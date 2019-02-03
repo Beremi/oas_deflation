@@ -1354,30 +1354,46 @@ static PyMethodDef Dmga2pyMethods[] = {
 
 
 
-PyMODINIT_FUNC
-initdmga2py(void)
-{
-    (void) Py_InitModule("dmga2py", Dmga2pyMethods);
+static struct PyModuleDef dmga2py = {
+  PyModuleDef_HEAD_INIT,
+  "dmga2py",
+  NULL,
+  -1,
+  Dmga2pyMethods,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
+
+PyMODINIT_FUNC PyInit_dmga2py(void) {
+  PyModule_Create(&dmga2py);
 }
 
 int
 main(int argc, char *argv[])
 {
+    wchar_t *program = Py_DecodeLocale(argv[0], NULL);
+    if (program == NULL) {
+        fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
+        exit(1);
+    }
+    /* Add a built-in module, before Py_Initialize */
+    PyImport_AppendInittab("dmga2py", PyInit_dmga2py);
+
     /* Pass argv[0] to the Python interpreter */
-    Py_SetProgramName(argv[0]);
+    Py_SetProgramName(program);
 
     /* Initialize the Python interpreter.  Required. */
     Py_Initialize();
 
     /* Add a static module */
-    initdmga2py();
+    PyInit_dmga2py();
 
+    PyMem_RawFree(program);
 	return 0;
 }
 
 
 
 }
-
-
-
