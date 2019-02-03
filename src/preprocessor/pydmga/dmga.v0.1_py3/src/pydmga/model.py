@@ -78,6 +78,7 @@ class CellVertexIterator:
         self._cell_handle = vertices._cell_handle
         self._max = vertices.size()
         self._i = -1
+        self._as_coords = as_coords
 
     def __iter__(self):
         '''
@@ -92,7 +93,7 @@ class CellVertexIterator:
         self._i += 1
         if (self._i >= self._max):
             raise StopIteration
-        if (as_coords):
+        if (self._as_coords):
             return dmga2py.cell_get_vertex_coords(self._cell_handle, self._i)
         else:
             return CellVertex(self._cell_handle, self._i, dmga2py.cell_get_vertex_coords(self._cell_handle, self._i))
