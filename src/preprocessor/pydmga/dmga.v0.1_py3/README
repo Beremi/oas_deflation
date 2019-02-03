@@ -20,7 +20,7 @@ diagram = Diagram(container)
 volume = 0.0
 for cell in diagram:
 	volume += cell.volume()
-print "volume is", volume, "should be", 10*10*10
+print("volume is", volume, "should be", 10*10*10)
 
 Other examples are under 
 
