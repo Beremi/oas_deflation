@@ -4,7 +4,6 @@ This package is supposed to contain routines for manipulating data in external f
 For better support for various biotechnological file formats consider using ``biopython`` library. Biopython may be obtained at http://biopython.org .
 """
 
-import pdb
+from . import pdb
 
 __all__ = ["pdb"]
-

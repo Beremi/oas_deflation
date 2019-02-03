@@ -21,11 +21,10 @@ The simplest code to render a half-transparent cube with side = 10au at the orig
 	r.run()
 """
 
-import render
-from render import *
-import assets
-import gen
-import geometry
+from . import render
+from .render import *
+from . import assets
+from . import gen
+from . import geometry
 
 __all__ = ["geometry", "gen", "assets", "render"]
-

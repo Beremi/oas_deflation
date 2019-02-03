@@ -14,24 +14,25 @@ import time
 #from dmga.io.pdb import PDBReader
 
 (box_x, box_y, box_z) = (300, 300, 300)
-print "[TEST] Classic Voronoi test"
+print("[TEST] Classic Voronoi test")
 g = OrthogonalGeometry(box_x, box_y, box_z, True, True, True)
 c = Container(g)
 if (len(sys.argv) > 1):
     count = int(sys.argv[1])
 else:
-    count = 1000    
-             
+    count = 1000
+
 for i in range(count):
-    c.add(i, box_x * random(), box_y * random(), box_z * random(), 1.0);
+    c.add(i, box_x * random(), box_y * random(), box_z * random(), 1.0)
 d = Diagram(c)
 
-#make parallel
+# make parallel
 ppservers = ()
 if (len(sys.argv) > 2):
     ncpus = int(sys.argv[2])
 else:
-    ncpus = 1 
+    ncpus = 1
+
 
 def compute_part(params):
     (diagram, start, step, last) = params
@@ -44,8 +45,9 @@ def compute_part(params):
         i += step
     return v
 
+
 pool = Pool(processes=ncpus)
-parts = pool.map(compute_part, [(d,i,ncpus,count) for i in range(ncpus)])
+parts = pool.map(compute_part, [(d, i, ncpus, count) for i in range(ncpus)])
 v = sum(parts)
 
-print v, 'vs', box_x*box_y*box_z
+print(v, 'vs', box_x*box_y*box_z)

@@ -14,7 +14,7 @@ from random import random
 from random import seed
 from math import pi
 
-(box_x, box_y, box_z) = (10.0, 10.0, 10.0);
+(box_x, box_y, box_z) = (10.0, 10.0, 10.0)
 # count = 8;
 # max_radius = 2.0;
 # data = [ (i, (box_x-max_radius*2.1) * random() + max_radius*1.05, (box_y-max_radius*2.1) * random() + max_radius*1.05, (box_z-max_radius*2.1) * random() + max_radius*1.05, 1.0 + (max_radius-1.0) * random()) for i in range(count)]
@@ -23,35 +23,35 @@ from math import pi
 # print "Data used:", data
 
 # count = 5
-# data = [(0, 5.0, 5.0, 5.0, 1.0), 
-#         (1, 5.0-1.0, 5.0, 5.0, 1.0), 
-#         (2, 5.0+1.0, 5.0, 5.0, 1.0), 
-#         (1, 5.0, 5.0-1.0, 5.0, 1.0), 
+# data = [(0, 5.0, 5.0, 5.0, 1.0),
+#         (1, 5.0-1.0, 5.0, 5.0, 1.0),
+#         (2, 5.0+1.0, 5.0, 5.0, 1.0),
+#         (1, 5.0, 5.0-1.0, 5.0, 1.0),
 #         (2, 5.0, 5.0+1.0, 5.0, 1.0)]
 
 count = 4
-data = [(0, 5.0, 5.0, 5.0, 1.0), 
-        (1, 5.0-1.0, 5.0, 5.0, 1.0), 
-        (2, 5.0, 5.0-1.0, 5.0, 1.0), 
+data = [(0, 5.0, 5.0, 5.0, 1.0),
+        (1, 5.0-1.0, 5.0, 5.0, 1.0),
+        (2, 5.0, 5.0-1.0, 5.0, 1.0),
         (3, 5.0, 5.0, 5.0-1.0, 1.0)]
-        #(3, 5.0-0.5, 5.0-0.5, 5.0-0.5, 1.0)]
+#(3, 5.0-0.5, 5.0-0.5, 5.0-0.5, 1.0)]
 
 # count = 3
-# data = [(0, 5.0, 5.0, 5.0, 1.0), 
-#         (1, 5.0-1.0, 5.0, 5.0, 1.0), 
+# data = [(0, 5.0, 5.0, 5.0, 1.0),
+#         (1, 5.0-1.0, 5.0, 5.0, 1.0),
 #         (2, 5.0, 5.0-1.0, 5.0, 1.0)]
 
 # count = 4
-# data = [(0, 5.0, 5.0, 5.0, 1.0), 
-#         (1, 5.0-0.75, 5.0-0.45, 5.0, 0.3), 
+# data = [(0, 5.0, 5.0, 5.0, 1.0),
+#         (1, 5.0-0.75, 5.0-0.45, 5.0, 0.3),
 #         (2, 5.0-0.45, 5.0-0.75, 5.0, 0.3),
 #         (3, 5.0-0.6, 5.0-0.6, 5.0+0.6, 0.38)]
 
 # geometry  = OrthogonalGeometry(10, 10, 10, False, False, False);
 # geometry  = OrthogonalGeometry(box_x, box_y, box_z, True, True, True);
-geometry  = OrthogonalGeometry(box_x, box_y, box_z, True, True, True);
+geometry = OrthogonalGeometry(box_x, box_y, box_z, True, True, True)
 container = Container(geometry)
-container.add(data)   
+container.add(data)
 
 diagram = Diagram(container)
 shape = SASAShape(diagram)
@@ -59,7 +59,7 @@ shape = SASAShape(diagram)
 display = render.Render(Color.WHITE_OPAQUE)
 
 area = shape.sas_area()
-print "SASA Area:", area
+print("SASA Area:", area)
 colors = [Color.RED_OPAQUE]
 for ball in container:
     (id, x, y, z, r) = ball
@@ -74,21 +74,23 @@ for ball in container:
 for i, cell_shape in enumerate(shape):
     if i == 0:
         (id, x, y, z, r) = container.get(i)
-        display.add(Asset(assets.sphere, (x,y,z), r, Color.BLUE_QUARTER))
-        all_area = cell_shape.sas_area() + cell_shape.excluded_area()    
-        print "area is", cell_shape.sas_area(), ", excluded area is", cell_shape.excluded_area()
-        print "sum is", all_area, "should be", 4.0 * pi * (r**2);
-        print cell_shape.area(), ",", cell_shape.volume()
+        display.add(Asset(assets.sphere, (x, y, z), r, Color.BLUE_QUARTER))
+        all_area = cell_shape.sas_area() + cell_shape.excluded_area()
+        print("area is", cell_shape.sas_area(),
+              ", excluded area is", cell_shape.excluded_area())
+        print("sum is", all_area, "should be", 4.0 * pi * (r**2))
+        print(cell_shape.area(), ",", cell_shape.volume())
         b = 0
         for a, side in enumerate(cell_shape):
             if side.neighbour >= 0:
                 b += 1
-                display.add(render.Outline(side.as_coords(), 2.0, Color.BLACK_OPAQUE))
+                display.add(render.Outline(
+                    side.as_coords(), 2.0, Color.BLACK_OPAQUE))
         points = draw.PointCloud()
-        great_arcs = render.GreatArcs((5,5,5),1.0,2.0,Color.BLUE_OPAQUE)
-        for j, arc in enumerate(cell_shape.shape()):       
-            print "Arc is: ", arc
-            arcs = draw.SphereArcs((x,y,z), r, 2.0, colors[j % len(colors)])
+        great_arcs = render.GreatArcs((5, 5, 5), 1.0, 2.0, Color.BLUE_OPAQUE)
+        for j, arc in enumerate(cell_shape.shape()):
+            print("Arc is: ", arc)
+            arcs = draw.SphereArcs((x, y, z), r, 2.0, colors[j % len(colors)])
             arcs.add_arc(arc.on_plane, arc.first, arc.second)
             #display.add(render.Lines([arc.first, arc.on_plane, arc.second], 2.0, Color.RED_OPAQUE))
             great_arcs.add_arcs([arc.first, arc.on_sphere, arc.second], False)

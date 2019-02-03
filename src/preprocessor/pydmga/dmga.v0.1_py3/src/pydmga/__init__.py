@@ -4,10 +4,10 @@ is much simpler than the bare C++ counterpart. It uses dmga2py module to communi
 with C++ library dmga. 
 """
 
-import container
-import diagram
-import geometry
-import model
-import shape
+from . import container
+from . import diagram
+from . import geometry
+from . import model
+from . import shape
 
 __all__ = ["container", "diagram", "geometry", "model", "shape"]
