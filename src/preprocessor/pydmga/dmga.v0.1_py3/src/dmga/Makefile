@@ -1,5 +1,4 @@
 #CONFIGURE THIS
-
 # C++ compiler
 CXX=g++
 
@@ -24,6 +23,8 @@ CFLAGS=-Wall -ansi -pedantic $(INC) -std=c++0x -ggdb -Wsign-compare -DEIGEN_MPL2
 OUT_DIR=$(BASE_DIR)/../../bin
 OUT_EXT=
 
+$(OUT_DIR): 
+	@mkdir -p $(OUT_DIR)
 
 # Tell make that these are phony targets
 .PHONY: all clean default voropp test dppc sasa_test
