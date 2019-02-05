@@ -6,10 +6,10 @@ import re  # regular expressions (split)
 import sys  # sys.argv
 
 from panda3d.core import *
-from pandac.PandaModules import NodePath
-from pandac.PandaModules import Point3
-from pandac.PandaModules import Vec4
-from pandac.PandaModules import LineSegs
+from panda3d.core import NodePath
+from panda3d.core import Point3
+from panda3d.core import Vec4
+from panda3d.core import LineSegs
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 
