@@ -2,15 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 import math
+import os
 
-from scipy.spatial import Voronoi 
+from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
 
 #VORONOI PY
 from shapely.geometry import Polygon, Point
-    
-    
+
+
 def mirror_data(data):
     '''Cast data array to 3x3 array by mirroring input data'''
     return np.vstack((np.array([0,2]) + np.array([-1,-1]) * data, np.array([0,2]) + data * np.array([1,-1]), np.array([2,2]) + data * np.array([-1,-1]),
@@ -32,7 +33,7 @@ def mirror_dataBeam(data, dim, sizes):
         np.array([0,sizes[1]*2]) + data * np.array([1,-1]),
         np.array([0,0]) + data * np.array([1,-1])
         ))
-    
+
     if (dim == 3):
         datao =  np.vstack((data,
             np.array([0,0,0]) + data * np.array([-1,1,1]),
@@ -42,7 +43,7 @@ def mirror_dataBeam(data, dim, sizes):
             np.array([ 0 ,0,0]) + data * np.array([1,1,-1]),
             np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
         ))
-        
+
         return np.vstack((
          datao
         ))
@@ -56,20 +57,20 @@ def copy_dataBeam(data, dim, sizes):
             data + np.array([-sizes[0], sizes[1]]),
             data + np.array([0,sizes[1]]),
             data + np.array([sizes[0],sizes[1]]),
-            data + np.array([-sizes[0],0]), 
+            data + np.array([-sizes[0],0]),
             data + np.array([sizes[0],0]),
             data + np.array([-sizes[0],-sizes[1]]),
             data + np.array([0,-sizes[1]]),
             data + np.array([sizes[0],-sizes[1]])
         ))
-    
+
     if (dim == 3):
         return np.vstack((
             data + np.array([0, 0,0]),
             data + np.array([-sizes[0], sizes[1],0]),
             data + np.array([0,sizes[1],0]),
             data + np.array([sizes[0],sizes[1],0]),
-            data + np.array([-sizes[0],0,0]), 
+            data + np.array([-sizes[0],0,0]),
             data + np.array([sizes[0],0,0]),
             data + np.array([-sizes[0],-sizes[1],0]),
             data + np.array([0,-sizes[1],0]),
@@ -78,7 +79,7 @@ def copy_dataBeam(data, dim, sizes):
             data + np.array([-sizes[0], sizes[1],sizes[2]]),
             data + np.array([0,sizes[1],sizes[2]]),
             data + np.array([sizes[0],sizes[1],sizes[2]]),
-            data + np.array([-sizes[0],0,sizes[2]]), 
+            data + np.array([-sizes[0],0,sizes[2]]),
             data + np.array([sizes[0],0,sizes[2]]),
             data + np.array([-sizes[0],-sizes[1],sizes[2]]),
             data + np.array([0,-sizes[1],sizes[2]]),
@@ -87,11 +88,11 @@ def copy_dataBeam(data, dim, sizes):
             data + np.array([-sizes[0], sizes[1],-sizes[2]]),
             data + np.array([0,sizes[1],-sizes[2]]),
             data + np.array([sizes[0],sizes[1],-sizes[2]]),
-            data + np.array([-sizes[0],0,-sizes[2]]), 
+            data + np.array([-sizes[0],0,-sizes[2]]),
             data + np.array([sizes[0],0,-sizes[2]]),
             data + np.array([-sizes[0],-sizes[1],-sizes[2]]),
             data + np.array([0,-sizes[1],-sizes[2]]),
-            data + np.array([sizes[0],-sizes[1],-sizes[2]])       
+            data + np.array([sizes[0],-sizes[1],-sizes[2]])
             ))
 
 
@@ -99,7 +100,7 @@ def voronoi_2d(vor, sizes):
 
     if vor.points.shape[1] != 2:
         raise ValueError("Requires 2D input")
-    
+
     polygons = []
     new_regions = []
     areas = []
@@ -135,21 +136,21 @@ def voronoi_3d(vor, sizes):
 
     if vor.points.shape[1] != 3:
         raise ValueError("Requires 3D input")
-    
+
     volumes = []
     #
     for i in range (vor.points.shape[0]):
         comp = True
         for p in range (3):
-            if (vor.points[i][p] < 0 or vor.points[i][p] > sizes[p] ): 
+            if (vor.points[i][p] < 0 or vor.points[i][p] > sizes[p] ):
                 comp = False
-        
+
         if (comp):
             vol = cellVolume3d(vor, i)
             volumes.append(vol)
             #print (vol)
-        
-   # print (np.sum(volumes))    
+
+   # print (np.sum(volumes))
 
     return volumes
 

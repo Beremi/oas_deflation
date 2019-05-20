@@ -3,6 +3,7 @@
 
 # In[1]:
 
+import os
 import time
 import numpy as np
 import random
@@ -33,6 +34,8 @@ import voronoi
 print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
 start = time.time()
 
+if not os.path.exists('/inpFiles'):
+    os.makedirs('/inpFiles')
 
 #type of solver. does not matter now
 solver = 0
