@@ -36,8 +36,8 @@ print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
 start = time.time()
 
 try:
-    if not os.path.exists('/inpFiles/'):
-        os.makedirs('/inpFiles/')
+    if not os.path.exists('inpFiles'):
+        os.makedirs('inpFiles')
 except:
     print('Please create inpFiles directory! Code Exited.')
     sys.exit()
