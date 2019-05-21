@@ -74,7 +74,10 @@ def getPlaneNormalVector (pA, pB, pC):
 # maxLim: n-d pole rozměrů kvádru
 # minDist
 def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
-    print('Generating 2d Rectangle segment...')
+    if (dim==2):
+        print('Generating 2d block segment of size: %f / %f ' %(maxLim[0], maxLim[1]) )
+    if (dim==3):
+        print('Generating 3d block segment of size: %f / %f / %f' %(maxLim[0], maxLim[1], maxLim[2]) )
     generatedPoints = 0
     tr = 0
     while (tr<trials):
@@ -128,7 +131,8 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
 
 
 def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, catchCorners):
-    print('Generating 3d Line segment...')
+    print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
+     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
     generatedPoints = 0
 
     if(catchCorners):
@@ -188,7 +192,8 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
 
 
 def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials):
-    print('Generating 3d Surface segment...')
+    print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f] '
+     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
     generatedPoints = 0
 
     tr=0
@@ -232,7 +237,7 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node
         #
         #
         node_mechBC.append(np.copy(mechBC))
-        print('3d Surf Pt: %d' %(generatedPoints))
+        #print('3d Surf Pt: %d' %(generatedPoints))
         clear_output(True)
 
    # print(node_coords)
@@ -245,7 +250,8 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node
 
 
 def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, catchCorners):
-    print('Generating 2d Line segment...')
+    print('Generating 2d line segment from [%f; %f] to [%f; %f] '
+     %(nodeA[0], nodeA[1], nodeB[0], nodeB[1]) )
     generatedPoints = 0
 
     if(catchCorners):
@@ -635,7 +641,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
 
-def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize, order):
+def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################
@@ -853,6 +859,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     if (allCoplanar):
         if (printout):print ('ALL ridges coplanar OK')
+        #print ('ALL ridges coplanar. Seems ok so far.')
     else:
         if (printout):print ('NOT ALL RIDGES COPLANAR !!!')
 

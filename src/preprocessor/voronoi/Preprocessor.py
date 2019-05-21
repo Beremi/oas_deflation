@@ -50,7 +50,7 @@ powerTes = 0
 
 #dimension 2/3
 dim = 2
-print('Creating a %dD lattice model...' %dim)
+print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
 if (dim == 2 ): maxLim = np.array([3,1])
@@ -60,11 +60,11 @@ if (dim == 3 ): maxLim = np.array([3,2,1])
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
-radius = 0.15
+radius = 0.1
 minDist = radius
 
 #trials of random node positioning
-trials = 1000
+trials = 5000
 
 
 #lists for the model
@@ -334,8 +334,7 @@ if (dim == 3 ):
 #for i in range (len(id)):#
 #    print (vor.vertices[id[i]])
 
-
-print('Checking connectivitiy...')
+#print('Checking connectivitiy...')
 # matice "konektivity" nodů
 A = np.zeros( (node_count,node_count) )
 
@@ -373,7 +372,7 @@ plt.imshow(A)
 #plt.colorbar()
 #plt.show()
 
-print('Diagonalizing...')
+#print('Diagonalizing...')
 C = np.zeros( (node_count,node_count) )
 C = csr_matrix(A)
 order = reverse_cuthill_mckee(C, symmetric_mode=True)
@@ -414,17 +413,15 @@ linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, transpC, tra
 materials.append(linElMaterial)
 
 
-diagonalize = False
-
 #print (len(points))
 
 print('Saving model...')
 if (dim == 2):
     vert_count = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
-    areas, order, mechanicalElements, mechBC_merged, transportPaths,materials, functions, diagonalize)
+    areas, order, mechanicalElements, mechBC_merged, transportPaths,materials, functions, False)
 if (dim == 3):
     vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
-    areas, order, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize)
+    areas, order, mechanicalElements, mechBC_merged, transportPaths, materials, functions, False)
 
 #print (vert_count)
 
