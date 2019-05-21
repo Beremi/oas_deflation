@@ -54,7 +54,7 @@ print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
 if (dim == 2 ): maxLim = np.array([3,1])
-if (dim == 3 ): maxLim = np.array([3,2,1])
+if (dim == 3 ): maxLim = np.array([1,1,1])
 
 #volume of the model (later for check)
 volume = np.sum(maxLim)
@@ -154,7 +154,7 @@ def assemble2DRectangle ():
 
 ######## FUNCTION FOR CREATING OF A 3D SUPPORTED RECTANGE
 def assemble3Dblock():
-    indent = 1e-8
+    indent = 1e-5
 
     transtBC = np.array([0,1])
     tsptBC = utilitiesGeom.transportBC(20, transtBC)
@@ -306,7 +306,7 @@ if (dim == 3 ):
    # ax.set_ylim3d(-maxLim[0],2*maxLim[0])
    # ax.set_zlim3d(-maxLim[0],2*maxLim[0])
 
-    #plt.show()
+    plt.show()
 
 #ptA = np.array([0,0])
 #ptB = np.array([0.5,0.7])

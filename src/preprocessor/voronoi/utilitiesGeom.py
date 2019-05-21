@@ -799,21 +799,24 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
             pC = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+2]][:]
             pD = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+3]][:]
             #pD[2] = 10
-            if ( equation_plane(pA, pB, pC, pD) > 1e-14 ): allCoplanar = False
+            if ( equation_plane(pA, pB, pC, pD) > 1e-14 ):
+                allCoplanar = False
+                print('Not coplanar!!! %d' %i)
+            #else: print('Coplanar  %d' %i)
 
         #normála plochy z prvních třech vertexů, normalizovaná
         planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][2]][:])
-        if (printout): print ('planeNormal:')
-        if (printout): print (planeNormal)
+        #if (printout): print ('planeNormal:')
+        #if (printout): print (planeNormal)
 
         # spojnice mezi generujícími body
         # měla by být totožná s normálou plochy. Když ne, tak se pak musí pořadí vertexů otočit
         pointNormal = vor.points[pointB] - vor.points[pointA]
         pointNormal /= np.linalg.norm(pointNormal)
-        if (printout): print ('pointNormal')
-        if (printout): print (pointNormal)
+        #if (printout): print ('pointNormal')
+        #if (printout): print (pointNormal)
 
         #print ('diff:')
         diff = np.linalg.norm(planeNormal - pointNormal)
@@ -852,16 +855,18 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
             if (angles [l] < 0):
                 angles [l] = 360 - (-angles [l])
 
-        if (printout): print (angles)
-        if (printout): print('\n')
+        #if (printout): print (angles)
+        #if (printout): print('\n')
 
         ridges_out.append(rdg)
 
     if (allCoplanar):
-        if (printout):print ('ALL ridges coplanar OK')
+        #if (printout):print ('ALL ridges coplanar OK')
+        print ('ALL ridges coplanar OK. Model seems ok.')
         #print ('ALL ridges coplanar. Seems ok so far.')
     else:
-        if (printout):print ('NOT ALL RIDGES COPLANAR !!!')
+        #if (printout):print ('NOT ALL RIDGES COPLANAR !!!')
+        print ('NOT ALL RIDGES COPLANAR !!!')
 
     #writing nodes
     ########################################################################################################
