@@ -11,7 +11,7 @@ def create2dCantileverUniTens(maxLim, minDist, trials ):
     return node_coords,node_mechBC, mechBC_merged
 
 
-
+#
 ######## FUNCTION FOR CREATING OF A 2D SUPPORTED RECTANGLE MODEL
 def assemble2DRectangle (maxLim, minDist, trials):
     dim = 2

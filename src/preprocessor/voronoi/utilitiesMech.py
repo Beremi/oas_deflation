@@ -6,7 +6,7 @@ from IPython.display import clear_output
 
 
 
-
+#
 ##################################################
 #### MECHANICAL BEAM ELEMENT FOR LATTICE MODEL ###
 class latticeBeam:

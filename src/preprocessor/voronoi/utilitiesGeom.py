@@ -21,7 +21,7 @@ auxNodesFile = 'inpFiles/auxNodes.inp'
 
 
 
-
+#
 #coplanarity test
 def equation_plane(pA, pB, pC, pD):
 
