@@ -2,17 +2,46 @@ import numpy as np
 import random
 import utilitiesGeom
 import utilitiesMech
+import utilitiesNumeric
+import voronoi
 
 def create2dCantileverUniTens(maxLim, minDist, trials ):
-    ### sampling of node point_size
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
     node_coords,node_mechBC, mechBC_merged  = assemble2DRectangle(maxLim, minDist, trials );
 
+    print('Conducting Voronoi tesselation...')
+    ### conducting Voronoi tesselation
+    vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    ### extracting characteristics of the Vor diagram
+    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
 
-    return node_coords,node_mechBC, mechBC_merged
+    # fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange', line_width=1, line_alpha=1, point_size=0.5)
+    # fig.set_figwidth(maxLim[0]*3)
+    # fig.set_figheight(maxLim[1]*3)
+    #
+    # for i in range(points.shape[0]):
+    #     plt.text(points[i,0], points[i,1], str(i))
+    #     #print (i)
+    #
+    # plt.xlim(-maxLim[0]*0.2, maxLim[0]*1.2)
+    # plt.ylim(-maxLim[1]*0.2, maxLim[1]*1.2)
+    # plt.show()
+
+    ### indirect setting of transportBCs by spatial selection of vertices
+    ### selecting vertices on the left surface
+    boundA = np.array(  [-1e-9 , 0] )
+    boundB = np.array(  [ 1e-7 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+    return node_coords,node_mechBC, mechBC_merged, vor, areas
+
+
+
 
 
 #
-######## FUNCTION FOR CREATING OF A 2D SUPPORTED RECTANGLE MODEL
+######## METHOD FOR CREATING OF A 2D SUPPORTED RECTANGLE MODEL
 def assemble2DRectangle (maxLim, minDist, trials):
     dim = 2
     #lists for the model
@@ -42,7 +71,7 @@ def assemble2DRectangle (maxLim, minDist, trials):
         mechBC_merged.append(mBC)
         #print('adding')
 
-    ###############generating of nodes, a single point top right (a line of zero length) ###############
+    ###############generating a single point top right (a line of zero length) ###############
     lineBC = np.array([-1,-1,-1,0,1,0])
 
     #defining points of the line
@@ -78,6 +107,16 @@ def assemble2DRectangle (maxLim, minDist, trials):
 
 
 
+
+
+
+
+def create3dCantileverUniTens(maxLim, minDist, trials ):
+    node_coords,node_mechBC, mechBC_merged  = assemble2DRectangle(maxLim, minDist, trials )
+
+    areas = voronoi.voronoi_3d(vor, maxLim)
+
+    return node_coords,node_mechBC, mechBC_merged
 
 ######## FUNCTION FOR CREATING OF A 3D SUPPORTED RECTANGE
 def assemble3Dblock():

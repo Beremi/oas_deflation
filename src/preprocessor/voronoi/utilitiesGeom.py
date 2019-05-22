@@ -592,32 +592,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         mechanicalElements.append (latticeBeamElement )
 
 
-
-    #writing mechanical lattice beam elements
-   # with open('mechanicalElements_out.txt', 'w') as f:
-     #   headerLine = 'nodeAidx\tnodeBidx\tmaterialIdx'
-    #    f.write("%s\n" % headerLine )
-    #    for item in mechanicalElements:
-    #        f.write("%s\n" % item.getString() )
-           # print (item.getString())
-
-
-
-    ### TRANSPORT PATHS
-    #for i in range ( len(ridges_out) ):
-     #   trsprtPath = utilitiesMech.transportPath2d (ridges_out[i][2], ridges_out[i][3], 0)
-     #   transportPaths.append(trsprtPath)
-
-
-    #writing transport paths from lattice model
-  #  with open('transportPaths_out.txt', 'w') as f:
-   #     headerLine = 'vertexAidx\tvertexBidx\tmaterialIdx'
-    #    f.write("%s\n" % headerLine )
-    #    for item in transportPaths:
-     #       f.write("%s\n" % item.getString() )
-           # print (item.getString())
-
-
     ### MATERIALS
     with open(materialsFile, 'w') as f:
         headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
@@ -1004,6 +978,8 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     return v_count
 
+
+
 def returnSelectedPts (boundPtA , boundPtB, points):
     dim = len (boundPtA)
     #
@@ -1096,17 +1072,11 @@ def saveMasterInput(dim, solver, solStep):
      fl=open(masterFile,'w')
      fl.write("%%% MASTER INPUT %%%\n")
 
-     #fl.write('MODEL:\tLATTICE\n')
-     #fl.write('POWERTESS:\t%d\n'%powerTes)
      fl.write('DIM:\t%d\n' % dim)
-     #fl.write('NODES:\t%ld\n' % node_count)
-     #fl.write('VERTICES:\t%ld\n' % vert_count)
 
      fl.write("\n%%% SOLUTION %%%\n")
      if (solver == 0):
             fl.write('SOLVER:\tMECH STEADY\tSTEP\t%e\n' % solStep)
-     #fl.write('TRANSIENT:\t%ld\n' % solStatDyn)
-     #fl.write('EXPLICIT:\t%ld\n' % solImpExp)
 
      fl.write("\n%%% INPUT FILES %%%\n")
      fl.write('NODES:\t%s\n' % nodesFile  )
@@ -1145,7 +1115,6 @@ def saveTransportBC(vertices_transportBCmerged):
         bc = np.zeros ((1 + 1+1))
         #
         bc[0] = vertices_transportBCmerged[i].getNodeIdx()
-        #
         bc[1:] = vertices_transportBCmerged[i].getTrsprtBC()
         #
         #print (len( bc))

@@ -85,3 +85,17 @@ class generalFunc:
 
         return line
 ####################################################
+
+
+##################################################
+#### Sine function ####
+class sineFunc:
+    def __init__ (self, amplitude, freq):
+        self.amplitude = amplitude
+        self.freq = freq
+    def getString(self):
+        line = 'SineFunction\t'
+        line += '%f\t' (self.freq)
+        line += '%f' (self.amplitude)
+        return line
+##################################################
