@@ -629,7 +629,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     ### FUNCTIONS
     with open(functionsFile, 'w') as f:
-        headerLine = 'numberOfDefPoints\tpointvalues'
+        headerLine = 'FuncType\tnumberOfDefPoints\tpointvalues'
         f.write("%s\n" % headerLine )
         for item in functions:
             f.write("%s\n" % item.getString() )

@@ -29,6 +29,7 @@ from scipy.sparse import csc_matrix
 
 import utilitiesGeom
 import utilitiesMech
+import utilitiesModeling
 import voronoi
 
 
@@ -60,12 +61,11 @@ if (dim == 3 ): maxLim = np.array([1,1,1])
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
-radius = 0.1
+radius = 0.2
 minDist = radius
 
 #trials of random node positioning
 trials = 5000
-
 
 #lists for the model
 node_coords = []
@@ -73,8 +73,6 @@ node_mechBC = []
 mechBC_merged = []
 transportBC_merged = []
 functions = []
-
-
 
 #### Defining functions
 #0 constant zero
@@ -89,158 +87,24 @@ func1.append( np.array([0, 1]) )
 fn1 = utilitiesMech.generalFunc(func1)
 functions.append (fn1)
 
-#just a test funtion for trsprtBC
+#2 jen zkusebni funkce pro transportni boundary conditions
 transtBC = np.array([0,1])
 tsptBC = utilitiesGeom.transportBC(-20, transtBC)
 transportBC_merged.append(tsptBC)
 
 
-
-######## FUNCTION FOR CREATING OF A 2D SUPPORTED RECTANGLE MODEL
-def assemble2DRectangle ():
-    #an indent due to mirroring of the data for voronoi tess.
-    indent = 1e-8
-
-    ###############generating of nodes, supported line left vertical ###############
-    #mech bc
-    lineBC = np.array([0,0,0,-1,-1,-1])
-
-    #defining points of the line
-    nodeA = np.array([indent, indent])
-    nodeB = np.array([indent, maxLim[1]-indent])
-
-    oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, True)
-    nrOfPoints =  (len(node_coords)) - oldLen
-    #print (nrOfPoints)
-
-    #adding mech boundary conditions
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
-
-    ###############generating of nodes, a single point top right (a line of zero length) ###############
-    lineBC = np.array([-1,-1,-1,0,1,0])
-
-    #defining points of the line
-    nodeA = np.array([maxLim[0] - indent, maxLim[1] - indent])
-    nodeB = np.array([maxLim[0] - indent, maxLim[1] - indent])
-
-    oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, False)
-    nrOfPoints =  (len(node_coords)) - oldLen
-    #print (nrOfPoints)
-
-    #adding mech boundary conditions
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
-
-    ##########################################generating of points, homogeneous volume
-    rectBC = np.array([-1,-1,-1,-1,-1,-1])
-
-    #rect
-    oldLen = len(node_coords)
-    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, rectBC)
-    #
-    newLen = len(node_coords)-1
-
-   # print (nrOfPoints)
-  #  mBC = utilitiesGeom.mechanicalBC(dim, kvadrBC, oldLen, newLen)
-   # mechBC_merged.append(mBC)
-    ####################################################################################################
-
-######## FUNCTION FOR CREATING OF A 3D SUPPORTED RECTANGE
-def assemble3Dblock():
-    indent = 1e-5
-
-    transtBC = np.array([0,1])
-    tsptBC = utilitiesGeom.transportBC(20, transtBC)
-    transportBC_merged.append(tsptBC)
-
-    ###############generating of points supported line bottom left ###############
-    mechBC = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
-
-    nodeA = np.array([indent , indent, indent])
-    nodeB = np.array([indent , maxLim[1] - indent, indent])
-
-    oldLen = len(node_coords)
-   # utilitiesGeom.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, True)
-    #
-    nrOfPoints =  (len(node_coords)) - oldLen
-
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
-
-    ###############generating of points supported line top right ###############
-    mechBC = np.array([-1,-1,-1, -1,-1,-1,    0,1,0, 0,0,0])
-
-    nodeA = np.array([maxLim[0] - indent , indent, maxLim[2] -indent])
-    nodeB = np.array([maxLim[0] - indent , maxLim[1] - indent, maxLim[2] -indent])
-
-    oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, True)
-    #
-    nrOfPoints =  (len(node_coords)) - oldLen
-     #print (nrOfPoints)
-
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
-
-
-    ###############generating of points supported surface  left face ###############
-    mechBC = np.array([0,0,0,0,0,0,-1,-1,-1,-1,-1,-1])
-
-    nodeA = np.array([ indent , indent, indent])
-    nodeB = np.array([ indent , maxLim[1] - indent, maxLim[2] -indent])
-
-    oldLen = len(node_coords)
-    utilitiesGeom.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials)
-    nrOfPoints =  (len(node_coords)) - oldLen
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
-
-
-    ###############generating of points rectangular volume ###############
-    mechBC = np.array([-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1])
-
-    #kvadr
-    oldLen = len(node_coords)
-    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC)
-    newLen = len(node_coords)-1
-    nrOfPoints =  (len(node_coords)) - oldLen
-   # for n in range ( nrOfPoints ):
-       # mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
-       # mechBC_merged.append(mBC)
-       # print('adding')
-    ####################################################################################################
-
-
-# In[5]:
-
-
 #sampling of nodes
 if (dim == 2):
-    assemble2DRectangle()
+    node_coords,node_mechBC, mechBC_merged = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
 if (dim == 3):
-   assemble3Dblock()
+    print('3d model inactive! Exiting.')
+    sys.exit()
+    #assemble3Dblock()
 
 
 node_coords = np.asarray(node_coords)
 node_count = len(node_coords)
-
-clear_output(True)
 print('Model containing %d nodes successfuly generated.' %(node_count))
-
-
 
 
 print('Conducting Voronoi tesselation...')
@@ -278,7 +142,7 @@ if (dim == 2 ):
     #plt.xlim(0, 1)
     #plt.ylim(0, 1)
 
-    #plt.show()
+    plt.show()
 
 if (dim == 3 ):
     areas = voronoi.voronoi_3d(vor, maxLim)
@@ -308,31 +172,7 @@ if (dim == 3 ):
 
     plt.show()
 
-#ptA = np.array([0,0])
-#ptB = np.array([0.5,0.7])
 
-#id = utilitiesGeom.returnSelectedPts (ptA, ptB, vor.points)
-
-#print (id)
-
-#for i in range (len(id)):#
-#    print (vor.points[id[i]])
-
-
-# In[8]:
-
-
-# spatial boundary conditions
-# najit vertexy na hornim lici
-#ptA = np.array([0, 0.99])
-#ptB = np.array([3, 1])
-
-#id = utilitiesGeom.returnSelectedPts (ptA, ptB, vor.vertices)
-
-#print (id)
-
-#for i in range (len(id)):#
-#    print (vor.vertices[id[i]])
 
 #print('Checking connectivitiy...')
 # matice "konektivity" nodů
@@ -429,6 +269,7 @@ if (dim == 3):
 mechSolStatDyn = 0
 mechSolImpExp = 0
 solStep = 1e-4
+
 
 print('Saving boundary conditions...')
 utilitiesGeom.saveMechBC(dim, mechBC_merged)
