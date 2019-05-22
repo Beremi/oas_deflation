@@ -530,9 +530,10 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         vA = ridges_out[i][3]
         vB = ridges_out[i][4]
         #
-        ridges_out[i][0] = 2
-        ridges_out[i][1] = vA
-        ridges_out[i][2] = vB
+
+        ridges_out[i][0] = vA
+        ridges_out[i][1] = vB
+        ridges_out[i][2] = 2
         ridges_out[i][3] = nA
         ridges_out[i][4] = nB
         #
@@ -542,7 +543,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     ############################################### ridges: idx noduA, idx noduB, transport okr. podmínka, idx vertexů
 #    headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
 
-    headerLine = 'ElemType\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tnodeAidx\tnodeBidx\tMaterial'
+    headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
 
 
     fl=open(trsprtElemsFile ,'w')
@@ -552,8 +553,8 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     for i in range (len(ridges_out)):
         #
-        nA = ridges_out[i][1]
-        nB = ridges_out[i][2]
+        nA = ridges_out[i][0]
+        nB = ridges_out[i][1]
         vA = ridges_out[i][3]
         vB = ridges_out[i][4]
         #
@@ -863,7 +864,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     if (allCoplanar):
         #if (printout):print ('ALL ridges coplanar OK')
         print ('ALL ridges coplanar OK. Model seems ok.')
-        #print ('ALL ridges coplanar. Seems ok so far.')
     else:
         #if (printout):print ('NOT ALL RIDGES COPLANAR !!!')
         print ('NOT ALL RIDGES COPLANAR !!!')
