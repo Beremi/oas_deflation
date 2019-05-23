@@ -48,7 +48,7 @@ def equation_plane(pA, pB, pC, pD):
     #
     return condition
 
-#vrátí normalizovaný vektor normály plochy ze třech bodů
+#return normalized vector normal to plane determined by 3 points
 def getPlaneNormalVector (pA, pB, pC):
     a1 = pB[0] - pA[0]
     b1 = pB[1] - pA[1]
@@ -69,9 +69,9 @@ def getPlaneNormalVector (pA, pB, pC):
     return  normal
 
 
-# vygeneruje náhodné body při zadané minimální vzdálenosti
-# do 2D nebo 3D kvádru
-# maxLim: n-d pole rozměrů kvádru
+# vygeneruje nahodne body pri zadane minimalni vzdalenosti
+# do 2D nebo 3D kvadru
+# maxLim: n-d pole rozmeru kvadru
 # minDist
 def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
     if (dim==2):
@@ -370,10 +370,10 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
 
-    # slovník originálních a nových indexů vertexů
+    # slovnik originalnich a novych indexu vertexu
     verticesIdxDict = {}
 
-    # ridges: idx noduA, idx noduB, transport okr. podmínka, idx vertexů
+    # ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
     ridges_out = []
 
     #auxiliary nodes
@@ -387,19 +387,19 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         vrtxA = np.zeros ( (dim  +1 +1 ) )
         vrtxB = np.zeros ( (dim  +1 +1 ) )
 
-        #originální indexy vertexů A a B
+        #originalni indexy vertexu A a B
         vertA = vor.ridge_vertices[validRidgeIdxs[i]][0]
         vertB = vor.ridge_vertices[validRidgeIdxs[i]][1]
 
         #print (vertA)
         #print (vertB)
 
-        #kopírovaní souřadnic vertexů A a B
+        #kopirovani souradnic vertexu A a B
         for d in range (dim):
             vrtxA [d] = vor.vertices[vertA][d]
             vrtxB [d] = vor.vertices[vertB][d]
 
-        #kopírování originálních indexů vertexů A a B
+        #kopirovani originalnich indexu vertexu A a B
         vrtxA[dim] = vertA
         vrtxB[dim] = vertB
 
@@ -407,7 +407,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         vrtxA[dim+1] = 0
         vrtxB[dim+1] = 0
 
-        #kontrola duplicity vertexů A a B v listu
+        #kontrola duplicity vertexu A a B v listu
         addVrtxA = True
         addVrtxB = True
         for j in range (len(vertices_out)):
@@ -416,7 +416,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
             if (vertices_out[j][0] ==  vor.vertices[vertB][0] and vertices_out[j][1] ==  vor.vertices[vertB][1]):
                 addVrtxB = False
 
-        #přidání vertexů A nebo B do listu vertexů
+        #pridani vertexu A nebo B do listu vertexu
         if (addVrtxA == True):
             verticesIdxDict.update( { vertA : len(vertices_out)  } )
             vrtxA [dim] = len(vertices_out)
@@ -432,7 +432,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #pole pro ridge nAidx, nBidx, trBc, vertAidx, vertBidx
         rdg = np.zeros ( (2 + 1 +  2) )
 
-        #indexy dvou nodů, které ridge rozděluje
+        #indexy dvou nodu, ktere ridge rozdeluje
         pointA = vor.ridge_points[validRidgeIdxs[i],0]
         pointB = vor.ridge_points[validRidgeIdxs[i],1]
         #
@@ -460,14 +460,14 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #transport BC
        # rdg[2] = 0
 
-        #indexy vertexů, které ridge tvoří
+        #indexy vertexu, ktere ridge tvori
 
         rdg[2] = 2
         #rdg[3] = vertB
 
         rdg[3] = verticesIdxDict[vertA] #vrtxA [dim] #verticesIdxDict[vertA]
         rdg[4] = verticesIdxDict[vertB] #vrtxB [dim] #verticesIdxDict[vertA]
-        #přidání ridge do listu ridges
+        #pridani ridge do listu ridges
         ridges_out.append(rdg)
 
         #print ('Ridge nr %d: vertices %d and %d' %(validRidgeIdxs[i], vertA, vertB ) )
@@ -539,7 +539,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
     #writing ridges - transport elements
-    ############################################### ridges: idx noduA, idx noduB, transport okr. podmínka, idx vertexů
+    ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
 #    headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
 
     headerLine = 'ElemType\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tnodeAidx\tnodeBidx\tMaterial'
@@ -678,7 +678,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         nodes_out[n, dim+3]  =  mechBCidx
 
     ########################################################################################################
-    # ridges, které mají nody ve vzorku
+    # ridges, ktere maji nody ve vzorku
     validRidgeIdxs = []
 
     #print('ridge points')
@@ -699,10 +699,10 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
 
-    # slovník originálních a nových indexů vertexů
+    # slovnik originalnich a novych indexu vertexu
     verticesIdxDict = {}
 
-    # ridges: idx noduA, idx noduB, transport okr. podmínka, idx vertexů
+    # ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
     ridges_out = []
 
     #auxiliary nodes
@@ -719,7 +719,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
        # vrtxs = []
 
         rdge = vor.ridge_vertices[validRidgeIdxs[i]]
-        #indexy všech vertexů tvořících plošný ridge
+        #indexy vsech vertexu tvoricich plosny ridge
         for j in range (len(rdge)):
             vrtx = np.zeros ( (dim + 1 +1 +1) ) # vor.ridge_vertices[validRidgeIdxs[i]]  [j]
             #
@@ -741,10 +741,10 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
         #ridges
         ########################################################
-        #pole pro ridge nAidx, nBidx, trBc, početVertexů, newIdxVertexů
+        #pole pro ridge nAidx, nBidx, trBc, pocetVertexu, newIdxVertexu
         rdg = np.zeros ( (2 + 0 + 1 + len(vor.ridge_vertices[validRidgeIdxs[i]])  ) )
 
-        #indexy dvou nodů, které ridge rozděluje
+        #indexy dvou nodu, ktere ridge rozdeluje
         pointA = vor.ridge_points[validRidgeIdxs[i]][0]
         pointB = vor.ridge_points[validRidgeIdxs[i]][1]
         #
@@ -780,19 +780,19 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #transport BC
         #rdg[2] = 6666666666666666
 
-        #počet vertexů
+        #pocet vertexu
         nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
         rdg[2] =  nrVertices
         #print (rdg[3])
         #
-        #přidání indexů vertexů
+        #pridani indexu vertexu
         for v in range ( len(vor.ridge_vertices[validRidgeIdxs[i]]) ):
             rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[validRidgeIdxs[i]][v] ]
 
             #print (rdg[3+v] )
 
 
-        #kontrola, že všechny body v ridge jsou koplanární
+        #kontrola, ze vsechny body v ridge jsou koplanarni
         for v in range ( nrVertices-3 ):
             pA = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v]][:]
             pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
@@ -804,15 +804,15 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
                 print('Not coplanar!!! %d' %i)
             #else: print('Coplanar  %d' %i)
 
-        #normála plochy z prvních třech vertexů, normalizovaná
+        #normala plochy z prvnich trech vertexu, normalizovana
         planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][2]][:])
         #if (printout): print ('planeNormal:')
         #if (printout): print (planeNormal)
 
-        # spojnice mezi generujícími body
-        # měla by být totožná s normálou plochy. Když ne, tak se pak musí pořadí vertexů otočit
+        # spojnice mezi generujicimi body
+        # mela by byt totozna s normalou plochy. Kdyz ne, tak se pak musi poradi vertexu otocit
         pointNormal = vor.points[pointB] - vor.points[pointA]
         pointNormal /= np.linalg.norm(pointNormal)
         #if (printout): print ('pointNormal')
@@ -827,8 +827,8 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
             #np.flip( (rdg[4:]), axis = 0)
             rdg[nrVertices:] = rdg[:nrVertices-1:-1]
 
-        ##############přeřazení bodů podle úhlu atan2((Vb x Va) . Vn, Va . Vb)##############
-        #průměrný bod ze souřadnic vertexů
+        ##############prerazeni bodu podle uhlu atan2((Vb x Va) . Vn, Va . Vb)##############
+        #prumerny bod ze souradnic vertexu
         avgPoint = np.zeros(3)
         for d in range (3):
             for l in range ( nrVertices ):
@@ -838,15 +838,15 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #print('avgPoint')
         #print(avgPoint)
 
-        #pole vzájemných ůhlů mezi body a 'středem'
+        #pole vzajemnych uhlu mezi body a 'stredem'
         angles = np.zeros(nrVertices)
 
-        #vektor, od ktereho se měří úhly (centrum a prví vertex)
+        #vektor, od ktereho se meri uhly (centrum a prvi vertex)
         referenceVector =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:] - avgPoint
         # print ('refvec')
         # print (referenceVector)
 
-        # výpočet úhlu mezi všemi vektory tvořenými středem a vertexy
+        # vypocet uhlu mezi vsemi vektory tvorenymi stredem a vertexy
         # atan2((Vb x Va) . Vn, Va . Vb)
         for l in range ( nrVertices ):
             currVector =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][l]][:] - avgPoint
@@ -920,7 +920,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
     #writing ridges
-    ############################################### ridges: idx noduA, idx noduB, transport okr. podmínka, idx vertexů
+    ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
     headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
 
     fl=open(trsprtElemsFile,'w')
