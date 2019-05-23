@@ -6,18 +6,18 @@ from IPython.display import clear_output
 
 import utilitiesMech
 
-masterFile = "inpFiles/master.inp"
-nodesFile = "inpFiles/nodes.inp"
-verticesFile = 'inpFiles/vertices.inp'
-mechElemsFile = 'inpFiles/mechElems.inp'
-trsprtElemsFile = 'inpFiles/trsprtElems.inp'
-mechBCFile = 'inpFiles/mechBC.inp'
-trsprtBCFile = 'inpFiles/trsprtBC.inp'
-materialsFile= 'inpFiles/materials.inp'
-functionsFile = 'inpFiles/functions.inp'
-initConditionsMechFile = 'inpFiles/initCondMech.inp'
-initConditionsTrsprtFile = 'inpFiles/initCondTrsprt.inp'
-auxNodesFile = 'inpFiles/auxNodes.inp'
+masterFile                  = "inpFiles/master.inp"
+nodesFile                   = "inpFiles/nodes.inp"
+verticesFile                = 'inpFiles/vertices.inp'
+mechElemsFile               = 'inpFiles/mechElems.inp'
+trsprtElemsFile             = 'inpFiles/trsprtElems.inp'
+mechBCFile                  = 'inpFiles/mechBC.inp'
+trsprtBCFile                = 'inpFiles/trsprtBC.inp'
+materialsFile               = 'inpFiles/materials.inp'
+functionsFile               = 'inpFiles/functions.inp'
+initConditionsMechFile      = 'inpFiles/initCondMech.inp'
+initConditionsTrsprtFile    = 'inpFiles/initCondTrsprt.inp'
+auxNodesFile                = 'inpFiles/auxNodes.inp'
 
 
 
@@ -103,8 +103,6 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
             if (tr > trials): break
         if (tr > trials): break
         #
-        #
-        #
         #Adding node coords
         #
         node_coords.append(coords)
@@ -112,11 +110,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
         generatedPoints  += 1
         #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
-        #
-        #
         #
         #print('Pt: %d Tr: %d' %(generatedPoints, tr))
         #print('Rect Pt: %d' %generatedPoints)
@@ -173,16 +167,11 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
             if (tr > trials): break
         #
         #Adding node coords
-        #
-
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-
         #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
         #print('3d Line Pt: %d' %(generatedPoints))
         #clear_output(True)
@@ -227,24 +216,15 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node
         #
         #Adding node coords
         #
-
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-
-        #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
         #print('3d Surf Pt: %d' %(generatedPoints))
         clear_output(True)
 
    # print(node_coords)
-
-
-
-
 
 
 
@@ -263,10 +243,6 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         #
         node_mechBC.append(np.copy(mechBC))
         node_mechBC.append(np.copy(mechBC))
-
-
-
-
     tr=0
     while (tr<trials):
         tr = 0;
@@ -299,11 +275,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-
-        #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
         #print('2d Line Pt: %d' %(generatedPoints))
         #clear_output(True)
@@ -391,9 +363,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         vertA = vor.ridge_vertices[validRidgeIdxs[i]][0]
         vertB = vor.ridge_vertices[validRidgeIdxs[i]][1]
 
-        #print (vertA)
-        #print (vertB)
-
         #kopírovaní souřadnic vertexů A a B
         for d in range (dim):
             vrtxA [d] = vor.vertices[vertA][d]
@@ -402,7 +371,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #kopírování originálních indexů vertexů A a B
         vrtxA[dim] = vertA
         vrtxB[dim] = vertB
-
 
         vrtxA[dim+1] = 0
         vrtxB[dim+1] = 0
@@ -472,17 +440,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
         #print ('Ridge nr %d: vertices %d and %d' %(validRidgeIdxs[i], vertA, vertB ) )
         #print ('btw pts: %d and %d' %( pointA, pointB ) )
-    ########################################################################################
-    #vO = np.asarray(vertices_out)
-    #print (vO)
-
-    #rO = np.asarray(ridges_out)
-    #print(rO)
-
-
-    #print('ridge vertices')
-    #print(regions)
-    #print(verticesIdxDict)
 
     #writing nodes
     ##############################################
@@ -520,10 +477,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     np.savetxt(fl, vertices_print[:, 0:2], delimiter='\t', fmt='TrsprtNode\t%.12f\t%.12f', header = headerLine)
     fl.close()
 
+    vertIdxStart = node_count + len(aux_nodes)
 
     for i in range (len(ridges_out)):
-        ridges_out[i][3] += node_count + len(aux_nodes)
-        ridges_out[i][4] += node_count + len(aux_nodes)
+        ridges_out[i][3] += vertIdxStart
+        ridges_out[i][4] += vertIdxStart
         #
         nA = ridges_out[i][0]
         nB = ridges_out[i][1]
@@ -610,7 +568,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
           # print (item.getString())
 
 
-    return v_count
+    return v_count, verticesIdxDict, vertIdxStart
 
 
 
@@ -1107,14 +1065,14 @@ class transportBC:
         return self.nodeIdx
 
 
-def saveTransportBC(vertices_transportBCmerged):
+def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
 
     trsptBC_out = []
 
     for i in range (len(vertices_transportBCmerged)):
         bc = np.zeros ((1 + 1+1))
         #
-        bc[0] = vertices_transportBCmerged[i].getNodeIdx()
+        bc[0] = verticesDict[vertices_transportBCmerged[i].getNodeIdx()] + vertIdxStart
         bc[1:] = vertices_transportBCmerged[i].getTrsprtBC()
         #
         #print (len( bc))

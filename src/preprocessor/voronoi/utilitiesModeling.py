@@ -29,12 +29,28 @@ def create2dCantileverUniTens(maxLim, minDist, trials ):
     # plt.show()
 
     ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
     ### selecting vertices on the left surface
-    boundA = np.array(  [-1e-9 , 0] )
-    boundB = np.array(  [ 1e-7 , maxLim[1]]  )
+    leftFaceBC = np.array([2,-1])
+    boundA = np.array(  [-1e-8 , 0] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
 
-    return node_coords,node_mechBC, mechBC_merged, vor, areas
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+
+    return node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas
 
 
 

@@ -88,30 +88,32 @@ func1.append( np.array([0, 1]) )
 fn1 = utilitiesMech.generalFunc(func1)
 functions.append (fn1)
 
-#2 jen zkusebni funkce pro transportni boundary conditions
-transtBC = np.array([0,1])
-tsptBC = utilitiesGeom.transportBC(-20, transtBC)
-transportBC_merged.append(tsptBC)
+#transport function leftFace
+func2 = []
+func2.append( np.array([2, 3]) )
+fn2 = utilitiesMech.generalFunc(func2)
+functions.append (fn2)
 
+#transport function rightFace
+func3 = []
+func3.append( np.array([8, 6]) )
+fn3 = utilitiesMech.generalFunc(func3)
+functions.append (fn3)
 
 #sampling of nodes
 if (dim == 2):
-    node_coords,node_mechBC, mechBC_merged, vor, areas = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
+    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
 if (dim == 3):
     print('3d model inactive! Exiting.')
     sys.exit()
     #assemble3Dblock()
 
-
 node_coords = np.asarray(node_coords)
 node_count = len(node_coords)
 print('Model containing %d nodes successfuly generated.' %(node_count))
 
-
-
 #reordering nodes due to their connectivity
 order = utilitiesNumeric.reorderToDiagonal(node_count, node_coords, vor)
-
 
 mechanicalElements = []
 transportPaths = []
@@ -131,7 +133,7 @@ materials.append(linElMaterial)
 
 print('Saving model...')
 if (dim == 2):
-    vert_count = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
     areas, order, mechanicalElements, mechBC_merged, transportPaths,materials, functions, False)
 if (dim == 3):
     vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
@@ -139,14 +141,12 @@ if (dim == 3):
 
 
 solStep = 1e-4
-
 print('Saving boundary conditions...')
 utilitiesGeom.saveMechBC(dim, mechBC_merged)
-utilitiesGeom.saveTransportBC(transportBC_merged)
+utilitiesGeom.saveTransportBC(transportBC_merged, verticesIdxDict, vertIdxStart)
 
 print('Saving master file...')
 utilitiesGeom.saveMasterInput(dim, solver, solStep)
-
 
 
 end =  time.time() -start
