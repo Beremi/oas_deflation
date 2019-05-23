@@ -8,7 +8,7 @@ from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
 
-#VORONOI PY
+#VORONOI PY#
 from shapely.geometry import Polygon, Point
 
 

@@ -2,26 +2,35 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 import math
+import os
 from IPython.display import clear_output
 
 import utilitiesMech
 
-masterFile = "inpFiles/master.inp"
-nodesFile = "inpFiles/nodes.inp"
-verticesFile = 'inpFiles/vertices.inp'
-mechElemsFile = 'inpFiles/mechElems.inp'
-trsprtElemsFile = 'inpFiles/trsprtElems.inp'
-mechBCFile = 'inpFiles/mechBC.inp'
-trsprtBCFile = 'inpFiles/trsprtBC.inp'
-materialsFile= 'inpFiles/materials.inp'
-functionsFile = 'inpFiles/functions.inp'
-initConditionsMechFile = 'inpFiles/initCondMech.inp'
-initConditionsTrsprtFile = 'inpFiles/initCondTrsprt.inp'
-auxNodesFile = 'inpFiles/auxNodes.inp'
+master_folder = "coupled_problem"
+try:
+    if not os.path.exists(master_folder):
+        os.makedirs(master_folder)
+except:
+    print('Please create directory %s! Code Exited.'%master_folder)
+    sys.exit()
+
+masterFile                  = "master.inp"
+nodesFile                   = "nodes.inp"
+verticesFile                = "vertices.inp"
+mechElemsFile               = "mechElems.inp"
+trsprtElemsFile             = "trsprtElems.inp"
+mechBCFile                  = "mechBC.inp"
+trsprtBCFile                = "trsprtBC.inp"
+materialsFile               = "materials.inp"
+functionsFile               = "functions.inp"
+initConditionsMechFile      = "initCondMech.inp"
+initConditionsTrsprtFile    = "initCondTrsprt.inp"
+auxNodesFile                = "auxNodes.inp"
+exportersFile               = "exporters.inp"
 
 
-
-
+#
 #coplanarity test
 def equation_plane(pA, pB, pC, pD):
 
@@ -103,8 +112,6 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
             if (tr > trials): break
         if (tr > trials): break
         #
-        #
-        #
         #Adding node coords
         #
         node_coords.append(coords)
@@ -112,11 +119,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
         generatedPoints  += 1
         #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
-        #
-        #
         #
         #print('Pt: %d Tr: %d' %(generatedPoints, tr))
         #print('Rect Pt: %d' %generatedPoints)
@@ -173,16 +176,11 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
             if (tr > trials): break
         #
         #Adding node coords
-        #
-
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-
         #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
         #print('3d Line Pt: %d' %(generatedPoints))
         #clear_output(True)
@@ -227,24 +225,15 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node
         #
         #Adding node coords
         #
-
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-
-        #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
         #print('3d Surf Pt: %d' %(generatedPoints))
         clear_output(True)
 
    # print(node_coords)
-
-
-
-
 
 
 
@@ -263,10 +252,6 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         #
         node_mechBC.append(np.copy(mechBC))
         node_mechBC.append(np.copy(mechBC))
-
-
-
-
     tr=0
     while (tr<trials):
         tr = 0;
@@ -299,11 +284,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-
-        #
         #Adding node mechBC
-        #
-        #
         node_mechBC.append(np.copy(mechBC))
         #print('2d Line Pt: %d' %(generatedPoints))
         #clear_output(True)
@@ -391,9 +372,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         vertA = vor.ridge_vertices[validRidgeIdxs[i]][0]
         vertB = vor.ridge_vertices[validRidgeIdxs[i]][1]
 
-        #print (vertA)
-        #print (vertB)
-
         #kopirovani souradnic vertexu A a B
         for d in range (dim):
             vrtxA [d] = vor.vertices[vertA][d]
@@ -402,7 +380,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #kopirovani originalnich indexu vertexu A a B
         vrtxA[dim] = vertA
         vrtxB[dim] = vertB
-
 
         vrtxA[dim+1] = 0
         vrtxB[dim+1] = 0
@@ -472,17 +449,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
         #print ('Ridge nr %d: vertices %d and %d' %(validRidgeIdxs[i], vertA, vertB ) )
         #print ('btw pts: %d and %d' %( pointA, pointB ) )
-    ########################################################################################
-    #vO = np.asarray(vertices_out)
-    #print (vO)
-
-    #rO = np.asarray(ridges_out)
-    #print(rO)
-
-
-    #print('ridge vertices')
-    #print(regions)
-    #print(verticesIdxDict)
 
     #writing nodes
     ##############################################
@@ -497,15 +463,22 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         for x in range (len(nodes_out)):
             nodes_out[x, :] = nodes_backup[order[x],:]
 
-    fl=open(nodesFile,'w')
+    fl=open(os.path.join(master_folder,nodesFile),'w')
     np.savetxt(fl,  nodes_out[:,  0:3], delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
 
 
     headerLine  = "Type\tnodeCrdX\tnodeCrdY"
     fmt='AuxNode\t%.12f\t%.12f'
-    fl=open(auxNodesFile,'w')
+    fl=open(os.path.join(master_folder,auxNodesFile),'w')
     np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
+    fl.close()
+
+
+    #HACK - HONZO, PROSIM OPRAV
+    fl=open(os.path.join(master_folder,exportersFile),'w')
+    fl.write("TXTNodalExporter translations 2 ux uy\n")
+    fl.write("TXTNodalExporter pressure 1 pressure")
     fl.close()
 
     #writing vertices
@@ -516,23 +489,25 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     v_count = len (vertices_out)
 
-    fl=open(verticesFile,'w')
+    fl=open(os.path.join(master_folder,verticesFile),'w')
     np.savetxt(fl, vertices_print[:, 0:2], delimiter='\t', fmt='TrsprtNode\t%.12f\t%.12f', header = headerLine)
     fl.close()
 
+    vertIdxStart = node_count + len(aux_nodes)
 
     for i in range (len(ridges_out)):
-        ridges_out[i][3] += node_count + len(aux_nodes)
-        ridges_out[i][4] += node_count + len(aux_nodes)
+        ridges_out[i][3] += vertIdxStart
+        ridges_out[i][4] += vertIdxStart
         #
         nA = ridges_out[i][0]
         nB = ridges_out[i][1]
         vA = ridges_out[i][3]
         vB = ridges_out[i][4]
         #
-        ridges_out[i][0] = 2
-        ridges_out[i][1] = vA
-        ridges_out[i][2] = vB
+
+        ridges_out[i][0] = vA
+        ridges_out[i][1] = vB
+        ridges_out[i][2] = 2
         ridges_out[i][3] = nA
         ridges_out[i][4] = nB
         #
@@ -542,18 +517,18 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
 #    headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
 
-    headerLine = 'ElemType\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tnodeAidx\tnodeBidx\tMaterial'
+    headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
 
 
-    fl=open(trsprtElemsFile ,'w')
+    fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
     np.savetxt(fl, ridges_out, delimiter='\t',fmt='LTCTRSP\t%d\t%d\t%d\t%d\t%d\t1',
           header = headerLine )
     fl.close()
 
     for i in range (len(ridges_out)):
         #
-        nA = ridges_out[i][1]
-        nB = ridges_out[i][2]
+        nA = ridges_out[i][0]
+        nB = ridges_out[i][1]
         vA = ridges_out[i][3]
         vB = ridges_out[i][4]
         #
@@ -574,8 +549,8 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
      #       tady se to prehazi
     headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
    # headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfVertices\tnodeAidx\tnodeBidx\tMaterial'
-    fl=open(mechElemsFile,'w')
-    np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t1',
+    fl=open(os.path.join(master_folder,mechElemsFile),'w')
+    np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0',
           header = headerLine )
     fl.close()
 
@@ -591,34 +566,8 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         mechanicalElements.append (latticeBeamElement )
 
 
-
-    #writing mechanical lattice beam elements
-   # with open('mechanicalElements_out.txt', 'w') as f:
-     #   headerLine = 'nodeAidx\tnodeBidx\tmaterialIdx'
-    #    f.write("%s\n" % headerLine )
-    #    for item in mechanicalElements:
-    #        f.write("%s\n" % item.getString() )
-           # print (item.getString())
-
-
-
-    ### TRANSPORT PATHS
-    #for i in range ( len(ridges_out) ):
-     #   trsprtPath = utilitiesMech.transportPath2d (ridges_out[i][2], ridges_out[i][3], 0)
-     #   transportPaths.append(trsprtPath)
-
-
-    #writing transport paths from lattice model
-  #  with open('transportPaths_out.txt', 'w') as f:
-   #     headerLine = 'vertexAidx\tvertexBidx\tmaterialIdx'
-    #    f.write("%s\n" % headerLine )
-    #    for item in transportPaths:
-     #       f.write("%s\n" % item.getString() )
-           # print (item.getString())
-
-
     ### MATERIALS
-    with open(materialsFile, 'w') as f:
+    with open(os.path.join(master_folder,materialsFile), 'w') as f:
         headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
        # f.write("%s\n" % headerLine )
         for item in materials:
@@ -627,15 +576,15 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
     ### FUNCTIONS
-    with open(functionsFile, 'w') as f:
-        headerLine = 'numberOfDefPoints\tpointvalues'
+    with open(os.path.join(master_folder,functionsFile), 'w') as f:
+        headerLine = '#FuncType\tnumberOfDefPoints\tpointvalues'
         f.write("%s\n" % headerLine )
         for item in functions:
             f.write("%s\n" % item.getString() )
           # print (item.getString())
 
 
-    return v_count
+    return v_count, verticesIdxDict, vertIdxStart
 
 
 
@@ -863,7 +812,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     if (allCoplanar):
         #if (printout):print ('ALL ridges coplanar OK')
         print ('ALL ridges coplanar OK. Model seems ok.')
-        #print ('ALL ridges coplanar. Seems ok so far.')
     else:
         #if (printout):print ('NOT ALL RIDGES COPLANAR !!!')
         print ('NOT ALL RIDGES COPLANAR !!!')
@@ -873,14 +821,14 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
    # headerLine =  "nodeCrdX \t nodeCrdY \t nodeCrdZ \t powRadius \t vorArea \t bcTransX \t bcTransY \t bcTransZ \t bcRotX \t bcRotY \t bcRotZ"
     headerLine =  "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ\tpowRadius"
 
-    fl=open(nodesFile,'w')
+    fl=open(os.path.join(master_folder,nodesFile),'w')
     np.savetxt(fl,  nodes_out[:,  0:4], delimiter='\t',  fmt = 'Particle\t%.12f\t%.12f\t%.12f\t%.12f',  header = headerLine)
     fl.close()
 
     #writing auxNodes
     headerLine  = "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ"
     fmt='AuxNode\t%.12f\t%.12f\t%.12f'
-    fl=open(auxNodesFile,'w')
+    fl=open(os.path.join(master_folder,auxNodesFile),'w')
     np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
 
@@ -892,7 +840,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     vertices_print = np.asarray(vertices_out)
     v_count = len(vertices_print)
 
-    fl=open(verticesFile,'w')
+    fl=open(os.path.join(master_folder,verticesFile),'w')
     np.savetxt(fl, vertices_print[:, 0:3], delimiter='\t', fmt='TrsprtNode%.12f\t%.12f\t%.12f', header = headerLine)
     fl.close()
 
@@ -923,7 +871,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
     headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
 
-    fl=open(trsprtElemsFile,'w')
+    fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
     ro = np.asarray(ridges_out_trsprt[0])
     #print (ro)
     fl.write(headerLine)
@@ -953,7 +901,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
 
-    fl=open(mechElemsFile,'w')
+    fl=open(os.path.join(master_folder,mechElemsFile),'w')
     ro = np.asarray(mechElemRidges[0])
     #print (ro)
     fl.write(headerLine)
@@ -962,7 +910,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         ro = np.asarray(mechElemRidges[i])
         fmt='LTCBEAM\t%d\t%d\t%d'
         sh = ro.shape[0]
-        np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t1')
+        np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t0')
         #print (ro)
 
     ############################################################################################
@@ -977,7 +925,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         mechanicalElements.append (latticeBeamElement )
 
     #writing mechanical lattice beam elements
-    #with open('mechanicalElements_out.txt', 'w') as f:
+    #with open(os.path.join(master_folder,'mechanicalElements_out.txt'), 'w') as f:
     #    headerLine = 'nodeAidx\tnodeBidx\tmaterialIdx'
     #    f.write("%s\n" % headerLine )
     #    for item in mechanicalElements:
@@ -985,7 +933,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     #       # print (item.getString())
 
      ### MATERIALS
-    with open(materialsFile, 'w') as f:
+    with open(os.path.join(master_folder,materialsFile), 'w') as f:
         headerLine = 'matType\tYoung\tPoisson\tTranspC\tTranspS\tDensity'
         #f.write("%s\n" % headerLine )
         for item in materials:
@@ -994,7 +942,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
     ### FUNCTIONS
-    with open(functionsFile, 'w') as f:
+    with open(os.path.join(master_folder,functionsFile), 'w') as f:
         headerLine = 'numberOfDefPoints\tpointvalues'
         f.write("%s\n" % headerLine )
         for item in functions:
@@ -1003,6 +951,8 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
     return v_count
+
+
 
 def returnSelectedPts (boundPtA , boundPtB, points):
     dim = len (boundPtA)
@@ -1082,44 +1032,31 @@ def saveMechBC(dim, nodes_mechBCmerged):
     #
     if (dim == 2):
         headerLine = 'nodeIdx\tKinTrX\tKinTrY\tKinRotZ\tStTrX\tStTrY\tStRotZ'
-        fl=open(mechBCFile ,'w')
+        fl=open(os.path.join(master_folder,mechBCFile) ,'w')
         np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
         fl.close()
     elif (dim == 3):
         headerLine = 'nodeIdx\tKinTrX\tKinTrY\tKinTrZ\tKinRotX\tKinRotY\tKinRotZ\tStTrX\tStTrY\tStTrZ\tStRotX\tStRotY\tStRotZ'
-        fl=open(mechBCFile ,'w')
+        fl=open(os.path.join(master_folder,mechBCFile) ,'w')
         np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
         fl.close()
 
 
 def saveMasterInput(dim, solver, solStep):
-     fl=open(masterFile,'w')
-     fl.write("%%% MASTER INPUT %%%\n")
+     fl=open(os.path.join(master_folder,masterFile),'w')
 
-     #fl.write('MODEL:\tLATTICE\n')
-     #fl.write('POWERTESS:\t%d\n'%powerTes)
-     fl.write('DIM:\t%d\n' % dim)
-     #fl.write('NODES:\t%ld\n' % node_count)
-     #fl.write('VERTICES:\t%ld\n' % vert_count)
-
-     fl.write("\n%%% SOLUTION %%%\n")
+     fl.write("Dimension\t%d\n"%dim)
      if (solver == 0):
-            fl.write('SOLVER:\tMECH STEADY\tSTEP\t%e\n' % solStep)
-     #fl.write('TRANSIENT:\t%ld\n' % solStatDyn)
-     #fl.write('EXPLICIT:\t%ld\n' % solImpExp)
+            fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t50\n'%solStep)
+     fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
+     fl.write("MatFiles\t1\t%s\n"%materialsFile)
+     fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+     fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+     fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
+     fl.write("ExporterFiles\t1\t%s"%exportersFile)
 
-     fl.write("\n%%% INPUT FILES %%%\n")
-     fl.write('NODES:\t%s\n' % nodesFile  )
-     fl.write('AUXNODES:\t%s\n' % auxNodesFile  )
-     fl.write('VERTICES:\t%s\n' %verticesFile)
-     fl.write('MECHELEMS:\t%s\n'% mechElemsFile)
-     fl.write('TRSPRTELEMS:\t%s\n' % trsprtElemsFile )
-     fl.write('MECHBC:\t%s\n' % mechBCFile  )
-     fl.write('TRSPRTBC:\t%s\n' % trsprtBCFile  )
-     fl.write('MATERIALS:\t%s\n' % materialsFile  )
-     fl.write('FUNCTIONS:\t%s\n' % functionsFile   )
-     fl.write('INITMECH:\t%s\n' % initConditionsMechFile   )
-     fl.write('INITTRSPRT:\t%s\n' % initConditionsTrsprtFile   )
+     #fl.write('INITMECH:\t%s\n' % initConditionsMechFile   )
+     #fl.write('INITTRSPRT:\t%s\n' % initConditionsTrsprtFile   )
 
      fl.close()
 
@@ -1137,15 +1074,14 @@ class transportBC:
         return self.nodeIdx
 
 
-def saveTransportBC(vertices_transportBCmerged):
+def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
 
     trsptBC_out = []
 
     for i in range (len(vertices_transportBCmerged)):
         bc = np.zeros ((1 + 1+1))
         #
-        bc[0] = vertices_transportBCmerged[i].getNodeIdx()
-        #
+        bc[0] = verticesDict[vertices_transportBCmerged[i].getNodeIdx()] + vertIdxStart
         bc[1:] = vertices_transportBCmerged[i].getTrsprtBC()
         #
         #print (len( bc))
@@ -1154,6 +1090,6 @@ def saveTransportBC(vertices_transportBCmerged):
 
     #
     headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
-    fl=open(trsprtBCFile ,'w')
+    fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
     np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
     fl.close()

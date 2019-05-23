@@ -6,7 +6,7 @@ from IPython.display import clear_output
 
 
 
-
+#
 ##################################################
 #### MECHANICAL BEAM ELEMENT FOR LATTICE MODEL ###
 class latticeBeam:
@@ -61,7 +61,7 @@ class linearElasticMaterial:
 
     def getString(self):
        # line = 'LINEL\t' + '%e'%(self.youngModulus)  + '\t' + '%f'%(self.poisson) + '\t' + '%f'%(self.transportC) + '\t' + '%f'%(self.transportS) + '\t' + '%f'%(self.density)
-        line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)         + '\nTrsprtMaterial'         + '\t' + 'density\t%f'%(self.density)         + '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
+        line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)     + 'density\t%f'%(self.density)     + '\nTrsprtMaterial'         + '\t' + '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
 
         return line
 
@@ -73,15 +73,32 @@ class linearElasticMaterial:
 class generalFunc:
     def __init__(self, table):
         self.table = table
-
+    
     def getString(self):
-        line = '%d'%(len(self.table))
+        line = 'PWLFunction\t%d'%(len(self.table[0])/2)
 
+        for i in range (len(self.table[0])):
+            line += '\t%f'%(self.table[0][i])
+        """
         for i in range (len(self.table)):
             line += '\t%f'%(self.table[i][0])
 
         for i in range (len(self.table)):
             line += '\t%f'%(self.table[i][1])
-
+        """
         return line
 ####################################################
+
+
+##################################################
+#### Sine function ####
+class sineFunc:
+    def __init__ (self, amplitude, freq):
+        self.amplitude = amplitude
+        self.freq = freq
+    def getString(self):
+        line = 'SineFunction\t'
+        line += '%f\t' (self.freq)
+        line += '%f' (self.amplitude)
+        return line
+##################################################

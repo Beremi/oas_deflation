@@ -6,9 +6,22 @@ import matplotlib.pylab as plt
 from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
+import voronoi
+#2d voronoi a teselace
+from scipy.spatial import Voronoi
+from scipy.spatial import voronoi_plot_2d
+from scipy.spatial import Delaunay
 
-def reorderToDiagonal ():
-    # matice "konektivity" nodů
+#run voronoi, mirrored data
+def runMirroredVoronoi (node_coords, dim, maxLim):
+    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim))
+
+    return vor
+
+
+
+#reordering of indices
+def reorderToDiagonal (node_count, node_coords, vor):
     A = np.zeros( (node_count,node_count) )
 
     validRidgeIdxs = []
@@ -41,9 +54,9 @@ def reorderToDiagonal ():
 
     ax = fig.add_subplot(1,1,1)
     ax.set_aspect('equal')
-    plt.imshow(A)
+    #plt.imshow(A)
     #plt.colorbar()
-    plt.show()
+    #plt.show()
 
     C = np.zeros( (node_count,node_count) )
     C = csr_matrix(A)
@@ -60,8 +73,8 @@ def reorderToDiagonal ():
 
     ax = fig.add_subplot(1,1,1)
     ax.set_aspect('equal')
-    plt.imshow(B)
+    #plt.imshow(B)
     #plt.colorbar()
-    plt.show()
+    #plt.show()
 
     return order
