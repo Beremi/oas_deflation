@@ -161,3 +161,4 @@ dmypy.json
 *.app
 voro++
 dmgalpha
+*DiscreteModel
