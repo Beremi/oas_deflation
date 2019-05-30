@@ -15,6 +15,7 @@ SRC_SOURCES := $(wildcard $(SRC_FOLDER)*.cpp)
 SRC_HEADERS := $(wildcard $(SRC_FOLDER)*.h)
 SRC_OBJECTS := $(patsubst %.cpp,%.o,$(SRC_SOURCES))
 
+
 DiscreteModel: $(SRC_OBJECTS)
 	$(CPPCOMP) $(SRC_OBJECTS) -m${ARCH}  -o DiscreteModel
 	cp DiscreteModel ../
@@ -23,6 +24,12 @@ DiscreteModel: $(SRC_OBJECTS)
 %.o: $(SRC_FOLDER)%.cpp
 	$(CPPCOMP) ${CPPFLAGS} $@ $<
 
+.PHONY : clean_all
 clean_all:
 	rm -f $(SRC_OBJECTS)
+	rm DiscreteModel
+	rm ../DiscreteModel
 	@echo "***********************  C L E A N    D O N E  ************************"
+
+.PHONY : clean
+clean : clean_all
