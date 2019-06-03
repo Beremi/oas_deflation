@@ -10,14 +10,16 @@
 class BoundaryCondition; //forward declaration, needed to have pointer here, but defined in boundary_condition.h
 
 
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// BASIC NODE - ONLY MASTER CLASS
+/**
+ * \brief A more elaborate Node class description.
+ *
+ *  A more elaborate Node class description. DETAILED
+ */
 class Node {
 private:
 
 protected:
-    Point point;  // center of voronoi cell
+    Point point;  /// center of voronoi cell
     int nDoFs; //
     BoundaryCondition *bc;
     unsigned firstDoF;
@@ -28,6 +30,12 @@ public:
     Node(){bc = NULL; name = "basic node"; isMechanical = false; isTransport = false;};
     virtual ~Node(){};
 
+    /// A pure virtual member.
+    /**
+     * \sa testMe()
+     * \param c1 the first argument.
+     * \param c2 the second argument.
+     */
     virtual void readFromLine(istringstream &iss, int dim);
     Point givePoint() const {return point;};
     void setPoint(const Point &P){point = P;};
@@ -90,7 +98,7 @@ private:
 protected:
 public:
     Particle(int dim){nDoFs = 3*(dim-1); name = "particle";};
-    virtual ~Particle(){};    
+    virtual ~Particle(){};
 
     virtual void readFromLine(istringstream &iss, int dim);
     double giveRadius() const {return r;};
