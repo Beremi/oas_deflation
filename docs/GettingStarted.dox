@@ -42,11 +42,15 @@ Recommended structure
 \endcode
 
 -# create build directory \c partmod-build \c
--# configure the target
+-# configure the target - default is DEBUG
   \code{.sh}
     cd partmod-build
     cmake PATH_TO_SRC (if recommended structure - cmake ../partmod)
   \endcode
+  - create RELEASE
+    \code{.sh}
+      cmake -D CMAKE_BUILD_TYPE=Release PATH_TO_SRC
+    \endcode
 -# compile
   \code{.sh}
     cmake --build .
