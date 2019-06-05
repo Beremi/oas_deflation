@@ -7,6 +7,7 @@ Element::~Element(){
     for(vector<MaterialStatus*>::iterator e=stats.begin(); e!=stats.end(); ++e) delete *e;
 }
 
+//////////////////////////////////////////////////////////
 void Element::init(){
     unsigned totalDoFs = 0;
     for(vector<Node*>::const_iterator n=nodes.begin(); n!=nodes.end(); ++n) totalDoFs += (*n)->giveNumberOfDoFs();
@@ -20,6 +21,30 @@ void Element::init(){
 }
 
 //////////////////////////////////////////////////////////
+void Element::initMaterialStatuses(){
+    for(vector<MaterialStatus *>::iterator m = stats.begin(); m!=stats.end(); ++m) (*m)->init();
+}
+
+//////////////////////////////////////////////////////////
+void Element::updateMaterialStatuses(){
+    for(vector<MaterialStatus *>::iterator m = stats.begin(); m!=stats.end(); ++m) (*m)->update();
+}
+
+//////////////////////////////////////////////////////////
+double Element::giveValue(string code) const{
+    return 0;
+};
+
+//////////////////////////////////////////////////////////
+double Element::giveIPValue(string code, unsigned ipnum) const{
+    if(code.compare("x")==0){
+        return ip_locs[ipnum].x;
+    }else if(code.compare("y")==0){
+        return ip_locs[ipnum].y;
+    }else return stats[ipnum]->giveValue(code);
+};
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
 RigidBodyContact::RigidBodyContact(const unsigned dim){
@@ -28,6 +53,20 @@ RigidBodyContact::RigidBodyContact(const unsigned dim){
     ip_locs.resize(1);
     stats.resize(1);
     name = "RigidBodyContact";
+}
+
+//////////////////////////////////////////////////////////
+double RigidBodyContact::giveValue(string code) const{
+    if(code.compare("damage")==0){
+        DisMechMaterialStatus* dmstats = static_cast<DisMechMaterialStatus*>(stats[0]);
+        return dmstats->giveValue(code);
+    }
+    else return mechanicalElement::giveValue(code);
+}
+
+//////////////////////////////////////////////////////////
+double RigidBodyContact::giveIPValue(string code, unsigned ipnum) const{
+    return mechanicalElement::giveIPValue(code, ipnum);
 }
 
 //////////////////////////////////////////////////////////
@@ -84,7 +123,7 @@ void RigidBodyContact::init(){
         exit(0);
     }
    
-    stats[0] = mat->giveNewMaterialStatus(); 
+    stats[0] = mat->giveNewMaterialStatus(this); 
     normal = nodes[1]->givePoint()-nodes[0]->givePoint();
     length = normal.norm();
     normal = normal/length;
@@ -97,7 +136,7 @@ void RigidBodyContact::init(){
     //Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
 
     //Matrix B
-    B = Matrix(ndim,6*(ndim-1));
+    Matrix B = Matrix(ndim,6*(ndim-1));
     Matrix Aa = giveAMatrix(nodes[0]->givePoint(), ip_locs[0])*(-1.);
     Matrix Ab = giveAMatrix(nodes[1]->givePoint(), ip_locs[0]);
     for(int i=0; i<ndim; i++){
@@ -109,6 +148,7 @@ void RigidBodyContact::init(){
     B = B/length;
 
     //Matrix R
+    Matrix R;
     if(ndim==2){
         Point t1 = Point(-normal.y, normal.x);
         R = Matrix(2,2);
@@ -129,6 +169,7 @@ void RigidBodyContact::init(){
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
         exit(0);
     }    
+    RB = R*B;
 }
 
 //////////////////////////////////////////////////////////
@@ -154,13 +195,14 @@ Matrix RigidBodyContact::giveAMatrix(Point a, Point x) const{
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact::giveStiffnessMatrix() const{
-    DisMechMaterialStatus *dmstats = static_cast<DisMechMaterialStatus *>(stats[0]);    
-    vector<double> matstiffness = dmstats->giveNormalShearStiffness();
+Matrix RigidBodyContact::giveStiffnessMatrix(string matrixType) const{
+    DisMechMaterialStatus* dmstats = static_cast<DisMechMaterialStatus*>(stats[0]);
+    Vector matstiffness;
+    if(matrixType.compare("secant")==0) matstiffness = dmstats->giveSecantNormalShearStiffness();
+    else matstiffness = dmstats->giveElasticNormalShearStiffness();
     Matrix Alpha(ndim,ndim);
     Alpha[0][0] = matstiffness[0]; //E0
     for(int i=1; i<ndim; i++) Alpha[i][i]= matstiffness[1]; //E0*alpha
-    Matrix RB = R*B;
     Matrix K = RB.transpose()*Alpha*RB; 
     return K*(length*area);    
 }
@@ -172,6 +214,19 @@ Matrix RigidBodyContact::giveInertiaMatrix() const{
     //TO BE DONE
     return S;
 }
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact::giveInternalForces(const Vector &DoFs)const{
+    Vector strainNT = RB*DoFs;
+    DisMechMaterialStatus *dmstats = static_cast<DisMechMaterialStatus *>(stats[0]);
+    Vector stressNT = dmstats->giveStress(strainNT); 
+    return RB.transpose()*(stressNT*(length*area)); 
+};
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact::giveInternalForcesX(const Vector &DoFs)const{
+    return -matrix_vector_multiply(giveStiffnessMatrix("secant"), DoFs);
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -251,7 +306,7 @@ void Transp1D::init(){
         exit(0);
     }
 
-    stats[0] = mat->giveNewMaterialStatus(); 
+    stats[0] = mat->giveNewMaterialStatus(this); 
     normal = nodes[1]->givePoint()-nodes[0]->givePoint();
     length = normal.norm();
     normal = normal/length;
@@ -265,7 +320,7 @@ void Transp1D::init(){
 }
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D::giveConductivityMatrix() const{
+Matrix Transp1D::giveConductivityMatrix(string matrixType) const{
     Matrix C(2,2);
     TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);    
     double c = area*tstats->giveConductivity()/length;
@@ -283,3 +338,13 @@ Matrix Transp1D::giveCapacityMatrix() const{
     S[1][0] = S[0][1] = s;
     return S;
 }
+
+//////////////////////////////////////////////////////////
+Vector Transp1D::giveInternalForces(const Vector &DoFs)const{
+    return giveConductivityMatrix("elastic")*DoFs;    
+};
+//////////////////////////////////////////////////////////
+Vector Transp1D::giveInternalForcesX(const Vector &DoFs)const{
+    return giveConductivityMatrix("elastic")*DoFs;    
+};
+

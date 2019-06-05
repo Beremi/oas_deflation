@@ -10,18 +10,23 @@
 //////////////////////////////////////////////////////////
 //BASIC MATERIAL
 
+class Element; //forward declaration
 
 class Material;
 class MaterialStatus {
 private:
     
 public:
-    MaterialStatus(){name="basic mat. status";};
+    MaterialStatus(Material *m, Element *e){name="basic mat. status"; mat = m; element = e;};
     MaterialStatus(Material *m){name="basic mat. status"; mat=m;};
     virtual ~MaterialStatus(){};    
     string whoAmI(){return name;}
     Material* giveMaterial(){return mat;};
+    virtual void init(){};
+    virtual void update(){};
+    virtual double giveValue(string code)const{return 0;};
 protected:
+    Element *element;
     string name;
     Material *mat;
 };
@@ -35,8 +40,9 @@ public:
     Material(){name="basic material";};
     virtual ~Material(){};
     virtual void readFromLine(istringstream &iss){}; 
-    virtual MaterialStatus* giveNewMaterialStatus(){MaterialStatus* newStatus = new MaterialStatus(this); return newStatus;}; 
+    virtual MaterialStatus* giveNewMaterialStatus(Element *e){MaterialStatus* newStatus = new MaterialStatus(this, e); return newStatus;}; 
     string giveName(){return name;}
+    virtual void init(){};
 protected:
     string name;
 };
@@ -48,7 +54,7 @@ protected:
 class TrsprtMaterial;
 class TrsprtMaterialStatus: public MaterialStatus {
 public:
-    TrsprtMaterialStatus(TrsprtMaterial *m);
+    TrsprtMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtMaterialStatus(){};  
     double giveConductivity() const; 
     double giveCapacity() const;
@@ -64,7 +70,7 @@ public:
     double giveConductivity(){return conductivity;}; 
     double giveCapacity(){return capacity;};
     void readFromLine(istringstream &iss);
-    MaterialStatus* giveNewMaterialStatus();
+    MaterialStatus* giveNewMaterialStatus(Element *e);
 };
 
 //////////////////////////////////////////////////////////
@@ -73,81 +79,31 @@ public:
 
 class DisMechMaterial;
 class DisMechMaterialStatus: public MaterialStatus {
-private:
-    DisMechMaterialStatus(){};
+protected:
+
 public:
-    DisMechMaterialStatus(DisMechMaterial *m);
+    DisMechMaterialStatus(DisMechMaterial *m, Element *e);
     virtual ~DisMechMaterialStatus(){};  
-    vector<double> giveNormalShearStiffness() const; 
+    Vector giveElasticNormalShearStiffness() const; 
+    virtual Vector giveSecantNormalShearStiffness()const{return giveElasticNormalShearStiffness();}   //only elastic
+    virtual Vector giveSecantNormalShearStiffness(const Vector &strain)const{return giveElasticNormalShearStiffness();} //only elastic 
+    virtual Vector giveStress(const Vector &strain);
     double giveDensity() const;
 };
 
 //////////////////////////////////////////////////////////
 class DisMechMaterial: public Material {
-private:
+protected:
     double E0, alpha, density;
     
 public:
     DisMechMaterial(){name="discrete mechanical material";};
     ~DisMechMaterial(){};
-    virtual vector<double> giveNormalShearStiffness(){vector<double> c; c.resize(2); c[0] = E0; c[1] = alpha*E0; return c;} 
     double giveDensity(){return density;};
     virtual void readFromLine(istringstream &iss);
-    virtual MaterialStatus* giveNewMaterialStatus();
+    virtual MaterialStatus* giveNewMaterialStatus(Element *e);
+    double giveAlpha()const{return alpha;}
+    double giveE0()const{return E0;}
 };
-
-//////////////////////////////////////////////////////////
-// CUSATIS/MARS MATERIAL
-/*
-class MarsMaterial;
-class MarsMaterialStatus: public DisMechMaterial {
-private:
-    double epsEQ, epsT, epsN, epsmaxEQ, epsmaxT, epsmaxN;
-    double omega, S0, chi, K0, K1;
-    double damage, temp_damage;
-    double RAND_H;
-public:
-    MarsMaterialStatus(MarsMaterialMaterial *m);
-    virtual ~MarsMaterialStatus(){};  
-};
-
-
-class MarsMaterial: public Material {
-private:
-
-public:
-    MarsMaterial(){name="discrete mechanical material";};
-    ~MarsMaterial(){};
-    vector<double> giveNormalShearStiffness(){vector<double> c; c.resize(2); c[0] = E0*(1-temp_damage); c[1] = alpha*E0*(1-temp_damage); return c;} 
-    void readFromLine(istringstream &iss);
-    MaterialStatus* giveNewMaterialStatus();
-};
-*/
-
-/*
-//////////////////////////////////////////////////////////
-//COUPLED DISCRETE MECHANICAL - TRANSPORT MATERIAL
-
-class DisMechLinMat;
-class DisMechLinMatStatus: public MaterialStatus {
-private:
-
-public:    
-    DisMechLinMatStatus();
-    DisMechLinMatStatus(DisMechLinMat *m);
-    ~DisMechLinMatStatus(){};
-};
-
-class DisMechLinMat: public Material {
-private:
-    double E0, alpha, density;
-public:    
-    DisMechLinMat();
-    ~DisMechLinMat(){};
-    void readFromLine(istringstream &iss);
-    vector<double> giveStress(vector<double> strain) const;
-    MaterialStatus* giveNewMaterialStatus(); 
-};
-*/
 
 #endif /* _MATERIAL_H */

@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <iomanip>      // std::setw
 #include "linear_algebra.h"
 #include "element_container.h"
 #include "node_container.h"
@@ -15,16 +16,16 @@ class Solver{
         ElementContainer *elems;
         NodeContainer *nodes;
         double time, dt, termination_time;        
-        CoordinateIndexedSparseMatrix K11,K12;
-        Vector f, pbc, r, dr, full_r;
-        unsigned freeDoFnum, fixedDoFnum;
+        CoordinateIndexedSparseMatrix K;
+        Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr;
+        unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
         int step;
         bool terminated;
         virtual void runBeforeEachStep();
         virtual void runAfterEachStep();
         
     public:
-        Solver(){name="basic solver"; terminated=false;};
+        Solver(){name="basic solver";};
         ~Solver(){};
         virtual void init();
         virtual Solver* readFromLine(istringstream &iss);
@@ -33,7 +34,8 @@ class Solver{
         void setNodeContainer(NodeContainer *n){nodes=n;};
         string giveName()const {return name;}
         bool isTerminated(){return terminated;}
-        Vector giveFullDoFValues(){return full_r;}
+        Vector giveDoFValues(){return r;}
+        Vector giveNodalForces(){return f_ext;}
         int giveStepNumber()const{return step;};
 };
 
@@ -47,6 +49,28 @@ class SteadyStateLinearSolver: public Solver{
     public:
         SteadyStateLinearSolver();        
         ~SteadyStateLinearSolver(); //destructor
+        virtual void init();
+        virtual void solveStep(){runBeforeEachStep(); solve(); runAfterEachStep();};
+        virtual Solver* readFromLine(istringstream &iss);
+        virtual void computeInternalExternalForces(Vector &rr);
+        virtual void computeInternalExternalForcesX(Vector &rr);
+};
+
+class SteadyStateNonLinearSolver: public SteadyStateLinearSolver{
+    protected:
+        Vector f_int_old, f_ext_old, residual;
+        Vector trial_r;
+        double W_ext_old, W_int_old, W_ext, W_int;  
+        double disErr, resErr, eneErr;      
+
+        virtual void runBeforeEachStep();
+        virtual void runAfterEachStep();
+        virtual void solve();
+    private:
+
+    public:
+        SteadyStateNonLinearSolver();        
+        ~SteadyStateNonLinearSolver(); //destructor
         virtual void init();
         virtual void solveStep(){runBeforeEachStep(); solve(); runAfterEachStep();};
         virtual Solver* readFromLine(istringstream &iss);

@@ -2,6 +2,7 @@
 #define _MATERIAL_C_H
 
 #include "material.h"
+#include "mars_material.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -16,6 +17,7 @@ public:
     ~MaterialContainer();
 
     void readFromFile(const string filename);
+    void init();
     Material* giveMaterial(unsigned const mat){return matrs[mat];}
 protected:
 

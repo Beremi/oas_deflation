@@ -77,7 +77,7 @@ Solver* readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                 iss >> iint;
                 for(int i=0; i<iint; i++){
                     iss >> istr;
-                    exporters->readFromFile(istr, nodes, elems);    
+                    exporters->readFromFile(istr, nodes, elems, dimension);    
                 }                
             }else if (istr.compare("Solver") == 0){
                 Solver auxs;
@@ -125,14 +125,17 @@ int main(int argc, char **argv) {
     //initialization
     bcconds.init();
     nodes.init();
+    matrs.init();
     elems.init();
+    exporters.init();
     solver->init();
+
 
     //solution
     while(not solver->isTerminated()){  
         start_part = std::chrono::system_clock::now();
         solver->solveStep();
-        exporters.exportData(solver->giveStepNumber(),solver->giveFullDoFValues());
+        exporters.exportData(solver->giveStepNumber(),solver->giveDoFValues(),solver->giveNodalForces());
         if (PRINT_TIME){
             now = std::chrono::system_clock::now();
 

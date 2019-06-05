@@ -15,9 +15,14 @@ public:
     void setNodeContainer(NodeContainer *n){nodes=n;};
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
-    void prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K11, CoordinateIndexedSparseMatrix &K12) const;
-    void updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K11, CoordinateIndexedSparseMatrix &K12) const;
+    unsigned giveSize()const{return elems.size();}
+    void updateMaterialStatuses();
+    void prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K) const;
+    void updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const;
     void addBodyForces(Vector &R, double time) const;
+    void giveInternalForces(const Vector &full_r, Vector &full_f);
+    void giveInternalForcesX(const Vector &full_r, Vector &full_f);
+    Element* giveElement(unsigned const num){return elems[num];}
 };
 
 

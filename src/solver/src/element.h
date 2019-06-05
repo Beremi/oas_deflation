@@ -12,7 +12,7 @@
 class Element {
 private:
 
-protected:
+protected:    
     unsigned ndim;
     vector<Node *> nodes;
     string name;
@@ -25,9 +25,17 @@ public:
   virtual ~Element();
   virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs){};
   virtual void init();
-  virtual Matrix giveSteadyStateMatrix() const{};  
+  void initMaterialStatuses();
+  void updateMaterialStatuses();
+  virtual Matrix giveSteadyStateMatrix(string matrixType) const{};  
   virtual Matrix giveTransientMatrix() const{};
   vector<unsigned> giveDoFs(){return DoFids;};
+  virtual Vector giveInternalForces(const Vector &DoFs)const{};
+  virtual Vector giveInternalForcesX(const Vector &DoFs)const{};
+  virtual double giveValue(string code)const;
+  virtual unsigned giveIPNum()const{return ip_locs.size();};
+  virtual double giveIPValue(string code, unsigned ipnum)const;
+
 };
 
 
@@ -40,7 +48,7 @@ private:
 public:
     transportElement (){}
     ~transportElement (){};
-    virtual Matrix giveConductivityMatrix()const{};
+    virtual Matrix giveConductivityMatrix(string matrixType)const{};
     virtual Matrix giveCapacityMatrix()const{};
 };
 
@@ -54,7 +62,7 @@ private:
 public:
     mechanicalElement (){}
     ~mechanicalElement (){};
-    virtual Matrix giveStiffnessMatrix()const{};
+    virtual Matrix giveStiffnessMatrix(string matrixType)const{};
     virtual Matrix giveInertiaMatrix()const{};
 };
 
@@ -66,19 +74,25 @@ private:
     vector<Node *> vert;
     double length, area;
     Point normal;
-    Matrix B, R;
+    Matrix RB; //R*B
 public:
     RigidBodyContact (const unsigned dim);
     ~RigidBodyContact (){};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     void init();
-    Matrix giveStiffnessMatrix() const;
+    Matrix giveStiffnessMatrix(string matrixType) const;
     Matrix giveInertiaMatrix() const;
-    Matrix giveSteadyStateMatrix() const {return giveStiffnessMatrix();};  
+    Matrix giveSteadyStateMatrix(string matrixType) const {return giveStiffnessMatrix(matrixType);};  
     Matrix giveTransientMatrix() const {return giveInertiaMatrix();};
-    Matrix giveBMatrix(Point x) const {return B;};
-    Matrix giveRMatrix() const {return R;};
+    //Matrix giveBMatrix(Point x) const {return B;};
+    //Matrix giveRMatrix() const {return R;};
+    Matrix giveRBMatrix() const {return RB;};
     Matrix giveAMatrix(Point a, Point x) const;
+    double giveLength()const{return length;}
+    virtual Vector giveInternalForces(const Vector &DoFs)const;
+    virtual Vector giveInternalForcesX(const Vector &DoFs)const;
+    virtual double giveValue(string code)const;
+    virtual double giveIPValue(string code, unsigned ipnum)const;
 };
 
 //////////////////////////////////////////////////////////
@@ -94,10 +108,12 @@ public:
     ~Transp1D (){};
     void init();
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    Matrix giveConductivityMatrix() const;
+    Matrix giveConductivityMatrix(string matrixType) const;
     Matrix giveCapacityMatrix() const;
-    Matrix giveSteadyStateMatrix() const {return giveConductivityMatrix();};  
+    Matrix giveSteadyStateMatrix(string matrixType) const {return giveConductivityMatrix(matrixType);};  
     Matrix giveTransientMatrix() const {return giveCapacityMatrix();};
+    virtual Vector giveInternalForces(const Vector &DoFs)const;
+    virtual Vector giveInternalForcesX(const Vector &DoFs)const;
 };
 
 #endif	/* _ELEMENT_STRUCT_H */

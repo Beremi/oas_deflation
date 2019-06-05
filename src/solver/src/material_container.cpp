@@ -6,6 +6,11 @@ MaterialContainer::~MaterialContainer(){
 }
 
 //////////////////////////////////////////////////////////
+void MaterialContainer::init(){
+    for(vector<Material*>::iterator m=matrs.begin(); m!=matrs.end(); ++m) (*m)->init();
+}
+
+//////////////////////////////////////////////////////////
 void MaterialContainer::readFromFile(const string filename){
     int origsize = matrs.size();
     string line, matType;
@@ -23,6 +28,11 @@ void MaterialContainer::readFromFile(const string filename){
                 }
                 else if (matType.compare("TrsprtMaterial") == 0){
                     TrsprtMaterial* newmat= new TrsprtMaterial();      
+                    newmat->readFromLine(iss);              
+                    matrs.push_back(newmat);
+                }
+                else if (matType.compare("MarsMaterial") == 0){
+                    MarsMaterial* newmat= new MarsMaterial();      
                     newmat->readFromLine(iss);              
                     matrs.push_back(newmat);
                 }

@@ -370,7 +370,7 @@ inline const Matrix matrix_multiply(const Matrix &m0, const Matrix &m1) {
 inline const Vector matrix_vector_multiply(const Matrix &m, const Vector &v) {
     assert(m.numCols() == v.size());
 
-    Vector ret(v.size());
+    Vector ret(m.numRows());
 
     for (size_t i = 0; i < m.numRows(); i++) {
 

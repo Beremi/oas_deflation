@@ -32,7 +32,11 @@ public:
     void init();
     void addRHS_nodalLoad(Vector &RHS, double time) const;
     void updateDirrichletBC(Vector &bc, double time) const;
-    void giveFullDoFArray(const Vector &freeDoFs, const Vector &fixedDoFs, Vector &fullDoFs) const;
+    void giveFullDoFArray(const Vector &fDoFs, const Vector &bDoFs, Vector &fullDoFs) const;
+    void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
+    void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
+    void updateExteranlForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const;
+    Node* findClosestMechanicalNode(Point A) const;
 
 protected:
 

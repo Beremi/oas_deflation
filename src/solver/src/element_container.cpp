@@ -42,25 +42,31 @@ void ElementContainer::readFromFile(const string filename, const unsigned ndim, 
 
 //////////////////////////////////////////////////////////
 void ElementContainer::init(){
-    for(vector<Element*>::iterator e=elems.begin(); e!=elems.end(); ++e) (*e)->init();
+    for(vector<Element*>::iterator e=elems.begin(); e!=elems.end(); ++e) { (*e)->init(); (*e)->initMaterialStatuses();}
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer::prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K11, CoordinateIndexedSparseMatrix &K12)const {
+void ElementContainer::updateMaterialStatuses(){
+    for(vector<Element*>::iterator e=elems.begin(); e!=elems.end(); ++e) (*e)->updateMaterialStatuses();
+}
+
+
+//////////////////////////////////////////////////////////
+void ElementContainer::prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K)const {
     
     map<pair<size_t, size_t>, double> indices11;
-    map<pair<size_t, size_t>, double> indices12;
+    //map<pair<size_t, size_t>, double> indices12;
 
     unsigned nDoFs = nodes->giveTotalNumDoFs();
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
-    vector<unsigned> DoFs;
+    vector<unsigned> elDoFs;
     for(vector<Element*>::const_iterator e=elems.begin(); e!=elems.end(); ++e){
-        DoFs = (*e)->giveDoFs();
-        for(int i=0; i<DoFs.size(); i++){
-            for(int j=i; j<DoFs.size(); j++){                
-                DoFi = nodes->giveDoFid(DoFs[i]);
-                DoFj = nodes->giveDoFid(DoFs[j]);
+        elDoFs = (*e)->giveDoFs();
+        for(int i=0; i<elDoFs.size(); i++){
+            for(int j=i; j<elDoFs.size(); j++){                
+                DoFi = nodes->giveDoFid(elDoFs[i]);
+                DoFj = nodes->giveDoFid(elDoFs[j]);
                 //diagonal
                 if (DoFi==DoFj){
                     if (DoFi < nfreeDoFs) indices11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFi), 0.0));
@@ -69,48 +75,79 @@ void ElementContainer::prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix 
                     if (DoFi < nfreeDoFs && DoFj < nfreeDoFs) {
                         indices11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFj), 0.0));
                         indices11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFj, DoFi), 0.0));
-                    }else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFj-nfreeDoFs), 0.0));
-                    else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFj, DoFi-nfreeDoFs), 0.0));
+                    }//else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFj-nfreeDoFs), 0.0));
+                    //else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFj, DoFi-nfreeDoFs), 0.0));
                 }
             }
         }
     }
 
-    K11 = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
-    K12 = CoordinateIndexedSparseMatrix(indices12, nfreeDoFs, nDoFs-nfreeDoFs);
+    K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
+    //K12 = CoordinateIndexedSparseMatrix(indices12, nfreeDoFs, nDoFs-nfreeDoFs);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer::updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K11, CoordinateIndexedSparseMatrix &K12)const {
+void ElementContainer::updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType)const {
     
-    K11 = K11*0.;
-    K12 = K12*0.;
+    K = K*0.;
+    //K12 = K12*0.;
 
     unsigned nDoFs = nodes->giveTotalNumDoFs();
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
-    vector<unsigned> DoFs;
-    Matrix K;
+    vector<unsigned> elDoFs;    
+    Vector elDoFValues;
+    Matrix k;
     for(vector<Element*>::const_iterator e=elems.begin(); e!=elems.end(); ++e){
-        DoFs = (*e)->giveDoFs();
-        K = (*e)->giveSteadyStateMatrix();
-        for(int i=0; i<DoFs.size(); i++){
-            for(int j=i; j<DoFs.size(); j++){    
-                DoFi = nodes->giveDoFid(DoFs[i]);
-                DoFj = nodes->giveDoFid(DoFs[j]);                
+        elDoFs = (*e)->giveDoFs();
+        k = (*e)->giveSteadyStateMatrix(matrixType);
+        for(int i=0; i<elDoFs.size(); i++){
+            for(int j=i; j<elDoFs.size(); j++){    
+                DoFi = nodes->giveDoFid(elDoFs[i]);
+                DoFj = nodes->giveDoFid(elDoFs[j]);                
                 //diagonal
                 if (DoFi==DoFj){
-                    if (DoFi < nfreeDoFs) K11[DoFi][DoFi] += K[i][i];
+                    if (DoFi < nfreeDoFs) K[DoFi][DoFi] += k[i][i];
                 }else{
                     //remaining items
-                    if (DoFi < nfreeDoFs && DoFj < nfreeDoFs) {K11[DoFi][DoFj] += K[i][j]; K11[DoFj][DoFi] += K[j][i];}                    
-                    else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) K12[DoFi][DoFj-nfreeDoFs] += K[i][j];
-                    else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) K12[DoFj][DoFi-nfreeDoFs] += K[j][i];
+                    if (DoFi < nfreeDoFs && DoFj < nfreeDoFs) {K[DoFi][DoFj] += k[i][j]; K[DoFj][DoFi] += k[j][i];}                    
+                    //else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) K12[DoFi][DoFj-nfreeDoFs] += k[i][j];
+                    //else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) K12[DoFj][DoFi-nfreeDoFs] += k[j][i];
                 }
             }
         }
     } 
-    cout << "Steady state matrices updated" << endl;
+    //cout << "Steady state matrices updated" << endl;
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer::giveInternalForces(const Vector &full_r, Vector &full_f) {
+    Vector elDoFvalues, elForces;
+    vector<unsigned> elDoFs; 
+    full_f *= 0; //clear array
+
+    for(vector<Element*>::const_iterator e=elems.begin(); e!=elems.end(); ++e){
+        elDoFs = (*e)->giveDoFs();
+        elDoFvalues.resize(elDoFs.size());
+        for(int i=0; i<elDoFs.size(); i++) elDoFvalues[i] = full_r[elDoFs[i]];
+        elForces = (*e)->giveInternalForces(elDoFvalues);
+        for(int i=0; i<elDoFs.size(); i++) full_f[elDoFs[i]] += elForces[i]; 
+    }     
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer::giveInternalForcesX(const Vector &full_r, Vector &full_f) {
+    Vector elDoFvalues, elForces;
+    vector<unsigned> elDoFs; 
+    full_f *= 0; //clear array
+
+    for(vector<Element*>::const_iterator e=elems.begin(); e!=elems.end(); ++e){
+        elDoFs = (*e)->giveDoFs();
+        elDoFvalues.resize(elDoFs.size());
+        for(int i=0; i<elDoFs.size(); i++) elDoFvalues[i] = full_r[elDoFs[i]];
+        elForces = (*e)->giveInternalForcesX(elDoFvalues);
+        for(int i=0; i<elDoFs.size(); i++) full_f[elDoFs[i]] += elForces[i]; 
+    }     
 }
 
 //////////////////////////////////////////////////////////

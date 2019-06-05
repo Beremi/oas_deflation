@@ -7,7 +7,7 @@ from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 from matplotlib.pyplot import arrow
 
-folder = "../benchmark/coupled"
+folder = ".."#/benchmark/coupled"
 folder = ".."
 
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     xylim[:,1] = xylim[:,1] + 0.05*dist
 
 
-    for step in range(0,5):
+    for step in range(1,6):
         translations = loadVariables("translations",step)[0:len(nodes),:]
         pressure = loadVariables("pressure",step)[len(nodes)+len(aux):len(nodes)+len(aux)+len(vertices)]
         masterPlot(step, [nodes,nodes,vertices], [translations[:,0]*1000.,translations[:,1]*1000.,pressure], [r"$u_x$ [mm]",r"$u_y$ [mm]","pressure [Pa]"], xylim)
