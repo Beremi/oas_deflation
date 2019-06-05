@@ -1,0 +1,123 @@
+/** \page GettingStarted Getting started
+
+
+This is a very short guide on how to get started with PartMod.
+
+
+\section GettingStartedInstallation How to "install" PartMod?
+
+In order to use PartMod, you just need to download and extract PartMod's source code
+(see <a href="http://xxx">download page</a>
+for download instructions).
+To grab a copy of the latest version of OOFEM using git access.
+\code{.sh}
+  git clone git@gitlab.com:kelidas/partmod.git
+  OR
+  git clone https://gitlab.com/kelidas/partmod.git
+\endcode
+
+\subsection Prereqisites Pre-requisites
+The oofem requires the CMake cross-platform build system and C++ compiler
+with STL support (Standard Template Library).
+
+
+\subsection Build Build
+PartMod project uses cross-platform building system \c cmake \c.
+http://www.oofem.org/wiki/doku.php?id=cmake
+
+Recommended structure
+\code{.txt}
+.
++-- partmod [git repository]
+|   +-- .git
+|   +-- docs
+|   +-- src
+|   +-- ...
++-- partmod-site [git repository]
+|   +-- public
+|   +-- ...
++-- partmod-build [can be created anywhere outside of partmod repository]
+|   +-- partmod_docs [generated documentation]
+|   +-- DiscreteModel [executable]
+\endcode
+
+-# create build directory \c partmod-build \c
+-# configure the target - default is DEBUG
+  \code{.sh}
+    cd partmod-build
+    cmake PATH_TO_SRC (if recommended structure - cmake ../partmod)
+  \endcode
+  - create RELEASE
+    \code{.sh}
+      cmake -D CMAKE_BUILD_TYPE=Release PATH_TO_SRC
+    \endcode
+-# compile
+  \code{.sh}
+    cmake --build .
+    OR
+    make [when Makefile generated]
+  \endcode
+  - for speedup when using Makefile use "-j [N]" (Allow N jobs at once; infinite jobs with no arg.)
+    \code{.sh}
+      cmake --build . -- -j 4
+      make -j 4
+    \endcode
+-# build documentation
+  \code{.sh}
+    cmake --build . --target docs
+    OR
+    make docs [when Makefile generated]
+  \endcode
+-# publish documentation (if partmod and partmod-site placed in the same directory
+   as recommended)
+  \code{.sh}
+    cmake --build . --target docs_publish
+    OR
+    make docs_publish [when Makefile generated]
+  \endcode
+
+
+\section CodingStandard Coding Standard
+http://www.oofem.org/wiki/doku.php?id=coding-conventions
+
+
+\section Running Running PartMod
+
+
+
+
+
+\section Doxsyntax Doxygen tests
+
+Here is a rather simple program to get you started.
+
+Paper \cite ImanConover:1980
+
+The distance between \f$(x_1,y_1)\f$ and \f$(x_2,y_2)\f$ is
+  \f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
+
+  First Header  | Second Header
+  ------------- | -------------
+  Content Cell  | Content Cell
+  Content Cell  | Content Cell
+
+
+~~~~~~~~~~~~~{.py}
+# A class
+class Dummy:
+    pass
+~~~~~~~~~~~~~
+
+
+
+\code{.py}
+class Python:
+   pass
+\endcode
+
+\code{.cpp}
+class Cpp {};
+\endcode
+
+
+*/
