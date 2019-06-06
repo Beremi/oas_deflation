@@ -6,7 +6,6 @@ import os
 from IPython.display import clear_output
 
 import utilitiesMech
-from numba import jit
 
 master_folder = "coupled_problem"
 try:
@@ -83,7 +82,7 @@ def getPlaneNormalVector (pA, pB, pC):
 # do 2D nebo 3D kvadru
 # maxLim: n-d pole rozmeru kvadru
 # minDist
-@jit
+
 def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
     if (dim==2):
         print('Generating 2d block segment of size: %f / %f ' %(maxLim[0], maxLim[1]) )
