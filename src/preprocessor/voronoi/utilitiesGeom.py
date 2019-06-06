@@ -6,6 +6,7 @@ import os
 from IPython.display import clear_output
 
 import utilitiesMech
+from numba import jit
 
 master_folder = "coupled_problem"
 try:
@@ -82,6 +83,7 @@ def getPlaneNormalVector (pA, pB, pC):
 # do 2D nebo 3D kvadru
 # maxLim: n-d pole rozmeru kvadru
 # minDist
+@jit
 def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
     if (dim==2):
         print('Generating 2d block segment of size: %f / %f ' %(maxLim[0], maxLim[1]) )
@@ -565,25 +567,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         latticeBeamElement = utilitiesMech.latticeBeam (2, ridges_out[i][0], ridges_out[i][1], 0)
         mechanicalElements.append (latticeBeamElement )
 
-
-    ### MATERIALS
-    with open(os.path.join(master_folder,materialsFile), 'w') as f:
-        headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
-       # f.write("%s\n" % headerLine )
-        for item in materials:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
-    ### FUNCTIONS
-    with open(os.path.join(master_folder,functionsFile), 'w') as f:
-        headerLine = '#FuncType\tnumberOfDefPoints\tpointvalues'
-        f.write("%s\n" % headerLine )
-        for item in functions:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
     return v_count, verticesIdxDict, vertIdxStart
 
 
@@ -932,24 +915,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     #        f.write("%s\n" % item.getString() )
     #       # print (item.getString())
 
-     ### MATERIALS
-    with open(os.path.join(master_folder,materialsFile), 'w') as f:
-        headerLine = 'matType\tYoung\tPoisson\tTranspC\tTranspS\tDensity'
-        #f.write("%s\n" % headerLine )
-        for item in materials:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
-    ### FUNCTIONS
-    with open(os.path.join(master_folder,functionsFile), 'w') as f:
-        headerLine = 'numberOfDefPoints\tpointvalues'
-        f.write("%s\n" % headerLine )
-        for item in functions:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
     return v_count
 
 
@@ -1006,7 +971,7 @@ class mechanicalBC:
 
 
 def saveMechBC(dim, nodes_mechBCmerged):
-
+    print('Saving MECH boundary conditions...')
 
     #print (len(nodes_mechBCmerged))
     mechBC_out = []
@@ -1043,6 +1008,7 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
 
 def saveMasterInput(dim, solver, solStep):
+     print('Saving master file...')
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
@@ -1060,7 +1026,25 @@ def saveMasterInput(dim, solver, solStep):
 
      fl.close()
 
+def saveMaterials (materials):
+    print ('Saving materials...')
+    ### MATERIALS
+    with open(os.path.join(master_folder,materialsFile), 'w') as f:
+        headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
+       # f.write("%s\n" % headerLine )
+        for item in materials:
+            f.write("%s\n" % item.getString() )
+          # print (item.getString())
 
+def saveFunctions (functions):
+    print ('Saving functions...')
+    ### FUNCTIONS
+    with open(os.path.join(master_folder,functionsFile), 'w') as f:
+        headerLine = '#FuncType\tnumberOfDefPoints\tpointvalues'
+        f.write("%s\n" % headerLine )
+        for item in functions:
+            f.write("%s\n" % item.getString() )
+          # print (item.getString())
 
 class transportBC:
     def __init__(self,  nodeIdx, transportBCarray):
@@ -1075,7 +1059,7 @@ class transportBC:
 
 
 def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
-
+    print('Saving TRSPRT boundary conditions...')
     trsptBC_out = []
 
     for i in range (len(vertices_transportBCmerged)):

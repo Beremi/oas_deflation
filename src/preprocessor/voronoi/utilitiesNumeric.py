@@ -49,7 +49,7 @@ def reorderToDiagonal (node_count, node_coords, vor):
         #print(dist)
 
 
-    print('original connectivity matrix')
+    #print('original connectivity matrix')
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1,1,1)
@@ -68,7 +68,7 @@ def reorderToDiagonal (node_count, node_coords, vor):
 
 
 
-    print('reordered connectivity matrix')
+    #print('reordered connectivity matrix')
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1,1,1)

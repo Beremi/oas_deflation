@@ -5,7 +5,9 @@ import utilitiesMech
 import utilitiesNumeric
 import voronoi
 
-def create2dCantileverUniTens(maxLim, minDist, trials ):
+
+
+def create2dCantileverBending(maxLim, minDist, trials ):
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     node_coords,node_mechBC, mechBC_merged  = assemble2DRectangle(maxLim, minDist, trials );

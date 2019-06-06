@@ -73,10 +73,10 @@ class linearElasticMaterial:
 class generalFunc:
     def __init__(self, table):
         self.table = table
-    
-    def getString(self):
-        line = 'PWLFunction\t%d'%(len(self.table[0])/2)
 
+    def getString(self):
+        line = 'PWLFunction\t%d'%(len(self.table))
+        """
         for i in range (len(self.table[0])):
             line += '\t%f'%(self.table[0][i])
         """
@@ -85,7 +85,7 @@ class generalFunc:
 
         for i in range (len(self.table)):
             line += '\t%f'%(self.table[i][1])
-        """
+
         return line
 ####################################################
 

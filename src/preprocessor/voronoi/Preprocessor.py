@@ -34,6 +34,9 @@ import utilitiesNumeric
 import voronoi
 
 
+
+
+
 print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
 start = time.time()
 
@@ -57,7 +60,7 @@ if (dim == 3 ): maxLim = np.array([1,1,1])
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
-radius = 0.15
+radius = 0.1
 minDist = radius
 
 #trials of random node positioning
@@ -77,27 +80,29 @@ func.append( np.array([0, 0]) )
 fn = utilitiesMech.generalFunc(func)
 functions.append (fn)
 
-#1 constant one
+#1 loading function, single force top right
 func1 = []
-func1.append( np.array([0, 50, 0, 50e4]) )
+func1.append( np.array([0,0]) )
+func1.append( np.array([50, 50e4]) )
 fn1 = utilitiesMech.generalFunc(func1)
 functions.append (fn1)
 
-#transport function leftFace
+#transport function, leftFace
 func2 = []
 func2.append( np.array([0, 100]) )
 fn2 = utilitiesMech.generalFunc(func2)
 functions.append (fn2)
 
-#transport function rightFace
+#transport function, rightFace
 func3 = []
-func3.append( np.array([0, 50, 0, 500]) )
+func3.append( np.array([0,0]) )
+func3.append( np.array([50, 500]) )
 fn3 = utilitiesMech.generalFunc(func3)
 functions.append (fn3)
 
 #sampling of nodes
 if (dim == 2):
-    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
+    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 if (dim == 3):
     print('3d model inactive! Exiting.')
     sys.exit()
@@ -126,24 +131,26 @@ materials.append(linElMaterial)
 
 
 
-print('Saving model...')
+print('\nSaving model...')
 if (dim == 2):
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim,
+    vor, node_coords, node_mechBC,
     areas, order, mechanicalElements, mechBC_merged, transportPaths,materials, functions, False)
 if (dim == 3):
     vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
     areas, order, mechanicalElements, mechBC_merged, transportPaths, materials, functions, False)
 
 
-solStep = 10
-print('Saving boundary conditions...')
+utilitiesGeom.saveMaterials(materials)
+utilitiesGeom.saveFunctions(functions)
 utilitiesGeom.saveMechBC(dim, mechBC_merged)
 utilitiesGeom.saveTransportBC(transportBC_merged, verticesIdxDict, vertIdxStart)
 
-print('Saving master file...')
+
+solStep = 10
 utilitiesGeom.saveMasterInput(dim, solver, solStep)
 
 
 end =  time.time() -start
-print('All done in %.3f secs.' %end)
+print('\nAll done in %.3f secs.' %end)
 print('%%%%%%%%% LATTICE PREPROCESSOR FINISHED %%%%%%%%%\n')
