@@ -294,7 +294,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
 
 
 #OUTPUT METHODS
-def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs,mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
+def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs,mechanicalElements, mechBC_merged, transportPaths, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################

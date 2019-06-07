@@ -5,12 +5,43 @@ import utilitiesMech
 import utilitiesNumeric
 import voronoi
 
+def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
+    node_coords,node_mechBC, mechBC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
+    print (len(node_coords))
+    print('Conducting Voronoi tesselation...')
+    vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+
+    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([2,-1])
+    boundA = np.array(  [-1e-8 , 0] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+
+    return node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas
 
 
 def create2dCantileverBending(maxLim, minDist, trials ):
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords,node_mechBC, mechBC_merged  = assemble2DRectangle(maxLim, minDist, trials );
+    node_coords,node_mechBC, mechBC_merged  = assemble2DCantileverBending(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...')
     ### conducting Voronoi tesselation
@@ -59,8 +90,8 @@ def create2dCantileverBending(maxLim, minDist, trials ):
 
 
 #
-######## METHOD FOR CREATING OF A 2D SUPPORTED RECTANGLE MODEL
-def assemble2DRectangle (maxLim, minDist, trials):
+######## METHOD FOR CREATING OF A 2D SUPPORTED CANTILEVER MODEL
+def assemble2DCantileverBending (maxLim, minDist, trials):
     dim = 2
     #lists for the model
     node_coords = []
@@ -124,6 +155,92 @@ def assemble2DRectangle (maxLim, minDist, trials):
     return node_coords, node_mechBC, mechBC_merged
 
 
+def assemble2DSSBeamBending (maxLim, minDist, trials):
+    dim = 2
+    #lists for the model
+    node_coords = []
+    node_mechBC = []
+    mechBC_merged = []
+
+    #an indent due to mirroring of the data for voronoi tess.
+    indent = 1e-8
+
+    #width of the supports
+    supportWidth = maxLim[0] / 40
+
+    ###############generating of nodes, left horizontal support ###############
+    #mech bc
+    lineBC = np.array([0,0,-1,-1,-1,-1])
+
+    #defining points of the line
+    nodeA = np.array([indent, indent])
+    nodeB = np.array([indent + supportWidth, indent])
+
+    oldLen = len(node_coords)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, True)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    #print (nrOfPoints)
+
+    #adding mech boundary conditions
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mechBC_merged.append(mBC)
+        #print('adding')
+
+    ###############generating of nodes, right horizontal support ###############
+    #mech bc
+    lineBC = np.array([-1,0,0,-1,-1,-1])
+
+    #defining points of the line
+    nodeA = np.array([maxLim[0] - supportWidth -indent, indent])
+    nodeB = np.array([maxLim[0] - indent, indent])
+
+    oldLen = len(node_coords)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, True)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    #print (nrOfPoints)
+
+    #adding mech boundary conditions
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mechBC_merged.append(mBC)
+        #print('adding')
+
+    ############### loaded top face ###############
+    lineBC = np.array([-1,-1,-1,-1, 1,-1])
+
+    #defining points of the line
+    nodeA =  np.array([indent, maxLim[1] - indent])
+    nodeB =  np.array([maxLim[0] - indent , maxLim[1] - indent])
+
+    oldLen = len(node_coords)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, False)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    #print (nrOfPoints)
+
+    #adding mech boundary conditions
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mechBC_merged.append(mBC)
+        #print('adding')
+
+
+
+    ##########################################generating of points, homogeneous volume
+    rectBC = np.array([-1,-1,-1,-1,-1,-1])
+
+    #rect
+    oldLen = len(node_coords)
+    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, rectBC)
+    #
+    newLen = len(node_coords)-1
+
+    #print (nrOfPoints)
+  #  mBC = utilitiesGeom.mechanicalBC(dim, kvadrBC, oldLen, newLen)
+   # mechBC_merged.append(mBC)
+    ####################################################################################################
+
+    return node_coords, node_mechBC, mechBC_merged
 
 
 

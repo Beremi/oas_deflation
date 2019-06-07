@@ -53,18 +53,19 @@ dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([3,1])
+if (dim == 2 ): maxLim = np.array([5,1])
 if (dim == 3 ): maxLim = np.array([1,1,1])
 
 #volume of the model (later for check)
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
-radius = 0.1
+#be cautious with small grains
+radius = 0.12
 minDist = radius
 
 #trials of random node positioning
-trials = 5000
+trials = 10000
 
 #lists for the model
 node_coords = []
@@ -75,34 +76,32 @@ functions = []
 
 #### Defining functions
 #0 constant zero
-func = []
-func.append( np.array([0, 0]) )
-fn = utilitiesMech.generalFunc(func)
+fn = utilitiesNumeric.constantFunc(0)
 functions.append (fn)
 
-#1 loading function, single force top right
+#1 loading function, single force top right, bilinear
 func1 = []
 func1.append( np.array([0,0]) )
 func1.append( np.array([50, 50e4]) )
-fn1 = utilitiesMech.generalFunc(func1)
+fn1 = utilitiesNumeric.generalFunc(func1)
 functions.append (fn1)
 
-#transport function, leftFace
-func2 = []
-func2.append( np.array([0, 100]) )
-fn2 = utilitiesMech.generalFunc(func2)
+#transport function, leftFace, constant
+fn2 = utilitiesNumeric.constantFunc(100)
 functions.append (fn2)
 
-#transport function, rightFace
+#transport function, rightFace, bilinear
 func3 = []
 func3.append( np.array([0,0]) )
 func3.append( np.array([50, 500]) )
-fn3 = utilitiesMech.generalFunc(func3)
+fn3 = utilitiesNumeric.generalFunc(func3)
 functions.append (fn3)
 
 #sampling of nodes
 if (dim == 2):
-    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+    #node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
+
 if (dim == 3):
     print('3d model inactive! Exiting.')
     sys.exit()
@@ -135,10 +134,10 @@ print('\nSaving model...')
 if (dim == 2):
     vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim,
     vor, node_coords, node_mechBC,
-    areas, order, mechanicalElements, mechBC_merged, transportPaths,materials, functions, False)
+    areas, order, mechanicalElements, mechBC_merged, transportPaths, False)
 if (dim == 3):
     vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
-    areas, order, mechanicalElements, mechBC_merged, transportPaths, materials, functions, False)
+    areas, order, mechanicalElements, mechBC_merged, transportPaths, False)
 
 
 utilitiesGeom.saveMaterials(materials)
