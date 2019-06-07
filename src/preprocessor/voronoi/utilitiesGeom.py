@@ -453,8 +453,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     #writing nodes
     ##############################################
-   # headerLine  =  "nodeCrdX \t nodeCrdY \t powRadius \t vorArea \t bcTransX \t bcTransY \t bcRotZ \t reorderedIdx"
-    #if (dim == 3): headerLine =  "nodeCrdX \t nodeCrdY \t nodeCrdZ \t powRadius \t vorArea \t bcTransX \t bcTransY \t bcTransZ \t bcRotX \t bcRotY \t bcRotZ \t reorderedIdx"
     headerLine  = "Type\tnodeCrdX\tnodeCrdY\tpowRadius"
     fmt='Particle\t%.12f\t%.12f\t%.12f'
 
@@ -473,13 +471,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     fmt='AuxNode\t%.12f\t%.12f'
     fl=open(os.path.join(master_folder,auxNodesFile),'w')
     np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
-    fl.close()
-
-
-    #HACK - HONZO, PROSIM OPRAV
-    fl=open(os.path.join(master_folder,exportersFile),'w')
-    fl.write("TXTNodalExporter translations 2 ux uy\n")
-    fl.write("TXTNodalExporter pressure 1 pressure")
     fl.close()
 
     #writing vertices
@@ -1075,4 +1066,13 @@ def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
     headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
     fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
     np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
+    fl.close()
+
+
+
+def saveExporters():
+    print('Saving exporters...')
+    fl=open(os.path.join(master_folder,exportersFile),'w')
+    fl.write("TXTNodalExporter translations 2 ux uy\n")
+    fl.write("TXTNodalExporter pressure 1 pressure")
     fl.close()

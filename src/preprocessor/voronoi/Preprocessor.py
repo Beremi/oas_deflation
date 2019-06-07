@@ -61,7 +61,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains
-radius = 0.12
+radius = 0.1
 minDist = radius
 
 #trials of random node positioning
@@ -99,8 +99,10 @@ functions.append (fn3)
 
 #sampling of nodes
 if (dim == 2):
-    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
-    #node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
+    #cantilever
+    #node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+    #simply supported beam
+    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
 
 if (dim == 3):
     print('3d model inactive! Exiting.')
@@ -144,7 +146,7 @@ utilitiesGeom.saveMaterials(materials)
 utilitiesGeom.saveFunctions(functions)
 utilitiesGeom.saveMechBC(dim, mechBC_merged)
 utilitiesGeom.saveTransportBC(transportBC_merged, verticesIdxDict, vertIdxStart)
-
+utilitiesGeom.saveExporters()
 
 solStep = 10
 utilitiesGeom.saveMasterInput(dim, solver, solStep)
