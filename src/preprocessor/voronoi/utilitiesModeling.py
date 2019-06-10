@@ -7,7 +7,7 @@ import voronoi
 
 def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     node_coords,node_mechBC, mechBC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
-    print (len(node_coords))
+    
     print('Conducting Voronoi tesselation...')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
 

@@ -40,8 +40,6 @@ import voronoi
 print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
 start = time.time()
 
-
-
 #type of solver. does not matter now
 solver = 0
 
@@ -53,7 +51,7 @@ dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([5,1])
+if (dim == 2 ): maxLim = np.array([  10   ,   1   ])
 if (dim == 3 ): maxLim = np.array([1,1,1])
 
 #volume of the model (later for check)
@@ -61,7 +59,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains
-radius = 0.1
+radius = 0.09
 minDist = radius
 
 #trials of random node positioning

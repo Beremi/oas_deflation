@@ -77,17 +77,21 @@ def getPlaneNormalVector (pA, pB, pC):
 
     return  normal
 
+#check if any number in matrix is lower than
+def checkLowerThan (matrix, minDist):
+    #return not (all(x < minDist for x in matrix))
+    return   all(i >= minDist for i in matrix)
 
-# vygeneruje nahodne body pri zadane minimalni vzdalenosti
-# do 2D nebo 3D kvadru
-# maxLim: n-d pole rozmeru kvadru
-# minDist
-
+# generates random points no closer to each other than minDist
+# into 2d or 3d block
+# maxLim: n-d array of dimensions
 def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
     if (dim==2):
-        print('Generating 2d block segment of size: %f / %f ' %(maxLim[0], maxLim[1]) )
+        print('Generating 2d block segment of size: %f / %f. This usually takes a while. Do not panic. ' %(maxLim[0], maxLim[1]) )
+
     if (dim==3):
-        print('Generating 3d block segment of size: %f / %f / %f' %(maxLim[0], maxLim[1], maxLim[2]) )
+        print('Generating 3d block segment of size: %f / %f / %f. This usually takes a while. Do not panic.' %(maxLim[0], maxLim[1], maxLim[2]) )
+
     generatedPoints = 0
     tr = 0
     while (tr<trials):
@@ -100,6 +104,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
             #
             distIsGood = True
             #
+            """
             for p in range (len(node_coords)):
                 #if (i!=p):
                     distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
@@ -109,15 +114,30 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
                         tr += 1
                        # clear_output(True)
                        # print('Pt: %d Tr: %d' %(generatedPoints, tr))
-                        break
+                        tr += 1
+            """
+            ncrds = np.asarray(node_coords)
+            #ncrds = np.reshape(ncrds, (-1, 2))
+            #print (ncrds)
+            crds = np.asarray(coords)
+            crds = np.reshape(crds, (-1, 2))
+            #print (crds)
+            dists = scipy.spatial.distance.cdist(crds, ncrds , 'euclidean')
+            dists = dists.flatten()
+            #print(dists)
+            distIsGood = checkLowerThan(dists, minDist)
+            if (distIsGood == False):
+                tr += 1
+
+            #print(distIsGood)
+
             if (tr > trials): break
         if (tr > trials): break
         #
         #Adding node coords
-        #
         node_coords.append(coords)
-       # node_coords [i,:] = coords
         generatedPoints  += 1
+        #print(generatedPoints)
         #
         #Adding node mechBC
         node_mechBC.append(np.copy(mechBC))
@@ -133,7 +153,8 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
 
 
 
-
+#generates random points onto a set 3d line. No closer than minDst
+#catch corners samples the boundary points first
 def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, catchCorners):
     print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
@@ -435,14 +456,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #
         rdg[0] = pointA
         rdg[1] = pointB
-        #transport BC
-       # rdg[2] = 0
 
-        #indexy vertexu, ktere ridge tvori
-
+        #muber of vertices
         rdg[2] = 2
-        #rdg[3] = vertB
 
+        #indices of vertices
         rdg[3] = verticesIdxDict[vertA] #vrtxA [dim] #verticesIdxDict[vertA]
         rdg[4] = verticesIdxDict[vertB] #vrtxB [dim] #verticesIdxDict[vertA]
         #pridani ridge do listu ridges
