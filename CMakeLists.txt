@@ -21,10 +21,10 @@ include (GenerateExportHeader)
 include (ProcessorCount)
 
 set(CMAKE_COLOR_MAKEFILE ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-project(PartMod)
+project(PartMod CXX)
 set (PartMod_VERSION_MAJOR 0)
 set (PartMod_VERSION_MINOR 1)
 set (PartMod_VERSION_PATCH 0) # Unused
@@ -37,9 +37,9 @@ set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/"
 message(STATUS "project source directory -> ${PartMod_SOURCE_DIR}")
 message(STATUS "project build directory -> ${PartMod_BINARY_DIR}")
 
-# Default is debug build
+# Default is release build
 if (NOT CMAKE_BUILD_TYPE)
-    set (CMAKE_BUILD_TYPE Debug)
+    set (CMAKE_BUILD_TYPE Release)
 endif ()
 
 if (MSVC)
@@ -125,11 +125,24 @@ if (DOXYGEN_FOUND)
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_OUTPUT}/html ${PARTMOD_SITE_SOURCE}/public
             COMMAND ${GIT_EXECUTABLE} add -A ${PARTMOD_SITE_SOURCE}
             COMMAND ${GIT_EXECUTABLE} commit -m "documentation updated"
-            COMMAND ${GIT_EXECUTABLE} push
+            COMMAND ${GIT_EXECUTABLE} push origin master
             COMMAND ${CMAKE_COMMAND} -E echo "Done."
             WORKING_DIRECTORY ${PARTMOD_SITE_SOURCE}
             DEPENDS)
     endif ()
+
+    add_custom_target (
+        docs_publish_rsync
+        COMMAND ${CMAKE_COMMAND} -E echo_append "Deploying Documentation by RSync..."
+        #COMMAND ${GIT_EXECUTABLE} merge master
+        #COMMAND ${CMAKE_COMMAND} -E remove_directory ${PARTMOD_SITE_SOURCE}/public
+        #COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_OUTPUT}/html ${PARTMOD_SITE_SOURCE}/public
+        #COMMAND ${GIT_EXECUTABLE} add -A ${PARTMOD_SITE_SOURCE}
+        #COMMAND ${GIT_EXECUTABLE} commit -m "documentation updated"
+        #COMMAND ${GIT_EXECUTABLE} push
+        COMMAND ${CMAKE_COMMAND} -E echo "Done."
+        WORKING_DIRECTORY ${PARTMOD_SITE_SOURCE}
+        DEPENDS)
 endif (DOXYGEN_FOUND)
 
 
