@@ -7,7 +7,7 @@ import voronoi
 
 def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     node_coords,node_mechBC, mechBC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
-    
+
     print('Conducting Voronoi tesselation...')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
 
@@ -17,7 +17,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     transportBC_merged = []
     ### selecting vertices on the left surface
     leftFaceBC = np.array([2,-1])
-    boundA = np.array(  [-1e-8 , 0] )
+    boundA = np.array(  [-1e-8 , maxLim[1]/4*3] )
     boundB = np.array(  [ 1e-8 , maxLim[1]]  )
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
@@ -25,15 +25,28 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
         trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
         transportBC_merged.append(trsBC)
 
+    ### selecting vertices on the bottom surface
+    """
+    botFaceBC = np.array([3,-1])
+    boundA = np.array(  [- 1e-8, - 1e-8] )
+    boundB = np.array(  [maxLim[0] + 1e-8 ,  1e-8]  )
+    botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(botFace)):
+        trsBC = utilitiesGeom.transportBC(botFace[i], botFaceBC)
+        transportBC_merged.append(trsBC)
+    """
+
     ### selecting vertices on the right surface
     rightFaceBC = np.array([3,-1])
-    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
-    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    boundA = np.array(  [maxLim[0] - 1e-8 , - 1e-8] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]/4 ] )
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(rightFace)
     for i in range (len(rightFace)):
         trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
+
 
     return node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas
 
@@ -189,7 +202,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
 
     ###############generating of nodes, right horizontal support ###############
     #mech bc
-    lineBC = np.array([-1,0,0,-1,-1,-1])
+    lineBC = np.array([-1,0,-1,-1,-1,-1])
 
     #defining points of the line
     nodeA = np.array([maxLim[0] - supportWidth -indent, indent])

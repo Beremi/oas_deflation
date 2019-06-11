@@ -87,10 +87,10 @@ def checkLowerThan (matrix, minDist):
 # maxLim: n-d array of dimensions
 def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
     if (dim==2):
-        print('Generating 2d block segment of size: %f / %f. This usually takes a while. Do not panic. ' %(maxLim[0], maxLim[1]) )
+        print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. ' %(maxLim[0], maxLim[1]) )
 
     if (dim==3):
-        print('Generating 3d block segment of size: %f / %f / %f. This usually takes a while. Do not panic.' %(maxLim[0], maxLim[1], maxLim[2]) )
+        print('Generating 3d block segment of size: %f / %f / %f. This may take few minutes. Do not panic.' %(maxLim[0], maxLim[1], maxLim[2]) )
 
     generatedPoints = 0
     tr = 0
@@ -104,6 +104,8 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
             #
             distIsGood = True
             #
+            #############################################x
+            ######old sequential computation of distances
             """
             for p in range (len(node_coords)):
                 #if (i!=p):
@@ -116,8 +118,9 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
                        # print('Pt: %d Tr: %d' %(generatedPoints, tr))
                         tr += 1
             """
+            #############################################x
+            ######new using c dist. Apparently faster
             ncrds = np.asarray(node_coords)
-            #ncrds = np.reshape(ncrds, (-1, 2))
             #print (ncrds)
             crds = np.asarray(coords)
             crds = np.reshape(crds, (-1, 2))
@@ -128,7 +131,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
             distIsGood = checkLowerThan(dists, minDist)
             if (distIsGood == False):
                 tr += 1
-
+             #############################################x
             #print(distIsGood)
 
             if (tr > trials): break

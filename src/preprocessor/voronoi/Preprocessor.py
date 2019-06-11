@@ -51,7 +51,7 @@ dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([  10   ,   1   ])
+if (dim == 2 ): maxLim = np.array([  5   ,   2  ])
 if (dim == 3 ): maxLim = np.array([1,1,1])
 
 #volume of the model (later for check)
@@ -63,7 +63,7 @@ radius = 0.09
 minDist = radius
 
 #trials of random node positioning
-trials = 10000
+trials = 20000
 
 #lists for the model
 node_coords = []
@@ -85,7 +85,7 @@ fn1 = utilitiesNumeric.generalFunc(func1)
 functions.append (fn1)
 
 #transport function, leftFace, constant
-fn2 = utilitiesNumeric.constantFunc(100)
+fn2 = utilitiesNumeric.constantFunc(20)
 functions.append (fn2)
 
 #transport function, rightFace, bilinear
