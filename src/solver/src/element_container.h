@@ -1,29 +1,30 @@
 #ifndef _ELEMENT_C_H
-#define	_ELEMENT_C_H
+#define _ELEMENT_C_H
 
 #include "element.h"
 #include "node_container.h"
 
 //////////////////////////////////////////////////////////
-class ElementContainer {
+class ElementContainer
+{
 private:
-    vector<Element*> elems; 
-    NodeContainer *nodes; 
+    vector< Element * >elems;
+    NodeContainer *nodes;
 public:
-    ElementContainer(){};    
+    ElementContainer() {};
     ~ElementContainer();
-    void setNodeContainer(NodeContainer *n){nodes=n;};
+    void setNodeContainer(NodeContainer *n) { nodes = n; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
-    unsigned giveSize()const{return elems.size();}
+    unsigned giveSize() const { return elems.size(); }
     void updateMaterialStatuses();
     void prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K) const;
     void updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const;
     void addBodyForces(Vector &R, double time) const;
     void giveInternalForces(const Vector &full_r, Vector &full_f);
-    Element* giveElement(unsigned const num){return elems[num];}
+    Element *giveElement(unsigned const num) { return elems [ num ]; }
 };
 
 
 
-#endif	/* _ELEMENT_STRUCT_C_H */
+#endif  /* _ELEMENT_STRUCT_C_H */

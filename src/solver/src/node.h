@@ -15,7 +15,8 @@ class BoundaryCondition; //forward declaration, needed to have pointer here, but
  *
  *  A more elaborate Node class description. DETAILED
  */
-class Node {
+class Node
+{
 private:
 
 protected:
@@ -27,8 +28,8 @@ protected:
     bool isMechanical;
     bool isTransport;
 public:
-    Node(){bc = NULL; name = "basic node"; isMechanical = false; isTransport = false;};
-    virtual ~Node(){};
+    Node() { bc = NULL; name = "basic node"; isMechanical = false; isTransport = false; };
+    virtual ~Node() {};
 
     /// A pure virtual member.
     /**
@@ -37,72 +38,76 @@ public:
      * \param c2 the second argument.
      */
     virtual void readFromLine(istringstream &iss, int dim);
-    Point givePoint() const {return point;};
-    void setPoint(const Point &P){point = P;};
-    void setNumberOfDoFs(const int num){nDoFs = num;};
-    unsigned giveNumberOfDoFs() const {return nDoFs;};
+    Point givePoint() const { return point; };
+    void setPoint(const Point &P) { point = P; };
+    void setNumberOfDoFs(const int num) { nDoFs = num; };
+    unsigned giveNumberOfDoFs() const { return nDoFs; };
     unsigned giveNumberOfFreeDoFs() const;
-    void setBC(BoundaryCondition *nbc){ bc = nbc;}
-    void setStartingDoF(unsigned num) {firstDoF = num;};
-    unsigned giveStartingDoF() const {return firstDoF;};
-    string giveName()const{return name;}
-    bool doesMechanics()const{return isMechanical;};
-    bool doesTransport()const{return isTransport;};
-    virtual double giveDoFBasedValue(string code, const Vector &DoFs) const {return 0;};
+    void setBC(BoundaryCondition *nbc) { bc = nbc; }
+    void setStartingDoF(unsigned num) { firstDoF = num; };
+    unsigned giveStartingDoF() const { return firstDoF; };
+    string giveName() const { return name; }
+    bool doesMechanics() const { return isMechanical; };
+    bool doesTransport() const { return isTransport; };
+    virtual double giveDoFBasedValue(string code, const Vector &DoFs) const { return 0; };
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Auxiliary NODE - only geometrical, without DoFs
-class AuxNode: public Node{
+class AuxNode : public Node
+{
 private:
 
 protected:
 public:
-    AuxNode(unsigned dim){nDoFs = 0; name = "auxiliary node";};
-    virtual ~AuxNode(){};
+    AuxNode(unsigned dim) { nDoFs = 0; name = "auxiliary node"; };
+    virtual ~AuxNode() {};
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational DoFs
-class MechNode: public Node{
+class MechNode : public Node
+{
 private:
 protected:
-    MechNode(){isMechanical = true;};
+    MechNode() { isMechanical = true; };
 public:
-    MechNode(unsigned dim){MechNode(); nDoFs = dim; name = "mechanical node";};
-    virtual ~MechNode(){};
+    MechNode(unsigned dim) { MechNode(); nDoFs = dim; name = "mechanical node"; };
+    virtual ~MechNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT NODE - transport DoF
-class TrsNode: public Node{
+class TrsNode : public Node
+{
 private:
 
 protected:
 public:
-    TrsNode(unsigned dim){nDoFs = 1; name = "transport node"; isTransport=true;};
-    virtual ~TrsNode(){};
+    TrsNode(unsigned dim) { nDoFs = 1; name = "transport node"; isTransport = true; };
+    virtual ~TrsNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational and rotational DoFs
-class Particle: public MechNode{
+class Particle : public MechNode
+{
 private:
     double r;  // radius in case of power tessellation
 protected:
 public:
-    Particle(unsigned dim){nDoFs = 3*(dim-1); name = "particle";};
-    virtual ~Particle(){};
+    Particle(unsigned dim) { nDoFs = 3 * ( dim - 1 ); name = "particle"; };
+    virtual ~Particle() {};
 
     virtual void readFromLine(istringstream &iss, int dim);
-    double giveRadius() const {return r;};
-    void setRadius(const double num) {r = num;};
+    double giveRadius() const { return r; };
+    void setRadius(const double num) { r = num; };
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
 

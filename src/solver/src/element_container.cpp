@@ -3,79 +3,89 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // ELEMENT CONATINER
-ElementContainer::~ElementContainer(){
-    for(vector<Element*>::iterator e=elems.begin(); e!=elems.end(); ++e) delete *e;    
+ElementContainer :: ~ElementContainer() {
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+        delete * e;
+    }
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer::readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs){
+void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
     unsigned origsize = elems.size();
     string line, elemType;
-    ifstream inputfile (filename.c_str());
-    if (inputfile.is_open()) {
-        while (getline(inputfile, line)){
-            if (line.at(0) == '#') continue;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile, line) ) {
+            if ( line.at(0) == '#' ) {
+                continue;
+            }
             istringstream iss(line);
-            iss >> elemType;            
-            if (not elemType.rfind("#", 0) == 0){
-                if (elemType.compare("LTCBEAM") == 0){
-                    RigidBodyContact* newelem = new RigidBodyContact(ndim);
-                    newelem->readFromLine(iss, nodes, matrs);     
+            iss >> elemType;
+            if ( not elemType.rfind("#", 0) == 0 ) {
+                if ( elemType.compare("LTCBEAM") == 0 ) {
+                    RigidBodyContact *newelem = new RigidBodyContact(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                }else if (elemType.compare("LTCTRSP") == 0){ 
-                    Transp1D* newelem=new Transp1D(ndim); 
-                    newelem->readFromLine(iss, nodes, matrs);              
+                } else if ( elemType.compare("LTCTRSP") == 0 )    {
+                    Transp1D *newelem = new Transp1D(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                }else{
+                } else  {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(0);
                 }
             }
         }
-        inputfile.close();    
-        cout << "Input file '" <<  filename << "' succesfully loaded; "<< elems.size()-origsize << " elements found" << endl;
+        inputfile.close();
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << elems.size() - origsize << " elements found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(0);
     }
-}  
-
-//////////////////////////////////////////////////////////
-void ElementContainer::init(){
-    for(vector<Element*>::iterator e=elems.begin(); e!=elems.end(); ++e) { (*e)->init(); (*e)->initMaterialStatuses();}
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer::updateMaterialStatuses(){
-    for(vector<Element*>::iterator e=elems.begin(); e!=elems.end(); ++e) (*e)->updateMaterialStatuses();
+void ElementContainer :: init() {
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+        ( * e )->init();
+        ( * e )->initMaterialStatuses();
+    }
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateMaterialStatuses() {
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+        ( * e )->updateMaterialStatuses();
+    }
 }
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer::prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K)const {
-    
-    map<pair<size_t, size_t>, double> indices11;
+void ElementContainer :: prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K) const {
+    map< pair< size_t, size_t >, double >indices11;
     //map<pair<size_t, size_t>, double> indices12;
 
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
-    vector<unsigned> elDoFs;
-    for(vector<Element*>::const_iterator e=elems.begin(); e!=elems.end(); ++e){
-        elDoFs = (*e)->giveDoFs();
-        for(unsigned i=0; i<elDoFs.size(); i++){
-            for(unsigned j=i; j<elDoFs.size(); j++){                
-                DoFi = nodes->giveDoFid(elDoFs[i]);
-                DoFj = nodes->giveDoFid(elDoFs[j]);
+    vector< unsigned >elDoFs;
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        elDoFs = ( * e )->giveDoFs();
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            for ( unsigned j = i; j < elDoFs.size(); j++ ) {
+                DoFi = nodes->giveDoFid(elDoFs [ i ]);
+                DoFj = nodes->giveDoFid(elDoFs [ j ]);
                 //diagonal
-                if (DoFi==DoFj){
-                    if (DoFi < nfreeDoFs) indices11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFi), 0.0));
-                }else{
+                if ( DoFi == DoFj ) {
+                    if ( DoFi < nfreeDoFs ) {
+                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
+                    }
+                } else  {
                     //remaining items
-                    if (DoFi < nfreeDoFs && DoFj < nfreeDoFs) {
-                        indices11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFj), 0.0));
-                        indices11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFj, DoFi), 0.0));
+                    if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
+                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
                     }//else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFj-nfreeDoFs), 0.0));
-                    //else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFj, DoFi-nfreeDoFs), 0.0));
+                     //else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFj, DoFi-nfreeDoFs), 0.0));
                 }
             }
         }
@@ -86,56 +96,63 @@ void ElementContainer::prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix 
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer::updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType)const {
-    
-    K = K*0.;
+void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const {
+    K = K * 0.;
     //K12 = K12*0.;
 
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
-    vector<unsigned> elDoFs;    
+    vector< unsigned >elDoFs;
     Vector elDoFValues;
     Matrix k;
-    for(vector<Element*>::const_iterator e=elems.begin(); e!=elems.end(); ++e){
-        elDoFs = (*e)->giveDoFs();        
-        k = (*e)->giveSteadyStateMatrix(matrixType);        
-        for(unsigned i=0; i<elDoFs.size(); i++){
-            for(unsigned j=i; j<elDoFs.size(); j++){    
-                DoFi = nodes->giveDoFid(elDoFs[i]);
-                DoFj = nodes->giveDoFid(elDoFs[j]);                
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        elDoFs = ( * e )->giveDoFs();
+        k = ( * e )->giveSteadyStateMatrix(matrixType);
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            for ( unsigned j = i; j < elDoFs.size(); j++ ) {
+                DoFi = nodes->giveDoFid(elDoFs [ i ]);
+                DoFj = nodes->giveDoFid(elDoFs [ j ]);
                 //diagonal
-                if (DoFi==DoFj){
-                    if (DoFi < nfreeDoFs) K[DoFi][DoFi] += k[i][i];
-                }else{
+                if ( DoFi == DoFj ) {
+                    if ( DoFi < nfreeDoFs ) {
+                        K [ DoFi ] [ DoFi ] += k [ i ] [ i ];
+                    }
+                } else  {
                     //remaining items
-                    if (DoFi < nfreeDoFs && DoFj < nfreeDoFs) {K[DoFi][DoFj] += k[i][j]; K[DoFj][DoFi] += k[j][i];}                    
+                    if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                        K [ DoFi ] [ DoFj ] += k [ i ] [ j ];
+                        K [ DoFj ] [ DoFi ] += k [ j ] [ i ];
+                    }
                     //else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) K12[DoFi][DoFj-nfreeDoFs] += k[i][j];
                     //else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) K12[DoFj][DoFi-nfreeDoFs] += k[j][i];
                 }
             }
         }
-    } 
+    }
     //cout << "Steady state matrices updated" << endl;
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer::giveInternalForces(const Vector &full_r, Vector &full_f) {
+void ElementContainer :: giveInternalForces(const Vector &full_r, Vector &full_f) {
     Vector elDoFvalues, elForces;
-    vector<unsigned> elDoFs; 
+    vector< unsigned >elDoFs;
     full_f *= 0; //clear array
 
-    for(vector<Element*>::const_iterator e=elems.begin(); e!=elems.end(); ++e){
-        elDoFs = (*e)->giveDoFs();
-        elDoFvalues.resize(elDoFs.size());
-        for(unsigned i=0; i<elDoFs.size(); i++) elDoFvalues[i] = full_r[elDoFs[i]];
-        elForces = (*e)->giveInternalForces(elDoFvalues);
-        for(unsigned i=0; i<elDoFs.size(); i++) full_f[elDoFs[i]] += elForces[i]; 
-    }     
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        elDoFs = ( * e )->giveDoFs();
+        elDoFvalues.resize(elDoFs.size() );
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
+        }
+        elForces = ( * e )->giveInternalForces(elDoFvalues);
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            full_f [ elDoFs [ i ] ] += elForces [ i ];
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer::addBodyForces(Vector &R, double time) const{
-    //here comes distributed load, self weight 
+void ElementContainer :: addBodyForces(Vector &R, double time) const {
+    //here comes distributed load, self weight
     //TO BE DONE
 }
-

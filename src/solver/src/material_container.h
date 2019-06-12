@@ -9,18 +9,18 @@
 
 
 //////////////////////////////////////////////////////////
-class MaterialContainer {
+class MaterialContainer
+{
 private:
-    vector<Material*> matrs;
+    vector< Material * >matrs;
 public:
-    MaterialContainer(){};
+    MaterialContainer() {};
     ~MaterialContainer();
 
     void readFromFile(const string filename);
     void init();
-    Material* giveMaterial(unsigned const mat){return matrs[mat];}
+    Material *giveMaterial(unsigned const mat) { return matrs [ mat ]; }
 protected:
-
 };
 
 #endif /* _MATERIAL_C_H */

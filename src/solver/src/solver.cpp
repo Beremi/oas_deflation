@@ -2,43 +2,50 @@
 #define EPS2 1e-30
 
 //////////////////////////////////////////////////////////
-Solver* Solver::readFromLine(istringstream &iss){
+Solver *Solver :: readFromLine(istringstream &iss) {
     string param;
     iss >> param;
-    if (param.compare("SteadyStateLinearSolver") == 0){
-        SteadyStateLinearSolver* newsolver = new SteadyStateLinearSolver();
+    if ( param.compare("SteadyStateLinearSolver") == 0 ) {
+        SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
         newsolver->readFromLine(iss);
         return newsolver;
-    }else if (param.compare("SteadyStateNonLinearSolver") == 0){
-        SteadyStateNonLinearSolver* newsolver = new SteadyStateNonLinearSolver();
+    } else if ( param.compare("SteadyStateNonLinearSolver") == 0 )    {
+        SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
         newsolver->readFromLine(iss);
         return newsolver;
-    }else {cerr << "Error: Solver "<< param << " is not implemented" << endl; exit(0);};
+    } else  {
+        cerr << "Error: Solver " << param << " is not implemented" << endl;
+        exit(0);
+    };
 }
 
 //////////////////////////////////////////////////////////
-void Solver::runBeforeEachStep(){
-    step += 1; 
-    time +=dt; 
+void Solver :: runBeforeEachStep() {
+    step += 1;
+    time += dt;
 }
 
 //////////////////////////////////////////////////////////
-void Solver::runAfterEachStep(){   
-    if (time+dt>termination_time) dt = termination_time-time;
-    if (dt<1e-15) terminated=true;
+void Solver :: runAfterEachStep() {
+    if ( time + dt > termination_time ) {
+        dt = termination_time - time;
+    }
+    if ( dt < 1e-15 ) {
+        terminated = true;
+    }
 }
 
 //////////////////////////////////////////////////////////
-void Solver::init(){
+void Solver :: init() {
     step = 0;
     time = 0.;
 
     terminated = false;
 
     freeDoFnum = nodes->giveNumFreeDoFs();
-    fixedDoFnum = (nodes->giveTotalNumDoFs()-freeDoFnum);
-    totalDoFnum = freeDoFnum+fixedDoFnum;
-    
+    fixedDoFnum = ( nodes->giveTotalNumDoFs() - freeDoFnum );
+    totalDoFnum = freeDoFnum + fixedDoFnum;
+
     elems->prepareSteadyStateMatrices(K);
     elems->updateSteadyStateMatrices(K, "elastic");
     f_ext = Vector(totalDoFnum);
@@ -54,89 +61,98 @@ void Solver::init(){
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // STEADY STATE LINEAR SOLVER
-SteadyStateLinearSolver::SteadyStateLinearSolver(){
+SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
 }
 
 //////////////////////////////////////////////////////////
-SteadyStateLinearSolver::~SteadyStateLinearSolver(){
+SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: init() {
+    Solver :: init();
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver::init(){
-    Solver::init();
-}
-
-//////////////////////////////////////////////////////////
-Solver* SteadyStateLinearSolver::readFromLine(istringstream &iss){
+Solver *SteadyStateLinearSolver :: readFromLine(istringstream &iss) {
     string param;
-    bool bdt,bttime;
-    bdt=bttime = false;
+    bool bdt, bttime;
+    bdt = bttime = false;
 
-    while (!iss.eof()) {
+    while ( !iss.eof() ) {
         iss >> param;
-        if (param.compare("time_step") == 0){
+        if ( param.compare("time_step") == 0 ) {
             bdt = true;
             iss >> dt;
-        }else if (param.compare("total_time") == 0){
+        } else if ( param.compare("total_time") == 0 )    {
             bttime = true;
             iss >> termination_time;
-        }        
-    }    
-    if (not bdt) {cerr << name << ": solver parameter 'time_step' was not specified" << endl; exit(0);};
-    if (not bttime) {cerr << name << ": solver parameter 'total_time' was not specified" << endl; exit(0);};
-    cout << name << " succesfully loaded"<< endl;
+        }
+    }
+    if ( not bdt ) {
+        cerr << name << ": solver parameter 'time_step' was not specified" << endl;
+        exit(0);
+    }
+    ;
+    if ( not bttime ) {
+        cerr << name << ": solver parameter 'total_time' was not specified" << endl;
+        exit(0);
+    }
+    ;
+    cout << name << " succesfully loaded" << endl;
     return this;
 };
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver::solve(){
-
+void SteadyStateLinearSolver :: solve() {
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(r, time); //give prescribed DoFs
     computeInternalExternalForces(r);
 
     //solve linear system
-    nodes->giveReducedDoFArray(f_ext-f_int, f);
-    if (ConjGrad(K, ddr, f, ddr) == false) cerr << "Conjugate gradients did not converge" << endl;
-    nodes->giveFullDoFArray(ddr, full_ddr); 
-    
-    for(unsigned i=0; i<totalDoFnum; i++) r[i] += full_ddr[i]; 
+    nodes->giveReducedDoFArray(f_ext - f_int, f);
+    if ( ConjGrad(K, ddr, f, ddr) == false ) {
+        cerr << "Conjugate gradients did not converge" << endl;
+    }
+    nodes->giveFullDoFArray(ddr, full_ddr);
+
+    for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+        r [ i ] += full_ddr [ i ];
+    }
     computeInternalExternalForces(r);
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver::computeInternalExternalForces(Vector &rr){
-        elems->giveInternalForces(rr, f_int);
-        nodes->updateExteranlForcesByReactions(f_int, load, f_ext); //give prescribed DoFs
+void SteadyStateLinearSolver :: computeInternalExternalForces(Vector &rr) {
+    elems->giveInternalForces(rr, f_int);
+    nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver::runBeforeEachStep(){
-    Solver::runBeforeEachStep();
-    cout << "######### Solving step "<< step << " at time " << time << "; time step " << dt << " #########" << endl;
-    load = load*0.;  //clear nodal load
+void SteadyStateLinearSolver :: runBeforeEachStep() {
+    Solver :: runBeforeEachStep();
+    cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
+    load = load * 0.;  //clear nodal load
 }
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver::runAfterEachStep(){ 
-    Solver::runAfterEachStep();    
+void SteadyStateLinearSolver :: runAfterEachStep() {
+    Solver :: runAfterEachStep();
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // STEADY STATE NONLINEAR SOLVER
 
-SteadyStateNonLinearSolver::SteadyStateNonLinearSolver(){
+SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     name = "SteadyStateNonLinearSolver";
 }
 
 //////////////////////////////////////////////////////////
-SteadyStateNonLinearSolver::~SteadyStateNonLinearSolver(){
-}
+SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {}
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver::init(){
-    Solver::init();
+void SteadyStateNonLinearSolver :: init() {
+    Solver :: init();
     f_int_old = Vector(totalDoFnum);
     f_ext_old = Vector(totalDoFnum);
     trial_r = Vector(totalDoFnum);
@@ -147,103 +163,120 @@ void SteadyStateNonLinearSolver::init(){
 }
 
 //////////////////////////////////////////////////////////
-Solver* SteadyStateNonLinearSolver::readFromLine(istringstream &iss){
+Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     string param;
-    bool bdt,bttime;
-    bdt=bttime = false;
+    bool bdt, bttime;
+    bdt = bttime = false;
 
-    while (!iss.eof()) {
+    while ( !iss.eof() ) {
         iss >> param;
-        if (param.compare("time_step") == 0){
+        if ( param.compare("time_step") == 0 ) {
             bdt = true;
             iss >> dt;
-        }else if (param.compare("total_time") == 0){
+        } else if ( param.compare("total_time") == 0 )    {
             bttime = true;
             iss >> termination_time;
-        }        
-    }    
-    if (not bdt) {cerr << name << ": solver parameter 'time_step' was not specified" << endl; exit(0);};
-    if (not bttime) {cerr << name << ": solver parameter 'total_time' was not specified" << endl; exit(0);};
-    cout << name << " succesfully loaded"<< endl;
+        }
+    }
+    if ( not bdt ) {
+        cerr << name << ": solver parameter 'time_step' was not specified" << endl;
+        exit(0);
+    }
+    ;
+    if ( not bttime ) {
+        cerr << name << ": solver parameter 'total_time' was not specified" << endl;
+        exit(0);
+    }
+    ;
+    cout << name << " succesfully loaded" << endl;
     return this;
 };
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver::solve(){
-    //setup loading    
+void SteadyStateNonLinearSolver :: solve() {
+    //setup loading
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     computeInternalExternalForces(trial_r);
 
-    unsigned it=0;
+    unsigned it = 0;
     bool converged = false;
     unsigned maxIt = 30;
-    while (!converged && it < maxIt) {
-
+    while ( !converged && it < maxIt ) {
         elems->updateSteadyStateMatrices(K, "secant");
-        
+
         //solve linear system
-        nodes->giveReducedDoFArray(f_ext-f_int, f);
-        if (ConjGrad(K, ddr, f, ddr) == false) cerr << "Conjugate gradients did not converge" << endl;
-        nodes->giveFullDoFArray(ddr, full_ddr); 
+        nodes->giveReducedDoFArray(f_ext - f_int, f);
+        if ( ConjGrad(K, ddr, f, ddr) == false ) {
+            cerr << "Conjugate gradients did not converge" << endl;
+        }
+        nodes->giveFullDoFArray(ddr, full_ddr);
 
         //update DoFs
-        for(unsigned i=0; i<totalDoFnum; i++) trial_r[i] += full_ddr[i];  
+        for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+            trial_r [ i ] += full_ddr [ i ];
+        }
 
-       //compute internal forces
+        //compute internal forces
         computeInternalExternalForces(trial_r);
 
         //compute residuals
         W_int = W_int_old;
         W_ext = W_ext_old;
-        for (unsigned i=0; i<totalDoFnum; i++) {
-                residual[i] = f_int[i]-f_ext[i];
-                W_int += abs(0.5*(f_int[i]+f_int_old[i])*(r[i]-trial_r[i]));
-                W_ext += abs(0.5*(f_ext[i]+f_ext_old[i])*(r[i]-trial_r[i]));
+        for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+            residual [ i ] = f_int [ i ] - f_ext [ i ];
+            W_int += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_ext += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
         }
-    
+
         //compute errors
-        double residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext),l2_norm(f_int)),EPS2);
-        double displa_error = (it==0) ? 0. : l2_norm(full_ddr)/max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
-        double energy_error =  abs( inner_product(&residual[0], &residual[totalDoFnum], &full_ddr[0], (double) (0))) / max(max(W_ext,W_int),EPS2);
-  
+        double residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
+        double displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
+        double energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
+
         cout << setw(6) << it << setw(15) << residu_error;
-        if (it==0) cout << setw(15) << "---"; else cout << setw(15) << displa_error;
-        cout << setw(15) << energy_error; 
-        cout << endl;        
-        
-        if (displa_error > disErr || residu_error > resErr || energy_error > eneErr) converged = false;
-        else converged = true;
+        if ( it == 0 ) {
+            cout << setw(15) << "---";
+        } else {
+            cout << setw(15) << displa_error;
+        }
+        cout << setw(15) << energy_error;
+        cout << endl;
+
+        if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {
+            converged = false;
+        } else {
+            converged = true;
+        }
         it++;
-    }  
-    
-    if(not converged){
+    }
+
+    if ( not converged ) {
         cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
         exit(1);
     }
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver::runBeforeEachStep(){
-    SteadyStateLinearSolver::runBeforeEachStep();
+void SteadyStateNonLinearSolver :: runBeforeEachStep() {
+    SteadyStateLinearSolver :: runBeforeEachStep();
 
     cout <<  scientific; //cout << setprecision(8);
-    cout << "----------------------------------------------------"<<endl;
-    cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error"<<endl;
-    cout << setw(6) << " " << setw(15) << resErr << setw(15) << disErr << setw(15) << eneErr <<endl;
-    cout << "----------------------------------------------------"<<endl;
-
+    cout << "----------------------------------------------------" << endl;
+    cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
+    cout << setw(6) << " " << setw(15) << resErr << setw(15) << disErr << setw(15) << eneErr << endl;
+    cout << "----------------------------------------------------" << endl;
 }
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver::runAfterEachStep(){ 
-    SteadyStateLinearSolver::runAfterEachStep();  
-    for(unsigned i=0; i<totalDoFnum; i++) {
-        r[i] = trial_r[i];
-        f_int_old[i] = f_int[i];
-        f_ext_old[i] = f_ext[i];
+void SteadyStateNonLinearSolver :: runAfterEachStep() {
+    SteadyStateLinearSolver :: runAfterEachStep();
+    for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+        r [ i ] = trial_r [ i ];
+        f_int_old [ i ] = f_int [ i ];
+        f_ext_old [ i ] = f_ext [ i ];
     }
     W_int_old = W_int;
     W_ext_old = W_ext;
-    elems->updateMaterialStatuses();     
-    cout << "----------------------------------------------------"<<endl;
+    elems->updateMaterialStatuses();
+    cout << "----------------------------------------------------" << endl;
 }

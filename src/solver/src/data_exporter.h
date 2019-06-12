@@ -10,111 +10,114 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC DATA EXPORTER - master class
-class DataExporter {
+class DataExporter
+{
 private:
-   
+
 public:
-    DataExporter(){};
-    virtual ~DataExporter(){};
-    virtual void readFromLine(istringstream &iss, unsigned dimension) =0;
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions)const = 0;
-    virtual void giveFileName(unsigned step, char* buffer) const; 
-    string giveFileName() const{return filename;};
-    virtual void init(){};             
+    DataExporter() {};
+    virtual ~DataExporter() {};
+    virtual void readFromLine(istringstream &iss, unsigned dimension) = 0;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const = 0;
+    virtual void giveFileName(unsigned step, char *buffer) const;
+    string giveFileName() const { return filename; };
+    virtual void init() {};
 protected:
     string filename;
-    vector<string> codes;
+    vector< string >codes;
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM NODES TO TXT
-class TXTNodalExporter: public DataExporter  {
+class TXTNodalExporter : public DataExporter
+{
 private:
     NodeContainer *nodes;
 public:
-    TXTNodalExporter(NodeContainer *n){nodes=n;};
-    ~TXTNodalExporter(){};
+    TXTNodalExporter(NodeContainer *n) { nodes = n; };
+    ~TXTNodalExporter() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
-
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM ELEMENTS TO TXT
-class TXTElementExporter: public DataExporter {
+class TXTElementExporter : public DataExporter
+{
 private:
-    ElementContainer *elems;   
+    ElementContainer *elems;
 public:
-    TXTElementExporter(ElementContainer *e){elems=e;};
-    ~TXTElementExporter(){};
+    TXTElementExporter(ElementContainer *e) { elems = e; };
+    ~TXTElementExporter() {};
     void readFromLine(istringstream &iss, unsigned dimension);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{};
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {};
 protected:
-
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
-class TXTGaussPointExporter: public DataExporter {
+class TXTGaussPointExporter : public DataExporter
+{
 private:
-    ElementContainer *elems;   
+    ElementContainer *elems;
 public:
-    TXTGaussPointExporter(ElementContainer *e){elems=e;};
-    ~TXTGaussPointExporter(){};
+    TXTGaussPointExporter(ElementContainer *e) { elems = e; };
+    ~TXTGaussPointExporter() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
-
 };
 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GAUGE EXPORTER
-class Gauge: public DataExporter {
+class Gauge : public DataExporter
+{
 protected:
     string name;
 public:
-    Gauge(){};
-    ~Gauge(){};
-    virtual void giveFileName(unsigned step, char* buffer) const; 
-    string giveName(){return name;};
+    Gauge() {};
+    ~Gauge() {};
+    virtual void giveFileName(unsigned step, char *buffer) const;
+    string giveName() { return name; };
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF FORCES
-class ForceGauge: public Gauge {
+class ForceGauge : public Gauge
+{
 private:
-    NodeContainer *nodes;  
-    vector<unsigned> DoFs;
-    vector<unsigned> n;
+    NodeContainer *nodes;
+    vector< unsigned >DoFs;
+    vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *n){nodes=n;};
-    ~ForceGauge(){};
+    ForceGauge(NodeContainer *n) { nodes = n; };
+    ~ForceGauge() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     virtual void init();
 protected:
-
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
-class DisplacementGauge: public Gauge {
+class DisplacementGauge : public Gauge
+{
 private:
     NodeContainer *nodes;
     ElementContainer *elems;
     Node *nodeA, *nodeB;
     Point pointA, pointB;
 public:
-    DisplacementGauge(NodeContainer *n, ElementContainer *e){nodes=n; elems=e;};
-    ~DisplacementGauge(){};
+    DisplacementGauge(NodeContainer *n, ElementContainer *e) { nodes = n; elems = e; };
+    ~DisplacementGauge() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     virtual void init();
@@ -124,18 +127,18 @@ protected:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // CONTAINER FOR EXPORTERS
-class ExporterContainer {
+class ExporterContainer
+{
 private:
-    vector <DataExporter*> exporters;
-    vector <DataExporter*> unique_file_exporters;
+    vector< DataExporter * >exporters;
+    vector< DataExporter * >unique_file_exporters;
 public:
-    ExporterContainer(){};
+    ExporterContainer() {};
     ~ExporterContainer();
-    void readFromFile(const string filename,NodeContainer *n, ElementContainer *e, unsigned dimension);
-    void exportData(unsigned step,const Vector &DoFs, const Vector &reactions)const;
+    void readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
+    void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     void init();
 protected:
-
 };
 
 
