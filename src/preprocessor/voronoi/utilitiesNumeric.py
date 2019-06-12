@@ -20,6 +20,57 @@ def runMirroredVoronoi (node_coords, dim, maxLim):
 
 
 
+##################################################
+#### General function set by table ####
+class generalFunc:
+    def __init__(self, table):
+        self.table = table
+
+    def getString(self):
+        line = 'PWLFunction\t%d'%(len(self.table))
+        """
+        for i in range (len(self.table[0])):
+            line += '\t%f'%(self.table[0][i])
+        """
+        for i in range (len(self.table)):
+            line += '\t%f'%(self.table[i][0])
+
+        for i in range (len(self.table)):
+            line += '\t%f'%(self.table[i][1])
+
+        return line
+####################################################
+
+##################################################
+#### General function set by table ####
+class constantFunc:
+    def __init__(self, val):
+        self.val = val
+
+    def getString(self):
+        line = 'PWLFunction\t1'
+        line += '\t%f'%(0)
+        line += '\t%f'%(self.val)
+
+        return line
+####################################################
+
+##################################################
+#### Sine function ####
+class sineFunc:
+    def __init__ (self, amplitude, freq):
+        self.amplitude = amplitude
+        self.freq = freq
+    def getString(self):
+        line = 'SineFunction\t'
+        line += '%f\t' (self.freq)
+        line += '%f' (self.amplitude)
+        return line
+##################################################
+
+
+
+
 #reordering of indices
 def reorderToDiagonal (node_count, node_coords, vor):
     A = np.zeros( (node_count,node_count) )
@@ -49,7 +100,7 @@ def reorderToDiagonal (node_count, node_coords, vor):
         #print(dist)
 
 
-    print('original connectivity matrix')
+    #print('original connectivity matrix')
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1,1,1)
@@ -68,7 +119,7 @@ def reorderToDiagonal (node_count, node_coords, vor):
 
 
 
-    print('reordered connectivity matrix')
+    #print('reordered connectivity matrix')
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1,1,1)

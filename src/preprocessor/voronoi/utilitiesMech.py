@@ -66,39 +66,3 @@ class linearElasticMaterial:
         return line
 
 ##################################################
-
-
-##################################################
-#### General function set by table ####
-class generalFunc:
-    def __init__(self, table):
-        self.table = table
-    
-    def getString(self):
-        line = 'PWLFunction\t%d'%(len(self.table[0])/2)
-
-        for i in range (len(self.table[0])):
-            line += '\t%f'%(self.table[0][i])
-        """
-        for i in range (len(self.table)):
-            line += '\t%f'%(self.table[i][0])
-
-        for i in range (len(self.table)):
-            line += '\t%f'%(self.table[i][1])
-        """
-        return line
-####################################################
-
-
-##################################################
-#### Sine function ####
-class sineFunc:
-    def __init__ (self, amplitude, freq):
-        self.amplitude = amplitude
-        self.freq = freq
-    def getString(self):
-        line = 'SineFunction\t'
-        line += '%f\t' (self.freq)
-        line += '%f' (self.amplitude)
-        return line
-##################################################

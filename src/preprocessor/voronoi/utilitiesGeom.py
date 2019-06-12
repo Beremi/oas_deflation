@@ -77,16 +77,21 @@ def getPlaneNormalVector (pA, pB, pC):
 
     return  normal
 
+#check if any number in matrix is lower than
+def checkLowerThan (matrix, minDist):
+    #return not (all(x < minDist for x in matrix))
+    return   all(i >= minDist for i in matrix)
 
-# vygeneruje nahodne body pri zadane minimalni vzdalenosti
-# do 2D nebo 3D kvadru
-# maxLim: n-d pole rozmeru kvadru
-# minDist
-def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
+# generates random points no closer to each other than minDist
+# into 2d or 3d block
+# maxLim: n-d array of dimensions
+def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
     if (dim==2):
-        print('Generating 2d block segment of size: %f / %f ' %(maxLim[0], maxLim[1]) )
+        print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. ' %(maxLim[0], maxLim[1]) )
+
     if (dim==3):
-        print('Generating 3d block segment of size: %f / %f / %f' %(maxLim[0], maxLim[1], maxLim[2]) )
+        print('Generating 3d block segment of size: %f / %f / %f. This may take few minutes. Do not panic.' %(maxLim[0], maxLim[1], maxLim[2]) )
+
     generatedPoints = 0
     tr = 0
     while (tr<trials):
@@ -99,6 +104,9 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
             #
             distIsGood = True
             #
+            #############################################x
+            ######old sequential computation of distances
+            """
             for p in range (len(node_coords)):
                 #if (i!=p):
                     distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
@@ -106,34 +114,56 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
                     if (distInt < minDist):
                         distIsGood = False
                         tr += 1
-                       # clear_output(True)
-                       # print('Pt: %d Tr: %d' %(generatedPoints, tr))
-                        break
+            """
+            #############################################x
+            ######new using c dist. Much faster
+            """
+            ncrds = np.asarray(node_coords)
+            #print (ncrds)
+            crds = np.asarray(coords)
+            crds = np.reshape(crds, (-1, 2))
+            #print (crds)
+            dists = scipy.spatial.distance.cdist(crds, ncrds , 'euclidean')
+            dists = dists.flatten()
+            #print(dists)
+            distIsGood = checkLowerThan(dists, minDist)
+            if (distIsGood == False):
+                tr += 1
+            """
+            #############################################x
+            #trying scipy cKDTree for searching for nearest neighbors. Slightly slower so far.
+            ##############################################
+
+            #node_coords.append(coords)
+            crds = np.asarray(coords)
+            pts = np.asarray (node_coords)
+            tree = scipy.spatial.cKDTree ( pts,  leafsize=500000 )
+            #
+            violatingPoints = tree.query_ball_point (x = crds,  r = minDist, n_jobs = -1 )
+            #print (violatingPoints)
+            if ( len(violatingPoints) != 0):
+                distIsGood = False
+                tr += 1
+            #else:
+            #    print('GOOD POINT')
+            #print(trials)
+
+            ##############################################
+
+
             if (tr > trials): break
         if (tr > trials): break
         #
         #Adding node coords
-        #
         node_coords.append(coords)
-       # node_coords [i,:] = coords
         generatedPoints  += 1
+        #print(generatedPoints)
         #
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #
-        #print('Pt: %d Tr: %d' %(generatedPoints, tr))
-        #print('Rect Pt: %d' %generatedPoints)
-        #clear_output(True)
-
-    #print ('%d Points GENERATED OK' %(generatedPoints))
 
 
-
-
-
-
-
-def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, catchCorners):
+#generates random points onto a set 3d line. No closer than minDst
+#catch corners samples the boundary points first
+def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
     print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
     generatedPoints = 0
@@ -142,11 +172,6 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         node_coords.append(np.copy(nodeA))
         node_coords.append(np.copy(nodeB))
         generatedPoints  += 2
-        #
-        #Adding node mechBC
-        #
-        node_mechBC.append(np.copy(mechBC))
-        node_mechBC.append(np.copy(mechBC))
 
     tr=0
     while (tr<trials):
@@ -180,16 +205,10 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
        # node_coords [i,:] = coords
         generatedPoints  += 1
         #
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #print('3d Line Pt: %d' %(generatedPoints))
-        #clear_output(True)
-
-   # print(node_coords)
 
 
 
-def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials):
+def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials):
     print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f] '
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
     generatedPoints = 0
@@ -228,17 +247,18 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #print('3d Surf Pt: %d' %(generatedPoints))
-        clear_output(True)
-
-   # print(node_coords)
 
 
+def generateSingleNode(node, dim, node_coords):
+    if (dim == 2):
+        print('Generating a single 2d node [%f; %f]' %(node[0], node[1]))
+    if (dim == 3):
+        print('Generating a single 3d node [%f; %f; %f]' %(node[0], node[1], node[2]))
 
 
-def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, catchCorners):
+
+
+def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
     print('Generating 2d line segment from [%f; %f] to [%f; %f] '
      %(nodeA[0], nodeA[1], nodeB[0], nodeB[1]) )
     generatedPoints = 0
@@ -247,11 +267,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         node_coords.append(np.copy(nodeA))
         node_coords.append(np.copy(nodeB))
         generatedPoints  += 2
-        #
-        #Adding node mechBC
-        #
-        node_mechBC.append(np.copy(mechBC))
-        node_mechBC.append(np.copy(mechBC))
+
     tr=0
     while (tr<trials):
         tr = 0;
@@ -273,41 +289,27 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
                     if (distInt < minDist):
                         distIsGood = False
                         tr += 1
-                        #clear_output(True)
-                        #print('Line Pt: %d Tr: %d' %(generatedPoints, tr))
                         break
+
             if (tr > trials): break
         if (tr > trials): break
         #
         #Adding node coords
         #
         node_coords.append(coords)
-       # node_coords [i,:] = coords
         generatedPoints  += 1
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #print('2d Line Pt: %d' %(generatedPoints))
-        #clear_output(True)
-
 
 
 
 #OUTPUT METHODS
-def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs,mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
+def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mechanicalElements, transportPaths, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################
     ############################################################################################
 
-    # nody: [x,y] [powerR] [area] [3x mech BC] [newIdxReordered]
-   # nodes_out = np.zeros( (node_count, (2 + 1 + 1 + 3 +1)))
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 + 1 +1)))
-
-   # for d in range (dim):
-  #      nodes_out[:,d] = node_coords[:,d]
-
     nodes_out[:,  0:2] = node_coords[:,  0:2]
-
     nodes_out[:,dim] = 0
     nodes_out[:,dim + 1] = areas[:]
 
@@ -315,21 +317,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     #print (np.sum(areas))
     #print ('Area Error: %.5E ' %(relAreaError) )
 
-
     for n in range (len(node_coords) ):
-        #print(node_mechBC[n])
-        #nodes_out[n,dim+2:dim+2+3] = node_mechBC[n]
-        #nodes_out[n, 7] = reOrderedIdxs[n]
         nodes_out[n, dim+2] = reOrderedIdxs[n]
 
         mechBCidx = -1
-       # for m in range (len(mechBC_merged)):
-            #print (m)
-          #  if (n >= mechBC_merged[m].nodeIdxFrom and n <= mechBC_merged[m].nodeIdxTo):
-           #     mechBCidx = m
         nodes_out[n, dim+3]  =  mechBCidx
-
-    #nodes_out[n, dim+6] = reOrderedIdxs[n]
 
     ########################################################################################
     validRidgeIdxs = []
@@ -434,14 +426,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         #
         rdg[0] = pointA
         rdg[1] = pointB
-        #transport BC
-       # rdg[2] = 0
 
-        #indexy vertexu, ktere ridge tvori
-
+        #muber of vertices
         rdg[2] = 2
-        #rdg[3] = vertB
 
+        #indices of vertices
         rdg[3] = verticesIdxDict[vertA] #vrtxA [dim] #verticesIdxDict[vertA]
         rdg[4] = verticesIdxDict[vertB] #vrtxB [dim] #verticesIdxDict[vertA]
         #pridani ridge do listu ridges
@@ -452,8 +441,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     #writing nodes
     ##############################################
-   # headerLine  =  "nodeCrdX \t nodeCrdY \t powRadius \t vorArea \t bcTransX \t bcTransY \t bcRotZ \t reorderedIdx"
-    #if (dim == 3): headerLine =  "nodeCrdX \t nodeCrdY \t nodeCrdZ \t powRadius \t vorArea \t bcTransX \t bcTransY \t bcTransZ \t bcRotX \t bcRotY \t bcRotZ \t reorderedIdx"
     headerLine  = "Type\tnodeCrdX\tnodeCrdY\tpowRadius"
     fmt='Particle\t%.12f\t%.12f\t%.12f'
 
@@ -472,13 +459,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     fmt='AuxNode\t%.12f\t%.12f'
     fl=open(os.path.join(master_folder,auxNodesFile),'w')
     np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
-    fl.close()
-
-
-    #HACK - HONZO, PROSIM OPRAV
-    fl=open(os.path.join(master_folder,exportersFile),'w')
-    fl.write("TXTNodalExporter translations 2 ux uy\n")
-    fl.write("TXTNodalExporter pressure 1 pressure")
     fl.close()
 
     #writing vertices
@@ -565,32 +545,13 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
         latticeBeamElement = utilitiesMech.latticeBeam (2, ridges_out[i][0], ridges_out[i][1], 0)
         mechanicalElements.append (latticeBeamElement )
 
-
-    ### MATERIALS
-    with open(os.path.join(master_folder,materialsFile), 'w') as f:
-        headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
-       # f.write("%s\n" % headerLine )
-        for item in materials:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
-    ### FUNCTIONS
-    with open(os.path.join(master_folder,functionsFile), 'w') as f:
-        headerLine = '#FuncType\tnumberOfDefPoints\tpointvalues'
-        f.write("%s\n" % headerLine )
-        for item in functions:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
     return v_count, verticesIdxDict, vertIdxStart
 
 
 
 
 
-def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
+def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################
@@ -599,7 +560,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     printout = False
      # nody: [x,y,z] [powerR] [area] [6x mech BC] [newReorderedIdx]
-   # nodes_out = np.zeros( (node_count, (dim + 1 + 1 + 2*dim +1)))
     nodes_out = np.zeros( (node_count, (dim + 1 + 1 +1+1)))
 
     for d in range (dim):
@@ -613,18 +573,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
    # print (np.sum(areas))
     if (printout): print ('Area Error: %.5E ' %(relAreaError) )
-
-    for n in range (len(node_coords) ):
-       # nodes_out[n,dim+2: dim+2+6] = node_mechBC[n]
-        #nodes_out[n, dim+2+6] = reOrderedIdxs[n]
-        nodes_out[n, dim+2] = reOrderedIdxs[n]
-
-        mechBCidx = -1
-       # for m in range (len(mechBC_merged)):
-        #    #print (m)
-         #   if (n >= mechBC_merged[m].nodeIdxFrom and n <= mechBC_merged[m].nodeIdxTo):
-        #        mechBCidx = m
-        nodes_out[n, dim+3]  =  mechBCidx
 
     ########################################################################################################
     # ridges, ktere maji nody ve vzorku
@@ -932,24 +880,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     #        f.write("%s\n" % item.getString() )
     #       # print (item.getString())
 
-     ### MATERIALS
-    with open(os.path.join(master_folder,materialsFile), 'w') as f:
-        headerLine = 'matType\tYoung\tPoisson\tTranspC\tTranspS\tDensity'
-        #f.write("%s\n" % headerLine )
-        for item in materials:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
-    ### FUNCTIONS
-    with open(os.path.join(master_folder,functionsFile), 'w') as f:
-        headerLine = 'numberOfDefPoints\tpointvalues'
-        f.write("%s\n" % headerLine )
-        for item in functions:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
-
-
     return v_count
 
 
@@ -1006,7 +936,7 @@ class mechanicalBC:
 
 
 def saveMechBC(dim, nodes_mechBCmerged):
-
+    print('Saving MECH boundary conditions...')
 
     #print (len(nodes_mechBCmerged))
     mechBC_out = []
@@ -1043,6 +973,7 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
 
 def saveMasterInput(dim, solver, solStep):
+     print('Saving master file...')
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
@@ -1060,7 +991,25 @@ def saveMasterInput(dim, solver, solStep):
 
      fl.close()
 
+def saveMaterials (materials):
+    print ('Saving materials...')
+    ### MATERIALS
+    with open(os.path.join(master_folder,materialsFile), 'w') as f:
+        headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
+       # f.write("%s\n" % headerLine )
+        for item in materials:
+            f.write("%s\n" % item.getString() )
+          # print (item.getString())
 
+def saveFunctions (functions):
+    print ('Saving functions...')
+    ### FUNCTIONS
+    with open(os.path.join(master_folder,functionsFile), 'w') as f:
+        headerLine = '#FuncType\tnumberOfDefPoints\tpointvalues'
+        f.write("%s\n" % headerLine )
+        for item in functions:
+            f.write("%s\n" % item.getString() )
+          # print (item.getString())
 
 class transportBC:
     def __init__(self,  nodeIdx, transportBCarray):
@@ -1075,7 +1024,7 @@ class transportBC:
 
 
 def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
-
+    print('Saving TRSPRT boundary conditions...')
     trsptBC_out = []
 
     for i in range (len(vertices_transportBCmerged)):
@@ -1092,4 +1041,13 @@ def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
     headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
     fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
     np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
+    fl.close()
+
+
+
+def saveExporters():
+    print('Saving exporters...')
+    fl=open(os.path.join(master_folder,exportersFile),'w')
+    fl.write("TXTNodalExporter translations 2 ux uy\n")
+    fl.write("TXTNodalExporter pressure 1 pressure")
     fl.close()
