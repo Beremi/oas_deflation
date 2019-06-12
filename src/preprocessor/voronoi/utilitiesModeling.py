@@ -5,8 +5,35 @@ import utilitiesMech
 import utilitiesNumeric
 import voronoi
 
+"""
+def createSingleSpringTestModel(length):
+    maxLim = np.array([  length   ,   0  ])
+    node_coords,  mechBC_merged = assembleTwoNodeSpringTest(length)
+
+    vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+
+    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    ### selecting vertices on the left surface
+    noTrsprtBC = np.array([ -1 , -1 ])
+    boundA = np.array(  [ -1 , -1] )
+    boundB = np.array(  [ maxLim[1] + 1 , maxLim[1] + 1  ]  )
+    allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+    for i in range (len(leftFace)):
+        trsBC = utilitiesGeom.transportBC(allVrtcs[i], noTrsprtBC)
+        transportBC_merged.append(trsBC)
+
+    return node_coords, mechBC_merged, transportBC_merged, vor, areas
+
+"""
+
+
+
 def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
-    node_coords,node_mechBC, mechBC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
+    node_coords, mechBC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -48,13 +75,13 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
         transportBC_merged.append(trsBC)
 
 
-    return node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas
+    return node_coords, mechBC_merged, transportBC_merged, vor, areas
 
 
 def create2dCantileverBending(maxLim, minDist, trials ):
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords,node_mechBC, mechBC_merged  = assemble2DCantileverBending(maxLim, minDist, trials );
+    node_coords, mechBC_merged  = assemble2DCantileverBending(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...')
     ### conducting Voronoi tesselation
@@ -96,11 +123,32 @@ def create2dCantileverBending(maxLim, minDist, trials ):
         trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas
+    return node_coords, mechBC_merged, transportBC_merged, vor, areas
 
 
+def assembleTwoNodeSpringTest (length):
+    node_coords = []
+    mechBC_merged = []
 
+    nodeA = np.array ( [ 0 , 0 ] )
+    nodeAmechBC = np.array([0, 0 , -1 , -1 , -1 , -1])
+    utilitiesGeom.generateSingleNode(nodeA, 2, node_coords)
+    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeAmechBC)
+    mechBC_merged.append(mBC)
 
+    nodeB = np.array ( [ 0 , length ] )
+    nodeBmechBC = np.array([-1, 0 , -1 , -1 , -1 , -1])
+    utilitiesGeom.generateSingleNode(nodeB, 2, node_coords)
+    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeBmechBC)
+    mechBC_merged.append(mBC)
+
+    #adding mech boundary conditions
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mechBC_merged.append(mBC)
+        #print('adding')
+
+    return node_coords,  mechBC_merged
 
 #
 ######## METHOD FOR CREATING OF A 2D SUPPORTED CANTILEVER MODEL
@@ -108,7 +156,6 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
     dim = 2
     #lists for the model
     node_coords = []
-    node_mechBC = []
     mechBC_merged = []
 
     #an indent due to mirroring of the data for voronoi tess.
@@ -123,7 +170,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
     nodeB = np.array([indent, maxLim[1]-indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, True)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -141,7 +188,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
     nodeB = np.array([maxLim[0] - indent, maxLim[1] - indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, False)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -156,7 +203,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
 
     #rect
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, rectBC)
+    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
     #
     newLen = len(node_coords)-1
 
@@ -165,14 +212,13 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
    # mechBC_merged.append(mBC)
     ####################################################################################################
 
-    return node_coords, node_mechBC, mechBC_merged
+    return node_coords,  mechBC_merged
 
 
 def assemble2DSSBeamBending (maxLim, minDist, trials):
     dim = 2
     #lists for the model
     node_coords = []
-    node_mechBC = []
     mechBC_merged = []
 
     #an indent due to mirroring of the data for voronoi tess.
@@ -190,7 +236,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     nodeB = np.array([indent + supportWidth, indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, True)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -209,7 +255,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     nodeB = np.array([maxLim[0] - indent, indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, True)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -227,7 +273,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     nodeB =  np.array([maxLim[0] - indent , maxLim[1] - indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, lineBC, trials, False)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -244,7 +290,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
 
     #rect
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, rectBC)
+    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
     #
     newLen = len(node_coords)-1
 
@@ -253,18 +299,18 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
    # mechBC_merged.append(mBC)
     ####################################################################################################
 
-    return node_coords, node_mechBC, mechBC_merged
+    return node_coords, mechBC_merged
 
 
 
 
 
 def create3dCantileverUniTens(maxLim, minDist, trials ):
-    node_coords,node_mechBC, mechBC_merged  = assemble2DRectangle(maxLim, minDist, trials )
+    node_coords, mechBC_merged  = assemble2DRectangle(maxLim, minDist, trials )
 
     areas = voronoi.voronoi_3d(vor, maxLim)
 
-    return node_coords,node_mechBC, mechBC_merged
+    return node_coords, mechBC_merged
 
 ######## FUNCTION FOR CREATING OF A 3D SUPPORTED RECTANGE
 def assemble3Dblock():
@@ -281,7 +327,7 @@ def assemble3Dblock():
     nodeB = np.array([indent , maxLim[1] - indent, indent])
 
     oldLen = len(node_coords)
-   # utilitiesGeom.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, True)
+   # utilitiesGeom.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords,trials, True)
     #
     nrOfPoints =  (len(node_coords)) - oldLen
 
@@ -297,7 +343,7 @@ def assemble3Dblock():
     nodeB = np.array([maxLim[0] - indent , maxLim[1] - indent, maxLim[2] -indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, True)
+    utilitiesGeom.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True)
     #
     nrOfPoints =  (len(node_coords)) - oldLen
      #print (nrOfPoints)
@@ -315,7 +361,7 @@ def assemble3Dblock():
     nodeB = np.array([ indent , maxLim[1] - indent, maxLim[2] -indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials)
+    utilitiesGeom.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
     nrOfPoints =  (len(node_coords)) - oldLen
     for n in range ( nrOfPoints ):
         mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
@@ -328,7 +374,7 @@ def assemble3Dblock():
 
     #kvadr
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC)
+    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
     newLen = len(node_coords)-1
     nrOfPoints =  (len(node_coords)) - oldLen
    # for n in range ( nrOfPoints ):

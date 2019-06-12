@@ -85,7 +85,7 @@ def checkLowerThan (matrix, minDist):
 # generates random points no closer to each other than minDist
 # into 2d or 3d block
 # maxLim: n-d array of dimensions
-def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, mechBC):
+def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
     if (dim==2):
         print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. ' %(maxLim[0], maxLim[1]) )
 
@@ -114,12 +114,10 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
                     if (distInt < minDist):
                         distIsGood = False
                         tr += 1
-                       # clear_output(True)
-                       # print('Pt: %d Tr: %d' %(generatedPoints, tr))
-                        tr += 1
             """
             #############################################x
-            ######new using c dist. Apparently faster
+            ######new using c dist. Much faster
+            """
             ncrds = np.asarray(node_coords)
             #print (ncrds)
             crds = np.asarray(coords)
@@ -131,8 +129,27 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
             distIsGood = checkLowerThan(dists, minDist)
             if (distIsGood == False):
                 tr += 1
-             #############################################x
-            #print(distIsGood)
+            """
+            #############################################x
+            #trying scipy cKDTree for searching for nearest neighbors. Slightly slower so far.
+            ##############################################
+
+            #node_coords.append(coords)
+            crds = np.asarray(coords)
+            pts = np.asarray (node_coords)
+            tree = scipy.spatial.cKDTree ( pts,  leafsize=500000 )
+            #
+            violatingPoints = tree.query_ball_point (x = crds,  r = minDist, n_jobs = -1 )
+            #print (violatingPoints)
+            if ( len(violatingPoints) != 0):
+                distIsGood = False
+                tr += 1
+            #else:
+            #    print('GOOD POINT')
+            #print(trials)
+
+            ##############################################
+
 
             if (tr > trials): break
         if (tr > trials): break
@@ -142,23 +159,11 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, node_mechBC, me
         generatedPoints  += 1
         #print(generatedPoints)
         #
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #
-        #print('Pt: %d Tr: %d' %(generatedPoints, tr))
-        #print('Rect Pt: %d' %generatedPoints)
-        #clear_output(True)
-
-    #print ('%d Points GENERATED OK' %(generatedPoints))
-
-
-
-
 
 
 #generates random points onto a set 3d line. No closer than minDst
 #catch corners samples the boundary points first
-def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, catchCorners):
+def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
     print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
     generatedPoints = 0
@@ -167,11 +172,6 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         node_coords.append(np.copy(nodeA))
         node_coords.append(np.copy(nodeB))
         generatedPoints  += 2
-        #
-        #Adding node mechBC
-        #
-        node_mechBC.append(np.copy(mechBC))
-        node_mechBC.append(np.copy(mechBC))
 
     tr=0
     while (tr<trials):
@@ -205,16 +205,10 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
        # node_coords [i,:] = coords
         generatedPoints  += 1
         #
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #print('3d Line Pt: %d' %(generatedPoints))
-        #clear_output(True)
-
-   # print(node_coords)
 
 
 
-def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials):
+def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials):
     print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f] '
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
     generatedPoints = 0
@@ -253,17 +247,18 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, node
         node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #print('3d Surf Pt: %d' %(generatedPoints))
-        clear_output(True)
-
-   # print(node_coords)
 
 
+def generateSingleNode(node, dim, node_coords):
+    if (dim == 2):
+        print('Generating a single 2d node [%f; %f]' %(node[0], node[1]))
+    if (dim == 3):
+        print('Generating a single 3d node [%f; %f; %f]' %(node[0], node[1], node[2]))
 
 
-def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC, mechBC, trials, catchCorners):
+
+
+def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
     print('Generating 2d line segment from [%f; %f] to [%f; %f] '
      %(nodeA[0], nodeA[1], nodeB[0], nodeB[1]) )
     generatedPoints = 0
@@ -272,11 +267,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
         node_coords.append(np.copy(nodeA))
         node_coords.append(np.copy(nodeB))
         generatedPoints  += 2
-        #
-        #Adding node mechBC
-        #
-        node_mechBC.append(np.copy(mechBC))
-        node_mechBC.append(np.copy(mechBC))
+
     tr=0
     while (tr<trials):
         tr = 0;
@@ -298,41 +289,27 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, node_mechBC
                     if (distInt < minDist):
                         distIsGood = False
                         tr += 1
-                        #clear_output(True)
-                        #print('Line Pt: %d Tr: %d' %(generatedPoints, tr))
                         break
+
             if (tr > trials): break
         if (tr > trials): break
         #
         #Adding node coords
         #
         node_coords.append(coords)
-       # node_coords [i,:] = coords
         generatedPoints  += 1
-        #Adding node mechBC
-        node_mechBC.append(np.copy(mechBC))
-        #print('2d Line Pt: %d' %(generatedPoints))
-        #clear_output(True)
-
 
 
 
 #OUTPUT METHODS
-def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs,mechanicalElements, mechBC_merged, transportPaths, diagonalize):
+def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mechanicalElements, transportPaths, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################
     ############################################################################################
 
-    # nody: [x,y] [powerR] [area] [3x mech BC] [newIdxReordered]
-   # nodes_out = np.zeros( (node_count, (2 + 1 + 1 + 3 +1)))
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 + 1 +1)))
-
-   # for d in range (dim):
-  #      nodes_out[:,d] = node_coords[:,d]
-
     nodes_out[:,  0:2] = node_coords[:,  0:2]
-
     nodes_out[:,dim] = 0
     nodes_out[:,dim + 1] = areas[:]
 
@@ -340,21 +317,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     #print (np.sum(areas))
     #print ('Area Error: %.5E ' %(relAreaError) )
 
-
     for n in range (len(node_coords) ):
-        #print(node_mechBC[n])
-        #nodes_out[n,dim+2:dim+2+3] = node_mechBC[n]
-        #nodes_out[n, 7] = reOrderedIdxs[n]
         nodes_out[n, dim+2] = reOrderedIdxs[n]
 
         mechBCidx = -1
-       # for m in range (len(mechBC_merged)):
-            #print (m)
-          #  if (n >= mechBC_merged[m].nodeIdxFrom and n <= mechBC_merged[m].nodeIdxTo):
-           #     mechBCidx = m
         nodes_out[n, dim+3]  =  mechBCidx
-
-    #nodes_out[n, dim+6] = reOrderedIdxs[n]
 
     ########################################################################################
     validRidgeIdxs = []
@@ -584,7 +551,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
 
 
-def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOrderedIdxs, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
+def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################
@@ -593,7 +560,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
 
     printout = False
      # nody: [x,y,z] [powerR] [area] [6x mech BC] [newReorderedIdx]
-   # nodes_out = np.zeros( (node_count, (dim + 1 + 1 + 2*dim +1)))
     nodes_out = np.zeros( (node_count, (dim + 1 + 1 +1+1)))
 
     for d in range (dim):
@@ -607,18 +573,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC, areas, reOr
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
    # print (np.sum(areas))
     if (printout): print ('Area Error: %.5E ' %(relAreaError) )
-
-    for n in range (len(node_coords) ):
-       # nodes_out[n,dim+2: dim+2+6] = node_mechBC[n]
-        #nodes_out[n, dim+2+6] = reOrderedIdxs[n]
-        nodes_out[n, dim+2] = reOrderedIdxs[n]
-
-        mechBCidx = -1
-       # for m in range (len(mechBC_merged)):
-        #    #print (m)
-         #   if (n >= mechBC_merged[m].nodeIdxFrom and n <= mechBC_merged[m].nodeIdxTo):
-        #        mechBCidx = m
-        nodes_out[n, dim+3]  =  mechBCidx
 
     ########################################################################################################
     # ridges, ktere maji nody ve vzorku

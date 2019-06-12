@@ -51,23 +51,27 @@ dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([  5   ,   2  ])
-if (dim == 3 ): maxLim = np.array([1,1,1])
+if (dim == 2 ): maxLim = np.array([  3  ,   1])
+if (dim == 3 ): maxLim = np.array([  1,  1,  1 ])
 
 #volume of the model (later for check)
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
-#be cautious with small grains
-radius = 0.09
-minDist = radius
+#be cautious with small grains!
+minDist = 0.05
+radius = minDist / 2
+
+grainV = 3.141592 * radius**2
+expectedGrains = volume / grainV  * 1/2
+print ('Expecting about %d grains.' %(expectedGrains))
+
 
 #trials of random node positioning
-trials = 20000
+trials = 30000
 
 #lists for the model
 node_coords = []
-node_mechBC = []
 mechBC_merged = []
 transportBC_merged = []
 functions = []
@@ -95,12 +99,13 @@ func3.append( np.array([50, 500]) )
 fn3 = utilitiesNumeric.generalFunc(func3)
 functions.append (fn3)
 
-#sampling of nodes
+#creating the model. Select the prepared models.
 if (dim == 2):
     #cantilever
-    #node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
-    #simply supported beam
-    node_coords,node_mechBC, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
+    #node_coords, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+
+    #simply supported beam, uniform load
+    node_coords, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
 
 if (dim == 3):
     print('3d model inactive! Exiting.')
@@ -110,6 +115,7 @@ if (dim == 3):
 node_coords = np.asarray(node_coords)
 node_count = len(node_coords)
 print('Model containing %d nodes successfuly generated.' %(node_count))
+
 
 #reordering nodes due to their connectivity
 order = utilitiesNumeric.reorderToDiagonal(node_count, node_coords, vor)
@@ -132,12 +138,9 @@ materials.append(linElMaterial)
 
 print('\nSaving model...')
 if (dim == 2):
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim,
-    vor, node_coords, node_mechBC,
-    areas, order, mechanicalElements, mechBC_merged, transportPaths, False)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order, mechanicalElements, transportPaths, False)
 if (dim == 3):
-    vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, node_mechBC,
-    areas, order, mechanicalElements, mechBC_merged, transportPaths, False)
+    vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechanicalElements, mechBC_merged, transportPaths, False)
 
 
 utilitiesGeom.saveMaterials(materials)
