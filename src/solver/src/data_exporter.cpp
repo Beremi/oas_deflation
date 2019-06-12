@@ -3,25 +3,25 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC DATA EXPORTER - master class
-void DataExporter::giveFileName(int step, char* buffer) const {
+void DataExporter::giveFileName(unsigned step, char* buffer) const {
     sprintf (buffer, "%s_%05d.out", filename.c_str(),step); 
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM NODES TO TXT
-void TXTNodalExporter::readFromLine(istringstream &iss, int dimension){
+void TXTNodalExporter::readFromLine(istringstream &iss, unsigned dimension){
     iss >> filename;
     unsigned num;
     iss >> num;
     codes.resize(num);
-    for(int i =0; i<num; i++){
+    for(unsigned i =0; i<num; i++){
         iss >> codes[i];
     }
 }
 
 //////////////////////////////////////////////////////////
-void TXTNodalExporter::exportData(int step, const Vector &DoFs, const Vector &reactions) const{
+void TXTNodalExporter::exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
 
     char buffer [100];
     Node *nn;
@@ -30,7 +30,7 @@ void TXTNodalExporter::exportData(int step, const Vector &DoFs, const Vector &re
     ofstream outputfile (buffer);
     if (outputfile.is_open()) {
         outputfile << std::scientific;
-        for(int n = 0; n<nodes->giveSize(); n++){            
+        for(unsigned n = 0; n<nodes->giveSize(); n++){            
             nn = nodes->giveNode(n);
             for(vector<string>::const_iterator c=codes.begin(); c!=codes.end(); ++c){
                 value = nn->giveDoFBasedValue(*c,DoFs);
@@ -46,12 +46,12 @@ void TXTNodalExporter::exportData(int step, const Vector &DoFs, const Vector &re
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM ELEMENTS TO TXT
-void TXTElementExporter::readFromLine(istringstream &iss, int dimension){
+void TXTElementExporter::readFromLine(istringstream &iss, unsigned dimension){
     iss >> filename;
     unsigned num;
     iss >> num;
     codes.resize(num);
-    for(int i =0; i<num; i++){
+    for(unsigned i =0; i<num; i++){
         iss >> codes[i];
     }
 }
@@ -59,29 +59,29 @@ void TXTElementExporter::readFromLine(istringstream &iss, int dimension){
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
-void TXTGaussPointExporter::readFromLine(istringstream &iss, int dimension){
+void TXTGaussPointExporter::readFromLine(istringstream &iss, unsigned dimension){
     iss >> filename;
     unsigned num;
     iss >> num;
     codes.resize(num);
-    for(int i =0; i<num; i++){
+    for(unsigned i =0; i<num; i++){
         iss >> codes[i];
     }
 }
 
 //////////////////////////////////////////////////////////
-void TXTGaussPointExporter::exportData(int step, const Vector &DoFs, const Vector &reactions) const{
+void TXTGaussPointExporter::exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
 
     char buffer [100];
     Element *ee;
     double value;
-    int nIP;
+    unsigned nIP;
     giveFileName(step, buffer);
     ofstream outputfile (buffer);
     
     if (outputfile.is_open()) {
         outputfile << std::scientific;
-        for(int e = 0; e<elems->giveSize(); e++){            
+        for(unsigned e = 0; e<elems->giveSize(); e++){            
             ee = elems->giveElement(e);
             nIP = ee->giveIPNum();
             for(unsigned k=0; k<nIP; k++){
@@ -100,7 +100,7 @@ void TXTGaussPointExporter::exportData(int step, const Vector &DoFs, const Vecto
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GAUGE EXPORTERS
-void Gauge::giveFileName(int step, char* buffer) const {
+void Gauge::giveFileName(unsigned step, char* buffer) const {
     sprintf (buffer, "%s.out", filename.c_str()); 
 }
 
@@ -108,7 +108,7 @@ void Gauge::giveFileName(int step, char* buffer) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF FORCES
-void ForceGauge::readFromLine(istringstream &iss, int dimension){
+void ForceGauge::readFromLine(istringstream &iss, unsigned dimension){
     iss >> filename;
     iss >> name;
     codes.resize(1);
@@ -116,7 +116,7 @@ void ForceGauge::readFromLine(istringstream &iss, int dimension){
     unsigned num;
     iss >> num;
     n.resize(num);
-    for(int i =0; i<num; i++) iss >> n[i];  
+    for(unsigned i =0; i<num; i++) iss >> n[i];  
 }
 //////////////////////////////////////////////////////////
 void ForceGauge::init(){
@@ -130,12 +130,12 @@ void ForceGauge::init(){
     }    
 
     DoFs.resize(n.size());
-    for(int i =0; i<n.size(); i++) DoFs[i] = nodes->giveNode(n[i])->giveStartingDoF()+DoFpos;
+    for(unsigned i =0; i<n.size(); i++) DoFs[i] = nodes->giveNode(n[i])->giveStartingDoF()+DoFpos;
 }
 
 
 //////////////////////////////////////////////////////////
-void ForceGauge::exportData(int step, const Vector &full_f, const Vector &reactions) const{
+void ForceGauge::exportData(unsigned step, const Vector &full_f, const Vector &reactions) const{
 
     char buffer [100];
     double value = 0;
@@ -144,7 +144,7 @@ void ForceGauge::exportData(int step, const Vector &full_f, const Vector &reacti
     outputfile.open(buffer,ios::app);
     if (outputfile.good()) {
         outputfile << std::scientific;
-        for(int i = 0; i<DoFs.size(); i++) value += reactions[DoFs[i]];
+        for(unsigned i = 0; i<DoFs.size(); i++) value += reactions[DoFs[i]];
         outputfile <<  "\t" << value;
     }       
     outputfile.close();
@@ -153,7 +153,7 @@ void ForceGauge::exportData(int step, const Vector &full_f, const Vector &reacti
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
-void DisplacementGauge::readFromLine(istringstream &iss, int dim){
+void DisplacementGauge::readFromLine(istringstream &iss, unsigned dim){
     iss >> filename;
     iss >> name;
     codes.resize(1);
@@ -180,7 +180,7 @@ void DisplacementGauge::init(){
 }
 
 //////////////////////////////////////////////////////////
-void DisplacementGauge::exportData(int step, const Vector &DoFs, const Vector &reactions) const{
+void DisplacementGauge::exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
 
     char buffer [100];
     double value = 0;
@@ -204,7 +204,7 @@ ExporterContainer::~ExporterContainer(){
 
 //////////////////////////////////////////////////////////
 void ExporterContainer::readFromFile(const string filename,NodeContainer *n, ElementContainer *e, unsigned dimension){
-    int origsize = exporters.size();
+    unsigned origsize = exporters.size();
     string line, exptype;
     ifstream inputfile (filename.c_str());
     if (inputfile.is_open()) {
@@ -295,7 +295,7 @@ void ExporterContainer::init(){
 };
 
 //////////////////////////////////////////////////////////
-void ExporterContainer::exportData(int step, const Vector &DoFs, const Vector &reactions)const{
+void ExporterContainer::exportData(unsigned step, const Vector &DoFs, const Vector &reactions)const{
     //add step number to gauge exporter files
     char buffer [100];
     for(vector<DataExporter*>::const_iterator unique=unique_file_exporters.begin(); unique!=unique_file_exporters.end(); ++unique){

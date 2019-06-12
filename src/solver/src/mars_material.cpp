@@ -126,10 +126,11 @@ void MarsMaterialStatus::computeDamage(Vector strain){
         temp_damage = 1. - strEQ / (m->giveE0() * epsEQ);
     } else temp_damage = 0.0;
 
-    //if(temp_damage>0) cout << "damage " << " " << temp_damage << endl;
-
     // no recovery	
     if (temp_damage < damage) temp_damage = damage;    	
+
+    //if(temp_damage>0) cout << "damage " << " " << temp_damage << " " << strain[0] << " " << strain[1] << endl;
+
 
     // compression recovery
     //if (temp_damage < damage && epsN>0)  temp_damage = damage;    	

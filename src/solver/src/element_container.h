@@ -21,7 +21,6 @@ public:
     void updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const;
     void addBodyForces(Vector &R, double time) const;
     void giveInternalForces(const Vector &full_r, Vector &full_f);
-    void giveInternalForcesX(const Vector &full_r, Vector &full_f);
     Element* giveElement(unsigned const num){return elems[num];}
 };
 

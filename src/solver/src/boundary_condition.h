@@ -18,8 +18,8 @@ private:
 public:
     Function(){};
     virtual ~Function(){};
-    virtual double giveY(double t) const {};
-    virtual void readFromLine(istringstream &iss){};
+    virtual double giveY(double t) const  = 0;
+    virtual void readFromLine(istringstream &iss) = 0;
 protected:
 
 };
@@ -103,7 +103,7 @@ public:
     vector<unsigned> giveArrayOfLoadedDoFs() const{return neumannDoFs;};
     vector<double> giveBlockedDoFValues(double time) const;
     vector<double> giveLoadedDoFValues(double time) const;
-    BoundaryCondition* giveBC(int i){return BC[i];};
+    BoundaryCondition* giveBC(unsigned i){return BC[i];};
     void calculateDoFfields();
 protected:
 

@@ -5,16 +5,16 @@
 //////////////////////////////////////////////////////////
 // PIECE-WISE LINEAR FUNCTION
 void PieceWiseLinearFunction::readFromLine(istringstream &iss){
-    int num;
+    unsigned num;
     iss >> num;
     x.resize(num); y.resize(num);
-    for(int i=0; i<num; i++) iss >> x[i];
-    for(int i=0; i<num; i++) iss >> y[i];
+    for(unsigned i=0; i<num; i++) iss >> x[i];
+    for(unsigned i=0; i<num; i++) iss >> y[i];
 }
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction::giveY(double t) const{
-    int i=0;
+    unsigned i=0;
     while(x[i]<t && i<x.size()) i++;
     if (i==0) return 0.;
     else if(i==x.size()) return y[x.size()-1];
@@ -30,7 +30,7 @@ FunctionContainer::~FunctionContainer(){
 
 //////////////////////////////////////////////////////////
 void FunctionContainer::readFromFile(const string filename){
-    int origsize = functions.size();
+    unsigned origsize = functions.size();
     string line, ftype;
     ifstream inputfile (filename.c_str());
     if (inputfile.is_open()) {
@@ -121,7 +121,7 @@ BCContainer::~BCContainer(){
 
 //////////////////////////////////////////////////////////
 void BCContainer::readFromFile(const string filename,NodeContainer *nodes){
-    int origsize = BC.size();
+    unsigned origsize = BC.size();
     string line,aux;
     unsigned intnum, nDoFs;
     vector<int> dirrichBC, neumannBC;
@@ -136,9 +136,9 @@ void BCContainer::readFromFile(const string filename,NodeContainer *nodes){
             node = nodes->giveNode(intnum);
             nDoFs = node->giveNumberOfDoFs();
             dirrichBC.resize(nDoFs); neumannBC.resize(nDoFs);
-            for(int i=0; i<nDoFs; i++) iss >> dirrichBC[i];
-            for(int i=0; i<nDoFs; i++) iss >> neumannBC[i];
-            for(int i=0; i<nDoFs; i++) if (neumannBC[i]>=0 && dirrichBC[i] >=0){
+            for(unsigned i=0; i<nDoFs; i++) iss >> dirrichBC[i];
+            for(unsigned i=0; i<nDoFs; i++) iss >> neumannBC[i];
+            for(unsigned i=0; i<nDoFs; i++) if (neumannBC[i]>=0 && dirrichBC[i] >=0){
                 cerr << "Error: Dirrichlet and Neumann boundary conditions assigned simulatneuosly" << endl;
                 cerr << line << endl;
                 exit(0);
@@ -147,7 +147,7 @@ void BCContainer::readFromFile(const string filename,NodeContainer *nodes){
             BC.push_back(newBC);
         }    
         inputfile.close(); 
-        for(int i = 0; i<BC.size()-origsize; i++) BC[i+origsize]->giveNode()->setBC(BC[i+origsize]);  
+        for(unsigned i = 0; i<BC.size()-origsize; i++) BC[i+origsize]->giveNode()->setBC(BC[i+origsize]);  
         cout << "Input file '" <<  filename << "' succesfully loaded; "<< BC.size()-origsize << " boundary conditions found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
@@ -182,14 +182,14 @@ void BCContainer::calculateDoFfields(){
 //////////////////////////////////////////////////////////
 vector<double> BCContainer::giveBlockedDoFValues(double t)const { 
     vector<double> blocked(dirrichDoFs.size());
-    for (int h=0; h<dirrichDoFs.size(); h++) blocked[h] = functions->giveY(dirrichF[h],t); 
+    for (unsigned h=0; h<dirrichDoFs.size(); h++) blocked[h] = functions->giveY(dirrichF[h],t); 
     return blocked;
 }
 
 //////////////////////////////////////////////////////////
 vector<double> BCContainer::giveLoadedDoFValues(double t)const {
     vector<double> loaded(neumannDoFs.size());
-    for (int h=0; h<neumannDoFs.size(); h++) loaded[h] = functions->giveY(neumannF[h],t); 
+    for (unsigned h=0; h<neumannDoFs.size(); h++) loaded[h] = functions->giveY(neumannF[h],t); 
     return loaded;
 }
 

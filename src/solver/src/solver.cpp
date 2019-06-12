@@ -101,19 +101,13 @@ void SteadyStateLinearSolver::solve(){
     if (ConjGrad(K, ddr, f, ddr) == false) cerr << "Conjugate gradients did not converge" << endl;
     nodes->giveFullDoFArray(ddr, full_ddr); 
     
-    for(int i=0; i<totalDoFnum; i++) r[i] += full_ddr[i]; 
+    for(unsigned i=0; i<totalDoFnum; i++) r[i] += full_ddr[i]; 
     computeInternalExternalForces(r);
 }
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver::computeInternalExternalForces(Vector &rr){
         elems->giveInternalForces(rr, f_int);
-        nodes->updateExteranlForcesByReactions(f_int, load, f_ext); //give prescribed DoFs
-}
-
-//////////////////////////////////////////////////////////
-void SteadyStateLinearSolver::computeInternalExternalForcesX(Vector &rr){
-        elems->giveInternalForcesX(rr, f_int);
         nodes->updateExteranlForcesByReactions(f_int, load, f_ext); //give prescribed DoFs
 }
 
@@ -149,7 +143,7 @@ void SteadyStateNonLinearSolver::init(){
     residual = Vector(totalDoFnum);
     W_ext_old = 0;
     W_int_old = 0;
-    disErr = resErr = eneErr = 1e-4;
+    disErr = resErr = eneErr = 1e-2;
 }
 
 //////////////////////////////////////////////////////////
@@ -176,39 +170,38 @@ Solver* SteadyStateNonLinearSolver::readFromLine(istringstream &iss){
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver::solve(){
-    //setup loading
+    //setup loading    
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-    computeInternalExternalForcesX(trial_r);
+    computeInternalExternalForces(trial_r);
 
-    f_ext *= 0;
     unsigned it=0;
     bool converged = false;
-    unsigned maxIt = 100;
+    unsigned maxIt = 30;
     while (!converged && it < maxIt) {
 
         elems->updateSteadyStateMatrices(K, "secant");
-
+        
         //solve linear system
         nodes->giveReducedDoFArray(f_ext-f_int, f);
         if (ConjGrad(K, ddr, f, ddr) == false) cerr << "Conjugate gradients did not converge" << endl;
         nodes->giveFullDoFArray(ddr, full_ddr); 
 
         //update DoFs
-        for(int i=0; i<totalDoFnum; i++) trial_r[i] += full_ddr[i];  
+        for(unsigned i=0; i<totalDoFnum; i++) trial_r[i] += full_ddr[i];  
 
-        //compute internal forces
+       //compute internal forces
         computeInternalExternalForces(trial_r);
 
         //compute residuals
         W_int = W_int_old;
         W_ext = W_ext_old;
-        for (int i=0; i<totalDoFnum; i++) {
+        for (unsigned i=0; i<totalDoFnum; i++) {
                 residual[i] = f_int[i]-f_ext[i];
                 W_int += abs(0.5*(f_int[i]+f_int_old[i])*(r[i]-trial_r[i]));
                 W_ext += abs(0.5*(f_ext[i]+f_ext_old[i])*(r[i]-trial_r[i]));
         }
-
+    
         //compute errors
         double residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext),l2_norm(f_int)),EPS2);
         double displa_error = (it==0) ? 0. : l2_norm(full_ddr)/max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
@@ -244,7 +237,7 @@ void SteadyStateNonLinearSolver::runBeforeEachStep(){
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver::runAfterEachStep(){ 
     SteadyStateLinearSolver::runAfterEachStep();  
-    for(int i=0; i<totalDoFnum; i++) {
+    for(unsigned i=0; i<totalDoFnum; i++) {
         r[i] = trial_r[i];
         f_int_old[i] = f_int[i];
         f_ext_old[i] = f_ext[i];

@@ -27,11 +27,10 @@ public:
   virtual void init();
   void initMaterialStatuses();
   void updateMaterialStatuses();
-  virtual Matrix giveSteadyStateMatrix(string matrixType) const{};  
-  virtual Matrix giveTransientMatrix() const{};
+  virtual Matrix giveSteadyStateMatrix(string matrixType) const = 0;  
+  virtual Matrix giveTransientMatrix() const = 0;
   vector<unsigned> giveDoFs(){return DoFids;};
-  virtual Vector giveInternalForces(const Vector &DoFs)const{};
-  virtual Vector giveInternalForcesX(const Vector &DoFs)const{};
+  virtual Vector giveInternalForces(const Vector &DoFs)const = 0;
   virtual double giveValue(string code)const;
   virtual unsigned giveIPNum()const{return ip_locs.size();};
   virtual double giveIPValue(string code, unsigned ipnum)const;
@@ -48,8 +47,8 @@ private:
 public:
     transportElement (){}
     ~transportElement (){};
-    virtual Matrix giveConductivityMatrix(string matrixType)const{};
-    virtual Matrix giveCapacityMatrix()const{};
+    virtual Matrix giveConductivityMatrix(string matrixType)const = 0;
+    virtual Matrix giveCapacityMatrix()const = 0;
 };
 
 
@@ -62,8 +61,8 @@ private:
 public:
     mechanicalElement (){}
     ~mechanicalElement (){};
-    virtual Matrix giveStiffnessMatrix(string matrixType)const{};
-    virtual Matrix giveInertiaMatrix()const{};
+    virtual Matrix giveStiffnessMatrix(string matrixType)const = 0;
+    virtual Matrix giveInertiaMatrix()const = 0;
 };
 
 //////////////////////////////////////////////////////////
@@ -90,7 +89,6 @@ public:
     Matrix giveAMatrix(Point a, Point x) const;
     double giveLength()const{return length;}
     virtual Vector giveInternalForces(const Vector &DoFs)const;
-    virtual Vector giveInternalForcesX(const Vector &DoFs)const;
     virtual double giveValue(string code)const;
     virtual double giveIPValue(string code, unsigned ipnum)const;
 };
@@ -113,7 +111,6 @@ public:
     Matrix giveSteadyStateMatrix(string matrixType) const {return giveConductivityMatrix(matrixType);};  
     Matrix giveTransientMatrix() const {return giveCapacityMatrix();};
     virtual Vector giveInternalForces(const Vector &DoFs)const;
-    virtual Vector giveInternalForcesX(const Vector &DoFs)const;
 };
 
 #endif	/* _ELEMENT_STRUCT_H */

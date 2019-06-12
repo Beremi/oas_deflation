@@ -20,7 +20,7 @@ private:
 
 protected:
     Point point;  /// center of voronoi cell
-    int nDoFs; //
+    unsigned nDoFs; //
     BoundaryCondition *bc;
     unsigned firstDoF;
     string name;
@@ -40,8 +40,8 @@ public:
     Point givePoint() const {return point;};
     void setPoint(const Point &P){point = P;};
     void setNumberOfDoFs(const int num){nDoFs = num;};
-    int giveNumberOfDoFs() const {return nDoFs;};
-    int giveNumberOfFreeDoFs() const;
+    unsigned giveNumberOfDoFs() const {return nDoFs;};
+    unsigned giveNumberOfFreeDoFs() const;
     void setBC(BoundaryCondition *nbc){ bc = nbc;}
     void setStartingDoF(unsigned num) {firstDoF = num;};
     unsigned giveStartingDoF() const {return firstDoF;};
@@ -59,7 +59,7 @@ private:
 
 protected:
 public:
-    AuxNode(int dim){nDoFs = 0; name = "auxiliary node";};
+    AuxNode(unsigned dim){nDoFs = 0; name = "auxiliary node";};
     virtual ~AuxNode(){};
 };
 
@@ -71,7 +71,7 @@ private:
 protected:
     MechNode(){isMechanical = true;};
 public:
-    MechNode(int dim){MechNode(); nDoFs = dim; name = "mechanical node";};
+    MechNode(unsigned dim){MechNode(); nDoFs = dim; name = "mechanical node";};
     virtual ~MechNode(){};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
@@ -84,7 +84,7 @@ private:
 
 protected:
 public:
-    TrsNode(int dim){nDoFs = 1; name = "transport node"; isTransport=true;};
+    TrsNode(unsigned dim){nDoFs = 1; name = "transport node"; isTransport=true;};
     virtual ~TrsNode(){};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
@@ -97,7 +97,7 @@ private:
     double r;  // radius in case of power tessellation
 protected:
 public:
-    Particle(int dim){nDoFs = 3*(dim-1); name = "particle";};
+    Particle(unsigned dim){nDoFs = 3*(dim-1); name = "particle";};
     virtual ~Particle(){};
 
     virtual void readFromLine(istringstream &iss, int dim);

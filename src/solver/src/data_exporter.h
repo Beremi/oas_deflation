@@ -15,10 +15,10 @@ private:
    
 public:
     DataExporter(){};
-    ~DataExporter(){};
-    virtual void readFromLine(istringstream &iss, int dimension){};
-    virtual void exportData(int step, const Vector &DoFs, const Vector &reactions)const{};
-    virtual void giveFileName(int step, char* buffer) const; 
+    virtual ~DataExporter(){};
+    virtual void readFromLine(istringstream &iss, unsigned dimension) =0;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions)const = 0;
+    virtual void giveFileName(unsigned step, char* buffer) const; 
     string giveFileName() const{return filename;};
     virtual void init(){};             
 protected:
@@ -34,9 +34,9 @@ private:
     NodeContainer *nodes;
 public:
     TXTNodalExporter(NodeContainer *n){nodes=n;};
-    ~TXTNodalExporter();
-    void readFromLine(istringstream &iss, int dimension);
-    virtual void exportData(int step, const Vector &DoFs, const Vector &reactions) const;
+    ~TXTNodalExporter(){};
+    void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
 
 };
@@ -50,8 +50,8 @@ private:
 public:
     TXTElementExporter(ElementContainer *e){elems=e;};
     ~TXTElementExporter(){};
-    void readFromLine(istringstream &iss, int dimension);
-    virtual void exportData(int step, const Vector &DoFs, const Vector &reactions) const{};
+    void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{};
 protected:
 
 };
@@ -65,8 +65,8 @@ private:
 public:
     TXTGaussPointExporter(ElementContainer *e){elems=e;};
     ~TXTGaussPointExporter(){};
-    void readFromLine(istringstream &iss, int dimension);
-    virtual void exportData(int step, const Vector &DoFs, const Vector &reactions) const;
+    void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
 
 };
@@ -81,7 +81,7 @@ protected:
 public:
     Gauge(){};
     ~Gauge(){};
-    virtual void giveFileName(int step, char* buffer) const; 
+    virtual void giveFileName(unsigned step, char* buffer) const; 
     string giveName(){return name;};
 };
 
@@ -96,8 +96,8 @@ private:
 public:
     ForceGauge(NodeContainer *n){nodes=n;};
     ~ForceGauge(){};
-    void readFromLine(istringstream &iss, int dimension);
-    virtual void exportData(int step, const Vector &DoFs, const Vector &reactions) const;
+    void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     virtual void init();
 protected:
 
@@ -115,8 +115,8 @@ private:
 public:
     DisplacementGauge(NodeContainer *n, ElementContainer *e){nodes=n; elems=e;};
     ~DisplacementGauge(){};
-    void readFromLine(istringstream &iss, int dimension);
-    virtual void exportData(int step, const Vector &DoFs, const Vector &reactions) const;
+    void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     virtual void init();
 protected:
 };
@@ -132,7 +132,7 @@ public:
     ExporterContainer(){};
     ~ExporterContainer();
     void readFromFile(const string filename,NodeContainer *n, ElementContainer *e, unsigned dimension);
-    void exportData(int step,const Vector &DoFs, const Vector &reactions)const;
+    void exportData(unsigned step,const Vector &DoFs, const Vector &reactions)const;
     void init();
 protected:
 

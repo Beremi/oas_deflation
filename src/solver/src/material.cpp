@@ -76,7 +76,7 @@ Vector DisMechMaterialStatus::giveStress(const Vector &strain){
     Vector stiff = giveElasticNormalShearStiffness();
     Vector stress(strain.size());
     stress[0] = stiff[0]*strain[0];
-    for(int i=1; i<strain.size(); i++) stress[i] = stiff[1]*strain[i]; 
+    for(unsigned i=1; i<strain.size(); i++) stress[i] = stiff[1]*strain[i]; 
     return stress;
 };
 

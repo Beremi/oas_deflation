@@ -16,7 +16,7 @@ void Element::init(){
     unsigned k;
     for(vector<Node*>::const_iterator n=nodes.begin(); n!=nodes.end(); ++n){
         k = (*n)->giveStartingDoF();
-        for(int s=0; s<(*n)->giveNumberOfDoFs(); s++, i++) DoFids[i]=k+s;
+        for(unsigned s=0; s<(*n)->giveNumberOfDoFs(); s++, i++) DoFids[i]=k+s;
     }
 }
 
@@ -71,14 +71,14 @@ double RigidBodyContact::giveIPValue(string code, unsigned ipnum) const{
 
 //////////////////////////////////////////////////////////
 void RigidBodyContact::readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs){
-    int num, num2;
+    unsigned num, num2;
     iss >> num;
     nodes[0] = fullnodes->giveNode(num);
     iss >> num;
     nodes[1] = fullnodes->giveNode(num);
     iss >> num;
     vert.resize(num);
-    for(int i =0; i<num; i++){
+    for(unsigned i =0; i<num; i++){
         iss >> num2;
         vert[i] = fullnodes->giveNode(num2);       
     }
@@ -92,7 +92,7 @@ void RigidBodyContact::init(){
     Element::init(); //calling base class method;
 
     //check that nodes are particles
-    for(int i=0; i<2; i++){
+    for(unsigned i=0; i<2; i++){
         Particle *p = dynamic_cast<Particle*>(nodes[i]);
         if(not p){
             cerr << "Error in "<< name << ": nodes must be inherited from Particle, " << nodes[i]->giveName() << " provided" << endl;
@@ -107,8 +107,8 @@ void RigidBodyContact::init(){
     }
     
     Point t; 
-    if(ndim = 2)  {
-        if(not vert.size()==2){
+    if(ndim == 2)  {
+        if(not (vert.size()==2)){
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         } 
@@ -139,8 +139,8 @@ void RigidBodyContact::init(){
     Matrix B = Matrix(ndim,6*(ndim-1));
     Matrix Aa = giveAMatrix(nodes[0]->givePoint(), ip_locs[0])*(-1.);
     Matrix Ab = giveAMatrix(nodes[1]->givePoint(), ip_locs[0]);
-    for(int i=0; i<ndim; i++){
-        for(int j=0; j<3*(ndim-1); j++){
+    for(unsigned i=0; i<ndim; i++){
+        for(unsigned j=0; j<3*(ndim-1); j++){
             B[i][j] = Aa[i][j];
             B[i][j+3*(ndim-1)]=Ab[i][j];
         }
@@ -152,8 +152,8 @@ void RigidBodyContact::init(){
     if(ndim==2){
         Point t1 = Point(-normal.y, normal.x);
         R = Matrix(2,2);
-        R[0][0]=normal.x; R[1][0]=normal.y;
-        R[0][1]=t1.x; R[1][1]=t1.y;
+        R[0][0]= normal.x; R[0][1]=normal.y;
+        R[1][0]= t1.x; R[1][1]= t1.y;
     }else if(ndim==3){
         Point t1, t2;
         if (abs(normal.x)>1e-3) t1 = Point(-normal.y/normal.x, 1, 0);
@@ -202,7 +202,7 @@ Matrix RigidBodyContact::giveStiffnessMatrix(string matrixType) const{
     else matstiffness = dmstats->giveElasticNormalShearStiffness();
     Matrix Alpha(ndim,ndim);
     Alpha[0][0] = matstiffness[0]; //E0
-    for(int i=1; i<ndim; i++) Alpha[i][i]= matstiffness[1]; //E0*alpha
+    for(unsigned i=1; i<ndim; i++) Alpha[i][i]= matstiffness[1]; //E0*alpha
     Matrix K = RB.transpose()*Alpha*RB; 
     return K*(length*area);    
 }
@@ -210,22 +210,17 @@ Matrix RigidBodyContact::giveStiffnessMatrix(string matrixType) const{
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact::giveInertiaMatrix() const{
     Matrix S(12,12);
-    TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);    
+    //TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);    
     //TO BE DONE
     return S;
 }
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact::giveInternalForces(const Vector &DoFs)const{
-    Vector strainNT = RB*DoFs;
+    Vector strainNT = RB*DoFs;    
     DisMechMaterialStatus *dmstats = static_cast<DisMechMaterialStatus *>(stats[0]);
     Vector stressNT = dmstats->giveStress(strainNT); 
     return RB.transpose()*(stressNT*(length*area)); 
-};
-
-//////////////////////////////////////////////////////////
-Vector RigidBodyContact::giveInternalForcesX(const Vector &DoFs)const{
-    return -matrix_vector_multiply(giveStiffnessMatrix("secant"), DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -242,14 +237,14 @@ Transp1D::Transp1D(const unsigned dim){
 
 //////////////////////////////////////////////////////////
 void Transp1D::readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs){
-    int num, num2;
+    unsigned num, num2;
     iss >> num;
     nodes[0] = fullnodes->giveNode(num);
     iss >> num;
     nodes[1] = fullnodes->giveNode(num);
     iss >> num;
     vert.resize(num);
-    for(int i =0; i<num; i++){
+    for(unsigned i =0; i<num; i++){
         iss >> num2;
         if (num2<0) {
             bound =true;
@@ -266,7 +261,7 @@ void Transp1D::init(){
     Element::init(); //calling base class method;
 
     //check that nodes are TrsNodes
-    for(int i=0; i<2; i++){
+    for(unsigned i=0; i<2; i++){
         TrsNode *p = dynamic_cast<TrsNode*>(nodes[i]);
         if(not p){
             cerr << "Error in "<< name << ": nodes must be inherited from TrsNode, " << nodes[i]->giveName() << " provided" << endl;
@@ -281,8 +276,8 @@ void Transp1D::init(){
     }
 
     Point v0, v1, t, normal; 
-    if(ndim = 2)  {
-        if(not vert.size()==2){
+    if(ndim == 2)  {
+        if(not (vert.size()==2)){
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         }
@@ -341,10 +336,6 @@ Matrix Transp1D::giveCapacityMatrix() const{
 
 //////////////////////////////////////////////////////////
 Vector Transp1D::giveInternalForces(const Vector &DoFs)const{
-    return giveConductivityMatrix("elastic")*DoFs;    
-};
-//////////////////////////////////////////////////////////
-Vector Transp1D::giveInternalForcesX(const Vector &DoFs)const{
     return giveConductivityMatrix("elastic")*DoFs;    
 };
 

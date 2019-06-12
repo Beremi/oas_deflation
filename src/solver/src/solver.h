@@ -26,7 +26,7 @@ class Solver{
         
     public:
         Solver(){name="basic solver";};
-        ~Solver(){};
+        virtual ~Solver(){};
         virtual void init();
         virtual Solver* readFromLine(istringstream &iss);
         virtual void solveStep(){};
@@ -48,12 +48,11 @@ class SteadyStateLinearSolver: public Solver{
 
     public:
         SteadyStateLinearSolver();        
-        ~SteadyStateLinearSolver(); //destructor
+        virtual ~SteadyStateLinearSolver(); //destructor
         virtual void init();
         virtual void solveStep(){runBeforeEachStep(); solve(); runAfterEachStep();};
         virtual Solver* readFromLine(istringstream &iss);
         virtual void computeInternalExternalForces(Vector &rr);
-        virtual void computeInternalExternalForcesX(Vector &rr);
 };
 
 class SteadyStateNonLinearSolver: public SteadyStateLinearSolver{
@@ -70,7 +69,7 @@ class SteadyStateNonLinearSolver: public SteadyStateLinearSolver{
 
     public:
         SteadyStateNonLinearSolver();        
-        ~SteadyStateNonLinearSolver(); //destructor
+        virtual ~SteadyStateNonLinearSolver(); //destructor
         virtual void init();
         virtual void solveStep(){runBeforeEachStep(); solve(); runAfterEachStep();};
         virtual Solver* readFromLine(istringstream &iss);
