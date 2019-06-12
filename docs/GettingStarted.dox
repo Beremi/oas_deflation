@@ -47,9 +47,9 @@ Recommended structure
     cd partmod-build
     cmake PATH_TO_SRC (if recommended structure - cmake ../partmod)
   \endcode
-  - create RELEASE
+  - create DEBUG
     \code{.sh}
-      cmake -D CMAKE_BUILD_TYPE=Release PATH_TO_SRC
+      cmake -D CMAKE_BUILD_TYPE=Debug PATH_TO_SRC
     \endcode
 -# compile
   \code{.sh}
@@ -79,7 +79,14 @@ Recommended structure
 
 \section CodingStandard Coding Standard
 http://www.oofem.org/wiki/doku.php?id=coding-conventions
-
+- uncrustify
+\code{.sh}
+uncrustify -c oofem_dir/uncrustify.cfg -l CPP --replace mysource.C
+\endcode
+- uncrustify all *.cpp and *.h files
+\code{.sh}
+uncrustify -c ../../../uncrustify.cfg -l CPP --replace *.cpp *.h
+\endcode
 
 \section Running Running PartMod
 
