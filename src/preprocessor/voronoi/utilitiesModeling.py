@@ -101,7 +101,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
 def create2dCantileverBending(maxLim, minDist, trials ):
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged  = assemble2DCantileverBending(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechIC_merged  = assemble2DCantileverBending(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...')
     ### conducting Voronoi tesselation
@@ -139,6 +139,7 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
+    transportIC_merged = []
     ### selecting vertices on the left surface
     leftFaceBC = np.array([2,-1])
     boundA = np.array(  [-1e-8 , 0] )
@@ -159,7 +160,7 @@ def create2dCantileverBending(maxLim, minDist, trials ):
         trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords, mechBC_merged, transportBC_merged, vor, areas, functions
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
 
 
 def assembleTwoNodeSpringTest (length):
@@ -193,6 +194,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
     #lists for the model
     node_coords = []
     mechBC_merged = []
+    mechIC_merged = []
 
     #an indent due to mirroring of the data for voronoi tess.
     indent = 1e-8
@@ -248,7 +250,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
    # mechBC_merged.append(mBC)
     ####################################################################################################
 
-    return node_coords,  mechBC_merged
+    return node_coords,  mechBC_merged, mechIC_merged
 
 
 def assemble2DSSBeamBending (maxLim, minDist, trials):
