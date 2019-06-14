@@ -21,7 +21,9 @@ verticesFile                = "vertices.inp"
 mechElemsFile               = "mechElems.inp"
 trsprtElemsFile             = "trsprtElems.inp"
 mechBCFile                  = "mechBC.inp"
+mechICFile                  = "mechIC.inp"
 trsprtBCFile                = "trsprtBC.inp"
+trsprtICFile                = "trsprtIC.inp"
 materialsFile               = "materials.inp"
 functionsFile               = "functions.inp"
 initConditionsMechFile      = "initCondMech.inp"
@@ -131,7 +133,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
                 tr += 1
             """
             #############################################x
-            #trying scipy cKDTree for searching for nearest neighbors. Slightly slower so far.
+            #trying scipy cKDTree for searching for nearest neighbors. About the same performance as cDist so far.
             ##############################################
 
             #node_coords.append(coords)
@@ -903,6 +905,74 @@ def returnSelectedPts (boundPtA , boundPtB, points):
 
 
 
+class transportIC:
+    def __init__(self, vrtxIdx, pressure):
+        self.vrtxIdx = vrtxIdx
+        self.pressure = pressure
+
+    def getVrtxIdx(self):
+        return self.vrtxIdx
+
+    def getPressure(self):
+        return self.pressure
+
+def saveTransportIC(transportIC_merged):
+    print('Saving TRSPRT initial conditions...')
+    trsprtIC_out = []
+
+    for i in range (len(transportIC_merged)):
+        ic = np.zeros (2)
+        ic[0] = transportIC_merged[i].getVrtxIdx()
+        ic[1] = transportIC_merged[i].getPressure()
+        trsprtIC_out.append(ic)
+
+    headerLine = 'vrtxIdx\tpressure'
+    fl=open(os.path.join(master_folder,trsprtICFile) ,'w')
+    np.savetxt(fl, trsprtIC_out, delimiter='\t', fmt='%d\t%f', header = headerLine)
+    fl.close()
+
+class mechanicalIC:
+    def __init__(self, dim, nodeIdx, mechICArray):
+        self.mechICArray = mechICArray
+        self.dim = dim
+        self.nodeIdx = nodeIdx
+
+    def getNodeIdx(self):
+        return self.nodeIdx
+    def getMechIC(self):
+        return self.mechICArray
+
+
+
+def saveMechIC(dim, nodes_mechICmerged):
+    print('Saving MECH initial conditions...')
+    mechIC_out = []
+
+    for i in range (len(nodes_mechICmerged)):
+        if (dim == 2):
+            ic = np.zeros (1 + 3)
+            ic[0] = nodes_mechICmerged[i].getNodeIdx()
+            ic[1:] = nodes_mechICmerged[i].getMechIC()
+        elif (dim == 3):
+            ic = np.zeros (1 + 6)
+            ic[0] = nodes_mechICmerged[i].getNodeIdx()
+            ic[1:] = nodes_mechICmerged[i].getMechIC()
+        mechIC_out.append(ic)
+
+    #
+    if (dim == 2):
+        headerLine = 'nodeIdx\tTrVelocX\tTrVelocY\tRotVelocZ'
+        fl=open(os.path.join(master_folder,mechICFile) ,'w')
+        np.savetxt(fl, mechIC_out, delimiter='\t', fmt='%d\t%f\t%f\t%f', header = headerLine)
+        fl.close()
+    elif (dim == 3):
+        headerLine = 'nodeIdx\tTrVelocX\tTrVelocY\tTrVelocZ\tRotVelocX\tRotVelocY\tRotVelocZ'
+        fl=open(os.path.join(master_folder,mechICFile) ,'w')
+        np.savetxt(fl, mechIC_out, delimiter='\t', fmt='%d\t%f\t%f\t%f\t%f\t%f\t%f', header = headerLine)
+        fl.close()
+
+
+
 class mechanicalBC:
     def __init__(self, dim, nodeIdx, mechBCarray):
         self.mechBCarray = mechBCarray
@@ -931,6 +1001,7 @@ class mechanicalBC:
             print('RotX: %d' %self.mechBCarray[3])
             print('RotY: %d' %self.mechBCarray[4])
             print('RotZ: %d' %self.mechBCarray[5])
+
 
 
 
@@ -983,6 +1054,7 @@ def saveMasterInput(dim, solver, solStep):
      fl.write("MatFiles\t1\t%s\n"%materialsFile)
      fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
      fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+     fl.write("ICFiles\t2\t%s\t%s\n"%(mechICFile,trsprtICFile))
      fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
      fl.write("ExporterFiles\t1\t%s"%exportersFile)
 

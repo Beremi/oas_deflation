@@ -19,13 +19,13 @@ plt.rcParams.update({'font.serif' : 'Times New Roman'})
 
 ######################################################################
 def loadNodes(filename):
-    filename = folder+"/" + filename
+    filename = filename
     nodes = np.loadtxt(filename, usecols=[1,2],skiprows = 1)
     return nodes
 
 ######################################################################
 def loadVariables(filename, step):
-    filename = folder+"/" + filename+"_%05d.out"%step
+    filename = filename+"_%05d.out"%step
     return  np.loadtxt(filename)
 
 ######################################################################
@@ -33,19 +33,19 @@ def plotData(ax, cax, nodes, values):
 
     cmap = matplotlib.cm.get_cmap('jet')
     norm = matplotlib.colors.Normalize(vmin=min(values),vmax=max(values))
-    m = cm.ScalarMappable(norm=norm, cmap=cmap)    
+    m = cm.ScalarMappable(norm=norm, cmap=cmap)
     ax.scatter(nodes[:,0],nodes[:,1],color=cmap(norm(values)))
 
     cbar = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation="horizontal")
     cbar.solids.set_rasterized(True)
     cbar.solids.set_edgecolor("face")
-    
+
     tick_locator = matplotlib.ticker.MaxNLocator(nbins=5)
     cbar.locator = tick_locator
     cbar.update_ticks()
 
 
-    #ax.axis("equal")  
+    #ax.axis("equal")
     ax.axis("off")
 
 
@@ -70,7 +70,7 @@ def masterPlot(step, nodes, values, labels, xylim):
         plt.figtext((i+0.5)*axwidth/figwidth,0.99,labels[i],fontsize=30,ha="center", va="top")
         plotData(ax, cax, nodes[i], values[i])
     fig.savefig(folder+"/step_%04d.png"%step)
-    plt.show()    
+    plt.show()
     plt.close(fig)
 
 ######################################################################

@@ -43,7 +43,7 @@ start = time.time()
 #type of solver. does not matter now
 solver = 0
 
-#power tesselation on/off
+#power tesselation on/off  does not matter now
 powerTes = 0
 
 #dimension 2/3
@@ -51,7 +51,7 @@ dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([  3  ,   1])
+if (dim == 2 ): maxLim = np.array([  5 ,   1])
 if (dim == 3 ): maxLim = np.array([  1,  1,  1 ])
 
 #volume of the model (later for check)
@@ -59,7 +59,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.05
+minDist = 0.08
 radius = minDist / 2
 
 grainV = 3.141592 * radius**2
@@ -68,44 +68,25 @@ print ('Expecting about %d grains.' %(expectedGrains))
 
 
 #trials of random node positioning
-trials = 30000
+trials = 10000
 
 #lists for the model
 node_coords = []
 mechBC_merged = []
-transportBC_merged = []
+mechIC_merged = []
+trsprtBC_merged = []
+trsprtIC_merged = []
 functions = []
 
-#### Defining functions
-#0 constant zero
-fn = utilitiesNumeric.constantFunc(0)
-functions.append (fn)
 
-#1 loading function, single force top right, bilinear
-func1 = []
-func1.append( np.array([0,0]) )
-func1.append( np.array([50, 50e4]) )
-fn1 = utilitiesNumeric.generalFunc(func1)
-functions.append (fn1)
-
-#transport function, leftFace, constant
-fn2 = utilitiesNumeric.constantFunc(20)
-functions.append (fn2)
-
-#transport function, rightFace, bilinear
-func3 = []
-func3.append( np.array([0,0]) )
-func3.append( np.array([50, 500]) )
-fn3 = utilitiesNumeric.generalFunc(func3)
-functions.append (fn3)
 
 #creating the model. Select the prepared models.
 if (dim == 2):
     #cantilever
-    #node_coords, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+    #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 
     #simply supported beam, uniform load
-    node_coords, mechBC_merged, transportBC_merged, vor, areas   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
 
 if (dim == 3):
     print('3d model inactive! Exiting.')
@@ -146,7 +127,9 @@ if (dim == 3):
 utilitiesGeom.saveMaterials(materials)
 utilitiesGeom.saveFunctions(functions)
 utilitiesGeom.saveMechBC(dim, mechBC_merged)
-utilitiesGeom.saveTransportBC(transportBC_merged, verticesIdxDict, vertIdxStart)
+if (len(mechIC_merged)>0):  utilitiesGeom.saveMechIC(dim, mechIC_merged)
+utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
+if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
 utilitiesGeom.saveExporters()
 
 solStep = 10

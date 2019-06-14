@@ -33,17 +33,47 @@ def createSingleSpringTestModel(length):
 
 
 def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
-    node_coords, mechBC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
 
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
 
+
+    ########################################################################
+    functions = []
+    ### creating functions
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, single force top right, bilinear
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([50, 50e4]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    #transport function, leftFace, constant
+    fn2 = utilitiesNumeric.constantFunc(20)
+    functions.append (fn2)
+
+    #transport function, rightFace, bilinear
+    func3 = []
+    func3.append( np.array([0,0]) )
+    func3.append( np.array([50, 500]) )
+    fn3 = utilitiesNumeric.generalFunc(func3)
+    functions.append (fn3)
+
+    ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
+    transportIC_merged = []
     ### selecting vertices on the left surface
     leftFaceBC = np.array([2,-1])
+    #leftFaceIC = 25.6
     boundA = np.array(  [-1e-8 , maxLim[1]/4*3] )
     boundB = np.array(  [ 1e-8 , maxLim[1]]  )
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
@@ -51,18 +81,8 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     for i in range (len(leftFace)):
         trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
         transportBC_merged.append(trsBC)
-
-    ### selecting vertices on the bottom surface
-    """
-    botFaceBC = np.array([3,-1])
-    boundA = np.array(  [- 1e-8, - 1e-8] )
-    boundB = np.array(  [maxLim[0] + 1e-8 ,  1e-8]  )
-    botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    #print(rightFace)
-    for i in range (len(botFace)):
-        trsBC = utilitiesGeom.transportBC(botFace[i], botFaceBC)
-        transportBC_merged.append(trsBC)
-    """
+        #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
+        #transportIC_merged.append(trsIC)
 
     ### selecting vertices on the right surface
     rightFaceBC = np.array([3,-1])
@@ -75,7 +95,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
         transportBC_merged.append(trsBC)
 
 
-    return node_coords, mechBC_merged, transportBC_merged, vor, areas
+    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
 
 
 def create2dCantileverBending(maxLim, minDist, trials ):
@@ -89,18 +109,34 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     ### extracting characteristics of the Vor diagram
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
 
-    # fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange', line_width=1, line_alpha=1, point_size=0.5)
-    # fig.set_figwidth(maxLim[0]*3)
-    # fig.set_figheight(maxLim[1]*3)
-    #
-    # for i in range(points.shape[0]):
-    #     plt.text(points[i,0], points[i,1], str(i))
-    #     #print (i)
-    #
-    # plt.xlim(-maxLim[0]*0.2, maxLim[0]*1.2)
-    # plt.ylim(-maxLim[1]*0.2, maxLim[1]*1.2)
-    # plt.show()
 
+    ########################################################################
+    functions = []
+    ### creating functions
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, single force top right, bilinear
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([50, 50e4]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    #transport function, leftFace, constant
+    fn2 = utilitiesNumeric.constantFunc(20)
+    functions.append (fn2)
+
+    #transport function, rightFace, bilinear
+    func3 = []
+    func3.append( np.array([0,0]) )
+    func3.append( np.array([50, 500]) )
+    fn3 = utilitiesNumeric.generalFunc(func3)
+    functions.append (fn3)
+
+    ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
     ### selecting vertices on the left surface
@@ -123,7 +159,7 @@ def create2dCantileverBending(maxLim, minDist, trials ):
         trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords, mechBC_merged, transportBC_merged, vor, areas
+    return node_coords, mechBC_merged, transportBC_merged, vor, areas, functions
 
 
 def assembleTwoNodeSpringTest (length):
@@ -220,6 +256,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     #lists for the model
     node_coords = []
     mechBC_merged = []
+    mechInitC_merged = []
 
     #an indent due to mirroring of the data for voronoi tess.
     indent = 1e-8
@@ -230,6 +267,8 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     ###############generating of nodes, left horizontal support ###############
     #mech bc
     lineBC = np.array([0,0,-1,-1,-1,-1])
+    #mech init cond
+
 
     #defining points of the line
     nodeA = np.array([indent, indent])
@@ -244,6 +283,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     for n in range ( nrOfPoints ):
         mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
+
         #print('adding')
 
     ###############generating of nodes, right horizontal support ###############
@@ -267,6 +307,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
 
     ############### loaded top face ###############
     lineBC = np.array([-1,-1,-1,-1, 1,-1])
+    #lineIC = np.array([12.1 , 24.2  , 36.3])
 
     #defining points of the line
     nodeA =  np.array([indent, maxLim[1] - indent])
@@ -282,7 +323,8 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
         mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
-
+        #mIC = utilitiesGeom.mechanicalIC(dim, oldLen + n, lineIC)
+        #mechInitC_merged.append(mIC)
 
 
     ##########################################generating of points, homogeneous volume
@@ -299,7 +341,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
    # mechBC_merged.append(mBC)
     ####################################################################################################
 
-    return node_coords, mechBC_merged
+    return node_coords, mechBC_merged, mechInitC_merged
 
 
 
