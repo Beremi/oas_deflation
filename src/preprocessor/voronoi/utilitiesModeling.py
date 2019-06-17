@@ -208,7 +208,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
     nodeB = np.array([indent, maxLim[1]-indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, False)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -223,10 +223,10 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
 
     #defining points of the line
     nodeA = np.array([maxLim[0] - indent, maxLim[1] - indent])
-    nodeB = np.array([maxLim[0] - indent, maxLim[1] - indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False)
+    #utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+    utilitiesGeom.generateSingleNode (nodeA, dim, node_coords)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -264,7 +264,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     indent = 1e-8
 
     #width of the supports
-    supportWidth = maxLim[0] / 40
+    supportWidth = maxLim[0] / 80
 
     ###############generating of nodes, left horizontal support ###############
     #mech bc
@@ -277,7 +277,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     nodeB = np.array([indent + supportWidth, indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -297,7 +297,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     nodeB = np.array([maxLim[0] - indent, indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
@@ -316,7 +316,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     nodeB =  np.array([maxLim[0] - indent , maxLim[1] - indent])
 
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False)
+    utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 

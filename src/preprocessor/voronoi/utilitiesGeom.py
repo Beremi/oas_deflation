@@ -156,9 +156,10 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
             if (tr > trials): break
         if (tr > trials): break
         #
-        #Adding node coords
-        node_coords.append(coords)
-        generatedPoints  += 1
+        #Adding node coords:
+        if (tr < trials):
+            node_coords.append(coords)
+            generatedPoints  += 1
         #print(generatedPoints)
         #
 
@@ -257,10 +258,11 @@ def generateSingleNode(node, dim, node_coords):
     if (dim == 3):
         print('Generating a single 3d node [%f; %f; %f]' %(node[0], node[1], node[2]))
 
+    node_coords.append(node)
 
 
 
-def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
+def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners, equidist):
     print('Generating 2d line segment from [%f; %f] to [%f; %f] '
      %(nodeA[0], nodeA[1], nodeB[0], nodeB[1]) )
     generatedPoints = 0
@@ -270,22 +272,23 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
         node_coords.append(np.copy(nodeB))
         generatedPoints  += 2
 
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
-        distIsGood = False
-        while (distIsGood == False):
-
-            coords = np.zeros(dim)
-            r = np.random.uniform()
-            coords[0] = (nodeB[0] - nodeA[0])*r  + nodeA[0]
-            coords[1] = (nodeB[1] - nodeA[1])*r  + nodeA[1]
-
-            distIsGood = True
+    if (not equidist):
+        tr=0
+        while (tr<trials):
+            tr = 0;
             #
-            for p in range (len(node_coords)):
-                #if (i!=p):
+            distIsGood = False
+            while (distIsGood == False):
+
+                coords = np.zeros(dim)
+                r = np.random.uniform()
+                coords[0] = (nodeB[0] - nodeA[0])*r  + nodeA[0]
+                coords[1] = (nodeB[1] - nodeA[1])*r  + nodeA[1]
+
+                distIsGood = True
+                #
+                for p in range (len(node_coords)):
+                    #if (i!=p):
                     distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
                     #
                     if (distInt < minDist):
@@ -293,14 +296,28 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
                         tr += 1
                         break
 
-            if (tr > trials): break
-        if (tr > trials): break
-        #
-        #Adding node coords
-        #
-        node_coords.append(coords)
-        generatedPoints  += 1
-
+                    if (tr > trials): break
+                if (tr > trials): break
+            #
+            #Adding node coords
+            #
+            if (tr < trials):
+                node_coords.append(coords)
+                generatedPoints  += 1
+    else:
+        #print('Equid')
+        mD = minDist * 1.6
+        length = np.linalg.norm(nodeA - nodeB)
+        nodeNr = int (length / mD)
+        indnt = (length-(nodeNr-1)*mD) / 2
+        for i in range (nodeNr):
+            #print(i)
+            coords = np.zeros(2)
+            coords[0] = (nodeB[0] - nodeA[0])*indnt/length +(nodeB[0] - nodeA[0])*mD/length*i  + nodeA[0]
+            coords[1] = (nodeB[1] - nodeA[1])*indnt/length +(nodeB[1] - nodeA[1])*mD/length*i  + nodeA[1]
+            node_coords.append(coords)
+            #print (len(node_coords))
+            generatedPoints  += 1
 
 
 #OUTPUT METHODS

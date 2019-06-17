@@ -63,12 +63,12 @@ minDist = 0.08
 radius = minDist / 2
 
 grainV = 3.141592 * radius**2
-expectedGrains = volume / grainV  * 1/2
+expectedGrains = volume / grainV  * 0.45
 print ('Expecting about %d grains.' %(expectedGrains))
 
 
 #trials of random node positioning
-trials = 10000
+trials = 20000
 
 #lists for the model
 node_coords = []
