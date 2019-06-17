@@ -329,7 +329,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
 
 #OUTPUT METHODS
-def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mechanicalElements,  diagonalize):
+def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  diagonalize):
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 + 1 +1)))
     nodes_out[:,  0:2] = node_coords[:,  0:2]
     nodes_out[:,dim] = 0
@@ -555,7 +555,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
 
 
 
-def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs, mechanicalElements, mechBC_merged,  materials, functions, diagonalize):
+def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  mechBC_merged,  materials, functions, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################

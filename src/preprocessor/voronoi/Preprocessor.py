@@ -46,7 +46,7 @@ solver = 0
 #power tesselation on/off  does not matter now
 powerTes = 0
 
-#dimension 2/3
+#dimension 2 //// dim 3 prohibited now
 dim = 2
 print('Creating a %dd lattice model...' %dim)
 
@@ -101,7 +101,6 @@ print('Model containing %d nodes successfuly generated.' %(node_count))
 #reordering nodes due to their connectivity
 order = utilitiesNumeric.reorderToDiagonal(node_count, node_coords, vor)
 
-mechanicalElements = []
 materials = []
 
 vert_count = -1
@@ -118,9 +117,9 @@ materials.append(linElMaterial)
 
 print('\nSaving model...')
 if (dim == 2):
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order, mechanicalElements, False)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order,  False)
 if (dim == 3):
-    vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechanicalElements, mechBC_merged, False)
+    vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechBC_merged, False)
 
 
 utilitiesGeom.saveMaterials(materials)
