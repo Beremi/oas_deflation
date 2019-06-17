@@ -33,13 +33,15 @@ def createSingleSpringTestModel(length):
 
 
 def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
+
+
     node_coords, mechBC_merged, mechInitC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
 
-    print('Conducting Voronoi tesselation...')
+    print('Conducting Voronoi tesselation...', end = '')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
 
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
-
+    print('done.')
 
     ########################################################################
     functions = []

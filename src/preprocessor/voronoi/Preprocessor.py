@@ -51,7 +51,7 @@ dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([  3 ,   1])
+if (dim == 2 ): maxLim = np.array([  3    ,  1 ])
 if (dim == 3 ): maxLim = np.array([  1,  1,  1 ])
 
 #volume of the model (later for check)
@@ -59,12 +59,16 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.08
+minDist = 0.07
 radius = minDist / 2
 
 grainV = 3.141592 * radius**2
 expectedGrains = volume / grainV  * 0.45
-print ('Expecting about %d grains.' %(expectedGrains))
+print ('Expecting about %d grains.' %(expectedGrains), end='')
+if(expectedGrains > 1000):
+    print (' This might take long!')
+else:
+    print('')
 
 
 #trials of random node positioning
@@ -96,7 +100,7 @@ if (dim == 3):
 node_coords = np.asarray(node_coords)
 node_count = len(node_coords)
 print('Model containing %d nodes successfuly generated.' %(node_count))
-
+sys.stdout.flush()
 
 #reordering nodes due to their connectivity
 order = utilitiesNumeric.reorderToDiagonal(node_count, node_coords, vor)
@@ -113,9 +117,8 @@ density = 2200
 linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, transpC, transpS, density)
 materials.append(linElMaterial)
 
-
-
-print('\nSaving model...')
+print('')
+#Deconstructing Voronoi diagram and saving the geometry
 if (dim == 2):
     vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order,  False)
 if (dim == 3):

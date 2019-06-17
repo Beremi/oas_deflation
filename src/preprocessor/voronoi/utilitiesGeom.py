@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 import math
+import sys
 import os
 from IPython.display import clear_output
 
@@ -35,7 +36,6 @@ exportersFile               = "exporters.inp"
 #
 #coplanarity test
 def equation_plane(pA, pB, pC, pD):
-
     a1 = pB[0] - pA[0]
     b1 = pB[1] - pA[1]
     c1 = pB[2] - pA[2]
@@ -47,10 +47,8 @@ def equation_plane(pA, pB, pC, pD):
     c = a1 * b2 - b1 * a2
     d = (- a * pA[0] - b * pA[1] - c * pA[2])
 
-    # equation of plane is: a*x + b*y + c*z = 0 #
-
     # checking if the 4th point satisfies
-    # the above equation
+    # equation of plane a*x + b*y + c*z = 0 #
     condition = a * pD[0] + b * pD[1] + c * pD[2] + d
    # if(condition == 0 ):
         #print("Coplanar")
@@ -79,13 +77,10 @@ def getPlaneNormalVector (pA, pB, pC):
 
     return  normal
 
-
-
 #check if any number in matrix is lower than
 def checkLowerThan (matrix, minDist):
     #return not (all(x < minDist for x in matrix))
     return   all(i >= minDist for i in matrix)
-
 
 
 # generates random points no closer to each other than minDist
@@ -122,8 +117,8 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
                         tr += 1
             """
             #############################################x
-            ######new using c dist. Much faster
-            """
+            ######new using c dist. The best so far.
+
             ncrds = np.asarray(node_coords)
             #print (ncrds)
             crds = np.asarray(coords)
@@ -135,15 +130,16 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
             distIsGood = checkLowerThan(dists, minDist)
             if (distIsGood == False):
                 tr += 1
-            """
+
             #############################################x
             #trying scipy cKDTree for searching for nearest neighbors. About the same performance as cDist so far.
+            #does not work in parallel asi it should with n_jobs = -1
             ##############################################
-
+            """
             #node_coords.append(coords)
             crds = np.asarray(coords)
             pts = np.asarray (node_coords)
-            tree = scipy.spatial.cKDTree ( pts,  leafsize=500000 )
+            tree = scipy.spatial.cKDTree ( pts,  leafsize=5 )
             #
             violatingPoints = tree.query_ball_point (x = crds,  r = minDist, n_jobs = -1 )
             #print (violatingPoints)
@@ -153,9 +149,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
             #else:
             #    print('GOOD POINT')
             #print(trials)
-
-            ##############################################
-
+            """
 
             if (tr > trials): break
         if (tr > trials): break
@@ -234,7 +228,6 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
                     coords[c] = nodeA[c]
                 else:
                     coords[c] = (nodeB[c] - nodeA[c])*np.random.uniform()  + nodeA[c]
-
 
             distIsGood = True
             #
@@ -332,6 +325,8 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
 #OUTPUT METHODS
 def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  diagonalize):
+    print('Extracting the geometry...', end='')
+    sys.stdout.flush()
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 + 1 +1)))
     nodes_out[:,  0:2] = node_coords[:,  0:2]
     nodes_out[:,dim] = 0
@@ -366,13 +361,10 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
     ########################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
-
     # dictionary of original and new indices of vertices
     verticesIdxDict = {}
-
     # ridges: nodeAidx, nodeBidx, trsprtBC, vertIdx
     ridges_out = []
-
     #auxiliary nodes
     aux_nodes = []
 
@@ -462,6 +454,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
         #print ('Ridge nr %d: vertices %d and %d' %(validRidgeIdxs[i], vertA, vertB ) )
         #print ('btw pts: %d and %d' %( pointA, pointB ) )
 
+    print('done.')
+    sys.stdout.flush()
+
+    print('Saving nodes...', end='')
+    sys.stdout.flush()
     #writing nodes
     ##############################################
     headerLine  = "Type\tnodeCrdX\tnodeCrdY\tpowRadius"
@@ -483,7 +480,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
     fl=open(os.path.join(master_folder,auxNodesFile),'w')
     np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
+    print('done.')
+    sys.stdout.flush()
 
+    print('Saving vertices...', end='')
+    sys.stdout.flush()
     #writing vertices
     ###############################################
     headerLine = 'Type\tvrtxCrdX\tvrtxCrdY'
@@ -513,8 +514,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
         ridges_out[i][3] = nA
         ridges_out[i][4] = nB
         #
+    print('done.')
+    sys.stdout.flush()
 
-
+    print('Saving TRSPRT elements...', end='')
+    sys.stdout.flush()
     #writing ridges - transport elements
     ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
     headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
@@ -535,7 +539,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
         ridges_out[i][2] = 2
         ridges_out[i][3] = nA
         ridges_out[i][4] = nB
+    print('done.')
+    sys.stdout.flush()
 
+    print('Saving MECH elements...', end ='')
+    sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample
     mechElemRidges = []
     for m in range (len(ridges_out)):
@@ -549,7 +557,8 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
     fl=open(os.path.join(master_folder,mechElemsFile),'w')
     np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0', header = headerLine )
     fl.close()
-
+    print('done.')
+    sys.stdout.flush()
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -902,7 +911,8 @@ class transportIC:
         return self.pressure
 
 def saveTransportIC(transportIC_merged):
-    print('Saving TRSPRT initial conditions...')
+    print('Saving TRSPRT initial conditions...', end ='')
+    sys.stdout.flush()
     trsprtIC_out = []
 
     for i in range (len(transportIC_merged)):
@@ -915,6 +925,7 @@ def saveTransportIC(transportIC_merged):
     fl=open(os.path.join(master_folder,trsprtICFile) ,'w')
     np.savetxt(fl, trsprtIC_out, delimiter='\t', fmt='%d\t%f', header = headerLine)
     fl.close()
+    print('done.')
 
 class mechanicalIC:
     def __init__(self, dim, nodeIdx, mechICArray):
@@ -930,7 +941,8 @@ class mechanicalIC:
 
 
 def saveMechIC(dim, nodes_mechICmerged):
-    print('Saving MECH initial conditions...')
+    print('Saving MECH initial conditions...', end='')
+    sys.stdout.flush()
     mechIC_out = []
 
     for i in range (len(nodes_mechICmerged)):
@@ -956,7 +968,7 @@ def saveMechIC(dim, nodes_mechICmerged):
         np.savetxt(fl, mechIC_out, delimiter='\t', fmt='%d\t%f\t%f\t%f\t%f\t%f\t%f', header = headerLine)
         fl.close()
 
-
+    print('done.')
 
 class mechanicalBC:
     def __init__(self, dim, nodeIdx, mechBCarray):
@@ -992,7 +1004,8 @@ class mechanicalBC:
 
 
 def saveMechBC(dim, nodes_mechBCmerged):
-    print('Saving MECH boundary conditions...')
+    print('Saving MECH boundary conditions...', end='')
+    sys.stdout.flush()
 
     #print (len(nodes_mechBCmerged))
     mechBC_out = []
@@ -1027,9 +1040,11 @@ def saveMechBC(dim, nodes_mechBCmerged):
         np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
         fl.close()
 
+    print('done.')
 
 def saveMasterInput(dim, solver, solStep):
-     print('Saving master file...')
+     print('Saving master file...', end='')
+     sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
@@ -1047,9 +1062,11 @@ def saveMasterInput(dim, solver, solStep):
      #fl.write('INITTRSPRT:\t%s\n' % initConditionsTrsprtFile   )
 
      fl.close()
+     print('done.')
 
 def saveMaterials (materials):
-    print ('Saving materials...')
+    print ('Saving materials...', end='')
+    sys.stdout.flush()
     ### MATERIALS
     with open(os.path.join(master_folder,materialsFile), 'w') as f:
         headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
@@ -1057,9 +1074,11 @@ def saveMaterials (materials):
         for item in materials:
             f.write("%s\n" % item.getString() )
           # print (item.getString())
+    print('done')
 
 def saveFunctions (functions):
-    print ('Saving functions...')
+    print ('Saving functions...', end='')
+    sys.stdout.flush()
     ### FUNCTIONS
     with open(os.path.join(master_folder,functionsFile), 'w') as f:
         headerLine = '#FuncType\tnumberOfDefPoints\tpointvalues'
@@ -1067,6 +1086,7 @@ def saveFunctions (functions):
         for item in functions:
             f.write("%s\n" % item.getString() )
           # print (item.getString())
+    print('done.')
 
 class transportBC:
     def __init__(self,  nodeIdx, transportBCarray):
@@ -1081,7 +1101,8 @@ class transportBC:
 
 
 def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
-    print('Saving TRSPRT boundary conditions...')
+    print('Saving TRSPRT boundary conditions...', end = '')
+    sys.stdout.flush()
     trsptBC_out = []
 
     for i in range (len(vertices_transportBCmerged)):
@@ -1100,11 +1121,15 @@ def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
     np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
     fl.close()
 
+    print('done.')
 
 
 def saveExporters():
-    print('Saving exporters...')
+    print('Saving exporters...', end='')
+    sys.stdout.flush()
     fl=open(os.path.join(master_folder,exportersFile),'w')
     fl.write("TXTNodalExporter translations 2 ux uy\n")
     fl.write("TXTNodalExporter pressure 1 pressure")
     fl.close()
+
+    print('done.')
