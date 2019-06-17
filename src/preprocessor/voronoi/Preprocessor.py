@@ -51,7 +51,7 @@ dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([  5 ,   1])
+if (dim == 2 ): maxLim = np.array([  3 ,   1])
 if (dim == 3 ): maxLim = np.array([  1,  1,  1 ])
 
 #volume of the model (later for check)
@@ -102,7 +102,6 @@ print('Model containing %d nodes successfuly generated.' %(node_count))
 order = utilitiesNumeric.reorderToDiagonal(node_count, node_coords, vor)
 
 mechanicalElements = []
-transportPaths = []
 materials = []
 
 vert_count = -1
@@ -119,9 +118,9 @@ materials.append(linElMaterial)
 
 print('\nSaving model...')
 if (dim == 2):
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order, mechanicalElements, transportPaths, False)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order, mechanicalElements, False)
 if (dim == 3):
-    vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechanicalElements, mechBC_merged, transportPaths, False)
+    vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechanicalElements, mechBC_merged, False)
 
 
 utilitiesGeom.saveMaterials(materials)

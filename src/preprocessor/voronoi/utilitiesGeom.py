@@ -79,10 +79,14 @@ def getPlaneNormalVector (pA, pB, pC):
 
     return  normal
 
+
+
 #check if any number in matrix is lower than
 def checkLowerThan (matrix, minDist):
     #return not (all(x < minDist for x in matrix))
     return   all(i >= minDist for i in matrix)
+
+
 
 # generates random points no closer to each other than minDist
 # into 2d or 3d block
@@ -165,7 +169,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
 
 
 #generates random points onto a set 3d line. No closer than minDst
-#catch corners samples the boundary points first
+#catch corners: samples the boundary points first
 def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
     print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
@@ -252,6 +256,7 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
         generatedPoints  += 1
 
 
+#generate a single node in 2d or 3d
 def generateSingleNode(node, dim, node_coords):
     if (dim == 2):
         print('Generating a single 2d node [%f; %f]' %(node[0], node[1]))
@@ -262,6 +267,9 @@ def generateSingleNode(node, dim, node_coords):
 
 
 
+#generates random points onto a set 3d line. No closer than minDst
+#catch corners: samples the boundary points first
+#equid: you can generate equidistant points on the line
 def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners, equidist):
     print('Generating 2d line segment from [%f; %f] to [%f; %f] '
      %(nodeA[0], nodeA[1], nodeB[0], nodeB[1]) )
@@ -321,12 +329,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
 
 #OUTPUT METHODS
-def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mechanicalElements, transportPaths, diagonalize):
-    ############################################################################################
-    ############################################################################################
-    ###################################### SAVING LATTICE MODEL GEOMETRY #######################
-    ############################################################################################
-
+def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mechanicalElements,  diagonalize):
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 + 1 +1)))
     nodes_out[:,  0:2] = node_coords[:,  0:2]
     nodes_out[:,dim] = 0
@@ -362,10 +365,10 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
 
-    # slovnik originalnich a novych indexu vertexu
+    # dictionary of original and new indices of vertices
     verticesIdxDict = {}
 
-    # ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
+    # ridges: nodeAidx, nodeBidx, trsprtBC, vertIdx
     ridges_out = []
 
     #auxiliary nodes
@@ -375,27 +378,27 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
     ####################################################
     #list of vertices, list of beams
     for i in range (validRidgeIdxs.size):
-        #pole pro dva vertexy A a B
+        #array for two vertices A and B
         vrtxA = np.zeros ( (dim  +1 +1 ) )
         vrtxB = np.zeros ( (dim  +1 +1 ) )
 
-        #originalni indexy vertexu A a B
+        #original indices of vertices A and B
         vertA = vor.ridge_vertices[validRidgeIdxs[i]][0]
         vertB = vor.ridge_vertices[validRidgeIdxs[i]][1]
 
-        #kopirovani souradnic vertexu A a B
+        # copying of coordinates of vertices A and B
         for d in range (dim):
             vrtxA [d] = vor.vertices[vertA][d]
             vrtxB [d] = vor.vertices[vertB][d]
 
-        #kopirovani originalnich indexu vertexu A a B
+        #copying of original indices of vertices A and B
         vrtxA[dim] = vertA
         vrtxB[dim] = vertB
 
         vrtxA[dim+1] = 0
         vrtxB[dim+1] = 0
 
-        #kontrola duplicity vertexu A a B v listu
+        #duplicity check
         addVrtxA = True
         addVrtxB = True
         for j in range (len(vertices_out)):
@@ -404,7 +407,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
             if (vertices_out[j][0] ==  vor.vertices[vertB][0] and vertices_out[j][1] ==  vor.vertices[vertB][1]):
                 addVrtxB = False
 
-        #pridani vertexu A nebo B do listu vertexu
+        #adding the vertices into the list of vertices if new
         if (addVrtxA == True):
             verticesIdxDict.update( { vertA : len(vertices_out)  } )
             vrtxA [dim] = len(vertices_out)
@@ -417,15 +420,14 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
 
         #ridges
         ########################################################
-        #pole pro ridge nAidx, nBidx, trBc, vertAidx, vertBidx
+        #Array for ridge nAidx, nBidx, trBc, vertAidx, vertBidx
         rdg = np.zeros ( (2 + 1 +  2) )
 
-        #indexy dvou nodu, ktere ridge rozdeluje
+        #indices of two nodes that are divided by the ridge
         pointA = vor.ridge_points[validRidgeIdxs[i],0]
         pointB = vor.ridge_points[validRidgeIdxs[i],1]
-        #
 
-        #
+        #creating auxiliary nodes if one of nodes is outside
         if(pointA >= node_count and pointB<node_count):
             ptA = np.zeros((2))
             ptA[0] = (vor.points[pointB, 0] + vor.points[pointA, 0]  ) /2
@@ -433,7 +435,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
 
             pointA = node_count + len(aux_nodes)
             aux_nodes.append(ptA)
-
 
         if(pointB >= node_count  and pointA<node_count):
             ptB = np.zeros((2))
@@ -446,13 +447,14 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
         rdg[0] = pointA
         rdg[1] = pointB
 
-        #muber of vertices
+        #number of vertices
         rdg[2] = 2
 
         #indices of vertices
         rdg[3] = verticesIdxDict[vertA] #vrtxA [dim] #verticesIdxDict[vertA]
         rdg[4] = verticesIdxDict[vertB] #vrtxB [dim] #verticesIdxDict[vertA]
-        #pridani ridge do listu ridges
+
+        #adding the ridge into the list of ridges
         ridges_out.append(rdg)
 
         #print ('Ridge nr %d: vertices %d and %d' %(validRidgeIdxs[i], vertA, vertB ) )
@@ -473,7 +475,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
     np.savetxt(fl,  nodes_out[:,  0:3], delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
 
-
+    #writing aux nodes
     headerLine  = "Type\tnodeCrdX\tnodeCrdY"
     fmt='AuxNode\t%.12f\t%.12f'
     fl=open(os.path.join(master_folder,auxNodesFile),'w')
@@ -503,7 +505,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
         vA = ridges_out[i][3]
         vB = ridges_out[i][4]
         #
-
         ridges_out[i][0] = vA
         ridges_out[i][1] = vB
         ridges_out[i][2] = 2
@@ -514,11 +515,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
 
     #writing ridges - transport elements
     ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
-#    headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
-
     headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
-
-
     fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
     np.savetxt(fl, ridges_out, delimiter='\t',fmt='LTCTRSP\t%d\t%d\t%d\t%d\t%d\t1',
           header = headerLine )
@@ -547,22 +544,10 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
      #   for x in range (len(mechElemRidges)):
      #       tady se to prehazi
     headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
-   # headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfVertices\tnodeAidx\tnodeBidx\tMaterial'
     fl=open(os.path.join(master_folder,mechElemsFile),'w')
-    np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0',
-          header = headerLine )
+    np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0', header = headerLine )
     fl.close()
 
-    ############################################################################################
-    ############################################################################################
-    ###################################### SAVING NUMERICAL MODEL ELEMENTS #####################
-    ######################################### MECHANICAL ELEMENTS ##############################
-    ############################################################################################
-
-    ### MECHANICAL ELEMENTS
-    for i in range ( len(ridges_out) ):
-        latticeBeamElement = utilitiesMech.latticeBeam (2, ridges_out[i][0], ridges_out[i][1], 0)
-        mechanicalElements.append (latticeBeamElement )
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -570,7 +555,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,mec
 
 
 
-def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs, mechanicalElements, mechBC_merged, transportPaths, materials, functions, diagonalize):
+def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs, mechanicalElements, mechBC_merged,  materials, functions, diagonalize):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################
@@ -578,7 +563,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs, me
 
 
     printout = False
-     # nody: [x,y,z] [powerR] [area] [6x mech BC] [newReorderedIdx]
+     # nody: [x,y,z] [powerR] [area]
     nodes_out = np.zeros( (node_count, (dim + 1 + 1 +1+1)))
 
     for d in range (dim):
@@ -879,25 +864,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs, me
         sh = ro.shape[0]
         np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t0')
         #print (ro)
-
-    ############################################################################################
-    ############################################################################################
-    ###################################### SAVING NUMERICAL MODEL ELEMENTS #####################
-    ######################################### MECHANICAL ELEMENTS ##############################
-    ############################################################################################
-
-    ### MECHANICAL ELEMENTS
-    for i in range ( len(ridges_out) ):
-        latticeBeamElement = utilitiesMech.latticeBeam (3, ridges_out[i][0], ridges_out[i][1], 3)
-        mechanicalElements.append (latticeBeamElement )
-
-    #writing mechanical lattice beam elements
-    #with open(os.path.join(master_folder,'mechanicalElements_out.txt'), 'w') as f:
-    #    headerLine = 'nodeAidx\tnodeBidx\tmaterialIdx'
-    #    f.write("%s\n" % headerLine )
-    #    for item in mechanicalElements:
-    #        f.write("%s\n" % item.getString() )
-    #       # print (item.getString())
 
     return v_count
 
