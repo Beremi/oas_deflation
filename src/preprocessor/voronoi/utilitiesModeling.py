@@ -67,6 +67,10 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     fn3 = utilitiesNumeric.generalFunc(func3)
     functions.append (fn3)
 
+    #function from txt data_table
+    #funcFromTxt = utilitiesNumeric.PWLFuncFromTxt('data_table.txt')
+    #functions.append(funcFromTxt)
+
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []

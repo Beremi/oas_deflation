@@ -28,10 +28,7 @@ class generalFunc:
 
     def getString(self):
         line = 'PWLFunction\t%d'%(len(self.table))
-        """
-        for i in range (len(self.table[0])):
-            line += '\t%f'%(self.table[0][i])
-        """
+
         for i in range (len(self.table)):
             line += '\t%f'%(self.table[i][0])
 
@@ -40,6 +37,21 @@ class generalFunc:
 
         return line
 ####################################################
+class PWLFuncFromTxt:
+    def __init__(self, filename):
+        self.table = np.loadtxt(filename)
+
+    def getString(self):
+        line = 'PWLFunction\t%d'%(len(self.table))
+
+        for i in range (len(self.table)):
+            line += '\t%f'%(self.table[i][0])
+
+        for i in range (len(self.table)):
+            line += '\t%f'%(self.table[i][1])
+
+        return line
+
 
 ##################################################
 #### General function set by table ####

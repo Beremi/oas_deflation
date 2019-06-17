@@ -208,7 +208,8 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
             if (tr > trials): break
         #
         #Adding node coords
-        node_coords.append(coords)
+        if (tr < trials):
+            node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
         #
@@ -251,7 +252,8 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
         #
         #Adding node coords
         #
-        node_coords.append(coords)
+        if (tr < trials):
+            node_coords.append(coords)
        # node_coords [i,:] = coords
         generatedPoints  += 1
 
