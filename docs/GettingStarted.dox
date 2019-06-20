@@ -76,6 +76,10 @@ Recommended structure
     OR
     make docs_publish [when Makefile generated]
   \endcode
+-# print possible targets
+  \code{.sh}
+    cmake --build . --target help
+  \endcode
 
 
 \section CodingStandard Coding Standard
