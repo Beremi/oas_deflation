@@ -26,7 +26,7 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     Node *nn;
     double value;
     giveFileName(step, buffer);
-    ofstream outputfile(buffer);
+    ofstream outputfile(GlobPaths::RESULTDIR / buffer);
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {

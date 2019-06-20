@@ -1,11 +1,13 @@
 #ifndef _EXPORTER_C_H
 #define _EXPORTER_C_H
 
+#include "globals.h"
 #include "node_container.h"
 #include "element_container.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

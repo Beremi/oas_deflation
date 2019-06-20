@@ -150,7 +150,7 @@ void NodeContainer :: updateExteranlForcesByReactions(const Vector &f_int, const
 
 //////////////////////////////////////////////////////////
 Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
-    Node *closest;
+    Node *closest = nullptr;
     double minDist = 1e20;
     double distance2;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {

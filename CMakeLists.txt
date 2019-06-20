@@ -85,6 +85,11 @@ endif ()
 add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #target_link_libraries (DiscreteModel libDiscreteModel)
+target_link_libraries(DiscreteModel
+                      PUBLIC
+                      "stdc++fs"
+                    #    Boost::filesystem)
+                  )
 install (TARGETS DiscreteModel DESTINATION bin)
 
 #######################################################################

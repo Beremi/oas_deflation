@@ -11,6 +11,7 @@
 #include <chrono>
 #include <ctime>
 
+#include "globals.h"
 #include "material_container.h"
 #include "node_container.h"
 #include "element_container.h"
@@ -20,6 +21,11 @@
 using namespace std;
 
 #define PRINT_TIME true
+
+fs::path GlobPaths::INPUT;
+fs::path GlobPaths::INPUTFILENAME;
+fs::path GlobPaths::BASEDIR;
+fs::path GlobPaths::RESULTDIR;
 
 string convertTimeToString(std :: chrono :: duration< double >time_interval) {
     int hours = time_interval.count() / 3600;
@@ -34,8 +40,8 @@ string convertTimeToString(std :: chrono :: duration< double >time_interval) {
 Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialContainer *matrs, ElementContainer *elems, FunctionContainer *funcs, BCContainer *bcconds, ExporterContainer *exporters) {
     string istr, line;
     int iint, dimension;
-    Solver *newsolver;
-    ifstream inputfile(filename.c_str() );
+    Solver *newsolver = nullptr;
+    ifstream inputfile(GlobPaths::BASEDIR / filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile, line) ) {
             if ( line.at(0) == '#' ) {
@@ -49,37 +55,37 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    nodes->readFromFile(istr, dimension);
+                    nodes->readFromFile(GlobPaths::BASEDIR / istr, dimension);
                 }
             } else if ( istr.compare("MatFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    matrs->readFromFile(istr);
+                    matrs->readFromFile(GlobPaths::BASEDIR / istr);
                 }
             } else if ( istr.compare("ElemFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems->readFromFile(istr, dimension, matrs);
+                    elems->readFromFile(GlobPaths::BASEDIR / istr, dimension, matrs);
                 }
             } else if ( istr.compare("BCFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bcconds->readFromFile(istr, nodes);
+                    bcconds->readFromFile(GlobPaths::BASEDIR / istr, nodes);
                 }
             } else if ( istr.compare("FunctionFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    funcs->readFromFile(istr);
+                    funcs->readFromFile(GlobPaths::BASEDIR / istr);
                 }
             } else if ( istr.compare("ExporterFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters->readFromFile(istr, nodes, elems, dimension);
+                    exporters->readFromFile(GlobPaths::BASEDIR / istr, nodes, elems, dimension);
                 }
             } else if ( istr.compare("Solver") == 0 )    {
                 Solver auxs;
@@ -93,7 +99,7 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
         return newsolver;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -103,8 +109,20 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
 int main(int argc, char **argv) {
     if ( argc == 1 ) {
         cerr << "Error: no input file specified, please try again with input file" << endl;
-        exit(0);
+        cerr << "Usage: DiscreteModel [master.inp]" << endl;
+        exit(EXIT_FAILURE);
     }
+
+    GlobPaths::INPUT = fs::absolute(argv[ 1 ]);
+    GlobPaths::INPUTFILENAME = GlobPaths::INPUT.filename();
+    GlobPaths::BASEDIR = GlobPaths::INPUT.parent_path();
+    GlobPaths::RESULTDIR = GlobPaths::BASEDIR / "results";
+
+    /*cout << GlobPaths::INPUTFILE << endl
+         << GlobPaths::BASEDIR << endl
+         << GlobPaths::RESULTDIR << endl;*/
+    // create directory for results
+    fs::create_directories(GlobPaths::RESULTDIR);
 
     auto start = std :: chrono :: system_clock :: now();
     auto now = start;
@@ -124,7 +142,7 @@ int main(int argc, char **argv) {
     ElementContainer elems;
     elems.setNodeContainer(& nodes);
     ExporterContainer exporters;
-    Solver *solver = readMasterFile(argv [ 1 ], & nodes, & matrs, & elems, & funcs, & bcconds, & exporters);
+    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME, & nodes, & matrs, & elems, & funcs, & bcconds, & exporters);
 
     //initialization
     bcconds.init();
