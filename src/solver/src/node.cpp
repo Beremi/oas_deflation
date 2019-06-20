@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////
 // BASIC NODE - ONLY MASTER CLASS
 unsigned Node :: giveNumberOfFreeDoFs() const {
-    if ( not bc ) {
+    if ( !bc ) {
         return nDoFs;
     } else {
         return nDoFs - bc->giveNumberOfBlockedDoFs();

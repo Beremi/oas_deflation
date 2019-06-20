@@ -21,7 +21,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
             }
             istringstream iss(line);
             iss >> elemType;
-            if ( not elemType.rfind("#", 0) == 0 ) {
+            if ( !elemType.rfind("#", 0) == 0 ) {
                 if ( elemType.compare("LTCBEAM") == 0 ) {
                     RigidBodyContact *newelem = new RigidBodyContact(ndim);
                     newelem->readFromLine(iss, nodes, matrs);

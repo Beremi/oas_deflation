@@ -26,7 +26,7 @@ void MaterialContainer :: readFromFile(const string filename) {
             }
             istringstream iss(line);
             iss >> matType;
-            if ( not matType.rfind("#", 0) == 0 ) {
+            if ( !matType.rfind("#", 0) == 0 ) {
                 if ( matType.compare("DisMechMaterial") == 0 ) {
                     DisMechMaterial *newmat = new DisMechMaterial();
                     newmat->readFromLine(iss);

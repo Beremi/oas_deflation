@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 
 
     //solution
-    while ( not solver->isTerminated() ) {
+    while ( !solver->isTerminated() ) {
         start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
         exporters.exportData(solver->giveStepNumber(), solver->giveDoFValues(), solver->giveNodalForces() );

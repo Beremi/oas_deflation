@@ -19,7 +19,7 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
             }
             istringstream iss(line);
             iss >> nodeType;
-            if ( not nodeType.rfind("#", 0) == 0 ) {
+            if ( !nodeType.rfind("#", 0) == 0 ) {
                 if ( nodeType.compare("TrsprtNode") == 0 ) {
                     TrsNode *newnode = new TrsNode(dim);
                     newnode->readFromLine(iss, dim);

@@ -53,7 +53,7 @@ void FunctionContainer :: readFromFile(const string filename) {
             }
             istringstream iss(line);
             iss >> ftype;
-            if ( not ftype.rfind("#", 0) == 0 ) {
+            if ( !ftype.rfind("#", 0) == 0 ) {
                 if ( ftype.compare("PWLFunction") == 0 ) {
                     PieceWiseLinearFunction *newf = new PieceWiseLinearFunction();
                     newf->readFromLine(iss);

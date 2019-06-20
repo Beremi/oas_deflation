@@ -225,7 +225,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             }
             istringstream iss(line);
             iss >> exptype;
-            if ( not exptype.rfind("#", 0) == 0 ) {
+            if ( !exptype.rfind("#", 0) == 0 ) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {
                     TXTNodalExporter *newexp = new TXTNodalExporter(n);
                     newexp->readFromLine(iss, dimension);

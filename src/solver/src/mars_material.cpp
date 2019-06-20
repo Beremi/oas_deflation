@@ -214,12 +214,12 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
             iss >> ft;
         }
     }
-    if ( not bft ) {
+    if ( !bft ) {
         cerr << name << ": material parameter 'ft' was not specified" << endl;
         exit(0);
     }
     ;
-    if ( not bGt ) {
+    if ( !bGt ) {
         cerr << name << ": material parameter 'Gt' was not specified" << endl;
         exit(0);
     }
