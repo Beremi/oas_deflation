@@ -21,15 +21,16 @@ plt.rcParams.update({'axes.linewidth': 2})
 plt.rcParams.update({'font.family': 'serif'})
 plt.rcParams.update({'font.serif': 'Times New Roman'})
 
+BASEDIR = pathlib.Path('.').resolve()
 
 def loadNodes(filename):
     filename = filename
-    nodes = np.loadtxt(filename, usecols=[1, 2], skiprows=1)
+    nodes = np.loadtxt(BASEDIR.joinpath(filename), usecols=[1, 2], skiprows=1)
     return nodes
 
 
 def loadVariables(filename, step):
-    filename = filename + "_%05d.out" % step
+    filename = BASEDIR.joinpath(filename + "_%05d.out" % step)
     return np.loadtxt(filename)
 
 
@@ -85,34 +86,41 @@ def masterPlot(step, nodes, values, labels, xylim):
         plt.figtext((i+0.5)*axwidth/figwidth, 0.99, labels[i], fontsize=30,
                     ha="center", va="top")
         plotData(ax, cax, nodes[i], values[i])
-    fig.savefig("step_%04d.png" % step)
+    fig.savefig(OUTPUTDIR.joinpath("step_%04d.png" % step))
     plt.show()
     plt.close(fig)
 
-
-if __name__ == "__main__":
+def init_parser():
     # Create the parser
-    parser = argparse.ArgumentParser(description='2D postprocessing')
+    parser = argparse.ArgumentParser(description='2D postprocessing',
+                                     allow_abbrev=True)
 
     # Add the arguments
-    parser.add_argument('Folder',
+    parser.add_argument('folder',
                         metavar='folder',
+                        # default=BASEDIR,
                         type=pathlib.Path,
+                        # nargs='?',
                         help='the path to result folder')
 
     # Execute the parse_args() method
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    folder = args.Folder
 
-    if not folder.exists():
-        print('The path specified does not exist')
+if __name__ == "__main__":
+    args = init_parser()
+
+    BASEDIR = args.folder
+    OUTPUTDIR = BASEDIR.joinpath('postprocessing')
+
+    if not BASEDIR.exists():
+        print('The path specified does not exist:', BASEDIR)
         sys.exit()
 
-    os.chdir(folder)
     nodes = loadNodes("nodes.inp")
     aux = loadNodes("auxNodes.inp")
     vertices = loadNodes("vertices.inp")
+    OUTPUTDIR.mkdir(parents=True, exist_ok=True)
     xylim = np.zeros([2, 2])
     xylim[0, :] = [min(vertices[:, 0]), max(vertices[:, 0])]
     xylim[1, :] = [min(vertices[:, 1]), max(vertices[:, 1])]
