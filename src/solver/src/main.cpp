@@ -41,7 +41,7 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
     string istr, line;
     int iint, dimension;
     Solver *newsolver = nullptr;
-    ifstream inputfile(GlobPaths::BASEDIR / filename.c_str() );
+    ifstream inputfile((GlobPaths::BASEDIR / filename).string() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile, line) ) {
             if ( line.at(0) == '#' ) {
@@ -55,37 +55,37 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    nodes->readFromFile(GlobPaths::BASEDIR / istr, dimension);
+                    nodes->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension);
                 }
             } else if ( istr.compare("MatFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    matrs->readFromFile(GlobPaths::BASEDIR / istr);
+                    matrs->readFromFile((GlobPaths::BASEDIR / istr).string());
                 }
             } else if ( istr.compare("ElemFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems->readFromFile(GlobPaths::BASEDIR / istr, dimension, matrs);
+                    elems->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension, matrs);
                 }
             } else if ( istr.compare("BCFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bcconds->readFromFile(GlobPaths::BASEDIR / istr, nodes);
+                    bcconds->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes);
                 }
             } else if ( istr.compare("FunctionFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    funcs->readFromFile(GlobPaths::BASEDIR / istr);
+                    funcs->readFromFile((GlobPaths::BASEDIR / istr).string());
                 }
             } else if ( istr.compare("ExporterFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters->readFromFile(GlobPaths::BASEDIR / istr, nodes, elems, dimension);
+                    exporters->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes, elems, dimension);
                 }
             } else if ( istr.compare("Solver") == 0 )    {
                 Solver auxs;
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
     ElementContainer elems;
     elems.setNodeContainer(& nodes);
     ExporterContainer exporters;
-    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME, & nodes, & matrs, & elems, & funcs, & bcconds, & exporters);
+    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bcconds, & exporters);
 
     //initialization
     bcconds.init();
