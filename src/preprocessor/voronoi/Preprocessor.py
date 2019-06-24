@@ -50,16 +50,20 @@ powerTes = 0
 dim = 2
 print('Creating a %dd lattice model...' %dim)
 
+Xdim = 5
+Ydim = 2
+Zdim = 1
+
 #dimensions of a rectangle model
-if (dim == 2 ): maxLim = np.array([  3    ,  1 ])
-if (dim == 3 ): maxLim = np.array([  1,  1,  1 ])
+if (dim == 2 ): maxLim = np.array([  Xdim   ,  Ydim ])
+if (dim == 3 ): maxLim = np.array([  Xdim,  Ydim,  Zdim ])
 
 #volume of the model (later for check)
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.07
+minDist = 0.09
 radius = minDist / 2
 
 grainV = 3.141592 * radius**2
@@ -72,7 +76,7 @@ else:
 
 
 #trials of random node positioning
-trials = 20000
+trials = 30000
 
 #lists for the model
 node_coords = []
@@ -91,6 +95,12 @@ if (dim == 2):
 
     #simply supported beam, uniform load
     node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
+
+    #single spring test
+    #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createSingleSpringTestModel( 2 )
+
+    #diamond test
+    #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, .8)
 
 if (dim == 3):
     print('3d model inactive! Exiting.')

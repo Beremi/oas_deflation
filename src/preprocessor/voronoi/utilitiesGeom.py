@@ -1081,7 +1081,7 @@ def saveFunctions (functions):
     sys.stdout.flush()
     ### FUNCTIONS
     with open(os.path.join(master_folder,functionsFile), 'w') as f:
-        headerLine = '#FuncType\tnumberOfDefPoints\tpointvalues'
+        headerLine = '#FuncTyped'
         f.write("%s\n" % headerLine )
         for item in functions:
             f.write("%s\n" % item.getString() )
@@ -1112,6 +1112,7 @@ def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
         bc[1:] = vertices_transportBCmerged[i].getTrsprtBC()
         #
         #print (len( bc))
+
 
         trsptBC_out.append(bc)
 

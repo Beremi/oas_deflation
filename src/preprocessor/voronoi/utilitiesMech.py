@@ -45,10 +45,6 @@ class transportPath2d:
 ##################################################
 
 
-
-# #matType    YoungM    Poisson    TranspC    TranspS    Density
-#DisMechMaterial    E0 3.000000e+10    alpha 0.300000    density 2200.000000 TrsprtMaterial capacity 11.000000    conductivity 22.000000
-
 ##################################################
 #### TRANSPORT PATH ELEMENT FOR LATTICE MODEL ####
 class linearElasticMaterial:

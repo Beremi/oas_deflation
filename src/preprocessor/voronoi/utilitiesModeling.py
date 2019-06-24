@@ -4,37 +4,113 @@ import utilitiesGeom
 import utilitiesMech
 import utilitiesNumeric
 import voronoi
+import matplotlib.pyplot as plt
 
-"""
 def createSingleSpringTestModel(length):
-    maxLim = np.array([  length   ,   0  ])
-    node_coords,  mechBC_merged = assembleTwoNodeSpringTest(length)
+    #defining functions
+    functions = []
+    #### Defining functions
+    #0 sine func
+    #fn = utilitiesNumeric.sineFunc(10,22)
+
+    #constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    fn1 = utilitiesNumeric.constantFunc(1e-3)
+    functions.append (fn1)
+
+    dim = 2
+    idt = length /2
+
+    maxLim = np.array([  length*2    ,   2  ])
+
+    node_coords,  mechBC_merged = assembleTwoNodeSpringTest(maxLim, idt)
+
+    #print(node_coords)
 
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
-
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
 
+    #fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
+    #plt.show()
+
+    idt = 1e-1
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
     ### selecting vertices on the left surface
     noTrsprtBC = np.array([ -1 , -1 ])
-    boundA = np.array(  [ -1 , -1] )
-    boundB = np.array(  [ maxLim[1] + 1 , maxLim[1] + 1  ]  )
+    boundA = np.array(  [ -idt , -idt ] )
+    boundB = np.array(  [ maxLim[0] + idt , maxLim[1] + idt  ]  )
     allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
-    for i in range (len(leftFace)):
+    for i in range (len(allVrtcs)):
         trsBC = utilitiesGeom.transportBC(allVrtcs[i], noTrsprtBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords, mechBC_merged, transportBC_merged, vor, areas
 
-"""
+
+
+    return node_coords, mechBC_merged, transportBC_merged, vor, areas, functions
+
+
+
+def createDiamondTestModel(width, height):
+    #defining functions
+    functions = []
+    #### Defining functions
+    #0 sine func
+    #fn = utilitiesNumeric.sineFunc(10,22)
+
+    #constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    fn1 = utilitiesNumeric.constantFunc(1e-3)
+    functions.append (fn1)
+
+    dim = 2
+    idtW = width /2
+    idtH = height /5
+
+    maxLim = np.array([  width*2    ,   height*2   ])
+
+    node_coords,  mechBC_merged = assembleDiamondTest(maxLim, idtW, idtH)
+
+    #print(node_coords)
+
+    vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+
+    fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
+    plt.show()
+
+    print (points)
+
+    idt = 1e-1
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    ### selecting vertices on the left surface
+    noTrsprtBC = np.array([ -1 , -1 ])
+    boundA = np.array(  [ -idt , -idt ] )
+    boundB = np.array(  [ maxLim[0] + idt , maxLim[1] + idt  ]  )
+    allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+    for i in range (len(allVrtcs)):
+        trsBC = utilitiesGeom.transportBC(allVrtcs[i], noTrsprtBC)
+        transportBC_merged.append(trsBC)
+
+
+
+
+    return node_coords, mechBC_merged, transportBC_merged, vor, areas, functions
+
+
 
 
 
 def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
-
-
+    #
     node_coords, mechBC_merged, mechInitC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...', end = '')
@@ -45,7 +121,6 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
 
     ########################################################################
     functions = []
-    ### creating functions
     #### Defining functions
     #0 constant zero
     fn = utilitiesNumeric.constantFunc(0)
@@ -169,29 +244,65 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
 
 
-def assembleTwoNodeSpringTest (length):
+def assembleTwoNodeSpringTest (maxLim, idt):
     node_coords = []
     mechBC_merged = []
+    dim = 2
 
-    nodeA = np.array ( [ 0 , 0 ] )
-    nodeAmechBC = np.array([0, 0 , -1 , -1 , -1 , -1])
+
+    nodeA = np.array ( [ 0 + idt , maxLim[1]/2 ] )
+    nodeAmechBC = np.array([0, 0 , -1 ,      -1 , -1 , -1])
+    utilitiesGeom.generateSingleNode(nodeA, dim, node_coords)
+    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeAmechBC)
+    mechBC_merged.append(mBC)
+
+    nodeB = np.array ( [ maxLim[0] - idt, maxLim[1]/2 ] )
+    nodeBmechBC = np.array([-1, 0 , 0 ,      1, -1 , -1])
+    utilitiesGeom.generateSingleNode(nodeB, dim, node_coords)
+    mBC = utilitiesGeom.mechanicalBC(dim, 1, nodeBmechBC)
+    mechBC_merged.append(mBC)
+
+
+    return node_coords,  mechBC_merged
+
+
+
+def assembleDiamondTest (maxLim, idtW, idtH):
+    node_coords = []
+    mechBC_merged = []
+    dim = 2
+
+    #left mid
+    nodeA = np.array ( [ 0 + idtW , maxLim[1]/2 ] )
+    nodeAmechBC = np.array([-1,-1,-1 , -1,-1 ,-1])
     utilitiesGeom.generateSingleNode(nodeA, 2, node_coords)
     mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeAmechBC)
     mechBC_merged.append(mBC)
 
-    nodeB = np.array ( [ 0 , length ] )
-    nodeBmechBC = np.array([-1, 0 , -1 , -1 , -1 , -1])
+    #right mid
+    nodeB = np.array ( [ maxLim[0] - idtW, maxLim[1]/2 ] )
+    nodeBmechBC = np.array([-1,-1,-1 , -1,-1,-1])
     utilitiesGeom.generateSingleNode(nodeB, 2, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeBmechBC)
+    mBC = utilitiesGeom.mechanicalBC(dim, 1, nodeBmechBC)
     mechBC_merged.append(mBC)
 
-    #adding mech boundary conditions
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
+    #top
+    nodeC = np.array ( [ maxLim[0]/2, maxLim[1] -idtH] )
+    nodeCmechBC = np.array([0, -1 , 0 , -1, 1, -1])
+    utilitiesGeom.generateSingleNode(nodeC, 2, node_coords)
+    mBC = utilitiesGeom.mechanicalBC(dim, 2, nodeCmechBC)
+    mechBC_merged.append(mBC)
+
+    #bottom
+    nodeD = np.array ( [ maxLim[0]/2, idtH] )
+    nodeDmechBC = np.array([0,0,0,  -1, -1, -1])
+    utilitiesGeom.generateSingleNode(nodeD, 2, node_coords)
+    mBC = utilitiesGeom.mechanicalBC(dim, 3, nodeDmechBC)
+    mechBC_merged.append(mBC)
+
 
     return node_coords,  mechBC_merged
+
 
 #
 ######## METHOD FOR CREATING OF A 2D SUPPORTED CANTILEVER MODEL

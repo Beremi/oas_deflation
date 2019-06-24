@@ -7,6 +7,7 @@ from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import voronoi
+
 #2d voronoi a teselace
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
@@ -75,8 +76,8 @@ class sineFunc:
         self.freq = freq
     def getString(self):
         line = 'SineFunction\t'
-        line += '%f\t' (self.freq)
-        line += '%f' (self.amplitude)
+        line += '%f\t' %(self.freq)
+        line += '%f' %(self.amplitude)
         return line
 ##################################################
 
