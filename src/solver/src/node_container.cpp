@@ -19,7 +19,7 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
             }
             istringstream iss(line);
             iss >> nodeType;
-            if ( not nodeType.rfind("#", 0) == 0 ) {
+            if ( !nodeType.rfind("#", 0) == 0 ) {
                 if ( nodeType.compare("TrsprtNode") == 0 ) {
                     TrsNode *newnode = new TrsNode(dim);
                     newnode->readFromLine(iss, dim);
@@ -150,7 +150,7 @@ void NodeContainer :: updateExteranlForcesByReactions(const Vector &f_int, const
 
 //////////////////////////////////////////////////////////
 Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
-    Node *closest;
+    Node *closest = nullptr;
     double minDist = 1e20;
     double distance2;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {

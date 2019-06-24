@@ -106,21 +106,21 @@ void RigidBodyContact :: init() {
     //check that nodes are particles
     for ( unsigned i = 0; i < 2; i++ ) {
         Particle *p = dynamic_cast< Particle * >( nodes [ i ] );
-        if ( not p ) {
+        if ( !p ) {
             cerr << "Error in " << name << ": nodes must be inherited from Particle, " << nodes [ i ]->giveName() << " provided" << endl;
             exit(1);
         }
     }
     //check that material is DisMechMat
     DisMechMaterial *p = dynamic_cast< DisMechMaterial * >( mat );
-    if ( not p ) {
+    if ( !p ) {
         cerr << "Error in " << name << ": material must be inherited from DisMechMaterial, " << mat->giveName() << " provided" << endl;
         exit(1);
     }
 
     Point t;
     if ( ndim == 2 ) {
-        if ( not ( vert.size() == 2 ) ) {
+        if ( !( vert.size() == 2 ) ) {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         }
@@ -292,21 +292,21 @@ void Transp1D :: init() {
     //check that nodes are TrsNodes
     for ( unsigned i = 0; i < 2; i++ ) {
         TrsNode *p = dynamic_cast< TrsNode * >( nodes [ i ] );
-        if ( not p ) {
+        if ( !p ) {
             cerr << "Error in " << name << ": nodes must be inherited from TrsNode, " << nodes [ i ]->giveName() << " provided" << endl;
             exit(1);
         }
     }
     //check that material is DisMechMat
     TrsprtMaterial *p = dynamic_cast< TrsprtMaterial * >( mat );
-    if ( not p ) {
+    if ( !p ) {
         cerr << "Error in " << name << ": material must be inherited from TrsprtMaterial, " << mat->giveName() << " provided" << endl;
         exit(1);
     }
 
     Point v0, v1, t, normal;
     if ( ndim == 2 ) {
-        if ( not ( vert.size() == 2 ) ) {
+        if ( !( vert.size() == 2 ) ) {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         }

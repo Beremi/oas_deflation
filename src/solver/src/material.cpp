@@ -37,12 +37,12 @@ void TrsprtMaterial :: readFromLine(istringstream &iss) {
             iss >> conductivity;
         }
     }
-    if ( not bcapacity ) {
+    if ( !bcapacity ) {
         cerr << name << ": material parameter 'capacity' was not specified" << endl;
         exit(0);
     }
     ;
-    if ( not bconductivity ) {
+    if ( !bconductivity ) {
         cerr << name << ": material parameter 'conductivity' was not specified" << endl;
         exit(0);
     }
@@ -110,17 +110,17 @@ void DisMechMaterial :: readFromLine(istringstream &iss) {
             iss >> density;
         }
     }
-    if ( not bE0 ) {
+    if ( !bE0 ) {
         cerr << name << ": material parameter 'E0' was not specified" << endl;
         exit(0);
     }
     ;
-    if ( not balpha ) {
+    if ( !balpha ) {
         cerr << name << ": material parameter 'alpha' was not specified" << endl;
         exit(0);
     }
     ;
-    if ( not bdensity ) {
+    if ( !bdensity ) {
         cerr << name << ": material parameter 'density' was not specified" << endl;
         exit(0);
     }

@@ -89,12 +89,12 @@ Solver *SteadyStateLinearSolver :: readFromLine(istringstream &iss) {
             iss >> termination_time;
         }
     }
-    if ( not bdt ) {
+    if ( !bdt ) {
         cerr << name << ": solver parameter 'time_step' was not specified" << endl;
         exit(0);
     }
     ;
-    if ( not bttime ) {
+    if ( !bttime ) {
         cerr << name << ": solver parameter 'total_time' was not specified" << endl;
         exit(0);
     }
@@ -178,12 +178,12 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
             iss >> termination_time;
         }
     }
-    if ( not bdt ) {
+    if ( !bdt ) {
         cerr << name << ": solver parameter 'time_step' was not specified" << endl;
         exit(0);
     }
     ;
-    if ( not bttime ) {
+    if ( !bttime ) {
         cerr << name << ": solver parameter 'total_time' was not specified" << endl;
         exit(0);
     }
@@ -251,7 +251,7 @@ void SteadyStateNonLinearSolver :: solve() {
         it++;
     }
 
-    if ( not converged ) {
+    if ( !converged ) {
         cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
         exit(1);
     }

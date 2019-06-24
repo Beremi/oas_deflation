@@ -26,7 +26,7 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     Node *nn;
     double value;
     giveFileName(step, buffer);
-    ofstream outputfile(buffer);
+    ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
@@ -225,7 +225,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             }
             istringstream iss(line);
             iss >> exptype;
-            if ( not exptype.rfind("#", 0) == 0 ) {
+            if ( !exptype.rfind("#", 0) == 0 ) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {
                     TXTNodalExporter *newexp = new TXTNodalExporter(n);
                     newexp->readFromLine(iss, dimension);
