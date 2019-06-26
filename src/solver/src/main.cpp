@@ -31,8 +31,9 @@ string convertTimeToString(std :: chrono :: duration< double >time_interval) {
     int hours = time_interval.count() / 3600;
     int minutes = time_interval.count() / 60 - hours * 60;
     int seconds = time_interval.count() - hours * 3600 - minutes * 60;
+    int miliseconds = (time_interval.count() - hours * 3600 - minutes * 60 - seconds) * 100;
     stringstream ss;
-    ss << hours << " : " << minutes << " : " << seconds;
+    ss << hours << ":" << minutes << ":" << seconds << "." << miliseconds;
     return ss.str();
 }
 
