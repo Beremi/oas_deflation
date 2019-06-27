@@ -91,7 +91,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
         print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. ' %(maxLim[0], maxLim[1]) )
 
     if (dim==3):
-        print('Generating 3d block segment of size: %f / %f / %f. This may take few minutes. Do not panic.' %(maxLim[0], maxLim[1], maxLim[2]) )
+        print('Generating 3d block segment of size: %f / %f / %f. This may take long. Keep calm.' %(maxLim[0], maxLim[1], maxLim[2]) )
 
     generatedPoints = 0
     tr = 0
@@ -122,7 +122,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
             ncrds = np.asarray(node_coords)
             #print (ncrds)
             crds = np.asarray(coords)
-            crds = np.reshape(crds, (-1, 2))
+            crds = np.reshape(crds, (-1, dim))
             #print (crds)
             dists = scipy.spatial.distance.cdist(crds, ncrds , 'euclidean')
             dists = dists.flatten()
@@ -211,7 +211,7 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
 
 def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials):
-    print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f] '
+    print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f]'
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
     generatedPoints = 0
 
@@ -566,12 +566,13 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
 
 
 
-def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  mechBC_merged,  materials, functions, diagonalize):
+def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  mechBC_merged,  materials):
     ############################################################################################
     ############################################################################################
     ###################################### SAVING LATTICE MODEL GEOMETRY #######################
     ############################################################################################
-
+    print('Extracting the geometry...',  end ='')
+    sys.stdout.flush()
 
     printout = False
      # nody: [x,y,z] [powerR] [area]
@@ -689,8 +690,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
 
         #print ('%d \t %d'  %(pointA,pointB) )
 
-        #transport BC
-        #rdg[2] = 6666666666666666
 
         #pocet vertexu
         nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
@@ -711,9 +710,11 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
             pC = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+2]][:]
             pD = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+3]][:]
             #pD[2] = 10
-            if ( equation_plane(pA, pB, pC, pD) > 1e-14 ):
+            tol = 1e-12
+            val = equation_plane(pA, pB, pC, pD)
+            if ( val > tol):
                 allCoplanar = False
-                print('Not coplanar!!! %d' %i)
+                print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
             #else: print('Coplanar  %d' %i)
 
         #normala plochy z prvnich trech vertexu, normalizovana
@@ -773,16 +774,21 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
         ridges_out.append(rdg)
 
     if (allCoplanar):
-        #if (printout):print ('ALL ridges coplanar OK')
-        print ('ALL ridges coplanar OK. Model seems ok.')
+        if (printout):print ('ALL ridges coplanar OK')
+        #print ('ALL ridges coplanar OK. Model seems ok.')
     else:
         #if (printout):print ('NOT ALL RIDGES COPLANAR !!!')
-        print ('NOT ALL RIDGES COPLANAR !!!')
+        print ('!!! NOT ALL RIDGES COPLANAR !!!')
+    print('done.')
 
+    print('Saving nodes...', end ='')
     #writing nodes
     ########################################################################################################
    # headerLine =  "nodeCrdX \t nodeCrdY \t nodeCrdZ \t powRadius \t vorArea \t bcTransX \t bcTransY \t bcTransZ \t bcRotX \t bcRotY \t bcRotZ"
     headerLine =  "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ\tpowRadius"
+
+
+    vertIdxStart = node_count + len(aux_nodes)
 
     fl=open(os.path.join(master_folder,nodesFile),'w')
     np.savetxt(fl,  nodes_out[:,  0:4], delimiter='\t',  fmt = 'Particle\t%.12f\t%.12f\t%.12f\t%.12f',  header = headerLine)
@@ -794,8 +800,9 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
     fl=open(os.path.join(master_folder,auxNodesFile),'w')
     np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
+    print('done.')
 
-
+    print('Saving vertices...', end ='')
     #writing vertices
     ########################################################################################################
     headerLine = 'Type\tvrtxCrdX\tvrtxCrdY\tvrtxCrdZ'
@@ -827,9 +834,9 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
         nwarr [nrVert+1: (nrVert+3)] = ro [0:2]
 
         ridges_out_trsprt.append(nwarr)
+    print('done.')
 
-
-
+    print('Saving TRSPRT elements...', end ='')
     #writing ridges
     ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
     headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
@@ -848,12 +855,12 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
 
         np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t1')
         #print (ro)
-
-
     fl.close()
+    print ('done.')
    # print (ridges_out)
 
 
+    print('Saving MECH elements...', end ='')
     headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
     #filtering ridges to ridges with both nodes in sample
     mechElemRidges = []
@@ -876,7 +883,9 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
         np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t0')
         #print (ro)
 
-    return v_count
+
+    print ('done.')
+    return v_count, verticesIdxDict, vertIdxStart
 
 
 

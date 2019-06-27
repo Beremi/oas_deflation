@@ -50,7 +50,7 @@ powerTes = 0
 dim = 2
 print('Creating a %dd lattice model...' %dim)
 
-Xdim = 5
+Xdim = 2
 Ydim = 2
 Zdim = 1
 
@@ -63,20 +63,19 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.09
+minDist = 0.1
 radius = minDist / 2
 
-grainV = 3.141592 * radius**2
-expectedGrains = volume / grainV  * 0.45
-print ('Expecting about %d grains.' %(expectedGrains), end='')
-if(expectedGrains > 1000):
-    print (' This might take long!')
-else:
-    print('')
+if (dim == 2):
+    dV = 3.141592 * radius **2
+if (dim == 3):
+    dV = 4/3 * 3.141592 * radius **3
 
+expNodes = volume / dV  * 0.5
+print ('Expecting about %d nodes' %expNodes)
 
 #trials of random node positioning
-trials = 30000
+trials = 50000
 
 #lists for the model
 node_coords = []
@@ -103,9 +102,8 @@ if (dim == 2):
     #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, .8)
 
 if (dim == 3):
-    print('3d model inactive! Exiting.')
-    sys.exit()
-    #assemble3Dblock()
+    #cantilever
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
 
 node_coords = np.asarray(node_coords)
 node_count = len(node_coords)
@@ -132,7 +130,7 @@ print('')
 if (dim == 2):
     vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order,  False)
 if (dim == 3):
-    vert_count = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechBC_merged, False)
+    vert_count, verticesIdxDict, vertIdxStart  = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechBC_merged, False)
 
 
 utilitiesGeom.saveMaterials(materials)
