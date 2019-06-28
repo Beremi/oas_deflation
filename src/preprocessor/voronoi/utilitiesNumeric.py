@@ -131,7 +131,6 @@ def reorderToDiagonal (node_count, node_coords, vor):
     #print(B)
 
 
-
     #print('reordered connectivity matrix')
     fig = plt.figure(figsize=(10, 10))
 

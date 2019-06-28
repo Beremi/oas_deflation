@@ -4,7 +4,6 @@ import scipy
 import math
 import sys
 import os
-from IPython.display import clear_output
 
 import utilitiesMech
 
@@ -265,7 +264,8 @@ except:
 
 
 
-#OUTPUT METHODS
+#Extract geometry 2d
+#Extracts nodes, vertices, conectivity,
 def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  diagonalize):
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -383,65 +383,39 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
 
         #number of vertices
         rdg[2] = 2
-
         #indices of vertices
         rdg[3] = verticesIdxDict[vertA] #vrtxA [dim] #verticesIdxDict[vertA]
         rdg[4] = verticesIdxDict[vertB] #vrtxB [dim] #verticesIdxDict[vertA]
-
         #adding the ridge into the list of ridges
         ridges_out.append(rdg)
 
-        #print ('Ridge nr %d: vertices %d and %d' %(validRidgeIdxs[i], vertA, vertB ) )
-        #print ('btw pts: %d and %d' %( pointA, pointB ) )
 
     print('done.')
     sys.stdout.flush()
 
-    print('Saving nodes...', end='')
-    sys.stdout.flush()
-    #writing nodes
-    ##############################################
-    headerLine  = "Type\tnodeCrdX\tnodeCrdY\tpowRadius"
-    fmt='Particle\t%.12f\t%.12f\t%.12f'
+    #saving nodes
+    saveNodes(nodes_out, aux_nodes)
 
-    if (diagonalize):
-        nodes_backup = np.copy(nodes_out)
-        #
-        for x in range (len(nodes_out)):
-            nodes_out[x, :] = nodes_backup[order[x],:]
-
-    fl=open(os.path.join(master_folder,nodesFile),'w')
-    np.savetxt(fl,  nodes_out[:,  0:3], delimiter='\t',   fmt=fmt,  header = headerLine)
-    fl.close()
-
-    #writing aux nodes
-    headerLine  = "Type\tnodeCrdX\tnodeCrdY"
-    fmt='AuxNode\t%.12f\t%.12f'
-    fl=open(os.path.join(master_folder,auxNodesFile),'w')
-    np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
-    fl.close()
-    print('done.')
-    sys.stdout.flush()
-
-    print('Saving vertices...', end='')
-    sys.stdout.flush()
-    #writing vertices
-    ###############################################
-    headerLine = 'Type\tvrtxCrdX\tvrtxCrdY'
-
-    vertices_print = np.asarray(vertices_out)
-
+    #saving vertices
+    saveVertices(vertices_out)
     v_count = len (vertices_out)
-
-    fl=open(os.path.join(master_folder,verticesFile),'w')
-    np.savetxt(fl, vertices_print[:, 0:2], delimiter='\t', fmt='TrsprtNode\t%.12f\t%.12f', header = headerLine)
-    fl.close()
-
     vertIdxStart = node_count + len(aux_nodes)
+
 
     for i in range (len(ridges_out)):
         ridges_out[i][3] += vertIdxStart
         ridges_out[i][4] += vertIdxStart
+
+    #filtering ridges to ridges with both nodes in sample
+    mechElemRidges = []
+    for m in range (len(ridges_out)):
+        if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
+            mechElemRidges.append( ridges_out[m] )
+    #saving mechanical elements
+    saveMechanicalElems(mechElemRidges)
+
+
+    for i in range (len(ridges_out)):
         #
         nA = ridges_out[i][0]
         nB = ridges_out[i][1]
@@ -454,8 +428,9 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
         ridges_out[i][3] = nA
         ridges_out[i][4] = nB
         #
-    print('done.')
-    sys.stdout.flush()
+    #ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0]
+    #ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1]
+    #ridges_out[:,2] = 2
 
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
@@ -466,39 +441,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
     np.savetxt(fl, ridges_out, delimiter='\t',fmt='LTCTRSP\t%d\t%d\t%d\t%d\t%d\t1',
           header = headerLine )
     fl.close()
-
-    for i in range (len(ridges_out)):
-        #
-        nA = ridges_out[i][0]
-        nB = ridges_out[i][1]
-        vA = ridges_out[i][3]
-        vB = ridges_out[i][4]
-        #
-        ridges_out[i][0] = vA
-        ridges_out[i][1] = vB
-        ridges_out[i][2] = 2
-        ridges_out[i][3] = nA
-        ridges_out[i][4] = nB
     print('done.')
     sys.stdout.flush()
 
-    print('Saving MECH elements...', end ='')
-    sys.stdout.flush()
-    #filtering ridges to ridges with both nodes in sample
-    mechElemRidges = []
-    for m in range (len(ridges_out)):
-        if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
-            mechElemRidges.append( ridges_out[m] )
 
-  #  if (diagonalize):
-     #   for x in range (len(mechElemRidges)):
-     #       tady se to prehazi
-    headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
-    fl=open(os.path.join(master_folder,mechElemsFile),'w')
-    np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0', header = headerLine )
-    fl.close()
-    print('done.')
-    sys.stdout.flush()
+
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -1030,3 +977,56 @@ def saveExporters():
     fl.close()
 
     print('done.')
+
+
+
+def saveNodes (nodes_out, aux_nodes):
+    print('Saving nodes...', end='')
+    sys.stdout.flush()
+    #writing nodes
+    headerLine  = "Type\tnodeCrdX\tnodeCrdY\tpowRadius"
+    fmt='Particle\t%.12f\t%.12f\t%.12f'
+
+    """
+    if (diagonalize):
+        nodes_backup = np.copy(nodes_out)
+        #
+        for x in range (len(nodes_out)):
+            nodes_out[x, :] = nodes_backup[order[x],:]
+    """
+    fl=open(os.path.join(master_folder,nodesFile),'w')
+    np.savetxt(fl,  nodes_out[:,  0:3], delimiter='\t',   fmt=fmt,  header = headerLine)
+    fl.close()
+
+    #writing aux nodes
+    headerLine  = "Type\tnodeCrdX\tnodeCrdY"
+    fmt='AuxNode\t%.12f\t%.12f'
+    fl=open(os.path.join(master_folder,auxNodesFile),'w')
+    np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
+    fl.close()
+    print('done.')
+    sys.stdout.flush()
+
+
+
+def saveVertices (vertices_out):
+    print('Saving vertices...', end='')
+    sys.stdout.flush()
+    headerLine = 'Type\tvrtxCrdX\tvrtxCrdY'
+    vertices_print = np.asarray(vertices_out)
+    fl=open(os.path.join(master_folder,verticesFile),'w')
+    np.savetxt(fl, vertices_print[:, 0:2], delimiter='\t', fmt='TrsprtNode\t%.12f\t%.12f', header = headerLine)
+    fl.close()
+    print('done.')
+    sys.stdout.flush()
+
+
+def saveMechanicalElems (mechElemRidges):
+    print('Saving MECH elements...', end ='')
+    sys.stdout.flush()
+    headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
+    fl=open(os.path.join(master_folder,mechElemsFile),'w')
+    np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0', header = headerLine )
+    fl.close()
+    print('done.')
+    sys.stdout.flush()
