@@ -23,13 +23,18 @@ def generateNodesRect_cython(double[:] maxLim,
         double distInt
         int i
         vector[float] coords
-        int node_coords_len
+        int node_coords_input_len = len(node_coords)
         vector[float] node_coords_temp
         bint distIsGood
         mt19937_64 gen = mt19937_64()
         uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0,1.0)
     coords.push_back(0.0)
     coords.push_back(0.0)
+
+    if node_coords:
+        for node in node_coords:
+            for d in range(dim):
+                node_coords_temp.push_back(node[d])
 
     while (tr < trials):
         tr = 0
@@ -39,8 +44,7 @@ def generateNodesRect_cython(double[:] maxLim,
                 coords[i] = dist(gen)
             distIsGood = True
 
-            node_coords_len = generatedPoints
-            for p in range(node_coords_len):
+            for p in range(generatedPoints):
                 distInt = 0
                 for i in range(dim):
                     distInt += ((node_coords_temp[p*dim+i] - coords[i])*
@@ -58,5 +62,5 @@ def generateNodesRect_cython(double[:] maxLim,
             generatedPoints += 1
 
     # Copy back to lists
-    for i in range(generatedPoints):
+    for i in range(node_coords_input_len, generatedPoints):
         node_coords.append([node_coords_temp[i*dim], node_coords_temp[i*dim+1]])

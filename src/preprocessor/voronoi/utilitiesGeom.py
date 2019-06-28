@@ -160,6 +160,12 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
             generatedPoints  += 1
         #print(generatedPoints)
         #
+try:
+    from point_generators_cython import generateNodesRect_cython as generateNodesRect
+    print('Using Cython version of point generator.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
 
 
 #generates random points onto a set 3d line. No closer than minDst
