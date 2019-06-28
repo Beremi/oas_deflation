@@ -81,6 +81,148 @@ def getPlaneNormalVector (pA, pB, pC):
 def checkLowerThan (matrix, minDist):
     return   all(i >= minDist for i in matrix)
 
+# generates random points no closer to each other than minDist
+# into 2d or 3d block
+# maxLim: n-d array of dimensions
+def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
+    if (dim==2):
+        print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. ' %(maxLim[0], maxLim[1]) )
+
+    if (dim==3):
+        print('Generating 3d block segment of size: %f / %f / %f. This may take long. Keep calm.' %(maxLim[0], maxLim[1], maxLim[2]) )
+
+    generatedPoints = 0
+    tr = 0
+    while (tr<trials):
+        tr = 0
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = np.random.random(dim)
+            coords *= maxLim
+            #
+            distIsGood = True
+            #
+            #############################################x
+            ######old sequential computation of distances
+            """
+            for p in range (len(node_coords)):
+                #if (i!=p):
+                    distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
+                    #
+                    if (distInt < minDist):
+                        distIsGood = False
+                        tr += 1
+            """
+            #############################################x
+            ######new using c dist. The best so far.
+
+            ncrds = np.asarray(node_coords)
+            #print (ncrds)
+            crds = np.asarray(coords)
+            crds = np.reshape(crds, (-1, dim))
+            #print (crds)
+            dists = scipy.spatial.distance.cdist(crds, ncrds , 'euclidean')
+            dists = dists.flatten()
+            #print(dists)
+            distIsGood = checkLowerThan(dists, minDist)
+            if (distIsGood == False):
+                tr += 1
+
+            #############################################x
+            #trying scipy cKDTree for searching for nearest neighbors. About the same performance as cDist so far.
+            #does not work in parallel asi it should with n_jobs = -1
+            ##############################################
+            """
+            #node_coords.append(coords)
+            crds = np.asarray(coords)
+            pts = np.asarray (node_coords)
+            tree = scipy.spatial.cKDTree ( pts,  leafsize=5 )
+            #
+            violatingPoints = tree.query_ball_point (x = crds,  r = minDist, n_jobs = -1 )
+            #print (violatingPoints)
+            if ( len(violatingPoints) != 0):
+                distIsGood = False
+                tr += 1
+            #else:
+            #    print('GOOD POINT')
+            #print(trials)
+            """
+
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords:
+        if (tr < trials):
+            node_coords.append(coords)
+            generatedPoints  += 1
+        #print(generatedPoints)
+        #
+try:
+    from point_generators_cython import generateNodesRect_cython as generateNodesRect
+    print('Using Cython version of point generator - generateNodesRect.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
+
+#generates random points onto a set 3d line. No closer than minDst
+#catch corners: samples the boundary points first
+def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
+    print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
+     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
+    generatedPoints = 0
+
+    if(catchCorners):
+        node_coords.append(np.copy(nodeA))
+        node_coords.append(np.copy(nodeB))
+        generatedPoints  += 2
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = np.zeros(dim)
+            #
+            r = np.random.uniform()
+            coords[0] = (nodeB[0] - nodeA[0])*r  + nodeA[0]
+            coords[1] = (nodeB[1] - nodeA[1])*r  + nodeA[1]
+            coords[2] = (nodeB[2] - nodeA[2])*r  + nodeA[2]
+            #
+            distIsGood = True
+            #
+            for p in range (len(node_coords)):
+                distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
+                #
+                if (distInt < minDist):
+                    distIsGood = False
+                    tr += 1
+                    #clear_output(True)
+                    #print('Line Pt: %d Tr: %d' %(generatedPoints, tr))
+                    break
+                if (tr > trials): break
+            if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+       # node_coords [i,:] = coords
+        generatedPoints  += 1
+        #
+
+
+
+def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials):
+    print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f]'
+     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
+    generatedPoints = 0
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
 
 #check mutual distances between particles using cDist
 def checkMutDistancesCdist(dim, minDist, currentNodes, newNode):
@@ -113,6 +255,12 @@ def checkMutDistancesLoops (dim, minDist, currentNodes, newNode):
             break
     return distIsGood
 
+try:
+    from point_generators_cython import checkMutDistancesLoops_cython as checkMutDistancesLoops
+    print('Using Cython version of point generator - checkMutDistancesLoops.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
 
 
 
