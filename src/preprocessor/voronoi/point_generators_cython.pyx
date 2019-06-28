@@ -1,3 +1,4 @@
+# distutils: language=c++
 cimport cython
 import numpy as np
 cimport numpy as np
@@ -67,22 +68,22 @@ def generateNodesRect_cython(double[:] maxLim,
 
 
 
-    def checkMutDistancesLoops_cython(int dim,
-                                      float minDist,
-                                      list currentNodes,
-                                      list newNode):
-        cdef:
-            distIsGood = True
-            int p, i
-            int currentNodes_len = len(currentNodes)
-            double distInt
-        for p in range (currentNodes_len):
-            distInt = 0
-            for i in range(dim):
-                distInt += ((currentNodes[p*dim+i] - newNode[i])*
-                            (currentNodes[p*dim+i] - newNode[i]))
-            #distInt = scipy.spatial.distance.euclidean(currentNodes[p], newNode)
-            if (distInt < minDist):
-                distIsGood = False
-                break
-        return distIsGood
+def checkMutDistancesLoops_cython(int dim,
+                                  float minDist,
+                                  list currentNodes,
+                                  list newNode):
+    cdef:
+        distIsGood = True
+        int p, i
+        int currentNodes_len = len(currentNodes)
+        double distInt
+    for p in range (currentNodes_len):
+        distInt = 0
+        for i in range(dim):
+            distInt += ((currentNodes[p*dim+i] - newNode[i])*
+                        (currentNodes[p*dim+i] - newNode[i]))
+        #distInt = scipy.spatial.distance.euclidean(currentNodes[p], newNode)
+        if (distInt < minDist):
+            distIsGood = False
+            break
+    return distIsGood
