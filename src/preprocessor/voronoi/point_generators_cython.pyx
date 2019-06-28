@@ -41,7 +41,7 @@ def generateNodesRect_cython(double[:] maxLim,
         distIsGood = False
         while (not distIsGood) and (tr < trials):
             for i in range(dim):
-                coords[i] = dist(gen)
+                coords[i] = dist(gen) * maxLim[i]
             distIsGood = True
 
             for p in range(generatedPoints):
@@ -64,3 +64,25 @@ def generateNodesRect_cython(double[:] maxLim,
     # Copy back to lists
     for i in range(node_coords_input_len, generatedPoints):
         node_coords.append([node_coords_temp[i*dim], node_coords_temp[i*dim+1]])
+
+
+
+    def checkMutDistancesLoops_cython(int dim,
+                                      float minDist,
+                                      list currentNodes,
+                                      list newNode):
+        cdef:
+            distIsGood = True
+            int p, i
+            int currentNodes_len = len(currentNodes)
+            double distInt
+        for p in range (currentNodes_len):
+            distInt = 0
+            for i in range(dim):
+                distInt += ((currentNodes[p*dim+i] - newNode[i])*
+                            (currentNodes[p*dim+i] - newNode[i]))
+            #distInt = scipy.spatial.distance.euclidean(currentNodes[p], newNode)
+            if (distInt < minDist):
+                distIsGood = False
+                break
+        return distIsGood
