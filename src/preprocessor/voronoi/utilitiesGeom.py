@@ -266,7 +266,7 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
     #saving mechanical elements
     saveMechanicalElems(mechElemRidges)
 
-
+    """
     for i in range (len(ridges_out)):
         #
         nA = ridges_out[i][0]
@@ -280,9 +280,11 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
         ridges_out[i][3] = nA
         ridges_out[i][4] = nB
         #
-    #ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0]
-    #ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1]
-    #ridges_out[:,2] = 2
+    """
+    ridges_out = np.asarray(ridges_out)
+    ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0].copy()
+    ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1].copy()
+    ridges_out[:,2] = 2
 
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
