@@ -50,8 +50,8 @@ powerTes = 0
 dim = 2
 print('Creating a %dd lattice model...' %dim)
 
-Xdim = 2
-Ydim = 2
+Xdim = 5
+Ydim = 1
 Zdim = 1
 
 #dimensions of a rectangle model
@@ -71,11 +71,11 @@ if (dim == 2):
 if (dim == 3):
     dV = 4/3 * 3.141592 * radius **3
 
-expNodes = volume / dV  * 0.5
+expNodes = volume / dV  * 0.6
 print ('Expecting about %d nodes' %expNodes)
 
 #trials of random node positioning
-trials = 50000
+trials = 30000
 
 #lists for the model
 node_coords = []
@@ -90,16 +90,16 @@ functions = []
 #creating the model. Select the prepared models.
 if (dim == 2):
     #cantilever
-    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 
     #simply supported beam, uniform load
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
 
     #single spring test
     #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createSingleSpringTestModel( 2 )
 
     #diamond test
-    #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, .8)
+    #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, .7)
 
 if (dim == 3):
     #cantilever
@@ -130,7 +130,7 @@ print('')
 if (dim == 2):
     vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order,  False)
 if (dim == 3):
-    vert_count, verticesIdxDict, vertIdxStart  = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechBC_merged, False)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechBC_merged, False)
 
 
 utilitiesGeom.saveMaterials(materials)
