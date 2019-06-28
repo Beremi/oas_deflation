@@ -161,7 +161,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
         #
 try:
     from point_generators_cython import generateNodesRect_cython as generateNodesRect
-    print('Using Cython version of point generator.')
+    print('Using Cython version of point generator - generateNodesRect.')
 except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
@@ -256,6 +256,12 @@ def checkMutDistancesLoops (dim, minDist, currentNodes, newNode):
             break
     return distIsGood
 
+try:
+    from point_generators_cython import checkMutDistancesLoops_cython as checkMutDistancesLoops
+    print('Using Cython version of point generator - checkMutDistancesLoops.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
 
 
 
