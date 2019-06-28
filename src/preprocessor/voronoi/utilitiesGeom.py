@@ -77,250 +77,44 @@ def getPlaneNormalVector (pA, pB, pC):
 
     return  normal
 
+
 #check if any number in matrix is lower than
 def checkLowerThan (matrix, minDist):
-    #return not (all(x < minDist for x in matrix))
     return   all(i >= minDist for i in matrix)
 
 
-# generates random points no closer to each other than minDist
-# into 2d or 3d block
-# maxLim: n-d array of dimensions
-def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
-    if (dim==2):
-        print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. ' %(maxLim[0], maxLim[1]) )
+#check mutual distances between particles using cDist
+def checkMutDistancesCdist(dim, minDist, currentNodes, newNode):
+    ncrds = np.asarray(currentNodes)
+    crds = np.asarray(newNode)
+    crds = np.reshape(crds, (-1, dim))
+    dists = scipy.spatial.distance.cdist(crds, ncrds , 'euclidean')
+    dists = dists.flatten()
+    distIsGood = checkLowerThan(dists, minDist)
+    return distIsGood
 
-    if (dim==3):
-        print('Generating 3d block segment of size: %f / %f / %f. This may take long. Keep calm.' %(maxLim[0], maxLim[1], maxLim[2]) )
-
-    generatedPoints = 0
-    tr = 0
-    while (tr<trials):
-        tr = 0
-        #
+#check mutual distances between particles using cKDTree
+def checkMutDistancesCKDTree (dim, minDist, currentNodes, newNode):
+    crds = np.asarray(newNode)
+    ncrds = np.asarray (currentNodes)
+    tree = scipy.spatial.cKDTree ( ncrds,  leafsize=50 )
+    violatingPoints = tree.query_ball_point (x = crds,  r = minDist, n_jobs = -1 )
+    distIsGood = True
+    if ( len(violatingPoints) != 0):
         distIsGood = False
-        while (distIsGood == False):
-            coords = np.random.random(dim)
-            coords *= maxLim
-            #
-            distIsGood = True
-            #
-            #############################################x
-            ######old sequential computation of distances
-            """
-            for p in range (len(node_coords)):
-                #if (i!=p):
-                    distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
-                    #
-                    if (distInt < minDist):
-                        distIsGood = False
-                        tr += 1
-            """
-            #############################################x
-            ######new using c dist. The best so far.
+    return distIsGood
 
-            ncrds = np.asarray(node_coords)
-            #print (ncrds)
-            crds = np.asarray(coords)
-            crds = np.reshape(crds, (-1, dim))
-            #print (crds)
-            dists = scipy.spatial.distance.cdist(crds, ncrds , 'euclidean')
-            dists = dists.flatten()
-            #print(dists)
-            distIsGood = checkLowerThan(dists, minDist)
-            if (distIsGood == False):
-                tr += 1
-
-            #############################################x
-            #trying scipy cKDTree for searching for nearest neighbors. About the same performance as cDist so far.
-            #does not work in parallel asi it should with n_jobs = -1
-            ##############################################
-            """
-            #node_coords.append(coords)
-            crds = np.asarray(coords)
-            pts = np.asarray (node_coords)
-            tree = scipy.spatial.cKDTree ( pts,  leafsize=5 )
-            #
-            violatingPoints = tree.query_ball_point (x = crds,  r = minDist, n_jobs = -1 )
-            #print (violatingPoints)
-            if ( len(violatingPoints) != 0):
-                distIsGood = False
-                tr += 1
-            #else:
-            #    print('GOOD POINT')
-            #print(trials)
-            """
-
-            if (tr > trials): break
-        if (tr > trials): break
-        #
-        #Adding node coords:
-        if (tr < trials):
-            node_coords.append(coords)
-            generatedPoints  += 1
-        #print(generatedPoints)
-        #
-
-
-#generates random points onto a set 3d line. No closer than minDst
-#catch corners: samples the boundary points first
-def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
-    print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
-     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
-    generatedPoints = 0
-
-    if(catchCorners):
-        node_coords.append(np.copy(nodeA))
-        node_coords.append(np.copy(nodeB))
-        generatedPoints  += 2
-
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
-        distIsGood = False
-        while (distIsGood == False):
-            coords = np.zeros(dim)
-            #
-            r = np.random.uniform()
-            coords[0] = (nodeB[0] - nodeA[0])*r  + nodeA[0]
-            coords[1] = (nodeB[1] - nodeA[1])*r  + nodeA[1]
-            coords[2] = (nodeB[2] - nodeA[2])*r  + nodeA[2]
-            #
-            distIsGood = True
-            #
-            for p in range (len(node_coords)):
-                distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
-                #
-                if (distInt < minDist):
-                    distIsGood = False
-                    tr += 1
-                    #clear_output(True)
-                    #print('Line Pt: %d Tr: %d' %(generatedPoints, tr))
-                    break
-                if (tr > trials): break
-            if (tr > trials): break
-        #
-        #Adding node coords
-        if (tr < trials):
-            node_coords.append(coords)
-       # node_coords [i,:] = coords
-        generatedPoints  += 1
-        #
-
-
-
-def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials):
-    print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f]'
-     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
-    generatedPoints = 0
-
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
-        distIsGood = False
-        while (distIsGood == False):
-            coords = np.zeros(dim)
-            #
-            for c in range (dim):
-                if (nodeA[c] == nodeB[c]):
-                    coords[c] = nodeA[c]
-                else:
-                    coords[c] = (nodeB[c] - nodeA[c])*np.random.uniform()  + nodeA[c]
-
-            distIsGood = True
-            #
-            for p in range (len(node_coords)):
-                distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
-                #
-                if (distInt < minDist):
-                    distIsGood = False
-                    tr += 1
-                    #clear_output(True)
-                    #print('Line Pt: %d Tr: %d' %(generatedPoints, tr))
-                    break
-                if (tr > trials): break
-            if (tr > trials): break
-        #
-        #Adding node coords
-        #
-        if (tr < trials):
-            node_coords.append(coords)
-       # node_coords [i,:] = coords
-        generatedPoints  += 1
-
-
-#generate a single node in 2d or 3d
-def generateSingleNode(node, dim, node_coords):
-    if (dim == 2):
-        print('Generating a single 2d node [%f; %f]' %(node[0], node[1]))
-    if (dim == 3):
-        print('Generating a single 3d node [%f; %f; %f]' %(node[0], node[1], node[2]))
-
-    node_coords.append(node)
-
-
-
-#generates random points onto a set 3d line. No closer than minDst
-#catch corners: samples the boundary points first
-#equid: you can generate equidistant points on the line
-def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners, equidist):
-    print('Generating 2d line segment from [%f; %f] to [%f; %f] '
-     %(nodeA[0], nodeA[1], nodeB[0], nodeB[1]) )
-    generatedPoints = 0
-
-    if(catchCorners):
-        node_coords.append(np.copy(nodeA))
-        node_coords.append(np.copy(nodeB))
-        generatedPoints  += 2
-
-    if (not equidist):
-        tr=0
-        while (tr<trials):
-            tr = 0;
-            #
+#check mutual distances between particles using loops
+def checkMutDistancesLoops (dim, minDist, currentNodes, newNode):
+    distIsGood = True
+    for p in range (len(currentNodes)):
+        distInt = scipy.spatial.distance.euclidean(currentNodes[p], newNode)
+        if (distInt < minDist):
             distIsGood = False
-            while (distIsGood == False):
+            break
+    return distIsGood
 
-                coords = np.zeros(dim)
-                r = np.random.uniform()
-                coords[0] = (nodeB[0] - nodeA[0])*r  + nodeA[0]
-                coords[1] = (nodeB[1] - nodeA[1])*r  + nodeA[1]
 
-                distIsGood = True
-                #
-                for p in range (len(node_coords)):
-                    #if (i!=p):
-                    distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
-                    #
-                    if (distInt < minDist):
-                        distIsGood = False
-                        tr += 1
-                        break
-
-                    if (tr > trials): break
-                if (tr > trials): break
-            #
-            #Adding node coords
-            #
-            if (tr < trials):
-                node_coords.append(coords)
-                generatedPoints  += 1
-    else:
-        #print('Equid')
-        mD = minDist * 1.6
-        length = np.linalg.norm(nodeA - nodeB)
-        nodeNr = int (length / mD)
-        indnt = (length-(nodeNr-1)*mD) / 2
-        for i in range (nodeNr):
-            #print(i)
-            coords = np.zeros(2)
-            coords[0] = (nodeB[0] - nodeA[0])*indnt/length +(nodeB[0] - nodeA[0])*mD/length*i  + nodeA[0]
-            coords[1] = (nodeB[1] - nodeA[1])*indnt/length +(nodeB[1] - nodeA[1])*mD/length*i  + nodeA[1]
-            node_coords.append(coords)
-            #print (len(node_coords))
-            generatedPoints  += 1
 
 
 #OUTPUT METHODS
@@ -344,8 +138,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
 
     ########################################################################################
     validRidgeIdxs = []
-
-    #print('ridge points')
     for i in range (vor.ridge_points.shape[0]):
         pr = False
         for p in range (2):
@@ -575,7 +367,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
     sys.stdout.flush()
 
     printout = False
-     # nody: [x,y,z] [powerR] [area]
+    # nody: [x,y,z] [powerR] [area]
     nodes_out = np.zeros( (node_count, (dim + 1 + 1 +1+1)))
 
     for d in range (dim):
@@ -587,11 +379,10 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
     nodes_out[:,dim + 1] = areas[:]
 
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
-   # print (np.sum(areas))
     if (printout): print ('Area Error: %.5E ' %(relAreaError) )
 
     ########################################################################################################
-    # ridges, ktere maji nody ve vzorku
+    # ridges with nodes within sample
     validRidgeIdxs = []
 
     #print('ridge points')
@@ -600,7 +391,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
         for p in range (2):
             if (vor.ridge_points[i][p] < node_count):
                 pr=True
-
         if (pr):
             #print(vor.ridge_points[i,:])
             validRidgeIdxs.append(i)
@@ -611,28 +401,18 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
     ########################################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
-
-    # slovnik originalnich a novych indexu vertexu
+    # dictionary of original and new indices of vertices
     verticesIdxDict = {}
-
-    # ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
+    # ridges: nodeAidx, nodeBidx, trsprtBC, vertIdx
     ridges_out = []
-
     #auxiliary nodes
     aux_nodes = []
-
-    #vertices
     ########################################################################################################
-    #list of valid vertices
     allCoplanar = True
     for i in range (validRidgeIdxs.size):
-        #pole pro dva vertexy A a B
-        #vrtxA = np.zeros ( (dim + 1 +1 ) )
-        #vrtxB = np.zeros ( (dim + 1 +1 ) )
-       # vrtxs = []
 
         rdge = vor.ridge_vertices[validRidgeIdxs[i]]
-        #indexy vsech vertexu tvoricich plosny ridge
+        #indices of all vertices that form the planar ridge
         for j in range (len(rdge)):
             vrtx = np.zeros ( (dim + 1 +1 +1) ) # vor.ridge_vertices[validRidgeIdxs[i]]  [j]
             #
@@ -649,22 +429,19 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
             if (addVrtx == True):
                 verticesIdxDict.update( { vrtx[dim] : len(vertices_out)  } )
                 vrtx [dim +1] = len(vertices_out)
-                vrtx [dim +2] = 0 #utilitiesMech.getVertexBC ( vrtx[0:dim])
+                vrtx [dim +2] = 0
                 vertices_out.append(vrtx)
 
         #ridges
         ########################################################
-        #pole pro ridge nAidx, nBidx, trBc, pocetVertexu, newIdxVertexu
+        #array for the ridge: nodeA, nodeB, trBc, vertCount,newVertIdcs
         rdg = np.zeros ( (2 + 0 + 1 + len(vor.ridge_vertices[validRidgeIdxs[i]])  ) )
 
-        #indexy dvou nodu, ktere ridge rozdeluje
+        #nodes divided by the ridge
         pointA = vor.ridge_points[validRidgeIdxs[i]][0]
         pointB = vor.ridge_points[validRidgeIdxs[i]][1]
-        #
-        #if(pointA >= node_count):
-         #   pointA = -1
-        #if(pointB >= node_count):
-         #   pointB = -1
+
+        #auxiliary nodes if one of them is out of sample
         if(pointA >= node_count and pointB<node_count):
             ptA = np.zeros((3))
             ptA[0] = (vor.points[pointB, 0] + vor.points[pointA, 0]  ) /2
@@ -688,48 +465,37 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
         rdg[0] = pointA
         rdg[1] = pointB
 
-        #print ('%d \t %d'  %(pointA,pointB) )
-
-
-        #pocet vertexu
+        #vert count
         nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
         rdg[2] =  nrVertices
         #print (rdg[3])
         #
-        #pridani indexu vertexu
+        #adding vert idcs
         for v in range ( len(vor.ridge_vertices[validRidgeIdxs[i]]) ):
             rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[validRidgeIdxs[i]][v] ]
 
-            #print (rdg[3+v] )
-
-
-        #kontrola, ze vsechny body v ridge jsou koplanarni
+        #coplanarity control
         for v in range ( nrVertices-3 ):
             pA = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v]][:]
             pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
             pC = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+2]][:]
             pD = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+3]][:]
             #pD[2] = 10
-            tol = 1e-12
+            tol = 1e-10
             val = equation_plane(pA, pB, pC, pD)
             if ( val > tol):
                 allCoplanar = False
                 print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
             #else: print('Coplanar  %d' %i)
 
-        #normala plochy z prvnich trech vertexu, normalizovana
+        #normal of the ridge surface from first three vertices
         planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][2]][:])
-        #if (printout): print ('planeNormal:')
-        #if (printout): print (planeNormal)
 
-        # spojnice mezi generujicimi body
-        # mela by byt totozna s normalou plochy. Kdyz ne, tak se pak musi poradi vertexu otocit
+        # vector connecting the nodes. Should be identical with plane normal. Otherwise the order of vertices will be swapped.
         pointNormal = vor.points[pointB] - vor.points[pointA]
         pointNormal /= np.linalg.norm(pointNormal)
-        #if (printout): print ('pointNormal')
-        #if (printout): print (pointNormal)
 
         #print ('diff:')
         diff = np.linalg.norm(planeNormal - pointNormal)
@@ -741,25 +507,19 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
             rdg[nrVertices:] = rdg[:nrVertices-1:-1]
 
         ##############prerazeni bodu podle uhlu atan2((Vb x Va) . Vn, Va . Vb)##############
-        #prumerny bod ze souradnic vertexu
+        #averagew point within the ridge surface
         avgPoint = np.zeros(3)
         for d in range (3):
             for l in range ( nrVertices ):
                 avgPoint [d] += vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][l]][d]
             avgPoint[d] /= len(vor.ridge_vertices[validRidgeIdxs[i]])
         #
-        #print('avgPoint')
-        #print(avgPoint)
 
-        #pole vzajemnych uhlu mezi body a 'stredem'
+        #mutual angles between vertices and the average point
         angles = np.zeros(nrVertices)
-
-        #vektor, od ktereho se meri uhly (centrum a prvi vertex)
         referenceVector =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:] - avgPoint
-        # print ('refvec')
-        # print (referenceVector)
 
-        # vypocet uhlu mezi vsemi vektory tvorenymi stredem a vertexy
+        # computing the angles
         # atan2((Vb x Va) . Vn, Va . Vb)
         for l in range ( nrVertices ):
             currVector =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][l]][:] - avgPoint
@@ -767,9 +527,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
                                                 np.dot(referenceVector,currVector)   ) )
             if (angles [l] < 0):
                 angles [l] = 360 - (-angles [l])
-
-        #if (printout): print (angles)
-        #if (printout): print('\n')
 
         ridges_out.append(rdg)
 
@@ -819,10 +576,7 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
     for i in range (len(ridges_out)):
         ro = np.copy(ridges_out[i])
         ro = np.asarray(ro)
-        #
         sh = ro.shape[0]
-        #
-        #
         for j in range (sh-3):
             #ro[j+3] += 500
             ro[j+3] += node_count + len(aux_nodes)
@@ -868,7 +622,6 @@ def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  m
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >0  and ridges_out[m][1] > 0):
             mechElemRidges.append( ridges_out[m] )
            # print (mechElemRidges[0])
-
 
 
     fl=open(os.path.join(master_folder,mechElemsFile),'w')
@@ -1022,19 +775,13 @@ def saveMechBC(dim, nodes_mechBCmerged):
     for i in range (len(nodes_mechBCmerged)):
         if (dim == 2):
             bc = np.zeros (1 + 6)
-            #
             bc[0] = nodes_mechBCmerged[i].getNodeIdx()
-            #
             bc[1:] = nodes_mechBCmerged[i].getMechBC()
-            #
-            #print(bc)
         elif (dim == 3):
             bc = np.zeros (1 + 12)
-            #
             bc[0] = nodes_mechBCmerged[i].getNodeIdx()
-            #
             bc[1:] = nodes_mechBCmerged[i].getMechBC()
-            #
+
         mechBC_out.append(bc)
 
     #
@@ -1101,31 +848,23 @@ class transportBC:
     def __init__(self,  nodeIdx, transportBCarray):
         self.transportBCarray = transportBCarray
         self.nodeIdx = nodeIdx
-
-
     def getTrsprtBC(self):
         return self.transportBCarray
     def getNodeIdx(self):
         return self.nodeIdx
 
 
-def saveTransportBC(vertices_transportBCmerged, verticesDict, vertIdxStart):
+def saveTransportBC(transportBCmerged, verticesDict, vertIdxStart):
     print('Saving TRSPRT boundary conditions...', end = '')
     sys.stdout.flush()
     trsptBC_out = []
 
-    for i in range (len(vertices_transportBCmerged)):
-        bc = np.zeros ((1 + 1+1))
-        #
-        bc[0] = verticesDict[vertices_transportBCmerged[i].getNodeIdx()] + vertIdxStart
-        bc[1:] = vertices_transportBCmerged[i].getTrsprtBC()
-        #
-        #print (len( bc))
-
-
+    for i in range (len(transportBCmerged)):
+        bc = np.zeros ((1 + 1 + 1))
+        bc[0] = verticesDict[transportBCmerged[i].getNodeIdx()] + vertIdxStart
+        bc[1:] = transportBCmerged[i].getTrsprtBC()
         trsptBC_out.append(bc)
 
-    #
     headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
     fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
     np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
