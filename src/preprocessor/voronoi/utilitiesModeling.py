@@ -561,9 +561,15 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
     #an indent due to mirroring of the data for voronoi tess.
     indent = 1e-8
 
+
+    nodeA = np.array ( [ 0 + indent , maxLim[1]/2 ] )
+    nodeAmechBC = np.array([0, 0 , -1 ,      -1 , -1 , -1])
+    pointGenerators.generateSingleNode(nodeA, dim, node_coords)
+    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeAmechBC)
+    mechBC_merged.append(mBC)
     ###############generating of nodes, supported line left vertical ###############
     #mech bc
-    lineBC = np.array([0,0,0,-1,-1,-1])
+    lineBC = np.array([0,-1,-1,-1,-1,-1])
 
     #defining points of the line
     nodeA = np.array([indent, indent])
@@ -572,7 +578,7 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
     oldLen = len(node_coords)
     pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
     nrOfPoints =  (len(node_coords)) - oldLen
-    #print (nrOfPoints)
+
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
