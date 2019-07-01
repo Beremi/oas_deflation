@@ -320,7 +320,7 @@ def create3dCantileverBending(maxLim, minDist, trials ):
     ### direct setting of mechanicalBCs
     node_coords, mechBC_merged, mechIC_merged  = assemble3dCantileverBending(maxLim, minDist, trials )
 
-    print(node_coords)
+    
     print('Conducting Voronoi tesselation...', end='')
     ### conducting Voronoi tesselation
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)

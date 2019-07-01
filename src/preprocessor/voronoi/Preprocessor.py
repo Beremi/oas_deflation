@@ -47,7 +47,7 @@ solver = 0
 powerTes = 0
 
 #dimension 2 //// dim 3 prohibited now
-dim = 3
+dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 Xdim = 5.
@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.3
+minDist = 0.1
 radius = minDist / 2
 
 if (dim == 2):
@@ -76,7 +76,7 @@ expNodes = volume / dV  * 0.6
 print ('Expecting about %d nodes' %expNodes)
 
 #trials of random node positioning
-trials = 30000
+trials = 50000
 
 #lists for the model
 node_coords = []
