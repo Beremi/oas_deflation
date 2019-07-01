@@ -16,10 +16,12 @@ from scipy.spatial import Delaunay
 ##run voronoi, mirrored data
 def runMirroredVoronoi (node_coords, dim, maxLim):
     vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim))
-
-    return vor
-
-
+    if (dim == 2):
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+        return vor, regions, vertices, polygons, areas, centroids, points
+    if (dim == 3):
+        volumes = voronoi.voronoi_3d(vor, maxLim);
+        return vor, volumes
 
 
 
