@@ -166,63 +166,8 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-#generates random points onto a set 3d line. No closer than minDst
-#catch corners: samples the boundary points first
-def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
-    print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
-     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
-    generatedPoints = 0
-
-    if(catchCorners):
-        node_coords.append(np.copy(nodeA))
-        node_coords.append(np.copy(nodeB))
-        generatedPoints  += 2
-
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
-        distIsGood = False
-        while (distIsGood == False):
-            coords = np.zeros(dim)
-            #
-            r = np.random.uniform()
-            coords[0] = (nodeB[0] - nodeA[0])*r  + nodeA[0]
-            coords[1] = (nodeB[1] - nodeA[1])*r  + nodeA[1]
-            coords[2] = (nodeB[2] - nodeA[2])*r  + nodeA[2]
-            #
-            distIsGood = True
-            #
-            for p in range (len(node_coords)):
-                distInt = scipy.spatial.distance.euclidean(node_coords[p], coords)
-                #
-                if (distInt < minDist):
-                    distIsGood = False
-                    tr += 1
-                    #clear_output(True)
-                    #print('Line Pt: %d Tr: %d' %(generatedPoints, tr))
-                    break
-                if (tr > trials): break
-            if (tr > trials): break
-        #
-        #Adding node coords
-        if (tr < trials):
-            node_coords.append(coords)
-       # node_coords [i,:] = coords
-        generatedPoints  += 1
-        #
 
 
-
-def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials):
-    print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f]'
-     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
-    generatedPoints = 0
-
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
 
 #check mutual distances between particles using cDist
 def checkMutDistancesCdist(dim, minDist, currentNodes, newNode):
@@ -275,8 +220,6 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
     nodes_out[:,dim + 1] = areas[:]
 
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
-    #print (np.sum(areas))
-    #print ('Area Error: %.5E ' %(relAreaError) )
 
     for n in range (len(node_coords) ):
         nodes_out[n, dim+2] = reOrderedIdxs[n]
@@ -388,78 +331,30 @@ def output2D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  d
         rdg[4] = verticesIdxDict[vertB] #vrtxB [dim] #verticesIdxDict[vertA]
         #adding the ridge into the list of ridges
         ridges_out.append(rdg)
-
-
-    print('done.')
-    sys.stdout.flush()
-
-    #saving nodes
-    saveNodes(nodes_out, aux_nodes)
-
-    #saving vertices
-    saveVertices(vertices_out)
+    #
     v_count = len (vertices_out)
     vertIdxStart = node_count + len(aux_nodes)
-
 
     for i in range (len(ridges_out)):
         ridges_out[i][3] += vertIdxStart
         ridges_out[i][4] += vertIdxStart
 
-    #filtering ridges to ridges with both nodes in sample
-    mechElemRidges = []
-    for m in range (len(ridges_out)):
-        if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
-            mechElemRidges.append( ridges_out[m] )
-    #saving mechanical elements
-    saveMechanicalElems(mechElemRidges)
-
-    """
-    for i in range (len(ridges_out)):
-        #
-        nA = ridges_out[i][0]
-        nB = ridges_out[i][1]
-        vA = ridges_out[i][3]
-        vB = ridges_out[i][4]
-        #
-        ridges_out[i][0] = vA
-        ridges_out[i][1] = vB
-        ridges_out[i][2] = 2
-        ridges_out[i][3] = nA
-        ridges_out[i][4] = nB
-        #
-    """
-    ridges_out = np.asarray(ridges_out)
-    ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0].copy()
-    ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1].copy()
-    ridges_out[:,2] = 2
-
-    print('Saving TRSPRT elements...', end='')
-    sys.stdout.flush()
-    #writing ridges - transport elements
-    ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
-    headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
-    fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
-    np.savetxt(fl, ridges_out, delimiter='\t',fmt='LTCTRSP\t%d\t%d\t%d\t%d\t%d\t1',
-          header = headerLine )
-    fl.close()
     print('done.')
     sys.stdout.flush()
+    #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
+    saveNodes(nodes_out, aux_nodes)
+    saveVertices(vertices_out)
+    saveMechanicalElems(ridges_out, node_count)
+    saveTransportElements(ridges_out)
 
-
-
-    return v_count, verticesIdxDict, vertIdxStart
+    return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
 
 
 
 
 
 def output3D(node_count, dim, maxLim, vor, node_coords, areas, reOrderedIdxs,  mechBC_merged,  materials):
-    ############################################################################################
-    ############################################################################################
-    ###################################### SAVING LATTICE MODEL GEOMETRY #######################
-    ############################################################################################
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
 
@@ -1023,12 +918,37 @@ def saveVertices (vertices_out):
     sys.stdout.flush()
 
 
-def saveMechanicalElems (mechElemRidges):
+def saveMechanicalElems (ridges_out, node_count):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
+    #filtering ridges to ridges with both nodes in sample -> mech elements
+    mechElemRidges = []
+    for m in range (len(ridges_out)):
+        if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
+            mechElemRidges.append( ridges_out[m] )
+
+
     headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
     fl=open(os.path.join(master_folder,mechElemsFile),'w')
     np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0', header = headerLine )
+    fl.close()
+    print('done.')
+    sys.stdout.flush()
+
+
+def saveTransportElements(ridges_out):
+    print('Saving TRSPRT elements...', end='')
+    sys.stdout.flush()
+    ridges_out = np.asarray(ridges_out)
+    ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0].copy()
+    ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1].copy()
+    ridges_out[:,2] = 2
+    #writing ridges - transport elements
+    ############################################### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
+    headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
+    fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
+    np.savetxt(fl, ridges_out, delimiter='\t',fmt='LTCTRSP\t%d\t%d\t%d\t%d\t%d\t1',
+          header = headerLine )
     fl.close()
     print('done.')
     sys.stdout.flush()

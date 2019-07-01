@@ -64,9 +64,10 @@ def generateNodesRect_cython(double[:] maxLim,
 
     # Copy back to lists
     for i in range(node_coords_input_len, generatedPoints):
-        node_coords.append([node_coords_temp[i*dim], node_coords_temp[i*dim+1]])
-
-
+        if (dim==2):
+          node_coords.append([node_coords_temp[i*dim], node_coords_temp[i*dim+1]])
+        if (dim==3):
+          node_coords.append([node_coords_temp[i*dim], node_coords_temp[i*dim+1], node_coords_temp[i*dim+2]])
 
 def checkMutDistancesLoops_cython(int dim,
                                   float minDist,

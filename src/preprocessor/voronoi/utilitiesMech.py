@@ -57,7 +57,7 @@ class linearElasticMaterial:
 
     def getString(self):
        # line = 'LINEL\t' + '%e'%(self.youngModulus)  + '\t' + '%f'%(self.poisson) + '\t' + '%f'%(self.transportC) + '\t' + '%f'%(self.transportS) + '\t' + '%f'%(self.density)
-        line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)     + 'density\t%f'%(self.density)     + '\nTrsprtMaterial'         + '\t' + '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
+        line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     + '\nTrsprtMaterial'         + '\t' + '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
 
         return line
 

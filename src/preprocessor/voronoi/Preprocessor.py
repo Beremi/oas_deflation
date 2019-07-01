@@ -47,7 +47,7 @@ solver = 0
 powerTes = 0
 
 #dimension 2 //// dim 3 prohibited now
-dim = 2
+dim = 3
 print('Creating a %dd lattice model...' %dim)
 
 Xdim = 5.
@@ -58,12 +58,13 @@ Zdim = 1.
 if (dim == 2 ): maxLim = np.array([  Xdim   ,  Ydim ])
 if (dim == 3 ): maxLim = np.array([  Xdim,  Ydim,  Zdim ])
 
+
 #volume of the model (later for check)
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.09
+minDist = 0.3
 radius = minDist / 2
 
 if (dim == 2):

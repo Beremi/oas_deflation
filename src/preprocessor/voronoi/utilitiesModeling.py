@@ -31,9 +31,11 @@ def createSingleSpringTestModel(length):
     node_coords,  mechBC_merged = assembleTwoNodeSpringTest(maxLim, idt)
 
     #print(node_coords)
-
+    print('Conducting Voronoi tesselation...', end = '')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+
+    print('done.')
 
     #fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
     #plt.show()
@@ -41,7 +43,7 @@ def createSingleSpringTestModel(length):
     idt = 1e-1
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
-    ### selecting all vertices
+    ### selecting all vertices in model
     noTrsprtBC = np.array([ -1 , -1 ])
     boundA = np.array(  [ -idt , -idt ] )
     boundB = np.array(  [ maxLim[0] + idt , maxLim[1] + idt  ]  )
@@ -80,8 +82,11 @@ def createDiamondTestModel(width, height):
 
     node_coords,  mechBC_merged = assembleDiamondTest(maxLim, idtW, idtH)
 
+    print('Conducting Voronoi tesselation...', end = '')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+
+    print('done.')
 
     fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
     plt.show()
@@ -91,7 +96,7 @@ def createDiamondTestModel(width, height):
     idt = 1e-3
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
-    ### selecting vertices on the left surface
+    ### selecting vertices in model
     noTrsprtBC = np.array([ -1 , -1 ])
     boundA = np.array(  [ -idt , -idt ] )
     boundB = np.array(  [ maxLim[0] + idt , maxLim[1] + idt  ]  )
@@ -114,8 +119,8 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
 
     print('Conducting Voronoi tesselation...', end = '')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
-
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+
     print('done.')
 
     ########################################################################
@@ -183,11 +188,11 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     ### direct setting of mechanicalBCs
     node_coords, mechBC_merged, mechIC_merged  = assemble2DCantileverBending(maxLim, minDist, trials );
 
-    print('Conducting Voronoi tesselation...')
-    ### conducting Voronoi tesselation
+    print('Conducting Voronoi tesselation...', end = '')
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
-    ### extracting characteristics of the Vor diagram
     regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+
+    print('done.')
 
 
     ########################################################################
@@ -313,13 +318,15 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 def create3dCantileverBending(maxLim, minDist, trials ):
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechIC_merged  = assemble3dCantileverBending(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechIC_merged  = assemble3dCantileverBending(maxLim, minDist, trials )
 
-    print('Conducting Voronoi tesselation...')
+    print(node_coords)
+    print('Conducting Voronoi tesselation...', end='')
     ### conducting Voronoi tesselation
     vor = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
     ### extracting characteristics of the Vor diagram
-    volumes = voronoi.voronoi_3d(vor, maxLim)
+    volumes = voronoi.voronoi_3d(vor, maxLim);
+    print('done.')
 
     """
     fig = plt.figure()
@@ -611,8 +618,6 @@ def assemble3dCantileverBending(maxLim, minDist, trials):
     for n in range ( nrOfPoints ):
         mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
         mechBC_merged.append(mBC)
-        #print('adding')
-
 
     ###############generating of points supported surface  left face ###############
     mechBC = np.array([0,0,0,0,0,0,-1,-1,-1,-1,-1,-1])
@@ -626,7 +631,6 @@ def assemble3dCantileverBending(maxLim, minDist, trials):
     for n in range ( nrOfPoints ):
         mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
         mechBC_merged.append(mBC)
-        #print('adding')
 
 
     ###############generating of points rectangular volume ###############
