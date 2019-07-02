@@ -42,6 +42,54 @@ protected:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH CONSTANT MAX VALUE
+class ConstSawToothFunction : public Function
+{
+private:
+    double upper, lower, period;
+    int multip = 1;
+public:
+    ConstSawToothFunction() {};
+    virtual ~ConstSawToothFunction() {};
+    void readFromLine(istringstream &iss);
+    double giveY(double t) const;
+protected:
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH linearly increasing MAX VALUE
+class LinSawToothFunction : public ConstSawToothFunction
+{
+private:
+    double time_multiplier;
+public:
+    LinSawToothFunction() {};
+    virtual ~LinSawToothFunction() {};
+    void readFromLine(istringstream &iss);
+    double giveY(double t) const;
+protected:
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SINUS FUNCTION
+class SinusFunction : public Function
+{
+private:
+    double period, amplitude, shift;
+public:
+    SinusFunction() {};
+    virtual ~SinusFunction() {};
+    void readFromLine(istringstream &iss);
+    double giveY(double t) const;
+protected:
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // CONTAINER FOR FUNCTIONS
 class FunctionContainer
 {
