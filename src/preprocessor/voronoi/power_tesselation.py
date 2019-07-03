@@ -4,10 +4,7 @@ from collections import defaultdict
 from pydmga.geometry import OrthogonalGeometry
 from pydmga.container import Container
 from pydmga.diagram import Diagram
-from random import random
-from random import seed
 import numpy as np
-import logging
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s - %(message)s')
@@ -52,7 +49,7 @@ class PowerTesselation(object):
     --------
     Voronoi diagram for a set of point:
     >>> points = np.array([[0.25, 0.5], [0.75, 0.5]])
-    >>> radii = np.array([.2, .4])
+    >>> radii = np.array([.1, .1])
     >>> from power_tesselation import PowerTesselation
     >>> vor = PowerTesselation(points, weights=radii)
 
@@ -62,8 +59,8 @@ class PowerTesselation(object):
     >>> fig = voronoi_plot_2d(vor)
     >>> ax = fig.gca()
     >>> _ = [ax.text(v[0], v[1], '%d' % vi) for vi, v in enumerate(vor.vertices)]
-    >>> ax.set_xlim(0, 1)
-    >>> ax.set_ylim(0, 1)
+    >>> _ = ax.set_xlim(0, 1)
+    >>> _ = ax.set_ylim(0, 1)
     >>> plt.show()
 
     The Voronoi vertices:
@@ -128,13 +125,13 @@ class PowerTesselation(object):
 
     def _get_points_pydgma(self):
         points_pydgma = []
+        if self._weights is None:
+            self._weights = np.zeros(self._npoints)
         for idx, row in enumerate(self._points):
             row_tmp = [idx]
             row_tmp.extend(row.tolist())
             if self._ndim == 2:
                 row_tmp.append(0)
-            if self._weights is None:
-                self._weights = np.zeros(self._npoints)
             row_tmp.append(self._weights[idx])
             points_pydgma.append(tuple(row_tmp))
         return points_pydgma
@@ -262,16 +259,13 @@ class PowerTesselation(object):
             if ri == 0:
                 continue
             r_replaced = replace(r, replace_dict)
-            if self._ndim == 2:
-                r_replaced = [i for i in r_replaced if i != -1]
-            self._regions[ri] = r_replaced
+            self._regions[ri] = list(r_replaced)
 
         for rvi, rv in enumerate(self._ridge_vertices):
             rv_replaced = replace(rv, replace_dict)
             if self._ndim == 2:
                 rv_replaced = [i for i in rv_replaced if i != -1]
             self._ridge_vertices[rvi] = rv_replaced
-
 
 
 if __name__ == '__main__':
