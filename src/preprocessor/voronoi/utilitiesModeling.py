@@ -260,7 +260,6 @@ def create2dCantileverUniTens(maxLim, minDist, trials ):
 
     ########################################################################
     functions = []
-    ### creating functions
     #### Defining functions
     #0 constant zero
     fn = utilitiesNumeric.constantFunc(0)
@@ -706,10 +705,6 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     #
     newLen = len(node_coords)-1
 
-    #print (nrOfPoints)
-  #  mBC = utilitiesGeom.mechanicalBC(dim, kvadrBC, oldLen, newLen)
-   # mechBC_merged.append(mBC)
-    ####################################################################################################
 
     return node_coords, mechBC_merged, mechInitC_merged
 
@@ -776,7 +771,7 @@ def assemble3dCantileverBending(maxLim, minDist, trials):
 
     #kvadr
     oldLen = len(node_coords)
-    utilitiesGeom.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
     newLen = len(node_coords)-1
     nrOfPoints =  (len(node_coords)) - oldLen
    # for n in range ( nrOfPoints ):

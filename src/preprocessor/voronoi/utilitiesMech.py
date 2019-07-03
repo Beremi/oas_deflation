@@ -31,15 +31,19 @@ class latticeBeam:
 
 ##################################################
 #### TRANSPORT PATH ELEMENT FOR LATTICE MODEL ####
-class transportPath2d:
-    def __init__ (self,  vertexAidx, vertexBidx, materialIdx):
+class transportPath:
+    def __init__ (self,  vertexAidx, vertexBidx, connectedNodes, materialIdx):
         self.vertexA = vertexAidx
         self.vertexB = vertexBidx
+        self.connectedNodes = connectedNodes
 
         self.material = materialIdx
 
     def getString(self):
-        line = '%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) + '\t' + '%d'%(self.material)
+        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(len(self.connectedNodes))
+        for i in range (len(self.connectedNodes)):
+            line+='\t%d'%(self.connectedNodes[i])
+        line +='\t' + '%d'%(self.material)
         return line
 
 ##################################################
@@ -56,7 +60,6 @@ class linearElasticMaterial:
         self.density = density
 
     def getString(self):
-       # line = 'LINEL\t' + '%e'%(self.youngModulus)  + '\t' + '%f'%(self.poisson) + '\t' + '%f'%(self.transportC) + '\t' + '%f'%(self.transportS) + '\t' + '%f'%(self.density)
         line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     + '\nTrsprtMaterial'         + '\t' + '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
 
         return line

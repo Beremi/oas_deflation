@@ -50,8 +50,8 @@ powerTes = 0
 dim = 2
 print('Creating a %dd lattice model...' %dim)
 
-Xdim = 6.
-Ydim = 1.
+Xdim = 5.
+Ydim = 3.
 Zdim = 1.
 
 #dimensions of a rectangle model
@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.07
+minDist = 0.1
 radius = minDist / 2
 
 if (dim == 2):
@@ -94,7 +94,7 @@ if (dim == 2):
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 
     #cantilever uni tension
-    #do not use this yet ! please
+    #do not use this yet! ...please
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
 
     #simply supported beam, uniform load
@@ -119,7 +119,7 @@ end=time.time()
 sys.stdout.flush()
 
 #reordering nodes due to their connectivity
-order = utilitiesNumeric.reorderToDiagonal(node_count, node_coords, vor)
+#order = utilitiesNumeric.reorderToDiagonal(node_count, node_coords, vor)
 
 materials = []
 
@@ -134,13 +134,11 @@ linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, transpC, tra
 materials.append(linElMaterial)
 
 print('')
+
+
 #Deconstructing Voronoi diagram and saving the geometry
-if (dim == 2):
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output2D(node_count, dim, maxLim, vor, node_coords,  areas, order,  False)
-if (dim == 3):
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.output3D(node_count, dim, maxLim, vor, node_coords, areas, order, mechBC_merged, False)
-
-
+vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas)
+# saving rest of input
 utilitiesGeom.saveMaterials(materials)
 utilitiesGeom.saveFunctions(functions)
 utilitiesGeom.saveMechBC(dim, mechBC_merged)
