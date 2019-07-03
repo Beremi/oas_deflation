@@ -1,0 +1,9 @@
+Dimension	2
+Solver	SteadyStateLinearSolver	time_step	1.000000e+00	total_time	50
+NodeFiles	3	nodes.inp	auxNodes.inp	vertices.inp
+MatFiles	1	materials.inp
+ElemFiles	2	mechElems.inp	trsprtElems.inp
+BCFiles	2	mechBC.inp	trsprtBC.inp
+ICFiles	2	mechIC.inp	trsprtIC.inp
+FunctionFiles	1	functions.inp
+ExporterFiles	1	exporters.inp

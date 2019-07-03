@@ -34,6 +34,198 @@ double PieceWiseLinearFunction :: giveY(double t) const {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH CONSTATNT MAX VALUE
+void ConstSawToothFunction :: readFromLine(istringstream &iss) {
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  string param;
+  double timo, temp;
+  int num_cycles;
+  bool bup, blow, bper, btim, bcyc, sym;
+  bup = blow = bper = btim = bcyc = sym = false;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("lower") == 0 ) {
+      iss >> lower;
+      blow = true;
+    } else if ( param.compare("value") == 0 ){
+      iss >> upper;
+      bup = true;
+    } else if ( param.compare("period") == 0 ){
+      iss >> period;
+      bper = true;
+    } else if ( param.compare("time") == 0 ){
+      iss >> timo;
+      btim = true;
+    } else if ( param.compare("num_cycles") == 0 ){
+      iss >> num_cycles;
+      bcyc = true;
+    } else if ( param.compare("sym") == 0 ){
+      iss >> sym;
+    }
+  }
+
+  if ( !bper ) {
+    if (bcyc && btim){
+      period = timo / num_cycles;
+      cout << " function parameter 'period' for function " << typeid(this).name() << " calculated from number of cycles per given time" << endl;
+    } else {
+      cerr << " function parameter 'period' for function " << typeid(this).name() << " was not specified" << endl;
+      exit(0);
+    }
+  }
+  if ( !bup ) {
+    cerr << " function parameter 'value' for function " << typeid(this).name() << " was not specified" << endl;
+    exit(0);
+  }
+  if ( !blow ) {
+    if (sym){
+      lower = -upper;
+    } else {
+      lower = 0;
+    }
+  }
+  if (lower < 0 && upper < 0){
+    multip = -1;
+    lower *= multip;
+    upper *= multip;
+  }
+  if (upper < lower){
+    temp = lower;
+    lower = upper;
+    upper = temp;
+  }
+}
+
+//////////////////////////////////////////////////////////
+double ConstSawToothFunction :: giveY(double t) const {
+  double time_shift, up_low;
+  up_low = upper - lower;
+  time_shift = 0.5 * period * abs(lower) / up_low;
+  if (lower > 0){
+    time_shift *= -1;
+  }
+  if (lower > 0 && t < abs(time_shift)){
+    return multip * t * lower / (abs(time_shift));
+  } else {
+    return (up_low - ((up_low/(0.5*period))*abs(fmod((t + time_shift), period) - 0.5 * period)) + lower) * multip;
+  }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH CONSTATNT MAX VALUE
+void LinSawToothFunction :: readFromLine(istringstream &iss) {
+  // read the same constatnts from constant function
+  ConstSawToothFunction :: readFromLine(iss);
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  string param;
+  double timo, val;
+  bool bmult, btim, bval;
+  bmult = btim = bval = false;
+
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("multip") == 0 ) {
+      iss >> time_multiplier;
+      bmult = true;
+    } else if ( param.compare("time") == 0 ) {
+      iss >> timo;
+      btim = true;
+    } else if ( param.compare("value") == 0 ) {
+      iss >> val;
+      bval = true;
+    }
+  }
+  if ( !bmult ) {
+    if (btim && bval){
+      time_multiplier = 1/timo;
+      std::cout << "timo = " << timo << ", value = " << val << ", time_multiplier = " << time_multiplier << '\n';
+    } else {
+      cerr << " function parameter 'time_multiplier' for function " << typeid(this).name() << " was not specified" << endl;
+      exit(0);
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////
+double LinSawToothFunction :: giveY(double t) const {
+  // only multiply result of the constant saw tooth function by linearly increasing time function SawToot(t) * (t_m * t)
+  double value = ConstSawToothFunction :: giveY(t);
+  return value * time_multiplier * t;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH VARYING MAX VALUE
+void VaryingSawToothFunction :: readFromLine(istringstream &iss) {
+  // read the same constatnts from constant function
+  PieceWiseLinearFunction :: readFromLine(iss);
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  ConstSawToothFunction :: readFromLine(iss);
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  string param;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("shift") == 0 ) {
+      iss >> shift;
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////
+double VaryingSawToothFunction :: giveY(double t) const {
+  // only multiply result of the constant saw tooth function by linearly increasing time function SawToot(t) * (t_m * t)
+  double value = ConstSawToothFunction :: giveY(t);
+  double value2 = PieceWiseLinearFunction :: giveY(t);
+  return (value * value2) + shift;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH CONSTATNT MAX VALUE
+void SinusFunction :: readFromLine(istringstream &iss) {
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  string param;
+  bool bper, bamp, bshift;
+  bper = bamp = bshift = false;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("period") == 0 ) {
+      iss >> period;
+      bper = true;
+    } else if ( param.compare("amplitude") == 0 ){
+      iss >> amplitude;
+      bamp = true;
+    } else if ( param.compare("shift") == 0 ){
+      iss >> shift;
+      bshift = true;
+    }
+  }
+  if ( !bper ) {
+    cerr << " function parameter 'period' for function " << typeid(this).name() << " was not specified" << endl;
+    exit(0);
+  }
+  if ( !bamp ) {
+    cerr << " function parameter 'amplitude' for function " << typeid(this).name() << " was not specified" << endl;
+    exit(0);
+  }
+  if ( !bshift ) {
+    cout << " function parameter 'shift' (optional) for function " << typeid(this).name() << " was not specified" << endl;
+  }
+}
+
+//////////////////////////////////////////////////////////
+double SinusFunction :: giveY(double t) const {
+  return amplitude * sin(2 * M_PI * t / period) + shift;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // CONTAINER FOR FUNCTIONS
 FunctionContainer :: ~FunctionContainer() {
     for ( vector< Function * > :: iterator f = functions.begin(); f != functions.end(); ++f ) {
@@ -58,6 +250,23 @@ void FunctionContainer :: readFromFile(const string filename) {
                     PieceWiseLinearFunction *newf = new PieceWiseLinearFunction();
                     newf->readFromLine(iss);
                     functions.push_back(newf);
+                } else if ( ftype.compare("ConstSawToothFn") == 0 ) {
+                    ConstSawToothFunction *newf = new ConstSawToothFunction();
+                    newf->readFromLine(iss);
+                    functions.push_back(newf);
+                } else if ( ftype.compare("LinSawToothFn") == 0 ) {
+                    LinSawToothFunction *newf = new LinSawToothFunction();
+                    newf->readFromLine(iss);
+                    functions.push_back(newf);
+                } else if ( ftype.compare("SinusFn") == 0 ) {
+                    SinusFunction *newf = new SinusFunction();
+                    newf->readFromLine(iss);
+                    functions.push_back(newf);
+                } else if ( ftype.compare("VaryingSawToothFn") == 0 ) {
+                    VaryingSawToothFunction *newf = new VaryingSawToothFunction();
+                    newf->readFromLine(iss);
+                    // it is necessary to specify which of two parent classes will the tree go throug
+                    functions.push_back((ConstSawToothFunction *) newf);
                 } else  {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(0);
