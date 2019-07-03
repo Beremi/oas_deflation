@@ -77,7 +77,7 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
     double value;
     unsigned nIP;
     giveFileName(step, buffer);
-    ofstream outputfile(buffer);
+    ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
 
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
