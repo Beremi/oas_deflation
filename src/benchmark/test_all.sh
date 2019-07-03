@@ -1,4 +1,6 @@
 #!/bin/bash
+# Any subsequent(*) commands which fail will cause the shell script to exit immediately
+set -e
 # path to binary file for recomended build tree
 # (see https://kelidas.gitlab.io/partmod-site/GettingStarted.html)
 # NOTE it is a path from one of the subdirectories
@@ -20,6 +22,8 @@ while true; do
     esac
 done
 
+echo "In case of test crush see nohup file in particular folder"
+
 for folder in $( ls -d */ ); do
     echo "---------------------------------------------------------"
     cd $folder 
@@ -36,4 +40,4 @@ for folder in $( ls -d */ ); do
     cd - > /dev/null
 done
 
-
+$SHELL
