@@ -32,14 +32,12 @@ double PieceWiseLinearFunction :: giveY(double t) const {
     }
 }
 
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SAW TOOTH FUNCTION WITH CONSTATNT MAX VALUE
 void ConstSawToothFunction :: readFromLine(istringstream &iss) {
   iss.clear(); // clear string stream
   iss.seekg(0, iss.beg); //reset position in string stream
-  // TODO contuinue from here and do linearly increasing function
   string param;
   double timo, temp;
   int num_cycles;
@@ -118,11 +116,10 @@ double ConstSawToothFunction :: giveY(double t) const {
 //////////////////////////////////////////////////////////
 // SAW TOOTH FUNCTION WITH CONSTATNT MAX VALUE
 void LinSawToothFunction :: readFromLine(istringstream &iss) {
-  // read the same constatnts from constant material
+  // read the same constatnts from constant function
   ConstSawToothFunction :: readFromLine(iss);
   iss.clear(); // clear string stream
   iss.seekg(0, iss.beg); //reset position in string stream
-  // TODO contuinue from here and do linearly increasing function
   string param;
   double timo, val;
   bool bmult, btim, bval;
@@ -161,11 +158,38 @@ double LinSawToothFunction :: giveY(double t) const {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH VARYING MAX VALUE
+void VaryingSawToothFunction :: readFromLine(istringstream &iss) {
+  // read the same constatnts from constant function
+  PieceWiseLinearFunction :: readFromLine(iss);
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  ConstSawToothFunction :: readFromLine(iss);
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  string param;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("shift") == 0 ) {
+      iss >> shift;
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////
+double VaryingSawToothFunction :: giveY(double t) const {
+  // only multiply result of the constant saw tooth function by linearly increasing time function SawToot(t) * (t_m * t)
+  double value = ConstSawToothFunction :: giveY(t);
+  double value2 = PieceWiseLinearFunction :: giveY(t);
+  return (value * value2) + shift;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // SAW TOOTH FUNCTION WITH CONSTATNT MAX VALUE
 void SinusFunction :: readFromLine(istringstream &iss) {
   iss.clear(); // clear string stream
   iss.seekg(0, iss.beg); //reset position in string stream
-  // TODO contuinue from here and do linearly increasing function
   string param;
   bool bper, bamp, bshift;
   bper = bamp = bshift = false;
@@ -199,7 +223,6 @@ void SinusFunction :: readFromLine(istringstream &iss) {
 double SinusFunction :: giveY(double t) const {
   return amplitude * sin(2 * M_PI * t / period) + shift;
 }
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -239,6 +262,11 @@ void FunctionContainer :: readFromFile(const string filename) {
                     SinusFunction *newf = new SinusFunction();
                     newf->readFromLine(iss);
                     functions.push_back(newf);
+                } else if ( ftype.compare("VaryingSawToothFn") == 0 ) {
+                    VaryingSawToothFunction *newf = new VaryingSawToothFunction();
+                    newf->readFromLine(iss);
+                    // it is necessary to specify which of two parent classes will the tree go throug
+                    functions.push_back((ConstSawToothFunction *) newf);
                 } else  {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(0);

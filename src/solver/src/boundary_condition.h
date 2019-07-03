@@ -72,6 +72,22 @@ public:
 protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SAW TOOTH FUNCTION WITH VARYING MAX VALUE
+// INHERITED FROM TWO CLASSES
+// BE CAREFUL FURTHER INHERITING THIS CLASS!!!
+class VaryingSawToothFunction : public ConstSawToothFunction, public PieceWiseLinearFunction
+{
+private:
+    double shift = 0;
+public:
+    VaryingSawToothFunction() {};
+    virtual ~VaryingSawToothFunction() {};
+    void readFromLine(istringstream &iss);
+    double giveY(double t) const;
+protected:
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
