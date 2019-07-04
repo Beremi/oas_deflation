@@ -52,6 +52,10 @@ Recommended structure
     \code{.sh}
       cmake -D CMAKE_BUILD_TYPE=Debug PATH_TO_SRC
     \endcode
+  - using toolchain to build Windows executable under Linux system using cross compiler MXE (https://mxe.cc)
+    \code{.sh}
+      cmake -D CMAKE_TOOLCHAIN_FILE=../partmod/toolchain_mxe.cmake ../partmod
+    \endcode
 -# compile
   \code{.sh}
     cmake --build .
@@ -94,8 +98,20 @@ uncrustify -c ../../../uncrustify.cfg -l CPP --replace *.cpp *.h
 \endcode
 
 \section Running Running PartMod
+PartMod executable requires path to master.inp - the path can be both absolute
+and relative. Unix commands can look like:
+\code{.sh}
+./DiscreteModel /path/to/master.inp
+./DiscreteModel ../../master.inp
+./DiscreteModel master.inp
+\endcode
 
-
+Windows alternatives are (TODO: test it):
+\code{.sh}
+DiscreteModel.exe C:\path\to\master.inp
+DiscreteModel.exe ..\..\master.inp
+DiscreteModel master.inp
+\endcode
 
 
 
