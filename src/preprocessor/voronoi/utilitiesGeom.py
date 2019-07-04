@@ -469,45 +469,16 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
     vertIdxStart = node_count + len(aux_nodes)
     v_count = len (vertices_out)
 
+    for i in range (len(ridges_out)):
+        ln = len(np.asarray(ridges_out[i]) )
+        for l in range (3, ln):
+            ridges_out[i][l] += vertIdxStart
 
     saveNodes(nodes_out, aux_nodes,dim)
     saveVertices(vertices_out, dim)
     saveMechanicalElements(ridges_out, node_count, dim)
     saveTransportElements(ridges_out,dim)
-    """
-    ridges_out_trsprt = []
-    for i in range (len(ridges_out)):
-        ro = np.copy(ridges_out[i])
-        ro = np.asarray(ro)
-        sh = ro.shape[0]
-        for j in range (sh-3):
-            ro[j+3] += node_count + len(aux_nodes)
 
-        nrVert = int( ro[2] )
-        nwarr = np.copy (ro)
-        nwarr [0:nrVert] = ro [2: (nrVert+2)]
-        nwarr [nrVert+1: (nrVert+3)] = ro [0:2]
-
-        ridges_out_trsprt.append(ro)
-
-
-    print('Saving TRSPRT elements...', end ='')
-    headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
-    fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
-    ro = np.asarray(ridges_out_trsprt[0])
-    fl.write(headerLine)
-    for i in range (len(ridges_out_trsprt)):
-        ro = np.asarray(ridges_out_trsprt[i])
-        fmt='LTCTRSP\t%d\t%d\t%d'
-        sh = ro.shape[0]
-        #for j in range (sh-3):
-        #    ro[j+3] += node_count
-
-        np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t1')
-
-    fl.close()
-    print ('done.')
-    """
     return v_count, verticesIdxDict, vertIdxStart
 
 
@@ -853,13 +824,12 @@ def saveTransportElements(ridges_out, dim):
     print('done.')
     sys.stdout.flush()
     """
+
     print('Creating TRSPRT elements...', end='')
+    sys.stdout.flush()
     transportElements = []
     ridges_out = np.asarray(ridges_out)
     if (dim == 2):
-        #ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0].copy()
-        #ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1].copy()
-        #ridges_out[:,2] = 2
         for i in range (len(ridges_out)):
             connNds = []
             connNds.append (ridges_out[i,0])
@@ -871,40 +841,36 @@ def saveTransportElements(ridges_out, dim):
     if (dim ==3):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
-            print(ro)
-            connNds = []
-            for n in range (0,2):
-                connNds.append (ro[n])
+            #print(ro)
 
-            for n in range (3, len(ro)-1):
-                trp = utilitiesMech.transportPath (ro[n], ro[n+1], connNds, 1)
-                appnd = True
+            for n in range (3, len(ro)):
+                newPath = True
+                m = n+1
+                if (n==len(ro)-1):
+                    m = 3
+
                 for elem in transportElements:
-                    if ( (elem.vertexA == trp.vertexA and elem.vertexB == trp.vertexB) or (elem.vertexA == trp.vertexB and elem.vertexB == trp.vertexA) ):
-                        appnd = False
-                        elem.connectedNodes.append(ro[0])
-                        elem.connectedNodes.append(ro[1])
+                    if ( ((elem.vertexA == ro[n]) and (elem.vertexB == ro[m]))
+                      or ((elem.vertexA == ro[m]) and (elem.vertexB == ro[n])) ):
+                    #    print ('%d %d  ; %d %d' %(ro[n], ro[m], elem.vertexA,elem.vertexB ), end='')
+                    #    print (' ro %d - %d ' %(ro[n], ro[m]))
+                        newPath = False
+                        elem.addConnectedNodes(ro)
                         break
-                if (appnd == True):
+
+                if (newPath == True):
+                    connNds = []
+                    connNds.clear()
+                    connNds.append (ro[0])
+                    connNds.append (ro[1])
+                    trp = utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1)
                     transportElements.append (trp)
-
-
-
-            trp = utilitiesMech.transportPath (ro[len(ro)-1], ro[3], connNds, 1)
-            appnd = True
-            for elem in transportElements:
-                if ( (elem.vertexA == trp.vertexA and elem.vertexB == trp.vertexB) or (elem.vertexA == trp.vertexB and elem.vertexB == trp.vertexA) ):
-                    appnd = False
-                    elem.connectedNodes.append(ro[0])
-                    elem.connectedNodes.append(ro[1])
-                    break
-            if (appnd == True):
-                transportElements.append (trp)
-
     print('done.')
+    sys.stdout.flush()
 
 
     print('Saving TRSPRT elements...', end='')
+    sys.stdout.flush()
     with open(os.path.join(master_folder,trsprtElemsFile), 'w') as f:
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
         f.write("%s\n" % headerLine )

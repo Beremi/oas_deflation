@@ -32,17 +32,33 @@ class latticeBeam:
 ##################################################
 #### TRANSPORT PATH ELEMENT FOR LATTICE MODEL ####
 class transportPath:
-    def __init__ (self,  vertexAidx, vertexBidx, connectedNodes, materialIdx):
+    def __init__ (self,  vertexAidx, vertexBidx, connectedNds, materialIdx):
         self.vertexA = vertexAidx
         self.vertexB = vertexBidx
-        self.connectedNodes = connectedNodes
-
+        self.__connectedNodes = connectedNds
+        self.nds = len(self.__connectedNodes)
         self.material = materialIdx
 
+    def addConnectedNodes (self, ridge):
+        #print(ridge)
+        #print(self.getString())
+        """
+        if (len(self.__connectedNodes) != self.nds):
+            print ('ERROR ERROR ERROR ERROR ERROR')
+            print ('orig: %d' %(self.nds))
+            print ('curr: %d' %(len(self.__connectedNodes)))
+        else:
+            print('OK')
+        """
+        self.__connectedNodes.append(ridge[0])
+        self.__connectedNodes.append(ridge[1])
+        self.nds = len(self.__connectedNodes)
+        #print(self.getString())
+
     def getString(self):
-        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(len(self.connectedNodes))
-        for i in range (len(self.connectedNodes)):
-            line+='\t%d'%(self.connectedNodes[i])
+        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(len(self.__connectedNodes))
+        for i in range (len(self.__connectedNodes)):
+            line+='\t%d'%(self.__connectedNodes[i])
         line +='\t' + '%d'%(self.material)
         return line
 
