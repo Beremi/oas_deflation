@@ -39,6 +39,11 @@ public:
     void updateExteranlForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
 
+    vector< Node * > :: iterator begin(){return nodes.begin();}
+    vector< Node * > :: iterator end(){return nodes.end();}
+    vector< Node * > :: const_iterator begin() const {return nodes.begin();}
+    vector< Node * > :: const_iterator end() const {return nodes.end();}
+
 protected:
 };
 

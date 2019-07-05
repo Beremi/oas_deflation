@@ -23,6 +23,11 @@ public:
     void addBodyForces(Vector &R, double time) const;
     void giveInternalForces(const Vector &full_r, Vector &full_f);
     Element *giveElement(unsigned const num) { return elems [ num ]; }
+
+    vector< Element * > :: iterator begin(){return elems.begin();}
+    vector< Element * > :: iterator end(){return elems.end();}
+    vector< Element * > :: const_iterator begin() const {return elems.begin();}
+    vector< Element * > :: const_iterator end() const {return elems.end();}
 };
 
 
