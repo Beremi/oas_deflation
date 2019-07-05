@@ -74,6 +74,38 @@ public:
 protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// VTK EXPORTERS
+class VTKExporter : public DataExporter
+{
+private:
+
+public:
+    VTKExporter() {};
+    virtual ~VTKExporter() {};
+    virtual void readFromLine(istringstream &iss, unsigned dimension) = 0;
+    virtual void giveFileName(unsigned step, char *buffer) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const = 0;
+protected:
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT ELEMENTS TO VTK (VTU)
+class VTKElementExporter : public VTKExporter
+{
+private:
+    ElementContainer *elems;
+    NodeContainer *nodes;
+public:
+    VTKElementExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
+    ~VTKElementExporter() {};
+    void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+protected:
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
