@@ -39,7 +39,11 @@ void MaterialContainer :: readFromFile(const string filename) {
                     MarsMaterial *newmat = new MarsMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
-                } else   {
+                } else if ( matType.compare("FatigueShearMaterial") == 0 )     {
+                   FatigueShearMaterial *newmat = new FatigueShearMaterial();
+                   newmat->readFromLine(iss);
+                   matrs.push_back(newmat);
+                } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(0);
                 }

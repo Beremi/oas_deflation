@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
     while ( !solver->isTerminated() ) {
         start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData(solver->giveStepNumber(), solver->giveDoFValues(), solver->giveNodalForces() );
+        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces() );
         if ( PRINT_TIME ) {
             now = std :: chrono :: system_clock :: now();
 

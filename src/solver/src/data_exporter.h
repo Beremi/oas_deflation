@@ -170,7 +170,7 @@ public:
     ExporterContainer() {};
     ~ExporterContainer();
     void readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
-    void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions) const;
     void init();
 protected:
 };

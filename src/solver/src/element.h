@@ -92,6 +92,7 @@ public:
     Matrix giveRBMatrix() const { return RB; };
     Matrix giveAMatrix(Point a, Point x) const;
     double giveLength() const { return length; }
+    double giveArea() const { return area ; }
     virtual Vector giveInternalForces(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;

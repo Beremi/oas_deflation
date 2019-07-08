@@ -38,6 +38,7 @@ public:
     Vector giveDoFValues() { return r; }
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
+    double giveTime() const { return time; };
 };
 
 class SteadyStateLinearSolver : public Solver

@@ -1,8 +1,13 @@
+## export data in every nodes
 # TXTNodalExporter translations 2 ux uy
 # TXTNodalExporter pressure 1 pressure
-# displacement gauge uy x1coord y1coord x2coord y2coord 
-DisplacementGauge LD displY uy 1 1 3 1
-DisplacementGauge LD displX ux 1 1 3 1
-# ForceGauge file_name gauge_name which_force how_many node_ids
+## export data in gaus points
+TXTGaussPointExporter damage 6 x y damage cumSlip slip multip
+## displacement gauge uy x1coord y1coord x2coord y2coord 
+DisplacementGauge LD displY uy 0.5e-3 0.5e-3 2e-3 1e-3
+DisplacementGauge LD displX ux 0.5e-3 0.5e-3 2e-3 1e-3
+## ForceGauge file_name gauge_name which_force how_many node_ids
 ForceGauge LD loadY fy 1 1
 ForceGauge LD loadX fx 1 1
+## export VTK file
+VTKElementExporter elems 0

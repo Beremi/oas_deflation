@@ -3,6 +3,7 @@
 
 #include "material.h"
 #include "mars_material.h"
+#include "fatigue_material.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
