@@ -443,7 +443,7 @@ void ExporterContainer :: init() {
 };
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void ExporterContainer :: exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions) const {
     //add step number to gauge exporter files
     char buffer [ 100 ];
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
@@ -451,7 +451,7 @@ void ExporterContainer :: exportData(unsigned step, const Vector &DoFs, const Ve
         ofstream outputfile;
         outputfile.open(buffer, ios :: app);
         if ( outputfile.good() ) {
-            outputfile << step;
+            outputfile << step << "\t" << time;
         }
         outputfile.close();
     }

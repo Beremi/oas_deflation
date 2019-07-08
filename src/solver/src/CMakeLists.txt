@@ -8,6 +8,7 @@ set (solver
     material_container.cpp
     material.cpp
     mars_material.cpp
+    fatigue_material.cpp
     node_container.cpp
     node.cpp
     solver.cpp
