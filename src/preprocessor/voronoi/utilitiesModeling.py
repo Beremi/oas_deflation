@@ -6,7 +6,7 @@ import utilitiesNumeric
 import pointGenerators
 import voronoi
 import matplotlib.pyplot as plt
-
+import voronoi_viewer
 
 
 def createSingleSpringTestModel(length):
@@ -23,6 +23,15 @@ def createSingleSpringTestModel(length):
 
     fn1 = utilitiesNumeric.constantFunc(1e-3)
     functions.append (fn1)
+
+    fn2 = utilitiesNumeric.sawToothConstFunc(value = 20, period = 11, sym =1)
+    functions.append (fn2)
+
+    fn3 = utilitiesNumeric.sineFunc(value = 22, period = 33)
+    functions.append (fn3)
+
+    fn4 = utilitiesNumeric.varyingSawToothFunction(fn1, fn2)
+    functions.append(fn4)
 
     dim = 2
     idt = length /2
@@ -49,7 +58,7 @@ def createSingleSpringTestModel(length):
     allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
     for i in range (len(allVrtcs)):
-        trsBC = utilitiesGeom.transportBC(allVrtcs[i], noTrsprtBC)
+        trsBC = utilitiesMech.transportBC(allVrtcs[i], noTrsprtBC)
         transportBC_merged.append(trsBC)
 
 
@@ -71,7 +80,7 @@ def createDiamondTestModel(width, height):
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
 
-    fn1 = utilitiesNumeric.constantFunc(1e-3)
+    fn1 = utilitiesNumeric.constantFunc(-1e-3)
     functions.append (fn1)
 
     dim = 2
@@ -101,7 +110,7 @@ def createDiamondTestModel(width, height):
     allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
     for i in range (len(allVrtcs)):
-        trsBC = utilitiesGeom.transportBC(allVrtcs[i], noTrsprtBC)
+        trsBC = utilitiesMech.transportBC(allVrtcs[i], noTrsprtBC)
         transportBC_merged.append(trsBC)
 
 
@@ -130,7 +139,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     #1 loading function, single force top right, bilinear
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([50, 50e4]) )
+    func1.append( np.array([50, -50e4]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
@@ -161,7 +170,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
     for i in range (len(leftFace)):
-        trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
         transportBC_merged.append(trsBC)
         #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
         #transportIC_merged.append(trsIC)
@@ -173,7 +182,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(rightFace)
     for i in range (len(rightFace)):
-        trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
 
@@ -202,7 +211,7 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     #1 loading function, single force top right, bilinear
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([50, 50e4]) )
+    func1.append( np.array([50, -50e4]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
@@ -229,7 +238,7 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
     for i in range (len(leftFace)):
-        trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
         transportBC_merged.append(trsBC)
         #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
         #transportIC_merged.append(trsIC)
@@ -241,7 +250,7 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(rightFace)
     for i in range (len(rightFace)):
-        trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
@@ -295,7 +304,7 @@ def create2dCantileverUniTens(maxLim, minDist, trials ):
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
     for i in range (len(leftFace)):
-        trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
         transportBC_merged.append(trsBC)
         #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
         #transportIC_merged.append(trsIC)
@@ -307,7 +316,7 @@ def create2dCantileverUniTens(maxLim, minDist, trials ):
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(rightFace)
     for i in range (len(rightFace)):
-        trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
@@ -321,13 +330,13 @@ def assembleTwoNodeSpringTest (maxLim, idt):
     nodeA = np.array ( [ 0 + idt , maxLim[1]/2 ] )
     nodeAmechBC = np.array([0, 0 , -1 ,      -1 , -1 , -1])
     pointGenerators.generateSingleNode(nodeA, dim, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeAmechBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 0, nodeAmechBC)
     mechBC_merged.append(mBC)
 
     nodeB = np.array ( [ maxLim[0] - idt, maxLim[1]/2 ] )
     nodeBmechBC = np.array([-1, 0 , 0 ,      1, -1 , -1])
     pointGenerators.generateSingleNode(nodeB, dim, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 1, nodeBmechBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 1, nodeBmechBC)
     mechBC_merged.append(mBC)
 
 
@@ -344,28 +353,28 @@ def assembleDiamondTest (maxLim, idtW, idtH):
     nodeA = np.array ( [ 0 + idtW , maxLim[1]/2 ] )
     nodeAmechBC = np.array([-1,-1,-1 , -1,-1 ,-1])
     pointGenerators.generateSingleNode(nodeA, 2, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeAmechBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 0, nodeAmechBC)
     mechBC_merged.append(mBC)
 
     #right mid
     nodeB = np.array ( [ maxLim[0] - idtW, maxLim[1]/2 ] )
     nodeBmechBC = np.array([-1,-1,-1 , -1,-1,-1])
     pointGenerators.generateSingleNode(nodeB, 2, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 1, nodeBmechBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 1, nodeBmechBC)
     mechBC_merged.append(mBC)
 
     #top
     nodeC = np.array ( [ maxLim[0]/2, maxLim[1] -idtH] )
     nodeCmechBC = np.array([0, -1 , 0 , -1, 1, -1])
     pointGenerators.generateSingleNode(nodeC, 2, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 2, nodeCmechBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 2, nodeCmechBC)
     mechBC_merged.append(mBC)
 
     #bottom
     nodeD = np.array ( [ maxLim[0]/2, idtH] )
     nodeDmechBC = np.array([0,0,0,  -1, -1, -1])
     pointGenerators.generateSingleNode(nodeD, 2, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 3, nodeDmechBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 3, nodeDmechBC)
     mechBC_merged.append(mBC)
 
 
@@ -389,7 +398,7 @@ def create3dCantileverBending(maxLim, minDist, trials ):
     ### extracting characteristics of the Vor diagram
 
     print('done.')
-
+    voronoi_viewer.voronoi_plot_3d_vtk(vor)
     """
     fig = plt.figure()
     ax = plt.axes(projection='3d')
@@ -440,7 +449,7 @@ def create3dCantileverBending(maxLim, minDist, trials ):
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
     for i in range (len(leftFace)):
-        trsBC = utilitiesGeom.transportBC(leftFace[i], leftFaceBC)
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
         transportBC_merged.append(trsBC)
 
     ### selecting vertices on the right surface
@@ -450,7 +459,7 @@ def create3dCantileverBending(maxLim, minDist, trials ):
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(rightFace)
     for i in range (len(rightFace)):
-        trsBC = utilitiesGeom.transportBC(rightFace[i], rightFaceBC)
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
@@ -506,7 +515,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
 
@@ -524,7 +533,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
 
@@ -559,16 +568,17 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
 
     #an indent due to mirroring of the data for voronoi tess.
     indent = 1e-8
-
-
+    """
     nodeA = np.array ( [ 0 + indent , maxLim[1]/2 ] )
     nodeAmechBC = np.array([0, 0 , -1 ,      -1 , -1 , -1])
     pointGenerators.generateSingleNode(nodeA, dim, node_coords)
-    mBC = utilitiesGeom.mechanicalBC(dim, 0, nodeAmechBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 0, nodeAmechBC)
     mechBC_merged.append(mBC)
+    """
+
     ###############generating of nodes, supported line left vertical ###############
     #mech bc
-    lineBC = np.array([0,-1,-1,-1,-1,-1])
+    lineBC = np.array([0,0,-1,-1,-1,-1])
 
     #defining points of the line
     nodeA = np.array([indent, indent])
@@ -578,12 +588,11 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
     pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
     nrOfPoints =  (len(node_coords)) - oldLen
 
-
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
-        #print('adding')
+
 
     ###############generating a nodes on right face, loaded by uni tens in X) ###############
     lineBC = np.array([-1,-1,-1,   1, -1 ,-1])
@@ -599,7 +608,7 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
 
@@ -647,7 +656,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
 
         #print('adding')
@@ -667,7 +676,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
 
@@ -689,7 +698,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, lineBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
         #mIC = utilitiesGeom.mechanicalIC(dim, oldLen + n, lineIC)
@@ -734,7 +743,7 @@ def assemble3dCantileverBending(maxLim, minDist, trials):
     nrOfPoints =  (len(node_coords)) - oldLen
 
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
         mechBC_merged.append(mBC)
         #print('adding')
 
@@ -749,7 +758,7 @@ def assemble3dCantileverBending(maxLim, minDist, trials):
      #print (nrOfPoints)
 
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
         mechBC_merged.append(mBC)
 
     ###############generating of points supported surface  left face ###############
@@ -762,7 +771,7 @@ def assemble3dCantileverBending(maxLim, minDist, trials):
     pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
     nrOfPoints =  (len(node_coords)) - oldLen
     for n in range ( nrOfPoints ):
-        mBC = utilitiesGeom.mechanicalBC(dim, oldLen + n, mechBC)
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
         mechBC_merged.append(mBC)
 
 

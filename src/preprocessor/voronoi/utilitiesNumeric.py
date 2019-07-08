@@ -76,15 +76,89 @@ class constantFunc:
 ##################################################
 #### Sine function ####
 class sineFunc:
-    def __init__ (self, amplitude, freq):
-        self.amplitude = amplitude
-        self.freq = freq
+    def __init__ (self, value, period, shift = None):
+        self.value = value
+        self.period = period
+        self.shift = shift
     def getString(self):
-        line = 'SineFunction\t'
-        line += '%f\t' %(self.freq)
-        line += '%f' %(self.amplitude)
+        line = 'SinusFn'
+        line += '\tvalue\t%f' %(self.value)
+        line += '\tperiod\t%f' %(self.period)
+        if (self.shift!=None):
+            line += '\tshift\t%f' %(self.shift)
+
         return line
 ##################################################
+
+##################################################
+#### Saw tooth constant function ####
+class sawToothConstFunc:
+    def __init__(self, value, period =None, sym=None, lower=None, time=None, num_cycles=None):
+        self.value = value
+        self.period = period
+        self.sym = sym
+        self.lower = lower
+        self.time = time
+        self.num_cycles = num_cycles
+    def getString (self):
+        line = 'ConstSawToothFn'
+        line += '\tvalue\t%f' %(self.value)
+        if (self.period!=None):
+            line += '\tperiod\t%f' %(self.period)
+        if (self.sym!=None):
+            line += '\tsym\t%f' %(self.sym)
+        if (self.lower!=None):
+            line += '\tlower\t%f' %(self.lower)
+        if (self.time!=None):
+            line += '\ttime\t%f' %(self.time)
+        if (self.num_cycles!=None):
+            line += '\tlower\t%f' %(self.num_cycles)
+
+        return line
+##################################################
+
+##################################################
+#### Linear saw tooth constant function ####
+class linearSawToothFunc:
+    def __init__(self, value, period=None, sym=None, lower=None, time=None, num_cycles=None, multiplier = None):
+        self.value = value
+        self.period = period
+        self.sym = sym
+        self.lower = lower
+        self.time = time
+        self.num_cycles = num_cycles
+        self.multiplier = mutiplier
+    def getString (self):
+        line = 'LinSawToothFn'
+        line += '\tvalue\t%f' %(self.value)
+        if (self.period!=None):
+            line += '\tperiod\t%f' %(self.period)
+        if (self.sym!=None):
+            line += '\tsym\t%f' %(self.sym)
+        if (self.lower!=None):
+            line += '\tlower\t%f' %(self.lower)
+        if (self.time!=None):
+            line += '\ttime\t%f' %(self.time)
+        if (self.num_cycles!=None):
+            line += '\tlower\t%f' %(self.num_cycles)
+        if (self.multiplier!=None):
+            line += '\tmultiplier\t%f' %(self.multiplier)
+        return line
+
+##################################################
+
+##################################################
+#### varying saw tooth function
+class varyingSawToothFunction:
+     def __init__(self, pwlFn, constSawToothFn ):
+         self.constSawToothFn = constSawToothFn
+         self.pwlFn = pwlFn
+     def getString (self):
+         line = 'VaryingSawToothFn\t'
+         line += self.pwlFn.getString()[12:]
+         line += '\t'
+         line += self.constSawToothFn.getString()[16:]
+         return line
 
 
 

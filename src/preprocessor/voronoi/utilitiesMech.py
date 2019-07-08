@@ -81,3 +81,70 @@ class linearElasticMaterial:
         return line
 
 ##################################################
+
+
+
+
+
+class transportBC:
+    def __init__(self,  nodeIdx, transportBCarray):
+        self.transportBCarray = transportBCarray
+        self.nodeIdx = nodeIdx
+    def getTrsprtBC(self):
+        return self.transportBCarray
+    def getNodeIdx(self):
+        return self.nodeIdx
+
+class mechanicalBC:
+    def __init__(self, dim, nodeIdx, mechBCarray):
+        self.mechBCarray = mechBCarray
+        self.dim = dim
+        self.nodeIdx = nodeIdx
+
+    def getDim(self):
+        return self.dim
+    def getMechBC(self):
+        return self.mechBCarray
+    def getNodeIdx(self):
+        return self.nodeIdx
+
+    def printProps(self):
+        print ('Node %d' %(self.nodeIdx))
+
+        if (self.dim ==2):
+            print('TransX: %d' %self.mechBCarray[0])
+            print('TransY: %d' %self.mechBCarray[1])
+            print('RotZ: %d' %self.mechBCarray[2])
+
+        if (self.dim ==3):
+            print('TransX: %d' %self.mechBCarray[0])
+            print('TransY: %d' %self.mechBCarray[1])
+            print('TransZ: %d' %self.mechBCarray[2])
+            print('RotX: %d' %self.mechBCarray[3])
+            print('RotY: %d' %self.mechBCarray[4])
+            print('RotZ: %d' %self.mechBCarray[5])
+
+
+
+class mechanicalIC:
+    def __init__(self, dim, nodeIdx, mechICArray):
+        self.mechICArray = mechICArray
+        self.dim = dim
+        self.nodeIdx = nodeIdx
+
+    def getNodeIdx(self):
+        return self.nodeIdx
+    def getMechIC(self):
+        return self.mechICArray
+
+
+class transportIC:
+    def __init__(self, vrtxIdx, pressure):
+        self.vrtxIdx = vrtxIdx
+        self.pressure = pressure
+
+    def getVrtxIdx(self):
+        return self.vrtxIdx
+
+    def getPressure(self):
+        return self.pressure

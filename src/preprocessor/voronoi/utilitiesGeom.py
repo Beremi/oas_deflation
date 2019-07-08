@@ -127,15 +127,6 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-
-
-
-
-
-
-
-
-
 def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas):
     if (dim == 2):
         vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas)
@@ -238,11 +229,7 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
             ptA = (pA + pB)/2
-            """
-            ptA = np.zeros((2))
-            ptA[0] = (vor.points[pointB, 0] + vor.points[pointA, 0]  ) /2
-            ptA[1] = (vor.points[pointB, 1] + vor.points[pointA, 1]  ) /2
-            """
+
             pointA = node_count + len(aux_nodes)
             aux_nodes.append(ptA)
 
@@ -250,15 +237,10 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
             ptB = (pA + pB)/2
-            """
-            ptB = np.zeros((2))
-            ptB[0] = (vor.points[pointB, 0] + vor.points[pointA, 0]  ) /2
-            ptB[1] = (vor.points[pointB, 1] + vor.points[pointA, 1]  ) /2
-            """
+            
             pointB = node_count + len(aux_nodes)
             aux_nodes.append(ptB)
         #
-
         rdg[0] = pointA
         rdg[1] = pointB
 
@@ -370,12 +352,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
             ptA = (pA + pB)/2
-            """
-            ptA = np.zeros((3))
-            ptA[0] = (vor.points[pointB, 0] + vor.points[pointA, 0]  ) /2
-            ptA[1] = (vor.points[pointB, 1] + vor.points[pointA, 1]  ) /2
-            ptA[2] = (vor.points[pointB, 2] + vor.points[pointA, 2]  ) /2
-            """
+
             pointA = node_count + len(aux_nodes)
             aux_nodes.append(ptA)
 
@@ -384,12 +361,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
             ptB = (pA + pB)/2
-            """
-            ptB = np.zeros((3))
-            ptB[0] = (vor.points[pointB, 0] + vor.points[pointA, 0]  ) /2
-            ptB[1] = (vor.points[pointB, 1] + vor.points[pointA, 1]  ) /2
-            ptB[2] = (vor.points[pointB, 2] + vor.points[pointA, 2]  ) /2
-            """
+
             pointB = node_count + len(aux_nodes)
             aux_nodes.append(ptB)
 
@@ -502,17 +474,6 @@ def returnSelectedPts (boundPtA , boundPtB, points):
 
 
 
-class transportIC:
-    def __init__(self, vrtxIdx, pressure):
-        self.vrtxIdx = vrtxIdx
-        self.pressure = pressure
-
-    def getVrtxIdx(self):
-        return self.vrtxIdx
-
-    def getPressure(self):
-        return self.pressure
-
 def saveTransportIC(transportIC_merged):
     print('Saving TRSPRT initial conditions...', end ='')
     sys.stdout.flush()
@@ -529,17 +490,6 @@ def saveTransportIC(transportIC_merged):
     np.savetxt(fl, trsprtIC_out, delimiter='\t', fmt='%d\t%f', header = headerLine)
     fl.close()
     print('done.')
-
-class mechanicalIC:
-    def __init__(self, dim, nodeIdx, mechICArray):
-        self.mechICArray = mechICArray
-        self.dim = dim
-        self.nodeIdx = nodeIdx
-
-    def getNodeIdx(self):
-        return self.nodeIdx
-    def getMechIC(self):
-        return self.mechICArray
 
 
 
@@ -572,36 +522,6 @@ def saveMechIC(dim, nodes_mechICmerged):
         fl.close()
 
     print('done.')
-
-class mechanicalBC:
-    def __init__(self, dim, nodeIdx, mechBCarray):
-        self.mechBCarray = mechBCarray
-        self.dim = dim
-        self.nodeIdx = nodeIdx
-
-    def getDim(self):
-        return self.dim
-    def getMechBC(self):
-        return self.mechBCarray
-    def getNodeIdx(self):
-        return self.nodeIdx
-
-    def printProps(self):
-        print ('Node %d' %(self.nodeIdx))
-
-        if (self.dim ==2):
-            print('TransX: %d' %self.mechBCarray[0])
-            print('TransY: %d' %self.mechBCarray[1])
-            print('RotZ: %d' %self.mechBCarray[2])
-
-        if (self.dim ==3):
-            print('TransX: %d' %self.mechBCarray[0])
-            print('TransY: %d' %self.mechBCarray[1])
-            print('TransZ: %d' %self.mechBCarray[2])
-            print('RotX: %d' %self.mechBCarray[3])
-            print('RotY: %d' %self.mechBCarray[4])
-            print('RotZ: %d' %self.mechBCarray[5])
-
 
 
 
@@ -685,14 +605,6 @@ def saveFunctions (functions):
           # print (item.getString())
     print('done.')
 
-class transportBC:
-    def __init__(self,  nodeIdx, transportBCarray):
-        self.transportBCarray = transportBCarray
-        self.nodeIdx = nodeIdx
-    def getTrsprtBC(self):
-        return self.transportBCarray
-    def getNodeIdx(self):
-        return self.nodeIdx
 
 
 def saveTransportBC(transportBCmerged, verticesDict, vertIdxStart):
@@ -841,7 +753,6 @@ def saveTransportElements(ridges_out, dim):
     if (dim ==3):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
-            #print(ro)
 
             for n in range (3, len(ro)):
                 newPath = True
@@ -852,12 +763,9 @@ def saveTransportElements(ridges_out, dim):
                 for elem in transportElements:
                     if ( ((elem.vertexA == ro[n]) and (elem.vertexB == ro[m]))
                       or ((elem.vertexA == ro[m]) and (elem.vertexB == ro[n])) ):
-                    #    print ('%d %d  ; %d %d' %(ro[n], ro[m], elem.vertexA,elem.vertexB ), end='')
-                    #    print (' ro %d - %d ' %(ro[n], ro[m]))
                         newPath = False
                         elem.addConnectedNodes(ro)
                         break
-
                 if (newPath == True):
                     connNds = []
                     connNds.clear()
@@ -876,4 +784,4 @@ def saveTransportElements(ridges_out, dim):
         f.write("%s\n" % headerLine )
         for element in transportElements:
             f.write("%s\n" % element.getString() )
-    print('done')
+    print('done.')

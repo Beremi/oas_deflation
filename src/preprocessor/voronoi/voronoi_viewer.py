@@ -1,12 +1,7 @@
 
-from pydmga.geometry import OrthogonalGeometry
-from pydmga.container import Container
-from pydmga.diagram import Diagram
-from pydmga.draw import assets
-from pydmga.draw import render
 from random import random
 from random import seed
-from pydmga.draw.render import Color
+
 import numpy as np
 from mayavi import mlab
 from scipy.spatial import ConvexHull
