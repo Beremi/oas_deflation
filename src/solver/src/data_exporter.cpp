@@ -272,7 +272,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open(buffer, ios :: app);
+    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
@@ -318,7 +318,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open(buffer, ios :: app);
+    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         value = nodeB->giveDoFBasedValue(codes [ 0 ], DoFs) - nodeA->giveDoFBasedValue(codes [ 0 ], DoFs);
@@ -411,7 +411,7 @@ void ExporterContainer :: init() {
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open(buffer);
+        outputfile.open((GlobPaths::RESULTDIR / buffer).string());
         if ( outputfile.good() ) {
             outputfile << "#step";
         }
@@ -423,7 +423,7 @@ void ExporterContainer :: init() {
         if ( g ) {
             ( * d )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open(buffer, ios :: app);
+            outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
             if ( outputfile.good() ) {
                 outputfile << "\t" << g->giveName();
             }
@@ -434,7 +434,7 @@ void ExporterContainer :: init() {
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open(buffer, ios :: app);
+        outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
         if ( outputfile.good() ) {
             outputfile << endl;
         }
@@ -449,7 +449,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open(buffer, ios :: app);
+        outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
         if ( outputfile.good() ) {
             outputfile << step << "\t" << time;
         }
@@ -465,7 +465,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open(buffer, ios :: app);
+        outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
         if ( outputfile.good() ) {
             outputfile << endl;
         }
