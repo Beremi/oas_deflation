@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import scipy
 import math
 import os
+import itertools
 
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
@@ -13,86 +14,139 @@ from shapely.geometry import Polygon, Point
 
 
 def mirror_data(data):
-    '''Cast data array to 3x3 array by mirroring input data'''
-    return np.vstack((np.array([0,2]) + np.array([-1,-1]) * data, np.array([0,2]) + data * np.array([1,-1]), np.array([2,2]) + data * np.array([-1,-1]),
-                  np.array([-1,1]) * data, data, np.array([2,0]) + data * np.array([-1,1]),
-                  data * np.array([-1,-1]), np.array([1,-1]) * data, np.array([2,0]) + data * np.array([-1,-1])))
+    '''Mirror 2D data'''
+    return np.vstack((np.array([0, 2]) + np.array([-1, -1]) * data,
+                      np.array([0, 2]) + data * np.array([1, -1]),
+                      np.array([2, 2]) + data * np.array([-1, -1]),
+                      np.array([-1, 1]) * data,
+                      data,
+                      np.array([2, 0]) + data * np.array([-1, 1]),
+                      data * np.array([-1, -1]), np.array([1, -1]) * data,
+                      np.array([2, 0]) + data * np.array([-1, -1])))
+
 
 def copy_data(data):
-    '''Cast data array to 3x3 array'''
-    return np.vstack((data + np.array([-1, 1]), data + np.array([0,1]), data + np.array([1,1]),
-               data + np.array([-1,0]), data, data + np.array([1,0]),
-               data + np.array([-1,-1]), data + np.array([0,-1]), data + np.array([1,-1])))
+    '''Copy 2D data'''
+    return np.vstack((data + np.array([-1, 1]),
+                      data + np.array([0, 1]),
+                      data + np.array([1, 1]),
+                      data + np.array([-1, 0]),
+                      data,
+                      data + np.array([1, 0]),
+                      data + np.array([-1, -1]),
+                      data + np.array([0, -1]),
+                      data + np.array([1, -1])))
+
+
+def mirror_data_general_full(data):
+    '''Mirror data in N dimensions'''
+    nvar = data.shape[1]
+    new_data = data.copy()
+    for d in itertools.product([-1, 0, 1], repeat=nvar):
+        if not np.all(np.array(d) == 0):
+            mult = np.asanyarray(d)
+            mult[mult != 0] = -1
+            mult[mult == 0] = 1
+            add = np.asanyarray(d)
+            add[add != 0] += 1
+            new_data = np.vstack((new_data, mult * data + add))
+    return new_data
+
+
+def mirror_data_general_perp(data):
+    '''Mirror data in one axis direction'''
+    nvar = data.shape[1]
+    new_data = data.copy()
+    vectors = []
+    for i in [-1, 1]:
+        row = [i] + (nvar - 1) * [0]
+        vectors.extend(itertools.permutations(row))
+    for d in vectors:
+        if not np.all(np.array(d) == 0):
+            mult = np.asanyarray(d)
+            mult[mult != 0] = -1
+            mult[mult == 0] = 1
+            add = np.asanyarray(d)
+            add[add != 0] += 1
+            new_data = np.vstack((new_data, mult * data + add))
+    return new_data
+
+
+def copy_data_general_full(data):
+    '''Copy data'''
+    nvar = data.shape[1]
+    new_data = data.copy()
+    for d in itertools.product([-1, 0, 1], repeat=nvar):
+        if not np.all(d == 0):
+            new_data = np.vstack((new_data, data + np.asanyarray(d)))
+    return new_data
+
 
 def mirror_dataBeam(data, dim, sizes):
+    '''Mirror data 2D and 3D'''
     if (dim == 2):
-        return np.vstack((
-        data,
-        np.array([0,0]) + data * np.array([-1,1]),
-        np.array([sizes[0]*2,0]) + data * np.array([-1,1]),
-        np.array([0,sizes[1]*2]) + data * np.array([1,-1]),
-        np.array([0,0]) + data * np.array([1,-1])
-        ))
+        return np.vstack((data,
+                          np.array([0, 0]) + data * np.array([-1, 1]),
+                          np.array([sizes[0]*2, 0]) + data * np.array([-1, 1]),
+                          np.array([0, sizes[1]*2]) + data * np.array([1, -1]),
+                          np.array([0, 0]) + data * np.array([1, -1])))
 
     if (dim == 3):
-        datao =  np.vstack((data,
-            np.array([0,0,0]) + data * np.array([-1,1,1]),
-            np.array([ sizes[0]*2 ,0,0]) + data * np.array([-1,1,1]),
-            np.array([ 0 ,0,0]) + data * np.array([1,-1,1]),
-            np.array([ 0 ,sizes[1]*2,0]) + data * np.array([1,-1,1]),
-            np.array([ 0 ,0,0]) + data * np.array([1,1,-1]),
-            np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
-        ))
+        datao = np.vstack((data,
+                           np.array([0, 0, 0]) + data * np.array([-1, 1, 1]),
+                           np.array([sizes[0]*2, 0, 0]) + data * np.array([-1, 1, 1]),
+                           np.array([0, 0, 0]) + data * np.array([1, -1, 1]),
+                           np.array([0, sizes[1]*2, 0]) + data * np.array([1, -1, 1]),
+                           np.array([0, 0, 0]) + data * np.array([1, 1, -1]),
+                           np.array([0, 0, sizes[2]*2]) + data * np.array([1, 1, -1])))
 
-        return np.vstack((
-         datao
-        ))
-
+        return np.vstack((datao))
 
 
 def copy_dataBeam(data, dim, sizes):
+    '''Copy data 2D and 3D'''
     if (dim == 2):
         return np.vstack((
             data + np.array([0, 0]),
             data + np.array([-sizes[0], sizes[1]]),
-            data + np.array([0,sizes[1]]),
-            data + np.array([sizes[0],sizes[1]]),
-            data + np.array([-sizes[0],0]),
-            data + np.array([sizes[0],0]),
-            data + np.array([-sizes[0],-sizes[1]]),
-            data + np.array([0,-sizes[1]]),
-            data + np.array([sizes[0],-sizes[1]])
-        ))
+            data + np.array([0, sizes[1]]),
+            data + np.array([sizes[0], sizes[1]]),
+            data + np.array([-sizes[0], 0]),
+            data + np.array([sizes[0], 0]),
+            data + np.array([-sizes[0], -sizes[1]]),
+            data + np.array([0, -sizes[1]]),
+            data + np.array([sizes[0],  -sizes[1]])
+            ))
 
     if (dim == 3):
         return np.vstack((
-            data + np.array([0, 0,0]),
-            data + np.array([-sizes[0], sizes[1],0]),
-            data + np.array([0,sizes[1],0]),
-            data + np.array([sizes[0],sizes[1],0]),
-            data + np.array([-sizes[0],0,0]),
-            data + np.array([sizes[0],0,0]),
-            data + np.array([-sizes[0],-sizes[1],0]),
-            data + np.array([0,-sizes[1],0]),
-            data + np.array([sizes[0],-sizes[1],0]),
-            data + np.array([0, 0,sizes[2]]),
-            data + np.array([-sizes[0], sizes[1],sizes[2]]),
-            data + np.array([0,sizes[1],sizes[2]]),
-            data + np.array([sizes[0],sizes[1],sizes[2]]),
-            data + np.array([-sizes[0],0,sizes[2]]),
-            data + np.array([sizes[0],0,sizes[2]]),
-            data + np.array([-sizes[0],-sizes[1],sizes[2]]),
-            data + np.array([0,-sizes[1],sizes[2]]),
-            data + np.array([sizes[0],-sizes[1],sizes[2]]),
-            data + np.array([0, 0,-sizes[2]]),
-            data + np.array([-sizes[0], sizes[1],-sizes[2]]),
-            data + np.array([0,sizes[1],-sizes[2]]),
-            data + np.array([sizes[0],sizes[1],-sizes[2]]),
-            data + np.array([-sizes[0],0,-sizes[2]]),
-            data + np.array([sizes[0],0,-sizes[2]]),
-            data + np.array([-sizes[0],-sizes[1],-sizes[2]]),
-            data + np.array([0,-sizes[1],-sizes[2]]),
-            data + np.array([sizes[0],-sizes[1],-sizes[2]])
+            data + np.array([0, 0, 0]),
+            data + np.array([-sizes[0], sizes[1], 0]),
+            data + np.array([0, sizes[1], 0]),
+            data + np.array([sizes[0], sizes[1], 0]),
+            data + np.array([-sizes[0], 0, 0]),
+            data + np.array([sizes[0], 0, 0]),
+            data + np.array([-sizes[0], -sizes[1], 0]),
+            data + np.array([0, -sizes[1], 0]),
+            data + np.array([sizes[0], -sizes[1], 0]),
+            data + np.array([0, 0, sizes[2]]),
+            data + np.array([-sizes[0], sizes[1], sizes[2]]),
+            data + np.array([0, sizes[1], sizes[2]]),
+            data + np.array([sizes[0], sizes[1], sizes[2]]),
+            data + np.array([-sizes[0], 0, sizes[2]]),
+            data + np.array([sizes[0], 0, sizes[2]]),
+            data + np.array([-sizes[0], -sizes[1], sizes[2]]),
+            data + np.array([0, -sizes[1], sizes[2]]),
+            data + np.array([sizes[0], -sizes[1], sizes[2]]),
+            data + np.array([0, 0, -sizes[2]]),
+            data + np.array([-sizes[0], sizes[1], -sizes[2]]),
+            data + np.array([0, sizes[1], -sizes[2]]),
+            data + np.array([sizes[0], sizes[1], -sizes[2]]),
+            data + np.array([-sizes[0], 0, -sizes[2]]),
+            data + np.array([sizes[0], 0, -sizes[2]]),
+            data + np.array([-sizes[0], -sizes[1], -sizes[2]]),
+            data + np.array([0, -sizes[1], -sizes[2]]),
+            data + np.array([sizes[0], -sizes[1], -sizes[2]])
             ))
 
 
