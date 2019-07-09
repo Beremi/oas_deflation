@@ -273,7 +273,7 @@ def voronoi_plot_3d_mlab(vor, fig=None, **kw):
     return fig
 
 
-def voronoi_plot_3d_mlab(vor, fig=None, **kw):
+def voronoi_plot_3d_mlab2(vor, fig=None, **kw):
     """
     Plot the given Voronoi diagram in 3-D
     Parameters
@@ -321,16 +321,6 @@ def voronoi_plot_3d_mlab(vor, fig=None, **kw):
     """
     if vor.points.shape[1] != 3:
         raise ValueError("Voronoi diagram is not 3-D")
-
-    if kw.get('show_points', True):
-        point_size = kw.get('point_size', None)
-        #ax.plot(vor.points[:,0], vor.points[:,1], '.', markersize=point_size)
-    if kw.get('show_vertices', True): pass
-        #ax.plot(vor.vertices[:,0], vor.vertices[:,1], 'o')
-
-    line_colors = kw.get('line_colors', 'k')
-    line_width = kw.get('line_width', 1.0)
-    line_alpha = kw.get('line_alpha', 1.0)
 
     if fig is None:
         fig = mlab.figure(1, size=(1000, 500), fgcolor=(0, 0, 0),

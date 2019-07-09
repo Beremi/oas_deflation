@@ -23,7 +23,7 @@ def createSingleSpringTestModel(length):
 
     fn1 = utilitiesNumeric.constantFunc(1e-3)
     functions.append (fn1)
-
+    """
     fn2 = utilitiesNumeric.sawToothConstFunc(value = 20, period = 11, sym =1)
     functions.append (fn2)
 
@@ -32,7 +32,7 @@ def createSingleSpringTestModel(length):
 
     fn4 = utilitiesNumeric.varyingSawToothFunction(fn1, fn2)
     functions.append(fn4)
-
+    """
     dim = 2
     idt = length /2
 
@@ -73,27 +73,32 @@ def createDiamondTestModel(width, height):
     #defining functions
     functions = []
     #### Defining functions
-    #0 sine func
-    #fn = utilitiesNumeric.sineFunc(10,22)
 
     #constant zero
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
-
+    #constant load
     fn1 = utilitiesNumeric.constantFunc(-1e-3)
     functions.append (fn1)
 
     dim = 2
-    idtW = width /2
-    idtH = height /5
+    idtW = 1e-10
+    idtH = 1e-10
 
-    maxLim = np.array([  width*2    ,   height*2   ])
+    maxLim = np.array([  width   ,   height ])
+    #shifts = -maxLim / 2
+    shifts = np.zeros(2) 
 
     node_coords,  mechBC_merged = assembleDiamondTest(maxLim, idtW, idtH)
 
+    print(node_coords)
+
     print('Conducting Voronoi tesselation...', end = '')
-    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim, shifts=shifts)
     print('done.')
+
+    #print(vor.points)
+    print(areas)
 
     fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
     plt.show()
@@ -105,10 +110,11 @@ def createDiamondTestModel(width, height):
     transportBC_merged = []
     ### selecting vertices in model
     noTrsprtBC = np.array([ -1 , -1 ])
-    boundA = np.array(  [ -idt , -idt ] )
-    boundB = np.array(  [ maxLim[0] + idt , maxLim[1] + idt  ]  )
+    boundA = np.array(  [ shifts[0] - idt , shifts[1] -idt ] )
+    boundB = np.array(  [ maxLim[0] +shifts[0] + idt , maxLim[1] +shifts[0]  + idt  ]  )
     allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
+    print(allVrtcs)
     for i in range (len(allVrtcs)):
         trsBC = utilitiesMech.transportBC(allVrtcs[i], noTrsprtBC)
         transportBC_merged.append(trsBC)
@@ -275,22 +281,18 @@ def create2dCantileverUniTens(maxLim, minDist, trials ):
     functions.append (fn)
 
     #1 loading function, single force top right, bilinear
-    func1 = []
-    func1.append( np.array([0,0]) )
-    func1.append( np.array([50, 50e4]) )
-    fn1 = utilitiesNumeric.generalFunc(func1)
+    fn1 = utilitiesNumeric.sawToothConstFunc(value = -0.5e-4, period = 10)
     functions.append (fn1)
 
     #transport function, leftFace, constant
-    fn2 = utilitiesNumeric.constantFunc(20)
+    fn2 = utilitiesNumeric.constantFunc(0)
     functions.append (fn2)
 
     #transport function, rightFace, bilinear
-    func3 = []
-    func3.append( np.array([0,0]) )
-    func3.append( np.array([50, 500]) )
-    fn3 = utilitiesNumeric.generalFunc(func3)
+    fn3 = utilitiesNumeric.constantFunc(100)
     functions.append (fn3)
+
+
 
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices

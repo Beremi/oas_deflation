@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO,
 
 class PowerTesselation(object):
     """
-    PowerTesselation(points, weights=None, limits=None)
+    PowerTesselation(points, weights=None, maxLim=None)
     Power diagrams in N dimensions using pydmga.
     Parameters
     ----------
@@ -20,7 +20,7 @@ class PowerTesselation(object):
         Coordinates of points to construct a convex hull from
     weights : ndarray of floats, shape (npoints), optional
         Weights of points to construct power diagram. Default: None
-    limits: ndarray of floats, shape (npoints), optional
+    maxLim: ndarray of floats, shape (npoints), optional
         Dimensions of box - (dx, dy [, dz])
     Attributes
     ----------
@@ -91,7 +91,7 @@ class PowerTesselation(object):
            [-4,  1]])
     """
 
-    def __init__(self, points, weights=None, limits=None):
+    def __init__(self, points, weights=None, maxLim=None):
         self._points = np.ascontiguousarray(points, dtype=np.double)
         self._npoints, self._ndim = points.shape
         if self._ndim not in [2, 3]:
@@ -99,15 +99,15 @@ class PowerTesselation(object):
         self._weights = weights
         # convert points+weights to array for pydgma
         self._points_pydgma = self._get_points_pydgma()
-        if limits is None:
+        if maxLim is None:
             dx, dy, dz = 1, 1, 1
         else:
-            dx = limits[0]
-            dy = limits[1]
+            dx = maxLim[0]
+            dy = maxLim[1]
             if self._ndim == 2:
                 dz = 1
             else:
-                dz = limits[2]
+                dz = maxLim[2]
 
         start = time.time()
         self.geometry = OrthogonalGeometry(dx, dy, dz, False, False, False)
