@@ -82,11 +82,12 @@ def createDiamondTestModel(width, height):
     functions.append (fn1)
 
     dim = 2
-    idtW = 1e-9
-    idtH = 1e-9
+    idtW = 1e-10
+    idtH = 1e-10
 
     maxLim = np.array([  width   ,   height ])
-    shifts = -maxLim/2 
+    shifts = -maxLim / 2
+    #shifts = np.zeros(2) - 0.25
 
     node_coords,  mechBC_merged = assembleDiamondTest(maxLim, idtW, idtH)
 
@@ -96,7 +97,8 @@ def createDiamondTestModel(width, height):
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim, shifts=shifts)
     print('done.')
 
-    print(vor.points)
+    #print(vor.points)
+    print(areas)
 
     fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
     plt.show()
