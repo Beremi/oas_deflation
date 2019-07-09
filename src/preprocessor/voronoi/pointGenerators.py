@@ -40,8 +40,8 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
             coords = randPointInRectangle(dim, maxLim)
             distIsGood = True
             #
-            #distIsGood = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords, coords)
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
+            distIsGood = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords, coords)
+            #distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
             #distIsGood = cutilitiesGeom.heckMutDistancesCKDTree(dim, minDist, node_coords, coords)
 
             if (distIsGood == False):
@@ -170,3 +170,69 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
             coords[0] = (nodeB[0] - nodeA[0])*indnt/length +(nodeB[0] - nodeA[0])*mD/length*i  + nodeA[0]
             coords[1] = (nodeB[1] - nodeA[1])*indnt/length +(nodeB[1] - nodeA[1])*mD/length*i  + nodeA[1]
             node_coords.append(coords)
+
+
+def fuller2D(d, dmax):
+    return (1.065 * np.sqrt(d / dmax) - 0.053 * np.power(d / dmax, 4) -
+            0.012 * np.power(d / dmax, 6) - 0.0045 * np.power(d/dmax, 8) -
+            0.0025 * np.power(d / dmax, 10))
+
+
+def generateTesC(lx, ly, lz=None, seed=None):
+
+    if lz:
+        dim = 3
+        size = np.array([lx, ly, lz])
+        V = lx*ly*lz
+    else:
+        V = lx*ly
+        dim = 2
+        size = np.array([lx, ly])
+    zero = np.array([0.] * dim)
+
+    dmax = 2.
+    dmin = 0.4
+    Pk = 0.75
+    d = np.linspace(dmin, dmax, 20)[::-1]
+    prob = Pk * fuller2D(d, dmax)
+    num = ((prob[:-1] - prob[1:]) * V /
+           (np.pi * np.square(d[:-1] / 2.)) + 1.).astype(int)
+
+    nodes = np.empty((0, dim))
+    radii = np.empty((0))
+    beams = []
+
+    lmin = 1.
+    i = 0
+
+    xlim = [0., lx]
+    ylim = [0., ly]
+    if seed:
+        np.random.seed(seed)
+
+    # NODES
+    di = 0
+    numi = 0
+    while d[di] > dmin:
+        if numi < num[di]:
+            point = np.random.rand(dim)*(size-d[di]) + (zero+d[di]/2.)
+            if len(nodes) == 0:
+                nodes = np.vstack((nodes, point))
+                radii = np.hstack((radii, d[di]/2.))
+                numi += 1
+                continue
+
+            dist = min(np.sqrt(np.sum(np.square(nodes-point), 1)) -
+                       1.1*(radii+d[di]/2.))
+            if dist > 0.:
+                nodes = np.vstack((nodes, point))
+                radii = np.hstack((radii, d[di]/2.))
+                numi += 1
+                i = 0
+            else:
+                i += 1
+        else:
+            di += 1
+            numi = 0.
+
+    return nodes, radii

@@ -659,6 +659,9 @@ MigrationBackup/
 *.exe
 *.out
 *.app
+
+########### This project
 voro++
 dmgalpha
 *DiscreteModel
+point_generators_cython.cpp
