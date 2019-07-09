@@ -9,7 +9,7 @@ template <typename T> int sgn(T &val) {
 
 
 //////////////////////////////////////////////////////////
-// MATERIAL ACCORDING TO ALGORYTHM FROM https://doi.org/10.1016/j.ijfatigue.2018.04.020
+// MATERIAL ACCORDING TO ALGORITHM FROM https://doi.org/10.1016/j.ijfatigue.2018.04.020
 // TODO:
 // NORMAL STIFNESS IS KEPT ELASTIC, DAMAGE INFLUENCES ONLY SHEAR DIRECTION
 //////////////////////////////////////////////////////////
