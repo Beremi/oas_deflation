@@ -2,6 +2,7 @@
 cimport cython
 import numpy as np
 cimport numpy as np
+import random
 from libc.stdio cimport printf
 from libc.stdlib cimport rand, RAND_MAX
 from libcpp.vector cimport vector
@@ -19,18 +20,17 @@ def generateNodesRect_cython(double[:] maxLim,
     print('Generating {:d}d block segment of size: {}'.format(dim, ' / '.join('{:f}'.format(i) for i in maxLim)))
     cdef:
         int generatedPoints = 0
-        cdef int p
+        int p, d
         int tr = 0
         double distInt
-        int i
-        vector[float] coords
+        vector[double] coords
         int node_coords_input_len = len(node_coords)
-        vector[float] node_coords_temp
+        vector[double] node_coords_temp
         bint distIsGood
         mt19937_64 gen = mt19937_64()
-        uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0,1.0)
-    coords.push_back(0.0)
-    coords.push_back(0.0)
+        uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
+    for d in range(dim):
+        coords.push_back(0.0)
 
     if node_coords:
         for node in node_coords:
@@ -41,15 +41,18 @@ def generateNodesRect_cython(double[:] maxLim,
         tr = 0
         distIsGood = False
         while (not distIsGood) and (tr < trials):
-            for i in range(dim):
-                coords[i] = dist(gen) * maxLim[i]
+            #for d in range(dim):
+            #    coords[d] = dist(gen) * maxLim[d]
+            for d in range(dim):
+                 coords[d] = random.random() * maxLim[d]
             distIsGood = True
 
-            for p in range(generatedPoints):
+            for p in range(node_coords_input_len + generatedPoints):
                 distInt = 0
-                for i in range(dim):
-                    distInt += ((node_coords_temp[p*dim+i] - coords[i])*
-                                (node_coords_temp[p*dim+i] - coords[i]))
+                for d in range(dim):
+                    dx = node_coords_temp[p*dim+d]
+                    dx -= coords[d]
+                    distInt += dx * dx
                 distInt = distInt**0.5
                 if (distInt < minDist):
                     distIsGood = False
@@ -58,16 +61,16 @@ def generateNodesRect_cython(double[:] maxLim,
 
         # Adding node coords
         if distIsGood and (tr < trials):
-            for i in range(dim):
-                node_coords_temp.push_back(coords[i])
+            for d in range(dim):
+                node_coords_temp.push_back(coords[d])
             generatedPoints += 1
 
     # Copy back to lists
-    for i in range(node_coords_input_len, generatedPoints):
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
         if (dim==2):
-          node_coords.append([node_coords_temp[i*dim], node_coords_temp[i*dim+1]])
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1]])
         if (dim==3):
-          node_coords.append([node_coords_temp[i*dim], node_coords_temp[i*dim+1], node_coords_temp[i*dim+2]])
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1], node_coords_temp[p*dim+2]])
 
 def checkMutDistancesLoops_cython(int dim,
                                   float minDist,
@@ -75,15 +78,15 @@ def checkMutDistancesLoops_cython(int dim,
                                   list newNode):
     cdef:
         distIsGood = True
-        int p, i
+        int p, d
         int currentNodes_len = len(currentNodes)
         double distInt
     for p in range (currentNodes_len):
         distInt = 0
-        for i in range(dim):
-            distInt += ((currentNodes[p*dim+i] - newNode[i])*
-                        (currentNodes[p*dim+i] - newNode[i]))
-        #distInt = scipy.spatial.distance.euclidean(currentNodes[p], newNode)
+        for d in range(dim):
+            dx = currentNodes[p*dim+d] - newNode[d]
+            distInt += dx * dx
+        distInt = distInt**0.5
         if (distInt < minDist):
             distIsGood = False
             break

@@ -568,24 +568,28 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
 
     #an indent due to mirroring of the data for voronoi tess.
     indent = 1e-8
-    """
-    nodeA = np.array ( [ 0 + indent , maxLim[1]/2 ] )
+
+    nodeA = np.array ( [ 0 + indent, indent ] )
     nodeAmechBC = np.array([0, 0 , -1 ,      -1 , -1 , -1])
     pointGenerators.generateSingleNode(nodeA, dim, node_coords)
-    mBC = utilitiesMech.mechanicalBC(dim, 0, nodeAmechBC)
-    mechBC_merged.append(mBC)
-    """
+    mechBC_merged.append( utilitiesMech.mechanicalBC(dim, 0, nodeAmechBC))
+
+
+    nodeB = np.array ( [ 0 + indent, maxLim[1]-indent ] )
+    nodeBmechBC = np.array([0, -1 , -1 ,      -1 , -1 , -1])
+    pointGenerators.generateSingleNode(nodeB, dim, node_coords)
+    mechBC_merged.append(utilitiesMech.mechanicalBC(dim, 1, nodeBmechBC))
 
     ###############generating of nodes, supported line left vertical ###############
     #mech bc
-    lineBC = np.array([0,0,-1,-1,-1,-1])
+    lineBC = np.array([0,-1,-1,-1,-1,-1])
 
     #defining points of the line
     nodeA = np.array([indent, indent])
     nodeB = np.array([indent, maxLim[1]-indent])
 
     oldLen = len(node_coords)
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False, True)
     nrOfPoints =  (len(node_coords)) - oldLen
 
     #adding mech boundary conditions
@@ -595,7 +599,7 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
 
 
     ###############generating a nodes on right face, loaded by uni tens in X) ###############
-    lineBC = np.array([-1,-1,-1,   1, -1 ,-1])
+    lineBC = np.array([1,-1,-1,   -1, -1 ,-1])
 
     #defining points of the line
     nodeA = np.array([maxLim[0] - indent, indent])
