@@ -51,6 +51,13 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
   FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
 
+  //kill element when excessive tension occur
+  if (m->giveTauBar() - m->giveM() * stress[0] <=0){
+    for(unsigned i=1; i<stress.size(); i++)  stress[ i ] = 0;
+    temp_damageShear = 1;
+    return stress;
+  }
+
 
   double f_trial;
 
@@ -59,11 +66,11 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       temp_slip = strain [ 1 ];
   } else {  // 3D
       temp_slip = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) ); //NOT CORRECT  
-  }
-  
+  }  
+
   //compute trials
   double tauTildaPiTrial = stiff [1] * (temp_slip - sPi);
-  f_trial = abs(tauTildaPiTrial - m->giveGamma() * alphaKin) - (m->giveKin() * zIso) - m->giveTauBar() + (m->giveM() * stress [ 0 ]);
+  f_trial = abs(tauTildaPiTrial - m->giveGamma() * alphaKin) - (m->giveKin() * zIso) - (m->giveTauBar() + (m->giveM() * stress [ 0 ]));
 
   if (f_trial <= 0){ 
     // internal variables unchanged
@@ -85,8 +92,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     Ynext = 0.5 * stiff[1] * pow(temp_slip - temp_sPi, 2);
 
     part1 = pow(1 - damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
-    temp_damageShear = fmin(1-1e-10, damageShear + dLambda * part1);
+    temp_damageShear = fmax(1e-10,fmin(1-1e-10, damageShear + dLambda * part1)); //limited by <0 1>
 
+    cout << m->giveTauBar() - m->giveM() * stress[0] << endl;
+    
     temp_zIso = zIso + dLambda;
     temp_alphaKin = alphaKin + dLambda * sgn1;
 
@@ -112,7 +121,6 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
     temp_EAlg = fmax(0, partA - partB - partC);
     */
-
 
     stress [ 1 ] = (1 - temp_damageShear) * stiff[ 1 ] * (temp_slip - temp_sPi);   //shear stress
   }
@@ -161,6 +169,8 @@ Vector FatigueShearMaterialStatus :: giveUnloadingNormalShearStiffness(const Vec
 //////////////////////////////////////////////////////////
 Vector FatigueShearMaterialStatus :: giveSecantNormalShearStiffness() const {
     Vector stiff = giveElasticNormalShearStiffness();
+    //cout << "---------------" << endl;
+    //print();
     //stiff[1] *= temp_stiffMultip; // normal stiffness stays elastic
     return stiff;
 }
@@ -168,6 +178,7 @@ Vector FatigueShearMaterialStatus :: giveSecantNormalShearStiffness() const {
 //////////////////////////////////////////////////////////
 Vector FatigueShearMaterialStatus :: giveSecantNormalShearStiffness(const Vector &strain) {
   Vector stiff = giveElasticNormalShearStiffness();
+
   //computeShearStifness(strain);
   //stiff[1] *= temp_stiffMultip; // normal stiffness stays elastic
   return stiff;
@@ -176,6 +187,7 @@ Vector FatigueShearMaterialStatus :: giveSecantNormalShearStiffness(const Vector
 //////////////////////////////////////////////////////////
 Vector FatigueShearMaterialStatus :: giveTangentNormalShearStiffness() const{
   Vector stiff = giveElasticNormalShearStiffness();
+      
   //stiff[1] = temp_EAlg; // normal stiffness stays elastic
   return stiff;
 }
