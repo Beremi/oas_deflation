@@ -104,7 +104,7 @@ def mirror_dataBeam(data, dim, sizes, shifts=0):
         ))
 
     dataOut += shifts
-    return 
+    return dataOut
 
 
 def copy_dataBeam(data, dim, sizes):
