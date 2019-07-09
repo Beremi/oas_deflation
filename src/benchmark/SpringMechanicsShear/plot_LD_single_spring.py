@@ -29,13 +29,12 @@ def get_damage_data():
         if not os.path.isfile(file_name):
             break
         # print("exporting file %s" % file_name, end='')
-        data = np.genfromtxt(file_name, usecols=(2, 3, 4, 5))
-        damage.append(data[0, 0])
-        cumSlip.append(data[0, 1])
-        slips.append(data[0, 2])
-        multip.append(data[0, 3])
+        data = np.genfromtxt(file_name, usecols=(2, 3, 4))
+        damage.append(data[0])
+        cumSlip.append(data[1])
+        slips.append(data[2])
         i += 1
-        # print("damage = %lg, cumSlip = %lg, slip = %lg, multip = %lg" % (damage[-1], cumSlip[-1], slips[-1], multip[-1]))
+        #print("damage = %lg, cumSlip = %lg, slip = %lg, multip = %lg" % (damage[-1], cumSlip[-1], slips[-1], multip[-1]))
 
     return [damage, cumSlip]
 
@@ -48,7 +47,7 @@ def plot_results_single_spring():
     # fig = plt.figure(figsize=(width, height))
     f, ((ax1, ax3, ax2, ax4, axD)) = plt.subplots(5, sharex='col')  # , sharey='row')
     axs = [ax1, ax2, ax3, ax4]
-    data = np.genfromtxt("LD.out", skip_header=1)
+    data = np.genfromtxt("results/LD.out", skip_header=1)
     steps = data[:, 0]
     timo = data[:, 1]
     try:
@@ -82,6 +81,7 @@ def plot_results_single_spring():
     f, (ax5, ax6) = plt.subplots(2)
 
     ax5.plot(data_values[0], data_values[2], 'k-', marker='o', markersize=0.5, mfc='r', mec='r', mew=0.5)
+    print(data_values[0])
     ax5.set_xlabel(names[0])
     ax5.set_ylabel(names[2])
 
