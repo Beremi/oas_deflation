@@ -10,26 +10,23 @@ class FatigueShearMaterial;
 class FatigueShearMaterialStatus : public DisMechMaterialStatus
 {
 private:
-    double slip_cur, slip_prev;
-    double maxEpsT, temp_maxEpsT;
-    double damageShear, temp_damageShear;
-    double temp_stiffMultip, stiffMultip;
-    double sPi, temp_sPi;  // cumulative slip
-    // double tauPi, temp_tauPi ;
-    double tauPiTrial, tauTildaPiTrial;  //  sliding bond stress
-    double alphaKin, temp_alphaKin;  // kinematic hardening variable
-    double zIso, temp_zIso;  // isotropic hardening variable
-    double temp_EAlg, EAlg;  // tangential shear stiffness
-    double RAND_H;
+    double slip; ///< slip
+    double damageShear; ///< damage in tangential direction
+    double sPi; ///< irreversible slip
+    double alphaKin;  ///< kinematic hardening variable
+    double zIso;  ///< isotropic hardening variable
+    //double temp_EAlg, EAlg;  // tangential shear stiffness
 
-    double computeTrials(const double &stressN, const FatigueShearMaterial *m);  // returns f_trial (negative f_trial -> elastic step)
-    void computeShearStifness(const Vector &strain);
+    double temp_sPi, temp_damageShear, temp_slip, temp_alphaKin, temp_zIso; ///<temporary variables
+    
     void print() const;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e);
     virtual ~FatigueShearMaterialStatus() {};
     void init();
     virtual void update();
+    virtual Vector giveUnloadingNormalShearStiffness() const;
+    virtual Vector giveUnloadingNormalShearStiffness(const Vector &strain);
     virtual Vector giveSecantNormalShearStiffness() const;
     virtual Vector giveSecantNormalShearStiffness(const Vector &strain);
     virtual Vector giveTangentNormalShearStiffness() const;
@@ -42,19 +39,17 @@ public:
 class FatigueShearMaterial : public DisMechMaterial
 {
 private:
-    // double Eb;  // bond stiffness (~shear stifness? Eb = E_0*alpha...?)
-    double tauBar; // reversibility limit
-    double Kin;  // isotropic hardening modulus
-    double gamma;  // kinematic hardening modulus
-    double S;  // damage strength
+    double tauBar; ///< reversibility limit
+    double Kin;  ///< isotropic hardening modulus
+    double gamma;  ///< kinematic hardening modulus
+    double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
-    double m;  // parameter controling the pressure sensitivity
+    double m;  ///< parameter controling the pressure sensitivity
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);
-    double giveEb() const { return alpha * E0; }
     double giveTauBar() const { return tauBar; }
     double giveKin() const { return Kin; }
     double giveGamma() const { return gamma; }

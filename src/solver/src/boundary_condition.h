@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <typeinfo>
 
 class Node; //forward declaration
 class NodeContainer; //forward declaration
