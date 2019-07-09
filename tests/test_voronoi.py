@@ -1,19 +1,12 @@
-import sys
-import pathlib
 import time
 import logging
 from scipy.spatial import Voronoi, voronoi_plot_2d
 import matplotlib.pyplot as plt
 import numpy as np
-print(pathlib.Path(__file__))
-PROJECT_DIR = pathlib.Path(__file__).resolve().parents[1]
-print(PROJECT_DIR)
-
-sys.path.append(str(PROJECT_DIR / 'src' / 'preprocessor' / 'voronoi'))
-
-from point_generators import generateTesC
+import settings
+from pointGenerators import generateTesC
 from voronoi import mirror_dataBeam
-from voronoi_viewer import voronoi_plot_3d_vtk
+from voronoi_viewer import voronoi_plot_3d_vtk, voronoi_plot_3d_mlab
 from power_tesselation import PowerTesselation
 
 logging.basicConfig(level=logging.INFO,
@@ -80,8 +73,8 @@ def test_voronoi_3d():
     points /= 10
     radii /= 10
     start = time.time()
-    vor = Voronoi(mirror_dataBeam(points, points.shape[1], points.shape[1]*[1]))
-    #vor = PowerTesselation(points)
+    #vor = Voronoi(mirror_dataBeam(points, points.shape[1], points.shape[1]*[1]))
+    vor = PowerTesselation(points)
     print('time =', time.time() - start)
     #print('#'*50)
     #print('points:', vor.points)
@@ -92,6 +85,25 @@ def test_voronoi_3d():
     #print('point_region:', vor.point_region)
 
     voronoi_plot_3d_vtk(vor)
+
+
+def test_voronoi_3d_mlab():
+    #points, radii = generateTesC(10, 10, 10, seed=1234)
+    points = np.array([[.1, .1, .1], [.2, .2, .2], [.5, .6, .4], [.3, .8, .2], [.7, .9, .8]])
+    points /= 10
+    #radii /= 10
+    start = time.time()
+    vor = PowerTesselation(points)
+    print('time =', time.time() - start)
+    #print('#'*50)
+    #print('points:', vor.points)
+    #print('vertices:', vor.vertices)
+    #print('ridge_points:', vor.ridge_points)
+    #print('ridge_vertices:', vor.ridge_vertices)
+    #print('regions:', vor.regions)
+    #print('point_region:', vor.point_region)
+
+    voronoi_plot_3d_mlab(vor)
 
 if __name__ == '__main__':
     test_power_voronoi_2d()
