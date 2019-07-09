@@ -50,8 +50,8 @@ powerTes = 0
 dim = 2
 print('Creating a %dd lattice model...' %dim)
 
-Xdim = 3.
-Ydim = 2.
+Xdim = 1.
+Ydim = 1.
 Zdim = 1.
 
 #dimensions of a rectangle model
@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.08
+minDist = 0.037
 radius = minDist / 2
 
 if (dim == 2):
@@ -96,6 +96,9 @@ if (dim == 2):
     #cantilever uni tension
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
 
+    #confined beam pressure
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions  = utilitiesModeling.create2dbeamConfinedPress(maxLim, minDist, trials )
+
     #simply supported beam, uniform load
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
 
@@ -103,7 +106,7 @@ if (dim == 2):
     #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createSingleSpringTestModel( 2 )
 
     #diamond test
-    node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 2)
+    #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 2)
 
 if (dim == 3):
     #cantilever
