@@ -18,7 +18,7 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
     vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts))
 
     if (dim == 2):
-        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim, shifts = shifts)
         return vor, regions, vertices, polygons, areas, centroids, points
     if (dim == 3):
         volumes = voronoi.voronoi_3d(vor, maxLim);

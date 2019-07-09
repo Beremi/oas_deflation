@@ -154,7 +154,7 @@ def copy_dataBeam(data, dim, sizes):
             ))
 
 
-def voronoi_2d(vor, sizes):
+def voronoi_2d(vor, sizes, shifts=0):
 
     if vor.points.shape[1] != 2:
         raise ValueError("Requires 2D input")
@@ -166,7 +166,10 @@ def voronoi_2d(vor, sizes):
     points = []
     new_vertices = vor.vertices.tolist()
 
-    pol=Polygon([(0,0), (0,sizes[1]), (sizes[0],sizes[1]), (sizes[0],0)])
+    polArr = np.array([(0.,0), (0,sizes[1]), (sizes[0],sizes[1]), (sizes[0],0)])
+    polArr += shifts
+
+    pol=Polygon(polArr)
   #  pol=Polygon([(0,0), (0,ySize), (xSize,ySize), (xSize,0)])
     # Reconstruct infinite regions
     for p1, region in enumerate(vor.point_region):

@@ -86,8 +86,8 @@ def createDiamondTestModel(width, height):
     idtH = 1e-10
 
     maxLim = np.array([  width   ,   height ])
-    shifts = -maxLim / 2
-    #shifts = np.zeros(2) - 0.25
+    #shifts = -maxLim / 2
+    shifts = np.zeros(2) 
 
     node_coords,  mechBC_merged = assembleDiamondTest(maxLim, idtW, idtH)
 
@@ -114,6 +114,7 @@ def createDiamondTestModel(width, height):
     boundB = np.array(  [ maxLim[0] +shifts[0] + idt , maxLim[1] +shifts[0]  + idt  ]  )
     allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
+    print(allVrtcs)
     for i in range (len(allVrtcs)):
         trsBC = utilitiesMech.transportBC(allVrtcs[i], noTrsprtBC)
         transportBC_merged.append(trsBC)
