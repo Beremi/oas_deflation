@@ -82,25 +82,29 @@ def copy_data_general_full(data):
     return new_data
 
 
-def mirror_dataBeam(data, dim, sizes):
+def mirror_dataBeam(data, dim, sizes, shifts=0):
     '''Mirror data 2D and 3D'''
     if (dim == 2):
-        return np.vstack((data,
-                          np.array([0, 0]) + data * np.array([-1, 1]),
-                          np.array([sizes[0]*2, 0]) + data * np.array([-1, 1]),
-                          np.array([0, sizes[1]*2]) + data * np.array([1, -1]),
-                          np.array([0, 0]) + data * np.array([1, -1])))
+        dataOut= np.vstack((
+        data,
+        np.array([0,0]) + data * np.array([-1,1]),
+        np.array([sizes[0]*2,0]) + data * np.array([-1,1]),
+        np.array([0,sizes[1]*2]) + data * np.array([1,-1]),
+        np.array([0,0]) + data * np.array([1,-1])
+        ))
 
     if (dim == 3):
-        datao = np.vstack((data,
-                           np.array([0, 0, 0]) + data * np.array([-1, 1, 1]),
-                           np.array([sizes[0]*2, 0, 0]) + data * np.array([-1, 1, 1]),
-                           np.array([0, 0, 0]) + data * np.array([1, -1, 1]),
-                           np.array([0, sizes[1]*2, 0]) + data * np.array([1, -1, 1]),
-                           np.array([0, 0, 0]) + data * np.array([1, 1, -1]),
-                           np.array([0, 0, sizes[2]*2]) + data * np.array([1, 1, -1])))
+        dataOut =  np.vstack((data,
+            np.array([0,0,0]) + data * np.array([-1,1,1]),
+            np.array([ sizes[0]*2 ,0,0]) + data * np.array([-1,1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,sizes[1]*2,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,1,-1]),
+            np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
+        ))
 
-        return np.vstack((datao))
+    dataOut += shifts
+    return 
 
 
 def copy_dataBeam(data, dim, sizes):

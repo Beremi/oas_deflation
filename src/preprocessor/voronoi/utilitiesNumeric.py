@@ -14,8 +14,9 @@ from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
 
 ##run voronoi, mirrored data
-def runMirroredVoronoi (node_coords, dim, maxLim):
-    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim))
+def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
+    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts))
+
     if (dim == 2):
         regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
         return vor, regions, vertices, polygons, areas, centroids, points
