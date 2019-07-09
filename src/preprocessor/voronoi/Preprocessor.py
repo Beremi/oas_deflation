@@ -76,7 +76,7 @@ expNodes = volume / dV  * 0.6
 print ('Expecting about %d nodes' %expNodes)
 
 #trials of random node positioning
-trials = 30000
+trials = 50000
 
 #lists for the model
 node_coords = []
@@ -94,8 +94,7 @@ if (dim == 2):
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 
     #cantilever uni tension
-    #do not use this yet! ...please
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
 
     #simply supported beam, uniform load
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )
@@ -104,7 +103,7 @@ if (dim == 2):
     #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createSingleSpringTestModel( 2 )
 
     #diamond test
-    #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 0.7)
+    node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 2)
 
 if (dim == 3):
     #cantilever

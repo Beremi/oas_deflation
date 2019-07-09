@@ -24,18 +24,18 @@ def copy_data(data):
                data + np.array([-1,0]), data, data + np.array([1,0]),
                data + np.array([-1,-1]), data + np.array([0,-1]), data + np.array([1,-1])))
 
-def mirror_dataBeam(data, dim, sizes):
+def mirror_dataBeam(data, dim, sizes, shifts=0):
     if (dim == 2):
-        return np.vstack((
+        dataOut= np.vstack((
         data,
         np.array([0,0]) + data * np.array([-1,1]),
         np.array([sizes[0]*2,0]) + data * np.array([-1,1]),
         np.array([0,sizes[1]*2]) + data * np.array([1,-1]),
         np.array([0,0]) + data * np.array([1,-1])
         ))
-
+    
     if (dim == 3):
-        datao =  np.vstack((data,
+        dataOut =  np.vstack((data,
             np.array([0,0,0]) + data * np.array([-1,1,1]),
             np.array([ sizes[0]*2 ,0,0]) + data * np.array([-1,1,1]),
             np.array([ 0 ,0,0]) + data * np.array([1,-1,1]),
@@ -44,9 +44,8 @@ def mirror_dataBeam(data, dim, sizes):
             np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
         ))
 
-        return np.vstack((
-         datao
-        ))
+    dataOut += shifts
+    return dataOut
 
 
 

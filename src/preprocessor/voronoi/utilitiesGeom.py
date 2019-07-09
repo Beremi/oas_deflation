@@ -142,7 +142,8 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 )))
-    nodes_out[:,  0:2] = node_coords[:,  0:2]
+    #nodes_out[:,  0:2] = node_coords[:,  0:2]
+    nodes_out[:,  0:2] = vor.points[0:node_count , 0:2]
     nodes_out[:,dim] = 0
     nodes_out[:,dim + 1] = areas[:]
 
@@ -237,7 +238,7 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
             ptB = (pA + pB)/2
-            
+
             pointB = node_count + len(aux_nodes)
             aux_nodes.append(ptB)
         #
@@ -750,7 +751,7 @@ def saveTransportElements(ridges_out, dim):
             vrtB = ridges_out[i,4]
             trp = utilitiesMech.transportPath (vrtA, vrtB, connNds, 1)
             transportElements.append (trp)
-    if (dim ==3):
+    if (dim==3):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
 
