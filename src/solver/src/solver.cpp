@@ -243,6 +243,11 @@ void SteadyStateNonLinearSolver :: solve() {
         cout << setw(15) << energy_error;
         cout << endl;
 
+        if (std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ){
+          cerr << "calculating with NaN - exit" << '\n';
+          exit(1);
+        }
+
         if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {
             converged = false;
         } else {
