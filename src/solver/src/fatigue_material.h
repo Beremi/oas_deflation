@@ -15,7 +15,7 @@ private:
     double sPi; ///< irreversible slip
     double alphaKin;  ///< kinematic hardening variable
     double zIso;  ///< isotropic hardening variable
-    //double temp_EAlg, EAlg;  // tangential shear stiffness
+    double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness 
 
     double temp_sPi, temp_damageShear, temp_slip, temp_alphaKin, temp_zIso; ///<temporary variables
     
@@ -25,12 +25,7 @@ public:
     virtual ~FatigueShearMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveUnloadingNormalShearStiffness() const;
-    virtual Vector giveUnloadingNormalShearStiffness(const Vector &strain);
-    virtual Vector giveSecantNormalShearStiffness() const;
-    virtual Vector giveSecantNormalShearStiffness(const Vector &strain);
-    virtual Vector giveTangentNormalShearStiffness() const;
-    virtual Vector giveTangentNormalShearStiffness(const Vector &strain);
+    virtual Vector giveNormalShearStiffness(string type) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };

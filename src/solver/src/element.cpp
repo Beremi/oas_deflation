@@ -221,11 +221,7 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
 Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
     DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
     Vector matstiffness;
-    if ( matrixType.compare("secant") == 0 ) {
-        matstiffness = dmstats->giveSecantNormalShearStiffness();
-    } else {
-        matstiffness = dmstats->giveElasticNormalShearStiffness();
-    }
+    matstiffness = dmstats->giveNormalShearStiffness(matrixType);
     Matrix Alpha(ndim, ndim);
     Alpha [ 0 ] [ 0 ] = matstiffness [ 0 ]; //E0
     for ( unsigned i = 1; i < ndim; i++ ) {

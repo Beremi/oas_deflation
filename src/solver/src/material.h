@@ -90,8 +90,8 @@ public:
     DisMechMaterialStatus(DisMechMaterial *m, Element *e);
     virtual ~DisMechMaterialStatus() {};
     Vector giveElasticNormalShearStiffness() const;
-    virtual Vector giveSecantNormalShearStiffness() const { return giveElasticNormalShearStiffness(); }   //only elastic
-    virtual Vector giveSecantNormalShearStiffness(const Vector &strain) const { return giveElasticNormalShearStiffness(); } //only elastic
+    virtual Vector giveNormalShearStiffness(string type) const { return giveElasticNormalShearStiffness(); }   //only elastic
+    virtual Vector giveNormalShearStiffness(string type, const Vector &strain) { giveStress(strain); return giveNormalShearStiffness(type); }
     virtual Vector giveStress(const Vector &strain);
     double giveDensity() const;
 };
