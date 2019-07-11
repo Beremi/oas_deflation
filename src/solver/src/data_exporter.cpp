@@ -413,7 +413,7 @@ void ExporterContainer :: init() {
         ofstream outputfile;
         outputfile.open((GlobPaths::RESULTDIR / buffer).string());
         if ( outputfile.good() ) {
-            outputfile << "#step";
+            outputfile << "#step\ttime";
         }
         outputfile.close();
     }
