@@ -173,14 +173,16 @@ void MarsMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveSecantNormalShearStiffness() const {
-    return giveElasticNormalShearStiffness() * ( 1 - temp_damage );
-}
-
-//////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveSecantNormalShearStiffness(const Vector &strain) {
-    computeDamage(strain);
-    return giveSecantNormalShearStiffness();
+Vector MarsMaterialStatus :: giveNormalShearStiffness(string type) const {
+    Vector stiff = giveElasticNormalShearStiffness();
+    if (type.compare("elastic")==0) return stiff;
+    else if (type.compare("secant")==0) return  stiff * ( 1 - temp_damage );
+    else if (type.compare("unloading")==0) return  stiff * ( 1 - temp_damage );
+    else if (type.compare("tangent")==0) return  stiff * ( 1 - temp_damage ); //not implemented, used unloading
+    else{
+        cerr << "Error: MarsMaterialStatus does not provide '"<< type << "' stiffness";
+        exit(1);
+    };
 }
 
 //////////////////////////////////////////////////////////

@@ -1,0 +1,25 @@
+#FuncTyped
+PWLFunction	1	0.000000	0.000000
+# PWLFunction	1	0.000000	-50000
+PWLFunction	2	0.000000	50   0.0 -1e-2
+## SAW TOOTH FUNCTION ###############################
+## with constant max value, lower bound is optional, zero if not given (-value if sym == 1)
+ConstSawToothFn value -5e-4 period 4
+# ConstSawToothFn value 10e-4 period 10 sym 1
+# ConstSawToothFn value 14e-4 lower 4e-4 period 10
+## can be given by time and number of cycles at that time
+# ConstSawToothFn value 10e-4 sym 1 time 40 num_cycles 10
+## SAW TOOT FUNCTION WITH INCREASING MAX VALUE ###############################
+## any combination of previous ConsSawToothFn multiplied by multip
+# LinSawToothFn value 1e-4 period 4 multip 1
+# LinSawToothFn value 1e-4 period 4 multip 1 sym 1
+## multip is time multiplier at time 1, 
+## can be given time, value at this given time and number of cycles per that time, multiplier is then multip = value/time
+# LinSawToothFn time 40 value 2e0 num_cycles 10 sym 1
+# LinSawToothFn time 40 value 1e-4 lower 0.5e-4 num_cycles 10
+## SINUS FUNCTION ###############################
+# SinusFn period 4 amplitude 1.0 shift 0.0
+## VARYING SAW TOOTH FUNCTION ###############################
+## combining SAW TOOTH FUNCTION with PWLF 
+## parameter shift basically means constant lower bound (for nonsymetric fn)
+# VaryingSawToothFn 3	0.000000 19.99999 20.00000 1.0 1.0 2.0 value 5e-4 period 4 shift 0

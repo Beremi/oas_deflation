@@ -79,7 +79,13 @@ double RigidBodyContact :: giveValue(string code) const {
 
 //////////////////////////////////////////////////////////
 double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
+  if ( code.compare("normal_x") == 0 )       {
+      return normal.getX();
+  } else if ( code.compare("normal_y") == 0 )       {
+      return normal.getY();
+  } else {
     return mechanicalElement :: giveIPValue(code, ipnum);
+  }
 }
 
 //////////////////////////////////////////////////////////
@@ -222,11 +228,7 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
 Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
     DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
     Vector matstiffness;
-    if ( matrixType.compare("secant") == 0 ) {
-        matstiffness = dmstats->giveSecantNormalShearStiffness();
-    } else {
-        matstiffness = dmstats->giveElasticNormalShearStiffness();
-    }
+    matstiffness = dmstats->giveNormalShearStiffness(matrixType);
     Matrix Alpha(ndim, ndim);
     Alpha [ 0 ] [ 0 ] = matstiffness [ 0 ]; //E0
     for ( unsigned i = 1; i < ndim; i++ ) {
