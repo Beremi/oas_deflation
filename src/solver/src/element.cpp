@@ -131,6 +131,7 @@ void RigidBodyContact :: init() {
         t = t / area;
     } else   {
         cerr << "Dimension " << ndim << " is not implemented yet. Feel free toi do it." << endl;
+        //JM: todo, kontrola rovinnosti a kolmosti
         exit(0);
     }
 

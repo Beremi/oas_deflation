@@ -476,7 +476,7 @@ def create3dCantileverBending(maxLim, minDist, trials ):
     ### extracting characteristics of the Vor diagram
 
     print('done.')
-    voronoi_viewer.voronoi_plot_3d_vtk(vor)
+
     """
     fig = plt.figure()
     ax = plt.axes(projection='3d')
@@ -727,7 +727,7 @@ def assemble2dbeamConfinedPress (maxLim, minDist, trials):
 
 
     nodeB = np.array ( [ 0 + indent, maxLim[1]-indent ] )
-    nodeBmechBC = np.array([0, -1 , -1 ,      -1 , -1 , -1])
+    nodeBmechBC = np.array([0, 0 , -1 ,      -1 , -1 , -1])
     pointGenerators.generateSingleNode(nodeB, dim, node_coords)
     mechBC_merged.append(utilitiesMech.mechanicalBC(dim, 1, nodeBmechBC))
 
