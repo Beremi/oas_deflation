@@ -23,7 +23,7 @@ FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m
 double FatigueShearMaterialStatus :: giveValue(string code) const {
     if ( code.compare("damage") == 0 ) {
         return damageShear;
-    } else if ( code.compare("cumSlip") == 0 ) {
+    } else if ( code.compare("SlipPi") == 0 ) {
         return sPi;
     } else if ( code.compare("slip") == 0 ) {
         return slip;
@@ -66,14 +66,14 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       //temp_slip = abs(strain [ 1 ]) * mult;  // 2D
       temp_slip = strain [ 1 ];
   } else {  // 3D
-      temp_slip = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) ); //NOT CORRECT  
-  }  
+      temp_slip = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) ); //NOT CORRECT
+  }
 
   //compute trials
   double tauTildaPiTrial = stiff [1] * (temp_slip - sPi);
   f_trial = abs(tauTildaPiTrial - m->giveGamma() * alphaKin) - (m->giveKin() * zIso) - (m->giveTauBar() - (m->giveM() * stress [ 0 ]));
 
-  if (f_trial <= 0){ 
+  if (f_trial <= 0){
     // internal variables unchanged
     temp_zIso = zIso;
     temp_alphaKin = alphaKin;
@@ -94,7 +94,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
     part1 = pow(1 - damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
     temp_damageShear = fmax(1e-10,fmin(1-1e-10, damageShear + dLambda * part1)); //limited by <0 1>
-    
+
     temp_zIso = zIso + dLambda;
     temp_alphaKin = alphaKin + dLambda * sgn1;
 

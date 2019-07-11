@@ -79,7 +79,13 @@ double RigidBodyContact :: giveValue(string code) const {
 
 //////////////////////////////////////////////////////////
 double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
+  if ( code.compare("normal_x") == 0 )       {
+      return normal.getX();
+  } else if ( code.compare("normal_y") == 0 )       {
+      return normal.getY();
+  } else {
     return mechanicalElement :: giveIPValue(code, ipnum);
+  }
 }
 
 //////////////////////////////////////////////////////////
