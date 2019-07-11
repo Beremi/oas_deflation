@@ -267,7 +267,7 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
     saveNodes(nodes_out, aux_nodes, dim)
     saveVertices(vertices_out, dim)
     saveMechanicalElements(ridges_out, node_count, dim)
-    saveTransportElements(ridges_out,dim)
+    saveTransportElements(ridges_out,dim, node_count)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
 
@@ -293,14 +293,20 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
     validRidgeIdxs = []
 
     #print('ridge points')
+    #adding ridges with at least on node in sample
     for i in range (vor.ridge_points.shape[0]):
         pr = False
         for p in range (2):
             if (vor.ridge_points[i][p] < node_count):
                 pr=True
+
         if (pr):
-            #print(vor.ridge_points[i,:])
             validRidgeIdxs.append(i)
+
+    #further adding ridges with both nodes out of sample
+    #but both are part of at least one ridge with one node in sample
+    #for i in range (len(validRidgeIdxs)):
+
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
 
@@ -450,7 +456,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
     saveNodes(nodes_out, aux_nodes,dim)
     saveVertices(vertices_out, dim)
     saveMechanicalElements(ridges_out, node_count, dim)
-    saveTransportElements(ridges_out,dim)
+    saveTransportElements(ridges_out,dim, node_count)
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -697,7 +703,6 @@ def saveMechanicalElements (ridges_out, node_count, dim):
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
             mechElemRidges.append( ridges_out[m] )
 
-
     if (dim ==2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
@@ -719,7 +724,7 @@ def saveMechanicalElements (ridges_out, node_count, dim):
     sys.stdout.flush()
 
 
-def saveTransportElements(ridges_out, dim):
+def saveTransportElements(ridges_out, dim, node_count):
     """
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
@@ -772,6 +777,12 @@ def saveTransportElements(ridges_out, dim):
                     connNds.clear()
                     connNds.append (ro[0])
                     connNds.append (ro[1])
+                    """
+                    if (ro[0]>node_count):
+                        print ('aux_node %d' %ro[0])
+                    if (ro[1]>node_count):
+                        print ('aux_node %d' %ro[1])
+                    """
                     trp = utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1)
                     transportElements.append (trp)
     print('done.')

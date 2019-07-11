@@ -42,22 +42,16 @@ class transportPath:
     def addConnectedNodes (self, ridge):
         #print(ridge)
         #print(self.getString())
-        """
-        if (len(self.__connectedNodes) != self.nds):
-            print ('ERROR ERROR ERROR ERROR ERROR')
-            print ('orig: %d' %(self.nds))
-            print ('curr: %d' %(len(self.__connectedNodes)))
-        else:
-            print('OK')
-        """
+
         self.__connectedNodes.append(ridge[0])
         self.__connectedNodes.append(ridge[1])
         self.nds = len(self.__connectedNodes)
         #print(self.getString())
 
     def getString(self):
-        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(len(self.__connectedNodes))
-        for i in range (len(self.__connectedNodes)):
+
+        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(self.nds)
+        for i in range (self.nds):
             line+='\t%d'%(self.__connectedNodes[i])
         line +='\t' + '%d'%(self.material)
         return line
