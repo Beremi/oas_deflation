@@ -1,5 +1,4 @@
 #include "element.h"
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC ELEMENT - MASTER CLASS
@@ -136,9 +135,68 @@ void RigidBodyContact :: init() {
         area = t.norm();
         t = t / area;
     } else   {
-        cerr << "Dimension " << ndim << " is not implemented yet. Feel free toi do it." << endl;
-        //JM: todo, kontrola rovinnosti a kolmosti
-        exit(0);
+        //JM: Coplanarity check for vertices on the face
+        //checking coplanarity of every consecutive 4 nodes
+        double maxErr = 0.0;
+        double currErr = 0.0;
+        //
+        for (unsigned int i=0; i<vert.size()-3; i++){
+          currErr = checkCoplanarity(  vert[i]->givePoint(), vert[i+1]->givePoint(), vert[i+2]->givePoint(), vert[i+3]->givePoint()  );
+          if (currErr > maxErr){ maxErr = currErr; }
+        }
+        //also checking if the beam midpoint is coplanar with the face
+        Point midPoint = (nodes [1]->givePoint() + nodes [0]->givePoint())/2.;
+        currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), midPoint );
+        if (currErr > maxErr){ maxErr = currErr; }
+        //
+        if (maxErr > 1e-12){
+          cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
+          exit(1);
+        }
+
+        //JM: Perpendicularity check of the beam and face directions
+        // normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
+        // perpendicularity check: cross (beam, face)=>0
+        Point prp = cross( (nodes [1]->givePoint() - nodes [0]->givePoint()) ,
+                            cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint())  );
+        if (prp.norm() > 1e-12){
+          cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+          exit(1);
+        }
+
+        //JM: finding position of the SINGLE integration point -> center of gravity of the face polygon
+        //average point of the polygon for triangulation
+        Point avgPoint = Point(0.0, 0.0, 0.0);
+        for (unsigned int i=0; i<vert.size(); i++){ avgPoint += vert[i]->givePoint(); }
+        avgPoint /= vert.size();
+
+        //integration point coordinates as an average of CGs of face triangles weighted by areas
+        ip_locs[0] = Point(0.0, 0.0, 0.0);
+        area = 0.0;
+        double ai = 0.0;
+        unsigned int j = 0;
+        for (unsigned int i=0; i<vert.size(); i++){
+          j=i+1;
+          if (i==vert.size()-1){ j=0; }
+          //triangle area computed as a_i = norm(cross(AB, AC)) / 2
+          ai = (cross(vert[i]->givePoint() - avgPoint,   vert[j]->givePoint() - avgPoint) ).norm();
+          area += ai;
+          //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
+          ip_locs[0] += ( avgPoint +vert[i]->givePoint() +vert[j]->givePoint() )/3.0 * ai;
+        }
+        ip_locs[0] /= area;
+
+        //Check if integration point is coplanar with face
+        currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
+        if (currErr > 1e-12){
+          cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
+          exit(1);
+        }
+
+
+        //Work in progress
+        //cerr << "Dimension " << ndim << " implementation is in progress. " << endl;
+        //exit(0);
     }
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this);

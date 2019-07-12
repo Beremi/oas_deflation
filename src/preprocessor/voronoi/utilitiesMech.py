@@ -49,12 +49,14 @@ class transportPath:
         #print(self.getString())
 
     def getString(self):
-
         line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(self.nds)
         for i in range (self.nds):
             line+='\t%d'%(self.__connectedNodes[i])
         line +='\t' + '%d'%(self.material)
         return line
+
+    def printConnectedNodes(self):
+        print (self.__connectedNodes)
 
 ##################################################
 

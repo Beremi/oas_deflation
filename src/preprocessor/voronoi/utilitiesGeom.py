@@ -293,21 +293,18 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
     validRidgeIdxs = []
 
     #print('ridge points')
-    #adding ridges with at least on node in sample
+    #adding ridges with at least one node in sample
     for i in range (vor.ridge_points.shape[0]):
         pr = False
         for p in range (2):
             if (vor.ridge_points[i][p] < node_count):
                 pr=True
-
         if (pr):
             validRidgeIdxs.append(i)
 
     #further adding ridges with both nodes out of sample
     #but both are part of at least one ridge with one node in sample
     #for i in range (len(validRidgeIdxs)):
-
-
     validRidgeIdxs = np.asarray(validRidgeIdxs)
 
 
@@ -329,8 +326,10 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         for j in range (len(rdge)):
             vrtx = np.zeros ( (dim + 1 +1 +1) )
             #
-            for d in range (dim):
-                vrtx [d] = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][d]
+            #for d in range (dim):
+            #    vrtx [d] = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][d]
+            vrtx[0:dim] =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][0:dim]
+
             #
             vrtx[dim] = vor.ridge_vertices[validRidgeIdxs[i]][j]
             #
@@ -348,7 +347,8 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         #ridges
         ########################################################
         #array for the ridge: nodeA, nodeB, trBc, vertCount,newVertIdcs
-        rdg = np.zeros ( (2 + 0 + 1 + len(vor.ridge_vertices[validRidgeIdxs[i]])  ) )
+        nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
+        rdg = np.zeros ( (2 + 1 + nrVertices  ) )
 
         #nodes divided by the ridge
         pointA = vor.ridge_points[validRidgeIdxs[i]][0]
@@ -375,14 +375,10 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         #
         rdg[0] = pointA
         rdg[1] = pointB
-
-        #vert count
-        nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
         rdg[2] =  nrVertices
-        #print (rdg[3])
-        #
+
         #adding vert idcs
-        for v in range ( len(vor.ridge_vertices[validRidgeIdxs[i]]) ):
+        for v in range ( nrVertices ):
             rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[validRidgeIdxs[i]][v] ]
 
         #coplanarity control
@@ -391,7 +387,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
             pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
             pC = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+2]][:]
             pD = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+3]][:]
-            #pD[2] = 10
+
             tol = 1e-10
             val = equation_plane(pA, pB, pC, pD)
             if ( val > tol):
@@ -759,12 +755,14 @@ def saveTransportElements(ridges_out, dim, node_count):
     if (dim==3):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
+            print (ro)
 
             for n in range (3, len(ro)):
                 newPath = True
                 m = n+1
                 if (n==len(ro)-1):
                     m = 3
+                #print('%d ; %d = %d ; %d' %(n,m, ro[n], ro[m]))
 
                 for elem in transportElements:
                     if ( ((elem.vertexA == ro[n]) and (elem.vertexB == ro[m]))
@@ -777,14 +775,11 @@ def saveTransportElements(ridges_out, dim, node_count):
                     connNds.clear()
                     connNds.append (ro[0])
                     connNds.append (ro[1])
-                    """
-                    if (ro[0]>node_count):
-                        print ('aux_node %d' %ro[0])
-                    if (ro[1]>node_count):
-                        print ('aux_node %d' %ro[1])
-                    """
-                    trp = utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1)
-                    transportElements.append (trp)
+
+                    #if (ro[0]>node_count and ro[1]>node_count):
+                    #    print ('both aux')
+
+                    transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
     print('done.')
     sys.stdout.flush()
 
@@ -795,5 +790,6 @@ def saveTransportElements(ridges_out, dim, node_count):
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
         f.write("%s\n" % headerLine )
         for element in transportElements:
+            #element.printConnectedNodes()
             f.write("%s\n" % element.getString() )
     print('done.')

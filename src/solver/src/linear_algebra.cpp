@@ -242,6 +242,17 @@ double determinant(const Point &u, const Point &v, const Point &w) {
     return D;
 }
 
+//JM: Coplanarity check of 4 points (for 3d faces)
+double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD){
+    Point AB = ptB - ptA;
+    Point AC = ptC - ptA;
+    Point AD = ptD - ptA;
+    //triple scalar product AB*(ACxAD) =>0
+    double coplanarityError = dot(  AB, cross(AC,AD)  );
+    return coplanarityError;
+}
+
+
 
 Matrix :: Matrix(size_t x, size_t y) {
     r = x;
