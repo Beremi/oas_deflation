@@ -142,12 +142,12 @@ void RigidBodyContact :: init() {
         //
         for (unsigned int i=0; i<vert.size()-3; i++){
           currErr = checkCoplanarity(  vert[i]->givePoint(), vert[i+1]->givePoint(), vert[i+2]->givePoint(), vert[i+3]->givePoint()  );
-          if (currErr > maxErr){ maxErr = currErr; }
+          if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
         }
         //also checking if the beam midpoint is coplanar with the face
         Point midPoint = (nodes [1]->givePoint() + nodes [0]->givePoint())/2.;
         currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), midPoint );
-        if (currErr > maxErr){ maxErr = currErr; }
+        if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
         //
         if (maxErr > 1e-12){
           cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
@@ -188,15 +188,15 @@ void RigidBodyContact :: init() {
 
         //Check if integration point is coplanar with face
         currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
-        if (currErr > 1e-12){
+        if (abs(currErr) > 1e-12){
           cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
           exit(1);
         }
 
 
         //Work in progress
-        //cerr << "Dimension " << ndim << " implementation is in progress. " << endl;
-        //exit(0);
+        cerr << "Dimension " << ndim << " implementation is in progress. JM" << endl;
+        exit(0);
     }
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
