@@ -153,7 +153,7 @@ Point calculateVertexDisplacement2D(const RigidBodyContact &rbc, const Node &v, 
 
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRBExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
+void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
   // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
   // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
   char buffer [ 100 ];

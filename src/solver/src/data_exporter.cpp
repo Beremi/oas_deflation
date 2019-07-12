@@ -252,7 +252,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     newexp->readFromLine(iss, dimension);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKRBExporter") == 0 )    {
-                    VTKRBExporter *newexp = new VTKRBExporter(e, n);
+                    VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n);
                     newexp->readFromLine(iss, dimension);
                     exporters.push_back(newexp);
                 } else  {

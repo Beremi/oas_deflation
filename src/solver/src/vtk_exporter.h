@@ -42,14 +42,14 @@ protected:
 //////////////////////////////////////////////////////////
 // EXPORT RIGID BODIES TO VTK (VTU)
 // WORKS ONLY FOR RIGID BODIES IN 2D
-class VTKRBExporter : public VTKExporter
+class VTKRB2DExporter : public VTKExporter
 {
 private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKRBExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
-    ~VTKRBExporter() {};
+    VTKRB2DExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
+    ~VTKRB2DExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
