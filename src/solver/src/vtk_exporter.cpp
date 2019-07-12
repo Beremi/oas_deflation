@@ -145,7 +145,7 @@ Point calculateVertexDisplacement2D(const RigidBodyContact &rbc, const Node &v, 
 
   Matrix P = A * U;
 
-  Point p = Point(P[0][0], P[1][0], P[2][0]);
+  Point p = Point(P[0][0], P[1][0], 0.);  // zero displacement in Z direction
 
   return p;
 }
