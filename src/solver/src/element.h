@@ -83,6 +83,7 @@ public:
     ~RigidBodyContact() {};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     void init();
+    vector< Node * > giveVertices() const { return vert; };
     Matrix giveStiffnessMatrix(string matrixType) const;
     Matrix giveInertiaMatrix() const;
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveStiffnessMatrix(matrixType); };

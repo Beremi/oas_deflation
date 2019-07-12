@@ -1,6 +1,7 @@
 set (solver
     boundary_condition.cpp
     data_exporter.cpp
+    vtk_exporter.cpp
     element_container.cpp
     element.cpp
     linear_algebra.cpp
