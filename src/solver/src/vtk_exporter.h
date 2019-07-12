@@ -10,13 +10,14 @@
 class VTKExporter : public DataExporter
 {
 private:
-
+    double time_each, time_last;
 public:
     VTKExporter() {};
     virtual ~VTKExporter() {};
-    virtual void readFromLine(istringstream &iss, unsigned dimension) = 0;
+    virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void giveFileName(unsigned step, char *buffer) const;
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const = 0;
+    virtual bool doExportNow(const double &time);
 protected:
 };
 
@@ -32,7 +33,7 @@ private:
 public:
     VTKElementExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
     ~VTKElementExporter() {};
-    void readFromLine(istringstream &iss, unsigned dimension);
+    // virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
 };
@@ -49,7 +50,7 @@ private:
 public:
     VTKRBExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
     ~VTKRBExporter() {};
-    void readFromLine(istringstream &iss, unsigned dimension);
+    // virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
 };

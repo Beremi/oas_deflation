@@ -340,7 +340,9 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 
     //export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        ( * d )->exportData(step, DoFs, reactions);
+        if ( ( * d )->doExportNow(time) ){
+          ( * d )->exportData(step, DoFs, reactions);
+        }
     }
 
     //add end line to gauge exporter files
