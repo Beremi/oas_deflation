@@ -136,7 +136,7 @@ void RigidBodyContact :: init() {
         t = t / area;
     } else   {
         //JM: Coplanarity check for vertices on the face
-        //checking coplanarity of every consecutive 4 nodes
+        //JM: checking coplanarity of every consecutive 4 nodes
         double maxErr = 0.0;
         double currErr = 0.0;
         //
@@ -144,7 +144,7 @@ void RigidBodyContact :: init() {
           currErr = checkCoplanarity(  vert[i]->givePoint(), vert[i+1]->givePoint(), vert[i+2]->givePoint(), vert[i+3]->givePoint()  );
           if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
         }
-        //also checking if the beam midpoint is coplanar with the face
+        //JM: also checking if the beam midpoint is coplanar with the face
         Point midPoint = (nodes [1]->givePoint() + nodes [0]->givePoint())/2.;
         currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), midPoint );
         if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
@@ -154,23 +154,39 @@ void RigidBodyContact :: init() {
           exit(1);
         }
 
+        //JM: face normal vector made from first 3 vertices
+        t = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
+        //JM: tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
+        if(t.x<t.z){
+          double crd = t.y;
+          t.x = 0;
+          t.y = -t.z;
+          t.z = crd;
+        }
+        else {
+          double crd = t.x;
+          t.x = -t.y;
+          t.y = t.x;
+          t.z = 0;
+        }
+        t /= t.norm();
+
         //JM: Perpendicularity check of the beam and face directions
-        // normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
-        // perpendicularity check: cross (beam, face)=>0
-        Point prp = cross( (nodes [1]->givePoint() - nodes [0]->givePoint()) ,
-                            cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint())  );
-        if (prp.norm() > 1e-12){
+        //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
+        //JM: perpendicularity check: cross (beam, face)=>0
+        Point prp = (nodes [1]->givePoint() - nodes [0]->givePoint())* t ;
+        if (prp.norm() > 1e-6){
           cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
-          exit(1);
+        //  exit(1);
         }
 
         //JM: finding position of the SINGLE integration point -> center of gravity of the face polygon
-        //average point of the polygon for triangulation
+        //JM: average point of the polygon for triangulation
         Point avgPoint = Point(0.0, 0.0, 0.0);
         for (unsigned int i=0; i<vert.size(); i++){ avgPoint += vert[i]->givePoint(); }
         avgPoint /= vert.size();
 
-        //integration point coordinates as an average of CGs of face triangles weighted by areas
+        //JM: integration point coordinates as an average of CGs of face triangles weighted by areas
         ip_locs[0] = Point(0.0, 0.0, 0.0);
         area = 0.0;
         double ai = 0.0;
@@ -186,17 +202,12 @@ void RigidBodyContact :: init() {
         }
         ip_locs[0] /= area;
 
-        //Check if integration point is coplanar with face
-        currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
+        //JM: Check if integration point is coplanar with face
+        currErr = checkCoplanarity( vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
         if (abs(currErr) > 1e-12){
           cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
           exit(1);
         }
-
-
-        //Work in progress
-        cerr << "Dimension " << ndim << " implementation is in progress. JM" << endl;
-        exit(0);
     }
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
@@ -209,6 +220,9 @@ void RigidBodyContact :: init() {
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
         exit(1);
     }
+    //Work in progress
+    cerr << "Dimension " << ndim << " implementation is in progress. JM" << endl;
+    exit(0);
     //Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
 
     //Matrix B
