@@ -155,27 +155,22 @@ void RigidBodyContact :: init() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        t = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
-        //JM: tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-        if(t.x<t.z){
-          double crd = t.y;
-          t.x = 0;
-          t.y = -t.z;
-          t.z = crd;
-        }
-        else {
-          double crd = t.x;
-          t.x = -t.y;
-          t.y = t.x;
-          t.z = 0;
-        }
+        Point n = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
+        //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
+        n /= n.norm();
+        Point t2 ;
+        if( fabs (n.x ) > fabs (n.z )) t2 = Point (-n.y , n.x , 0.0f );
+        else t2 = Point (0.0f , -n.z , n.y );
+        t = cross (t2 , n);
         t /= t.norm();
+        //  t = cross (t, Point(sqrt(2), sqrt(3), sqrt(5))); // not good enough!!
+
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
         Point prp = (nodes [1]->givePoint() - nodes [0]->givePoint())* t ;
-        if (prp.norm() > 1e-6){
+        if (prp.norm() > 1e-8){
           cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
         //  exit(1);
         }
@@ -220,9 +215,7 @@ void RigidBodyContact :: init() {
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
         exit(1);
     }
-    //Work in progress
-    cerr << "Dimension " << ndim << " implementation is in progress. JM" << endl;
-    exit(0);
+
     //Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
 
     //Matrix B
@@ -406,8 +399,10 @@ void Transp1D :: init() {
         area = t.norm();
         t = t / area;
     } else   {
-        cerr << "Dimension " << ndim << " is not implemented yet. Feel free toi do it." << endl;
-        exit(0);
+
+      //Work in progress
+      cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;
+      exit(0);
     }
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
