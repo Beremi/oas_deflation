@@ -49,7 +49,14 @@ class transportPath:
         #print(self.getString())
 
     def getString(self):
-        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(self.nds)
+        ndNr = self.nds
+        if (ndNr == 2):
+            ndNr = 1
+        else:
+            ndNr /= 2
+            ndNr += 1
+
+        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
         for i in range (self.nds):
             line+='\t%d'%(self.__connectedNodes[i])
         line +='\t' + '%d'%(self.material)
@@ -62,23 +69,48 @@ class transportPath:
 
 
 ##################################################
-#### TRANSPORT PATH ELEMENT FOR LATTICE MODEL ####
+#### Linear ealastic materials ####
 class linearElasticMaterial:
-    def __init__ (self, youngModulus, poisson, transportC, transportS, density):
+    def __init__ (self, youngModulus, poisson,  density):
         self.youngModulus = youngModulus
         self.poisson = poisson
-        self.transportC = transportC
-        self.transportS = transportS
         self.density = density
 
     def getString(self):
-        line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     + '\nTrsprtMaterial'         + '\t' + '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
-
+        line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)
         return line
 
 ##################################################
 
 
+##################################################
+#### Mars material ####
+class MarsMaterial:
+    def __init__ (self, youngModulus, poisson, density, ft, Gt):
+        self.youngModulus = youngModulus
+        self.poisson = poisson
+        self.density = density
+        self.ft = ft
+        self.Gt = Gt
+    def getString (self):
+        line = 'MarsMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'ft\t%f' %(self.ft) +'\t' + 'Gt\t%f' %(self.Gt)
+        return line
+##################################################
+
+##################################################
+#### Transport material ####
+class TransportMaterial:
+    def __init__ (self, transportC, transportS):
+        self.transportC = transportC
+        self.transportS = transportS
+
+    def getString (self):
+        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
+        return line
+
+
+
+##################################################
 
 
 

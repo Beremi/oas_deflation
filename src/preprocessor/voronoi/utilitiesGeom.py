@@ -286,7 +286,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
     nodes_out[:,dim] = areas[:]
 
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
-    print ('Area Error: %.5E ' %(relAreaError) )
+    #print ('Area Error: %.5E ' %(relAreaError) )
 
     ########################################################################################################
     # ridges with nodes within sample
@@ -383,6 +383,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
 
 
         #coplanarity control
+        """
         for v in range ( nrVertices-3 ):
             pA = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v]][:]
             pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
@@ -395,7 +396,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
                 allCoplanar = False
                 print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
             #else: print('Coplanar  %d' %i)
-
+        """
         #normal of the ridge surface from first three vertices
         planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
@@ -412,12 +413,13 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         else:
             if (printout): print ('Direction of plane normal REVERSE')
             #rdg[nrVertices:] = rdg[:nrVertices-1:-1]
-            print('pred %s' %rdg)
+            #print('pred %s' %rdg)
             rdg[3:len(rdg)]= rdg[3:len(rdg)][::-1]
-            print('po %s \n' %rdg)
+            #print('po %s \n' %rdg)
 
-        ##############prerazeni bodu podle uhlu atan2((Vb x Va) . Vn, Va . Vb)##############
+        ##############atan2((Vb x Va) . Vn, Va . Vb)##############
         #average point within the ridge surface
+        """
         avgPoint = np.zeros(3)
         for d in range (3):
             for l in range ( nrVertices ):
@@ -438,6 +440,8 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
             if (angles [l] < 0):
                 angles [l] = 360 - (-angles [l])
         #print(angles)
+        """
+
         ridges_out.append(rdg)
 
     if (allCoplanar):
@@ -566,14 +570,14 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
     print('done.')
 
-def saveMasterInput(dim, solver, solStep):
+def saveMasterInput(dim, solver, solStep, simTime):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
      if (solver == 0):
-            fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t50\n'%solStep)
+            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\ttotal_time\t%f\n' %(solStep, simTime))
      fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
      fl.write("MatFiles\t1\t%s\n"%materialsFile)
      fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
@@ -638,7 +642,8 @@ def saveExporters():
     sys.stdout.flush()
     fl=open(os.path.join(master_folder,exportersFile),'w')
     fl.write("TXTNodalExporter translations 2 ux uy\n")
-    fl.write("TXTNodalExporter pressure 1 pressure")
+    fl.write("TXTNodalExporter pressure 1 pressure\n")
+    fl.write('VTKElementExporter out  time_every 1e-20 0')
     fl.close()
 
     print('done.')

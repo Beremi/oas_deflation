@@ -50,7 +50,7 @@ powerTes = 0
 dim = 3
 print('Creating a %dd lattice model...' %dim)
 
-Xdim = 1.
+Xdim = 3.
 Ydim = 1.
 Zdim = 1.
 
@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.25
+minDist = 0.15
 radius = minDist / 2
 
 if (dim == 2):
@@ -129,11 +129,20 @@ vert_count = -1
 
 young = 30e9
 poisson = 0.3
+density = 2200
+linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, density)
+#materials.append(linElMaterial)
+
+ft = 2e6
+Gt = 500
+marsMaterial = utilitiesMech.MarsMaterial(young, poisson, density, ft, Gt)
+materials.append(marsMaterial)
+
+
 transpC = 11
 transpS = 22
-density = 2200
-linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, transpC, transpS, density)
-materials.append(linElMaterial)
+transportMaterial = utilitiesMech.TransportMaterial( transpC, transpS)
+materials.append(transportMaterial)
 
 print('')
 
@@ -149,8 +158,9 @@ utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
 if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
 utilitiesGeom.saveExporters()
 
-solStep = 0.5
-utilitiesGeom.saveMasterInput(dim, solver, solStep)
+solStep = 1e-2
+simTime = 10
+utilitiesGeom.saveMasterInput(dim, solver, solStep, simTime)
 end =  time.time() -end
 print('Saving done in %.3f secs.' %end)
 
