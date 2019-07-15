@@ -9,17 +9,31 @@ void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
 }
 
 //////////////////////////////////////////////////////////
-// ELEMENTS TO VTU FILE
-void VTKElementExporter :: readFromLine(istringstream &iss, unsigned dimension){
-  iss >> filename;
+void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
+  string dummy;  // to skip the specifier
+  iss >> filename >> dummy >> time_each;
   unsigned num;
   iss >> num;
   codes.resize(num);
   for ( unsigned i = 0; i < num; i++ ) {
       iss >> codes [ i ];
   }
+  time_last = 0.;
+}
+//////////////////////////////////////////////////////////
+bool VTKExporter :: doExportNow(const double &time) {
+  if (time < time_last + time_each) {
+    return false;
+  } else {
+    time_last = time;
+    return true;
+  }
 }
 
+
+
+//////////////////////////////////////////////////////////
+// ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
   // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
@@ -118,22 +132,10 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
       outputfile << "</VTKFile>" << '\n';
       outputfile.close();
   }
-
 }
-
 
 //////////////////////////////////////////////////////////
-// RIGID POLYGONS TO VTU FILE
-void VTKRBExporter :: readFromLine(istringstream &iss, unsigned dimension){
-  iss >> filename;
-  unsigned num;
-  iss >> num;
-  codes.resize(num);
-  for ( unsigned i = 0; i < num; i++ ) {
-      iss >> codes [ i ];
-  }
-}
-
+// function tahat calculates displacement of any point of rigid body from its rotations and
 Point calculateVertexDisplacement2D(const RigidBodyContact &rbc, const Node &v, const Node &a, const Vector &DoFs){
   Matrix A = rbc.giveAMatrix(a.givePoint(), v.givePoint());
   Matrix U(3, 1);
@@ -143,13 +145,15 @@ Point calculateVertexDisplacement2D(const RigidBodyContact &rbc, const Node &v, 
 
   Matrix P = A * U;
 
-  Point p = Point(P[0][0], P[1][0], P[2][0]);
+  Point p = Point(P[0][0], P[1][0], 0.);  // zero displacement in Z direction
 
   return p;
 }
-
 //////////////////////////////////////////////////////////
-void VTKRBExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
+
+// RIGID POLYGONS TO VTU FILE
+//////////////////////////////////////////////////////////
+void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
   // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
   // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
   char buffer [ 100 ];
@@ -268,5 +272,4 @@ void VTKRBExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
       outputfile << "</VTKFile>" << '\n';
       outputfile.close();
   }
-
 }
