@@ -286,7 +286,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
     nodes_out[:,dim] = areas[:]
 
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
-    if (printout): print ('Area Error: %.5E ' %(relAreaError) )
+    print ('Area Error: %.5E ' %(relAreaError) )
 
     ########################################################################################################
     # ridges with nodes within sample
@@ -302,12 +302,12 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         if (pr):
             validRidgeIdxs.append(i)
 
-    #further adding ridges with both nodes out of sample
+    """
+    #it is a question if consider ridges with both nodes out of sample
     #but both are part of at least one ridge with one node in sample
-    #for i in range (len(validRidgeIdxs)):
+    """
+
     validRidgeIdxs = np.asarray(validRidgeIdxs)
-
-
     ########################################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
@@ -375,11 +375,12 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         #
         rdg[0] = pointA
         rdg[1] = pointB
-        rdg[2] =  nrVertices
+        rdg[2] = nrVertices
 
         #adding vert idcs
         for v in range ( nrVertices ):
             rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[validRidgeIdxs[i]][v] ]
+
 
         #coplanarity control
         for v in range ( nrVertices-3 ):
@@ -410,7 +411,10 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
             if (printout): print ('Direction of plane normal OK')
         else:
             if (printout): print ('Direction of plane normal REVERSE')
-            rdg[nrVertices:] = rdg[:nrVertices-1:-1]
+            #rdg[nrVertices:] = rdg[:nrVertices-1:-1]
+            print('pred %s' %rdg)
+            rdg[3:len(rdg)]= rdg[3:len(rdg)][::-1]
+            print('po %s \n' %rdg)
 
         ##############prerazeni bodu podle uhlu atan2((Vb x Va) . Vn, Va . Vb)##############
         #average point within the ridge surface
@@ -433,7 +437,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
                                                 np.dot(referenceVector,currVector)   ) )
             if (angles [l] < 0):
                 angles [l] = 360 - (-angles [l])
-
+        #print(angles)
         ridges_out.append(rdg)
 
     if (allCoplanar):
@@ -755,7 +759,7 @@ def saveTransportElements(ridges_out, dim, node_count):
     if (dim==3):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
-            print (ro)
+            #print (ro)
 
             for n in range (3, len(ro)):
                 newPath = True
@@ -765,8 +769,11 @@ def saveTransportElements(ridges_out, dim, node_count):
                 #print('%d ; %d = %d ; %d' %(n,m, ro[n], ro[m]))
 
                 for elem in transportElements:
+
                     if ( ((elem.vertexA == ro[n]) and (elem.vertexB == ro[m]))
                       or ((elem.vertexA == ro[m]) and (elem.vertexB == ro[n])) ):
+
+                    #if ( elem.vertexA in ro and elem.vertexB in ro ):
                         newPath = False
                         elem.addConnectedNodes(ro)
                         break

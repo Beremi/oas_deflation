@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.15
+minDist = 0.25
 radius = minDist / 2
 
 if (dim == 2):
@@ -149,7 +149,7 @@ utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
 if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
 utilitiesGeom.saveExporters()
 
-solStep = 10
+solStep = 0.5
 utilitiesGeom.saveMasterInput(dim, solver, solStep)
 end =  time.time() -end
 print('Saving done in %.3f secs.' %end)

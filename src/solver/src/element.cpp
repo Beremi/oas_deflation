@@ -155,8 +155,8 @@ void RigidBodyContact :: init() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        Point n = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
+        Point n = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
         n /= n.norm();
         Point t2 ;
         if( fabs (n.x ) > fabs (n.z )) t2 = Point (-n.y , n.x , 0.0f );

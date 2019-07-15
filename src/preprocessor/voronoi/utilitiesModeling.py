@@ -502,8 +502,15 @@ def create3dCantileverBending(maxLim, minDist, trials ):
     functions.append (fn)
 
     #1 loading function. Const
-    fn1 = utilitiesNumeric.constantFunc(100)
+    """
+    func = []
+    func.append( np.array([0,0]) )
+    func.append( np.array([50, -1e-3]) )
+    fn1= utilitiesNumeric.generalFunc(func)
+    """
+    fn1 = utilitiesNumeric.sawToothConstFunc(value = -1e-1, period = 10, sym = 1)
     functions.append (fn1)
+
 
     #transport function, leftFace, constant
     fn2 = utilitiesNumeric.constantFunc(20)
@@ -939,7 +946,7 @@ def assemble3dCantileverBending(maxLim, minDist, trials):
         #print('adding')
 
     ###############generating of points supported line top right ###############
-    mechBC = np.array([-1,-1,-1, -1,-1,-1,    0,1,0, 0,0,0])
+    mechBC = np.array([-1,-1,1, -1,-1,-1,    -1,-1,-1, -1,-1,-1])
     nodeA = np.array([maxLim[0] - indent , indent, maxLim[2] -indent])
     nodeB = np.array([maxLim[0] - indent , maxLim[1] - indent, maxLim[2] -indent])
 
