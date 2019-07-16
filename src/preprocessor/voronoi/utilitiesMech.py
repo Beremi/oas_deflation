@@ -35,18 +35,19 @@ class transportPath:
     def __init__ (self,  vertexAidx, vertexBidx, connectedNds, materialIdx):
         self.vertexA = vertexAidx
         self.vertexB = vertexBidx
-        self.__connectedNodes = connectedNds
-        self.nds = len(self.__connectedNodes)
+        self.connectedNodes = connectedNds
+        self.nds = len(self.connectedNodes)
         self.material = materialIdx
 
     def addConnectedNodes (self, ridge):
         #print(ridge)
         #print(self.getString())
 
-        self.__connectedNodes.append(ridge[0])
-        self.__connectedNodes.append(ridge[1])
-        self.nds = len(self.__connectedNodes)
+        self.connectedNodes.append(ridge[0])
+        self.connectedNodes.append(ridge[1])
+        self.nds = len(self.connectedNodes)
         #print(self.getString())
+
 
     def getString(self):
         ndNr = self.nds
@@ -58,12 +59,12 @@ class transportPath:
 
         line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
         for i in range (self.nds):
-            line+='\t%d'%(self.__connectedNodes[i])
+            line+='\t%d'%(self.connectedNodes[i])
         line +='\t' + '%d'%(self.material)
         return line
 
     def printConnectedNodes(self):
-        print (self.__connectedNodes)
+        print (self.connectedNodes)
 
 ##################################################
 

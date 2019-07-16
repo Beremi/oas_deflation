@@ -795,6 +795,64 @@ def saveTransportElements(ridges_out, dim, node_count):
     print('done.')
     sys.stdout.flush()
 
+    #  i[b], i[a] = i[a], i[b]
+    print ('Reordering connected nds...', end='')
+    for elem in transportElements:
+        #print('\n\n\n')
+        for i in range (1, len( elem.connectedNodes )-2, 2) :
+
+            if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
+                #print(elem.connectedNodes, end='')
+                #print(' size %d' % len(elem.connectedNodes))
+                simIdx = -1
+                for j in range (i+1, len(elem.connectedNodes)):
+                    #print('search for %d ' %elem.connectedNodes[i] , end='')
+                    #print(elem.connectedNodes[j])
+                    if (elem.connectedNodes[i] == elem.connectedNodes[j]):
+                        simIdx = j
+                        #print('simIdx: %d ' %simIdx)
+                        break
+                if (simIdx == -1):
+                    #print ("___ Not found ", end='')
+                    #swapnout prvni dva nody
+                    #print ('First couple swapping %d for %d' %(0,1))
+                    elem.connectedNodes[0], elem.connectedNodes[1] =  elem.connectedNodes[1], elem.connectedNodes[0]
+                    #
+                    #print(elem.connectedNodes)
+                    for j in range (i+1, len(elem.connectedNodes)):
+                        #print('search for %d ' %elem.connectedNodes[i] , end='')
+                        #print(elem.connectedNodes[j])
+                        if (elem.connectedNodes[i] == elem.connectedNodes[j]):
+                            simIdx = j
+                            #print('simIdx: %d ' %simIdx)
+                            break
+
+
+                isFstNode = True
+                if (int(simIdx) % 2):
+                    isFstNode = False
+
+                if (isFstNode):
+                    #swapping linked nodes
+                    #print ('1st swapping %d for %d and %d for %d' %(i+1,simIdx, i+2, simIdx+1))
+                    elem.connectedNodes[i+1], elem.connectedNodes[simIdx] =  elem.connectedNodes[simIdx], elem.connectedNodes[i+1]
+                    elem.connectedNodes[i+2], elem.connectedNodes[simIdx+1] =  elem.connectedNodes[simIdx+1], elem.connectedNodes[i+2]
+                else:
+                    #swapping and reversing linked nodes
+                    #print ('2nd swapping %d for %d and %d for %d' %(i+1,simIdx, i+2, simIdx-1))
+                    elem.connectedNodes[i+1], elem.connectedNodes[simIdx] =  elem.connectedNodes[simIdx], elem.connectedNodes[i+1]
+                    elem.connectedNodes[i+2], elem.connectedNodes[simIdx-1] =  elem.connectedNodes[simIdx-1], elem.connectedNodes[i+2]
+
+                    if (np.abs(i+1  - simIdx) == 1):
+                        #print('swapping order')
+                        elem.connectedNodes[i+1], elem.connectedNodes[simIdx] =  elem.connectedNodes[simIdx], elem.connectedNodes[i+1]
+
+                #print(elem.connectedNodes)
+                #print()
+
+    print('done.')
+    sys.stdout.flush()
+
 
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()

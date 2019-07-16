@@ -50,7 +50,7 @@ powerTes = 0
 dim = 3
 print('Creating a %dd lattice model...' %dim)
 
-Xdim = 3.
+Xdim = 1.
 Ydim = 1.
 Zdim = 1.
 
@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.15
+minDist = 0.2
 radius = minDist / 2
 
 if (dim == 2):
