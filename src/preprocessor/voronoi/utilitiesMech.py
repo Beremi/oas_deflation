@@ -50,12 +50,7 @@ class transportPath:
 
 
     def getString(self):
-        ndNr = self.nds
-        if (ndNr == 2):
-            ndNr = 1
-        else:
-            ndNr /= 2
-            ndNr += 1
+        ndNr = self.nds /2
 
         line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
         for i in range (self.nds):
