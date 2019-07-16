@@ -1142,7 +1142,7 @@ def assemble3dCantileverUniPressFree(maxLim, minDist, trials):
         mechBC_merged.append(mBC)
 
     ###############generating of points loaded surface right face ###############
-    mechBC = np.array([1,-1,-1,-1,-1,-1,   -1,-1,-1,-1,-1,-1])
+    mechBC = np.array([1, 0, 0, 0, 0, 0,   -1,-1,-1,-1,-1,-1])
 
     nodeA = np.array([ maxLim[0] - indent , indent, indent])
     nodeB = np.array([ maxLim[0] - indent , maxLim[1] - indent, maxLim[2] -indent])
@@ -1197,6 +1197,23 @@ def assemble3dCantileverUniPressConfined(maxLim, minDist, trials):
     for n in range ( nrOfPoints ):
         mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
         mechBC_merged.append(mBC)
+
+
+
+
+    ###############generating of points loaded surface right face ###############
+    mechBC = np.array([1, 0, 0, 0, 0, 0,   -1,-1,-1,-1,-1,-1])
+
+    nodeA = np.array([ maxLim[0] - indent , indent, indent])
+    nodeB = np.array([ maxLim[0] - indent , maxLim[1] - indent, maxLim[2] -indent])
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+
 
 
     ###############generating of points supported surface top face ###############
@@ -1254,20 +1271,6 @@ def assemble3dCantileverUniPressConfined(maxLim, minDist, trials):
 
 
 
-
-
-    ###############generating of points loaded surface right face ###############
-    mechBC = np.array([1,-1,-1,-1,-1,-1,   -1,-1,-1,-1,-1,-1])
-
-    nodeA = np.array([ maxLim[0] - indent , indent, indent])
-    nodeB = np.array([ maxLim[0] - indent , maxLim[1] - indent, maxLim[2] -indent])
-
-    oldLen = len(node_coords)
-    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
-    nrOfPoints =  (len(node_coords)) - oldLen
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
-        mechBC_merged.append(mBC)
 
 
     ###############generating of points rectangular volume ###############

@@ -163,7 +163,6 @@ void RigidBodyContact :: init() {
         else t2 = Point (0.0f , -n.z , n.y );
         t = cross (t2 , n);
         t /= t.norm();
-        //  t = cross (t, Point(sqrt(2), sqrt(3), sqrt(5))); // not good enough!!
 
 
         //JM: Perpendicularity check of the beam and face directions
@@ -399,9 +398,22 @@ void Transp1D :: init() {
         area = t.norm();
         t = t / area;
     } else   {
+      if ( !( vert.size() == 2 ) ) {
+          cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
+          exit(1);
+      }
+
+      //JM: coplanarity controll of nodes divided by the 1D trsprt link (v0,v1)
+      for (unsigned int i = 0; i<vert.size(); i++){
+        cout << "Vertex nr." << i << ": " << vert[i]->getPoint() << endl 
+      }
+
+
+
 
       //Work in progress
       cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;
+
       exit(0);
     }
 

@@ -50,7 +50,7 @@ powerTes = 0
 dim = 3
 print('Creating a %dd lattice model...' %dim)
 
-Xdim = 3.
+Xdim = 1.
 Ydim = 1.
 Zdim = 1.
 
@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.17
+minDist = 0.09
 radius = minDist / 2
 
 if (dim == 2):
@@ -113,10 +113,10 @@ if (dim == 3):
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
 
     #cantilever uniform pressure, free contraction
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
 
     #cantilever uniform pressure, confined
-    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
 
 
 
