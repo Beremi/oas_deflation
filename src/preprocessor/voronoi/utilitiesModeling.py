@@ -891,7 +891,24 @@ def assemble2dbeamConfinedPress (maxLim, minDist, trials):
         mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
 
+    ###############generating a nodes on right face, loaded by uni tens in X) ###############
+    lineBC = np.array([1,-1,-1,   -1, -1 ,-1])
 
+    #defining points of the line
+    nodeA = np.array([maxLim[0] - indent, indent])
+    nodeB = np.array([maxLim[0] - indent, maxLim[1]-indent])
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    #print (nrOfPoints)
+
+    #adding mech boundary conditions
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
+        mechBC_merged.append(mBC)
+        #print('adding')
+        
     ###############generating of nodes, supported top  vertical ###############
     #mech bc
     lineBC = np.array([-1,0,-1,-1,-1,-1])
@@ -927,23 +944,7 @@ def assemble2dbeamConfinedPress (maxLim, minDist, trials):
         mechBC_merged.append(mBC)
 
 
-    ###############generating a nodes on right face, loaded by uni tens in X) ###############
-    lineBC = np.array([1,-1,-1,   -1, -1 ,-1])
 
-    #defining points of the line
-    nodeA = np.array([maxLim[0] - indent, indent])
-    nodeB = np.array([maxLim[0] - indent, maxLim[1]-indent])
-
-    oldLen = len(node_coords)
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
-    nrOfPoints =  (len(node_coords)) - oldLen
-    #print (nrOfPoints)
-
-    #adding mech boundary conditions
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
 
     ##########################################generating of points, homogeneous volume
     rectBC = np.array([-1,-1,-1,-1,-1,-1])

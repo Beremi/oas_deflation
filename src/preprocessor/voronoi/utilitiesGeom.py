@@ -267,7 +267,7 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
     saveNodes(nodes_out, aux_nodes, dim)
     saveVertices(vertices_out, dim)
     saveMechanicalElements(ridges_out, node_count, dim)
-    saveTransportElements(ridges_out,dim, node_count)
+    saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
 
@@ -459,7 +459,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
 
 
 
-    saveTransportElements(ridges_out,dim, node_count)
+    saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
 
     saveNodes(nodes_out, aux_nodes,dim)
     saveVertices(vertices_out, dim)
@@ -733,24 +733,8 @@ def saveMechanicalElements (ridges_out, node_count, dim):
     sys.stdout.flush()
 
 
-def saveTransportElements(ridges_out, dim, node_count):
-    """
-    print('Saving TRSPRT elements...', end='')
-    sys.stdout.flush()
-    ridges_out = np.asarray(ridges_out)
-    ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0].copy()
-    ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1].copy()
-    ridges_out[:,2] = 2
-    #writing ridges - transport elements
-    ####### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
-    headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
-    fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
-    np.savetxt(fl, ridges_out, delimiter='\t',fmt='LTCTRSP\t%d\t%d\t%d\t%d\t%d\t1',
-          header = headerLine )
-    fl.close()
-    print('done.')
-    sys.stdout.flush()
-    """
+def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
+
 
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
@@ -880,10 +864,23 @@ def saveTransportElements(ridges_out, dim, node_count):
             #if (reorderOk == True):
             #    print ('Reordered fine: %s' %elem.connectedNodes)
 
+
+
     if (allReorderedFine == True):
         print('All reordered fine...', end = '')
     else:
         print('NOT ALL REORDERED FINE...', end ='')
+    print('done.')
+    sys.stdout.flush()
+
+
+    print('Generating additional aux_nodes...', end='')
+    for elem in transportElements:
+        if (elem.connectedNodes[0]>=node_count and elem.connectedNodes[len(elem.connectedNodes)-1]>=node_count):
+            #print('corner line: %s' %elem.getReducedString())
+            print( aux_nodes[ int(elem.connectedNodes[0]-node_count) ] )
+            print( aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ] )
+            print()
     print('done.')
     sys.stdout.flush()
 
@@ -894,6 +891,6 @@ def saveTransportElements(ridges_out, dim, node_count):
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
         f.write("%s\n" % headerLine )
         for element in transportElements:
-            #element.printConnectedNodes()
-            f.write("%s\n" % element.getString() )
+            #f.write("%s\n" % element.getString() )
+            f.write("%s\n" % element.getReducedString() )
     print('done.')

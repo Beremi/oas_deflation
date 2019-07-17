@@ -58,6 +58,14 @@ class transportPath:
         line +='\t' + '%d'%(self.material)
         return line
 
+    def getReducedString(self):
+        ndNr = self.nds /2
+        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
+        for i in range (0, self.nds, 2):
+            line+='\t%d'%(self.connectedNodes[i])
+        line+='\t%d'%(self.connectedNodes[len(self.connectedNodes)-1])
+        line +='\t' + '%d'%(self.material)
+        return line
     def printConnectedNodes(self):
         print (self.connectedNodes)
 
