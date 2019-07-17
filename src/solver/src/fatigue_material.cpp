@@ -236,3 +236,348 @@ MaterialStatus *FatigueShearMaterial :: giveNewMaterialStatus(Element *e) {
 void FatigueShearMaterial :: init() {
 
 };
+
+
+//////////////////////////////////////////////////////////
+// DAMAGE PLASTIC MATERIAL STATUS
+
+DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+    name = "Damage Plastic mat. status";
+}
+
+//////////////////////////////////////////////////////////
+double DamagePlasticMaterialStatus :: giveValue(string code) const {
+    if ( (code.compare("damage") == 0) || (code.compare("damageN") == 0) ) {
+        return damage;
+    } else if ( (code.compare("strainN") == 0) || (code.compare("strain") == 0) ) {
+        return epsN;
+    } else if ( (code.compare("strainPL") == 0) || (code.compare("strainPLN") == 0) ) {
+        return epsNP;
+    } else {
+        std::cout << "do not have such parameter " << code << '\n';
+        return DisMechMaterialStatus :: giveValue(code);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void DamagePlasticMaterialStatus :: init() {
+    damage = temp_damage = 0;
+    epsN = temp_epsN = 0;
+    epsNP = temp_epsNP = 0;
+    alphaN = temp_alphaN = 0;
+    zN = temp_zN = 0;
+    rN = temp_rN = 0;
+}
+
+//////////////////////////////////////////////////////////
+Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
+  // TODO transition from compression to tension is very simply done here, should be improved
+  Vector stress( strain.size() );
+  Vector stiff = giveElasticNormalShearStiffness();
+  for (int i = 1; i < stress.size(); i++){
+    stress[ i ] = stiff [ i ] * strain [ i ];
+  }
+  temp_epsN = strain[ 0 ];
+
+  DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
+
+  ////////////////////////////////////////////////////////
+  double f_trialT, f_trialC;
+  double SigmaTilda;
+  // distinguish between tension and compression
+
+  int Heaviside;
+  if (temp_epsN > 0){
+    Heaviside = 1;
+    // TODO following should work with plasticity, but does not
+    // double Y_next = Heaviside * 0.5 * stiff [ 0 ] * pow( temp_epsN - epsNP, 2 );
+    double Y_next = Heaviside * 0.5 * stiff [ 0 ] * pow( temp_epsN, 2 );
+    double Y_n0 = 0.5 * stiff [ 0 ] * pow( m->giveElasticLimit(), 2);
+    double Rn = ( 1 / m->giveAd() ) * ( - rN / ( 1 + rN ) );
+
+    f_trialT = Y_next - ( Y_n0 + Rn );
+    if ( f_trialT <= 0 ){
+      temp_damage = damage;
+      temp_rN = rN;
+    } else {
+      // update tensile internal variables
+      temp_damage = fmin( 1-1e-10, fmax( 0, 1 - 1 / ( 1 + m->giveAd() * ( Y_next - Y_n0) ) ) );
+      temp_rN = -temp_damage;
+    }
+    stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN );
+    // apply damage also in shear direction
+    for ( unsigned i = 1; i < strain.size(); i++){
+      stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] );
+    }
+    return stress;
+  } else {
+    Heaviside = 0;
+    SigmaTilda = ( 1 - Heaviside * damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
+    double Xn = m->giveGammaN() * alphaN;
+    double Zn = m->giveKinN() * zN;
+    int pos_iso;
+    if ( m->giveYieldStress() + Zn > 0 ){
+      pos_iso = 1;
+    } else {
+      pos_iso = 0;
+    }
+    f_trialC =  fabs( SigmaTilda - Xn ) - pos_iso * ( m->giveYieldStress() + Zn );
+    if ( f_trialC <= 0 ){
+      temp_epsNP = epsNP;
+      temp_alphaN = alphaN;
+      temp_zN = zN;
+    } else {
+      // update compressive internal variables
+      double h = SigmaTilda - Xn;
+      int sgn1 = sgn( h );
+      ////////////////////////////////////////////////////////////////
+      // TODO the following expression is taken from article, but does not work yet
+      // double dLambda = ( stiff [ 0 ] * ( temp_epsN - epsN ) * sgn1 / ( stiff [ 0 ] + m->giveKinN()) + m->giveGammaN() *
+      //                         ( 1 + m->giveM() * Xn * sgn1 ) );
+      ////////////////////////////////////////////////////////////////
+      double dLambda = ( f_trialC / ( stiff [ 0 ] + m->giveKinN() + m->giveGammaN() ) );
+      temp_alphaN = alphaN + dLambda * (sgn1 + m->giveM() * Xn );
+      temp_zN = zN + dLambda;
+      temp_epsNP = epsNP + dLambda * sgn1;
+
+    }
+    stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP );
+    // apply the same in shear direction
+    for ( unsigned i = 1; i < strain.size(); i++){
+      // stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] - (strain[ i ]/temp_epsN)*temp_epsNP );
+    }
+    if (stress[ 0 ] > 0){
+      stress[ 0 ] = 0;
+    }
+    return stress;
+  }
+}
+
+//////////////////////////////////////////////////////////
+void DamagePlasticMaterialStatus :: update() {
+  damage = temp_damage;
+  epsN = temp_epsN;
+  epsNP = temp_epsNP;
+  alphaN = temp_alphaN;
+  zN = temp_zN;
+  rN = temp_rN;
+}
+
+//////////////////////////////////////////////////////////
+void DamagePlasticMaterialStatus :: print() const {
+  std::cout << "damage = " << damage << '\n';
+  std::cout << "temp_damage = " << temp_damage << '\n';
+  std::cout << "strain = " << epsN << '\n';
+  std::cout << "temp_strain = " << temp_epsN << '\n';
+  std::cout << "strainP = " << epsNP << '\n';
+  std::cout << "temp_strainP = " << temp_epsNP << '\n';
+  std::cout << "alphaN = " << alphaN << '\n';
+  std::cout << "temp_alphaN = " << temp_alphaN << '\n';
+  std::cout << "zN = " << zN << '\n';
+  std::cout << "temp_zN = " << temp_zN << '\n';
+  std::cout << "rN = " << rN << '\n';
+  std::cout << "temp_rN = " << temp_rN << '\n';
+}
+
+
+//////////////////////////////////////////////////////////
+Vector DamagePlasticMaterialStatus :: giveNormalShearStiffness(string type) const {
+    Vector stiff = giveElasticNormalShearStiffness();
+    if (type.compare( "elastic" ) == 0 ){
+      return stiff;
+    } else if (type.compare( "secant" ) == 0 ){  //not implemented, used unloading
+        if (temp_epsN >= 0 ){
+          for (unsigned i = 0; i < stiff.size(); i++){
+            stiff[ i ] *= ( 1 - temp_damage ); // this is just unloading one
+          }
+        }
+        return  stiff;
+    } else if (type.compare( "unloading" ) == 0 ){
+      if (temp_epsN >= 0 ){
+        stiff[ 1 ] *= ( 1 - temp_damage );
+      }
+      return  stiff;
+    }
+    // else if (type.compare("tangent")==0){
+    //     stiff[1] *= tang_stiff; // normal stiffness stays elastic
+    //     return  stiff;
+    // }
+    else{
+        cerr << "Error: DamagePlasticMaterialStatus does not provide '"<< type << "' stiffness";
+        exit(1);
+    };
+}
+
+//////////////////////////////////////////////////////////
+// DAMAGE PLASTIC MATERIAL
+//////////////////////////////////////////////////////////
+void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
+    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+
+    string param;
+    bool bfc, bft, bgam, bkin, bAd, bm;
+    bfc = bft = bgam = bkin = bAd = bm = false;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("fc") == 0 ) {
+            bfc = true;
+            iss >> fc;
+        } else if ( param.compare("ft") == 0 ) {
+            bft = true;
+            iss >> ft;
+        } else if ( param.compare("KinN") == 0 )    {
+            bkin = true;
+            iss >> KinN;
+        } else if ( param.compare("gammaN") == 0 )    {
+            bgam = true;
+            iss >> gammaN;
+        } else if ( param.compare("Ad") == 0 )    {
+            bAd = true;
+            iss >> Ad;
+        } else if ( param.compare("m") == 0 )    {
+            bm = true;
+            iss >> m;
+        }
+    }
+    if ( !bfc ) {
+        cerr << name << ": material parameter 'fc' was not specified" << endl;
+        exit(0);
+    }
+    if ( !bft ) {
+        cerr << name << ": material parameter 'ft' was not specified" << endl;
+        exit(0);
+    }
+    if ( !bkin ) {
+        cerr << name << ": material parameter 'KinN' was not specified" << endl;
+        exit(0);
+    }
+    if ( !bgam ) {
+        cerr << name << ": material parameter 'gammaN' was not specified" << endl;
+        exit(0);
+    }
+    if ( !bAd ) {
+        cerr << name << ": material parameter 'Ad' was not specified" << endl;
+        exit(0);
+    }
+    if ( !bm ) {
+        cout << name << ": material parameter 'm' was not specified, taking m = 0.0" << endl;
+        m = 0.0;
+    }
+    ;
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e) {
+    DamagePlasticMaterialStatus *newStatus = new DamagePlasticMaterialStatus(this, e); //needs to be deleted manually
+    return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+void DamagePlasticMaterial :: init() {
+
+};
+
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// normal (damagePlastic) and tangential (cumulative slip - fatigue shear) const. laws together
+
+FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e) : FatigueShearMaterialStatus(m, e), DamagePlasticMaterialStatus(m, e) {
+    FatigueShearMaterialStatus :: name = "Fatigue mat. status";
+    DamagePlasticMaterialStatus :: name = "Fatigue mat. status";
+}
+
+//////////////////////////////////////////////////////////
+double FatigueMaterialStatus :: giveValue(string code) const {
+    if ( code.compare("damageN") == 0 ) {
+        return DamagePlasticMaterialStatus :: giveValue("damageN");
+    } else if ( code.compare("damageT") == 0 ) {
+        return FatigueShearMaterialStatus :: giveValue("damageT");
+    } else if ( code.compare("strainT") == 0 ) {
+        return FatigueShearMaterialStatus :: giveValue("strainT");
+    } else if ( code.compare("strainPLT") == 0 ) {
+        return FatigueShearMaterialStatus :: giveValue("strainPLT");
+    } else if ( code.compare("strainN") == 0 ) {
+        return DamagePlasticMaterialStatus :: giveValue("strainN");
+    } else if ( code.compare("strainPLN") == 0 ) {
+        return DamagePlasticMaterialStatus :: giveValue("strainPLN");
+    } else {
+      return FatigueShearMaterialStatus :: giveValue(code);
+      // return 0;
+    // return DisMechMaterialStatus :: giveValue(code);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void FatigueMaterialStatus :: init() {
+    FatigueShearMaterialStatus :: init();
+    DamagePlasticMaterialStatus :: init();
+}
+
+//////////////////////////////////////////////////////////
+Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
+  // TODO transition from compression to tension is very simply done here, should be improved
+  Vector stress( strain.size() );
+  Vector stiff = FatigueShearMaterialStatus :: giveElasticNormalShearStiffness();
+
+  for (int i = 0; i < stress.size(); i++){
+    if ( i == 0 ){
+      stress[ i ] = DamagePlasticMaterialStatus :: giveStress(strain)[ i ];
+    } else {
+      stress[ i ] = FatigueShearMaterialStatus :: giveStress(strain)[ i ];
+    }
+  }
+
+  return stress;
+}
+
+//////////////////////////////////////////////////////////
+void FatigueMaterialStatus :: update() {
+  FatigueShearMaterialStatus :: update();
+  DamagePlasticMaterialStatus :: update();
+}
+
+//////////////////////////////////////////////////////////
+Vector FatigueMaterialStatus :: giveNormalShearStiffness(string type) const {
+    Vector stiff = FatigueShearMaterialStatus :: giveElasticNormalShearStiffness();
+    if (type.compare( "elastic" ) == 0 ){
+      return stiff;
+    } else if (type.compare( "secant" ) == 0 || type.compare( "unloading" ) == 0 ){  //not implemented, used unloading
+      for (unsigned i = 0; i < stiff.size(); i++){
+        if ( i == 0 ){
+          stiff[ i ] = DamagePlasticMaterialStatus :: giveNormalShearStiffness(type)[ i ];
+        } else {
+          stiff[ i ] = FatigueShearMaterialStatus :: giveNormalShearStiffness(type)[ i ];
+        }
+      }
+      return  stiff;
+    } else {
+      cerr << "Error: FatigueMaterialStatus does not provide '"<< type << "' stiffness";
+      exit(1);
+    };
+}
+
+//////////////////////////////////////////////////////////
+// fatigue material in normal and tangential direction
+//////////////////////////////////////////////////////////
+void FatigueMaterial :: readFromLine(istringstream &iss) {
+    FatigueShearMaterial :: readFromLine(iss);
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+    DamagePlasticMaterial :: readFromLine(iss);
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *FatigueMaterial :: giveNewMaterialStatus(Element *e) {
+    FatigueMaterialStatus *newStatus1 = new FatigueMaterialStatus(this, e); //needs to be deleted manually
+    FatigueShearMaterialStatus *newStatus = (FatigueMaterialStatus *) newStatus1;
+    return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+void FatigueMaterial :: init() {
+
+};

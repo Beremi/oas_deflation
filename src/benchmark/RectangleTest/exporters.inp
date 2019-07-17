@@ -12,4 +12,4 @@ DisplacementGauge LD displX ux 0.5e0 0.5e0 2e0 1e0
 ForceGauge LD loadY fy 1 1
 ForceGauge LD loadX fx 1 1
 ## export VTK file
-VTKElementExporter elems timeEvery 0.5 0
+VTKElementExporter elems saveEvery 0.01. 4 damageN damageT strainPLN strainPLT
