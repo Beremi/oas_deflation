@@ -378,38 +378,26 @@ void Transp1D :: init() {
             exit(1);
         }
 
-        if ( bound ) {
-            if ( vert [ 0 ] ) {
-                v0 = vert [ 0 ]->givePoint();
-            } else {
-                v0 = ( nodes [ 1 ]->givePoint() + nodes [ 0 ]->givePoint() ) / 2.;
-            }
-            if ( vert [ 1 ] ) {
-                v1 = vert [ 1 ]->givePoint();
-            } else {
-                v1 = ( nodes [ 1 ]->givePoint() + nodes [ 0 ]->givePoint() ) / 2.;
-            }
-        } else  {
-            v0 = vert [ 0 ]->givePoint();
-            v1 = vert [ 1 ]->givePoint();
-        }
+        v0 = vert [ 0 ]->givePoint();
+        v1 = vert [ 1 ]->givePoint();
+
         ip_locs [ 0 ] = ( v0 + v1 ) / 2.;
         t = v1 - v0;
         area = t.norm();
         t = t / area;
     } else   {
-      if ( !( vert.size() == 2 ) ) {
+    /*  if ( !( vert.size() == 2 ) ) {
           cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
           exit(1);
       }
 
       //JM: coplanarity controll of nodes divided by the 1D trsprt link (v0,v1)
       for (unsigned int i = 0; i<vert.size(); i++){
-        cout << "Vertex nr." << i << ": " << vert[i]->getPoint() << endl 
+        cout << "Vertex nr." << i << ": " << vert[i]->getPoint() << endl
       }
 
 
-
+*/
 
       //Work in progress
       cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;
