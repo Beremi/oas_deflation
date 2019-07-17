@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.09
+minDist = 0.2
 radius = minDist / 2
 
 if (dim == 2):
