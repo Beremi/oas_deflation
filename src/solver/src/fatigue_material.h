@@ -5,19 +5,22 @@
 
 //////////////////////////////////////////////////////////
 // DAMAGE DRIVEN BY CUMMULATIVE SHEAR SLIP
+//////////////////////////////////////////////////////////
+// MATERIAL ACCORDING TO ALGORITHM FROM https://doi.org/10.1016/j.ijfatigue.2018.04.020
 
 class FatigueShearMaterial;
 class FatigueShearMaterialStatus : public DisMechMaterialStatus
 {
 private:
-    double slip; ///< slip
+    Point slip; ///< slip
+    Point sPi; ///< irreversible slip
+    Point alphaKin;  ///< kinematic hardening variable
     double damageShear; ///< damage in tangential direction
-    double sPi; ///< irreversible slip
-    double alphaKin;  ///< kinematic hardening variable
     double zIso;  ///< isotropic hardening variable
     double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
 
-    double temp_sPi, temp_damageShear, temp_slip, temp_alphaKin, temp_zIso; ///<temporary variables
+    Point temp_sPi, temp_slip, temp_alphaKin;
+    double temp_damageShear, temp_zIso; ///<temporary variables
 
     void print() const;
 public:
@@ -39,7 +42,7 @@ private:
     double gamma;  ///< kinematic hardening modulus
     double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
-    double m;  ///< parameter controling the pressure sensitivity
+    double m;  ///< parameter controling the pressure sensitivity, TODO rename to "a" due to coupling with normal direction
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -54,6 +57,7 @@ public:
     double giveM() const { return m; }
     virtual void init();
 };
+
 
 //////////////////////////////////////////////////////////
 // NORMAL DIRECTION: TENISON - DAMAGE, COMPRESSION - PLASTICITY
