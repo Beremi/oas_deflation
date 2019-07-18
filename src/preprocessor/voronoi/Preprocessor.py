@@ -47,7 +47,7 @@ solver = 0
 powerTes = 0
 
 #dimension 2 //// dim 3 prohibited now
-dim = 2
+dim = 3
 print('Creating a %dd lattice model...' %dim)
 
 Xdim = 1.
@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.03
+minDist = 0.13
 radius = minDist / 2
 
 if (dim == 2):
@@ -147,11 +147,18 @@ Gt = 500
 marsMaterial = utilitiesMech.MarsMaterial(young, poisson, density, ft, Gt)
 materials.append(marsMaterial)
 
+#	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6 m 0
+fatigueMaterial = utilitiesMech.FatigueMaterial(  43.0e9, 0.300000 , 2200.0, 4.0e6, 0.0, 10.0e6 , 0.0025e6, 0)
+#materials.append(fatigueMaterial)
+
+
 
 transpC = 11
 transpS = 22
 transportMaterial = utilitiesMech.TransportMaterial( transpC, transpS)
 materials.append(transportMaterial)
+
+
 
 print('')
 

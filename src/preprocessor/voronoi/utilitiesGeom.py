@@ -459,7 +459,12 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
 
 
 
-    saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    newAuxNodes = saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+
+    for i in range (len(ridges_out)):
+        ln = len(np.asarray(ridges_out[i]) )
+        for l in range (3, ln):
+            ridges_out[i][l] += newAuxNodes
 
     saveNodes(nodes_out, aux_nodes,dim)
     saveVertices(vertices_out, dim)
@@ -734,8 +739,6 @@ def saveMechanicalElements (ridges_out, node_count, dim):
 
 
 def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
-
-
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
@@ -753,19 +756,15 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
             #print (ro)
-
             for n in range (3, len(ro)):
                 newPath = True
                 m = n+1
                 if (n==len(ro)-1):
                     m = 3
                 #print('%d ; %d = %d ; %d' %(n,m, ro[n], ro[m]))
-
                 for elem in transportElements:
-
                     if ( ((elem.vertexA == ro[n]) and (elem.vertexB == ro[m]))
                       or ((elem.vertexA == ro[m]) and (elem.vertexB == ro[n])) ):
-
                     #if ( elem.vertexA in ro and elem.vertexB in ro ):
                         newPath = False
                         elem.addConnectedNodes(ro)
@@ -775,16 +774,14 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
                     connNds.clear()
                     connNds.append (ro[0])
                     connNds.append (ro[1])
-
                     #if (ro[0]>node_count and ro[1]>node_count):
                     #    print ('both aux')
-
                     transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
     print('done.')
     sys.stdout.flush()
 
     #  i[b], i[a] = i[a], i[b]
-    print ('Reordering connected nds...', end='')
+    print ('Reordering connected nodes...', end='')
     allReorderedFine = True
     for elem in transportElements:
         #print('\n\n\n')
@@ -851,9 +848,6 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
                         for j in range (1, len( elem.connectedNodes )-2, 2) :
                             if (elem.connectedNodes[j] != elem.connectedNodes[j+1]):
                                 restart = True
-
-
-
             reorderOk = True
             for i in range (1, len( elem.connectedNodes )-2, 2) :
                 if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
@@ -865,9 +859,8 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
             #    print ('Reordered fine: %s' %elem.connectedNodes)
 
 
-
     if (allReorderedFine == True):
-        print('All reordered fine...', end = '')
+        print('reordered fine...', end = '')
     else:
         print('NOT ALL REORDERED FINE...', end ='')
     print('done.')
@@ -875,15 +868,42 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
 
 
     print('Generating additional aux_nodes...', end='')
+    auxNodesInitLength = len (aux_nodes)
+    beamMidpoint = maxLim /2
     for elem in transportElements:
         if (elem.connectedNodes[0]>=node_count and elem.connectedNodes[len(elem.connectedNodes)-1]>=node_count):
             #print('corner line: %s' %elem.getReducedString())
-            print( aux_nodes[ int(elem.connectedNodes[0]-node_count) ] )
-            print( aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ] )
-            print()
+            anodeA = np.asarray (aux_nodes[ int(elem.connectedNodes[0]-node_count) ][:])
+            anodeB = np.asarray (aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ][:])
+            #print( anodeA )
+            #print( anodeB )
+            nanode = np.zeros(3)
+            for i in range (dim):
+                if ( scipy.spatial.distance.euclidean(anodeB[i], beamMidpoint) >
+                     scipy.spatial.distance.euclidean(anodeA[i], beamMidpoint) ):
+                    nanode[i] = anodeB[i]
+                else:
+                    nanode[i] = anodeA[i]
+            #print('New aux node: %s' %nanode)
+            aux_nodes.append(nanode)
+            #
+            #adding new aux node to connected nodes
+            #print('old elem: %s' %elem.connectedNodes)
+            elem.connectedNodes.append( node_count + len(aux_nodes) )
+            elem.connectedNodes.append( elem.connectedNodes[0] )
+            #print('new elem: %s' %elem.connectedNodes)
+            #print()
     print('done.')
     sys.stdout.flush()
 
+    print('Another renumbering of vertices...', end='')
+    auxNodesFinalLength = len (aux_nodes)
+    newAuxNodes = auxNodesFinalLength - auxNodesInitLength
+    for elem in transportElements:
+        elem.vertexA += newAuxNodes
+        elem.vertexB += newAuxNodes
+    print('done.')
+    sys.stdout.flush()
 
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
@@ -894,3 +914,5 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
             #f.write("%s\n" % element.getString() )
             f.write("%s\n" % element.getReducedString() )
     print('done.')
+
+    return newAuxNodes

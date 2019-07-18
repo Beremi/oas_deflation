@@ -101,6 +101,24 @@ class MarsMaterial:
         return line
 ##################################################
 
+# FatigueShearMaterial	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6 m 0
+##################################################
+#### Fatigue material shear ####
+class FatigueMaterial:
+    def __init__ (self, youngModulus, poisson, density, tauBar, Kin, gamma, S, m):
+        self.youngModulus = youngModulus
+        self.poisson = poisson
+        self.density = density
+        self.tauBar = tauBar
+        self.Kin = Kin
+        self.gamma = gamma
+        self.S = S
+        self.m = m
+    def getString (self):
+        line = 'FatigueShearMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'tauBar\t%f' %(self.tauBar) +'\t' + 'Kin\t%f' %(self.Kin) +'\t' + 'gamma\t%f' %(self.gamma) +'\t' + 'S\t%f' %(self.S) +'\t' + 'm\t%f' %(self.m)
+        return line
+##################################################
+
 ##################################################
 #### Transport material ####
 class TransportMaterial:
