@@ -352,27 +352,7 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
     mat = fullmatrs->giveMaterial(num);
 
   //  cout<< "Loaded 1D trsprt: "<<nodes.size()<<" nodes, "<<vert.size()<<" vertices"<<endl;
-    /*
-    //JM: nove nacitani
-    cout << "loading trsprt" <<endl;
-    iss >> num;
-    vert [ 0 ] = fullnodes->giveNode(num);
-    iss >> num;
-    vert [ 1 ] = fullnodes->giveNode(num);
-    iss >> num;
-    nodes.resize(num);
-    for ( unsigned i = 0; i < num; i++ ) {
-        iss >> num2;
-        if ( num2 < 0 ) {
-            bound = true;
-            nodes [ i ] = NULL;
-        } else  {
-            nodes [ i ] = fullnodes->giveNode(num2);
-        }
-    }
-    iss >> num;
-    mat = fullmatrs->giveMaterial(num);
-    */
+
 }
 
 //////////////////////////////////////////////////////////
