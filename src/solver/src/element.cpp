@@ -333,23 +333,46 @@ Transp1D :: Transp1D(const unsigned dim) {
 //////////////////////////////////////////////////////////
 void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num, num2;
+
+    //JM: Prijde mi, ze toto je stejne jako nacitani mechacńickych prvku.
+    // Jsou ocekavany dva nody a vic vertexu. Ale prece ma byt dva vertexy a vic nodu.
     iss >> num;
     nodes [ 0 ] = fullnodes->giveNode(num);
+
     iss >> num;
     nodes [ 1 ] = fullnodes->giveNode(num);
+
     iss >> num;
     vert.resize(num);
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> num2;
+        vert [ i ] = fullnodes->giveNode(num2);
+    }
+    iss >> num;
+    mat = fullmatrs->giveMaterial(num);
+
+  //  cout<< "Loaded 1D trsprt: "<<nodes.size()<<" nodes, "<<vert.size()<<" vertices"<<endl;
+    /*
+    //JM: nove nacitani
+    cout << "loading trsprt" <<endl;
+    iss >> num;
+    vert [ 0 ] = fullnodes->giveNode(num);
+    iss >> num;
+    vert [ 1 ] = fullnodes->giveNode(num);
+    iss >> num;
+    nodes.resize(num);
+    for ( unsigned i = 0; i < num; i++ ) {
+        iss >> num2;
         if ( num2 < 0 ) {
             bound = true;
-            vert [ i ] = NULL;
+            nodes [ i ] = NULL;
         } else  {
-            vert [ i ] = fullnodes->giveNode(num2);
+            nodes [ i ] = fullnodes->giveNode(num2);
         }
     }
     iss >> num;
     mat = fullmatrs->giveMaterial(num);
+    */
 }
 
 //////////////////////////////////////////////////////////
@@ -386,18 +409,16 @@ void Transp1D :: init() {
         area = t.norm();
         t = t / area;
     } else   {
-    /*  if ( !( vert.size() == 2 ) ) {
+      if ( !( vert.size() == 2 ) ) {
           cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
           exit(1);
       }
 
       //JM: coplanarity controll of nodes divided by the 1D trsprt link (v0,v1)
       for (unsigned int i = 0; i<vert.size(); i++){
-        cout << "Vertex nr." << i << ": " << vert[i]->getPoint() << endl
+        cout << "Vertex nr." << i << ": " << vert[i]->givePoint().x << endl;
       }
 
-
-*/
 
       //Work in progress
       cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;

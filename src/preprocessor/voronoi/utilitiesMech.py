@@ -48,6 +48,9 @@ class transportPath:
         self.nds = len(self.connectedNodes)
         #print(self.getString())
 
+    def addSingleConnectedNode (self, idx):
+        self.connectedNodes.append(idx)
+        self.nds = len(self.connectedNodes)
 
     def getString(self):
         ndNr = self.nds /2

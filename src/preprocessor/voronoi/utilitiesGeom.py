@@ -460,6 +460,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
 
 
     newAuxNodes = saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):
         ln = len(np.asarray(ridges_out[i]) )
@@ -866,9 +867,9 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
     print('done.')
     sys.stdout.flush()
 
+    auxNodesInitLength = len (aux_nodes)
 
     print('Generating additional aux_nodes...', end='')
-    auxNodesInitLength = len (aux_nodes)
     beamMidpoint = maxLim /2
     for elem in transportElements:
         if (elem.connectedNodes[0]>=node_count and elem.connectedNodes[len(elem.connectedNodes)-1]>=node_count):
@@ -889,8 +890,10 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
             #
             #adding new aux node to connected nodes
             #print('old elem: %s' %elem.connectedNodes)
-            elem.connectedNodes.append( node_count + len(aux_nodes) )
-            elem.connectedNodes.append( elem.connectedNodes[0] )
+            elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
+            elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+            elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+            elem.addSingleConnectedNode( elem.connectedNodes[0] )
             #print('new elem: %s' %elem.connectedNodes)
             #print()
     print('done.')
