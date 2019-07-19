@@ -10,13 +10,39 @@ void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
 
 //////////////////////////////////////////////////////////
 void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
-  string dummy;  // to skip the specifier
-  iss >> filename >> dummy >> time_each;
+  string param;
   unsigned num;
-  iss >> num;
-  codes.resize(num);
-  for ( unsigned i = 0; i < num; i++ ) {
-      iss >> codes [ i ];
+  time_each = 0;
+  vector< string > cell_data, point_data;
+  cell_data.resize(0);
+  point_data.resize(0);
+  iss >> filename;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("saveEvery")==0 || param.compare("timeEach")==0 ){
+      iss >> time_each;
+    } else if (param.compare("cellData")==0){
+      iss >> num;
+      cell_data.resize(num);
+      for ( unsigned i = 0; i < num; i++ ) {
+          iss >> cell_data [ i ];
+      }
+    } else if (param.compare("pointData")==0){
+      iss >> num;
+      point_data.resize(num);
+      for ( unsigned i = 0; i < num; i++ ) {
+          iss >> point_data [ i ];
+      }
+    }
+  }
+  codes.resize(cell_data.size()+point_data.size());
+  num = 0;
+  for (auto const &cel : cell_data){
+    codes[ num++ ] = cel;
+  }
+  cell_data_size = cell_data.size();
+  for (auto const &po : point_data){
+    codes[ num++ ] = po;
   }
   time_last = 0.;
 }
@@ -47,8 +73,13 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
   vector<int> cell_types;
   vector<int> offsets;
   vector<Point> displ;
+
   vector< vector< double > > cell_data;  // test version, this and more will be specified on the exporter input
-  cell_data.resize(codes.size());
+  cell_data.resize(cell_data_size);
+
+  vector< vector< double > > point_data;
+  point_data.resize(codes.size() - cell_data_size);
+
   int offset = 0;
   for (auto const &el : *elems){
     for (auto const &n : el->giveNodes()){
@@ -60,7 +91,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
     offset += points_id.size();
     offsets.push_back(offset);
-    for (unsigned i = 0; i < codes.size(); i++){
+    for (unsigned i = 0; i < cell_data_size; i++){
       cell_data[ i ].push_back(el->giveIPValue(codes[ i ], 0) );  // so far for single IP point
     }
     points_id.clear();
@@ -82,10 +113,14 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
       outputfile << "<Points>" << '\n';
       outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
       for (auto const &n : *nodes){
+        outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t"<< n->givePoint().getZ() << '\n';
+
         displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
                               n->giveDoFBasedValue("uy", DoFs),
                               n->giveDoFBasedValue("uz", DoFs)));  // this is not correct for 2D, because it gives the rotation
-        outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t"<< n->givePoint().getZ() << '\n';
+        for (unsigned i = cell_data_size; i < codes.size(); i++){
+          point_data[ i ].push_back(n->giveDoFBasedValue(codes[ i ], DoFs));
+        }
       }
       // for (unsigned n; n < nodes->giveSize(); n++) {
       //   P = nodes->giveNode(n)->givePoint();
