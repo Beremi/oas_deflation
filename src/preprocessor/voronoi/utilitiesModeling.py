@@ -592,7 +592,7 @@ def create3dCantileverUniPressFree(maxLim, minDist, trials ):
     #transport function, rightFace, bilinear
     func3 = []
     func3.append( np.array([0,0]) )
-    func3.append( np.array([50, 500]) )
+    func3.append( np.array([10, 500]) )
     fn3 = utilitiesNumeric.generalFunc(func3)
     functions.append (fn3)
 
@@ -602,8 +602,8 @@ def create3dCantileverUniPressFree(maxLim, minDist, trials ):
     transportIC_merged = []
     ### selecting vertices on the left surface
     leftFaceBC = np.array([2,-1])
-    boundA = np.array(  [-1e-8 , 0] )
-    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    boundA = np.array(  [-1e-8 , -1e-8, -1e-8 ] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]+1e8,  maxLim[2]+1e8]  )
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
     for i in range (len(leftFace)):
@@ -612,13 +612,14 @@ def create3dCantileverUniPressFree(maxLim, minDist, trials ):
 
     ### selecting vertices on the right surface
     rightFaceBC = np.array([3,-1])
-    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
-    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    boundA = np.array(  [maxLim[0] - 1e-8, -1e8, -1e8] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]+1e8, maxLim[2]+1e8 ]  )
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(rightFace)
     for i in range (len(rightFace)):
         trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
+
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
 
@@ -650,7 +651,6 @@ def create3dCantileverUniPressConfined(maxLim, minDist, trials ):
     functions.append (fn)
 
     #1 loading function. Const
-
     func = []
     func.append( np.array([0,0]) )
     func.append( np.array([10, -1e-2]) )
@@ -665,7 +665,7 @@ def create3dCantileverUniPressConfined(maxLim, minDist, trials ):
     #transport function, rightFace, bilinear
     func3 = []
     func3.append( np.array([0,0]) )
-    func3.append( np.array([50, 500]) )
+    func3.append( np.array([10, 500]) )
     fn3 = utilitiesNumeric.generalFunc(func3)
     functions.append (fn3)
 
@@ -675,8 +675,8 @@ def create3dCantileverUniPressConfined(maxLim, minDist, trials ):
     transportIC_merged = []
     ### selecting vertices on the left surface
     leftFaceBC = np.array([2,-1])
-    boundA = np.array(  [-1e-8 , 0] )
-    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    boundA = np.array(  [-1e-8 , -1e-8, -1e-8 ] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]+1e8,  maxLim[2]+1e8]  )
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
     for i in range (len(leftFace)):
@@ -685,8 +685,8 @@ def create3dCantileverUniPressConfined(maxLim, minDist, trials ):
 
     ### selecting vertices on the right surface
     rightFaceBC = np.array([3,-1])
-    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
-    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    boundA = np.array(  [maxLim[0] - 1e-8, -1e8, -1e8] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]+1e8, maxLim[2]+1e8 ]  )
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(rightFace)
     for i in range (len(rightFace)):
@@ -908,7 +908,7 @@ def assemble2dbeamConfinedPress (maxLim, minDist, trials):
         mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
-        
+
     ###############generating of nodes, supported top  vertical ###############
     #mech bc
     lineBC = np.array([-1,0,-1,-1,-1,-1])

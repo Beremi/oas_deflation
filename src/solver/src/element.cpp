@@ -23,6 +23,7 @@ void Element :: init() {
             DoFids [ i ] = k + s;
         }
     }
+
 }
 
 //////////////////////////////////////////////////////////
@@ -334,8 +335,6 @@ Transp1D :: Transp1D(const unsigned dim) {
 void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num, num2;
 
-    //JM: Prijde mi, ze toto je stejne jako nacitani mechacńickych prvku.
-    // Jsou ocekavany dva nody a vic vertexu. Ale prece ma byt dva vertexy a vic nodu.
     iss >> num;
     nodes [ 0 ] = fullnodes->giveNode(num);
 
@@ -352,13 +351,11 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
     mat = fullmatrs->giveMaterial(num);
 
   //  cout<< "Loaded 1D trsprt: "<<nodes.size()<<" nodes, "<<vert.size()<<" vertices"<<endl;
-
 }
 
 //////////////////////////////////////////////////////////
 void Transp1D :: init() {
     Element :: init(); //calling base class method;
-
     //check that nodes are TrsNodes
     for ( unsigned i = 0; i < 2; i++ ) {
         TrsNode *p = dynamic_cast< TrsNode * >( nodes [ i ] );
@@ -389,21 +386,76 @@ void Transp1D :: init() {
         area = t.norm();
         t = t / area;
     } else   {
-      if ( !( vert.size() == 2 ) ) {
-          cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
-          exit(1);
+      //JM: Coplanarity test of connected "vertices"
+      double maxErr = 0.0;
+      double currErr = 0.0;
+      //
+      for (unsigned int i=0; i<vert.size()-3; i++){
+        currErr = checkCoplanarity(  vert[i]->givePoint(), vert[i+1]->givePoint(), vert[i+2]->givePoint(), vert[i+3]->givePoint()  );
+        if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
+      }
+      //JM: also checking if the beam midpoint is coplanar with the face
+      Point midPoint = (nodes [1]->givePoint() + nodes [0]->givePoint())/2.;
+      currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), midPoint );
+      if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
+      //
+      //JM: coplanarity is not perfect
+      if (maxErr > 5e-2){
+        cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
+        exit(1);
       }
 
-      //JM: coplanarity controll of nodes divided by the 1D trsprt link (v0,v1)
-      for (unsigned int i = 0; i<vert.size(); i++){
-        cout << "Vertex nr." << i << ": " << vert[i]->givePoint().x << endl;
+      //JM: face normal vector made from first 3 vertices
+      //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
+      Point n = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
+      n /= n.norm();
+      Point t2 ;
+      if( fabs (n.x ) > fabs (n.z )) t2 = Point (-n.y , n.x , 0.0f );
+      else t2 = Point (0.0f , -n.z , n.y );
+      t = cross (t2 , n);
+      t /= t.norm();
+
+      //JM: Perpendicularity check of the beam and face directions
+      //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
+      //JM: perpendicularity check: cross (beam, face)=>0
+      Point prp = (nodes [1]->givePoint() - nodes [0]->givePoint())* t ;
+      if (prp.norm() > 1e-5){
+        cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+      //  exit(1);
       }
 
+      //JM: finding position of the SINGLE integration point -> center of gravity of the face polygon
+      //JM: average point of the polygon for triangulation
+      Point avgPoint = Point(0.0, 0.0, 0.0);
+      for (unsigned int i=0; i<vert.size(); i++){ avgPoint += vert[i]->givePoint(); }
+      avgPoint /= vert.size();
 
+      //JM: integration point coordinates as an average of CGs of face triangles weighted by areas
+      ip_locs[0] = Point(0.0, 0.0, 0.0);
+      area = 0.0;
+      double ai = 0.0;
+      unsigned int j = 0;
+      for (unsigned int i=0; i<vert.size(); i++){
+        j=i+1;
+        if (i==vert.size()-1){ j=0; }
+        //triangle area computed as a_i = norm(cross(AB, AC)) / 2
+        ai = (cross(vert[i]->givePoint() - avgPoint,   vert[j]->givePoint() - avgPoint) ).norm();
+        area += ai;
+        //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
+        ip_locs[0] += ( avgPoint +vert[i]->givePoint() +vert[j]->givePoint() )/3.0 * ai;
+      }
+      ip_locs[0] /= area;
+
+      //JM: Check if integration point is coplanar with face
+      currErr = checkCoplanarity( vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
+      if (abs(currErr) > 1e-2){
+        cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
+        exit(1);
+      }
       //Work in progress
-      cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;
+      //cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;
 
-      exit(0);
+      //exit(0);
     }
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
