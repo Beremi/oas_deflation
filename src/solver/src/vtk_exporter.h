@@ -56,4 +56,23 @@ public:
 protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT RIGID contacts TO VTK (VTU)
+// WORKS ONLY FOR 2D
+class VTKRC2DExporter : public VTKExporter
+{
+private:
+    ElementContainer *elems;
+    NodeContainer *nodes;
+public:
+    VTKRC2DExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
+    ~VTKRC2DExporter() {};
+    // virtual void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+protected:
+};
+
+
+
 #endif /* _EXPORTER_C_H */

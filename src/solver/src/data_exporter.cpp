@@ -252,9 +252,21 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     newexp->readFromLine(iss, dimension);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKRBExporter") == 0 )    {
-                    VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n);
-                    newexp->readFromLine(iss, dimension);
-                    exporters.push_back(newexp);
+                    if ( dimension == 2 ){
+                      VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n);
+                      newexp->readFromLine(iss, dimension);
+                      exporters.push_back(newexp);
+                    } else {
+                      std::cout << "no rigid body exporter for dimension " << dimension << '\n';
+                    }
+                } else if ( exptype.compare("VTKRCExporter") == 0 )    {
+                    if ( dimension == 2 ){
+                      VTKRC2DExporter *newexp = new VTKRC2DExporter(e, n);
+                      newexp->readFromLine(iss, dimension);
+                      exporters.push_back(newexp);
+                    } else {
+                      std::cout << "no rigid body contacts exporter for dimension " << dimension << '\n';
+                    }
                 } else  {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
                     exit(0);
