@@ -118,8 +118,9 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
                               n->giveDoFBasedValue("uy", DoFs),
                               n->giveDoFBasedValue("uz", DoFs)));  // this is not correct for 2D, because it gives the rotation
+
         for (unsigned i = cell_data_size; i < codes.size(); i++){
-          point_data[ i ].push_back(n->giveDoFBasedValue(codes[ i ], DoFs));
+          point_data[ i - cell_data_size ].push_back(n->giveDoFBasedValue(codes[ i ], DoFs));
         }
       }
       // for (unsigned n; n < nodes->giveSize(); n++) {
@@ -155,10 +156,19 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
       }
       outputfile << "</DataArray>" << '\n';
+      //////////////////////////////////////////////////////////////////////////
+      for ( unsigned i = 0; i < point_data.size(); i++){
+        outputfile << "<DataArray type=\"Float32\" Name=\" " << codes[ i + cell_data_size ] << " \" format=\"ascii\">" << '\n';
+        for (auto const & p : point_data[ i ]){
+          outputfile << p << '\n';
+        }
+        outputfile << "</DataArray>" << '\n';
+      }
+      //////////////////////////////////////////////////////////////////////////
       outputfile << "</PointData>" << '\n';
       // /*
       outputfile << "<CellData Scalars=\"scalars\">" << "\n";
-      for (unsigned i = 0; i < codes.size(); i++){
+      for (unsigned i = 0; i < cell_data.size(); i++){
         outputfile << "<DataArray type=\"Float32\" Name=\"" << codes[ i ] << "\" format=\"ascii\">" << '\n';
         for (auto const & value : cell_data[ i ]){
           outputfile << value << '\n';
