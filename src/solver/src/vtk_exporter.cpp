@@ -342,7 +342,14 @@ void VTKRC2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
   vector<int> cell_types;
   vector<int> offsets;
   vector<Point> displ;
-  vector<double> damage;  // test version, this and more will be specified on the exporter input
+
+  vector< vector< double > > cell_data;  // test version, this and more will be specified on the exporter input
+  cell_data.resize(cell_data_size);
+
+  // TODO be able to export also point data
+  // vector< vector< double > > point_data;
+  // point_data.resize(codes.size() - cell_data_size);
+
   int offset = 0;
   for (auto const &el : *elems){
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( el );
@@ -359,7 +366,11 @@ void VTKRC2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
       cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
       offset += points_id.size();
       offsets.push_back(offset);
-      damage.push_back(el->giveValue("damage"));
+
+      for (unsigned i = 0; i < cell_data_size; i++){
+        cell_data[ i ].push_back(el->giveIPValue(codes[ i ], 0) );  // so far for single IP point
+      }
+
       points_id.clear();
     }
   }
@@ -427,11 +438,13 @@ void VTKRC2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
       outputfile << "</PointData>" << '\n';
       // /*
       outputfile << "<CellData Scalars=\"scalars\">" << "\n";
-      outputfile << "<DataArray type=\"Float32\" Name=\"damage\" format=\"ascii\">" << '\n';
-      for (auto const & value : damage){
-        outputfile << value << '\n';
+      for (unsigned i = 0; i < cell_data.size(); i++){
+        outputfile << "<DataArray type=\"Float32\" Name=\"" << codes[ i ] << "\" format=\"ascii\">" << '\n';
+        for (auto const & value : cell_data[ i ]){
+          outputfile << value << '\n';
+        }
+        outputfile << "</DataArray>" << '\n';
       }
-      outputfile << "</DataArray>" << '\n';
 
       outputfile << "<DataArray type=\"Float32\" Name=\"node_id\" format=\"ascii\">" << '\n';
       for (auto const & value : node_id){
