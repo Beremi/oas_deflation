@@ -327,7 +327,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
 
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRC2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
+void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
   // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
   // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
   char buffer [ 100 ];
@@ -363,7 +363,8 @@ void VTKRC2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
       // points_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
       node_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
       all_points_id.push_back(points_id);
-      cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
+      cell_types.push_back((points_id.size() > 2) ? 7 : points_id.size()*2 - 1);
+      // cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
       offset += points_id.size();
       offsets.push_back(offset);
 

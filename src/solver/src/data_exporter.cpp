@@ -260,8 +260,8 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                       std::cout << "no rigid body exporter for dimension " << dimension << '\n';
                     }
                 } else if ( exptype.compare("VTKRCExporter") == 0 )    {
-                    if ( dimension == 2 ){
-                      VTKRC2DExporter *newexp = new VTKRC2DExporter(e, n);
+                    if ( dimension == 2 || dimension == 3){
+                      VTKRCExporter *newexp = new VTKRCExporter(e, n);
                       newexp->readFromLine(iss, dimension);
                       exporters.push_back(newexp);
                     } else {
