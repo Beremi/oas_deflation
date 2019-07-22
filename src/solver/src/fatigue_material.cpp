@@ -237,8 +237,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
         r = 1.0;
     }
     if ( !bm ) {
-        cout << name << ": material parameter 'a' was not specified, taking m = 1.0" << endl;
-        m = 1.0;
+        cout << name << ": material parameter 'a' was not specified, taking a = 0.0" << endl;
+        m = 0.0;
     }
     ;
 };
