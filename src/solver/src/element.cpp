@@ -209,7 +209,7 @@ void RigidBodyContact :: init() {
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-    if ( abs(normal * t) > 1e-6 ) {
+    if ( abs(normal * t) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
@@ -402,7 +402,7 @@ void Transp1D :: init() {
       //JM: coplanarity is not perfect
       if (maxErr > 5e-2){
         cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
-        exit(1);
+      //  exit(1);
       }
 
       //JM: face normal vector made from first 3 vertices
@@ -450,7 +450,7 @@ void Transp1D :: init() {
       currErr = checkCoplanarity( vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
       if (abs(currErr) > 1e-2){
         cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
-        exit(1);
+      //  exit(1);
       }
       //Work in progress
       //cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;
