@@ -127,17 +127,17 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas):
+def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None):
     if (dim == 2):
-        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas)
+        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
 
     return vert_count, verticesIdxDict, vertIdxStart
 
 
 #Extract geometry 2d
-def output2D(node_count,  maxLim, vor, node_coords, areas):
+def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -266,7 +266,7 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
 
     saveNodes(nodes_out, aux_nodes, dim)
     saveVertices(vertices_out, dim)
-    saveMechanicalElements(ridges_out, node_count, dim)
+    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
     saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
@@ -274,7 +274,7 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
 
 
 
-def output3D(node_count, maxLim, vor, node_coords, areas):
+def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
     dim = 3
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
@@ -469,7 +469,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
 
     saveNodes(nodes_out, aux_nodes,dim)
     saveVertices(vertices_out, dim)
-    saveMechanicalElements(ridges_out, node_count, dim)
+    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
 
 
     return v_count, verticesIdxDict, vertIdxStart
@@ -709,19 +709,40 @@ def saveVertices (vertices_out, dim):
     sys.stdout.flush()
 
 
-def saveMechanicalElements (ridges_out, node_count, dim):
+def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
     mechElemRidges = []
     for m in range (len(ridges_out)):
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
-            mechElemRidges.append( ridges_out[m] )
+            mechElemRidges.append( ridges_out[m].copy() )
 
-    if (dim ==2):
+    if (mZ!=None):
+        for i in range (len(mechElemRidges)):
+            nodeA = nodes[int(mechElemRidges[i][0])]
+            nodeB = nodes[int(mechElemRidges[i][1])]
+
+            if (dim==2):
+                if ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
+                      mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeB[1] < mZ[0][1][1]) or
+                      (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
+                      mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+
+
+                else:
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+
+
+    if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
-        np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0', header = headerLine )
+        np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
 
     if (dim == 3):
@@ -914,8 +935,8 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
         f.write("%s\n" % headerLine )
         for element in transportElements:
-            #f.write("%s\n" % element.getString() )
-            f.write("%s\n" % element.getReducedString() )
+            if (dim==2):f.write("%s\n" % element.getString() )
+            if (dim==3): f.write("%s\n" % element.getReducedString() )
     print('done.')
 
     return newAuxNodes

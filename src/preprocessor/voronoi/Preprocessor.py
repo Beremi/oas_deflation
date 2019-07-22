@@ -47,7 +47,7 @@ solver = 0
 powerTes = 0
 
 #dimension 2 //// dim 3 prohibited now
-dim = 3
+dim = 2
 print('Creating a %dd lattice model...' %dim)
 
 Xdim = 1.
@@ -58,13 +58,13 @@ Zdim = 1.
 if (dim == 2 ): maxLim = np.array([  Xdim   ,  Ydim ])
 if (dim == 3 ): maxLim = np.array([  Xdim,  Ydim,  Zdim ])
 
-
+elaX = 0.05
 #volume of the model (later for check)
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.15
+minDist = 0.025
 radius = minDist / 2
 
 if (dim == 2):
@@ -87,6 +87,29 @@ trsprtIC_merged = []
 functions = []
 
 
+materialZones = []
+#matZone 1
+matZ = []
+if (dim==2):
+    boundA = np.array(  [ -1e-8             , -1e-8          ] )
+    matZ.append (boundA)
+    boundB = np.array(  [ maxLim[0]*elaX    , maxLim[1] + 1e-8] )
+    matZ.append (boundB)
+    boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8] )
+    matZ.append (boundA1)
+    boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8]  )
+    matZ.append (boundB1)
+    materialZones.append(matZ)
+if (dim==3):
+    boundA = np.array(  [ -1e-8             , -1e-8             , -1e8] )
+    matZ.append (boundA)
+    boundB = np.array(  [ maxLim[0]*elaX    , maxLim[1] + 1e8   , maxLim[2] + 1e8  ] )
+    matZ.append (boundB)
+    boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8    , -1e8] )
+    matZ.append (boundA1)
+    boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
+    matZ.append (boundB1)
+    materialZones.append(matZ)
 
 #creating the model. Select the prepared models.
 if (dim == 2):
@@ -94,7 +117,7 @@ if (dim == 2):
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 
     #cantilever  pressure free contraction
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials)
 
     #confined  pressure
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions  = utilitiesModeling.create2dbeamConfinedPress(maxLim, minDist, trials )
@@ -139,8 +162,7 @@ vert_count = -1
 young = 30e9
 poisson = 0.3
 density = 2200
-linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, density)
-#materials.append(linElMaterial)
+
 
 ft = 2e6
 Gt = 500
@@ -158,13 +180,17 @@ transpS = 22
 transportMaterial = utilitiesMech.TransportMaterial( transpC, transpS)
 materials.append(transportMaterial)
 
+linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, density)
+materials.append(linElMaterial)
 
 
 print('')
 
 
 #Deconstructing Voronoi diagram and saving the geometry
-vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas)
+vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas, mZ=materialZones)
+
+
 # saving rest of input
 utilitiesGeom.saveMaterials(materials)
 utilitiesGeom.saveFunctions(functions)

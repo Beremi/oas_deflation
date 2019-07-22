@@ -262,7 +262,7 @@ def create2dCantileverBending(maxLim, minDist, trials ):
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
 
 
-def create2dCantileverUniTens(maxLim, minDist, trials ):
+def create2dCantileverUniTens(maxLim, minDist, trials):
     print('Creating 2d cantilever, uniform tension.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
@@ -790,13 +790,13 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
     #an indent due to mirroring of the data for voronoi tess.
     indent = 1e-8
 
-    nodeA = np.array ( [ 0 + indent, indent ] )
+    nodeA = np.array ( [  indent, indent ] )
     nodeAmechBC = np.array([0, 0 , -1 ,      -1 , -1 , -1])
     pointGenerators.generateSingleNode(nodeA, dim, node_coords)
     mechBC_merged.append( utilitiesMech.mechanicalBC(dim, 0, nodeAmechBC))
 
 
-    nodeB = np.array ( [ 0 + indent, maxLim[1]-indent ] )
+    nodeB = np.array ( [  indent, maxLim[1]-indent ] )
     nodeBmechBC = np.array([0, -1 , -1 ,      -1 , -1 , -1])
     pointGenerators.generateSingleNode(nodeB, dim, node_coords)
     mechBC_merged.append(utilitiesMech.mechanicalBC(dim, 1, nodeBmechBC))
