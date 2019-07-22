@@ -58,14 +58,16 @@ Zdim = 1.
 if (dim == 2 ): maxLim = np.array([  Xdim   ,  Ydim ])
 if (dim == 3 ): maxLim = np.array([  Xdim,  Ydim,  Zdim ])
 
-elaX = 0.05
+
 #volume of the model (later for check)
 volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.025
+minDist = 0.025 
 radius = minDist / 2
+
+elaX = minDist / Xdim * 2
 
 if (dim == 2):
     dV = 3.141592 * radius **2
@@ -117,10 +119,10 @@ if (dim == 2):
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 
     #cantilever  pressure free contraction
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials)
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials)
 
     #confined  pressure
-    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions  = utilitiesModeling.create2dbeamConfinedPress(maxLim, minDist, trials )
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions  = utilitiesModeling.create2dbeamConfinedPress(maxLim, minDist, trials )
 
     #simply supported beam, uniform load
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials )

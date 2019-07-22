@@ -892,7 +892,7 @@ def assemble2dbeamConfinedPress (maxLim, minDist, trials):
         mechBC_merged.append(mBC)
 
     ###############generating a nodes on right face, loaded by uni tens in X) ###############
-    lineBC = np.array([1,-1,-1,   -1, -1 ,-1])
+    lineBC = np.array([1, 0 ,-1,   -1, -1 ,-1])
 
     #defining points of the line
     nodeA = np.array([maxLim[0] - indent, indent])
