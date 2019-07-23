@@ -53,7 +53,7 @@ class transportPath:
         self.nds = len(self.connectedNodes)
 
     def getString(self):
-        ndNr = self.nds /2
+        ndNr = self.nds 
 
         line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
         for i in range (self.nds):

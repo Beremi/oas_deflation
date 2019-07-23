@@ -738,6 +738,24 @@ def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
+            if (dim==3):
+                if ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
+                      mZ[0][0][2] < nodeA[2] < mZ[0][1][2] and
+                      mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
+                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ) or
+                      (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
+                      mZ[0][2][2] < nodeA[2] < mZ[0][3][2] and
+                      mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
+                      mZ[0][2][2] < nodeB[2] < mZ[0][3][2])   ):
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                    
+
+                else:
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
