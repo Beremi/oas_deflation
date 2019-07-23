@@ -22,6 +22,14 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return sPi.norm();
     } else if ( (code.compare("strainT") == 0) ||  (code.compare("strain") == 0) ) {
         return slip.norm();
+    } else if ( (code.compare("strainTY") == 0)) {
+        return slip.getY();
+    } else if ( (code.compare("strainTZ") == 0)) {
+        return slip.getZ();
+    } else if ( (code.compare("strainPLTY") == 0)) {
+        return sPi.getY();
+    } else if ( (code.compare("strainPLTZ") == 0)) {
+        return sPi.getZ();
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -511,12 +519,6 @@ FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e) :
 double FatigueMaterialStatus :: giveValue(string code) const {
     if ( code.compare("damageN") == 0 ) {
         return DamagePlasticMaterialStatus :: giveValue("damageN");
-    } else if ( code.compare("damageT") == 0 ) {
-        return FatigueShearMaterialStatus :: giveValue("damageT");
-    } else if ( code.compare("strainT") == 0 ) {
-        return FatigueShearMaterialStatus :: giveValue("strainT");
-    } else if ( code.compare("strainPLT") == 0 ) {
-        return FatigueShearMaterialStatus :: giveValue("strainPLT");
     } else if ( code.compare("strainN") == 0 ) {
         return DamagePlasticMaterialStatus :: giveValue("strainN");
     } else if ( code.compare("strainPLN") == 0 ) {
