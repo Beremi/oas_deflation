@@ -165,14 +165,20 @@ void SteadyStateNonLinearSolver :: init() {
 //////////////////////////////////////////////////////////
 Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     string param;
-    bool bdt, bttime;
-    bdt = bttime = false;
+    bool bdt, bdtmax, bdtmin, bttime;
+    bdt = bttime = bdtmax = bdtmin = false;
 
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("time_step") == 0 ) {
             bdt = true;
             iss >> dt;
+        } else if ( param.compare("max_time_step") == 0 ) {
+            bdtmax = true;
+            iss >> dtmax;
+        } else if ( param.compare("min_time_step") == 0 ) {
+            bdtmin = true;
+            iss >> dtmin;
         } else if ( param.compare("total_time") == 0 )    {
             bttime = true;
             iss >> termination_time;
@@ -184,81 +190,109 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     }
     ;
     if ( !bttime ) {
-        cerr << name << ": solver parameter 'total_time' was not specified" << endl;
-        exit(0);
+      cerr << name << ": solver parameter 'total_time' was not specified" << endl;
+      exit(0);
     }
     ;
-    cout << name << " succesfully loaded" << endl;
+    if ( !bdtmax ) {
+        // cout << name << ": solver parameter 'max_time_step' was not specified, setting to timestep" << endl;
+        dtmax = dt;
+    }
+    ;
+    if ( !bdtmin ) {
+        // cout << name << ": solver parameter 'min_time_step' was not specified, setting to timestep" << endl;
+        dtmin = dt;
+    }
+    ;
+    cout << name << " succesfully loaded, ";
+    ;
+    if ( !bdtmin && !bdtmax){
+      cout << "fixed time step used" << endl;
+    } else if ( bdtmin || bdtmax){
+      cout << "adaptive time step used" << endl;
+    } else {
+      cout << endl;
+    }
+    ;
     return this;
 };
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
-    //setup loading
-    nodes->addRHS_nodalLoad(load, time);  //add nodal load
-    nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-    computeInternalExternalForces(trial_r);
-
-    unsigned it = 0;
     bool converged = false;
-    unsigned maxIt = 30;
-    while ( !converged && it < maxIt ) {
-        elems->updateSteadyStateMatrices(K, "secant");
+    while ( !converged ){
+      //setup loading
+      nodes->addRHS_nodalLoad(load, time);  //add nodal load
+      nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
+      computeInternalExternalForces(trial_r);
 
-        //solve linear system
-        nodes->giveReducedDoFArray(f_ext - f_int, f);
-        if ( ConjGrad(K, ddr, f, ddr) == false ) {
-            cerr << "Conjugate gradients did not converge" << endl;
-        }
-        nodes->giveFullDoFArray(ddr, full_ddr);
+      unsigned it = 0;
+      unsigned maxIt = 30;
+      while ( !converged && it < maxIt ) {
+          elems->updateSteadyStateMatrices(K, "secant");
 
-        //update DoFs
-        for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-            trial_r [ i ] += full_ddr [ i ];
-        }
+          //solve linear system
+          nodes->giveReducedDoFArray(f_ext - f_int, f);
+          if ( ConjGrad(K, ddr, f, ddr) == false ) {
+              cerr << "Conjugate gradients did not converge" << endl;
+          }
+          nodes->giveFullDoFArray(ddr, full_ddr);
 
-        //compute internal forces
-        computeInternalExternalForces(trial_r);
+          //update DoFs
+          for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+              trial_r [ i ] += full_ddr [ i ];
+          }
 
-        //compute residuals
-        W_int = W_int_old;
-        W_ext = W_ext_old;
-        for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-            residual [ i ] = f_int [ i ] - f_ext [ i ];
-            W_int += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_ext += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-        }
+          //compute internal forces
+          computeInternalExternalForces(trial_r);
 
-        //compute errors
-        double residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
-        double displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
-        double energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
+          //compute residuals
+          W_int = W_int_old;
+          W_ext = W_ext_old;
+          for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+              residual [ i ] = f_int [ i ] - f_ext [ i ];
+              W_int += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+              W_ext += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+          }
 
-        cout << setw(6) << it << setw(15) << residu_error;
-        if ( it == 0 ) {
-            cout << setw(15) << "---";
-        } else {
-            cout << setw(15) << displa_error;
-        }
-        cout << setw(15) << energy_error;
-        cout << endl;
+          //compute errors
+          double residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
+          double displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
+          double energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
 
-        if (std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ){
-          cerr << "calculating with NaN - exit" << '\n';
+          cout << setw(6) << it << setw(15) << residu_error;
+          if ( it == 0 ) {
+              cout << setw(15) << "---";
+          } else {
+              cout << setw(15) << displa_error;
+          }
+          cout << setw(15) << energy_error;
+          cout << endl;
+
+          if (std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ){
+            cerr << "calculating with NaN - exit" << '\n';
+            exit(1);
+          }
+
+          if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {
+              converged = false;
+          } else {
+              converged = true;
+          }
+          it++;
+      }
+      if ( !converged && dt > dtmin ) {
+          time -= dt;
+          dt = fmax(dt/2, dtmin);
+          time += dt;
+          cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+      } else if ( !converged ) {
+          cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
           exit(1);
-        }
-
-        if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {
-            converged = false;
-        } else {
-            converged = true;
-        }
-        it++;
-    }
-
-    if ( !converged ) {
-        cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
-        exit(1);
+      } else if ( converged && it < maxIt/3){
+          dt = fmin(dt*2, dtmax);
+          std::cout << "enlarging step, timestep = " << dt << '\n';
+      }
     }
 }
 

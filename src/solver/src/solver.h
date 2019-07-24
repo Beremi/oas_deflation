@@ -61,6 +61,7 @@ public:
 class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 {
 protected:
+    double dtmax, dtmin;  // for adaptive step
     Vector f_int_old, f_ext_old, residual;
     Vector trial_r;
     double W_ext_old, W_int_old, W_ext, W_int;
