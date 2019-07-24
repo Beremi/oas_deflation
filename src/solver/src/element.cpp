@@ -51,6 +51,8 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
         return ip_locs [ ipnum ].x;
     } else if ( code.compare("y") == 0 )       {
         return ip_locs [ ipnum ].y;
+    } else if ( code.compare("z") == 0 )       {
+        return ip_locs [ ipnum ].z;
     } else  {
         return stats [ ipnum ]->giveValue(code);
     }
@@ -82,6 +84,8 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
   if ( code.compare("normal_x") == 0 )       {
       return normal.getX();
   } else if ( code.compare("normal_y") == 0 )       {
+      return normal.getY();
+  } else if ( code.compare("normal_z") == 0 )       {
       return normal.getY();
   } else {
     return mechanicalElement :: giveIPValue(code, ipnum);
