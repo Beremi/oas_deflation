@@ -10,6 +10,8 @@ void DataExporter :: giveFileName(unsigned step, char *buffer) const {
 
 //////////////////////////////////////////////////////////
 void DataExporter :: readFromLine(istringstream &iss, unsigned dimension){
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
   string param;
   bool bte = false;
   while ( !iss.eof() ) {
@@ -38,9 +40,6 @@ bool DataExporter :: doExportNow(const double &time){
 //////////////////////////////////////////////////////////
 // EXPORT FROM NODES TO TXT
 void TXTNodalExporter :: readFromLine(istringstream &iss, unsigned dimension) {
-    DataExporter :: readFromLine(iss, dimension);
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
     iss >> filename;
     unsigned num;
     iss >> num;
@@ -48,6 +47,7 @@ void TXTNodalExporter :: readFromLine(istringstream &iss, unsigned dimension) {
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> codes [ i ];
     }
+    DataExporter :: readFromLine(iss, dimension);
 }
 
 //////////////////////////////////////////////////////////
@@ -91,9 +91,6 @@ void TXTElementExporter :: readFromLine(istringstream &iss, unsigned dimension) 
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
 void TXTGaussPointExporter :: readFromLine(istringstream &iss, unsigned dimension) {
-    DataExporter :: readFromLine(iss, dimension);
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
     iss >> filename;
     unsigned num;
     iss >> num;
@@ -101,6 +98,7 @@ void TXTGaussPointExporter :: readFromLine(istringstream &iss, unsigned dimensio
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> codes [ i ];
     }
+    DataExporter :: readFromLine(iss, dimension);
 }
 
 //////////////////////////////////////////////////////////

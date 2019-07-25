@@ -10,9 +10,6 @@ void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
 
 //////////////////////////////////////////////////////////
 void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
-  DataExporter :: readFromLine(iss, dimension);
-  iss.clear(); // clear string stream
-  iss.seekg(0, iss.beg); //reset position in string stream
   string param;
   unsigned num;
   vector< string > cell_data, point_data;
@@ -44,7 +41,7 @@ void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
   for (auto const &po : point_data){
     codes[ num++ ] = po;
   }
-  time_last = 0.;
+  DataExporter :: readFromLine(iss, dimension);
 }
 
 //////////////////////////////////////////////////////////
