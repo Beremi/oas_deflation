@@ -15,12 +15,11 @@
 class DataExporter
 {
 private:
-
 public:
     DataExporter() {};
     virtual ~DataExporter() {};
-    virtual void readFromLine(istringstream &iss, unsigned dimension) = 0;
-    virtual bool doExportNow(const double &time) { return true; };
+    virtual void readFromLine(istringstream &iss, unsigned dimension);
+    virtual bool doExportNow(const double &time);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const = 0;
     virtual void giveFileName(unsigned step, char *buffer) const;
     string giveFileName() const { return filename; };
@@ -28,6 +27,7 @@ public:
 protected:
     string filename;
     vector< string >codes;
+    double time_each, time_last;
 };
 
 //////////////////////////////////////////////////////////

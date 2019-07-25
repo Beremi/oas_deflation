@@ -9,9 +9,38 @@ void DataExporter :: giveFileName(unsigned step, char *buffer) const {
 }
 
 //////////////////////////////////////////////////////////
+void DataExporter :: readFromLine(istringstream &iss, unsigned dimension){
+  string param;
+  bool bte = false;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("saveEvery")==0 || param.compare("timeEach")==0 ){
+      iss >> time_each;
+      bte = true;
+    }
+  }
+  if( !bte ){
+    time_each = 0;
+  }
+  time_last = 0;
+}
+
+bool DataExporter :: doExportNow(const double &time){
+  if (time < time_last + time_each) {
+    return false;
+  } else {
+    time_last = time;
+    return true;
+  }
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM NODES TO TXT
 void TXTNodalExporter :: readFromLine(istringstream &iss, unsigned dimension) {
+    DataExporter :: readFromLine(iss, dimension);
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
     iss >> filename;
     unsigned num;
     iss >> num;
@@ -62,6 +91,9 @@ void TXTElementExporter :: readFromLine(istringstream &iss, unsigned dimension) 
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
 void TXTGaussPointExporter :: readFromLine(istringstream &iss, unsigned dimension) {
+    DataExporter :: readFromLine(iss, dimension);
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
     iss >> filename;
     unsigned num;
     iss >> num;
@@ -125,6 +157,8 @@ void ForceGauge :: readFromLine(istringstream &iss, unsigned dimension) {
 }
 //////////////////////////////////////////////////////////
 void ForceGauge :: init() {
+    time_each = 0;
+    time_last = 0;
     unsigned DoFpos = 0;
     if ( codes [ 0 ].compare("fx") == 0 ) {
         DoFpos = 0;
@@ -184,6 +218,8 @@ void DisplacementGauge :: readFromLine(istringstream &iss, unsigned dim) {
 }
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: init() {
+    time_each = 0;
+    time_last = 0;
     //find closest point
     //TODO: better to use direct displacements at given points A and B
     nodeA = nodes->findClosestMechanicalNode(pointA);
@@ -307,7 +343,7 @@ void ExporterContainer :: init() {
         ofstream outputfile;
         outputfile.open((GlobPaths::RESULTDIR / buffer).string());
         if ( outputfile.good() ) {
-            outputfile << "#step";
+            outputfile << "#step" << "\t" << "time";
         }
         outputfile.close();
     }

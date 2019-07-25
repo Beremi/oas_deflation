@@ -10,18 +10,18 @@ void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
 
 //////////////////////////////////////////////////////////
 void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
+  DataExporter :: readFromLine(iss, dimension);
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
   string param;
   unsigned num;
-  time_each = 0;
   vector< string > cell_data, point_data;
   cell_data.resize(0);
   point_data.resize(0);
   iss >> filename;
   while ( !iss.eof() ) {
     iss >> param;
-    if ( param.compare("saveEvery")==0 || param.compare("timeEach")==0 ){
-      iss >> time_each;
-    } else if (param.compare("cellData")==0){
+    if (param.compare("cellData")==0){
       iss >> num;
       cell_data.resize(num);
       for ( unsigned i = 0; i < num; i++ ) {
@@ -46,17 +46,6 @@ void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
   }
   time_last = 0.;
 }
-//////////////////////////////////////////////////////////
-bool VTKExporter :: doExportNow(const double &time) {
-  if (time < time_last + time_each) {
-    return false;
-  } else {
-    time_last = time;
-    return true;
-  }
-}
-
-
 
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
