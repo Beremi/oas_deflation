@@ -580,14 +580,14 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
     print('done.')
 
-def saveMasterInput(dim, solver, solStep, simTime):
+def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
      if (solver == 0):
-            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\ttotal_time\t%f\n' %(solStep, simTime))
+            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  minStep, maxStep,simTime))
      fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
      fl.write("MatFiles\t1\t%s\n"%materialsFile)
      fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
@@ -752,7 +752,7 @@ def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
                       mZ[0][2][2] < nodeB[2] < mZ[0][3][2])   ):
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
-                    
+
 
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )

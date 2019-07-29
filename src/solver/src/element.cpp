@@ -86,7 +86,7 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
   } else if ( code.compare("normal_y") == 0 )       {
       return normal.getY();
   } else if ( code.compare("normal_z") == 0 )       {
-      return normal.getY();
+      return normal.getZ();
   } else {
     return mechanicalElement :: giveIPValue(code, ipnum);
   }
