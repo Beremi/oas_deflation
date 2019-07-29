@@ -13,12 +13,16 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
     string line, nodeType;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile, line) ) {
+        while ( getline(inputfile >> std::ws, line) ) {
+            if ( line.empty() ){
+                cout << "EMPTY LINE" << endl;
+                continue;
+            }
             if ( line.at(0) == '#' ) {
                 continue;
             }
             istringstream iss(line);
-            iss >> nodeType;
+            iss >> std::ws >> nodeType;
             if ( !nodeType.rfind("#", 0) == 0 ) {
                 if ( nodeType.compare("TrsprtNode") == 0 ) {
                     TrsNode *newnode = new TrsNode(dim);

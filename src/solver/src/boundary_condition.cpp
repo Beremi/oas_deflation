@@ -239,7 +239,10 @@ void FunctionContainer :: readFromFile(const string filename) {
     string line, ftype;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile, line) ) {
+        while ( getline(inputfile >> std::ws, line) ) {
+            if ( line.empty() ){
+                continue;
+            }
             if ( line.at(0) == '#' ) {
                 continue;
             }
@@ -385,9 +388,11 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
     vector< int >dirrichBC, neumannBC;
     Node *node;
     ifstream inputfile(filename.c_str() );
-
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile, line) ) {
+        while ( getline(inputfile >> std::ws, line) ) {
+            if ( line.empty() ){
+                continue;
+            }
             if ( line.at(0) == '#' ) {
                 continue;
             }
