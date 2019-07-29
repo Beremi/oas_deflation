@@ -52,10 +52,6 @@ Recommended structure
     \code{.sh}
       cmake -D CMAKE_BUILD_TYPE=Debug PATH_TO_SRC
     \endcode
-  - using toolchain to build Windows executable under Linux system using cross compiler MXE (https://mxe.cc)
-    \code{.sh}
-      cmake -D CMAKE_TOOLCHAIN_FILE=../partmod/toolchain_mxe.cmake ../partmod
-    \endcode
 -# compile
   \code{.sh}
     cmake --build .
@@ -84,6 +80,23 @@ Recommended structure
   \code{.sh}
     cmake --build . --target help
   \endcode
+
+\subsubsection Crosscompilation Cross Compilation
+Build Windows binary under Linux
+- build mxe
+  \code{.sh}
+    make MXE_TARGETS=x86_64-w64-mingw32.static MXE_PLUGIN_DIRS=plugins/gcc9 gcc
+    make cc
+    make cmake
+  \endcode
+- using toolchain to build Windows executable under Linux system using cross compiler MXE (https://mxe.cc)
+  \code{.sh}
+    cmake -D CMAKE_TOOLCHAIN_FILE=../partmod/toolchain_mxe.cmake ../partmod
+  \endcode
+- using mxe cmake wrapper
+\code{.sh}
+  i686-w64-mingw32.static-cmake ../partmod
+\endcode
 
 
 \section CodingStandard Coding Standard
