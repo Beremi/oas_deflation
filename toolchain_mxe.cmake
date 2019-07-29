@@ -2,9 +2,9 @@
 set(CMAKE_SYSTEM_NAME Windows)
 
 # which compilers to use
-set(CMAKE_C_COMPILER i686-w64-mingw32.static-gcc)
-set(CMAKE_CXX_COMPILER i686-w64-mingw32.static-g++)
-set(CMAKE_Fortran_COMPILER i686-w64-mingw32.static-gfortran)
+set(CMAKE_C_COMPILER x86_64-w64-mingw32.static-gcc)
+set(CMAKE_CXX_COMPILER x86_64-w64-mingw32.static-g++)
+set(CMAKE_Fortran_COMPILER x86_64-w64-mingw32.static-gfortran)
 
 # here is the target environment located
 #set(CMAKE_FIND_ROOT_PATH /path/to/target/environment)
