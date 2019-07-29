@@ -1,4 +1,4 @@
-set (solver
+set (solver_files
     boundary_condition.cpp
     data_exporter.cpp
     element_container.cpp
@@ -14,7 +14,7 @@ set (solver
     solver.cpp
     )
 
-    add_library(solver
-        ${LIB_TYPE}
-        ${solver}
-        )
+add_library(solver
+    ${LIB_TYPE}
+    ${solver_files}
+    )
