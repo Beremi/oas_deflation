@@ -11,6 +11,7 @@
 #include <chrono>
 #include <ctime>
 
+#include "version.h"
 #include "globals.h"
 #include "material_container.h"
 #include "node_container.h"
@@ -33,7 +34,10 @@ string convertTimeToString(std :: chrono :: duration< double >time_interval) {
     int seconds = time_interval.count() - hours * 3600 - minutes * 60;
     int miliseconds = (time_interval.count() - hours * 3600 - minutes * 60 - seconds) * 100;
     stringstream ss;
-    ss << hours << ":" << minutes << ":" << seconds << "." << miliseconds;
+    ss << std::setw(2) << std::setfill('0') << hours << ":" 
+       << std::setw(2) << std::setfill('0') << minutes << ":" 
+       << std::setw(2) << std::setfill('0') << seconds << "." 
+       << std::setw(3) << std::setfill('0') << miliseconds;
     return ss.str();
 }
 
@@ -44,12 +48,15 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
     Solver *newsolver = nullptr;
     ifstream inputfile((GlobPaths::BASEDIR / filename).string() );
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile, line) ) {
+        while ( getline( inputfile >> std::ws, line) ) {
+            if ( line.empty() ){
+                continue;
+            }
             if ( line.at(0) == '#' ) {
                 continue;
             }
             istringstream iss(line);
-            iss >> istr;
+            iss >> std::skipws >> istr;
             if ( istr.compare("Dimension") == 0 ) {
                 iss >> dimension;
             } else if ( istr.compare("NodeFiles") == 0 )    {
@@ -77,9 +84,9 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                     bcconds->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes);
                 }
             } else if ( istr.compare("FunctionFiles") == 0 )    {
-                iss >> iint;
+                iss >> std::skipws >> iint;
                 for ( int i = 0; i < iint; i++ ) {
-                    iss >> istr;
+                    iss >> std::skipws >> istr;
                     funcs->readFromFile((GlobPaths::BASEDIR / istr).string());
                 }
             } else if ( istr.compare("ExporterFiles") == 0 )    {
@@ -104,13 +111,26 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+
+string version_info() {
+    string s = "This code has been built from version " + GIT_HASH + " : " + TIME_STRING + "\n";
+    s += "OS name: " + OS_NAME + "\n";
+    s += "OS sub-type: " + OS_RELEASE + "\n";
+    s += "OS build ID: " + OS_VERSION + "\n";
+    s += "OS platform: " + OS_PLATFORM;
+    return s;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv) {
     if ( argc == 1 ) {
         cerr << "Error: no input file specified, please try again with input file" << endl;
-        cerr << "Usage: DiscreteModel [master.inp]" << endl;
+        cerr << "Usage: DiscreteModel [path/to/master.inp]" << endl;
+        //cerr << std::setfill('=') << setw(50) << "" << endl;
+        cerr << string(80, '=') << endl;
+        cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -124,6 +144,14 @@ int main(int argc, char **argv) {
          << GlobPaths::RESULTDIR << endl;*/
     // create directory for results
     fs::create_directories(GlobPaths::RESULTDIR);
+
+    ofstream outputfile((GlobPaths::RESULTDIR / "version.txt").string());
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile << version_info();
+        outputfile << endl;
+        }
+        outputfile.close();
 
     auto start = std :: chrono :: system_clock :: now();
     auto now = start;
