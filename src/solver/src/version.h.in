@@ -1,0 +1,14 @@
+#pragma once
+
+#include <string>
+
+//#define TIME_STRING              "@TIME_STRING@"
+const std::string TIME_STRING = "@TIME_STRING@";
+
+const std::string OS_NAME = "@_OS_NAME@";
+const std::string OS_RELEASE = "@_OS_RELEASE@";
+const std::string OS_VERSION = "@_OS_VERSION@";
+const std::string OS_PLATFORM = "@_OS_PLATFORM@";
+const std::string GIT_HASH = "@GIT_HASH@";
+
+std::string print_version_info();

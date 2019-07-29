@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2.0)
+cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
 
 message(STATUS "project source directory -> ${CMAKE_SOURCE_DIR}")
 message(STATUS "project build directory -> ${CMAKE_BINARY_DIR}")
@@ -23,14 +23,18 @@ include (ProcessorCount)
 set(CMAKE_COLOR_MAKEFILE ON)
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
+include(GNUInstallDirs)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 project(PartMod CXX)
 set (PartMod_VERSION_MAJOR 0)
 set (PartMod_VERSION_MINOR 1)
 set (PartMod_VERSION_PATCH 0) # Unused
 set (PartMod_HOMEPAGE "https://kelidas.gitlab.io/partmod-site")
-#set (PartMod_COPYRIGHT "Copyright (C) 1994-2017 Borek Patzak")
-#set (PartMod_EMAIL "oofem@fsv.cvut.cz")
+#set (PartMod_COPYRIGHT "Copyright (C) 2019")
+#set (PartMod_EMAIL "elias.j@fce.vutbr.cz")
 
 set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
@@ -74,7 +78,7 @@ set (LIB_TYPE OBJECT)
 if (USE_SOLVER)
   include_directories ("${PartMod_SOURCE_DIR}/src/solver/src")
   add_subdirectory ("${PartMod_SOURCE_DIR}/src/solver/src")
-  list (APPEND MODULE_LIST "solver")
+  #list (APPEND MODULE_LIST "solver")
   list (APPEND LIBS $<TARGET_OBJECTS:solver>)
 endif ()
 
@@ -85,12 +89,51 @@ endif ()
 add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #target_link_libraries (DiscreteModel libDiscreteModel)
+#find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
 target_link_libraries(DiscreteModel
                       PUBLIC
-                      "stdc++fs"
-                    #    Boost::filesystem)
-                  )
-install (TARGETS DiscreteModel DESTINATION bin)
+                        stdc++fs
+                      #Boost::filesystem
+                     )
+
+install (
+  TARGETS
+    DiscreteModel
+  DESTINATION
+    ${CMAKE_INSTALL_BINDIR})
+
+
+#######################################################################
+######################## VERSION ######################################
+#######################################################################
+
+# needs to find the generated header file
+target_include_directories(DiscreteModel
+  PRIVATE
+    ${PartMod_BINARY_DIR}/generated
+  )
+
+add_custom_command(
+  OUTPUT
+    ${PartMod_BINARY_DIR}/generated/version.h
+    ALL
+  COMMAND
+    ${CMAKE_COMMAND} -D TARGET_DIR=${PartMod_BINARY_DIR} -P ${PartMod_SOURCE_DIR}/version.cmake
+  WORKING_DIRECTORY
+    ${PartMod_SOURCE_DIR}
+  )
+
+# rebuild version.hpp every time
+add_custom_target(
+  get_git_hash
+  ALL
+  DEPENDS
+    ${PartMod_BINARY_DIR}/generated/version.h
+  )
+
+# version.hpp has to be generated
+# before we start building DiscreteModel
+add_dependencies(DiscreteModel get_git_hash)
 
 #######################################################################
 ######################## Documentation ################################
