@@ -5,11 +5,11 @@
 # TXTNodalExporter pressure 1 pressure
 ## export data in gaus points
 TXTGaussPointExporter damage 7 x y normal_x normal_y damage slip slipPi
-## displacement gauge uy x1coord y1coord x2coord y2coord 
+## displacement gauge uy x1coord y1coord x2coord y2coord
 DisplacementGauge LD displY uy 0.5e0 0.5e0 2e0 1e0
 DisplacementGauge LD displX ux 0.5e0 0.5e0 2e0 1e0
 ## ForceGauge file_name gauge_name which_force how_many node_ids
 ForceGauge LD loadY fy 1 1
 ForceGauge LD loadX fx 1 1
 ## export VTK file
-VTKElementExporter elems 0
+VTKElementExporter elems saveEvery 0.01 cellData 4 damageN damageT strainPLN strainPLT

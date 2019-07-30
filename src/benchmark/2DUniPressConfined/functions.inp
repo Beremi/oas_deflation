@@ -1,0 +1,5 @@
+#FuncTyped
+PWLFunction	1	0.000000	0.000000
+ConstSawToothFn	value	-0.0020	period	1
+PWLFunction	1	0.000000	0.000000
+PWLFunction	1	0.000000	100.000000

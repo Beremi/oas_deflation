@@ -29,7 +29,7 @@ void MaterialContainer :: readFromFile(const string filename) {
             }
             istringstream iss(line);
             iss >> matType;
-            if ( !matType.rfind("#", 0) == 0 ) {
+            if ( !(matType.rfind("#", 0) == 0) ) {
                 if ( matType.compare("DisMechMaterial") == 0 ) {
                     DisMechMaterial *newmat = new DisMechMaterial();
                     newmat->readFromLine(iss);
@@ -46,6 +46,14 @@ void MaterialContainer :: readFromFile(const string filename) {
                    FatigueShearMaterial *newmat = new FatigueShearMaterial();
                    newmat->readFromLine(iss);
                    matrs.push_back(newmat);
+                } else if ( matType.compare("DamagePlasticMaterial") == 0 )     {
+                   DamagePlasticMaterial *newmat = new DamagePlasticMaterial();
+                   newmat->readFromLine(iss);
+                   matrs.push_back(newmat);
+                } else if ( matType.compare("FatigueMaterial") == 0 )     {
+                   FatigueMaterial *newmat = new FatigueMaterial();
+                   newmat->readFromLine(iss);
+                   matrs.push_back((FatigueShearMaterial *) newmat);
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(0);

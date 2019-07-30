@@ -77,6 +77,8 @@ double squareDist(const Point &v1, const Point &v2);
 double squareDist(const Point *v1, const Point *v2);
 double determinant(const Point &u, const Point &v, const Point &w);
 
+//JM coplanarity
+double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD);
 
 template< class T >
 class Slice_iter

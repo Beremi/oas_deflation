@@ -64,15 +64,17 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.2
+minDist = 0.15
 radius = minDist / 2
+
+elaX = minDist / Xdim * 2
 
 if (dim == 2):
     dV = 3.141592 * radius **2
 if (dim == 3):
     dV = 4/3 * 3.141592 * radius **3
 
-expNodes = volume / dV  * 0.6
+expNodes = volume / dV  * 0.5
 print ('Expecting about %d nodes' %expNodes)
 
 #trials of random node positioning
@@ -87,16 +89,39 @@ trsprtIC_merged = []
 functions = []
 
 
+materialZones = []
+#matZone 1
+matZ = []
+if (dim==2):
+    boundA = np.array(  [ -1e-8             , -1e-8          ] )
+    matZ.append (boundA)
+    boundB = np.array(  [ maxLim[0]*elaX    , maxLim[1] + 1e-8] )
+    matZ.append (boundB)
+    boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8] )
+    matZ.append (boundA1)
+    boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8]  )
+    matZ.append (boundB1)
+    materialZones.append(matZ)
+if (dim==3):
+    boundA = np.array(  [ -1e-8             , -1e-8             , -1e8] )
+    matZ.append (boundA)
+    boundB = np.array(  [ maxLim[0]*elaX    , maxLim[1] + 1e8   , maxLim[2] + 1e8  ] )
+    matZ.append (boundB)
+    boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8    , -1e8] )
+    matZ.append (boundA1)
+    boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
+    matZ.append (boundB1)
+    materialZones.append(matZ)
 
 #creating the model. Select the prepared models.
 if (dim == 2):
     #cantilever bending
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
 
-    #cantilever uni tension
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials )
+    #cantilever  pressure free contraction
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials)
 
-    #confined beam pressure
+    #confined  pressure
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions  = utilitiesModeling.create2dbeamConfinedPress(maxLim, minDist, trials )
 
     #simply supported beam, uniform load
@@ -109,8 +134,17 @@ if (dim == 2):
     #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 2)
 
 if (dim == 3):
-    #cantilever
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
+    #cantilever bending
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
+
+    #cantilever uniform pressure, free contraction
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
+
+    #cantilever uniform pressure, confined
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
+
+
+
 
 node_coords = np.asarray(node_coords)
 node_count = len(node_coords)
@@ -129,17 +163,36 @@ vert_count = -1
 
 young = 30e9
 poisson = 0.3
+density = 2200
+
+
+ft = 2e6
+Gt = 500
+marsMaterial = utilitiesMech.MarsMaterial(young, poisson, density, ft, Gt)
+materials.append(marsMaterial)
+
+#	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6 m 0
+fatigueMaterial = utilitiesMech.FatigueMaterial(  43.0e9, 0.300000 , 2200.0, 4.0e6, 0.0, 10.0e6 , 0.0025e6, 0)
+#materials.append(fatigueMaterial)
+
+
+
 transpC = 11
 transpS = 22
-density = 2200
-linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, transpC, transpS, density)
+transportMaterial = utilitiesMech.TransportMaterial( transpC, transpS)
+materials.append(transportMaterial)
+
+linElMaterial = utilitiesMech.linearElasticMaterial(young, poisson, density)
 materials.append(linElMaterial)
+
 
 print('')
 
 
 #Deconstructing Voronoi diagram and saving the geometry
-vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas)
+vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas, mZ=materialZones)
+
+
 # saving rest of input
 utilitiesGeom.saveMaterials(materials)
 utilitiesGeom.saveFunctions(functions)
@@ -149,8 +202,9 @@ utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
 if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
 utilitiesGeom.saveExporters()
 
-solStep = 10
-utilitiesGeom.saveMasterInput(dim, solver, solStep)
+solStep = 1e-2
+simTime = 10
+utilitiesGeom.saveMasterInput(dim, solver, solStep, 1e-4, 1e-1, simTime)
 end =  time.time() -end
 print('Saving done in %.3f secs.' %end)
 

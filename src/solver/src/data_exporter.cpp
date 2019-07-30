@@ -1,10 +1,39 @@
 #include "data_exporter.h"
+#include "vtk_exporter.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC DATA EXPORTER - master class
 void DataExporter :: giveFileName(unsigned step, char *buffer) const {
     sprintf(buffer, "%s_%05d.out", filename.c_str(), step);
+}
+
+//////////////////////////////////////////////////////////
+void DataExporter :: readFromLine(istringstream &iss, unsigned dimension){
+  iss.clear(); // clear string stream
+  iss.seekg(0, iss.beg); //reset position in string stream
+  string param;
+  bool bte = false;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("saveEvery")==0 || param.compare("timeEach")==0 ){
+      iss >> time_each;
+      bte = true;
+    }
+  }
+  if( !bte ){
+    time_each = 0;
+  }
+  time_last = 0;
+}
+
+bool DataExporter :: doExportNow(const double &time){
+  if (time < time_last + time_each) {
+    return false;
+  } else {
+    time_last = time;
+    return true;
+  }
 }
 
 //////////////////////////////////////////////////////////
@@ -18,6 +47,7 @@ void TXTNodalExporter :: readFromLine(istringstream &iss, unsigned dimension) {
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> codes [ i ];
     }
+    DataExporter :: readFromLine(iss, dimension);
 }
 
 //////////////////////////////////////////////////////////
@@ -68,6 +98,7 @@ void TXTGaussPointExporter :: readFromLine(istringstream &iss, unsigned dimensio
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> codes [ i ];
     }
+    DataExporter :: readFromLine(iss, dimension);
 }
 
 //////////////////////////////////////////////////////////
@@ -99,129 +130,6 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
     }
 }
 
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// VTK EXPORTERS
-
-void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
-  sprintf(buffer, "%s_%05d.vtu", filename.c_str(), step);
-}
-
-//////////////////////////////////////////////////////////
-// ELEMENTS TO VTU FILE
-void VTKElementExporter :: readFromLine(istringstream &iss, unsigned dimension){
-  iss >> filename;
-  unsigned num;
-  iss >> num;
-  codes.resize(num);
-  for ( unsigned i = 0; i < num; i++ ) {
-      iss >> codes [ i ];
-  }
-}
-
-//////////////////////////////////////////////////////////
-void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const{
-  // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-  // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
-  char buffer [ 100 ];
-  // Point P;
-  // Element *ee;
-
-  vector< int > points_id;
-  vector< vector< int > > all_points_id;
-  vector<int> cell_types;
-  vector<int> offsets;
-  vector<Point> displ;
-  vector<double> damage;  // test version, this and more will be specified on the exporter input
-  int offset = 0;
-  for (auto const &el : *elems){
-    for (auto const &n : el->giveNodes()){
-      auto res = std::find(begin(*nodes), end(*nodes), n);
-      points_id.push_back(std::distance(begin(*nodes), res));
-      // points_id.push_back(n - *nodes->begin());
-    }
-    all_points_id.push_back(points_id);
-    cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
-    offset += points_id.size();
-    offsets.push_back(offset);
-    damage.push_back(el->giveValue("damage"));
-    points_id.clear();
-  }
-  // for (unsigned e; e < elems->giveSize(); e++){
-  // }
-
-  giveFileName(step, buffer);
-  ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
-
-  if ( outputfile.is_open() ) {
-      outputfile << std :: scientific;
-      outputfile << "<?xml version=\"1.0\"?>\n";
-      outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
-      outputfile << "<UnstructuredGrid>" << '\n';
-      outputfile << "<Piece NumberOfPoints=\"" << nodes->giveSize() << "\" NumberOfCells=\"" << elems->giveSize() << "\">" << '\n';
-
-
-      outputfile << "<Points>" << '\n';
-      outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-      for (auto const &n : *nodes){
-        displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
-                              n->giveDoFBasedValue("uy", DoFs),
-                              n->giveDoFBasedValue("uz", DoFs)));
-        outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t"<< n->givePoint().getZ() << '\n';
-      }
-      // for (unsigned n; n < nodes->giveSize(); n++) {
-      //   P = nodes->giveNode(n)->givePoint();
-      // }
-      outputfile << "</DataArray>" << "\n";
-      outputfile << "</Points>" << "\n";
-      // /*
-      outputfile << "<Cells>" << '\n';
-      outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
-      for (auto const & value : all_points_id){
-        for (auto const & id : value){
-          outputfile << "\t" << id;
-        }
-        outputfile << '\n';
-      }
-      outputfile << "</DataArray>" << '\n';
-      outputfile << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << '\n';
-      for (auto const & value : offsets){
-        outputfile << value << '\n';
-      }
-      outputfile << "</DataArray>" << '\n';
-      outputfile << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << '\n';
-      for (auto const & value : cell_types){
-        outputfile << value << '\n';
-      }
-      outputfile << "</DataArray>" << '\n';
-      outputfile << "</Cells>" << '\n';
-      // */
-      outputfile << "<PointData Scalars=\"scalars\">" << "\n";
-      outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-      for (auto const & p : displ){
-        outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
-      }
-      outputfile << "</DataArray>" << '\n';
-      outputfile << "</PointData>" << '\n';
-      // /*
-      outputfile << "<CellData Scalars=\"scalars\">" << "\n";
-      outputfile << "<DataArray type=\"Float32\" Name=\"damage\" format=\"ascii\">" << '\n';
-      for (auto const & value : damage){
-        outputfile << value << '\n';
-      }
-      outputfile << "</DataArray>" << '\n';
-      outputfile << "</CellData>" << '\n';
-      // */
-      outputfile << "</Piece>" << '\n';
-      outputfile << "</UnstructuredGrid>" << '\n';
-      outputfile << "</VTKFile>" << '\n';
-      outputfile.close();
-  }
-
-}
-
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GAUGE EXPORTERS
@@ -247,6 +155,8 @@ void ForceGauge :: readFromLine(istringstream &iss, unsigned dimension) {
 }
 //////////////////////////////////////////////////////////
 void ForceGauge :: init() {
+    time_each = 0;
+    time_last = 0;
     unsigned DoFpos = 0;
     if ( codes [ 0 ].compare("fx") == 0 ) {
         DoFpos = 0;
@@ -306,6 +216,8 @@ void DisplacementGauge :: readFromLine(istringstream &iss, unsigned dim) {
 }
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: init() {
+    time_each = 0;
+    time_last = 0;
     //find closest point
     //TODO: better to use direct displacements at given points A and B
     nodeA = nodes->findClosestMechanicalNode(pointA);
@@ -373,6 +285,22 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     VTKElementExporter *newexp = new VTKElementExporter(e, n);
                     newexp->readFromLine(iss, dimension);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("VTKRBExporter") == 0 )    {
+                    if ( dimension == 2 ){
+                      VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n);
+                      newexp->readFromLine(iss, dimension);
+                      exporters.push_back(newexp);
+                    } else {
+                      std::cout << "no rigid body exporter for dimension " << dimension << '\n';
+                    }
+                } else if ( exptype.compare("VTKRCExporter") == 0 )    {
+                    if ( dimension == 2 || dimension == 3){
+                      VTKRCExporter *newexp = new VTKRCExporter(e, n);
+                      newexp->readFromLine(iss, dimension);
+                      exporters.push_back(newexp);
+                    } else {
+                      std::cout << "no rigid body contacts exporter for dimension " << dimension << '\n';
+                    }
                 } else  {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
                     exit(0);
@@ -413,7 +341,7 @@ void ExporterContainer :: init() {
         ofstream outputfile;
         outputfile.open((GlobPaths::RESULTDIR / buffer).string());
         if ( outputfile.good() ) {
-            outputfile << "#step";
+            outputfile << "#step" << "\t" << "time";
         }
         outputfile.close();
     }
@@ -458,7 +386,9 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 
     //export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        ( * d )->exportData(step, DoFs, reactions);
+        if ( ( * d )->doExportNow(time) ){
+          ( * d )->exportData(step, DoFs, reactions);
+        }
     }
 
     //add end line to gauge exporter files

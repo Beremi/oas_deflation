@@ -28,9 +28,9 @@ def randPointOnLine(dim, nodeA, nodeB):
 # maxLim: n-d array of dimensions
 def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
     if (dim==2):
-        print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. \n Although attempt to use the Cython solution by Vasek!!!' %(maxLim[0], maxLim[1]) )
+        print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. \nAlthough attempt to use the Cython solution by Vasek!!!' %(maxLim[0], maxLim[1]) )
     if (dim==3):
-        print('Generating 3d block segment of size: %f / %f / %f. This may take long. Keep calm. \n Although attempt to use the Cython solution by Vasek!!!' %(maxLim[0], maxLim[1], maxLim[2]) )
+        print('Generating 3d block segment of size: %f / %f / %f. This may take long. Keep calm. \nAlthough attempt to use the Cython solution by Vasek!!!' %(maxLim[0], maxLim[1], maxLim[2]) )
 
     tr = 0
     while (tr<trials):

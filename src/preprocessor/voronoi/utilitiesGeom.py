@@ -127,17 +127,17 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas):
+def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None):
     if (dim == 2):
-        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas)
+        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
 
     return vert_count, verticesIdxDict, vertIdxStart
 
 
 #Extract geometry 2d
-def output2D(node_count,  maxLim, vor, node_coords, areas):
+def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -266,15 +266,15 @@ def output2D(node_count,  maxLim, vor, node_coords, areas):
 
     saveNodes(nodes_out, aux_nodes, dim)
     saveVertices(vertices_out, dim)
-    saveMechanicalElements(ridges_out, node_count, dim)
-    saveTransportElements(ridges_out,dim, node_count)
+    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
 
 
 
 
-def output3D(node_count, maxLim, vor, node_coords, areas):
+def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
     dim = 3
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
@@ -286,31 +286,28 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
     nodes_out[:,dim] = areas[:]
 
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
-    if (printout): print ('Area Error: %.5E ' %(relAreaError) )
+    #print ('Area Error: %.5E ' %(relAreaError) )
 
     ########################################################################################################
     # ridges with nodes within sample
     validRidgeIdxs = []
 
     #print('ridge points')
-    #adding ridges with at least on node in sample
+    #adding ridges with at least one node in sample
     for i in range (vor.ridge_points.shape[0]):
         pr = False
         for p in range (2):
             if (vor.ridge_points[i][p] < node_count):
                 pr=True
-
         if (pr):
             validRidgeIdxs.append(i)
 
-    #further adding ridges with both nodes out of sample
+    """
+    #it is a question if consider ridges with both nodes out of sample
     #but both are part of at least one ridge with one node in sample
-    #for i in range (len(validRidgeIdxs)):
-
+    """
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
-
-
     ########################################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
@@ -329,8 +326,10 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         for j in range (len(rdge)):
             vrtx = np.zeros ( (dim + 1 +1 +1) )
             #
-            for d in range (dim):
-                vrtx [d] = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][d]
+            #for d in range (dim):
+            #    vrtx [d] = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][d]
+            vrtx[0:dim] =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][0:dim]
+
             #
             vrtx[dim] = vor.ridge_vertices[validRidgeIdxs[i]][j]
             #
@@ -348,7 +347,8 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         #ridges
         ########################################################
         #array for the ridge: nodeA, nodeB, trBc, vertCount,newVertIdcs
-        rdg = np.zeros ( (2 + 0 + 1 + len(vor.ridge_vertices[validRidgeIdxs[i]])  ) )
+        nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
+        rdg = np.zeros ( (2 + 1 + nrVertices  ) )
 
         #nodes divided by the ridge
         pointA = vor.ridge_points[validRidgeIdxs[i]][0]
@@ -375,30 +375,28 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         #
         rdg[0] = pointA
         rdg[1] = pointB
+        rdg[2] = nrVertices
 
-        #vert count
-        nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
-        rdg[2] =  nrVertices
-        #print (rdg[3])
-        #
         #adding vert idcs
-        for v in range ( len(vor.ridge_vertices[validRidgeIdxs[i]]) ):
+        for v in range ( nrVertices ):
             rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[validRidgeIdxs[i]][v] ]
 
+
         #coplanarity control
+        """
         for v in range ( nrVertices-3 ):
             pA = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v]][:]
             pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
             pC = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+2]][:]
             pD = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+3]][:]
-            #pD[2] = 10
+
             tol = 1e-10
             val = equation_plane(pA, pB, pC, pD)
             if ( val > tol):
                 allCoplanar = False
                 print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
             #else: print('Coplanar  %d' %i)
-
+        """
         #normal of the ridge surface from first three vertices
         planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
@@ -414,10 +412,14 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
             if (printout): print ('Direction of plane normal OK')
         else:
             if (printout): print ('Direction of plane normal REVERSE')
-            rdg[nrVertices:] = rdg[:nrVertices-1:-1]
+            #rdg[nrVertices:] = rdg[:nrVertices-1:-1]
+            #print('pred %s' %rdg)
+            rdg[3:len(rdg)]= rdg[3:len(rdg)][::-1]
+            #print('po %s \n' %rdg)
 
-        ##############prerazeni bodu podle uhlu atan2((Vb x Va) . Vn, Va . Vb)##############
+        ##############atan2((Vb x Va) . Vn, Va . Vb)##############
         #average point within the ridge surface
+        """
         avgPoint = np.zeros(3)
         for d in range (3):
             for l in range ( nrVertices ):
@@ -437,6 +439,8 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
                                                 np.dot(referenceVector,currVector)   ) )
             if (angles [l] < 0):
                 angles [l] = 360 - (-angles [l])
+        #print(angles)
+        """
 
         ridges_out.append(rdg)
 
@@ -453,10 +457,20 @@ def output3D(node_count, maxLim, vor, node_coords, areas):
         for l in range (3, ln):
             ridges_out[i][l] += vertIdxStart
 
+
+
+    newAuxNodes = saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    vertIdxStart += newAuxNodes
+
+    for i in range (len(ridges_out)):
+        ln = len(np.asarray(ridges_out[i]) )
+        for l in range (3, ln):
+            ridges_out[i][l] += newAuxNodes
+
     saveNodes(nodes_out, aux_nodes,dim)
     saveVertices(vertices_out, dim)
-    saveMechanicalElements(ridges_out, node_count, dim)
-    saveTransportElements(ridges_out,dim, node_count)
+    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -566,14 +580,14 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
     print('done.')
 
-def saveMasterInput(dim, solver, solStep):
+def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
      if (solver == 0):
-            fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t50\n'%solStep)
+            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  minStep, maxStep,simTime))
      fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
      fl.write("MatFiles\t1\t%s\n"%materialsFile)
      fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
@@ -638,7 +652,8 @@ def saveExporters():
     sys.stdout.flush()
     fl=open(os.path.join(master_folder,exportersFile),'w')
     fl.write("TXTNodalExporter translations 2 ux uy\n")
-    fl.write("TXTNodalExporter pressure 1 pressure")
+    fl.write("TXTNodalExporter pressure 1 pressure\n")
+    fl.write('VTKElementExporter out  time_every 1e-20 0')
     fl.close()
 
     print('done.')
@@ -694,19 +709,58 @@ def saveVertices (vertices_out, dim):
     sys.stdout.flush()
 
 
-def saveMechanicalElements (ridges_out, node_count, dim):
+def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
     mechElemRidges = []
     for m in range (len(ridges_out)):
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
-            mechElemRidges.append( ridges_out[m] )
+            mechElemRidges.append( ridges_out[m].copy() )
 
-    if (dim ==2):
+    if (mZ!=None):
+        for i in range (len(mechElemRidges)):
+            nodeA = nodes[int(mechElemRidges[i][0])]
+            nodeB = nodes[int(mechElemRidges[i][1])]
+
+            if (dim==2):
+                if ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
+                      mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeB[1] < mZ[0][1][1]) or
+                      (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
+                      mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+
+
+                else:
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+
+            if (dim==3):
+                if ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
+                      mZ[0][0][2] < nodeA[2] < mZ[0][1][2] and
+                      mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
+                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ) or
+                      (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
+                      mZ[0][2][2] < nodeA[2] < mZ[0][3][2] and
+                      mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
+                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
+                      mZ[0][2][2] < nodeB[2] < mZ[0][3][2])   ):
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+
+
+                else:
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+
+    if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
-        np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t0', header = headerLine )
+        np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
 
     if (dim == 3):
@@ -724,25 +778,7 @@ def saveMechanicalElements (ridges_out, node_count, dim):
     sys.stdout.flush()
 
 
-def saveTransportElements(ridges_out, dim, node_count):
-    """
-    print('Saving TRSPRT elements...', end='')
-    sys.stdout.flush()
-    ridges_out = np.asarray(ridges_out)
-    ridges_out[:,0], ridges_out[:,3] = ridges_out[:,3], ridges_out[:,0].copy()
-    ridges_out[:,1], ridges_out[:,4] = ridges_out[:,4], ridges_out[:,1].copy()
-    ridges_out[:,2] = 2
-    #writing ridges - transport elements
-    ####### ridges: idx noduA, idx noduB, transport okr. podminka, idx vertexu
-    headerLine = 'ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodeAidx\tnodeBidx\tMaterial'
-    fl=open(os.path.join(master_folder,trsprtElemsFile),'w')
-    np.savetxt(fl, ridges_out, delimiter='\t',fmt='LTCTRSP\t%d\t%d\t%d\t%d\t%d\t1',
-          header = headerLine )
-    fl.close()
-    print('done.')
-    sys.stdout.flush()
-    """
-
+def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
@@ -759,16 +795,17 @@ def saveTransportElements(ridges_out, dim, node_count):
     if (dim==3):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
-
+            #print (ro)
             for n in range (3, len(ro)):
                 newPath = True
                 m = n+1
                 if (n==len(ro)-1):
                     m = 3
-
+                #print('%d ; %d = %d ; %d' %(n,m, ro[n], ro[m]))
                 for elem in transportElements:
                     if ( ((elem.vertexA == ro[n]) and (elem.vertexB == ro[m]))
                       or ((elem.vertexA == ro[m]) and (elem.vertexB == ro[n])) ):
+                    #if ( elem.vertexA in ro and elem.vertexB in ro ):
                         newPath = False
                         elem.addConnectedNodes(ro)
                         break
@@ -777,17 +814,138 @@ def saveTransportElements(ridges_out, dim, node_count):
                     connNds.clear()
                     connNds.append (ro[0])
                     connNds.append (ro[1])
-                    """
-                    if (ro[0]>node_count):
-                        print ('aux_node %d' %ro[0])
-                    if (ro[1]>node_count):
-                        print ('aux_node %d' %ro[1])
-                    """
-                    trp = utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1)
-                    transportElements.append (trp)
+                    #if (ro[0]>node_count and ro[1]>node_count):
+                    #    print ('both aux')
+                    transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
     print('done.')
     sys.stdout.flush()
 
+    #  i[b], i[a] = i[a], i[b]
+    print ('Reordering connected nodes...', end='')
+    allReorderedFine = True
+    for elem in transportElements:
+        #print('\n\n\n')
+        restart = True
+        while restart:
+            restart = False
+            for i in range (1, len( elem.connectedNodes )-2, 2) :
+                #print(i)
+                if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
+                    #print(elem.connectedNodes, end='')
+                    #print(' size %d' % len(elem.connectedNodes))
+                    simIdx = -1
+                    for j in range (i+1, len(elem.connectedNodes)):
+                        #print('search for %d ' %elem.connectedNodes[i] , end='')
+                        #print(elem.connectedNodes[j])
+                        if (elem.connectedNodes[i] == elem.connectedNodes[j]):
+                            simIdx = j
+                            #print('simIdx: %d ' %simIdx)
+                            break
+                    if (simIdx == -1):
+                        #print ("___ Not found ", end='')
+                        #swapnout prvni dva nody
+                        #print ('First couple swapping %d for %d' %(0,1))
+                        elem.connectedNodes[0], elem.connectedNodes[1] =  elem.connectedNodes[1], elem.connectedNodes[0]
+                        elem.connectedNodes[2], elem.connectedNodes[3] =  elem.connectedNodes[3], elem.connectedNodes[2]
+                        #
+                        elem.connectedNodes[0], elem.connectedNodes[2] =  elem.connectedNodes[2], elem.connectedNodes[0]
+                        elem.connectedNodes[1], elem.connectedNodes[3] =  elem.connectedNodes[3], elem.connectedNodes[1]
+                        #
+                        #print(elem.connectedNodes)
+
+                        for j in range (i+1, len(elem.connectedNodes)):
+                            #print('search for %d ' %elem.connectedNodes[i] , end='')
+                            #print(elem.connectedNodes[j])
+                            if (elem.connectedNodes[i] == elem.connectedNodes[j]):
+                                simIdx = j
+                                #print('simIdx: %d ' %simIdx)
+                                break
+                        #if (simIdx == -1):
+                        #    elem.connectedNodes[0], elem.connectedNodes[1] =  elem.connectedNodes[1], elem.connectedNodes[0]
+
+                    isFstNode = True
+                    if (int(simIdx) % 2):
+                        isFstNode = False
+
+                    if (isFstNode):
+                        #swapping linked nodes
+                        #print ('1st swapping %d for %d and %d for %d' %(i+1,simIdx, i+2, simIdx+1))
+                        elem.connectedNodes[i+1], elem.connectedNodes[simIdx] =  elem.connectedNodes[simIdx], elem.connectedNodes[i+1]
+                        elem.connectedNodes[i+2], elem.connectedNodes[simIdx+1] =  elem.connectedNodes[simIdx+1], elem.connectedNodes[i+2]
+                    else:
+                        #swapping and reversing linked nodes
+                        #print ('2nd swapping %d for %d and %d for %d' %(i+1,simIdx, i+2, simIdx-1))
+                        elem.connectedNodes[i+1], elem.connectedNodes[simIdx] =  elem.connectedNodes[simIdx], elem.connectedNodes[i+1]
+                        elem.connectedNodes[i+2], elem.connectedNodes[simIdx-1] =  elem.connectedNodes[simIdx-1], elem.connectedNodes[i+2]
+
+                        if (np.abs(i+1  - simIdx) == 1 or np.abs(i  - simIdx)==1):
+                            #print('swapping order')
+                            elem.connectedNodes[i+1], elem.connectedNodes[simIdx] =  elem.connectedNodes[simIdx], elem.connectedNodes[i+1]
+
+                    #print(elem.connectedNodes)
+                    #print()
+                    if (i == len( elem.connectedNodes )-3):
+                        for j in range (1, len( elem.connectedNodes )-2, 2) :
+                            if (elem.connectedNodes[j] != elem.connectedNodes[j+1]):
+                                restart = True
+            reorderOk = True
+            for i in range (1, len( elem.connectedNodes )-2, 2) :
+                if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
+                    reorderOk = False
+                    #print ('!!! %d Reorder not ok %s \n\n\n' %((i), elem.connectedNodes))
+                    allReorderedFine = False
+                    break
+            #if (reorderOk == True):
+            #    print ('Reordered fine: %s' %elem.connectedNodes)
+
+
+    if (allReorderedFine == True):
+        print('reordered fine...', end = '')
+    else:
+        print('NOT ALL REORDERED FINE...', end ='')
+    print('done.')
+    sys.stdout.flush()
+
+    auxNodesInitLength = len (aux_nodes)
+
+    print('Generating additional aux_nodes...', end='')
+    beamMidpoint = maxLim /2
+    for elem in transportElements:
+        if (elem.connectedNodes[0]>=node_count and elem.connectedNodes[len(elem.connectedNodes)-1]>=node_count):
+            #print('corner line: %s' %elem.getReducedString())
+            anodeA = np.asarray (aux_nodes[ int(elem.connectedNodes[0]-node_count) ][:])
+            anodeB = np.asarray (aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ][:])
+            #print( anodeA )
+            #print( anodeB )
+            nanode = np.zeros(3)
+            for i in range (dim):
+                if ( scipy.spatial.distance.euclidean(anodeB[i], beamMidpoint) >
+                     scipy.spatial.distance.euclidean(anodeA[i], beamMidpoint) ):
+                    nanode[i] = anodeB[i]
+                else:
+                    nanode[i] = anodeA[i]
+            #print('New aux node: %s' %nanode)
+            aux_nodes.append(nanode)
+            #
+            #adding new aux node to connected nodes
+            #print('old elem: %s' %elem.connectedNodes)
+            elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
+            elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+            elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+            elem.addSingleConnectedNode( elem.connectedNodes[0] )
+            #print('new elem: %s' %elem.connectedNodes)
+            #print()
+    print('done.')
+    sys.stdout.flush()
+
+    print('Another renumbering of vertices...', end='')
+    auxNodesFinalLength = len (aux_nodes)
+    newAuxNodes = auxNodesFinalLength - auxNodesInitLength
+    for elem in transportElements:
+        elem.vertexA += newAuxNodes
+        elem.vertexB += newAuxNodes
+    print('done.')
+    sys.stdout.flush()
 
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
@@ -795,5 +953,8 @@ def saveTransportElements(ridges_out, dim, node_count):
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
         f.write("%s\n" % headerLine )
         for element in transportElements:
-            f.write("%s\n" % element.getString() )
+            if (dim==2):f.write("%s\n" % element.getString() )
+            if (dim==3): f.write("%s\n" % element.getReducedString() )
     print('done.')
+
+    return newAuxNodes
