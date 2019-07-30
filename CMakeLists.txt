@@ -41,6 +41,9 @@ set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/"
 message(STATUS "project source directory -> ${PartMod_SOURCE_DIR}")
 message(STATUS "project build directory -> ${PartMod_BINARY_DIR}")
 
+# detect python
+find_package(PythonInterp REQUIRED)
+
 # Default is release build
 if (NOT CMAKE_BUILD_TYPE)
     set (CMAKE_BUILD_TYPE Release)
@@ -118,7 +121,7 @@ add_custom_command(
     ${PartMod_BINARY_DIR}/generated/version.h
     ALL
   COMMAND
-    ${CMAKE_COMMAND} -D TARGET_DIR=${PartMod_BINARY_DIR} -P ${PartMod_SOURCE_DIR}/version.cmake
+    ${CMAKE_COMMAND} -D TARGET_DIR=${PartMod_BINARY_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${PartMod_SOURCE_DIR}/version.cmake
   WORKING_DIRECTORY
     ${PartMod_SOURCE_DIR}
   )
@@ -235,3 +238,61 @@ set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}.${CPACK_PACKAGE_VERSION_PATCH}+sid1")
 
 include (CPack)
+
+
+
+#######################################################################
+######################## Testing ######################################
+#######################################################################
+find_program(MEMORYCHECK_COMMAND NAMES valgrind)
+set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
+
+# add memcheck test action
+include(CTest)
+
+# define tests
+enable_testing()
+
+add_custom_command( TARGET DiscreteModel
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying benchmark data.."
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/benchmark ${CMAKE_BINARY_DIR}/benchmark
+    )
+
+# add_test(
+#   NAME setup
+#   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/setup.py
+#   )
+# set_tests_properties(
+#   setup
+#   PROPERTIES
+#     FIXTURES_SETUP my-fixture
+#   )
+
+add_test(
+  NAME CantileverCoupledLinear
+  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/CantileverCoupledLinear/master.inp
+  )
+
+add_test(
+  NAME CantileverMechanicsNonlinear
+  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/CantileverMechanicsNonlinear/master.inp
+  )
+
+set_tests_properties(
+  CantileverCoupledLinear
+  CantileverMechanicsNonlinear
+  PROPERTIES
+    LABELS "benchmark"
+    #FIXTURES_REQUIRED my-fixture
+  )
+
+# add_test(
+#   NAME cleanup
+#   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/cleanup.py
+#   )
+# set_tests_properties(
+#   cleanup
+#   PROPERTIES
+#     FIXTURES_CLEANUP my-fixture
+#   )

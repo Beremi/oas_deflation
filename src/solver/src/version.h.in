@@ -10,5 +10,6 @@ const std::string OS_RELEASE = "@_OS_RELEASE@";
 const std::string OS_VERSION = "@_OS_VERSION@";
 const std::string OS_PLATFORM = "@_OS_PLATFORM@";
 const std::string GIT_HASH = "@GIT_HASH@";
+const std::string BUILD_TYPE = "@CMAKE_BUILD_TYPE@";
 
 std::string print_version_info();
