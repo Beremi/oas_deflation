@@ -4,7 +4,7 @@ set -e
 # path to binary file for recomended build tree
 # (see https://kelidas.gitlab.io/partmod-site/GettingStarted.html)
 # NOTE it is a path from one of the subdirectories
-path_to_binary_file="../../../../partmod-build/DiscreteModel"
+path_to_binary_file="../../../../partmod-build/bin/DiscreteModel"
 remove_fol="rm -Rf results"
 copy_bin="cp $path_to_binary_file DiscreteModel"
 run_test="nohup ./DiscreteModel master.inp"
