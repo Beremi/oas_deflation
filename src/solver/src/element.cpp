@@ -154,7 +154,7 @@ void RigidBodyContact :: init() {
         currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), midPoint );
         if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
         //
-        if (maxErr > 1e-12){
+        if (maxErr > 1e-6){
           cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
           exit(1);
         }
@@ -203,7 +203,7 @@ void RigidBodyContact :: init() {
 
         //JM: Check if integration point is coplanar with face
         currErr = checkCoplanarity( vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
-        if (abs(currErr) > 1e-12){
+        if (abs(currErr) > 1e-6){
           cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
           exit(1);
         }

@@ -120,6 +120,173 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
             node_coords.append(coords)
 
 
+def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials):
+    print ('Generating a 3d circle surface. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInCircle(center, radius, directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials):
+    print ('Generating a 3d circle border. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointOnCircle(center, radius, directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+def randPointInCircle(center, radius, directionDim):
+    angle = np.random.uniform() * np.pi * 2
+
+    point = np.zeros(3)
+    point += center
+
+    if (directionDim == 0 ):
+        point[1] = radius * np.cos(angle) * np.random.uniform()
+        point[2] = radius * np.sin(angle) * np.random.uniform()
+    if (directionDim == 1):
+        point[0] = radius * np.cos(angle) * np.random.uniform()
+        point[2] = radius * np.sin(angle) * np.random.uniform()
+    if (directionDim == 2):
+        point[0] = radius * np.cos(angle) * np.random.uniform()
+        point[1] = radius * np.sin(angle) * np.random.uniform()
+
+    return point
+
+def randPointOnCircle(center, radius, directionDim):
+    angle = np.random.uniform() * np.pi * 2
+
+    point = np.zeros(3)
+    point += center
+
+    if (directionDim == 0 ):
+        point[1] = radius * np.cos(angle)
+        point[2] = radius * np.sin(angle)
+    if (directionDim == 1):
+        point[0] = radius * np.cos(angle)
+        point[2] = radius * np.sin(angle)
+    if (directionDim == 2):
+        point[0] = radius * np.cos(angle)
+        point[1] = radius * np.sin(angle)
+
+    return point
+
+def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist, node_coords, trials):
+    print ('Generating a 3d cylinder segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInCilinder(center, radius, height, directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials):
+    print ('Generating a 3d cylidner surf segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointOnCilinder(center, radius, height, directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+
+def randPointInCilinder(center, radius, height, directionDim):
+    angle = np.random.uniform() * np.pi * 2
+
+    point = np.zeros(3)
+    point += center
+
+    if (directionDim == 0 ):
+        point[0] = height * np.random.uniform()
+        point[1] = radius * np.cos(angle) * np.random.uniform()
+        point[2] = radius * np.sin(angle) * np.random.uniform()
+    if (directionDim == 1):
+        point[0] = radius * np.cos(angle) * np.random.uniform()
+        point[1] = height * np.random.uniform()
+        point[2] = radius * np.sin(angle) * np.random.uniform()
+    if (directionDim == 2):
+        point[0] = radius * np.cos(angle) * np.random.uniform()
+        point[1] = radius * np.sin(angle) * np.random.uniform()
+        point[2] = height * np.random.uniform()
+
+    return point
+
+def randPointOnCilinder(center, radius, height, directionDim):
+    angle = np.random.uniform() * np.pi * 2
+
+    point = np.zeros(3)
+    point += center
+
+    if (directionDim == 0 ):
+        point[0] = height * np.random.uniform()
+        point[1] = radius * np.cos(angle)
+        point[2] = radius * np.sin(angle)
+    if (directionDim == 1):
+        point[0] = radius * np.cos(angle)
+        point[1] = height * np.random.uniform()
+        point[2] = radius * np.sin(angle)
+    if (directionDim == 2):
+        point[0] = radius * np.cos(angle)
+        point[1] = radius * np.sin(angle)
+        point[2] = height * np.random.uniform()
+
+    return point
+
 #generate a single node in 2d or 3d
 def generateSingleNode(node, dim, node_coords):
     if (dim == 2):

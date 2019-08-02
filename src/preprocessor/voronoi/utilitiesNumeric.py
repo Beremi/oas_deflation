@@ -24,8 +24,10 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
         volumes = voronoi.voronoi_3d(vor, maxLim);
         return vor, volumes
 
-
-
+def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim):
+    vor = Voronoi(voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim))
+    volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
+    return vor, volumes
 
 ##################################################
 #### General function set by table ####

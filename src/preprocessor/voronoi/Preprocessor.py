@@ -64,7 +64,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.15
+minDist = 0.2
 radius = minDist / 2
 
 elaX = minDist / Xdim * 2
@@ -141,9 +141,11 @@ if (dim == 3):
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
 
     #cantilever uniform pressure, confined
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
 
-
+    #cylinder uniform pressure
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPress(np.zeros(3), 1, 2,  minDist, trials, 0 )
+    materialZones=None
 
 
 node_coords = np.asarray(node_coords)

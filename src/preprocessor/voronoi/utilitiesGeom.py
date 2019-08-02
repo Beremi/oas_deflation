@@ -283,7 +283,9 @@ def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
     # nody: [x,y,z] [powerR] [area]
     nodes_out = np.zeros( (node_count, (dim + 1 +1)))
     nodes_out[:,  0:dim] = node_coords[:,  0:dim]
-    nodes_out[:,dim] = areas[:]
+
+    if ((len(areas) == node_count)):
+        nodes_out[:,dim] = areas[:]
 
     relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area Error: %.5E ' %(relAreaError) )
@@ -302,10 +304,6 @@ def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
         if (pr):
             validRidgeIdxs.append(i)
 
-    """
-    #it is a question if consider ridges with both nodes out of sample
-    #but both are part of at least one ridge with one node in sample
-    """
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
     ########################################################################################################

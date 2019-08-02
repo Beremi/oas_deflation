@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import scipy
 import math
 import os
@@ -106,6 +107,71 @@ def mirror_dataBeam(data, dim, sizes, shifts=0):
     dataOut += shifts
     return dataOut
 
+def mirror_dataCylinder(data, center, radius, height, directionDim):
+    data = np.asarray(data)
+    rad = radius + 1e-5
+    if (directionDim == 0):
+        dataOut =  np.vstack((data,
+            np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
+            np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
+            ))
+
+        mirroredData = np.zeros( (len(dataOut)*3) )
+        mirroredData = np.reshape ( mirroredData, (len(dataOut),3))
+
+        for i in range (len(mirroredData)):
+            rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
+
+            mirroredData[i,0] = dataOut[i,0]
+            mirroredData[i,1] = center[1] + (-center[1]+dataOut[i,1]) * ((2*rad-rad0) / rad0 )
+            mirroredData[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*rad-rad0) / rad0 )
+
+        dataOut =  np.vstack((dataOut, mirroredData))
+
+
+    if (directionDim == 1):
+        dataOut =  np.vstack((data,
+            np.array([0,0,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 , height*2,0]) + data * np.array([1,-1, 1])
+            ))
+        mirroredData = np.zeros( (len(dataOut)*3) )
+        mirroredData = np.reshape ( mirroredData, (len(dataOut),3))
+
+        for i in range (len(mirroredData)):
+            rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([center[0], dataOut[i,1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
+
+
+            mirroredData[i,0] = center[0] + (-center[0]+dataOut[i,0]) * ((2*rad-rad0) / rad0 )
+            mirroredData[i,1] = dataOut[i,1]
+            mirroredData[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*rad-rad0) / rad0 )
+
+        dataOut =  np.vstack((dataOut, mirroredData))
+
+
+    if (directionDim == 2):
+        dataOut =  np.vstack((data,
+            np.array([0,0,0]) + data * np.array([1,1,-1]),
+            np.array([ 0 , 0, height*2]) + data * np.array([1,1, -1])
+            ))
+        mirroredData = np.zeros( (len(dataOut)*3) )
+        mirroredData = np.reshape ( mirroredData, (len(dataOut),3))
+
+        for i in range (len(mirroredData)):
+            rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([center[0], center[1], dataOut[i,2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
+
+            mirroredData[i,0] = center[0] + (-center[0]+dataOut[i,0]) * ((2*rad-rad0) / rad0 )
+            mirroredData[i,1] = center[1] + (-center[1]+dataOut[i,1]) * ((2*rad-rad0) / rad0 )
+            mirroredData[i,2] = dataOut[i,2]
+
+        dataOut =  np.vstack((dataOut, mirroredData))
+
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
+    plt.show()
+
+    return dataOut
 
 def copy_dataBeam(data, dim, sizes):
     '''Copy data 2D and 3D'''
@@ -209,9 +275,6 @@ def voronoi_3d(vor, sizes):
         if (comp):
             vol = cellVolume3d(vor, i)
             volumes.append(vol)
-            #print (vol)
-
-   # print (np.sum(volumes))
 
     return volumes
 
@@ -235,3 +298,23 @@ def tetravol(a,b,c,d):
      #'''Calculates the volume of a tetrahedron, given vertices a,b,c and d (triplets)'''
     tetravol=abs(np.dot((a-d),np.cross((b-d),(c-d))))/6
     return tetravol
+
+
+def volumesCylinder3d (vor, center, radius, height, directionDim ):
+    if vor.points.shape[1] != 3:
+        raise ValueError("Requires 3D input")
+
+    volumes = []
+    #
+    """
+    for i in range (vor.points.shape[0]):
+        comp = True
+        for p in range (3):
+            if (vor.points[i][p] < 0 or vor.points[i][p] > sizes[p] ):
+                comp = False
+
+        if (comp):
+            vol = cellVolume3d(vor, i)
+            volumes.append(vol)
+    """
+    return volumes

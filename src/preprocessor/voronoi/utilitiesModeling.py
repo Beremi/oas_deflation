@@ -7,7 +7,7 @@ import pointGenerators
 import voronoi
 import matplotlib.pyplot as plt
 import voronoi_viewer
-
+from mpl_toolkits.mplot3d import Axes3D
 
 def createSingleSpringTestModel(length):
     print ('Creating single spring test model.')
@@ -699,6 +699,81 @@ def create3dCantileverUniPressConfined(maxLim, minDist, trials ):
 
 
 
+def create3dcylinderUniPress(center, radius, height, minDist, trials, directionDim ):
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechIC_merged  = assemble3dcylinderUniPress(center, radius, height, minDist, trials, directionDim )
+
+    #print(*node_coords, sep='\n')
+
+    #node_coords = np.asarray(node_coords)
+    """
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+    """
+    print('Conducting Voronoi tesselation...', end='')
+    ### conducting Voronoi tesselation
+    vor, volumes = utilitiesNumeric.runCylinderMirroredVoronoi (node_coords, center, radius, height, directionDim)
+    ### extracting characteristics of the Vor diagram
+    print('done.')
+
+    ########################################################################
+    functions = []
+    ### creating functions
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function. Const
+    func = []
+    func.append( np.array([0,0]) )
+    func.append( np.array([10, -1e-2]) )
+    fn1= utilitiesNumeric.generalFunc(func)
+    #fn1 = utilitiesNumeric.sawToothConstFunc(value = -1e-1, period = 10, sym = 1)
+    functions.append (fn1)
+
+    #transport function, leftFace, constant
+    fn2 = utilitiesNumeric.constantFunc(20)
+    functions.append (fn2)
+
+    #transport function, rightFace, bilinear
+    func3 = []
+    func3.append( np.array([0,0]) )
+    func3.append( np.array([10, 500]) )
+    fn3 = utilitiesNumeric.generalFunc(func3)
+    functions.append (fn3)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([2,-1])
+    boundA = np.array(  [-1e-8 , center[1]-radius, center[2]-radius] )
+    boundB = np.array(  [ 1e-8 , center[1]+radius,  center[2]+radius]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [height-1e-8 , center[1]-radius, center[2]-radius] )
+    boundB = np.array(  [height+1e-8 , center[1]+radius,  center[2]+radius]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+        print(i)
+
+
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+
 
 
 
@@ -1286,5 +1361,74 @@ def assemble3dCantileverUniPressConfined(maxLim, minDist, trials):
        # mechBC_merged.append(mBC)
        # print('adding')
     ####################################################################################################
+
+    return node_coords, mechBC_merged, mechInitC_merged
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def assemble3dcylinderUniPress(center, radius, height, minDist, trials, directionDim):
+    indent = 1e-5
+    dim=3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    node_coords.append( center+indent)
+
+    ###############generating of points supported surface bottom face ###############
+    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+
+
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+    #print('%d nodes generated so far' %len(node_coords))
+    ###############generating of points loaded surface top face ###############
+    mechBC = np.array([1,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+
+    nodeA = center.copy()
+    nodeA[directionDim] += height
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius,  directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius,  directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+
+    #######################################################################
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist,  node_coords, trials)
+    #######################################################################
+
 
     return node_coords, mechBC_merged, mechInitC_merged
