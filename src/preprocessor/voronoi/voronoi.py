@@ -165,12 +165,12 @@ def mirror_dataCylinder(data, center, radius, height, directionDim):
 
         dataOut =  np.vstack((dataOut, mirroredData))
 
-
+    """
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
     plt.show()
-
+    """
     return dataOut
 
 def copy_dataBeam(data, dim, sizes):

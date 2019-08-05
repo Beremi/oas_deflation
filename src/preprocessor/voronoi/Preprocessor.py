@@ -54,6 +54,9 @@ Xdim = 1.
 Ydim = 1.
 Zdim = 1.
 
+cylinderRad = 0.5
+cylinderHeight = 1
+
 #dimensions of a rectangle model
 if (dim == 2 ): maxLim = np.array([  Xdim   ,  Ydim ])
 if (dim == 3 ): maxLim = np.array([  Xdim,  Ydim,  Zdim ])
@@ -64,7 +67,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.2
+minDist = 0.09
 radius = minDist / 2
 
 elaX = minDist / Xdim * 2
@@ -103,11 +106,11 @@ if (dim==2):
     matZ.append (boundB1)
     materialZones.append(matZ)
 if (dim==3):
-    boundA = np.array(  [ -1e-8             , -1e-8             , -1e8] )
+    boundA = np.array(  [ -1e-8   -maxLim[0]          , -1e-8    -maxLim[1]         , -1e8 -maxLim[2]] )
     matZ.append (boundA)
     boundB = np.array(  [ maxLim[0]*elaX    , maxLim[1] + 1e8   , maxLim[2] + 1e8  ] )
     matZ.append (boundB)
-    boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8    , -1e8] )
+    boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8  -maxLim[1]      , -1e8-maxLim[2]] )
     matZ.append (boundA1)
     boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
     matZ.append (boundB1)
@@ -143,9 +146,13 @@ if (dim == 3):
     #cantilever uniform pressure, confined
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
 
-    #cylinder uniform pressure
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPress(np.zeros(3), 1, 2,  minDist, trials, 0 )
-    materialZones=None
+    #cylinder uniform pressure free
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
+    #materialZones=None
+
+    #cylinder uniform pressure confined
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPressConfined(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
+    #materialZones=None
 
 
 node_coords = np.asarray(node_coords)
