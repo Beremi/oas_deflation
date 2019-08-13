@@ -1,4 +1,10 @@
 #!/bin/bash
+echo "---------------------------------------------------------"
+echo "USE CTEST INSTEAD THIS."
+echo "IN BUILD DIR RUN COMMAND - ctest"
+echo 
+echo 
+echo "---------------------------------------------------------"
 # Any subsequent(*) commands which fail will cause the shell script to exit immediately
 set -e
 # path to binary file for recomended build tree
