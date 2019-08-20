@@ -1,0 +1,12 @@
+# ElemType	nodeAidx	nodeBidx	nrOfVertices	vrtxAIdx	vrtxBIdx	Material
+LTCBEAM	0	1	2	5	8	0
+LTCBEAM	0	2	2	6	5	0
+LTCBEAM	0	3	2	7	6	0
+LTCBEAM	0	4	2	8	7	0
+LTCBEAM	1	2	2	5	9	0
+LTCBEAM	2	3	2	6	10	0
+LTCBEAM	3	4	2	7	11	0
+LTCBEAM	4	1	2	8	12	0
+# ElemType	masterNodeId	numSlaves slaveIds...
+# putted into boundary conditions
+# RGDPLATE    13  2   1   2
