@@ -127,7 +127,7 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop){
   double tol = 1e-9;  // NOTE this should be raltive to lmin or something
   if ((leftBottom.getX() - P.getX()) < tol && (P.getX() - rightTop.getX()) < tol ){
     if ((leftBottom.getY() - P.getY()) < tol && (P.getY() - rightTop.getY()) < tol ){
-      if ((leftBottom.getZ() - P.getZ()) < tol && (P.getZ() <= rightTop.getZ()) < tol ){
+      if ((leftBottom.getZ() - P.getZ()) < tol && (P.getZ() - rightTop.getZ()) < tol ){
         return true;
       }
     }
@@ -139,17 +139,17 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop){
 void ConstraintContainer :: readCoordRigidPlate(istringstream &iss, const unsigned ndim, NodeContainer *nodes){
   // jointDoF jD;
   unsigned nodeid;
-  double x0, x1, y0, y1, y2, z0, z1;
+  double x0, x1, y0, y1, z0, z1;
   Node *master;
   Point leftBottom, rightTop;
   //////////////////////////////////////////////////////////
   // read the line "masterId numSlaves slaveId1, slaveId2...."
   if ( ndim == 2 ){
-    iss >> nodeid >> x0 >> x1 >> y0 >> y1 >> y2;
+    iss >> nodeid >> x0 >> x1 >> y0 >> y1;
     leftBottom = Point(x0, y0, 0);
     rightTop = Point(x1, y1, 0);
   } else if ( ndim == 3 ){
-    iss >> nodeid >> x0 >> x1 >> y0 >> y1 >> y2 >> z0 >> z1;
+    iss >> nodeid >> x0 >> x1 >> y0 >> y1 >> z0 >> z1;
     leftBottom = Point(x0, y0, z0);
     rightTop = Point(x1, y1, z1);
   } else {
