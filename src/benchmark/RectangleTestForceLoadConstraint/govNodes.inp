@@ -1,0 +1,2 @@
+#type xcoord ycoord (zcoord) (numDoFs = 3 * (ndim - 1)
+MasterNode 1 0.5

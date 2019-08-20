@@ -1,0 +1,17 @@
+# TXTNodalExporter translations 2 ux uy
+# TXTNodalExporter pressure 1 pressure
+## export data in every nodes
+# TXTNodalExporter translations 2 ux uy
+# TXTNodalExporter pressure 1 pressure
+## export data in gaus points
+# TXTGaussPointExporter damage 7 x y normal_x normal_y damage slip slipPi
+# TXTGaussPointExporter damage 7 x y normal_x normal_y damage strainT stralPLT
+## displacement gauge uy x1coord y1coord x2coord y2coord 
+DisplacementGauge LD displY uy 0e0 0.5e0 1e0 0.5e0
+DisplacementGauge LD displX ux 0e0 0.5e0 1e0 0.5e0
+## ForceGauge file_name gauge_name which_force how_many node_ids
+ForceGauge LD react fx 18 0
+ForceGauge LD load fx 18 18
+## export VTK file
+VTKElementExporter elems saveEvery 1e-1 cellData 1 damageT
+VTKRCExporter rbc saveEvery 1e-1 cellData 1 damageT
