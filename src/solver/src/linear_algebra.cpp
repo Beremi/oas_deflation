@@ -1345,6 +1345,9 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     Maxit = b.size();
     if ( Maxit > 500 ) {
         Maxit *= .98;
+    } else if (Maxit < 50){
+        Maxit *= 1.2;
+        // NOTE using constraint, more iterations are needed (maybe size of original system should be used...?)
     }
 
 
@@ -1406,7 +1409,7 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
         err = l2_norm(r) / bnorm;
     }
     r = b - A * x;
-    err = err = l2_norm(r) / bnorm;
+    err = l2_norm(r) / bnorm;
 
     if ( nit == Maxit ) {
         std :: cerr << "\n did not converge after " << nit << " iterations. Error : " << err << ", x norm : " << l2_norm(r) << ", b norm : " << bnorm << std :: endl;

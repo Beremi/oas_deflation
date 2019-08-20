@@ -26,6 +26,37 @@ void Node :: readFromLine(istringstream &iss, int dim) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// MASTER DOF - GOVERN DEPENDENT DOFs
+void MasterDoF :: readFromLine(istringstream &iss, int dim){
+  double x, y, z;
+  if ( dim == 2 ) {
+      iss >> x >> y;
+      point = Point(x, y);
+  } else if ( dim == 3 )      {
+      iss >> x >> y >> z;
+      point = Point(x, y, z);
+  }
+  unsigned i;
+  iss >> i;
+  nDoFs = i;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MASTER Node - GOVERN multiple dependent DOFs
+void MasterNode :: readFromLine(istringstream &iss, int dim){
+  double x, y, z;
+  if ( dim == 2 ) {
+      iss >> x >> y;
+      point = Point(x, y);
+  } else if ( dim == 3 )      {
+      iss >> x >> y >> z;
+      point = Point(x, y, z);
+  }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational DoFs
 double MechNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
     if ( code.compare("ux") == 0 ) {

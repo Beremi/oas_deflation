@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include "boundary_condition.h"
+#include "constraint.h"
 
 class NodeContainer
 {
@@ -16,6 +17,11 @@ private:
     vector< unsigned >blockedDoFid;  //mapping from particle order to DoF order for blocked DoFs
     unsigned totalDoFs, freeDoFs;
     BCContainer *BC;
+
+    // #constraint
+    unsigned constrDoFs;
+    vector< unsigned >constrainedDoFid;  //mapping from particle order to DoF order for constrained DoFs
+    ConstraintContainer *constr;
 
     void establishDoFArray();
 
@@ -38,6 +44,10 @@ public:
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
     void updateExteranlForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
+
+    unsigned giveNumConstrDoFs() const { return constrDoFs; };
+    ConstraintContainer *giveConstraints() const { return constr; };
+    void setConstraintContainer(ConstraintContainer *c){ constr = c; }
 
     vector< Node * > :: iterator begin(){return nodes.begin();}
     vector< Node * > :: iterator end(){return nodes.end();}

@@ -36,6 +36,14 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     AuxNode *newnode = new AuxNode(dim);
                     newnode->readFromLine(iss, dim);
                     nodes.push_back(newnode);
+                } else if ( nodeType.compare("MasterDoF") == 0 )    {
+                    MasterDoF *newnode = new MasterDoF(dim);
+                    newnode->readFromLine(iss, dim);
+                    nodes.push_back(newnode);
+                } else if ( nodeType.compare("MasterNode") == 0 )    {
+                    MasterNode *newnode = new MasterNode(dim);
+                    newnode->readFromLine(iss, dim);
+                    nodes.push_back(newnode);
                 } else  {
                     cerr << "Error: node type '" <<  nodeType <<  "' does not exists" << endl;
                     exit(0);
@@ -72,22 +80,42 @@ void NodeContainer :: establishDoFArray() {
     blockedDoFid.resize(blocked.size() );
     loadedDoFid.resize(loaded.size() );
 
+    /////////////////////////////////////////////////////////////////
+    // #constraint
+    constrDoFs = constr->size();
+    constrainedDoFid.resize(constrDoFs);
+    //sort DoFs, keep track of indices
+    vector< pair< unsigned, unsigned > >cstr;
+
+    for (unsigned j = 0; j < constr->size(); j++){
+      cstr.push_back(make_pair(constr->giveConstraint( j )->giveSlaveDoF(), j) );
+    }
+    sort(cstr.begin(), cstr.end() );
+    unsigned cs = 0;  // constrained
+    /////////////////////////////////////////////////////////////////
+
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
         a.push_back(make_pair(blocked [ i ], i) );
     }
     sort(a.begin(), a.end() );
-
     unsigned k = 0;
     unsigned id = 0;
     for ( vector< unsigned > :: iterator d = DoFid.begin(); d != DoFid.end(); ++d, id++ ) {
-        if ( id == a [ k ].first ) {
+        if ( id == a [ k ].first && k < a.size()) {
+          // condition < a.size() is necessary because otherwise it continues to evaluate the values from following memory (if constraint present, from constraint)
             * d = freeDoFs + k;
             blockedDoFid [ a [ k ].second ] = id;
             k++;
+        } else if ( constrDoFs > 0  &&  // the later alone would not work with no constraint
+                                        id == cstr [ cs ].first && cs < cstr.size()) {
+            // #constraint
+            * d = freeDoFs - constrDoFs + cs;
+            constrainedDoFid [ cstr [ cs ].second ] = id;
+            cs++;
         } else   {
-            * d = id - k;
+            * d = id - k - cs;
         }
     }
     for ( unsigned i = 0; i < loaded.size(); i++ ) {
@@ -136,7 +164,7 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
+        if ( DoFid [ i ] < freeDoFs - constrDoFs ) {
             fDoFs [ DoFid [ i ] ] = fullDoFs [ i ];
         }
     }
@@ -146,7 +174,7 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 void NodeContainer :: updateExteranlForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const {
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
-        if ( DoFid [ k ] >= freeDoFs ) {
+        if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {
             f_ext [ k ] += f_int [ k ];
         }
     }

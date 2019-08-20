@@ -46,15 +46,16 @@ void Solver :: init() {
     fixedDoFnum = ( nodes->giveTotalNumDoFs() - freeDoFnum );
     totalDoFnum = freeDoFnum + fixedDoFnum;
 
-    elems->prepareSteadyStateMatrices(K);
+    elems->prepareSteadyStateMatrices(Kini);
+    K = Kini;
     elems->updateSteadyStateMatrices(K, "elastic");
     f_ext = Vector(totalDoFnum);
     load = Vector(totalDoFnum);
     f_int = Vector(totalDoFnum);
     r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
-    f = Vector(freeDoFnum);
-    ddr = Vector(freeDoFnum);
+    f = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
+    ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
     full_ddr = Vector(totalDoFnum);
 }
 
@@ -229,6 +230,7 @@ void SteadyStateNonLinearSolver :: solve() {
       unsigned it = 0;
       unsigned maxIt = 30;
       while ( !converged && it < maxIt ) {
+          K = Kini;
           elems->updateSteadyStateMatrices(K, "secant");
 
           //solve linear system

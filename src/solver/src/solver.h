@@ -17,7 +17,7 @@ protected:
     ElementContainer *elems;
     NodeContainer *nodes;
     double time, dt, termination_time;
-    CoordinateIndexedSparseMatrix K;
+    CoordinateIndexedSparseMatrix K, Kini;
     Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr;
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
