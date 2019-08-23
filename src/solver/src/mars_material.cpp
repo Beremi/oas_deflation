@@ -59,7 +59,14 @@ double MarsMaterialStatus :: giveS0tension(double omega) const {
     double fs = m->giveFs() * RAND_H;
 
     double sa = .5 * ft * ( pow(fs / ( m->giveMu() * ft ), 2) - 1. );
-    return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
+
+
+    if (omega == atan(sqrt(m->giveAlpha())/m->giveMu())){
+      // for this anle, the later equation is undetermined, but hyperbola eq. gives this (see Two Scale Study - Cusatis 2007 doi.org/10.1016/j.engfracmech.2006.01.021)
+      return .5 * ( ft + 2 * sa ) * ft / ( ( ft + sa ) * s);
+    } else {
+      return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
+    }
 }
 
 //////////////////////////////////////////////////////////
