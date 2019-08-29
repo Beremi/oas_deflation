@@ -20,6 +20,7 @@ private:
     double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
 
     Point temp_sPi, temp_slip, temp_alphaKin;
+    Point stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
     void print() const;
@@ -75,6 +76,7 @@ private:
     double rN;
 
     double temp_epsN, temp_damage, temp_epsNP, temp_alphaN, temp_zN, temp_rN; ///<temporary variables
+    double stressN;
 
     void print() const;
 public:

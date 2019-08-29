@@ -77,6 +77,7 @@ private:
     vector< Node * >vert;
     double length, area;
     Point normal;
+    vector< Point > tangs;
     Matrix RB; //R*B
 public:
     RigidBodyContact(const unsigned dim);

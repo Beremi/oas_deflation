@@ -64,6 +64,7 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
 RigidBodyContact :: RigidBodyContact(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
+    tangs.resize(2);
     ip_locs.resize(1);
     stats.resize(1);
     name = "RigidBodyContact";
@@ -87,6 +88,24 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
       return normal.getY();
   } else if ( code.compare("normal_z") == 0 )       {
       return normal.getZ();
+  } else if ( code.compare("t1_x") == 0 )       {
+      return tangs[ 0 ].getX();
+  } else if ( code.compare("t1_y") == 0 )       {
+      return tangs[ 0 ].getY();
+  } else if ( code.compare("t1_z") == 0 )       {
+      return tangs[ 0 ].getZ();
+  } else if ( code.compare("t2_x") == 0 )       {
+      if ( tangs.size() > 1 ){
+        return tangs[ 1 ].getX();
+      } else { return 0; }
+  } else if ( code.compare("t2_y") == 0 )       {
+    if ( tangs.size() > 1 ){
+      return tangs[ 1 ].getY();
+    } else { return 0; }
+  } else if ( code.compare("t2_z") == 0 )       {
+    if ( tangs.size() > 1 ){
+      return tangs[ 1 ].getZ();
+    } else { return 0; }
   } else {
     return mechanicalElement :: giveIPValue(code, ipnum);
   }
@@ -243,6 +262,7 @@ void RigidBodyContact :: init() {
         R [ 0 ] [ 1 ] = normal.y;
         R [ 1 ] [ 0 ] = t1.x;
         R [ 1 ] [ 1 ] = t1.y;
+        tangs[0] = t1;
     } else if ( ndim == 3 )       {
         Point t1, t2;
         if ( abs(normal.x) > 1e-3 ) {
@@ -264,6 +284,8 @@ void RigidBodyContact :: init() {
         R [ 2 ] [ 0 ] = t2.x;
         R [ 2 ] [ 1 ] = t2.y;
         R [ 2 ] [ 2 ] = t2.z;
+        tangs[0] = t1;
+        tangs[1] = t2;
     } else  {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
         exit(0);

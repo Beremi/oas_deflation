@@ -30,6 +30,10 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return sPi.getY();
     } else if ( (code.compare("strainPLTZ") == 0)) {
         return sPi.getZ();
+    } else if ( (code.compare("stressTY") == 0)) {
+        return stressT.getY();
+    } else if ( (code.compare("stressTZ") == 0)) {
+        return stressT.getZ();
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -51,7 +55,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
   Vector stiff = giveElasticNormalShearStiffness();
   Vector stress( strain.size());
-  Point stressT;
+  // Point stressT;  // declared in class
 
   stress [ 0 ] = stiff [ 0 ] * strain [ 0 ]; //normal stress
 
@@ -276,6 +280,8 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
         return damage;
     } else if ( (code.compare("strainN") == 0) || (code.compare("strain") == 0) ) {
         return epsN;
+    } else if ( (code.compare("stressN") == 0) || (code.compare("stress") == 0) ) {
+        return stressN;
     } else if ( (code.compare("strainPL") == 0) || (code.compare("strainPLN") == 0) ) {
         return epsNP;
     } else {
@@ -334,6 +340,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
     for ( unsigned i = 1; i < strain.size(); i++){
       stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] );
     }
+    stressN = stress[ 0 ];
     return stress;
   } else {
     Heaviside = 0;
@@ -374,6 +381,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
     if (stress[ 0 ] > 0){
       stress[ 0 ] = 0;
     }
+    stressN = stress[ 0 ];
     return stress;
   }
 }
@@ -521,6 +529,8 @@ double FatigueMaterialStatus :: giveValue(string code) const {
         return DamagePlasticMaterialStatus :: giveValue("damageN");
     } else if ( code.compare("strainN") == 0 ) {
         return DamagePlasticMaterialStatus :: giveValue("strainN");
+    } else if ( code.compare("stressN") == 0 ) {
+        return DamagePlasticMaterialStatus :: giveValue("stressN");
     } else if ( code.compare("strainPLN") == 0 ) {
         return DamagePlasticMaterialStatus :: giveValue("strainPLN");
     } else {
