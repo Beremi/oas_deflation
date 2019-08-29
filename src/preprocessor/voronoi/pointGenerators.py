@@ -142,6 +142,51 @@ def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_co
         if (tr < trials):
             node_coords.append(coords)
 
+def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials):
+    print ('Generating a 3d annulus surface. Ctr [%f, %f, %f], Rad: %f, Thick: %f' %(center[0],center[1],center[2], radius, thickness))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInAnnulus(center, radius, thickness,directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+def generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim, minDist, node_coords, trials):
+    print ('Generating a 3d tube. Ctr [%f, %f, %f], Rad: %f, Thick: %f' %(center[0],center[1],center[2], radius, thickness))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInTube(center, radius, height, thickness, directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+
 def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d circle border. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
@@ -170,15 +215,60 @@ def randPointInCircle(center, radius, directionDim):
     point = np.zeros(3)
     point += center
 
+    rn = np.random.uniform()
+
     if (directionDim == 0 ):
-        point[1] = radius * np.cos(angle) * np.random.uniform()
-        point[2] = radius * np.sin(angle) * np.random.uniform()
+        point[1] = radius * np.cos(angle) * rn
+        point[2] = radius * np.sin(angle) * rn
     if (directionDim == 1):
-        point[0] = radius * np.cos(angle) * np.random.uniform()
-        point[2] = radius * np.sin(angle) * np.random.uniform()
+        point[0] = radius * np.cos(angle) * rn
+        point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
-        point[0] = radius * np.cos(angle) * np.random.uniform()
-        point[1] = radius * np.sin(angle) * np.random.uniform()
+        point[0] = radius * np.cos(angle) * rn
+        point[1] = radius * np.sin(angle) * rn
+
+    return point
+
+def randPointInAnnulus(center, radius, thickness, directionDim):
+    angle = np.random.uniform() * np.pi * 2
+
+    point = np.zeros(3)
+    point += center
+
+    effRadius = (radius - thickness) + thickness *  np.random.uniform()
+
+    if (directionDim == 0 ):
+        point[1] =  np.cos(angle) * effRadius
+        point[2] =  np.sin(angle) * effRadius
+    if (directionDim == 1):
+        point[0] =  np.cos(angle) * effRadius
+        point[2] =  np.sin(angle) * effRadius
+    if (directionDim == 2):
+        point[0] =  np.cos(angle) * effRadius
+        point[1] =  np.sin(angle) * effRadius
+
+    return point
+
+def randPointInTube(center, radius, height, thickness, directionDim):
+    angle = np.random.uniform() * np.pi * 2
+
+    point = np.zeros(3)
+    point += center
+
+    effRadius = (radius - thickness) + thickness *  np.random.uniform()
+
+    if (directionDim == 0 ):
+        point[0] = height * np.random.uniform()
+        point[1] =  np.cos(angle) * effRadius
+        point[2] =  np.sin(angle) * effRadius
+    if (directionDim == 1):
+        point[0] =  np.cos(angle) * effRadius
+        point[1] = height * np.random.uniform()
+        point[2] =  np.sin(angle) * effRadius
+    if (directionDim == 2):
+        point[0] =  np.cos(angle) * effRadius
+        point[1] =  np.sin(angle) * effRadius
+        point[2] = height * np.random.uniform()
 
     return point
 
@@ -223,7 +313,7 @@ def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDis
             node_coords.append(coords)
 
 def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials):
-    print ('Generating a 3d cylidner surf segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+    print ('Generating a 3d cylinder surf segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
     tr=0
     while (tr<trials):
@@ -251,18 +341,20 @@ def randPointInCilinder(center, radius, height, directionDim):
     point = np.zeros(3)
     point += center
 
+    rn = np.random.uniform()
+
     if (directionDim == 0 ):
-        point[0] = height * np.random.uniform()
-        point[1] = radius * np.cos(angle) * np.random.uniform()
-        point[2] = radius * np.sin(angle) * np.random.uniform()
+        point[0] = height * rn
+        point[1] = radius * np.cos(angle) * rn
+        point[2] = radius * np.sin(angle) * rn
     if (directionDim == 1):
-        point[0] = radius * np.cos(angle) * np.random.uniform()
-        point[1] = height * np.random.uniform()
-        point[2] = radius * np.sin(angle) * np.random.uniform()
+        point[0] = radius * np.cos(angle) * rn
+        point[1] = height * rn
+        point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
-        point[0] = radius * np.cos(angle) * np.random.uniform()
-        point[1] = radius * np.sin(angle) * np.random.uniform()
-        point[2] = height * np.random.uniform()
+        point[0] = radius * np.cos(angle) * rn
+        point[1] = radius * np.sin(angle) * rn
+        point[2] = height * rn
 
     return point
 

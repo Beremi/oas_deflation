@@ -46,18 +46,24 @@ solver = 0
 #power tesselation on/off  does not matter now
 powerTes = 0
 
-#dimension 2 //// dim 3 prohibited now
+#dimension
 dim = 3
 print('Creating a %dd lattice model...' %dim)
 
+#coupled problem?
+coupled = 0
+
+#dimensions of rectangle model
 Xdim = 1.
 Ydim = 1.
 Zdim = 1.
 
-cylinderRad = 0.5
+#dimensions of cylinder model
+cylinderRad = 0.12
 cylinderHeight = 1
+tubeThickness = 0.02
 
-#dimensions of a rectangle model
+#dimensions of rectangle model
 if (dim == 2 ): maxLim = np.array([  Xdim   ,  Ydim ])
 if (dim == 3 ): maxLim = np.array([  Xdim,  Ydim,  Zdim ])
 
@@ -67,7 +73,7 @@ volume = np.sum(maxLim)
 
 #size of grains (minimum distance between nodes)
 #be cautious with small grains!
-minDist = 0.09
+minDist = 0.017
 radius = minDist / 2
 
 elaX = minDist / Xdim * 2
@@ -147,13 +153,18 @@ if (dim == 3):
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
 
     #cylinder uniform pressure free
-    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
     #materialZones=None
 
     #cylinder uniform pressure confined
     #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPressConfined(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
     #materialZones=None
 
+    #cylinder torsion free
+    #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderTorsionFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
+
+    #tube torsion free
+    node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dtubeTorsionFree(np.zeros(3), cylinderRad, cylinderHeight, tubeThickness, minDist, trials, 0 )
 
 node_coords = np.asarray(node_coords)
 node_count = len(node_coords)
@@ -212,7 +223,7 @@ if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
 utilitiesGeom.saveExporters()
 
 solStep = 1e-2
-simTime = 10
+simTime = 100
 utilitiesGeom.saveMasterInput(dim, solver, solStep, 1e-4, 1e-1, simTime)
 end =  time.time() -end
 print('Saving done in %.3f secs.' %end)

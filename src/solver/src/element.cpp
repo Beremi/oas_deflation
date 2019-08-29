@@ -193,7 +193,7 @@ void RigidBodyContact :: init() {
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
         Point prp = (nodes [1]->givePoint() - nodes [0]->givePoint())* t ;
-        if (prp.norm() > 1e-8){
+        if (prp.norm() > 1e-6){
           cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
         //  exit(1);
         }
@@ -426,7 +426,7 @@ void Transp1D :: init() {
       if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
       //
       //JM: coplanarity is not perfect
-      if (maxErr > 5e-2){
+      if (maxErr > 1e-5){
         cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
       //  exit(1);
       }
@@ -474,7 +474,7 @@ void Transp1D :: init() {
 
       //JM: Check if integration point is coplanar with face
       currErr = checkCoplanarity( vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
-      if (abs(currErr) > 1e-2){
+      if (abs(currErr) > 1e-4){
         cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
       //  exit(1);
       }
@@ -489,7 +489,7 @@ void Transp1D :: init() {
     length = normal.norm();
     normal = normal / length;
 
-    if ( abs(normal * t) > 1e-6 ) {
+    if ( abs(normal * t) > 1e-4) {
         cout << v0.x << " " <<  v0.y <<  " X " << v1.x << " " <<  v1.y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;

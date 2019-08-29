@@ -457,7 +457,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
 
 
 
-    newAuxNodes = saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    newAuxNodes = 0 #saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
     vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):

@@ -20,7 +20,7 @@ private:
 public:
     Function() {};
     virtual ~Function() {};
-    virtual double giveY(double t) const  = 0;
+    virtual double giveY(double t)  = 0;
     virtual void readFromLine(istringstream &iss) = 0;
 protected:
 };
@@ -37,7 +37,7 @@ public:
     PieceWiseLinearFunction() {};
     virtual ~PieceWiseLinearFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) const;
+    double giveY(double t) ;
 protected:
 };
 
@@ -53,7 +53,7 @@ public:
     ConstSawToothFunction() {};
     virtual ~ConstSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) const;
+    double giveY(double t) ;
 protected:
 };
 
@@ -69,7 +69,7 @@ public:
     LinSawToothFunction() {};
     virtual ~LinSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) const;
+    double giveY(double t) ;
 protected:
 };
 
@@ -86,7 +86,47 @@ public:
     VaryingSawToothFunction() {};
     virtual ~VaryingSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) const;
+    double giveY(double t) ;
+protected:
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// JM: Rotation function using angle multiplier from a ConstSawToothFunction
+class ConstSawToothRotationFunction : public ConstSawToothFunction
+{
+private:
+    Point initNodePosition;
+    Point rotationAngles;
+    unsigned int displacementType;
+    double currentTime;
+    double previousTime;
+public:
+    ConstSawToothRotationFunction() {};
+    virtual ~ConstSawToothRotationFunction() {};
+    void readFromLine( istringstream &iss);
+    double giveY(double t) ;
+    void setCurrentTime (double t);
+protected:
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// JM: Shear function using multiplier from a ConstSawToothFunction
+class ConstSawToothShearFunction : public ConstSawToothFunction
+{
+private:
+    Point initNodePosition;
+    Point governingPoint;
+    unsigned int displacementType ;
+    double currentTime;
+    double previousTime;
+public:
+    ConstSawToothShearFunction () {};
+    virtual ~ConstSawToothShearFunction() {};
+    void readFromLine( istringstream &iss );
+    double giveY(double t);
+    void setCurrentTime (double t);
 protected:
 };
 
@@ -101,7 +141,7 @@ public:
     SinusFunction() {};
     virtual ~SinusFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) const;
+    double giveY(double t) ;
 protected:
 };
 
@@ -116,7 +156,7 @@ public:
     FunctionContainer() {};
     virtual ~FunctionContainer();
     void readFromFile(const string filename);
-    double giveY(unsigned f, double t) const;
+    double giveY(unsigned f, double t) ;
 protected:
 };
 
