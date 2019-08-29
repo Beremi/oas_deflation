@@ -29,6 +29,11 @@ def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionD
     volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
     return vor, volumes
 
+def runTubeMirroredVoronoi  (node_coords, center, radius, height,thickness, directionDim):
+    vor = Voronoi(voronoi.mirror_dataTube(node_coords, center, radius, height,  thickness, directionDim))
+    volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
+    return vor, volumes
+
 ##################################################
 #### General function set by table ####
 class generalFunc:
@@ -75,6 +80,46 @@ class constantFunc:
 
         return line
 ####################################################
+# displType 0-dx, 1-dy, 2-dz, 3-rx, 4-ry, 5-rz
+class constSawToothRotationFunction:
+    def __init__ (self, angles, nodeCoords, value, displType, period =None, sym=None, lower=None, time=None, num_cycles=None):
+        self.angles = angles.copy()
+        self.nodeCoords = nodeCoords.copy()
+        self.value = value
+        self.period = period
+        self.sym = sym
+        self.lower = lower
+        self.time = time
+        self.num_cycles = num_cycles
+        self.displType = displType
+
+    def getString (self):
+        line = 'ConstSawToothRotationFunction'
+        line += '\trotAngles'
+        line += '\t%f' %(self.angles[0])
+        line += '\t%f' %(self.angles[1])
+        line += '\t%f' %(self.angles[2])
+        line += '\tinitNodeCrds'
+        line += '\t%f' %(self.nodeCoords[0])
+        line += '\t%f' %(self.nodeCoords[1])
+        line += '\t%f' %(self.nodeCoords[2])
+        line += '\tdisplType'
+        line += '\t%d' %(self.displType)
+
+
+        line += '\tvalue\t%f' %(self.value)
+        if (self.period!=None):
+            line += '\tperiod\t%f' %(self.period)
+        if (self.sym!=None):
+            line += '\tsym\t%f' %(self.sym)
+        if (self.lower!=None):
+            line += '\tlower\t%f' %(self.lower)
+        if (self.time!=None):
+            line += '\ttime\t%f' %(self.time)
+        if (self.num_cycles!=None):
+            line += '\tnum_cycles\t%f' %(self.num_cycles)
+
+        return line
 
 ##################################################
 #### Sine function ####
@@ -115,7 +160,7 @@ class sawToothConstFunc:
         if (self.time!=None):
             line += '\ttime\t%f' %(self.time)
         if (self.num_cycles!=None):
-            line += '\tlower\t%f' %(self.num_cycles)
+            line += '\tnum_cycles\t%f' %(self.num_cycles)
 
         return line
 ##################################################
