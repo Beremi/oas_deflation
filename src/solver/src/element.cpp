@@ -64,7 +64,7 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
 RigidBodyContact :: RigidBodyContact(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
-    tangs.resize(2);
+    tangs.resize(dim-1);
     ip_locs.resize(1);
     stats.resize(1);
     name = "RigidBodyContact";
