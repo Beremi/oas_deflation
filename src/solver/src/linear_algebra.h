@@ -68,6 +68,7 @@ public:
     }
     double norm() const;
     double sqNorm() const;
+    double sum() const;
     void print() const;
 };
 

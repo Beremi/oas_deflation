@@ -205,6 +205,10 @@ double Point :: sqNorm() const {
     return x * x + y * y + z * z;
 }
 
+double Point :: sum() const {
+    return x + y + z;
+}
+
 void Point :: print() const {
     cout << getX() << flush;
     cout << "; " << getY() << flush;

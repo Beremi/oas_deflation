@@ -54,6 +54,14 @@ void MaterialContainer :: readFromFile(const string filename) {
                    FatigueMaterial *newmat = new FatigueMaterial();
                    newmat->readFromLine(iss);
                    matrs.push_back((FatigueShearMaterial *) newmat);
+                } else if ( matType.compare("AllicheMaterial") == 0 )     {
+                   AllicheMaterial *newmat = new AllicheMaterial();
+                   newmat->readFromLine(iss);
+                   matrs.push_back((AllicheMaterial *) newmat);
+                } else if ( matType.compare("DesmoratMaterial") == 0 )     {
+                   DesmoratMaterial *newmat = new DesmoratMaterial();
+                   newmat->readFromLine(iss);
+                   matrs.push_back((DesmoratMaterial *) newmat);
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(0);

@@ -144,4 +144,115 @@ public:
 };
 
 
+//////////////////////////////////////////////////////////
+// MATERIAL FOR FATIGUE DAMAGE OF CONCRETE
+//////////////////////////////////////////////////////////
+// ACCORDING TO Damage model for fatigue loading of concrete, ALLICHE, 2004, doi.org/10.1016/j.ijfatigue.2004.02.006
+// see also Classification and evaluation of phenomenological numerical models for concrete fatigue behavior under compression, A. Baktheer, R. Chudoba 2019 doi.org/10.1016/j.conbuildmat.2019.06.022
+
+class AllicheMaterial;
+class AllicheMaterialStatus : public DisMechMaterialStatus
+{
+private:
+    Point sigma; ///< stress
+    Point temp_Y, Y, Y_plus; ///< energy release rate and its positive part
+    Point Y_prev;
+    Point temp_eps, eps, eps_plus, temp_eps_plus, eps_plus_prev; ///< strain and its positive part
+    Point damage, temp_damage; ///< damage
+
+    // Point shear_eps_cur, shear_eps_prev;
+    // double temp_damage, damage;
+
+public:
+    AllicheMaterialStatus(AllicheMaterial *m, Element *e);
+    virtual ~AllicheMaterialStatus() {};
+    void init();
+    virtual void update();
+    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Vector giveStress(const Vector &strain);
+    // virtual Vector giveStressWrong(const Vector &strain);
+    void calculateDamage(const Vector &strain);
+    virtual double giveValue(string code) const;
+};
+
+
+class AllicheMaterial : public DisMechMaterial
+{
+private:
+    double lambda, mu;   // Lame parameters
+    double C0, C1;
+    double K;
+    double n;
+    double g;  // constant relevant to damage-induced residual stress
+    double alphaDam, betaDam;  // parameters of damage degradation moduli
+public:
+    AllicheMaterial() { name = "Alliche material"; };
+    ~AllicheMaterial() {};
+    void readFromLine(istringstream &iss);
+    MaterialStatus *giveNewMaterialStatus(Element *e);
+    double giveLambda() const { return lambda; }
+    double giveMu() const { return mu; }
+    double giveC0() const { return C0; }
+    double giveC1() const { return C1; }
+    double giveK() const { return K; }
+    double giveN() const { return n; }
+    double giveG() const { return g; }
+    double giveAlphaDam() const { return alphaDam; }
+    double giveBetaDam() const { return betaDam; }
+    virtual void init();
+};
+
+
+//////////////////////////////////////////////////////////
+// MATERIAL FOR FATIGUE DAMAGE OF CONCRETE
+//////////////////////////////////////////////////////////
+// ACCORDING TO Continuum damage mechanics for hysteresis and fatigue of quasi-brittle materials and structures
+// R. Desmorat et al. 2007 10.1002/nag.532
+// see also Classification and evaluation of phenomenological numerical models for concrete fatigue behavior under compression, A. Baktheer, R. Chudoba 2019 doi.org/10.1016/j.conbuildmat.2019.06.022
+
+class DesmoratMaterial;
+class DesmoratMaterialStatus : public DisMechMaterialStatus
+{
+private:
+    Point temp_sigma, sigma; ///< stress
+    double temp_Y, Y; ///< energy release rate
+    Point epsT; ///< strain
+    double epsN;
+    Point temp_epsPi, epsPi; ///< irreversible strain
+    double temp_damage, damage; ///< damage
+    double temp_zIso, zIso;
+    Point temp_alphaKin, alphaKin;
+
+public:
+    DesmoratMaterialStatus(DesmoratMaterial *m, Element *e);
+    virtual ~DesmoratMaterialStatus() {};
+    void init();
+    virtual void update();
+    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Vector giveStress(const Vector &strain);
+    virtual double giveValue(string code) const;
+};
+
+
+class DesmoratMaterial : public DisMechMaterial
+{
+private:
+    double E2;
+    double Sigma0;
+    double K;
+    double gamma;
+    double S;
+public:
+    DesmoratMaterial() { name = "Desmorat material"; };
+    ~DesmoratMaterial() {};
+    void readFromLine(istringstream &iss);
+    MaterialStatus *giveNewMaterialStatus(Element *e);
+    double giveE2() const { return E0 * alpha; }
+    double giveSigma0() const { return Sigma0; }
+    double giveK() const { return K; }
+    double giveGamma() const { return gamma; }
+    double giveS() const { return S; }
+    virtual void init();
+};
+
 #endif /* _FATIGUE_MATERIAL_H */
