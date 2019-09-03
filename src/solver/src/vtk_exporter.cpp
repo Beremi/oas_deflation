@@ -44,6 +44,71 @@ void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
   DataExporter :: readFromLine(iss, dimension);
 }
 
+void exportAdditionalCellData(const ElementContainer * elems, const Vector &DoFs, const vector<bool> &codes_positions, const vector< string > &codes, vector< vector< double > > &cell_data, bool doubled=false, bool rbcOnly=false){
+  Vector elDoFvalues, strainNT;
+  vector< unsigned >elDoFs;
+  double data;
+  RigidBodyContact *rbc;
+
+  for ( auto const &e : *elems ){
+    rbc = nullptr;
+    // NOTE do not use this for transport elements
+    if (e->giveName().compare("RigidBodyContact") == 0){
+      elDoFs = e->giveDoFs();
+      elDoFvalues.resize(elDoFs.size() );
+      for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+        elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
+      }
+      rbc = static_cast< RigidBodyContact * >( e );
+      strainNT = rbc->giveContactStrainNT(elDoFvalues);
+      for ( unsigned i = 0; i < codes.size(); i++ ){
+        if (codes_positions[ i ]){
+          if ( codes[ i ].compare("normal_strain") == 0 ){
+            data = strainNT[ 0 ];
+          } else if ( codes[ i ].compare("sliding_strain") == 0 ){
+            double strT = 0;
+            for ( unsigned j = 1; j < strainNT.size(); j++){
+              strT += pow(strainNT[ j ], 2);
+            }
+            data = sqrt( strT );
+          } else if ( codes[ i ].compare("strainTY") == 0 ){
+            data = strainNT[ 1 ];
+          } else if ( codes[ i ].compare("strainTZ") == 0 ){
+            if ( strainNT.size() > 2 ){
+              data = strainNT[ 2 ];
+            } else {
+              data = 0;
+            }
+          } else if ( codes[ i ].compare("crack_opening") == 0 ){
+            data = strainNT[ 0 ] * rbc->giveLength() * rbc->giveIPValue("damageN", 0);
+          } else if ( codes[ i ].compare("crack_sliding") == 0 ){
+            double strT = 0;
+            for ( unsigned j = 1; j < strainNT.size(); j++){
+              strT += pow(strainNT[ j ], 2);
+            }
+            data = sqrt( strT ) * rbc->giveLength() * rbc->giveIPValue("damageT", 0);
+          } else {
+            data = 0;
+          }
+          cell_data[ i ].push_back(data);
+          if (doubled){
+            cell_data[ i ].push_back(data);
+          }
+        }
+      }
+    } else {
+      // for any other element, only one number will be stored
+      if (!rbcOnly){
+        for ( unsigned i = 0; i < codes.size(); i++ ){
+          if (codes_positions[ i ]){
+            cell_data[ i ].push_back(0);
+          }
+        }
+      }
+    }
+  }
+}
+
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
@@ -60,7 +125,18 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
   vector<int> offsets;
   vector<Point> displ;
 
-  vector< vector< double > > cell_data;  // test version, this and more will be specified on the exporter input
+  vector<bool> codes_positions(cell_data_size);  // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
+  for (unsigned i = 0; i < cell_data_size; i++){
+    if (codes[ i ].compare("crack_opening") == 0 || codes[ i ].compare("crack_sliding") == 0 ||
+        codes[ i ].compare("normal_strain") == 0 || codes[ i ].compare("sliding_strain") == 0 ||
+        codes[ i ].compare("strainTY") == 0 || codes[ i ].compare("strainTZ") == 0){
+      codes_positions[ i ] = true;
+    } else {
+      codes_positions[ i ] = false;
+    }
+  }
+
+  vector< vector< double > > cell_data;
   cell_data.resize(cell_data_size);
 
   vector< vector< double > > point_data;
@@ -78,12 +154,20 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     offset += points_id.size();
     offsets.push_back(offset);
     for (unsigned i = 0; i < cell_data_size; i++){
-      cell_data[ i ].push_back(el->giveIPValue(codes[ i ], 0) );  // so far for single IP point
+      if (codes[ i ].compare("crack_opening") == 0 || codes[ i ].compare("crack_sliding") == 0 ||
+          codes[ i ].compare("normal_strain") == 0 || codes[ i ].compare("sliding_strain") == 0 ||
+          codes[ i ].compare("strainTY") == 0 || codes[ i ].compare("strainTZ") == 0){
+        continue;
+      } else {
+        cell_data[ i ].push_back(el->giveIPValue(codes[ i ], 0) );  // so far for single IP point
+      }
     }
     points_id.clear();
   }
-  // for (unsigned e; e < elems->giveSize(); e++){
-  // }
+
+  if (!std::none_of(codes_positions.begin(), codes_positions.end(), [](bool i){return i==true;})){
+    exportAdditionalCellData(elems, DoFs, codes_positions, codes, cell_data);
+  }
 
   giveFileName(step, buffer);
   ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
@@ -329,16 +413,30 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
   vector<int> offsets;
   vector<Point> displ;
 
+  vector<bool> codes_positions(cell_data_size);  // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
+  for (unsigned i = 0; i < cell_data_size; i++){
+    if (codes[ i ].compare("crack_opening") == 0 || codes[ i ].compare("crack_sliding") == 0 ||
+        codes[ i ].compare("normal_strain") == 0 || codes[ i ].compare("sliding_strain") == 0 ||
+        codes[ i ].compare("strainTY") == 0 || codes[ i ].compare("strainTZ") == 0){
+      codes_positions[ i ] = true;
+    } else {
+      codes_positions[ i ] = false;
+    }
+  }
+
   vector< vector< double > > cell_data;  // test version, this and more will be specified on the exporter input
   cell_data.resize(cell_data_size);
 
   // TODO be able to export also point data
   // vector< vector< double > > point_data;
   // point_data.resize(codes.size() - cell_data_size);
+  unsigned num_rbcs = 0;
 
   int offset = 0;
   for (auto const &el : *elems){
+    if (el->giveName().compare("RigidBodyContact") != 0) continue;
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( el );
+    num_rbcs++;
     for (auto const &n : rbc->giveNodes()){
       auto nod_id_ptr = std::find(begin(*nodes), end(*nodes), n);
       for (auto const &v : rbc->giveVertices()){
@@ -355,14 +453,29 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
       offsets.push_back(offset);
 
       for (unsigned i = 0; i < cell_data_size; i++){
-        cell_data[ i ].push_back(el->giveIPValue(codes[ i ], 0) );  // so far for single IP point
+        if (codes[ i ].compare("crack_opening") == 0 || codes[ i ].compare("crack_sliding") == 0 ||
+            codes[ i ].compare("normal_strain") == 0 || codes[ i ].compare("sliding_strain") == 0 ||
+            codes[ i ].compare("strainTY") == 0 || codes[ i ].compare("strainTZ") == 0){
+          continue;
+        } else {
+          cell_data[ i ].push_back(el->giveIPValue(codes[ i ], 0) );  // so far for single IP point
+        }
       }
-
       points_id.clear();
     }
   }
-  // for (unsigned e; e < elems->giveSize(); e++){
+
+  if (!std::none_of(codes_positions.begin(), codes_positions.end(), [](bool i){return i==true;})){
+    exportAdditionalCellData(elems, DoFs, codes_positions, codes, cell_data, true, true);
+  }
+
+  // unsigned iii = 0;
+  // for (auto const &da : cell_data){
+  //   std::cout << "cell_data[" << iii << "] = " << da.size() << '\n';
   // }
+  // std::cout << "cell_types.size() = " << cell_types.size() << '\n';
+  // std::cout << "offsets.size() = " << offsets.size() << '\n';
+  // std::cout << "all_points_id.size() = " << all_points_id.size() << '\n';
 
   giveFileName(step, buffer);
   ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
@@ -372,7 +485,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
       outputfile << "<?xml version=\"1.0\"?>\n";
       outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
       outputfile << "<UnstructuredGrid>" << '\n';
-      outputfile << "<Piece NumberOfPoints=\"" << nodes->giveSize()+all_vertices_twice.size() << "\" NumberOfCells=\"" << elems->giveSize()*2 << "\">" << '\n';
+      outputfile << "<Piece NumberOfPoints=\"" << nodes->giveSize()+all_vertices_twice.size() << "\" NumberOfCells=\"" << num_rbcs*2 << "\">" << '\n';
 
 
       outputfile << "<Points>" << '\n';

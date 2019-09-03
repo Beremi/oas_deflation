@@ -33,6 +33,7 @@ public:
     vector< unsigned >giveDoFs() { return DoFids; };
     virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
     virtual double giveValue(string code) const;
+    virtual string giveName() const { return name; }
     virtual unsigned giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     virtual vector < Node * > giveNodes() const { return nodes;}
@@ -96,6 +97,7 @@ public:
     double giveLength() const { return length; }
     double giveArea() const { return area ; }
     virtual Vector giveInternalForces(const Vector &DoFs) const;
+    virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
 };

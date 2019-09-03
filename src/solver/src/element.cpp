@@ -346,6 +346,11 @@ Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs) const {
 };
 
 //////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
+    return RB * DoFs;
+};
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 1D TRANSPORT ELEMENT
 Transp1D :: Transp1D(const unsigned dim) {
