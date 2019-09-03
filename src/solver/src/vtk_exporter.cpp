@@ -125,12 +125,17 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
   vector<int> offsets;
   vector<Point> displ;
 
+  vector< string > materials;
+  unsigned matI;
+
   vector<bool> codes_positions(cell_data_size);  // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
   for (unsigned i = 0; i < cell_data_size; i++){
     if (codes[ i ].compare("crack_opening") == 0 || codes[ i ].compare("crack_sliding") == 0 ||
         codes[ i ].compare("normal_strain") == 0 || codes[ i ].compare("sliding_strain") == 0 ||
         codes[ i ].compare("strainTY") == 0 || codes[ i ].compare("strainTZ") == 0){
       codes_positions[ i ] = true;
+    // } else if ( codes[ i ].compare("material") == 0 ) {
+    //   mat_code = i;
     } else {
       codes_positions[ i ] = false;
     }
@@ -156,8 +161,20 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     for (unsigned i = 0; i < cell_data_size; i++){
       if (codes[ i ].compare("crack_opening") == 0 || codes[ i ].compare("crack_sliding") == 0 ||
           codes[ i ].compare("normal_strain") == 0 || codes[ i ].compare("sliding_strain") == 0 ||
-          codes[ i ].compare("strainTY") == 0 || codes[ i ].compare("strainTZ") == 0){
+          codes[ i ].compare("strainTY") == 0 || codes[ i ].compare("strainTZ") == 0 ){
         continue;
+      } else if (codes[ i ].compare("material") == 0) {
+        matI = 0;
+        while ( true ) {
+          if ( matI >= materials.size() ){
+            materials.push_back( el->giveMaterial()->giveName() );
+            break;
+          } else if ( materials.size() > 0 && materials[ matI ].compare( el->giveMaterial()->giveName() ) == 0 ){
+            break;
+          }
+          matI++;
+        }
+        cell_data[ i ].push_back( matI );
       } else {
         cell_data[ i ].push_back(el->giveIPValue(codes[ i ], 0) );  // so far for single IP point
       }

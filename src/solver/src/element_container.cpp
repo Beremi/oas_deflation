@@ -142,7 +142,7 @@ void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix
 void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
-    full_f *= 0; //clear array
+    full_f *= 0;  // clear array
 
     if (nodes->giveConstraints()->isActive()){
       nodes->giveConstraints()->calculateDependentDoFs(full_r);

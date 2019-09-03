@@ -37,6 +37,7 @@ public:
     virtual unsigned giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     virtual vector < Node * > giveNodes() const { return nodes;}
+    virtual Material* giveMaterial() const { return mat; }
 };
 
 
