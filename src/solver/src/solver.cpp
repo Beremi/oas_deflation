@@ -298,7 +298,7 @@ void SteadyStateNonLinearSolver :: solve() {
       } else if ( !converged ) {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
           exit(1);
-      } else if ( converged && it < maxIt/3 && dt < dtmax){
+      } else if ( (!restarted) && converged && it < maxIt/3 && dt < dtmax){
           dt = fmin(dt / .8, dtmax);
           std::cout << "enlarging step, timestep = " << dt << '\n';
       } else if ( converged && it > maxIt/2 && dt > dtmin){
