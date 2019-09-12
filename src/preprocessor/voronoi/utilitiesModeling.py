@@ -932,21 +932,22 @@ def create3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, 
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
 
+    directionDim = int(directionDim)
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    #node_coords, mechBC_merged, mechIC_merged  = assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions )
-    node_coords, mechBC_merged, mechIC_merged  = assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions )
+    node_coords, mechBC_merged, mechIC_merged = assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions )
+    #node_coords, mechBC_merged, mechIC_merged = assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions )
 
     #print(*node_coords, sep='\n')
 
 
     node_coords = np.asarray(node_coords)
-
+    """
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
     plt.show()
-
+    """
     print('Conducting Voronoi tesselation...', end='')
     ### conducting Voronoi tesselation
     vor, volumes = utilitiesNumeric.runTubeMirroredVoronoi (node_coords, center, radius, height, thickness, directionDim)
@@ -1789,7 +1790,7 @@ def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials
     mechBC_merged.append(mBC)
 
     ###############generating of points supported surface left face ###############
-    mechBC = np.array([0,0,0, 0 , 0, 0,    -1,-1,-1,-1,-1,-1])
+    mechBC = np.array([0,0,0, 0,0,0,    -1,-1,-1,-1,-1,-1])
 
     oldLen = len(node_coords)
     pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
@@ -1801,8 +1802,9 @@ def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials
         mechBC_merged.append(mBC)
     #print('%d nodes generated so far' %len(node_coords))
     ###############generating of points loaded surface right face ###############
+
     nodeA = center.copy()
-    nodeA[directionDim] += height
+    nodeA[directionDim] += float(height)
 
     oldLen = len(node_coords)
     pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)

@@ -53,7 +53,7 @@ class transportPath:
         self.nds = len(self.connectedNodes)
 
     def getString(self):
-        ndNr = self.nds 
+        ndNr = self.nds
 
         line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
         for i in range (self.nds):
@@ -105,20 +105,44 @@ class MarsMaterial:
 ##################################################
 
 # FatigueShearMaterial	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6 m 0
+
+#E0	35e9	alpha	0.300000    density 2200.0 fc 200e6 ft 35e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.00025e6 a 0
 ##################################################
 #### Fatigue material shear ####
 class FatigueMaterial:
-    def __init__ (self, youngModulus, poisson, density, tauBar, Kin, gamma, S, m):
+    def __init__ (self, youngModulus, poisson, density, fc, ft, KinN, gammaN, m, Ad, tauBar, Kin, gamma, S, a):
         self.youngModulus = youngModulus
         self.poisson = poisson
         self.density = density
+        self.fc = fc
+        self.ft = ft
+        self.KinN = KinN
+        self.gammaN = gammaN
+        self.m = m
+        self.Ad = Ad
         self.tauBar = tauBar
         self.Kin = Kin
         self.gamma = gamma
         self.S = S
-        self.m = m
+        self.a = a
+        
     def getString (self):
-        line = 'FatigueShearMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'tauBar\t%f' %(self.tauBar) +'\t' + 'Kin\t%f' %(self.Kin) +'\t' + 'gamma\t%f' %(self.gamma) +'\t' + 'S\t%f' %(self.S) +'\t' + 'm\t%f' %(self.m)
+        line = 'FatigueMaterial\t'
+        line += 'E0\t%e'        %(self.youngModulus)    + '\t'
+        line += 'alpha\t%f'     %(self.poisson)         + '\t'
+        line += 'density\t%f'   %(self.density)         + '\t'
+        line += 'fc\t%f'        %(self.fc)              + '\t'
+        line += 'ft\t%f'        %(self.ft)              + '\t'
+        line += 'KinN\t%f'      %(self.KinN)            + '\t'
+        line += 'gammaN\t%f'    %(self.gammaN)          + '\t'
+        line += 'm\t%f'         %(self.m)               + '\t'
+        line += 'Ad\t%f'        %(self.Ad)              + '\t'
+        line += 'tauBar\t%f'    %(self.tauBar)          + '\t'
+        line += 'Kin\t%f'       %(self.KinN)            + '\t'
+        line += 'gamma\t%f'     %(self.gammaN)          + '\t'
+        line += 'S\t%f'         %(self.S)               + '\t'
+        line += 'a\t%f'         %(self.a)               + '\t'
+
         return line
 ##################################################
 

@@ -127,11 +127,13 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None):
+def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False):
     if (dim == 2):
         vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ, withoutTransport=withoutTransport)
+
+
 
     return vert_count, verticesIdxDict, vertIdxStart
 
@@ -274,7 +276,7 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
 
 
 
-def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
+def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False):
     dim = 3
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
@@ -457,7 +459,9 @@ def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
 
 
 
-    newAuxNodes = 0 #saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    newAuxNodes = 0
+    if (not withoutTransport):
+        newAuxNodes = saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
     vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):
@@ -466,9 +470,8 @@ def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None):
             ridges_out[i][l] += newAuxNodes
 
     saveNodes(nodes_out, aux_nodes,dim)
-    saveVertices(vertices_out, dim)
+    saveVertices(vertices_out, dim, withoutTransport=withoutTransport)
     saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
-
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -639,7 +642,8 @@ def saveTransportBC(transportBCmerged, verticesDict, vertIdxStart):
 
     headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
     fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
-    np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
+    if (len(trsptBC_out)>0):
+        np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
     fl.close()
 
     print('done.')
@@ -689,15 +693,19 @@ def saveNodes (nodes_out, aux_nodes, dim):
 
 
 
-def saveVertices (vertices_out, dim):
+def saveVertices (vertices_out, dim, withoutTransport = False):
     print('Saving vertices...', end='')
     sys.stdout.flush()
     if (dim == 2):
         headerLine = 'Type\tvrtxCrdX\tvrtxCrdY'
         fmt ='TrsprtNode\t%.12f\t%.12f'
+        if (withoutTransport):
+            fmt = 'AuxNode\t%.12f\t%.12f'
     if (dim == 3):
         headerLine = 'Type\tvrtxCrdX\tvrtxCrdY\tvrtxCrdZ'
         fmt = 'TrsprtNode\t%.12f\t%.12f\t%.12f'
+        if (withoutTransport):
+            fmt = 'AuxNode\t%.12f\t%.12f\t%.12f'
 
     vertices_print = np.asarray(vertices_out)
     fl=open(os.path.join(master_folder,verticesFile),'w')
@@ -715,8 +723,10 @@ def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
     for m in range (len(ridges_out)):
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
             mechElemRidges.append( ridges_out[m].copy() )
+    print ('Mech elements: %d' %len(mechElemRidges))
 
-    if (mZ!=None):
+
+    if (mZ!=None and len(mZ)>0):
         for i in range (len(mechElemRidges)):
             nodeA = nodes[int(mechElemRidges[i][0])]
             nodeB = nodes[int(mechElemRidges[i][1])]
@@ -731,7 +741,6 @@ def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
-
 
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
@@ -754,6 +763,9 @@ def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
 
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+    else:
+        for i in range (len(mechElemRidges)):
+            mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
@@ -947,10 +959,12 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
 
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
+    print('Trsprt elements:%d' %len(transportElements))
     with open(os.path.join(master_folder,trsprtElemsFile), 'w') as f:
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
         f.write("%s\n" % headerLine )
         for element in transportElements:
+            #print ("%s\n" % element.getString() )
             if (dim==2):f.write("%s\n" % element.getString() )
             if (dim==3): f.write("%s\n" % element.getReducedString() )
     print('done.')
