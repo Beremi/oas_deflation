@@ -127,6 +127,11 @@ void SteadyStateLinearSolver :: solve() {
 void SteadyStateLinearSolver :: computeInternalExternalForces(Vector &rr) {
     elems->giveInternalForces(rr, f_int);
     nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
+    if (nodes->giveConstraints()->isActive()){
+      // also ddr must be updated, because displacement error is calculated from relative change (||ddr||/||r||)
+      // matters especially when force control on master is applied
+      nodes->giveConstraints()->calculateDependentDoFs(full_ddr);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -221,6 +226,7 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
     bool converged = false;
+    bool restarted = false;
     while ( !converged ){
       //setup loading
       nodes->addRHS_nodalLoad(load, time);  //add nodal load
@@ -288,10 +294,11 @@ void SteadyStateNonLinearSolver :: solve() {
           dt = fmax(dt/2, dtmin);
           time += dt;
           cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+          restarted = true;
       } else if ( !converged ) {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
           exit(1);
-      } else if ( converged && it < maxIt/3 && dt < dtmax){
+      } else if ( (!restarted) && converged && it < maxIt/3 && dt < dtmax){
           dt = fmin(dt / .8, dtmax);
           std::cout << "enlarging step, timestep = " << dt << '\n';
       } else if ( converged && it > maxIt/2 && dt > dtmin){
