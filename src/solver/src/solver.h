@@ -16,12 +16,14 @@ protected:
     string name;
     ElementContainer *elems;
     NodeContainer *nodes;
+    FunctionContainer *funcs;
     double time, dt, termination_time;
-    CoordinateIndexedSparseMatrix K;
+    CoordinateIndexedSparseMatrix K, Kini;
     Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr;
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
     bool terminated;
+    virtual void setNextStepTime();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
 
@@ -33,6 +35,7 @@ public:
     virtual void solveStep() {};
     void setElementContainer(ElementContainer *e) { elems = e; }
     void setNodeContainer(NodeContainer *n) { nodes = n; };
+    void setFunctionContainer(FunctionContainer *f) { funcs = f; };
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     Vector giveDoFValues() { return r; }

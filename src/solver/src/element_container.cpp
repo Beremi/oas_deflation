@@ -100,7 +100,7 @@ void ElementContainer :: prepareSteadyStateMatrices(CoordinateIndexedSparseMatri
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const {
-    K = K * 0.;
+    // K = K * 0.;
     //K12 = K12*0.;
 
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
@@ -133,13 +133,20 @@ void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix
         }
     }
     //cout << "Steady state matrices updated" << endl;
+    if (nodes->giveConstraints()->isActive()){
+      nodes->giveConstraints()->transformToConstraintSpace(K);
+    }
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: giveInternalForces(const Vector &full_r, Vector &full_f) {
+void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
-    full_f *= 0; //clear array
+    full_f *= 0;  // clear array
+
+    if (nodes->giveConstraints()->isActive()){
+      nodes->giveConstraints()->calculateDependentDoFs(full_r);
+    }
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
@@ -151,6 +158,10 @@ void ElementContainer :: giveInternalForces(const Vector &full_r, Vector &full_f
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             full_f [ elDoFs [ i ] ] += elForces [ i ];
         }
+    }
+
+    if (nodes->giveConstraints()->isActive()){
+      nodes->giveConstraints()->calculateMasterForces(full_f);
     }
 }
 

@@ -67,6 +67,33 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// Master Dof - additional DoF governing other dependent DoFs
+class MasterDoF : public Node
+{
+private:
+
+protected:
+public:
+    MasterDoF(unsigned dim) { name = "Master DoF"; };
+    virtual ~MasterDoF() {};
+    void readFromLine(istringstream &iss, int dim);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Master Dof - additional DoF governing other dependent DoFs
+class MasterNode : public Node
+{
+private:
+
+protected:
+public:
+    MasterNode(unsigned dim) { name = "Master Node"; nDoFs = 3 * (dim - 1); };
+    virtual ~MasterNode() {};
+    void readFromLine(istringstream &iss, int dim);
+};
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational DoFs
 class MechNode : public Node
 {

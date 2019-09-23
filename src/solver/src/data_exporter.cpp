@@ -160,12 +160,18 @@ void ForceGauge :: init() {
     unsigned DoFpos = 0;
     if ( codes [ 0 ].compare("fx") == 0 ) {
         DoFpos = 0;
-    } else if ( codes [ 0 ].compare("fy") == 0 )     {
+    } else if ( codes [ 0 ].compare("fy") == 0 ) {
         DoFpos = 1;
-    } else if ( codes [ 0 ].compare("fz") == 0 )                                                                {
+    } else if ( codes [ 0 ].compare("fz") == 0 ) {
         DoFpos = 2;
+    } else if ( codes [ 0 ].compare("mx") == 0 ) {
+        DoFpos = 3;
+    } else if ( codes [ 0 ].compare("my") == 0 ) {
+        DoFpos = 4;
+    } else if ( codes [ 0 ].compare("mz") == 0 ) {
+        DoFpos = 5;
     } else                                                                                                                    {
-        cerr << "Error: only 'fx', 'fy' or 'fz' can be exported by ForceGauge" << endl;
+        cerr << "Error: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge" << endl;
         exit(0);
     }
 

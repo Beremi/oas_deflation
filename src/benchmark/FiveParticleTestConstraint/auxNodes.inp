@@ -1,0 +1,9 @@
+# Type	vrtxCrdX	vrtxCrdY
+AuxNode	1	0
+AuxNode	0	-1
+AuxNode	-1	0
+AuxNode	0	1
+AuxNode	1.5	0
+AuxNode	0	-1.5
+AuxNode	-1.5	0
+AuxNode	0	1.5

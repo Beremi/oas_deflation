@@ -42,7 +42,7 @@ string convertTimeToString(std :: chrono :: duration< double >time_interval) {
 }
 
 
-Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialContainer *matrs, ElementContainer *elems, FunctionContainer *funcs, BCContainer *bcconds, ExporterContainer *exporters) {
+Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialContainer *matrs, ElementContainer *elems, FunctionContainer *funcs, BCContainer *bcconds, ConstraintContainer *constr, ExporterContainer *exporters) {
     string istr, line;
     int iint, dimension;
     Solver *newsolver = nullptr;
@@ -77,6 +77,13 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                     iss >> istr;
                     elems->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension, matrs);
                 }
+            } else if ( istr.compare("ConstrFiles") == 0 )    {
+                // read constraint files
+                iss >> iint;
+                for ( int i = 0; i < iint; i++ ) {
+                    iss >> istr;
+                    constr->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension, nodes);
+                }
             } else if ( istr.compare("BCFiles") == 0 )    {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
@@ -100,6 +107,7 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                 newsolver = auxs.readFromLine(iss);
                 newsolver->setElementContainer(elems);
                 newsolver->setNodeContainer(nodes);
+                newsolver->setFunctionContainer(funcs);
             }
         }
         inputfile.close();
@@ -167,16 +175,19 @@ int main(int argc, char **argv) {
     //read all files
     FunctionContainer funcs;
     BCContainer bcconds(& funcs);
+    ConstraintContainer constr;
     NodeContainer nodes(& bcconds);
+    nodes.setConstraintContainer(& constr);
     MaterialContainer matrs;
     ElementContainer elems;
     elems.setNodeContainer(& nodes);
     ExporterContainer exporters;
-    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bcconds, & exporters);
+    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bcconds, & constr, & exporters);
 
     //initialization
     bcconds.init();
     nodes.init();
+    constr.init(& nodes);
     matrs.init();
     elems.init();
     exporters.init();

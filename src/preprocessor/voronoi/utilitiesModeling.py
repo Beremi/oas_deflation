@@ -628,6 +628,9 @@ def create3dCantileverUniPressFree(maxLim, minDist, trials ):
 
 
 
+
+
+
 def create3dCantileverUniPressConfined(maxLim, minDist, trials ):
     ### sampling of nodes
     ### direct setting of mechanicalBCs
@@ -824,6 +827,7 @@ def create3dcylinderUniPressFree(center, radius, height, minDist, trials, direct
     fn3 = utilitiesNumeric.generalFunc(func3)
     functions.append (fn3)
 
+
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
@@ -851,6 +855,138 @@ def create3dcylinderUniPressFree(center, radius, height, minDist, trials, direct
 
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+
+
+
+
+
+def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim ):
+
+    ########################################################################
+    functions = []
+    ### creating functions
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechIC_merged  = assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim, functions )
+
+    #print(*node_coords, sep='\n')
+
+    #node_coords = np.asarray(node_coords)
+    """
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+    """
+    print('Conducting Voronoi tesselation...', end='')
+    ### conducting Voronoi tesselation
+    vor, volumes = utilitiesNumeric.runCylinderMirroredVoronoi (node_coords, center, radius, height, directionDim)
+    ### extracting characteristics of the Vor diagram
+    print('done.')
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([2,-1])
+    boundA = np.array(  [-1e-8 , center[1]-radius,  center[2]-radius] )
+    boundB = np.array(  [ 1e-8 , center[1]+radius,  center[2]+radius]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [height-1e-8 , center[1]-radius, center[2]-radius] )
+    boundB = np.array(  [height+1e-8 , center[1]+radius,  center[2]+radius]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+        print(i)
+
+
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+
+
+
+
+def create3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, rotationAngle = 0.001 ):
+
+    ########################################################################
+    functions = []
+    ### creating functions
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    directionDim = int(directionDim)
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechIC_merged = assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions, rotationAngle)
+    #node_coords, mechBC_merged, mechIC_merged = assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions )
+
+    #print(*node_coords, sep='\n')
+
+
+    node_coords = np.asarray(node_coords)
+    """
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+    """
+    print('Conducting Voronoi tesselation...', end='')
+    ### conducting Voronoi tesselation
+    vor, volumes = utilitiesNumeric.runTubeMirroredVoronoi (node_coords, center, radius, height, thickness, directionDim)
+    ### extracting characteristics of the Vor diagram
+    print('done.')
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([2,-1])
+    boundA = np.array(  [-1e-8 , center[1]-radius,  center[2]-radius] )
+    boundB = np.array(  [ 1e-8 , center[1]+radius,  center[2]+radius]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [height-1e-8 , center[1]-radius, center[2]-radius] )
+    boundB = np.array(  [height+1e-8 , center[1]+radius,  center[2]+radius]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+        print(i)
+
+
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+
+
+
+
+
+
 
 
 
@@ -1510,6 +1646,75 @@ def assemble3dcylinderUniPressFree(center, radius, height, minDist, trials, dire
 
 
 
+def assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim, functions):
+    indent = 1e-5
+    dim=3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+    node_coords.append( center+indent)
+    mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    mechBC_merged.append(mBC)
+
+    ###############generating of points supported surface left face ###############
+    mechBC = np.array([0,0,0, 0 , 0, 0,    -1,-1,-1,-1,-1,-1])
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+    #print('%d nodes generated so far' %len(node_coords))
+    ###############generating of points loaded surface right face ###############
+    nodeA = center.copy()
+    nodeA[directionDim] += height
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius,  directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius,  directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        lnfc = len(functions)
+        mechBC = np.array([lnfc, lnfc+1, lnfc+2, -1 , -1, -1,    -1,-1,-1,-1,-1,-1])
+        point = node_coords[oldLen + n]
+        rotAngles = np.array([0.01, 0, 0])
+        value = 1
+        period = 1
+
+        funcRot0 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 0, period=period, sym = 1)
+        funcRot1 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 1, period=period, sym = 1)
+        funcRot2 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 2, period=period, sym = 1)
+        #//funcRot3 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 3, period=period)
+        #//funcRot4 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 4, period=period)
+        #//funcRot5 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 5, period=period)
+        functions.append(funcRot0)
+        functions.append(funcRot1)
+        functions.append(funcRot2)
+        #//functions.append(funcRot3)
+        #//functions.append(funcRot4)
+        #//functions.append(funcRot5)
+
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+
+    #######################################################################
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist,  node_coords, trials)
+    #######################################################################
+
+
+    return node_coords, mechBC_merged, mechInitC_merged
+
 
 
 def assemble3dcylinderUniPressConfined(center, radius, height, minDist, trials, directionDim):
@@ -1564,5 +1769,150 @@ def assemble3dcylinderUniPressConfined(center, radius, height, minDist, trials, 
     pointGenerators.generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist,  node_coords, trials)
     #######################################################################
 
+
+    return node_coords, mechBC_merged, mechInitC_merged
+
+
+
+
+
+def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions, rotationAngle):
+    indent = 1e-5
+    dim=3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+    node_coords.append( np.array([  0,  radius-thickness/2,  0 ]))
+    mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    mechBC_merged.append(mBC)
+
+    ###############generating of points supported surface left face ###############
+    mechBC = np.array([0,0,0, 0,0,0,    -1,-1,-1,-1,-1,-1])
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-thickness, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+    #print('%d nodes generated so far' %len(node_coords))
+    ###############generating of points loaded surface right face ###############
+
+    nodeA = center.copy()
+    nodeA[directionDim] += float(height)
+
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-thickness, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        lnfc = len(functions)
+        mechBC = np.array([lnfc, lnfc+1, lnfc+2, -1 , -1, -1,    -1,-1,-1,-1,-1,-1])
+        point = node_coords[oldLen + n]
+        rotAngles = np.array([rotationAngle, 0, 0])
+        value = 1
+        period = 1
+
+        funcRot0 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 0, period=period, sym = 1)
+        funcRot1 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 1, period=period, sym = 1)
+        funcRot2 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 2, period=period, sym = 1)
+        #//funcRot3 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 3, period=period)
+        #//funcRot4 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 4, period=period)
+        #//funcRot5 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 5, period=period)
+        functions.append(funcRot0)
+        functions.append(funcRot1)
+        functions.append(funcRot2)
+        #//functions.append(funcRot3)
+        #//functions.append(funcRot4)
+        #//functions.append(funcRot5)
+
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness+1e-5, height, directionDim, minDist,  node_coords, trials)
+    #######################################################################
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim, minDist,  node_coords, trials)
+    #######################################################################
+
+
+    return node_coords, mechBC_merged, mechInitC_merged
+
+
+
+
+
+
+def assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions):
+    indent = 1e-5
+    dim=3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+    node_coords.append( np.array([  0,  radius-thickness/2,  0 ]))
+    mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    mechBC_merged.append(mBC)
+
+
+    ###############generating of points supported surface left face ###############
+    mechBC = np.array([0,0,0, 0 , 0, 0,    -1,-1,-1,-1,-1,-1])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-thickness, directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+
+
+    ###############generating of points loaded surface right face ###############
+    nodeA = center.copy()
+    nodeA[directionDim] += height
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-thickness, directionDim, minDist, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        lnfc = len(functions)
+        mechBC = np.array([lnfc, lnfc+1, lnfc+2, -1 , -1, -1,    -1,-1,-1,-1,-1,-1])
+        point = node_coords[oldLen + n]
+        rotAngles = np.array([0.01, 0, 0])
+        value = 1
+        period = 1
+
+        funcRot0 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 0, period=period, sym = 1)
+        funcRot1 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 1, period=period, sym = 1)
+        funcRot2 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 2, period=period, sym = 1)
+        #//funcRot3 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 3, period=period)
+        #//funcRot4 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 4, period=period)
+        #//funcRot5 = utilitiesNumeric.constSawToothRotationFunction(rotAngles, point, value, 5, period=period)
+        functions.append(funcRot0)
+        functions.append(funcRot1)
+        functions.append(funcRot2)
+        #//functions.append(funcRot3)
+        #//functions.append(funcRot4)
+        #//functions.append(funcRot5)
+
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
+        mechBC_merged.append(mBC)
+
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist,  node_coords, trials)
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist,  node_coords, trials)
+    #######################################################################
 
     return node_coords, mechBC_merged, mechInitC_merged

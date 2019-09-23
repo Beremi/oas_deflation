@@ -33,9 +33,11 @@ public:
     vector< unsigned >giveDoFs() { return DoFids; };
     virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
     virtual double giveValue(string code) const;
+    virtual string giveName() const { return name; }
     virtual unsigned giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     virtual vector < Node * > giveNodes() const { return nodes;}
+    virtual Material* giveMaterial() const { return mat; }
 };
 
 
@@ -77,7 +79,9 @@ private:
     vector< Node * >vert;
     double length, area;
     Point normal;
+    // vector< Point > tangs;
     Matrix RB; //R*B
+    Matrix R;
 public:
     RigidBodyContact(const unsigned dim);
     ~RigidBodyContact() {};
@@ -89,12 +93,13 @@ public:
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveStiffnessMatrix(matrixType); };
     Matrix giveTransientMatrix() const { return giveInertiaMatrix(); };
     //Matrix giveBMatrix(Point x) const {return B;};
-    //Matrix giveRMatrix() const {return R;};
+    Matrix giveRMatrix() const {return R;};
     Matrix giveRBMatrix() const { return RB; };
     Matrix giveAMatrix(Point a, Point x) const;
     double giveLength() const { return length; }
     double giveArea() const { return area ; }
     virtual Vector giveInternalForces(const Vector &DoFs) const;
+    virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
 };

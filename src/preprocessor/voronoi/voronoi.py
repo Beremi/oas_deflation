@@ -173,6 +173,47 @@ def mirror_dataCylinder(data, center, radius, height, directionDim):
     """
     return dataOut
 
+def mirror_dataTube(data, center, radius, height, thickness, directionDim):
+    data = np.asarray(data)
+    outerRad = radius + 1e-2
+    innerRad = radius - thickness - 1e-2
+
+    if (directionDim == 0):
+        dataOut =  np.vstack((data,
+            np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
+            np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
+            ))
+
+        mirroredOutside = np.zeros( (len(dataOut)*3) )
+        mirroredOutside = np.reshape ( mirroredOutside, (len(dataOut),3))
+
+        for i in range (len(mirroredOutside)):
+            rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
+            mirroredOutside[i,0] = dataOut[i,0]
+            mirroredOutside[i,1] = center[1] + (dataOut[i,1]-center[1]) * ((2*outerRad-rad0) / rad0 )
+            mirroredOutside[i,2] = center[2] + (dataOut[i,2]-center[2]) * ((2*outerRad-rad0) / rad0 )
+
+        mirroredInside = np.zeros( (len(dataOut)*3) )
+        mirroredInside = np.reshape ( mirroredInside, (len(dataOut),3))
+
+        for i in range (len(mirroredInside)):
+            rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
+            mirroredInside[i,0] = dataOut[i,0]
+            mirroredInside[i,1] = center[1] + (-center[1]+dataOut[i,1]) * ((2*innerRad-rad0) / rad0 )
+            mirroredInside[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*innerRad-rad0) / rad0 )
+    """
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
+    ax.scatter(mirroredOutside[:,0], mirroredOutside[:,1], mirroredOutside[:,2])
+    ax.scatter(mirroredInside[:,0], mirroredInside[:,1], mirroredInside[:,2])
+    plt.show()
+    """
+    dataOut =  np.vstack((dataOut, mirroredOutside))
+    dataOut =  np.vstack((dataOut, mirroredInside))
+    return dataOut
+
+
 def copy_dataBeam(data, dim, sizes):
     '''Copy data 2D and 3D'''
     if (dim == 2):

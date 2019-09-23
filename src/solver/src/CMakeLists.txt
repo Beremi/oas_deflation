@@ -1,7 +1,7 @@
 set (solver_files
     boundary_condition.cpp
+    constraint.cpp
     data_exporter.cpp
-    vtk_exporter.cpp
     element_container.cpp
     element.cpp
     linear_algebra.cpp
@@ -13,6 +13,7 @@ set (solver_files
     node_container.cpp
     node.cpp
     solver.cpp
+    vtk_exporter.cpp
     )
 
 add_library(solver

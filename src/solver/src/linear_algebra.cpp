@@ -205,6 +205,10 @@ double Point :: sqNorm() const {
     return x * x + y * y + z * z;
 }
 
+double Point :: sum() const {
+    return x + y + z;
+}
+
 void Point :: print() const {
     cout << getX() << flush;
     cout << "; " << getY() << flush;
@@ -1345,6 +1349,9 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     Maxit = b.size();
     if ( Maxit > 500 ) {
         Maxit *= .98;
+    } else if (Maxit < 50){
+        Maxit *= 1.2;
+        // NOTE using constraint, more iterations are needed (maybe size of original system should be used...?)
     }
 
 
