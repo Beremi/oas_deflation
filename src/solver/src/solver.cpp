@@ -20,9 +20,20 @@ Solver *Solver :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
+void Solver :: setNextStepTime(){
+  double nextExtremeTime = funcs->giveTimeOfNextExtreme(time);
+  // NOTE 1/4 of time step added to prevent next step extremely short
+  if ( nextExtremeTime < time + 1.25 * dt){
+    time = nextExtremeTime;
+  } else {
+    time += dt;
+  }
+}
+
+//////////////////////////////////////////////////////////
 void Solver :: runBeforeEachStep() {
     step += 1;
-    time += dt;
+    setNextStepTime();
 }
 
 //////////////////////////////////////////////////////////
