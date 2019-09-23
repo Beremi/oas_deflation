@@ -431,7 +431,7 @@ double FunctionContainer :: giveTimeOfNextExtreme(const double &t) const {
   double nextExtreme = INFINITY;
   // double thisFnExtreme;
   for ( auto const &fn : functions ){
-    if ( fn->giveNextEtreme( t ) < nextExtreme ){
+    if ( fn->isActive() && fn->giveNextEtreme( t ) < nextExtreme ){
       nextExtreme = fn->giveNextEtreme( t );
     }
   }
@@ -600,6 +600,25 @@ void BCContainer :: calculateDoFfields() {
         dirrichF.insert(dirrichF.end(), help.begin(), help.end() );
         help = ( * bc )->giveLoadedFunctions();
         neumannF.insert(neumannF.end(), help.begin(), help.end() );
+    }
+    // NOTE know which fns are actually used
+    for (auto const &f_id : dirrichF ){
+      std::cout << "dirich f_id = " << f_id << '\n';
+      if ( !functions->isActive(f_id) ){
+        std::cout << "setting active" << '\n';
+        functions->setActive(f_id);
+      } else {
+        std::cout << "already active" << '\n';
+      }
+    }
+    for (auto const &f_id : neumannF ){
+      std::cout << "neumann f_id = " << f_id << '\n';
+      if ( !functions->isActive(f_id) ){
+        std::cout << "setting active" << '\n';
+        functions->setActive(f_id);
+      } else {
+        std::cout << "already active" << '\n';
+      }
     }
 }
 
