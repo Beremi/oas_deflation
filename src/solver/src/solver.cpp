@@ -293,7 +293,7 @@ void SteadyStateNonLinearSolver :: solve() {
           time -= dt;
           dt = fmax(dt/2, dtmin);
           time += dt;
-          cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+          cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
           restarted = true;
       } else if ( !converged ) {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
