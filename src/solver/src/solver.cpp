@@ -20,9 +20,20 @@ Solver *Solver :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
+void Solver :: setNextStepTime(){
+  double nextExtremeTime = funcs->giveTimeOfNextExtreme(time);
+  // NOTE 1/4 of time step added to prevent next step extremely short
+  if ( nextExtremeTime < time + 1.25 * dt){
+    time = nextExtremeTime;
+  } else {
+    time += dt;
+  }
+}
+
+//////////////////////////////////////////////////////////
 void Solver :: runBeforeEachStep() {
     step += 1;
-    time += dt;
+    setNextStepTime();
 }
 
 //////////////////////////////////////////////////////////
@@ -293,7 +304,7 @@ void SteadyStateNonLinearSolver :: solve() {
           time -= dt;
           dt = fmax(dt/2, dtmin);
           time += dt;
-          cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+          cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
           restarted = true;
       } else if ( !converged ) {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;

@@ -107,6 +107,7 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                 newsolver = auxs.readFromLine(iss);
                 newsolver->setElementContainer(elems);
                 newsolver->setNodeContainer(nodes);
+                newsolver->setFunctionContainer(funcs);
             }
         }
         inputfile.close();

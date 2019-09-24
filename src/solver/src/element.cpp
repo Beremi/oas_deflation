@@ -64,7 +64,7 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
 RigidBodyContact :: RigidBodyContact(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
-    tangs.resize(dim-1);
+    // tangs.resize(dim-1);
     ip_locs.resize(1);
     stats.resize(1);
     name = "RigidBodyContact";
@@ -89,23 +89,17 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
   } else if ( code.compare("normal_z") == 0 )       {
       return normal.getZ();
   } else if ( code.compare("t1_x") == 0 )       {
-      return tangs[ 0 ].getX();
+      return R[ 1 ][ 0 ];
   } else if ( code.compare("t1_y") == 0 )       {
-      return tangs[ 0 ].getY();
+      return R[ 1 ][ 1 ];
   } else if ( code.compare("t1_z") == 0 )       {
-      return tangs[ 0 ].getZ();
+      return R[ 1 ][ 2 ];
   } else if ( code.compare("t2_x") == 0 )       {
-      if ( tangs.size() > 1 ){
-        return tangs[ 1 ].getX();
-      } else { return 0; }
+      return R[ 2 ][ 0 ];
   } else if ( code.compare("t2_y") == 0 )       {
-    if ( tangs.size() > 1 ){
-      return tangs[ 1 ].getY();
-    } else { return 0; }
+      return R[ 2 ][ 1 ];
   } else if ( code.compare("t2_z") == 0 )       {
-    if ( tangs.size() > 1 ){
-      return tangs[ 1 ].getZ();
-    } else { return 0; }
+    return R[ 2 ][ 2 ];
   } else {
     return mechanicalElement :: giveIPValue(code, ipnum);
   }
@@ -182,12 +176,11 @@ void RigidBodyContact :: init() {
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point n = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
         n /= n.norm();
-        Point t2 ;
+        Point t2;
         if( fabs (n.x ) > fabs (n.z )) t2 = Point (-n.y , n.x , 0.0f );
         else t2 = Point (0.0f , -n.z , n.y );
         t = cross (t2 , n);
         t /= t.norm();
-
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
@@ -253,8 +246,7 @@ void RigidBodyContact :: init() {
     }
     B = B / length;
 
-    //Matrix R
-    Matrix R;
+    // Matrix R;
     if ( ndim == 2 ) {
         Point t1 = Point(-normal.y, normal.x);
         R = Matrix(2, 2);
@@ -262,15 +254,24 @@ void RigidBodyContact :: init() {
         R [ 0 ] [ 1 ] = normal.y;
         R [ 1 ] [ 0 ] = t1.x;
         R [ 1 ] [ 1 ] = t1.y;
-        tangs[0] = t1;
+        // tangs[0] = t1;
     } else if ( ndim == 3 )       {
         Point t1, t2;
-        if ( abs(normal.x) > 1e-3 ) {
+        Point arbit(sqrt(2.), -sqrt(3.), M_PI);
+        if ( ( normal - arbit ).norm() < 1e-3 ){
+          t1 = cross(arbit, normal);
+          t1.normalize();
+          t2 = cross(normal, t1);
+          t2.normalize();
+        } else {
+          // the following results in zeros in stiffness matrix in case of normal in direstion of any of global base axes
+          if ( abs(normal.x) > 1e-3 ) {
             t1 = Point(-normal.y / normal.x, 1, 0);
-        } else if ( abs(normal.y) > 1e-3 ) {
+          } else if ( abs(normal.y) > 1e-3 ) {
             t1 = Point(0, -normal.z / normal.y, 1);
-        } else                                                                       {
+          } else                                                                       {
             t1 = Point(1, 0, -normal.x / normal.z);
+          }
         }
         t1 = t1 / t1.norm();
         t2 = cross(normal, t1);
@@ -284,8 +285,8 @@ void RigidBodyContact :: init() {
         R [ 2 ] [ 0 ] = t2.x;
         R [ 2 ] [ 1 ] = t2.y;
         R [ 2 ] [ 2 ] = t2.z;
-        tangs[0] = t1;
-        tangs[1] = t2;
+        // tangs[0] = t1;
+        // tangs[1] = t2;
     } else  {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
         exit(0);

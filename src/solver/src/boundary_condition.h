@@ -17,11 +17,15 @@ class Nodecontainer; //forward declaration
 class Function
 {
 private:
+    bool active = false;
 public:
     Function() {};
     virtual ~Function() {};
     virtual double giveY(double t)  = 0;
     virtual void readFromLine(istringstream &iss) = 0;
+    virtual double giveNextEtreme(const double &t) const = 0;
+    virtual void setActive(){ active = true; };
+    virtual bool isActive() const { return active;};
 protected:
 };
 
@@ -38,6 +42,7 @@ public:
     virtual ~PieceWiseLinearFunction() {};
     void readFromLine(istringstream &iss);
     double giveY(double t) ;
+    virtual double giveNextEtreme(const double &t) const ;
 protected:
 };
 
@@ -47,13 +52,14 @@ protected:
 class ConstSawToothFunction : public Function
 {
 private:
-    double upper, lower, period;
+    double upper, lower, period, time_shift;
     int multip = 1;
 public:
     ConstSawToothFunction() {};
     virtual ~ConstSawToothFunction() {};
     void readFromLine(istringstream &iss);
     double giveY(double t) ;
+    virtual double giveNextEtreme(const double &t) const ;
 protected:
 };
 
@@ -133,6 +139,7 @@ protected:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SINUS FUNCTION
+// TODO make parent functin "PeriodicFunction" for both SinusFn and SawToothFn
 class SinusFunction : public Function
 {
 private:
@@ -142,6 +149,7 @@ public:
     virtual ~SinusFunction() {};
     void readFromLine(istringstream &iss);
     double giveY(double t) ;
+    virtual double giveNextEtreme(const double &t) const ;
 protected:
 };
 
@@ -157,6 +165,10 @@ public:
     virtual ~FunctionContainer();
     void readFromFile(const string filename);
     double giveY(unsigned f, double t) ;
+    double giveTimeOfNextExtreme(const double &t) const;
+    void setActive(const unsigned &fid) { functions[ fid ]->setActive(); };
+    bool isActive(const unsigned &fid) const { return functions[ fid ]->isActive(); };
+    unsigned size() const { return functions.size(); };
 protected:
 };
 

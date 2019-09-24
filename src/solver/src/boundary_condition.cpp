@@ -34,6 +34,19 @@ double PieceWiseLinearFunction :: giveY(double t)  {
 }
 
 //////////////////////////////////////////////////////////
+double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
+  unsigned i = 0;
+  while ( x [ i ] < t && i < x.size() ) {
+      i++;
+  }
+  if ( i == 0 || i == x.size() ) {
+    return INFINITY;
+  } else {
+    return x [ i ];
+  }
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SAW TOOTH FUNCTION WITH CONSTATNT MAX VALUE
 void ConstSawToothFunction :: readFromLine(istringstream &iss) {
@@ -96,21 +109,30 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
     lower = upper;
     upper = temp;
   }
+  time_shift = 0.5 * period * abs(lower) / ( upper - lower );
+  if (lower > 0){
+    time_shift *= -1;
+  }
 }
 
 //////////////////////////////////////////////////////////
 double ConstSawToothFunction :: giveY(double t)  {
-  double time_shift, up_low;
-  up_low = upper - lower;
-  time_shift = 0.5 * period * abs(lower) / up_low;
-  if (lower > 0){
-    time_shift *= -1;
-  }
   if (lower > 0 && t < abs(time_shift)){
-    return multip * t * lower / (abs(time_shift));
+    return multip * t * lower / ( abs( time_shift ) );
   } else {
-    return (up_low - ((up_low/(0.5*period))*abs(fmod((t + time_shift), period) - 0.5 * period)) + lower) * multip;
+    return ( (upper - lower) - ( ( ( upper - lower ) / ( 0.5 * period ) ) *
+            abs( fmod( ( t + time_shift ), period ) - 0.5 * period ) ) +
+            lower ) * multip;
   }
+}
+
+//////////////////////////////////////////////////////////
+double ConstSawToothFunction :: giveNextEtreme(const double &t) const {
+  if ( t < time_shift )
+    return time_shift;
+  else
+    return ( ( int ( ( t - time_shift ) / ( 0.5 * period ) ) + 1 ) *
+            ( 0.5 * period ) ) + time_shift;
 }
 
 //////////////////////////////////////////////////////////
@@ -323,6 +345,11 @@ double SinusFunction :: giveY(double t)  {
 }
 
 //////////////////////////////////////////////////////////
+double SinusFunction :: giveNextEtreme(const double &t) const {
+  return ( ( int ( ( t ) / ( 0.5 * period ) ) + 1 ) * ( 0.5 * period ) );
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // CONTAINER FOR FUNCTIONS
 FunctionContainer :: ~FunctionContainer() {
@@ -392,6 +419,23 @@ void FunctionContainer :: readFromFile(const string filename) {
 //////////////////////////////////////////////////////////
 double FunctionContainer :: giveY(unsigned f, double t)  {
     return functions [ f ]->giveY(t);
+}
+
+//////////////////////////////////////////////////////////
+/*
+  returns time of next extreme - important point on time scale
+  peaks for periodic functions (SawTooth, Sinus ... )
+  changes of slope for PieceWiseLinearFunction
+*/
+double FunctionContainer :: giveTimeOfNextExtreme(const double &t) const {
+  double nextExtreme = INFINITY;
+  // double thisFnExtreme;
+  for ( auto const &fn : functions ){
+    if ( fn->isActive() && fn->giveNextEtreme( t ) < nextExtreme ){
+      nextExtreme = fn->giveNextEtreme( t );
+    }
+  }
+  return nextExtreme;
 }
 
 //////////////////////////////////////////////////////////
@@ -556,6 +600,25 @@ void BCContainer :: calculateDoFfields() {
         dirrichF.insert(dirrichF.end(), help.begin(), help.end() );
         help = ( * bc )->giveLoadedFunctions();
         neumannF.insert(neumannF.end(), help.begin(), help.end() );
+    }
+    // NOTE know which fns are actually used
+    for (auto const &f_id : dirrichF ){
+      std::cout << "dirich f_id = " << f_id << '\n';
+      if ( !functions->isActive(f_id) ){
+        std::cout << "setting active" << '\n';
+        functions->setActive(f_id);
+      } else {
+        std::cout << "already active" << '\n';
+      }
+    }
+    for (auto const &f_id : neumannF ){
+      std::cout << "neumann f_id = " << f_id << '\n';
+      if ( !functions->isActive(f_id) ){
+        std::cout << "setting active" << '\n';
+        functions->setActive(f_id);
+      } else {
+        std::cout << "already active" << '\n';
+      }
     }
 }
 

@@ -922,7 +922,7 @@ def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directi
 
 
 
-def create3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim ):
+def create3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, rotationAngle = 0.001 ):
 
     ########################################################################
     functions = []
@@ -935,7 +935,7 @@ def create3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, 
     directionDim = int(directionDim)
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechIC_merged = assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions )
+    node_coords, mechBC_merged, mechIC_merged = assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions, rotationAngle)
     #node_coords, mechBC_merged, mechIC_merged = assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions )
 
     #print(*node_coords, sep='\n')
@@ -1776,7 +1776,7 @@ def assemble3dcylinderUniPressConfined(center, radius, height, minDist, trials, 
 
 
 
-def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions):
+def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions, rotationAngle):
     indent = 1e-5
     dim=3
     #lists for the model
@@ -1815,7 +1815,7 @@ def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials
         lnfc = len(functions)
         mechBC = np.array([lnfc, lnfc+1, lnfc+2, -1 , -1, -1,    -1,-1,-1,-1,-1,-1])
         point = node_coords[oldLen + n]
-        rotAngles = np.array([0.01, 0, 0])
+        rotAngles = np.array([rotationAngle, 0, 0])
         value = 1
         period = 1
 

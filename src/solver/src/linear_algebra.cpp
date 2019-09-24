@@ -1185,7 +1185,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
     int col, row, ari;
 
     ari = 0;
-    for ( int i = 0; i < A->array.size(); i++ ) {
+    for ( size_t i = 0; i < A->array.size(); i++ ) {
         col = A->column_index [ i ];
         while ( ari < A->row_size.size() - 1 && A->accumulated_row_size [ ari + 1 ] == i ) {
             ari++;
@@ -1194,7 +1194,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
         indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), 0.) );
     }
     ari = 0;
-    for ( int i = 0; i < B->array.size(); i++ ) {
+    for ( size_t i = 0; i < B->array.size(); i++ ) {
         col = B->column_index [ i ];
         while ( ari < B->row_size.size() - 1 && B->accumulated_row_size [ ari + 1 ] == i ) {
             ari++;
@@ -1206,7 +1206,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
     CoordinateIndexedSparseMatrix AplusB(indeces, this->RowCount, this->ColumnCount);
 
     ari = 0;
-    for ( int i = 0; i < A->array.size(); i++ ) {
+    for ( size_t i = 0; i < A->array.size(); i++ ) {
         col = A->column_index [ i ];
         while ( ari < A->row_size.size() - 1 && A->accumulated_row_size [ ari + 1 ] == i ) {
             ari++;
@@ -1215,7 +1215,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
         AplusB [ row ] [ col ] += A->array [ i ];
     }
     ari = 0;
-    for ( int i = 0; i < B->array.size(); i++ ) {
+    for ( size_t i = 0; i < B->array.size(); i++ ) {
         col = B->column_index [ i ];
         while ( ari < B->row_size.size() - 1 && B->accumulated_row_size [ ari + 1 ] == i ) {
             ari++;
@@ -1279,7 +1279,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: transpose() const
     int col, row, ari;
 
     ari = 0;
-    for ( int i = 0; i < array.size(); i++ ) {
+    for ( size_t i = 0; i < array.size(); i++ ) {
         col = column_index [ i ];
         while ( ari < row_size.size() - 1 && accumulated_row_size [ ari + 1 ] == i ) {
             ari++;
@@ -1300,7 +1300,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendColumn(cons
     int col, row, ari;
 
     ari = 0;
-    for ( int i = 0; i < A->array.size(); i++ ) {
+    for ( size_t i = 0; i < A->array.size(); i++ ) {
         col = A->column_index [ i ];
         while ( ari < A->row_size.size() - 1 && A->accumulated_row_size [ ari + 1 ] == i ) {
             ari++;
@@ -1326,7 +1326,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const V
     int col, row, ari;
 
     ari = 0;
-    for ( int i = 0; i < A->array.size(); i++ ) {
+    for ( size_t i = 0; i < A->array.size(); i++ ) {
         col = A->column_index [ i ];
         while ( ari < A->row_size.size() - 1 && A->accumulated_row_size [ ari + 1 ] == i ) {
             ari++;
@@ -1334,7 +1334,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const V
         row = ari;
         indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), A->array [ i ]) );
     }
-    for ( int i = 0; i < this->ColumnCount; i++ ) {
+    for ( size_t i = 0; i < this->ColumnCount; i++ ) {
         indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, this->RowCount), c [ i ]) );
     }
 
@@ -1378,7 +1378,7 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     }
 
     Vector z(r);
-    for ( int i = 0; i < b.size(); i++ ) {
+    for ( size_t i = 0; i < b.size(); i++ ) {
         z [ i ] = r [ i ] * preconditioner [ i ];
     }
     Vector p = z;
@@ -1386,14 +1386,14 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
 
     double last_rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
     double alpha = last_rho / std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
-    double rho_0 = last_rho;
+    // double rho_0 = last_rho; // unused
 
     x += p * alpha;
     r -= q * alpha;
     err = l2_norm(r) / bnorm;
 
     while ( err > eps && nit < Maxit ) {
-        for ( int i = 0; i < b.size(); i++ ) {
+        for ( size_t i = 0; i < b.size(); i++ ) {
             z [ i ] = r [ i ] * preconditioner [ i ];
         }
         double rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], 0.);

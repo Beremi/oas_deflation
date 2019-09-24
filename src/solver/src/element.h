@@ -79,8 +79,9 @@ private:
     vector< Node * >vert;
     double length, area;
     Point normal;
-    vector< Point > tangs;
+    // vector< Point > tangs;
     Matrix RB; //R*B
+    Matrix R;
 public:
     RigidBodyContact(const unsigned dim);
     ~RigidBodyContact() {};
@@ -92,7 +93,7 @@ public:
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveStiffnessMatrix(matrixType); };
     Matrix giveTransientMatrix() const { return giveInertiaMatrix(); };
     //Matrix giveBMatrix(Point x) const {return B;};
-    //Matrix giveRMatrix() const {return R;};
+    Matrix giveRMatrix() const {return R;};
     Matrix giveRBMatrix() const { return RB; };
     Matrix giveAMatrix(Point a, Point x) const;
     double giveLength() const { return length; }

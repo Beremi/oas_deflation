@@ -581,18 +581,27 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
     print('done.')
 
-def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime):
+def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, withoutTransport = False):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
      if (solver == 0):
-            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  minStep, maxStep,simTime))
+            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  maxStep, minStep, simTime))
+
      fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
      fl.write("MatFiles\t1\t%s\n"%materialsFile)
-     fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
-     fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+     if (not withoutTransport):
+         fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+     else:
+         fl.write("ElemFiles\t1\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+
+     if (not withoutTransport):
+         fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+     else:
+         fl.write("BCFiles\t1\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+
      fl.write("ICFiles\t2\t%s\t%s\n"%(mechICFile,trsprtICFile))
      fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
      fl.write("ExporterFiles\t1\t%s"%exportersFile)
@@ -653,9 +662,12 @@ def saveExporters():
     print('Saving exporters...', end='')
     sys.stdout.flush()
     fl=open(os.path.join(master_folder,exportersFile),'w')
-    fl.write("TXTNodalExporter translations 2 ux uy\n")
-    fl.write("TXTNodalExporter pressure 1 pressure\n")
-    fl.write('VTKElementExporter out  time_every 1e-20 0')
+    fl.write('#TXTNodalExporter translations 2 ux uy\n')
+    fl.write('#TXTNodalExporter pressure 1 pressure\n')
+    fl.write('VTKElementExporter out  timeEeach 5e-2 cellData 1 damage\n')
+    fl.write('#VTKRCExporter faces  timeEeach 1e-1 cellData 1 damage\n')
+    fl.write('TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
+
     fl.close()
 
     print('done.')

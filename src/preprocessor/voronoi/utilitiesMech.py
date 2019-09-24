@@ -125,22 +125,22 @@ class FatigueMaterial:
         self.gamma = gamma
         self.S = S
         self.a = a
-        
+
     def getString (self):
         line = 'FatigueMaterial\t'
         line += 'E0\t%e'        %(self.youngModulus)    + '\t'
         line += 'alpha\t%f'     %(self.poisson)         + '\t'
         line += 'density\t%f'   %(self.density)         + '\t'
-        line += 'fc\t%f'        %(self.fc)              + '\t'
-        line += 'ft\t%f'        %(self.ft)              + '\t'
-        line += 'KinN\t%f'      %(self.KinN)            + '\t'
-        line += 'gammaN\t%f'    %(self.gammaN)          + '\t'
+        line += 'fc\t%e'        %(self.fc)              + '\t'
+        line += 'ft\t%e'        %(self.ft)              + '\t'
+        line += 'KinN\t%e'      %(self.KinN)            + '\t'
+        line += 'gammaN\t%e'    %(self.gammaN)          + '\t'
         line += 'm\t%f'         %(self.m)               + '\t'
         line += 'Ad\t%f'        %(self.Ad)              + '\t'
-        line += 'tauBar\t%f'    %(self.tauBar)          + '\t'
-        line += 'Kin\t%f'       %(self.KinN)            + '\t'
-        line += 'gamma\t%f'     %(self.gammaN)          + '\t'
-        line += 'S\t%f'         %(self.S)               + '\t'
+        line += 'tauBar\t%e'    %(self.tauBar)          + '\t'
+        line += 'Kin\t%e'       %(self.KinN)            + '\t'
+        line += 'gamma\t%e'     %(self.gammaN)          + '\t'
+        line += 'S\t%e'         %(self.S)               + '\t'
         line += 'a\t%f'         %(self.a)               + '\t'
 
         return line
