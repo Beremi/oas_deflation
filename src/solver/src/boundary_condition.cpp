@@ -1,6 +1,6 @@
-#include "boundary_condition.h"
-#include "node_container.h"
-#include "linear_algebra.h" //JM
+#include "boundarycondition.h"
+#include "nodecontainer.h"
+#include "linearalgebra.h" 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
