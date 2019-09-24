@@ -603,21 +603,13 @@ void BCContainer :: calculateDoFfields() {
     }
     // NOTE know which fns are actually used
     for (auto const &f_id : dirrichF ){
-      std::cout << "dirich f_id = " << f_id << '\n';
       if ( !functions->isActive(f_id) ){
-        std::cout << "setting active" << '\n';
         functions->setActive(f_id);
-      } else {
-        std::cout << "already active" << '\n';
       }
     }
     for (auto const &f_id : neumannF ){
-      std::cout << "neumann f_id = " << f_id << '\n';
       if ( !functions->isActive(f_id) ){
-        std::cout << "setting active" << '\n';
         functions->setActive(f_id);
-      } else {
-        std::cout << "already active" << '\n';
       }
     }
 }
