@@ -305,7 +305,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
   // TODO transition from compression to tension is very simply done here, should be improved
   Vector stress( strain.size() );
   Vector stiff = giveElasticNormalShearStiffness();
-  for (int i = 1; i < stress.size(); i++){
+  for (size_t i = 1; i < stress.size(); i++){
     stress[ i ] = stiff [ i ] * strain [ i ];
   }
   temp_epsN = strain[ 0 ];
@@ -552,7 +552,7 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
   Vector stress( strain.size() );
   Vector stiff = FatigueShearMaterialStatus :: giveElasticNormalShearStiffness();
 
-  for (int i = 0; i < stress.size(); i++){
+  for (size_t i = 0; i < stress.size(); i++){
     if ( i == 0 ){
       stress[ i ] = DamagePlasticMaterialStatus :: giveStress(strain)[ i ];
     } else {
