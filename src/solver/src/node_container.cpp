@@ -135,6 +135,8 @@ void NodeContainer :: establishDoFArray() {
 void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
     vector< double >loaded = BC->giveLoadedDoFValues(time);
     for ( unsigned k = 0; k < loaded.size(); k++ ) {
+        // QUESTION why is here += when after every step load *= 0. Can loadedDoFid[k] indeces repeat? or can any value appear in place of other than loaded DoF?
+        //  in case not, I would remove load *= 0 after every step and here replace += with just =
         RHS [ loadedDoFid [ k ] ] += loaded [ k ];
     }
 }

@@ -306,6 +306,10 @@ void SteadyStateNonLinearSolver :: solve() {
           time += dt;
           cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
           restarted = true;
+          trial_r = r;
+          f_int = f_int_old;
+          f_ext = f_ext_old;
+          load *= 0;
       } else if ( !converged ) {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
           exit(1);
