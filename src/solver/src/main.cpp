@@ -18,6 +18,7 @@
 #include "element_container.h"
 #include "boundary_condition.h"
 #include "data_exporter.h"
+#include "preprocessing_block.h"
 #include "solver.h"
 using namespace std;
 
@@ -42,7 +43,7 @@ string convertTimeToString(std :: chrono :: duration< double >time_interval) {
 }
 
 
-Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialContainer *matrs, ElementContainer *elems, FunctionContainer *funcs, BCContainer *bcconds, ConstraintContainer *constr, ExporterContainer *exporters) {
+Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialContainer *matrs, ElementContainer *elems, FunctionContainer *funcs, BCContainer *bconds, ConstraintContainer *constr, ExporterContainer *exporters, PBlockContainer *pblocks) {
     string istr, line;
     int iint, dimension;
     Solver *newsolver = nullptr;
@@ -88,7 +89,7 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bcconds->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes);
+                    bconds->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes);
                 }
             } else if ( istr.compare("FunctionFiles") == 0 )    {
                 iss >> std::skipws >> iint;
@@ -101,6 +102,12 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
                     exporters->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes, elems, dimension);
+                }
+            }else if ( istr.compare("PBlockFiles") == 0 )    {
+                iss >> iint;
+                for ( int i = 0; i < iint; i++ ) {
+                    iss >> istr;
+                    pblocks->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension);
                 }
             } else if ( istr.compare("Solver") == 0 )    {
                 Solver auxs;
@@ -174,25 +181,27 @@ int main(int argc, char **argv) {
 
     //read all files
     FunctionContainer funcs;
-    BCContainer bcconds(& funcs);
+    BCContainer bconds(& funcs);
     ConstraintContainer constr;
-    NodeContainer nodes(& bcconds);
+    NodeContainer nodes(& bconds);
     nodes.setConstraintContainer(& constr);
     MaterialContainer matrs;
     ElementContainer elems;
     elems.setNodeContainer(& nodes);
     ExporterContainer exporters;
-    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bcconds, & constr, & exporters);
+    PBlockContainer pblocks;   
+    pblocks.setContainers(& nodes,& elems,& bconds,& constr, & funcs, & exporters);
+    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bconds, & constr, & exporters, & pblocks);
 
     //initialization
-    bcconds.init();
+    pblocks.apply();
+    bconds.init();
     nodes.init();
     constr.init(& nodes);
     matrs.init();
     elems.init();
     exporters.init();
     solver->init();
-
 
     //solution
     while ( !solver->isTerminated() ) {

@@ -42,6 +42,14 @@ void MasterDoF :: readFromLine(istringstream &iss, int dim){
 }
 
 //////////////////////////////////////////////////////////
+// MASTER DOF - GOVERN DEPENDENT DOFs
+MasterDoF :: MasterDoF(Point c, unsigned n){
+  point = c;
+  nDoFs = n;
+  name = "Master DoF";
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER Node - GOVERN multiple dependent DOFs
 void MasterNode :: readFromLine(istringstream &iss, int dim){

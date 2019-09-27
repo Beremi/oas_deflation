@@ -75,13 +75,14 @@ private:
 protected:
 public:
     MasterDoF(unsigned dim) { name = "Master DoF"; };
+    MasterDoF(Point c, unsigned n);
     virtual ~MasterDoF() {};
     void readFromLine(istringstream &iss, int dim);
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// Master Dof - additional DoF governing other dependent DoFs
+// Master Node - additional node governing other dependent DoFs
 class MasterNode : public Node
 {
 private:

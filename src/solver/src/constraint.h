@@ -35,7 +35,7 @@ protected:
 class ConstraintContainer
 {
 private:
-  std::vector< JointDoF * > Constraints;
+  std::vector< JointDoF * > constraints;
   CoordinateIndexedSparseMatrix X;
 
   void connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim);
@@ -50,16 +50,15 @@ public:
   void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K);
   void calculateDependentDoFs(Vector &fullDoFs);
   void calculateMasterForces(Vector &fullForces);
-  JointDoF* giveConstraint(const unsigned &i){ return Constraints[ i ]; };
+  JointDoF* giveConstraint(const unsigned &i){ return constraints[ i ]; };
+  void addConstraint(JointDoF *jd){ constraints.push_back(jd); };
+  unsigned giveSize(){ return constraints.size(); };
+  bool isActive() const { return !constraints.empty(); }
 
-
-  unsigned size() const { return Constraints.size(); }
-  bool isActive() const { return !Constraints.empty(); }
-
-  std :: vector< JointDoF * > :: iterator begin(){return Constraints.begin();}
-  std :: vector< JointDoF * > :: iterator end(){return Constraints.end();}
-  std :: vector< JointDoF * > :: const_iterator begin() const {return Constraints.begin();}
-  std :: vector< JointDoF * > :: const_iterator end() const {return Constraints.end();}
+  std :: vector< JointDoF * > :: iterator begin(){return constraints.begin();}
+  std :: vector< JointDoF * > :: iterator end(){return constraints.end();}
+  std :: vector< JointDoF * > :: const_iterator begin() const {return constraints.begin();}
+  std :: vector< JointDoF * > :: const_iterator end() const {return constraints.end();}
 
 protected:
 

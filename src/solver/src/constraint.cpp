@@ -87,7 +87,7 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
       }
     }
     JointDoF * newJD = new JointDoF(slave, i, masterNodes, directions, multipliers);
-    Constraints.push_back(newJD);
+    constraints.push_back(newJD);
     masterNodes.clear();
     multipliers.clear();
     directions.clear();
@@ -180,7 +180,7 @@ void ConstraintContainer :: readCoordRigidPlate(istringstream &iss, const unsign
 }
 
 void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes){
-  unsigned origsize = Constraints.size();
+  unsigned origsize = constraints.size();
   string line, ConstrType;
   ifstream inputfile(filename.c_str() );
   if ( inputfile.is_open() ) {
@@ -197,7 +197,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
         if ( ConstrType.compare("jointDoF") == 0 ) {
           JointDoF * newJD = new JointDoF();
           newJD->readFromLine(iss, nodes);
-          Constraints.push_back(newJD);
+          constraints.push_back(newJD);
         } else if ( ConstrType.compare("RigidPlate") == 0 ) {
           readRigidPlate(iss, ndim, nodes);
         } else if ( ConstrType.compare("CoordRigidPlate") == 0 ) {
@@ -209,7 +209,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
       }
     }
     inputfile.close();
-    cout << "Input file '" <<  filename << "' succesfully loaded; " << Constraints.size() - origsize << " dependent DoFs found" << endl;
+    cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << endl;
   } else {
     cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
     exit(1);
@@ -217,7 +217,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 }
 
 // void ConstraintContainer :: calculateSlaveDoFfield(NodeContainer *nodes){
-//     for (auto &jD : Constraints){
+//     for (auto &jD : constraints){
 //
 //     }
 // }
@@ -232,20 +232,21 @@ void ConstraintContainer :: init(NodeContainer *nodes){
   if (!this->isActive()){
     return;
   }
+
   ///////////////////////////////////////////////////
   // fill the matrix with corresponding multipliers for slaveDoFs
   unsigned i;  // row index =  slave DoF
   unsigned j, numM;  // column index = master DoF
-  for (auto const &jD : Constraints){
-    i = nodes->giveDoFid( jD->giveSlaveDoF() );
-    // std::cout << "i = " << i << ", giveNumFreeDoFs() = " << nodes->giveNumFreeDoFs() << '\n';
+  for (auto const &jD : constraints){    
+    i = nodes->giveDoFid( jD->giveSlaveDoF() );    
+    //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", giveNumFreeDoFs() = " << nodes->giveNumFreeDoFs() << '\n';
     // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
     // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
     // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
-    if ( i < nodes->giveNumFreeDoFs() - Constraints.size() ){
+    if ( i < nodes->giveNumFreeDoFs() - constraints.size() ){
       std::cerr << "should never come here, constraint application unsuccesfull " << '\n';
-      exit(1);
-    } else if ( i > nodes->giveNumFreeDoFs() ){
+      //exit(1);
+    } else if ( i >= nodes->giveNumFreeDoFs() ){
       // Point A = jD->giveSlaveNode()->givePoint();
       // std::cout << "node name = " << jD->giveSlaveNode()->giveName() << '\n';
       // std::cout << "Point(" << A.getX() << ", " << A.getY() << ", " << A.getZ() << ")" << '\n';
@@ -255,7 +256,7 @@ void ConstraintContainer :: init(NodeContainer *nodes){
     numM = jD->giveMasterDoFs().size();
     for ( unsigned ind = 0; ind < numM; ind++){
       j = nodes->giveDoFid((jD->giveMasterDoFs()[ ind ])->giveStartingDoF() + jD->giveDirs()[ ind ]);
-      if ( j < nodes->giveNumFreeDoFs() - Constraints.size()){
+      if ( j < nodes->giveNumFreeDoFs() - constraints.size()){
         // master DoF is free
         indeces11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (i, j), jD->giveMultipliers()[ ind ]));
       }
@@ -268,7 +269,7 @@ void ConstraintContainer :: init(NodeContainer *nodes){
 
   // here fill in value 1 for all other DoFs
   ///////////////////////////////////////////////////
-  for (i = 0; i < nodes->giveNumFreeDoFs() - Constraints.size(); i++){
+  for (i = 0; i < nodes->giveNumFreeDoFs() - constraints.size(); i++){
     // fill the matrix with 1 for each unrestrained DoF (diagonal)
     indeces11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (i, i), 1));
   }
@@ -276,7 +277,7 @@ void ConstraintContainer :: init(NodeContainer *nodes){
   //   // fill the matrix with 1 for each boundary condition DoF (diagonal)
   //   indeces22.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (i, i), 1));
   // }
-  X = CoordinateIndexedSparseMatrix( indeces11, nodes->giveNumFreeDoFs(), nodes->giveNumFreeDoFs() - Constraints.size());
+  X = CoordinateIndexedSparseMatrix( indeces11, nodes->giveNumFreeDoFs(), nodes->giveNumFreeDoFs() - constraints.size());
   // X.print();
   // *X12 = CoordinateIndexedSparseMatrix( indeces12, freeDoFs, totalDoFs - freeDoFs);
   // *X22 = CoordinateIndexedSparseMatrix( indeces22, totalDoFs - freeDoFs, totalDoFs - freeDoFs);
@@ -291,7 +292,7 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
 
 
 void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs){
-  for (auto const &jD : Constraints){
+  for (auto const &jD : constraints){
     fullDoFs [ jD->giveSlaveDoF() ] = 0;  // to be sure that there is zero value
     for (unsigned i = 0; i < jD->giveMasterDoFs().size(); i++){
       fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs[ jD->giveMasterDoFs()[ i ]->giveStartingDoF() + jD->giveDirs()[ i ] ] * jD->giveMultipliers()[ i ];
@@ -300,7 +301,7 @@ void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs){
 }
 
 void ConstraintContainer :: calculateMasterForces(Vector &fullForces){
-  for (auto const &jD : Constraints){
+  for (auto const &jD : constraints){
     for (unsigned i = 0; i < jD->giveMasterDoFs().size(); i++){
       fullForces [jD->giveMasterDoFs()[ i ]->giveStartingDoF() + jD->giveDirs()[ i ] ] += fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
     }

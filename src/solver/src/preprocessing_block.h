@@ -1,0 +1,77 @@
+#ifndef _PBLOCK_H
+#define _PBLOCK_H
+
+#include "linear_algebra.h"
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <typeinfo>
+
+#include "boundary_condition.h"
+#include "node_container.h"
+#include "element_container.h"
+#include "constraint.h"
+#include "data_exporter.h"
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MASTER CLASS
+class PBlock
+{
+private:
+protected:
+    unsigned dim;
+public:
+    PBlock(){};
+    virtual ~PBlock() {};
+    virtual void apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex)  = 0;
+    virtual void readFromLine(istringstream &iss, unsigned d) = 0;
+
+
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// PeriodicBoundaryCondition on prism
+class BasicPeriodicBC : public PBlock
+{
+private:
+    vector<double> PUCsize;
+    vector<unsigned> masters;
+    vector<unsigned> slaves; 
+    vector<int> strainFunc;
+    vector<int> stressFunc;
+public:
+    BasicPeriodicBC(){};
+    virtual ~BasicPeriodicBC() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+protected:
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// CONTAINER FOR PREPROCESSOR BLOCKS
+class PBlockContainer
+{
+private:
+    vector< PBlock * > blocks;
+    NodeContainer *nodes;
+    ElementContainer *elems;
+    BCContainer *bcs;
+    ConstraintContainer *constrs;
+    FunctionContainer *funcs;
+    ExporterContainer *exporters;
+public:
+    PBlockContainer() {};
+    virtual ~PBlockContainer();
+    void readFromFile(const string filename, unsigned dim);
+    void setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex);
+    void apply();    
+protected:
+};
+
+
+#endif /* _PBLOCK_H */

@@ -100,6 +100,7 @@ private:
     vector< unsigned >n;
 public:
     ForceGauge(NodeContainer *n) { nodes = n; };
+    ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc);
     ~ForceGauge() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -109,7 +110,7 @@ protected:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// EXPORT OF DISPLACEMENTS
+// EXPORT OF DISPLACEMENTS DIFFERENCES
 class DisplacementGauge : public Gauge
 {
 private:
@@ -120,6 +121,27 @@ private:
 public:
     DisplacementGauge(NodeContainer *n, ElementContainer *e) { nodes = n; elems = e; };
     ~DisplacementGauge() {};
+    void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void init();
+protected:
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF DoFs
+class DoFGauge : public Gauge
+{
+private:
+    unsigned DoF;
+    Node *n;
+    unsigned direction;
+    unsigned nodenum;
+    NodeContainer *nodes;
+public:
+    DoFGauge(NodeContainer *nn){nodes = nn;};
+    DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn);
+    ~DoFGauge() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     virtual void init();
@@ -139,6 +161,8 @@ public:
     ~ExporterContainer();
     void readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
     void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions) const;
+    void addExporter(DataExporter *de) {exporters.push_back(de);};
+    unsigned giveSize(){return exporters.size();}
     void init();
 protected:
 };

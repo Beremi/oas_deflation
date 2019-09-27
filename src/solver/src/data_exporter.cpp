@@ -153,6 +153,16 @@ void ForceGauge :: readFromLine(istringstream &iss, unsigned dimension) {
         iss >> n [ i ];
     }
 }
+
+//////////////////////////////////////////////////////////
+ForceGauge::ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc){
+    nodes = nc;
+    filename = f;
+    name = gname;
+    n = nn;
+    codes = c;
+}
+
 //////////////////////////////////////////////////////////
 void ForceGauge :: init() {
     time_each = 0;
@@ -195,6 +205,47 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
             value += reactions [ DoFs [ i ] ];
         }
         outputfile <<  "\t" << value;
+    }
+    outputfile.close();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF DEGREES OF FREEDOM
+void DoFGauge :: readFromLine(istringstream &iss, unsigned dimension) {
+    iss >> filename;
+    iss >> name;  
+    iss >> nodenum;
+    iss >> direction;
+}
+
+//////////////////////////////////////////////////////////
+DoFGauge::DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn){
+    filename = f;
+    name = gname;
+    direction = dir;
+    nodes = nn;
+    nodenum = n;
+}
+
+//////////////////////////////////////////////////////////
+void DoFGauge :: init() {
+    n = nodes->giveNode(nodenum);
+    DoF = n->giveStartingDoF()+direction;
+    time_each = 0;
+    time_last = 0;
+}
+
+
+//////////////////////////////////////////////////////////
+void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions) const {
+    char buffer [ 100 ];
+    giveFileName(step, buffer);
+    ofstream outputfile;
+    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+    if ( outputfile.good() ) {
+        outputfile << std :: scientific;
+        outputfile << "\t" <<  full_f[DoF];
     }
     outputfile.close();
 }

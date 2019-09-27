@@ -375,7 +375,7 @@ inline const Vector matrix_vector_multiply(const Matrix &m, const Vector &v) {
 
     for ( size_t i = 0; i < m.numRows(); i++ ) {
         const Cslice_iter< double > &ri = m.row(i);
-        ret [ i ] = inner_product(ri, ri.end(), & v [ 0 ], ( double ) ( 0 ) );
+        ret [ i ] = inner_product(& ri[0], & ri[ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
     }
     return ret;
 }
@@ -387,7 +387,7 @@ inline const Vector operator*(const Vector &v, const Matrix &m) {
 
     for ( size_t i = 0; i < m.numCols(); i++ ) {
         const Cslice_iter< double > &ri = m.column(i);
-        ret [ i ] = inner_product(ri, ri.end(), & v [ 0 ], ( double ) ( 0 ) );
+        ret [ i ] = inner_product(& ri[0], & ri[ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
     }
     return ret;
 }

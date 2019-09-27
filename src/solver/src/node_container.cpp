@@ -73,6 +73,7 @@ void NodeContainer :: establishDoFArray() {
         totalDoFs += ( * n )->giveNumberOfDoFs();
         freeDoFs += ( * n )->giveNumberOfFreeDoFs();
     }
+
     BC->calculateDoFfields();
     DoFid.resize(totalDoFs);
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
@@ -82,36 +83,42 @@ void NodeContainer :: establishDoFArray() {
 
     /////////////////////////////////////////////////////////////////
     // #constraint
-    constrDoFs = constr->size();
+    constrDoFs = constr->giveSize();
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-
-    for (unsigned j = 0; j < constr->size(); j++){
-      cstr.push_back(make_pair(constr->giveConstraint( j )->giveSlaveDoF(), j) );
+    cstr.resize(constr->giveSize());
+    for (unsigned j = 0; j < constr->giveSize(); j++){
+      cstr[j].first = constr->giveConstraint( j )->giveSlaveDoF();
+      cstr[j].second = j;
     }
     sort(cstr.begin(), cstr.end() );
-    unsigned cs = 0;  // constrained
     /////////////////////////////////////////////////////////////////
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
+    a.resize(blocked.size());
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
-        a.push_back(make_pair(blocked [ i ], i) );
+        a[i].first = blocked [ i ];
+        a[i].second = i;
     }
     sort(a.begin(), a.end() );
+
+    unsigned cs = 0; 
     unsigned k = 0;
     unsigned id = 0;
     for ( vector< unsigned > :: iterator d = DoFid.begin(); d != DoFid.end(); ++d, id++ ) {
-        if ( id == a [ k ].first && k < a.size()) {
-          // condition < a.size() is necessary because otherwise it continues to evaluate the values from following memory (if constraint present, from constraint)
+        if ( k < a.size() && id == a [ k ].first ) {
             * d = freeDoFs + k;
             blockedDoFid [ a [ k ].second ] = id;
             k++;
-        } else if ( constrDoFs > 0  &&  // the later alone would not work with no constraint
-                                        id == cstr [ cs ].first && cs < cstr.size()) {
+            if(cs < cstr.size() && id == cstr [ cs ].first){
+                std::cerr << "Error in establishDoFArray: cannot assign Dirichlet BC to slave node" << '\n';
+                exit(1);
+            }
+        } else if ( cs < cstr.size() && id == cstr [ cs ].first) {
             // #constraint
-            * d = freeDoFs - constrDoFs + cs;
+            * d = freeDoFs - constrDoFs + cs;            
             constrainedDoFid [ cstr [ cs ].second ] = id;
             cs++;
         } else   {

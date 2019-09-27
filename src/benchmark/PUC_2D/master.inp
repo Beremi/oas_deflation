@@ -1,0 +1,8 @@
+Dimension 2
+Solver	SteadyStateNonLinearSolver	time_step	0.1	total_time	16
+NodeFiles	1	nodes.inp
+MatFiles	1	materials.inp
+ElemFiles	1	elems.inp
+PBlockFiles	1	blocks.inp
+FunctionFiles	1	functions.inp
+ExporterFiles	1	exporters.inp

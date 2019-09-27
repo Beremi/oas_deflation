@@ -44,6 +44,7 @@ public:
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
     void updateExteranlForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
+    void addNode(Node *n){ nodes.push_back(n); };
 
     unsigned giveNumConstrDoFs() const { return constrDoFs; };
     ConstraintContainer *giveConstraints() const { return constr; };
