@@ -69,6 +69,7 @@ protected:
     Vector trial_r;
     double W_ext_old, W_int_old, W_ext, W_int;
     double disErr, resErr, eneErr;
+    double limitDisErr, limitResErr, limitEneErr;
 
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();

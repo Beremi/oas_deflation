@@ -182,8 +182,8 @@ void SteadyStateNonLinearSolver :: init() {
 //////////////////////////////////////////////////////////
 Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     string param;
-    bool bdt, bdtmax, bdtmin, bttime;
-    bdt = bttime = bdtmax = bdtmin = false;
+    bool bdt, bdtmax, bdtmin, bttime, berr;
+    bdt = bttime = bdtmax = bdtmin = berr = false;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -199,6 +199,10 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
         } else if ( param.compare("total_time") == 0 )    {
             bttime = true;
             iss >> termination_time;
+        } else if ( param.compare("limit_tolerance") == 0 )    {
+            berr = true;
+            iss >> limitDisErr;
+            limitEneErr = limitResErr = limitDisErr;
         }
     }
     if ( !bdt ) {
@@ -220,6 +224,10 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
         // cout << name << ": solver parameter 'min_time_step' was not specified, setting to timestep" << endl;
         dtmin = dt;
     }
+    if ( !berr ) {
+        // cout << name << ": solver parameter 'min_time_step' was not specified, setting to timestep" << endl;
+        limitEneErr = limitResErr = limitDisErr = 0;
+    }
     ;
     cout << name << " succesfully loaded, ";
     ;
@@ -238,6 +246,7 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
 void SteadyStateNonLinearSolver :: solve() {
     bool converged = false;
     bool restarted = false;
+    double displa_error, energy_error, residu_error;
     while ( !converged ){
       //setup loading
       nodes->addRHS_nodalLoad(load, time);  //add nodal load
@@ -275,9 +284,9 @@ void SteadyStateNonLinearSolver :: solve() {
           }
 
           //compute errors
-          double residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
-          double displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
-          double energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
+          residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
+          displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
+          energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
 
           cout << setw(6) << it << setw(15) << residu_error;
           if ( it == 0 ) {
@@ -311,8 +320,13 @@ void SteadyStateNonLinearSolver :: solve() {
           f_ext = f_ext_old;
           load *= 0;
       } else if ( !converged ) {
+        if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
+            std::cout << "tolerance increased in this step" << '\n';
+            converged = true;
+        } else {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
           exit(1);
+        }
       } else if ( (!restarted) && converged && it < maxIt/3 && dt < dtmax){
           dt = fmin(dt / .8, dtmax);
           std::cout << "enlarging step, timestep = " << dt << '\n';
