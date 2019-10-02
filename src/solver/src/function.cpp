@@ -34,7 +34,7 @@ double PieceWiseLinearFunction :: giveY(double t)  {
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
   unsigned i = 0;
-  while ( x [ i ] < t && i < x.size() ) {
+  while ( x [ i ] <= t && i < x.size() ) {
       i++;
   }
   if ( i == 0 || i == x.size() ) {
