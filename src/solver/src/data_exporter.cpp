@@ -214,7 +214,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
 // EXPORT OF DEGREES OF FREEDOM
 void DoFGauge :: readFromLine(istringstream &iss, unsigned dimension) {
     iss >> filename;
-    iss >> name;  
+    iss >> name;
     iss >> nodenum;
     iss >> direction;
 }

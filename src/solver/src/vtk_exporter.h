@@ -19,6 +19,7 @@ public:
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const = 0;
 protected:
     unsigned cell_data_size;
+    unsigned dim;
 };
 
 

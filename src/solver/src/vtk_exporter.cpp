@@ -10,6 +10,7 @@ void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
 
 //////////////////////////////////////////////////////////
 void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
+  dim = dimension;
   string param;
   unsigned num;
   vector< string > cell_data, point_data;
@@ -204,7 +205,9 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
         displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
                               n->giveDoFBasedValue("uy", DoFs),
-                              n->giveDoFBasedValue("uz", DoFs)));  // this is not correct for 2D, because it gives the rotation
+                              dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
+                              )
+                        );
 
         for (unsigned i = cell_data_size; i < codes.size(); i++){
           point_data[ i - cell_data_size ].push_back(n->giveDoFBasedValue(codes[ i ], DoFs));
@@ -273,18 +276,44 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
 //////////////////////////////////////////////////////////
 // function tahat calculates displacement of any point of rigid body from its rotations and
-Point calculateVertexDisplacement2D(const RigidBodyContact &rbc, const Node &v, const Node &a, const Vector &DoFs){
-  Matrix A = rbc.giveAMatrix(a.givePoint(), v.givePoint());
-  Matrix U(3, 1);
-  U [ 0 ] [ 0 ] = a.giveDoFBasedValue("ux", DoFs);
-  U [ 1 ] [ 0 ] = a.giveDoFBasedValue("uy", DoFs);
-  U [ 2 ] [ 0 ] = a.giveDoFBasedValue("uz", DoFs);  // in 2D, this DOF stays for rotation
+Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node* v, const Node* a, const Vector &DoFs, const unsigned &dim){
+  Matrix A = rbc.giveAMatrix(a->givePoint(), v->givePoint());
+  unsigned DofsPerNode = (dim - 1) * 3;
+  // const Particle *part = static_cast< const Particle * >( v );
+  // if (dim == 3){
+  //   Matrix U(6, 1);
+  //   U [ 0 ] [ 0 ] = part->giveDoFBasedValue("ux", DoFs);
+  //   U [ 1 ] [ 0 ] = part->giveDoFBasedValue("uy", DoFs);
+  //   U [ 2 ] [ 0 ] = part->giveDoFBasedValue("uz", DoFs);
+  //   U [ 3 ] [ 0 ] = part->giveDoFBasedValue("rotx", DoFs);
+  //   U [ 4 ] [ 0 ] = part->giveDoFBasedValue("roty", DoFs);
+  //   U [ 5 ] [ 0 ] = part->giveDoFBasedValue("rotz", DoFs);
+  //
+  //   Matrix P = A * U;
+  //
+  //   return Point(P[0][0], P[1][0], P[2][0]);
+  // } else if ( dim == 2 ){
+  //   Matrix U(3, 1);
+  //   U [ 0 ] [ 0 ] = part->giveDoFBasedValue("ux", DoFs);
+  //   U [ 1 ] [ 0 ] = part->giveDoFBasedValue("uy", DoFs);
+  //   U [ 2 ] [ 0 ] = part->giveDoFBasedValue("uz", DoFs);  // in 2D, this DOF stays for rotation
+  //
+  //   Matrix P = A * U;
+  //
+  //   return Point(P[0][0], P[1][0], 0.);
+  // } else {
+  //   std::cerr << "export for dim " << dim << " not implemented, exporting zero" << '\n';
+  //   return Point();
+  // }
+  // this works with basic nodes (no need to cast to particles)
+  Matrix U(DofsPerNode, 1);
+  for (unsigned i = 0; i < DofsPerNode; i++){
+    U [ i ] [ 0 ] = DoFs[a->giveStartingDoF() + i];
+  }
 
   Matrix P = A * U;
 
-  Point p = Point(P[0][0], P[1][0], 0.);  // zero displacement in Z direction
-
-  return p;
+  return Point(P[0][0], P[1][0], P[2][0]);
 }
 //////////////////////////////////////////////////////////
 
@@ -310,11 +339,12 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
   for (auto const &el : *elems){
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( el );
     for (auto const &n : rbc->giveNodes()){
+      // Particle *part = static_cast< Particle * >( n );
       auto nod_id_ptr = std::find(begin(*nodes), end(*nodes), n);
       for (auto const &v : rbc->giveVertices()){
         all_vertices_twice.push_back(v->givePoint());
         points_id.push_back(nodes->giveSize()+all_vertices_twice.size()-1);
-        vertices_displ.push_back(calculateVertexDisplacement2D(*rbc, *v, *n, DoFs));
+        vertices_displ.push_back(calculateVertexDisplacement(*rbc, v, n, DoFs, this->dim));
       }
       points_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
       node_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
@@ -345,7 +375,8 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
       for (auto const &n : *nodes){
         displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
                               n->giveDoFBasedValue("uy", DoFs),
-                              0));  // for 2D this DOF stays for rotation
+                              dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
+                            ));  // for 2D this DOF stays for rotation
         outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t"<< n->givePoint().getZ() << '\n';
       }
       for (auto const &p : all_vertices_twice){
@@ -455,11 +486,12 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( el );
     num_rbcs++;
     for (auto const &n : rbc->giveNodes()){
+      // Particle *part = static_cast< Particle * >( n );
       auto nod_id_ptr = std::find(begin(*nodes), end(*nodes), n);
       for (auto const &v : rbc->giveVertices()){
         all_vertices_twice.push_back(v->givePoint());
         points_id.push_back(nodes->giveSize()+all_vertices_twice.size()-1);
-        vertices_displ.push_back(calculateVertexDisplacement2D(*rbc, *v, *n, DoFs));
+        vertices_displ.push_back(calculateVertexDisplacement(*rbc, v, n, DoFs, this->dim));
       }
       // points_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
       node_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
