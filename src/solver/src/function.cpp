@@ -126,11 +126,11 @@ double ConstSawToothFunction :: giveY(double t)  {
 
 //////////////////////////////////////////////////////////
 double ConstSawToothFunction :: giveNextEtreme(const double &t) const {
-  if ( t < time_shift )
+  if ( t < abs(time_shift) )
     return time_shift;
   else
-    return ( ( int ( ( t - time_shift ) / ( 0.5 * period ) ) + 1 ) *
-            ( 0.5 * period ) ) + time_shift;
+    return ( ( int( ( ( t - abs(time_shift) ) / ( 0.5 * period ) ) + 1.0 ) ) *
+            ( 0.5 * period ) ) + abs(time_shift);
 }
 
 //////////////////////////////////////////////////////////
@@ -427,12 +427,12 @@ double FunctionContainer :: giveY(unsigned f, double t)  {
 */
 double FunctionContainer :: giveTimeOfNextExtreme(const double &t) const {
   double nextExtreme = INFINITY;
-  // double thisFnExtreme;
+  double thisFnExtreme;
   for ( auto const &fn : functions ){
-    if ( fn->isActive() && fn->giveNextEtreme( t ) < nextExtreme ){
-      nextExtreme = fn->giveNextEtreme( t );
+    thisFnExtreme = fn->giveNextEtreme( t );
+    if ( fn->isActive() && thisFnExtreme < nextExtreme ){
+      nextExtreme = thisFnExtreme;
     }
   }
   return nextExtreme;
 }
-
