@@ -1,6 +1,6 @@
 #include "boundary_condition.h"
 #include "node_container.h"
-#include "linear_algebra.h" 
+#include "linear_algebra.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
 
 //////////////////////////////////////////////////////////
 void BCContainer :: init() {
-    
+
     dirichDoFs.resize(0);
     neumannDoFs.resize(0);
     for ( vector< BoundaryCondition * > :: iterator bc = BC.begin(); bc != BC.end(); ++bc ) {
@@ -167,7 +167,7 @@ void BCContainer :: calculateDoFfields() {
         neumannF.insert(neumannF.end(), help.begin(), help.end() );
     }
 
-    // NOTE know which fns are actually used //JE WHY? What is this information for? Nobody cares.
+    // NOTE know which fns are actually used //JE WHY? What is this information for? Nobody cares. // JK to prevent restricting time step in extreme points of unused fns, it is probably not necessary and if anyone does not comment (or remove fn from fn file) fn that is not used it is his problem, can be removed then
     for (auto const &f_id : dirichF ){
       if ( !functions->isActive(f_id) ){
         functions->setActive(f_id);

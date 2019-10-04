@@ -457,7 +457,7 @@ double FunctionContainer :: giveTimeOfNextExtreme(const double &t) const {
   double thisFnExtreme;
   for ( auto const &fn : functions ){
     thisFnExtreme = fn->giveNextEtreme( t );
-    if ( fn->isActive() && thisFnExtreme < nextExtreme ){
+    if ( fn->isActive() && thisFnExtreme < nextExtreme && thisFnExtreme > t ){
       nextExtreme = thisFnExtreme;
     }
   }
