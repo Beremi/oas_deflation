@@ -82,6 +82,7 @@ class Gauge : public DataExporter
 {
 protected:
     string name;
+    double multiplier;
 public:
     Gauge() {};
     ~Gauge() {};
@@ -99,8 +100,8 @@ private:
     vector< unsigned >DoFs;
     vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *n) { nodes = n; };
-    ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc);
+    ForceGauge(NodeContainer *n) { nodes = n; multiplier = 1;};
+    ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc, double m);
     ~ForceGauge() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -119,7 +120,7 @@ private:
     Node *nodeA, *nodeB;
     Point pointA, pointB;
 public:
-    DisplacementGauge(NodeContainer *n, ElementContainer *e) { nodes = n; elems = e; };
+    DisplacementGauge(NodeContainer *n, ElementContainer *e) { nodes = n; elems = e;  multiplier = 1;};
     ~DisplacementGauge() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -139,8 +140,8 @@ private:
     unsigned nodenum;
     NodeContainer *nodes;
 public:
-    DoFGauge(NodeContainer *nn){nodes = nn;};
-    DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn);
+    DoFGauge(NodeContainer *nn){nodes = nn; multiplier = 1;};
+    DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m);
     ~DoFGauge() {};
     void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;

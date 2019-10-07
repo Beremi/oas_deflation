@@ -136,6 +136,10 @@ void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix
     if (nodes->giveConstraints()->isActive()){
       nodes->giveConstraints()->transformToConstraintSpace(K);
     }
+
+    //JE:test matrix singularity
+    //if( isMatrixSingular(K) ) exit(1);
+    //else exit(0);
 }
 
 //////////////////////////////////////////////////////////

@@ -42,6 +42,7 @@ private:
     vector<unsigned> slaves; 
     vector<int> strainFunc;
     vector<int> stressFunc;
+    double volume;
 public:
     BasicPeriodicBC(){};
     virtual ~BasicPeriodicBC() {};

@@ -155,12 +155,13 @@ void ForceGauge :: readFromLine(istringstream &iss, unsigned dimension) {
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge::ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc){
+ForceGauge::ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc, double m){
     nodes = nc;
     filename = f;
     name = gname;
     n = nn;
     codes = c;
+    multiplier = m;
 }
 
 //////////////////////////////////////////////////////////
@@ -204,7 +205,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
             value += reactions [ DoFs [ i ] ];
         }
-        outputfile <<  "\t" << value;
+        outputfile <<  "\t" << value*multiplier;
     }
     outputfile.close();
 }
@@ -220,12 +221,13 @@ void DoFGauge :: readFromLine(istringstream &iss, unsigned dimension) {
 }
 
 //////////////////////////////////////////////////////////
-DoFGauge::DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn){
+DoFGauge::DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m){
     filename = f;
     name = gname;
     direction = dir;
     nodes = nn;
     nodenum = n;
+    multiplier = m;
 }
 
 //////////////////////////////////////////////////////////
@@ -245,7 +247,7 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
     outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
-        outputfile << "\t" <<  full_f[DoF];
+        outputfile << "\t" <<  full_f[DoF]*multiplier;
     }
     outputfile.close();
 }
@@ -291,7 +293,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         value = nodeB->giveDoFBasedValue(codes [ 0 ], DoFs) - nodeA->giveDoFBasedValue(codes [ 0 ], DoFs);
-        outputfile << "\t" << value;
+        outputfile << "\t" << value*multiplier;
     }
     outputfile.close();
 }

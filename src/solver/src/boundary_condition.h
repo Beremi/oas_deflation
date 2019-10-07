@@ -23,10 +23,12 @@ private:
     Node *node;
     vector< int >dirichBC; //kinematic - pressure BC
     vector< int >neumannBC; //static - flux BC
+    vector<double>multipliers; //multipliers of functions
     unsigned blockedDoFNum, loadedDoFNum;
 public:
     BoundaryCondition() {};
-    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC) { node = n; dirichBC = dBC; neumannBC = nBC; };
+    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC, vector< double >m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m;};
+    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(),1.);};
     ~BoundaryCondition() {};
     void init();
     unsigned giveNumberOfBlockedDoFs() const { return blockedDoFNum; };
@@ -35,6 +37,8 @@ public:
     vector< unsigned >giveLoadedDoFs() const;
     vector< unsigned >giveBlockedFunctions() const;
     vector< unsigned >giveLoadedFunctions() const;
+    vector< double >giveBlockedMultipliers() const;
+    vector< double >giveLoadedMultipliers() const;
     Node *giveNode() { return node; };
 
 protected:
@@ -52,6 +56,9 @@ private:
     vector< unsigned >neumannF;
     vector< unsigned >dirichDoFs;
     vector< unsigned >neumannDoFs;
+    vector< double >dirichMultipliers;
+    vector< double >neumannMultipliers;
+
 
 public:
     BCContainer(FunctionContainer *f) { functions = f; };

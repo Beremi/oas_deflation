@@ -5,6 +5,9 @@
 // Basic Periodic BC
 void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
 
+    volume = 1;
+    for(auto const a : PUCsize) volume *= a;
+
     unsigned const_num = constrs->giveSize();
     unsigned funcs_num = funcs->giveSize();
     unsigned bcs_num = bcs->giveSize();
@@ -119,22 +122,25 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
     bcs->addBoundaryCondition(bc);    
 
     //set prescribed strain and stress
+    vector<double> bcmults;
     dBC.resize(1,-1);
     nBC.resize(1,-1);
+    bcmults.resize(1,1);
     for(unsigned i=0; i<strainFunc.size(); i++){
         if(strainFunc[i]>=0){
             nBC[0] = -1;
             dBC[0] = strainFunc[i]; 
-            bc = new BoundaryCondition(nodes->giveNode(intialNodeNum+i),dBC, nBC);
+            bc = new BoundaryCondition(nodes->giveNode(intialNodeNum+i),dBC, nBC, bcmults);
             bcs->addBoundaryCondition(bc);
         }
+        bcmults[0] = volume;
         if(stressFunc[i]>=0){
             nBC[0] = stressFunc[i];
             dBC[0] = -1; 
-            bc = new BoundaryCondition(nodes->giveNode(intialNodeNum+i),dBC, nBC);
+            bc = new BoundaryCondition(nodes->giveNode(intialNodeNum+i),dBC, nBC, bcmults);
             bcs->addBoundaryCondition(bc);
         }
-        if(strainFunc[i]>=0 && strainFunc[i]>=0 ){    
+        if(strainFunc[i]>=0 && stressFunc[i]>=0 ){    
             cerr << "Error in Periodic boundary condition: cannot prescribe both stress and strain for the same direction" << endl;
         }
 
@@ -167,7 +173,7 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
     }
     for(unsigned i=0; i<gname.size(); i++){    
         n[0] = intialNodeNum+i;
-        fg = new ForceGauge(name,gname[i],codes, n, nodes);
+        fg = new ForceGauge(name,gname[i],codes, n, nodes, 1./volume);
         ex->addExporter(fg);
     }
     DoFGauge *dg;
@@ -178,7 +184,7 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
         gname[3] = "gamma_yz";  gname[4] = "gamma_xz";  gname[5] = "gamma_xy";
     }
     for(unsigned i=0; i<gname.size(); i++){    
-        dg = new DoFGauge(name, gname[i], intialNodeNum+i, 0, nodes);
+        dg = new DoFGauge(name, gname[i], intialNodeNum+i, 0, nodes, 1.);
         ex->addExporter(dg);
     }
     
@@ -194,16 +200,21 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
     string param;
     unsigned num, hnum;
 
+    bool sizeB, loadB, pairsB;
+    sizeB = loadB = pairsB = false;
+
     strainFunc.resize(3*(dim-1),-1);
     stressFunc.resize(3*(dim-1),-1);
     
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("pairs") == 0 ) {
+            pairsB = true;
             iss >> num;
             masters.resize(num); slaves.resize(num);
-            for(unsigned i=0; i<num; i++) iss >> slaves[i] >> masters[i];
+            for(unsigned i=0; i<num; i++) iss >> slaves[i] >> masters[i];            
         } else if ( param.compare("load") == 0 ) {
+            loadB = true;
             iss >> num;
             for(unsigned i=0; i<num; i++){
                 iss >> param >> hnum;
@@ -218,7 +229,7 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
                     else if (param.compare("gxy") == 0 ) strainFunc[2] = hnum;
                     else if (param.compare("sx") == 0 )  stressFunc[0] = hnum;         
                     else if (param.compare("sy") == 0 )  stressFunc[1] = hnum; 
-                    else if (param.compare("sxy") == 0 ) stressFunc[2] = hnum;
+                    else if (param.compare("txy") == 0 ) stressFunc[2] = hnum;
                     else{
                             cout << "Error in PeriodicBoundaryCondition: loaded by " << param << " not implemented yet" << '\n';
                             exit(1);
@@ -233,9 +244,9 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
                     else if (param.compare("sx") == 0 )  stressFunc[0] = hnum;         
                     else if (param.compare("sy") == 0 )  stressFunc[1] = hnum; 
                     else if (param.compare("sz") == 0 )  stressFunc[2] = hnum;
-                    else if (param.compare("syz") == 0 ) stressFunc[3] = hnum;
-                    else if (param.compare("sxz") == 0 ) stressFunc[4] = hnum;
-                    else if (param.compare("sxy") == 0 ) stressFunc[5] = hnum;
+                    else if (param.compare("tyz") == 0 ) stressFunc[3] = hnum;
+                    else if (param.compare("txz") == 0 ) stressFunc[4] = hnum;
+                    else if (param.compare("txy") == 0 ) stressFunc[5] = hnum;
                     else{
                             cout << "Error in PeriodicBoundaryCondition: loaded by " << param << " not implemented yet" << '\n';
                             exit(1);
@@ -243,11 +254,17 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
                 }
             } 
         }else if ( param.compare("size") == 0 ) {
+            sizeB = true;
             iss >> num;
             PUCsize.resize(num);
             for(unsigned i=0; i<num; i++) iss >> PUCsize[i];
         }
     }
+    
+    if (not sizeB) {cout << "Error BasicPeriodicBC: size was not specified" << endl; exit(1);}
+    if (not pairsB) {cout << "Error BasicPeriodicBC: pairs were not specified" << endl; exit(1);}
+    if (not loadB) {cout << "Error BasicPeriodicBC: load was not specified" << endl; exit(1);}
+
 }
 
 //////////////////////////////////////////////////////////

@@ -1362,8 +1362,9 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
         x = x0;
     }
 
-    if ( bnorm < 1E-30 ) {
-        x = x * 0.;
+    //right hand side is empty
+    if ( bnorm < 1E-30 ) {  
+        x = x * 0.;   
         return true;
     }
 
@@ -1420,9 +1421,77 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
         exit(1);
     }
 
-
     return ( nit < Maxit );
 }
+
+
+bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A){
+    size_t nit = 0;
+    size_t Maxit;
+    double eps = 1e-26;
+    size_t size = A.RowCount;
+    Maxit = size*0.99;
+
+    //check diagonal
+    for(unsigned i=0; i<Maxit; i++){
+        if(A[i][i]<1e-30) return 1;        
+    }
+    
+    Vector b, x;
+    b.resize(size,1.e6);
+    x.resize(size,0.);
+    double bnorm = l2_norm(b);
+
+    //Inverse Diagonal Preconditioner
+    Vector preconditioner(A.inverseDiagonal() );
+
+    Vector r = b - A * x;
+    double err = l2_norm(r) / bnorm;
+
+    Vector z(r);
+    for ( size_t i = 0; i < b.size(); i++ ) {
+        z [ i ] = r [ i ] * preconditioner [ i ];
+    }
+    Vector p = z;
+    Vector q = A * p;
+
+    double last_rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
+    double alpha = last_rho / std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
+    // double rho_0 = last_rho; // unused
+
+    x += p * alpha;
+    r -= q * alpha;
+    err = l2_norm(r) / bnorm;
+
+    while ( err > eps && nit < Maxit ) {
+        for ( size_t i = 0; i < b.size(); i++ ) {
+            z [ i ] = r [ i ] * preconditioner [ i ];
+        }
+        double rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], 0.);
+        double beta = rho / last_rho;
+        p = z + p * beta;
+        q = A * p;
+        assert(std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], 0.) != 0);
+        alpha = rho / std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], 0.);
+        r -= q * alpha;
+        x += p * alpha;
+
+        last_rho = rho;
+        nit++;
+        err = l2_norm(r) / bnorm;
+    }
+    r = b - A * x;
+    err = l2_norm(r) / bnorm;
+
+    if ( nit == Maxit ) {
+        cout << "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS " << err << endl;
+        return 1;       
+    }
+    return 0;
+}
+
+
+
 
 double l2_norm(Vector x) {
     return pow(inner_product(& x [ 0 ], & x [ x.size() ], & x [ 0 ], ( double ) ( 0 ) ), 0.5);
