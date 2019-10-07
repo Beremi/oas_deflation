@@ -1342,18 +1342,11 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const V
     return CoordinateIndexedSparseMatrix(indeces, this->RowCount + 1, this->ColumnCount);
 }
 
-bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0) {
+bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit) {
     size_t nit = 0;
     size_t Maxit;
-    double eps = 1e-15;
-    Maxit = b.size();
-    if ( Maxit > 500 ) {
-        Maxit *= .98;
-    } else if (Maxit < 50){
-        Maxit *= 1.2;
-        // NOTE using constraint, more iterations are needed (maybe size of original system should be used...?)
-    }
-
+    double eps = precision;
+    Maxit = b.size()*relmaxit;
 
     double bnorm = l2_norm(b);
 
@@ -1423,6 +1416,15 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
 
     return ( nit < Maxit );
 }
+
+
+bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0) {
+    double precision = 1e-16;
+    double  relmaxit = 0.9;
+    if (b.size()<50) relmaxit = 1.2;  // NOTE using constraint, more iterations are needed (maybe size of original system should be used...?)
+    return ConjGrad(A, x, b, x0, precision, relmaxit);
+}
+
 
 
 bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A){

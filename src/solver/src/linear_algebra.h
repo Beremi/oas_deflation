@@ -524,5 +524,6 @@ public:
 
 double l2_norm(Vector x);
 bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0);
+bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
 bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A);
 #endif

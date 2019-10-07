@@ -102,6 +102,10 @@ Solver *SteadyStateLinearSolver :: readFromLine(istringstream &iss) {
         } else if ( param.compare("total_time") == 0 )    {
             bttime = true;
             iss >> termination_time;
+        } else if ( param.compare("conj_grad_precission") == 0 )    {
+            iss >> conj_grad_precission;
+        } else if ( param.compare("conj_grad_relative_maxit") == 0 )    {
+            iss >> conj_grad_relative_maxit;
         }
     }
     if ( !bdt ) {
@@ -126,7 +130,7 @@ void SteadyStateLinearSolver :: solve() {
 
     //solve linear system
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    if ( ConjGrad(K, ddr, f, ddr) == false ) {
+    if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
         cerr << "Conjugate gradients did not converge" << endl;
     }
     nodes->giveFullDoFArray(ddr, full_ddr);
@@ -202,6 +206,10 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
         } else if ( param.compare("total_time") == 0 )    {
             bttime = true;
             iss >> termination_time;
+        } else if ( param.compare("conj_grad_precission") == 0 )    {
+            iss >> conj_grad_precission;
+        } else if ( param.compare("conj_grad_relative_maxit") == 0 )    {
+            iss >> conj_grad_relative_maxit;
         } else if ( param.compare("limit_tolerance") == 0 )    {
             berr = true;
             iss >> limitDisErr;
@@ -264,7 +272,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
           //solve linear system
           nodes->giveReducedDoFArray(f_ext - f_int, f);
-          if ( ConjGrad(K, ddr, f, ddr) == false ) {
+          if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
               cerr << "Conjugate gradients did not converge" << endl;
           }
           nodes->giveFullDoFArray(ddr, full_ddr);
