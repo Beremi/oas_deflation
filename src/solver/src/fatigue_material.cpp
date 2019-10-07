@@ -318,11 +318,9 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
   // distinguish between tension and compression
 
   int Heaviside;
-  if (temp_epsN > 0){
+  if (temp_epsN - epsNP > 0){
     Heaviside = 1;
-    // TODO following should work with plasticity, but does not
-    // double Y_next = Heaviside * 0.5 * stiff [ 0 ] * pow( temp_epsN - epsNP, 2 );
-    double Y_next = Heaviside * 0.5 * stiff [ 0 ] * pow( temp_epsN, 2 );
+    double Y_next = Heaviside * 0.5 * stiff [ 0 ] * pow( temp_epsN - epsNP, 2 );
     double Y_n0 = 0.5 * stiff [ 0 ] * pow( m->giveElasticLimit(), 2);
     double Rn = ( 1 / m->giveAd() ) * ( - rN / ( 1 + rN ) );
 
@@ -335,7 +333,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
       temp_damage = fmin( 1-1e-10, fmax( 0, 1 - 1 / ( 1 + m->giveAd() * ( Y_next - Y_n0) ) ) );
       temp_rN = -temp_damage;
     }
-    stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN );
+    stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
     // apply damage also in shear direction
     for ( unsigned i = 1; i < strain.size(); i++){
       stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] );
@@ -363,10 +361,6 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
       double h = SigmaTilda - Xn;
       int sgn1 = sgn( h );
       ////////////////////////////////////////////////////////////////
-      // TODO the following expression is taken from article, but does not work yet
-      // double dLambda = ( stiff [ 0 ] * ( temp_epsN - epsN ) * sgn1 / ( stiff [ 0 ] + m->giveKinN()) + m->giveGammaN() *
-      //                         ( 1 + m->giveM() * Xn * sgn1 ) );
-      ////////////////////////////////////////////////////////////////
       double dLambda = ( f_trialC / ( stiff [ 0 ] + m->giveKinN() + m->giveGammaN() ) );
       temp_alphaN = alphaN + dLambda * (sgn1 + m->giveM() * Xn );
       temp_zN = zN + dLambda;
@@ -377,9 +371,6 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
     // apply the same in shear direction
     for ( unsigned i = 1; i < strain.size(); i++){
       // stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] - (strain[ i ]/temp_epsN)*temp_epsNP );
-    }
-    if (stress[ 0 ] > 0){
-      stress[ 0 ] = 0;
     }
     stressN = stress[ 0 ];
     return stress;
