@@ -50,6 +50,8 @@ protected:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve();
+    double conj_grad_precission;
+    double conj_grad_relative_maxit;
 private:
 
 public:
