@@ -18,6 +18,19 @@ void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveY(double t)  {
+	
+	if (x.size() <= 0) return 0;
+
+	//indexovani ma typ podle typu velikosti pole
+	for (size_t i = 0; i < x.size(); i++) {
+		if (x[i] > t)	return y[i - 1] + (y[i] - y[i - 1]) / (x[i] - x[i - 1]) * (t - x[i - 1]);
+	}
+
+	//nenasel jsem vetsi prvek, takze vracim posledni prvek pole
+	return y[x.size() - 1];
+
+
+	/*  Tohle je spatne poradi podminek: index i vzdy presahne delku pole a vznikne neopravneny pristup do pameti
     unsigned i = 0;
     while ( x [ i ] < t && i < x.size() ) {
         i++;
@@ -29,19 +42,33 @@ double PieceWiseLinearFunction :: giveY(double t)  {
     } else                                                       {
         return y [ i - 1 ] + ( y [ i ] - y [ i - 1 ] ) / ( x [ i ] - x [ i - 1 ] ) * ( t - x [ i - 1 ] );
     }
+	*/
 }
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
+
+	if(x.size() <= 0) return INFINITY;
+
+	//indexovani ma typ podle typu velikosti pole
+	for (size_t i = 0; i < x.size(); i++) {
+		if (x[i] > t) return x[i];
+	}
+
+	return INFINITY;
+
+  /*  Tohle je spatne poradi podminek: index i vzdy presahne delku pole a vznikne neopravneny pristup do pameti
   unsigned i = 0;
-  while ( x [ i ] <= t && i < x.size() ) {
+  while ( x[i] <= t && i < x.size()) {
       i++;
   }
   if ( i == 0 || i == x.size() ) {
-    return INFINITY;
+	  return INFINITY;
   } else {
     return x [ i ];
   }
+  */
+  
 }
 
 //////////////////////////////////////////////////////////
