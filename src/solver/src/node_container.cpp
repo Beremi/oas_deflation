@@ -26,23 +26,27 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
             if ( !nodeType.rfind("#", 0) == 0 ) {
                 if ( nodeType.compare("TrsprtNode") == 0 ) {
                     TrsNode *newnode = new TrsNode(dim);
-                    newnode->readFromLine(iss, dim);
+                    newnode->readFromLine(iss);
+                    nodes.push_back(newnode);
+                } else if ( nodeType.compare("MechNode") == 0 )    {
+                    MechNode *newnode = new MechNode(dim);
+                    newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else if ( nodeType.compare("Particle") == 0 )    {
                     Particle *newnode = new Particle(dim);
-                    newnode->readFromLine(iss, dim);
+                    newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else if ( nodeType.compare("AuxNode") == 0 )    {
                     AuxNode *newnode = new AuxNode(dim);
-                    newnode->readFromLine(iss, dim);
+                    newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else if ( nodeType.compare("MasterDoF") == 0 )    {
                     MasterDoF *newnode = new MasterDoF(dim);
-                    newnode->readFromLine(iss, dim);
+                    newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else if ( nodeType.compare("MasterNode") == 0 )    {
                     MasterNode *newnode = new MasterNode(dim);
-                    newnode->readFromLine(iss, dim);
+                    newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else  {
                     cerr << "Error: node type '" <<  nodeType <<  "' does not exists" << endl;
@@ -93,6 +97,7 @@ void NodeContainer :: establishDoFArray() {
       cstr[j].second = j;
     }
     sort(cstr.begin(), cstr.end() );
+
     /////////////////////////////////////////////////////////////////
 
     //sort DoFs, keep track of indices
@@ -128,7 +133,7 @@ void NodeContainer :: establishDoFArray() {
     for ( unsigned i = 0; i < loaded.size(); i++ ) {
         loadedDoFid [ i ] = loaded [ i ];
     }
-    cout << "Loaded problem contains " << freeDoFs << " degrees of freedom; additional " << totalDoFs - freeDoFs << " degrees of freedom were prescribed" << endl;
+    cout << "Loaded problem contains " << freeDoFs - constrDoFs << " DoF; additional " << constrDoFs << " DoF are dictated by constraint and "  << totalDoFs - freeDoFs << " DoF are directly prescribed" << endl;
 }
 
 //////////////////////////////////////////////////////////

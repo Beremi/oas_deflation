@@ -29,6 +29,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     RigidBodyContact *newelem = new RigidBodyContact(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("Truss") == 0 )    {
+                    Truss *newelem = new Truss(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("LTCTRSP") == 0 )    {
                     Transp1D *newelem = new Transp1D(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
@@ -65,6 +69,7 @@ void ElementContainer :: updateMaterialStatuses() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K) const {
+
     map< pair< size_t, size_t >, double >indices11;
     //map<pair<size_t, size_t>, double> indices12;
 
@@ -137,9 +142,12 @@ void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix
       nodes->giveConstraints()->transformToConstraintSpace(K);
     }
 
-    //JE:test matrix singularity
-    //if( isMatrixSingular(K) ) exit(1);
-    //else exit(0);
+    for(size_t i=0; i<K.RowCount; i++){
+        if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
+            cerr<< "Error in ElementContainer: stiffness matrix has zero on diagonal " << endl; 
+            exit(1);
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////

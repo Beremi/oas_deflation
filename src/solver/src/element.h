@@ -59,43 +59,44 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MECHANICAL ELEMENT
-class mechanicalElement : public Element
+class MechanicalElement : public Element
 {
-private:
-
+protected:
+    Matrix GeomM; //R*B
 public:
-    mechanicalElement() {}
-    ~mechanicalElement() {};
+    MechanicalElement() {}
+    ~MechanicalElement() {};
     virtual Matrix giveStiffnessMatrix(string matrixType) const = 0;
     virtual Matrix giveInertiaMatrix() const = 0;
+    Matrix giveSteadyStateMatrix(string matrixType) const { return giveStiffnessMatrix(matrixType); };
+    Matrix giveTransientMatrix() const { return giveInertiaMatrix(); };
+    Matrix giveGeomMMatrix() const { return GeomM; };
+    virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
-class RigidBodyContact : public mechanicalElement
+class RigidBodyContact : public MechanicalElement
 {
-private:
+protected:
     vector< Node * >vert;
     double length, area;
     Point normal;
-    // vector< Point > tangs;
-    Matrix RB; //R*B
     Matrix R;
+
+    virtual void checkNodeType() const;
+    virtual Matrix giveBMatrix() const;
 public:
     RigidBodyContact(const unsigned dim);
     ~RigidBodyContact() {};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     void init();
     vector< Node * > giveVertices() const { return vert; };
-    Matrix giveStiffnessMatrix(string matrixType) const;
-    Matrix giveInertiaMatrix() const;
-    Matrix giveSteadyStateMatrix(string matrixType) const { return giveStiffnessMatrix(matrixType); };
-    Matrix giveTransientMatrix() const { return giveInertiaMatrix(); };
-    //Matrix giveBMatrix(Point x) const {return B;};
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveInertiaMatrix() const;
     Matrix giveRMatrix() const {return R;};
-    Matrix giveRBMatrix() const { return RB; };
-    Matrix giveAMatrix(Point a, Point x) const;
+    virtual Matrix giveAMatrix(Point a, Point x) const;
     double giveLength() const { return length; }
     double giveArea() const { return area ; }
     virtual Vector giveInternalForces(const Vector &DoFs) const;
@@ -103,6 +104,24 @@ public:
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRUSS ELEMENT
+class Truss : public RigidBodyContact
+{
+protected:
+    virtual void checkNodeType() const;
+    virtual Matrix giveBMatrix() const;
+public:
+    Truss(const unsigned dim) : RigidBodyContact(dim){name = "Truss";};
+    ~Truss() {};    
+    virtual Matrix giveAMatrix(Point a, Point x) const;
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Vector giveContactStrainNT(const Vector &DoFs) const;
+    virtual Matrix giveInertiaMatrix() const;
+};
+    
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -126,3 +145,4 @@ public:
 };
 
 #endif  /* _ELEMENT_STRUCT_H */
+
