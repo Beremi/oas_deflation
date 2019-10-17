@@ -24,11 +24,8 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
     //apply contraints, connect periodic images
     JointDoF *jd;
     vector<Node* > vm;
-    vm.resize(1);
     vector<unsigned> dirs;
-    dirs.resize(1);
     vector<double> mults;
-    mults.resize(1);
     Node *s, *m;
     Point diff;
     for(unsigned i=0; i<masters.size(); i++){
@@ -40,6 +37,11 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
         mults[0] = 1;
         vm[0] = m;
         if(dynamic_cast<Particle*>(s) && dynamic_cast<Particle*>(m)){
+            dirs.resize(1);
+            mults.resize(1);
+            vm.resize(1);
+            mults[0] = 1;
+            vm[0] = m;
             for(unsigned k=0; k<2*(dim-1)-1; k++){
                 dirs[0] = dim+k;
                 jd = new JointDoF(s, dirs[0], vm, dirs, mults);
@@ -55,6 +57,8 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
             vm.resize(4);
             mults.resize(4);
             dirs.resize(4,0);
+            dirs[2] = 0;
+            dirs[3] = 0;
             vm[2] = nodes->giveNode(intialNodeNum+5); //gamma xy
             vm[3] = nodes->giveNode(intialNodeNum+4); //gamma xz
             mults[3] = diff.z;
@@ -62,9 +66,11 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
             vm.resize(3);
             mults.resize(3);
             dirs.resize(3,0);
+            dirs[2] = 0;
             vm[2] = nodes->giveNode(intialNodeNum+2); //gamma xy
         }
         dirs[0] = 0;
+        dirs[1] = 0;
         vm[0] = m; //master
         vm[1] = nodes->giveNode(intialNodeNum); //eps x
         mults[0] = 1;
@@ -117,7 +123,7 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
     vector< int > dBC, nBC;
     dBC.resize(m->giveNumberOfDoFs(),-1);
     nBC.resize(m->giveNumberOfDoFs(),-1);
-    for(unsigned i=0; i<dim; i++) dBC[i] = funcs->giveSize();
+    for(unsigned i=0; i<dim; i++) dBC[i] = funcs->giveSize(); //only translation
     bc = new BoundaryCondition(m,dBC, nBC);
     bcs->addBoundaryCondition(bc);
 

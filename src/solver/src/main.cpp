@@ -202,7 +202,6 @@ int main(int argc, char **argv) {
     elems.init();
     exporters.init();
     solver->init();
-
     //solution
     while ( !solver->isTerminated() ) {
         start_part = std :: chrono :: system_clock :: now();

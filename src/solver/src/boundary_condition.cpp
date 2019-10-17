@@ -2,6 +2,8 @@
 #include "node_container.h"
 #include "linear_algebra.h"
 
+//TODO one currently cannot have two boundary conditions assigned to one node
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DIRICHLET AND NEUMANN BOUNDARY CONDITION

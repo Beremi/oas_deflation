@@ -21,6 +21,7 @@ private:
 
 protected:
     Point point;  /// center of voronoi cell
+    unsigned dim; /// number of dimensions
     unsigned nDoFs; //
     BoundaryCondition *bc;
     unsigned firstDoF;
@@ -37,7 +38,7 @@ public:
      * \param c1 the first argument.
      * \param c2 the second argument.
      */
-    virtual void readFromLine(istringstream &iss, int dim);
+    virtual void readFromLine(istringstream &iss);
     Point givePoint() const { return point; };
     void setPoint(const Point &P) { point = P; };
     void setNumberOfDoFs(const int num) { nDoFs = num; };
@@ -61,7 +62,7 @@ private:
 
 protected:
 public:
-    AuxNode(unsigned dim) { nDoFs = 0; name = "auxiliary node"; };
+    AuxNode(unsigned dimension) { dim = dimension; nDoFs = 0; name = "auxiliary node"; };
     virtual ~AuxNode() {};
 };
 
@@ -74,10 +75,10 @@ private:
 
 protected:
 public:
-    MasterDoF(unsigned dim) { name = "Master DoF"; };
+    MasterDoF(unsigned dimension) { dim = dimension; name = "Master DoF"; };
     MasterDoF(Point c, unsigned n);
     virtual ~MasterDoF() {};
-    void readFromLine(istringstream &iss, int dim);
+    void readFromLine(istringstream &iss);
 };
 
 //////////////////////////////////////////////////////////
@@ -89,9 +90,9 @@ private:
 
 protected:
 public:
-    MasterNode(unsigned dim) { name = "Master Node"; nDoFs = 3 * (dim - 1); };
+    MasterNode(unsigned dimension) { dim = dimension; name = "Master Node"; nDoFs = 3 * (dim - 1); };
     virtual ~MasterNode() {};
-    void readFromLine(istringstream &iss, int dim);
+    void readFromLine(istringstream &iss);
 };
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -102,7 +103,7 @@ private:
 protected:
     MechNode() { isMechanical = true; };
 public:
-    MechNode(unsigned dim) { MechNode(); nDoFs = dim; name = "mechanical node"; };
+    MechNode(unsigned dimension) { dim = dimension; MechNode(); nDoFs = dim; name = "mechanical node"; };
     virtual ~MechNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
@@ -116,7 +117,7 @@ private:
 
 protected:
 public:
-    TrsNode(unsigned dim) { nDoFs = 1; name = "transport node"; isTransport = true; };
+    TrsNode(unsigned dimension) { dim = dimension; nDoFs = 1; name = "transport node"; isTransport = true; };
     virtual ~TrsNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
@@ -130,10 +131,10 @@ private:
     double r;  // radius in case of power tessellation
 protected:
 public:
-    Particle(unsigned dim) { nDoFs = 3 * ( dim - 1 ); name = "particle"; };
+    Particle(unsigned dimension) { dim = dimension; nDoFs = 3 * ( dim - 1 ); name = "particle"; };
     virtual ~Particle() {};
 
-    virtual void readFromLine(istringstream &iss, int dim);
+    virtual void readFromLine(istringstream &iss);
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;

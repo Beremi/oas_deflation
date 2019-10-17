@@ -76,7 +76,7 @@ double RigidBodyContact :: giveValue(string code) const {
         DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
         return dmstats->giveValue(code);
     } else   {
-        return mechanicalElement :: giveValue(code);
+        return MechanicalElement :: giveValue(code);
     }
 }
 
@@ -101,7 +101,7 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
   } else if ( code.compare("t2_z") == 0 )       {
     return R[ 2 ][ 2 ];
   } else {
-    return mechanicalElement :: giveIPValue(code, ipnum);
+    return MechanicalElement :: giveIPValue(code, ipnum);
   }
 }
 
@@ -123,9 +123,8 @@ void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnod
 }
 
 //////////////////////////////////////////////////////////
-void RigidBodyContact :: init() {
-    Element :: init(); //calling base class method;
 
+void RigidBodyContact :: checkNodeType() const {
     //check that nodes are particles
     for ( unsigned i = 0; i < 2; i++ ) {
         Particle *p = dynamic_cast< Particle * >( nodes [ i ] );
@@ -134,6 +133,30 @@ void RigidBodyContact :: init() {
             exit(1);
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+
+Matrix RigidBodyContact :: giveBMatrix() const {
+    //Matrix B
+    Matrix B = Matrix(ndim, 6 * ( ndim - 1 ) );
+    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), ip_locs [ 0 ]) * ( -1. );
+    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), ip_locs [ 0 ]);
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
+            B [ i ] [ j ] = Aa [ i ] [ j ];
+            B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab [ i ] [ j ];
+        }
+    }
+    return  B / length;
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyContact :: init() {
+    Element :: init(); //calling base class method;
+
+    checkNodeType();
+
     //check that material is DisMechMat
     DisMechMaterial *p = dynamic_cast< DisMechMaterial * >( mat );
     if ( !p ) {
@@ -234,17 +257,7 @@ void RigidBodyContact :: init() {
 
     //Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
 
-    //Matrix B
-    Matrix B = Matrix(ndim, 6 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), ip_locs [ 0 ]) * ( -1. );
-    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), ip_locs [ 0 ]);
-    for ( unsigned i = 0; i < ndim; i++ ) {
-        for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
-            B [ i ] [ j ] = Aa [ i ] [ j ];
-            B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab [ i ] [ j ];
-        }
-    }
-    B = B / length;
+    Matrix B = giveBMatrix();
 
     // Matrix R;
     if ( ndim == 2 ) {
@@ -254,7 +267,6 @@ void RigidBodyContact :: init() {
         R [ 0 ] [ 1 ] = normal.y;
         R [ 1 ] [ 0 ] = t1.x;
         R [ 1 ] [ 1 ] = t1.y;
-        // tangs[0] = t1;
     } else if ( ndim == 3 )       {
         Point t1, t2;
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
@@ -285,13 +297,11 @@ void RigidBodyContact :: init() {
         R [ 2 ] [ 0 ] = t2.x;
         R [ 2 ] [ 1 ] = t2.y;
         R [ 2 ] [ 2 ] = t2.z;
-        // tangs[0] = t1;
-        // tangs[1] = t2;
     } else  {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
         exit(0);
     }
-    RB = R * B;
+    GeomM = R * B;
 }
 
 //////////////////////////////////////////////////////////
@@ -326,7 +336,7 @@ Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
     for ( unsigned i = 1; i < ndim; i++ ) {
         Alpha [ i ] [ i ] = matstiffness [ 1 ];                  //E0*alpha
     }
-    Matrix K = RB.transpose() * Alpha * RB;
+    Matrix K = GeomM.transpose() * Alpha * GeomM;
     return K * ( length * area );
 }
 
@@ -340,15 +350,87 @@ Matrix RigidBodyContact :: giveInertiaMatrix() const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs) const {
-    Vector strainNT = RB * DoFs;
+    Vector strainNT = giveContactStrainNT(DoFs);
     DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
     Vector stressNT = dmstats->giveStress(strainNT);
-    return RB.transpose() * ( stressNT * ( length * area ) );
+    return GeomM.transpose() * ( stressNT * ( length * area ) );
 };
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
-    return RB * DoFs;
+    return GeomM * DoFs;
+};
+    
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRUSS ELEMENT
+Matrix Truss :: giveAMatrix(Point a, Point x) const {
+    Matrix A(ndim, ndim);
+    if ( ndim == 3 )
+        A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = A [ 2 ] [ 2 ] = 1;
+    else if ( ndim == 2 )
+        A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = 1;
+    else  {
+        cerr << "Error - Truss: dimension " << ndim << "not implemented" << endl;
+        exit(0);
+    }
+    return A;
+}
+
+//////////////////////////////////////////////////////////
+Matrix Truss :: giveStiffnessMatrix(string matrixType) const {
+    DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
+    Vector matstiffness;
+    matstiffness = dmstats->giveNormalShearStiffness(matrixType);
+    Matrix Alpha(ndim, ndim);
+    Alpha [ 0 ] [ 0 ] = matstiffness [ 0 ]; //E0
+    for ( unsigned i = 1; i < ndim; i++ ) {
+        Alpha [ i ] [ i ] = 0;                  //no shear stiffness
+    }
+    Matrix K = GeomM.transpose() * Alpha * GeomM;
+    return K * ( length * area );
+}
+
+//////////////////////////////////////////////////////////
+Matrix Truss :: giveInertiaMatrix() const {
+    Matrix S(6, 6);
+    //TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);
+    //TO BE DONE
+    return S;
+}
+
+//////////////////////////////////////////////////////////
+void Truss :: checkNodeType() const {
+    //check that nodes are mechanical nodes
+    for ( unsigned i = 0; i < 2; i++ ) {
+        MechNode *p = dynamic_cast< MechNode * >( nodes [ i ] );
+        if ( !p ) {
+            cerr << "Error in " << name << ": nodes must be inherited from MechNode, " << nodes [ i ]->giveName() << " provided" << endl;
+            exit(1);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+Matrix Truss :: giveBMatrix() const {
+    //Matrix B
+    Matrix B = Matrix(ndim, 2*ndim );
+    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), ip_locs [ 0 ]) * ( -1. );
+    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), ip_locs [ 0 ]);
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        for ( unsigned j = 0; j < ndim; j++ ) {
+            B [ i ] [ j ] = Aa [ i ] [ j ];
+            B [ i ] [ j + ndim ] = Ab [ i ] [ j ];
+        }
+    }
+    return  B / length;
+}
+
+//////////////////////////////////////////////////////////
+Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
+    Vector strain = GeomM * DoFs;
+    for (size_t k=1; k< strain.size(); k++) strain[k] = 0; //only normal strain active in truss
+    return strain;
 };
 
 //////////////////////////////////////////////////////////
@@ -527,3 +609,4 @@ Matrix Transp1D :: giveCapacityMatrix() const {
 Vector Transp1D :: giveInternalForces(const Vector &DoFs) const {
     return giveConductivityMatrix("elastic") * DoFs;
 };
+
