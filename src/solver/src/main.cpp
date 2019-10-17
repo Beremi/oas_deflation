@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
     ElementContainer elems;
     elems.setNodeContainer(& nodes);
     ExporterContainer exporters;
-    PBlockContainer pblocks;   
+    PBlockContainer pblocks;
     pblocks.setContainers(& nodes,& elems,& bconds,& constr, & funcs, & exporters);
     Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bconds, & constr, & exporters, & pblocks);
 

@@ -181,7 +181,6 @@ void BCContainer :: init() {
     dirichMultipliers.resize(0);
     neumannMultipliers.resize(0);
 
-
     for ( vector< BoundaryCondition * > :: iterator bc = BC.begin(); bc != BC.end(); ++bc ) {
         ( * bc )->init();
     }

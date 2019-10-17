@@ -77,7 +77,6 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
     conj_grad_precission = 1e-16;
     conj_grad_relative_maxit = 0.85;
-
 }
 
 //////////////////////////////////////////////////////////

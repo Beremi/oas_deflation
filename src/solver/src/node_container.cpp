@@ -104,7 +104,7 @@ void NodeContainer :: establishDoFArray() {
     }
     sort(a.begin(), a.end() );
 
-    unsigned cs = 0; 
+    unsigned cs = 0;
     unsigned k = 0;
     unsigned id = 0;
     for ( vector< unsigned > :: iterator d = DoFid.begin(); d != DoFid.end(); ++d, id++ ) {
@@ -118,7 +118,7 @@ void NodeContainer :: establishDoFArray() {
             }
         } else if ( cs < cstr.size() && id == cstr [ cs ].first) {
             // #constraint
-            * d = freeDoFs - constrDoFs + cs;            
+            * d = freeDoFs - constrDoFs + cs;
             constrainedDoFid [ cstr [ cs ].second ] = id;
             cs++;
         } else   {

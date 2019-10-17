@@ -39,7 +39,7 @@ class BasicPeriodicBC : public PBlock
 private:
     vector<double> PUCsize;
     vector<unsigned> masters;
-    vector<unsigned> slaves; 
+    vector<unsigned> slaves;
     vector<int> strainFunc;
     vector<int> stressFunc;
     double volume;
@@ -70,7 +70,7 @@ public:
     virtual ~PBlockContainer();
     void readFromFile(const string filename, unsigned dim);
     void setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex);
-    void apply();    
+    void apply();
 protected:
 };
 

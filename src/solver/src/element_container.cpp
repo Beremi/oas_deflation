@@ -132,7 +132,7 @@ void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix
             }
         }
     }
-    //cout << "Steady state matrices updated" << endl;
+    // cout << "Steady state matrices updated" << endl;
     if (nodes->giveConstraints()->isActive()){
       nodes->giveConstraints()->transformToConstraintSpace(K);
     }

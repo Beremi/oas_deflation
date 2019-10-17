@@ -32,6 +32,13 @@ unsigned JointDoF :: giveSlaveDoF() const {
   return slaveNode->giveStartingDoF() + direction;
 }
 
+void JointDoF :: print(){
+  std::cout << "slave DoF = " << giveSlaveDoF() << '\n';
+  for (unsigned i = 0; i < masters.size(); i++){
+    std::cout << "master DoF[ " << i << " ] = " << masters[ i ]->giveStartingDoF() + directions[ i ] << " with multiplier = " << multipliers[ i ] <<  '\n';
+  }
+}
+
 
 void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim){
   unsigned nDoFsPerNode = 3 * ( ndim - 1 );
@@ -237,8 +244,8 @@ void ConstraintContainer :: init(NodeContainer *nodes){
   // fill the matrix with corresponding multipliers for slaveDoFs
   unsigned i;  // row index =  slave DoF
   unsigned j, numM;  // column index = master DoF
-  for (auto const &jD : constraints){    
-    i = nodes->giveDoFid( jD->giveSlaveDoF() );    
+  for (auto const &jD : constraints){
+    i = nodes->giveDoFid( jD->giveSlaveDoF() );
     //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", giveNumFreeDoFs() = " << nodes->giveNumFreeDoFs() << '\n';
     // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
     // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';

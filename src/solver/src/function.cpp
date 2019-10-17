@@ -18,7 +18,7 @@ void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveY(double t)  {
-	
+
 	if (x.size() <= 0) return 0;
 
 	//indexovani ma typ podle typu velikosti pole
@@ -32,14 +32,16 @@ double PieceWiseLinearFunction :: giveY(double t)  {
 
 	/*  Tohle je spatne poradi podminek: index i vzdy presahne delku pole a vznikne neopravneny pristup do pameti
     unsigned i = 0;
-    while ( x [ i ] < t && i < x.size() ) {
+    // while ( x [ i ] < t && i < x.size() ) {
+    // ok, this way would also be sufficient
+    while ( i < x.size() && x [ i ] < t ) {
         i++;
     }
     if ( i == 0 ) {
         return 0.;
-    } else if ( i == x.size() )   {
+    } else if ( i == x.size() ) {
         return y [ x.size() - 1 ];
-    } else                                                       {
+    } else {
         return y [ i - 1 ] + ( y [ i ] - y [ i - 1 ] ) / ( x [ i ] - x [ i - 1 ] ) * ( t - x [ i - 1 ] );
     }
 	*/
@@ -59,7 +61,8 @@ double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
 
   /*  Tohle je spatne poradi podminek: index i vzdy presahne delku pole a vznikne neopravneny pristup do pameti
   unsigned i = 0;
-  while ( x[i] <= t && i < x.size()) {
+  // while ( x[i] <= t && i < x.size()) {
+  while ( i < x.size() && x[i] <= t) {
       i++;
   }
   if ( i == 0 || i == x.size() ) {
@@ -68,7 +71,7 @@ double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
     return x [ i ];
   }
   */
-  
+
 }
 
 //////////////////////////////////////////////////////////
@@ -107,7 +110,7 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
   if ( !bper ) {
     if (bcyc && btim){
       period = timo / num_cycles;
-      cout << " function parameter 'period' for function " << typeid(this).name() << " calculated from number of cycles per given time" << endl;
+      // cout << " function parameter 'period' for function " << typeid(this).name() << " calculated from number of cycles per given time" << endl;
     } else {
       cerr << " function parameter 'period' for function " << typeid(this).name() << " was not specified" << endl;
       exit(0);
@@ -189,7 +192,7 @@ void LinSawToothFunction :: readFromLine(istringstream &iss) {
   if ( !bmult ) {
     if (btim && bval){
       time_multiplier = 1/timo;
-      std::cout << "timo = " << timo << ", value = " << val << ", time_multiplier = " << time_multiplier << '\n';
+      // std::cout << "timo = " << timo << ", value = " << val << ", time_multiplier = " << time_multiplier << '\n';
     } else {
       cerr << " function parameter 'time_multiplier' for function " << typeid(this).name() << " was not specified" << endl;
       exit(0);
@@ -360,7 +363,7 @@ void SinusFunction :: readFromLine(istringstream &iss) {
     exit(0);
   }
   if ( !bshift ) {
-    cout << " function parameter 'shift' (optional) for function " << typeid(this).name() << " was not specified" << endl;
+    // cout << " function parameter 'shift' (optional) for function " << typeid(this).name() << " was not specified" << endl;
   }
 }
 

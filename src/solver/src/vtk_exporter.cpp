@@ -278,7 +278,6 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 // function tahat calculates displacement of any point of rigid body from its rotations and
 Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node* v, const Node* a, const Vector &DoFs, const unsigned &dim){
   Matrix A = rbc.giveAMatrix(a->givePoint(), v->givePoint());
-  unsigned DofsPerNode = (dim - 1) * 3;
   // const Particle *part = static_cast< const Particle * >( v );
   // if (dim == 3){
   //   Matrix U(6, 1);
@@ -300,12 +299,13 @@ Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node* v, co
   //
   //   Matrix P = A * U;
   //
-  //   return Point(P[0][0], P[1][0], 0.);
+  //   return Point(P[0][0], P[1][0], 0);
   // } else {
   //   std::cerr << "export for dim " << dim << " not implemented, exporting zero" << '\n';
   //   return Point();
   // }
-  // this works with basic nodes (no need to cast to particles)
+  // this works with basic nodes (no need of cast to particles)
+  unsigned DofsPerNode = (dim - 1) * 3;
   Matrix U(DofsPerNode, 1);
   for (unsigned i = 0; i < DofsPerNode; i++){
     U [ i ] [ 0 ] = DoFs[a->giveStartingDoF() + i];
@@ -313,7 +313,14 @@ Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node* v, co
 
   Matrix P = A * U;
 
-  return Point(P[0][0], P[1][0], P[2][0]);
+  // std::cout << "A matrix:" << '\n';
+  // A.print();
+  // std::cout << "U matrix:" << '\n';
+  // U.print();
+  // std::cout << "P matrix:" << '\n';
+  // P.print();
+
+  return Point(P[0][0], P[1][0], P.numRows() > 2 ? P[2][0] : 0);
 }
 //////////////////////////////////////////////////////////
 

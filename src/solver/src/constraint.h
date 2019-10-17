@@ -21,6 +21,7 @@ public:
   ~JointDoF() {};
   JointDoF(Node * s, unsigned &dir, std::vector< Node * > &m, std::vector< unsigned > &dirs, std::vector< double > &mult);
   void readFromLine(istringstream &iss, NodeContainer *nodes);
+  void print();
   // void init();
   unsigned giveSlaveDoF() const ;
   Node * giveSlaveNode() const { return slaveNode; };
