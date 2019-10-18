@@ -23,6 +23,8 @@ private:
     Point stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
+    double Ynext;
+
     void print() const;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e);

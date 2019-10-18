@@ -34,6 +34,19 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return stressT.getY();
     } else if ( (code.compare("stressTZ") == 0)) {
         return stressT.getZ();
+    } else if ( (code.compare("energy") == 0)) {
+        return giveValue("energy_PL") + giveValue("energy_D") +
+               giveValue("energy_Kin") + giveValue("energy_Iso");
+    } else if ( (code.compare("energy_PL") == 0)) {
+        return dot(stressT, sPi);
+    } else if ( (code.compare("energy_D") == 0)) {
+        return Ynext*damageShear;
+    } else if ( (code.compare("energy_Kin") == 0)) {
+        FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
+        return dot(alphaKin * m->giveGamma(), alphaKin);
+    } else if ( (code.compare("energy_Iso") == 0)) {
+        FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
+        return m->giveKin() * zIso;
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -99,7 +112,8 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     stressT =  tauTildaPiTrial * (1 - damageShear); //shear stress
   } else {
     // inelastic step, update variables
-    double dLambda, Ynext, part1;
+    double dLambda, part1;
+    // double Ynext;
     Point sgn1;
     double err = 100;
     double damage_iter = damageShear;  // damage in current iteration
