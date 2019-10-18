@@ -115,13 +115,13 @@ protected:
     virtual Matrix giveBMatrix() const;
 public:
     Truss(const unsigned dim) : RigidBodyContact(dim){name = "Truss";};
-    ~Truss() {};    
+    ~Truss() {};
     virtual Matrix giveAMatrix(Point a, Point x) const;
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual Matrix giveInertiaMatrix() const;
 };
-    
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -145,4 +145,3 @@ public:
 };
 
 #endif  /* _ELEMENT_STRUCT_H */
-

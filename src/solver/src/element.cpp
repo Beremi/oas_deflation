@@ -23,7 +23,6 @@ void Element :: init() {
             DoFids [ i ] = k + s;
         }
     }
-
 }
 
 //////////////////////////////////////////////////////////
@@ -100,6 +99,11 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
       return R[ 2 ][ 1 ];
   } else if ( code.compare("t2_z") == 0 )       {
     return R[ 2 ][ 2 ];
+  } else if ( code.compare("volume") == 0 )       {
+    return area * length / ndim;
+  } else if ( code.compare("energy_per_volume") == 0 )       {
+    FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
+    return fmstat->giveValue("energy")  / (area * length / ndim);
   } else {
     return MechanicalElement :: giveIPValue(code, ipnum);
   }
@@ -360,7 +364,7 @@ Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs) const {
 Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
     return GeomM * DoFs;
 };
-    
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRUSS ELEMENT
@@ -609,4 +613,3 @@ Matrix Transp1D :: giveCapacityMatrix() const {
 Vector Transp1D :: giveInternalForces(const Vector &DoFs) const {
     return giveConductivityMatrix("elastic") * DoFs;
 };
-
