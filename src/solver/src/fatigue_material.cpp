@@ -38,15 +38,15 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return giveValue("energy_PL") + giveValue("energy_D") +
                giveValue("energy_Kin") + giveValue("energy_Iso");
     } else if ( (code.compare("energy_PL") == 0)) {
-        return dot(stressT, sPi);
+        return dot(stressT, sPi - prev_sPi);
     } else if ( (code.compare("energy_D") == 0)) {
-        return Ynext*damageShear;
+        return Ynext * (damageShear - prev_damageShear);
     } else if ( (code.compare("energy_Kin") == 0)) {
         FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
-        return dot(alphaKin * m->giveGamma(), alphaKin);
+        return dot((alphaKin - prev_alphaKin) * m->giveGamma(), alphaKin);
     } else if ( (code.compare("energy_Iso") == 0)) {
         FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
-        return m->giveKin() * zIso;
+        return m->giveKin() * (zIso - prev_zIso);
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -54,10 +54,10 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: init() {
-    damageShear = temp_damageShear = 0;
-    zIso = temp_zIso = 0;
-    sPi = temp_sPi = Point();
-    alphaKin = temp_alphaKin = Point();
+    damageShear = prev_damageShear = temp_damageShear = 0;
+    zIso = prev_zIso = temp_zIso = 0;
+    sPi = prev_sPi = temp_sPi = Point();
+    alphaKin = prev_alphaKin = temp_alphaKin = Point();
     slip = temp_slip = Point();
 }
 
@@ -170,6 +170,11 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: update() {
+  prev_damageShear = damageShear;
+  prev_sPi = sPi;
+  prev_alphaKin = alphaKin;
+  prev_zIso = zIso;
+
   damageShear = temp_damageShear;
   sPi = temp_sPi;
   alphaKin = temp_alphaKin;

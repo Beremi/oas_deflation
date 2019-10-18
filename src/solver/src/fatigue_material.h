@@ -23,6 +23,9 @@ private:
     Point stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
+    double prev_damageShear, prev_zIso;
+    Point prev_sPi, prev_alphaKin;
+
     double Ynext;
 
     void print() const;
