@@ -118,8 +118,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     double err = 100;
     double damage_iter = damageShear;  // damage in current iteration
     double dLambda_iter = 1;
-
-    while ( err < 0.001 ){
+    unsigned iterD = 0;
+    std::cout << "------------------------------------------------------" << '\n';
+    while ( err > 0.001 && iterD < 100 ){
+      iterD++;
       dLambda = f_trial / ((stiff[1]/(1 - damage_iter)) + m->giveGamma() + m->giveKin());
       Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
       sgn1 = h / h.norm();
@@ -131,6 +133,9 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       damage_iter = fmax(1e-10,fmin(1-1e-10, damageShear + dLambda * part1)); //limited by <0 1>
 
       err = fabs( ( dLambda - dLambda_iter ) / dLambda_iter);
+      // std::cout << "dLambda = " << dLambda << ", dLambda previous = " << dLambda_iter <<  ", err = " << err << ", damage = " << damage_iter <<
+      // // ", temp_sPi = " << temp_sPi <<
+      // '\n';
       dLambda_iter = dLambda;
     }
 
