@@ -101,16 +101,26 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     // inelastic step, update variables
     double dLambda, Ynext, part1;
     Point sgn1;
+    double err = 100;
+    double damage_iter = damageShear;  // damage in current iteration
+    double dLambda_iter = 1;
 
-    dLambda = f_trial / ((stiff[1]/(1 - damageShear)) + m->giveGamma() + m->giveKin());
-    Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
-    sgn1 = h / h.norm();
-    temp_sPi = sPi + sgn1 * dLambda / (1 - damageShear);
+    while ( err < 0.001 ){
+      dLambda = f_trial / ((stiff[1]/(1 - damage_iter)) + m->giveGamma() + m->giveKin());
+      Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
+      sgn1 = h / h.norm();
+      temp_sPi = sPi + sgn1 * dLambda / (1 - damage_iter);
 
-    Ynext = 0.5 * stiff[1] * (temp_slip - temp_sPi).sqNorm(); // sqNorm = self dot product
+      Ynext = 0.5 * stiff[1] * (temp_slip - temp_sPi).sqNorm(); // sqNorm = self dot product
 
-    part1 = pow(1 - damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
-    temp_damageShear = fmax(1e-10,fmin(1-1e-10, damageShear + dLambda * part1)); //limited by <0 1>
+      part1 = pow(1 - damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
+      damage_iter = fmax(1e-10,fmin(1-1e-10, damageShear + dLambda * part1)); //limited by <0 1>
+
+      err = fabs( ( dLambda - dLambda_iter ) / dLambda_iter);
+      dLambda_iter = dLambda;
+    }
+
+    temp_damageShear = damage_iter;
 
     temp_zIso = zIso + dLambda;
     temp_alphaKin = alphaKin + sgn1 * dLambda;
