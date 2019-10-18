@@ -129,9 +129,11 @@ void SteadyStateLinearSolver :: solve() {
 
     //solve linear system
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
-        cerr << "Conjugate gradients did not converge" << endl;
-    }
+    terminated = !ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
+    // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+    //     terminated = true;
+    //     cerr << "Conjugate gradients did not converge" << endl;
+    // }
     nodes->giveFullDoFArray(ddr, full_ddr);
 
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
@@ -271,9 +273,11 @@ void SteadyStateNonLinearSolver :: solve() {
 
           //solve linear system
           nodes->giveReducedDoFArray(f_ext - f_int, f);
-          if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
-              cerr << "Conjugate gradients did not converge" << endl;
-          }
+          terminated = !ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
+          // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+          //     terminated = true;
+          //     cerr << "Conjugate gradients did not converge" << endl;
+          // }
           nodes->giveFullDoFArray(ddr, full_ddr);
 
           //update DoFs
@@ -335,7 +339,8 @@ void SteadyStateNonLinearSolver :: solve() {
             converged = true;
         } else {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
-          exit(1);
+          terminated = true;
+          // exit(1);
         }
       } else if ( (!restarted) && converged && it < maxIt/3 && dt < dtmax){
           dt = fmin(dt / .8, dtmax);
@@ -357,8 +362,10 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
     cout << setw(6) << " " << setw(15) << resErr << setw(15) << disErr << setw(15) << eneErr << endl;
     cout << "----------------------------------------------------" << endl;
 }
+
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runAfterEachStep() {
+  if (not terminated){
     SteadyStateLinearSolver :: runAfterEachStep();
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
         r [ i ] = trial_r [ i ];
@@ -369,4 +376,5 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
     W_ext_old = W_ext;
     elems->updateMaterialStatuses();
     cout << "----------------------------------------------------" << endl;
+  }
 }

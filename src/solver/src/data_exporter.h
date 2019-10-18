@@ -161,7 +161,7 @@ public:
     ExporterContainer() {};
     ~ExporterContainer();
     void readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
-    void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions) const;
+    void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const;
     void addExporter(DataExporter *de) {exporters.push_back(de);};
     unsigned giveSize(){return exporters.size();}
     void init();

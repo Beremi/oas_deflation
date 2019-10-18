@@ -430,7 +430,7 @@ void ExporterContainer :: init() {
 };
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions) const {
+void ExporterContainer :: exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const {
     //add step number to gauge exporter files
     char buffer [ 100 ];
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
@@ -445,7 +445,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 
     //export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        if ( ( * d )->doExportNow(time) ){
+        if ( ( * d )->doExportNow(time) || exportAll){
           ( * d )->exportData(step, DoFs, reactions);
         }
     }

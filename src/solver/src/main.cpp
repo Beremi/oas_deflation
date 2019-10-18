@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
     while ( !solver->isTerminated() ) {
         start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces() );
+        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated());
         if ( PRINT_TIME ) {
             now = std :: chrono :: system_clock :: now();
 
@@ -214,6 +214,7 @@ int main(int argc, char **argv) {
             std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl;
         }
     }
+
 
     if ( PRINT_TIME ) {
         now = std :: chrono :: system_clock :: now();
@@ -224,6 +225,10 @@ int main(int argc, char **argv) {
         std :: cout << "######### total duration: " << convertTimeToString(elapsed_seconds) << " #########" << endl;
     }
 
+    int terminationStatus = solver->giveTerminationStatus();
+    std::cout << "termination status = " << terminationStatus << '\n';
     delete solver;
-    return 0;
+    return terminationStatus;
+    // JK: why is this deleted? does it cause memory leak? after that, the calculation is teminated, it should not cause any problems, without deleting it, main coul just return solver terminationStatus as following (instead of three previous rows)
+    // return solver->giveTerminationStatus();
 }

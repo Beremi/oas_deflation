@@ -1356,8 +1356,8 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     }
 
     //right hand side is empty
-    if ( bnorm < 1E-30 ) {  
-        x = x * 0.;   
+    if ( bnorm < 1E-30 ) {
+        x = x * 0.;
         return true;
     }
 
@@ -1411,7 +1411,7 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
 
     if ( nit == Maxit ) {
         std :: cerr << "\n did not converge after " << nit << " iterations. Error : " << err << ", x norm : " << l2_norm(r) << ", b norm : " << bnorm << std :: endl;
-        exit(1);
+        return false;
     }
 
     return ( nit < Maxit );
@@ -1436,9 +1436,9 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A){
 
     //check diagonal
     for(unsigned i=0; i<Maxit; i++){
-        if(A[i][i]<1e-30) return 1;        
+        if(A[i][i]<1e-30) return 1;
     }
-    
+
     Vector b, x;
     b.resize(size,1.e6);
     x.resize(size,0.);
@@ -1487,7 +1487,7 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A){
 
     if ( nit == Maxit ) {
         cout << "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS " << err << endl;
-        return 1;       
+        return 1;
     }
     return 0;
 }

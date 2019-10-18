@@ -42,6 +42,7 @@ public:
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
+    int giveTerminationStatus() const { return ( termination_time - time > 1e-15); };
 };
 
 class SteadyStateLinearSolver : public Solver
@@ -84,6 +85,7 @@ public:
     virtual void init();
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
     virtual Solver *readFromLine(istringstream &iss);
+    virtual Vector giveNodalForces() { return f_ext_old; };
 };
 
 #endif
