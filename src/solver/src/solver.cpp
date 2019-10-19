@@ -340,6 +340,7 @@ void SteadyStateNonLinearSolver :: solve() {
         } else {
           cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
           terminated = true;
+          return;
           // exit(1);
         }
       } else if ( (!restarted) && converged && it < maxIt/3 && dt < dtmax){

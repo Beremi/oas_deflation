@@ -119,7 +119,6 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     double damage_iter = damageShear;  // damage in current iteration
     double dLambda_iter = 1;
     unsigned iterD = 0;
-    std::cout << "------------------------------------------------------" << '\n';
     while ( err > 0.001 && iterD < 100 ){
       iterD++;
       dLambda = f_trial / ((stiff[1]/(1 - damage_iter)) + m->giveGamma() + m->giveKin());
