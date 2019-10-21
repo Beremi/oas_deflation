@@ -264,9 +264,9 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
         }
     }
 
-    if (not sizeB) {cout << "Error BasicPeriodicBC: size was not specified" << endl; exit(1);}
-    if (not pairsB) {cout << "Error BasicPeriodicBC: pairs were not specified" << endl; exit(1);}
-    if (not loadB) {cout << "Error BasicPeriodicBC: load was not specified" << endl; exit(1);}
+    if (! sizeB) {cout << "Error BasicPeriodicBC: size was not specified" << endl; exit(1);}
+    if (! pairsB) {cout << "Error BasicPeriodicBC: pairs were not specified" << endl; exit(1);}
+    if (! loadB) {cout << "Error BasicPeriodicBC: load was not specified" << endl; exit(1);}
 
 }
 

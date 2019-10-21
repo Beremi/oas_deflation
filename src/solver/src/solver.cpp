@@ -367,7 +367,7 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runAfterEachStep() {
-  if (not terminated){
+  if (! terminated){
     SteadyStateLinearSolver :: runAfterEachStep();
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
         r [ i ] = trial_r [ i ];
