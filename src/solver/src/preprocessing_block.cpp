@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Basic Periodic BC
-void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
+void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
 
     volume = 1;
     for(auto const a : PUCsize) volume *= a;
@@ -32,10 +32,7 @@ void BasicPeriodicBC::apply(NodeContainer *nodes, ElementContainer *e, BCContain
 
         m = nodes->giveNode(masters[i]);
         s = nodes->giveNode(slaves[i]);
-
         //connect rotations
-        mults[0] = 1;
-        vm[0] = m;
         if(dynamic_cast<Particle*>(s) && dynamic_cast<Particle*>(m)){
             dirs.resize(1);
             mults.resize(1);
@@ -294,7 +291,9 @@ void PBlockContainer :: setContainers(NodeContainer *n, ElementContainer *e, BCC
 
 //////////////////////////////////////////////////////////
 void PBlockContainer :: apply() {
-    for(auto b: blocks) b->apply(nodes, elems, bcs, constrs, funcs, exporters);
+  for(auto b: blocks) {
+    b->apply(nodes, elems, bcs, constrs, funcs, exporters);
+  }
 }
 
 //////////////////////////////////////////////////////////
