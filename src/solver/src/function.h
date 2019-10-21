@@ -167,7 +167,7 @@ public:
     double giveTimeOfNextExtreme(const double &t) const;
     void setActive(const unsigned &fid) { functions[ fid ]->setActive(); };
     bool isActive(const unsigned &fid) const { return functions[ fid ]->isActive(); };
-    unsigned giveSize() const { return functions.size(); };
+	size_t giveSize() const { return functions.size(); };
     void addFunction(Function *f) { functions.push_back(f);};
 protected:
 };

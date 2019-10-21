@@ -9,7 +9,7 @@ NodeContainer :: ~NodeContainer() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: readFromFile(const string filename, const int dim) {
-    int origsize = nodes.size();
+	size_t origsize = nodes.size();
     string line, nodeType;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
