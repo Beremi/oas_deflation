@@ -273,11 +273,12 @@ void SteadyStateNonLinearSolver :: solve() {
 
           //solve linear system
           nodes->giveReducedDoFArray(f_ext - f_int, f);
-          terminated = !ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
-          // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
-          //     terminated = true;
-          //     cerr << "Conjugate gradients did not converge" << endl;
-          // }
+          // terminated = !ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
+          if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+              terminated = true;
+              cerr << "Conjugate gradients did not converge" << endl;
+              return;
+          }
           nodes->giveFullDoFArray(ddr, full_ddr);
 
           //update DoFs
