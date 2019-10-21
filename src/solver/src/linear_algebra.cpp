@@ -20,6 +20,7 @@ Point :: Point(double ox) {
 Point :: Point(double ox, double oy) {
     x = ox;
     y = oy;
+	z = 0.0;
 }
 
 Point :: Point(double ox, double oy, double oz) {

@@ -71,7 +71,7 @@ public:
     vector< double >giveLoadedDoFValues(double time) const;
     BoundaryCondition *giveBC(unsigned i) { return BC [ i ]; };
     void calculateDoFfields();  
-    unsigned giveSize(){return BC.size();}
+	size_t giveSize(){return BC.size();}
     void addBoundaryCondition(BoundaryCondition *bc){BC.push_back(bc);}
 protected:
 };

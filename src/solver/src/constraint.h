@@ -53,7 +53,7 @@ public:
   void calculateMasterForces(Vector &fullForces);
   JointDoF* giveConstraint(const unsigned &i){ return constraints[ i ]; };
   void addConstraint(JointDoF *jd){ constraints.push_back(jd); };
-  unsigned giveSize(){ return constraints.size(); };
+  size_t giveSize(){ return constraints.size(); };
   bool isActive() const { return !constraints.empty(); }
 
   std :: vector< JointDoF * > :: iterator begin(){return constraints.begin();}

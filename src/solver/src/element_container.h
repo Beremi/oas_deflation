@@ -16,7 +16,7 @@ public:
     void setNodeContainer(NodeContainer *n) { nodes = n; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
-    unsigned giveSize() const { return elems.size(); }
+	size_t giveSize() const { return elems.size(); }
     void updateMaterialStatuses();
     void prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K) const;
     void updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const;

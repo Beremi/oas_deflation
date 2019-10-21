@@ -19,7 +19,7 @@ private:
     BCContainer *BC;
 
     // #constraint
-    unsigned constrDoFs;
+	size_t constrDoFs;
     vector< unsigned >constrainedDoFid;  //mapping from particle order to DoF order for constrained DoFs
     ConstraintContainer *constr;
 
@@ -31,7 +31,7 @@ public:
 
     void readFromFile(const string filename, const int dim);
     Node *giveNode(unsigned const num) { return nodes [ num ]; }
-    unsigned giveSize() { return nodes.size(); };
+	size_t giveSize() { return nodes.size(); };
     unsigned giveDoFid(unsigned i) const { return DoFid [ i ]; }
     void establishDoFArray(BCContainer *BC);
     unsigned giveTotalNumDoFs() const { return totalDoFs; };
@@ -46,7 +46,7 @@ public:
     Node *findClosestMechanicalNode(Point A) const;
     void addNode(Node *n){ nodes.push_back(n); };
 
-    unsigned giveNumConstrDoFs() const { return constrDoFs; };
+	size_t giveNumConstrDoFs() const { return constrDoFs; };
     ConstraintContainer *giveConstraints() const { return constr; };
     void setConstraintContainer(ConstraintContainer *c){ constr = c; }
 

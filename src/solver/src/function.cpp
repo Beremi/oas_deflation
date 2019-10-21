@@ -291,9 +291,6 @@ double ConstSawToothRotationFunction :: giveY(double t)  {
   //
   double currentAngleX  = rotationAngles.x * ConstSawToothFunction :: giveY(currentTime);
   double previousAngleX = 0;
-  if (t>0){
-    rotationAngles.x * ConstSawToothFunction :: giveY(previousTime);
-  }
 
   // delta Coordinate X
   if (displacementType == 0 ){
@@ -389,7 +386,7 @@ FunctionContainer :: ~FunctionContainer() {
 
 //////////////////////////////////////////////////////////
 void FunctionContainer :: readFromFile(const string filename) {
-    unsigned origsize = functions.size();
+    size_t origsize = functions.size();
     string line, ftype;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {

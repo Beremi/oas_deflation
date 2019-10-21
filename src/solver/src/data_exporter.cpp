@@ -106,7 +106,7 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
     char buffer [ 100 ];
     Element *ee;
     double value;
-    unsigned nIP;
+	size_t nIP;
     giveFileName(step, buffer);
     ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
 
@@ -309,7 +309,7 @@ ExporterContainer :: ~ExporterContainer() {
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
-    unsigned origsize = exporters.size();
+	size_t origsize = exporters.size();
     string line, exptype;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {

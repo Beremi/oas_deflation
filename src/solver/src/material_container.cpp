@@ -16,7 +16,7 @@ void MaterialContainer :: init() {
 
 //////////////////////////////////////////////////////////
 void MaterialContainer :: readFromFile(const string filename) {
-    int origsize = matrs.size();
+	size_t origsize = matrs.size();
     string line, matType;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {

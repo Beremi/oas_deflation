@@ -34,7 +34,7 @@ public:
     virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
     virtual double giveValue(string code) const;
     virtual string giveName() const { return name; }
-    virtual unsigned giveIPNum() const { return ip_locs.size(); };
+    virtual size_t giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     virtual vector < Node * > giveNodes() const { return nodes;}
     virtual Material* giveMaterial() const { return mat; }
