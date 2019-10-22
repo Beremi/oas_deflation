@@ -251,8 +251,8 @@ void ConstraintContainer :: init(NodeContainer *nodes){
     // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
     // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
     if ( i < nodes->giveNumFreeDoFs() - constraints.size() ){
-      std::cerr << "should never come here, constraint application unsuccesfull " << '\n';
-      //exit(1);
+      std::cerr << "should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << '\n';
+      exit(1);
     } else if ( i >= nodes->giveNumFreeDoFs() ){
       // Point A = jD->giveSlaveNode()->givePoint();
       // std::cout << "node name = " << jD->giveSlaveNode()->giveName() << '\n';

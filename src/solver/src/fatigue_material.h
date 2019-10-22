@@ -28,6 +28,8 @@ private:
 
     double Ynext;
 
+    double regularization_multiplier;
+
     void print() const;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e);
@@ -49,6 +51,7 @@ private:
     double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
     double m;  ///< parameter controling the pressure sensitivity, TODO rename to "a" due to coupling with normal direction
+    bool regularize;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -61,6 +64,7 @@ public:
     double giveC() const { return c; }
     double giveR() const { return r; }
     double giveM() const { return m; }
+    bool isRegularized() const { return regularize; }
     virtual void init();
 };
 

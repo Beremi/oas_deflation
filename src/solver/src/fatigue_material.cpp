@@ -34,7 +34,7 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return stressT.getY();
     } else if ( (code.compare("stressTZ") == 0)) {
         return stressT.getZ();
-    } else if ( (code.compare("energy") == 0)) {
+    } else if ( (code.compare("energy_increment") == 0)) {
         return giveValue("energy_PL") + giveValue("energy_D") +
                giveValue("energy_Kin") + giveValue("energy_Iso");
     } else if ( (code.compare("energy_PL") == 0)) {
@@ -54,6 +54,10 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: init() {
+    RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
+    FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
+    regularization_multiplier = pow(rbc->giveLength(), int(m->isRegularized()));
+
     damageShear = prev_damageShear = temp_damageShear = 0;
     zIso = prev_zIso = temp_zIso = 0;
     sPi = prev_sPi = temp_sPi = Point();
@@ -96,7 +100,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       exit(1);
     }
   }
-  temp_slip = Point(x, y, z);
+  temp_slip = Point(x, y, z) * regularization_multiplier;
 
   //compute trials
   Point tauTildaPiTrial = (temp_slip - sPi) * stiff [1];
@@ -118,13 +122,13 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     double err = 100;
     double damage_iter = damageShear;  // damage in current iteration
     double dLambda_iter = 1;
-    
+
 	//inicializace:
 	dLambda = f_trial / ((stiff[1] / (1 - damage_iter)) + m->giveGamma() + m->giveKin());
 	//iterations (max 100)
 	for(unsigned iterD = 0; iterD<100 ; iterD++) {
 		if (err <= 0.001) break;
-    
+
       Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
       sgn1 = h / h.norm();
       temp_sPi = sPi + sgn1 * dLambda / (1 - damage_iter);
@@ -138,7 +142,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       // std::cout << "dLambda = " << dLambda << ", dLambda previous = " << dLambda_iter <<  ", err = " << err << ", damage = " << damage_iter <<
       // // ", temp_sPi = " << temp_sPi <<
       // '\n';
-	  dLambda_iter = dLambda; 
+	  dLambda_iter = dLambda;
 	  dLambda = f_trial / ((stiff[1] / (1 - damage_iter)) + m->giveGamma() + m->giveKin());
     }
 
@@ -228,6 +232,8 @@ Vector FatigueShearMaterialStatus :: giveNormalShearStiffness(string type) const
 void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     DisMechMaterial :: readFromLine(iss); //read elastic parameters
 
+    regularize = false;
+
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
@@ -259,6 +265,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             // for coupled model (cumulative sliding + plasticity damage)
             bm = true;
             iss >> m;
+        } else if ( param.compare("regularize") == 0 )    {
+            iss >> regularize;
         }
     }
     if ( !btau ) {
