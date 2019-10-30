@@ -54,6 +54,35 @@ protected:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// PeriodicBoundaryCondition on prism
+class RigidPlate : public PBlock
+{
+private:
+    std :: vector<unsigned> slave_ids;
+public:
+    RigidPlate(){};
+    virtual ~RigidPlate() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+protected:
+    unsigned master_id, ndim;
+};
+
+class CoordRigidPlate : public RigidPlate
+{
+private:
+    Point leftBottom, rightTop;
+public:
+    CoordRigidPlate(){};
+    virtual ~CoordRigidPlate() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+protected:
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // CONTAINER FOR PREPROCESSOR BLOCKS
 class PBlockContainer
 {

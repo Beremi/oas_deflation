@@ -116,6 +116,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
   }
 
   temp_slip = Point(x, y, z) * strain_slip_multiplier;
+  // std::cout << "strain_slip_multiplier = " << strain_slip_multiplier << '\n';
 
   if ( checkReturnMap ) {
 
@@ -157,6 +158,8 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
           part1 = pow(1 - omega_k, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Y / m->giveS(), m->giveR());
 
+
+          // NOTE here I add in every iterration, is this correct?!?
           omega_k += dLambda * part1; //limited by <0 1>
 
           z_k += dLambda;
@@ -268,8 +271,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
   partC = (pow(stiff [ 1 ], 2) * (temp_slip - temp_sPi).norm() * part1 * sgn1.norm()) / ((stiff [ 1 ] / (1 - temp_damageShear)) + m->giveGamma() + m->giveKin());
   tang_stiff = fmax(0, partA - partB - partC);
 
-  // tau trial je ale v MPa * m v případě slipu v displacementech
-  // stressT /= regularization_multiplier_area;
+  // tau trial units are MPa * m in case of slip in absolute values (displacement instead of strain)
 
   for (unsigned i = 1; i < strain.size(); i++){
     if (i == 1) stress[ i ] = stressT.getY();
