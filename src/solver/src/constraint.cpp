@@ -40,7 +40,13 @@ void JointDoF :: print(){
 }
 
 
-void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim){
+bool containsChar(const std::string & str, char c)
+{
+    // std::cout << "str = " << str << ", char = " << c << '\n';
+    return str.find(c) != std::string::npos;
+}
+
+void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim, const string &which){
   unsigned nDoFsPerNode = 3 * ( ndim - 1 );
 
   if (slave->giveNumberOfDoFs() != master->giveNumberOfDoFs()){
@@ -54,10 +60,10 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
   vector< double > multipliers;
   vector< unsigned > directions;
 
-  tableOfMultipliers.resize(nDoFsPerNode);  // first index is for master dof
+  tableOfMultipliers.resize(nDoFsPerNode);  // first index (j) is for master dof
 
   for (auto &mul : tableOfMultipliers){
-    mul.resize(nDoFsPerNode);  // second index is for slave dof
+    mul.resize(nDoFsPerNode);  // second index (i) is for slave dof
   }
 
   for (unsigned i = 0; i < nDoFsPerNode; i++){
@@ -84,6 +90,15 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
   // read the table and put the information to jointDoFs
   // NOTE this could be done in the previous loop
   for (unsigned i = 0; i < nDoFsPerNode; i++){
+    if ( containsChar( which, 'x') && (i == 0 || i == 4 || i == nDoFsPerNode - 1) ){
+      // std::cout << "fixed in x dir" << '\n';
+    } else if ( containsChar( which, 'y') && (i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ){
+      // std::cout << "fixed in y dir" << '\n';
+    } else if ( containsChar( which, 'z') && (i == 2 || i == 3 || i == 4) && ndim > 2 ){
+      // std::cout << "fixed in z dir" << '\n';
+    } else {
+      continue;
+    }
     for (unsigned j = 0; j < nDoFsPerNode; j++){
       if ( tableOfMultipliers [ j ] [ i ] != 0 ){
         // std::cout << "master->giveStartingDoF() = " << master->giveStartingDoF() << '\n';
@@ -125,7 +140,7 @@ void ConstraintContainer :: readRigidPlate(istringstream &iss, const unsigned nd
   for (unsigned i = 0; i < nslaves; i++){
     iss >> nodeid;
     slave = nodes->giveNode(nodeid);
-    connectSlaveMaster(slave, master, ndim);
+    connectSlaveMaster(slave, master, ndim, "xyz");
   }
 }
 
@@ -180,7 +195,7 @@ void ConstraintContainer :: readCoordRigidPlate(istringstream &iss, const unsign
       // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
       Particle *nn = dynamic_cast< Particle * >( nod );
       if ( nn ){
-        connectSlaveMaster(nod, master, ndim);
+        connectSlaveMaster(nod, master, ndim, "xyz");
       }
     }
   }
@@ -245,6 +260,7 @@ void ConstraintContainer :: init(NodeContainer *nodes){
   unsigned i;  // row index =  slave DoF
   unsigned j, numM;  // column index = master DoF
   for (auto const &jD : constraints){
+    jD->print();
     i = nodes->giveDoFid( jD->giveSlaveDoF() );
     //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", giveNumFreeDoFs() = " << nodes->giveNumFreeDoFs() << '\n';
     // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());

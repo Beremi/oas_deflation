@@ -1412,6 +1412,12 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
 
     if ( nit == Maxit ) {
         std :: cerr << "\n did not converge after " << nit << " iterations. Error : " << err << ", x norm : " << l2_norm(r) << ", b norm : " << bnorm << std :: endl;
+        // for ( unsigned i = 0; i < A.RowCount; i++){
+        //   for ( unsigned j = 0; j < A.ColumnCount; j++){
+        //     std::cout << "\t" << A(i, j);
+        //   }
+        //   std::cout << '\n';
+        // }
         return false;
     }
 

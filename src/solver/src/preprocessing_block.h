@@ -66,6 +66,7 @@ public:
     virtual void readFromLine(istringstream &iss, unsigned d);
 protected:
     unsigned master_id, ndim;
+    std :: string which;  ///< which direction to fix (e.g. to leave expansion in perpendicualr direction)
 };
 
 class CoordRigidPlate : public RigidPlate
