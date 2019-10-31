@@ -23,6 +23,9 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return sPi.norm();
     } else if ( (code.compare("strainT") == 0) ||  (code.compare("strain") == 0) ) {
         return slip.norm();
+    } else if ( (code.compare("crack_sliding") == 0)) {
+        RigidBodyContact *rbc = static_cast<RigidBodyContact *>( element );
+        return slip.norm() * damageShear * rbc->giveLength();
     } else if ( (code.compare("strainTY") == 0)) {
         return slip.getY();
     } else if ( (code.compare("strainTZ") == 0)) {
@@ -437,6 +440,9 @@ DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial
 double DamagePlasticMaterialStatus :: giveValue(string code) const {
     if ( (code.compare("damage") == 0) || (code.compare("damageN") == 0) ) {
         return damage;
+    } else if ( (code.compare("crack_opening") == 0) ) {
+        RigidBodyContact *rbc = static_cast<RigidBodyContact *>( element );
+        return epsN * damage * rbc->giveLength();
     } else if ( (code.compare("strainN") == 0) || (code.compare("strain") == 0) ) {
         return epsN;
     } else if ( (code.compare("stressN") == 0) || (code.compare("stress") == 0) ) {
