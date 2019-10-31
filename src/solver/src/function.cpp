@@ -81,8 +81,9 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
   iss.clear(); // clear string stream
   iss.seekg(0, iss.beg); //reset position in string stream
   string param;
-  double timo, temp;
-  int num_cycles;
+  double timo = 0;
+  int num_cycles = 1;
+  double temp;
   bool bup, blow, bper, btim, bcyc, sym;
   bup = blow = bper = btim = bcyc = sym = false;
   while ( !iss.eof() ) {
@@ -113,12 +114,12 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
       // cout << " function parameter 'period' for function " << typeid(this).name() << " calculated from number of cycles per given time" << endl;
     } else {
       cerr << " function parameter 'period' for function " << typeid(this).name() << " was not specified" << endl;
-      exit(0);
+      exit(1);
     }
   }
   if ( !bup ) {
     cerr << " function parameter 'value' for function " << typeid(this).name() << " was not specified" << endl;
-    exit(0);
+    exit(1);
   }
   if ( !blow ) {
     if (sym){
@@ -290,9 +291,6 @@ double ConstSawToothRotationFunction :: giveY(double t)  {
   //
   double currentAngleX  = rotationAngles.x * ConstSawToothFunction :: giveY(currentTime);
   double previousAngleX = 0;
-  if (t>0){
-    rotationAngles.x * ConstSawToothFunction :: giveY(previousTime);
-  }
 
   // delta Coordinate X
   if (displacementType == 0 ){
@@ -388,7 +386,7 @@ FunctionContainer :: ~FunctionContainer() {
 
 //////////////////////////////////////////////////////////
 void FunctionContainer :: readFromFile(const string filename) {
-    unsigned origsize = functions.size();
+    size_t origsize = functions.size();
     string line, ftype;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {

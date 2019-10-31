@@ -270,6 +270,90 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
 
 }
 
+
+void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
+  // jointDoF jD;
+  ndim = d;
+  unsigned nslaves, nodeid;
+  //////////////////////////////////////////////////////////
+  // read the line "masterId numSlaves slaveId1, slaveId2...."
+  iss >> master_id >> nslaves;
+
+  for (unsigned i = 0; i < nslaves; i++){
+    iss >> nodeid;
+    slave_ids.push_back(nodeid);
+  }
+}
+
+void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
+  Node *master, *slave;
+  //////////////////////////////////////////////////////////
+  // read the line "masterId numSlaves slaveId1, slaveId2...."
+  master = nodes->giveNode(master_id);
+  // check if it is master node
+  MasterNode *n = dynamic_cast< MasterNode * >( master );
+  if ( !n ) {
+    cerr << "Error in " << __func__ << ": node must be MasterDoF, " << master->giveName() << " provided" << endl;
+    exit(1);
+  }
+  if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ){
+    cerr << "Error in " << __func__ << ": MasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
+    exit(1);
+  }
+
+  for (auto const &sl_id : slave_ids){
+    slave = nodes->giveNode(sl_id);
+    constrs->connectSlaveMaster(slave, master, ndim);
+  }
+}
+
+void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
+  ndim = d;
+  if ( d == 2 ){
+    double x0, x1, y0, y1;
+    iss >> master_id >> x0 >> x1 >> y0 >> y1;
+    leftBottom = Point(x0, y0, 0);
+    rightTop = Point(x1, y1, 0);
+  } else if ( d == 3 ){
+    double x0, x1, y0, y1, z0, z1;
+    iss >> master_id >> x0 >> x1 >> y0 >> y1 >> z0 >> z1;
+    leftBottom = Point(x0, y0, z0);
+    rightTop = Point(x1, y1, z1);
+  } else {
+    std::cerr << "dimension " << d << " not implemented yet" << '\n';
+    exit(1);
+  }
+}
+
+void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
+  // jointDoF jD;
+  Node *master;
+
+  master = nodes->giveNode(master_id);
+  // check if it is master node
+  MasterNode *n = dynamic_cast< MasterNode * >( master );
+  if ( !n ) {
+    cerr << "Error in " << __func__ << ": node must be MasterDoF, " << master->giveName() << " provided" << endl;
+    exit(1);
+  }
+  if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ){
+    cerr << "Error in " << __func__ << ": MasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
+    exit(1);
+  }
+
+  for (auto const &nod : *nodes){
+    if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ){
+      // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
+      Particle *nn = dynamic_cast< Particle * >( nod );
+      if ( nn ){
+        constrs->connectSlaveMaster(nod, master, ndim);
+      }
+    }
+  }
+}
+
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // CONTAINER FOR PBLOCKS
@@ -314,6 +398,14 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
             if ( !ftype.rfind("#", 0) == 0 ) {
                 if ( ftype.compare("BasicPeriodicBC") == 0 ) {
                     BasicPeriodicBC *newblock = new BasicPeriodicBC();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("RigidPlate") == 0 ) {
+                    RigidPlate *newblock = new RigidPlate();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("CoordRigidPlate") == 0 ) {
+                    CoordRigidPlate *newblock = new CoordRigidPlate();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 }

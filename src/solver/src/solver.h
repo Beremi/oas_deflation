@@ -35,7 +35,7 @@ public:
     virtual void solveStep() {};
     void setElementContainer(ElementContainer *e) { elems = e; }
     void setNodeContainer(NodeContainer *n) { nodes = n; };
-    void setFunctionContainer(FunctionContainer *f) { funcs = f; };
+    void setFunctionContainer(FunctionContainer *functions) { this->funcs = functions; };
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     Vector giveDoFValues() { return r; }

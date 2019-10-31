@@ -11,7 +11,7 @@ ElementContainer :: ~ElementContainer() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
-    unsigned origsize = elems.size();
+    size_t origsize = elems.size();
     string line, elemType;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {

@@ -128,7 +128,7 @@ BCContainer :: ~BCContainer() {
 
 //////////////////////////////////////////////////////////
 void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
-    unsigned origsize = BC.size();
+	size_t origsize = BC.size();
     string line, aux;
     unsigned intnum, nDoFs;
     vector< int >dirichBC, neumannBC;

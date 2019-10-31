@@ -148,7 +148,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
   vector< vector< double > > point_data;
   point_data.resize(codes.size() - cell_data_size);
 
-  int offset = 0;
+  size_t offset = 0;
   for (auto const &el : *elems){
     for (auto const &n : el->giveNodes()){
       auto res = std::find(begin(*nodes), end(*nodes), n);

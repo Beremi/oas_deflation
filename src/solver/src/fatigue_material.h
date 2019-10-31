@@ -27,6 +27,13 @@ private:
     Point prev_sPi, prev_alphaKin;
 
     double Ynext;
+    double lambda;
+    double temp_lambda;
+
+    double strain_slip_multiplier;
+    double regularization_multiplier_area;
+
+    bool checkReturnMap;
 
     void print() const;
 public:
@@ -49,6 +56,7 @@ private:
     double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
     double m;  ///< parameter controling the pressure sensitivity, TODO rename to "a" due to coupling with normal direction
+    bool use_slip, check_retturn_mapping;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -62,6 +70,9 @@ public:
     double giveR() const { return r; }
     double giveM() const { return m; }
     virtual void init();
+
+    bool useSlip() const { return use_slip; }
+    bool checkReturnMap() const { return check_retturn_mapping; }
 };
 
 

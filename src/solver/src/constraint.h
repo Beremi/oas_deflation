@@ -39,11 +39,12 @@ private:
   std::vector< JointDoF * > constraints;
   CoordinateIndexedSparseMatrix X;
 
-  void connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim);
 public:
   ConstraintContainer() {};
   ~ConstraintContainer() {};
+  [[deprecated("rigid plates moved to preprocessing_block, specify them in any of PBlockFiles instead of ConstrFiles")]]
   void readRigidPlate(istringstream &iss, const unsigned ndim, NodeContainer *nodes);
+  [[deprecated("rigid plates moved to preprocessing_block, specify them in any of PBlockFiles instead of ConstrFiles")]]
   void readCoordRigidPlate(istringstream &iss, const unsigned ndim, NodeContainer *nodes);
   void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
   // void calculateSlaveDoFfield(NodeContainer *nodes);
@@ -53,7 +54,8 @@ public:
   void calculateMasterForces(Vector &fullForces);
   JointDoF* giveConstraint(const unsigned &i){ return constraints[ i ]; };
   void addConstraint(JointDoF *jd){ constraints.push_back(jd); };
-  unsigned giveSize(){ return constraints.size(); };
+  void connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim);
+  size_t giveSize(){ return constraints.size(); };
   bool isActive() const { return !constraints.empty(); }
 
   std :: vector< JointDoF * > :: iterator begin(){return constraints.begin();}
@@ -65,5 +67,6 @@ protected:
 
 };
 
+bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop);
 
 #endif /* _CONSTRAINT_H */
