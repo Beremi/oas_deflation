@@ -30,7 +30,7 @@ initConditionsMechFile      = "initCondMech.inp"
 initConditionsTrsprtFile    = "initCondTrsprt.inp"
 auxNodesFile                = "auxNodes.inp"
 exportersFile               = "exporters.inp"
-
+blocksFile                  = "blocks.inp"
 
 #
 #coplanarity test
@@ -127,11 +127,31 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False):
+
+#check mutual distances between particles using loops in a periodic domain
+def checkMutDistancesLoopsPeriodic (dim, minDist, currentNodes, newNode, maxLim):
+    distIsGood = True
+    return distIsGood
+
+try:
+    from point_generators_cython import checkMutDistancesLoopsPeriodic_cython as checkMutDistancesLoopsPeriodic
+    print('Using Cython version of point generator - checkMutDistancesLoopsPeriodic.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
+
+
+
+
+def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False, periodicModel = 0, nodePositions = None, coupledNodes = None):
     if (dim == 2):
-        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
+        if (periodicModel == 0):
+            vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
+        if (periodicModel == 1):
+            vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mZ=mZ )
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ, withoutTransport=withoutTransport)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ, withoutTransport=withoutTransport, periodicModel = periodicModel)
 
 
 
@@ -144,10 +164,9 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 )))
-    #nodes_out[:,  0:2] = node_coords[:,  0:2]
-    nodes_out[:,  0:2] = vor.points[0:node_count , 0:2]
-    nodes_out[:,dim] = 0
-    nodes_out[:,dim + 1] = areas[:]
+    nodes_out[:, 0:2] = vor.points[0:node_count , 0:2]
+    nodes_out[:, dim] = 0
+    nodes_out[:, dim + 1] = areas[:]
 
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area error: %.5e ' %(relAreaError)  )
@@ -163,7 +182,6 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
            validRidgeIdxs.append(i)
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
-
     ########################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
@@ -272,6 +290,278 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
     saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
+
+
+
+
+
+
+
+
+
+#Extract geometry 2d periodic torus
+def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mZ=None):
+    dim = 2
+
+    print('Filtering valid ridges of 2d periodic model...')
+    print ('Filtering valid ridges...', end ='')
+    # arrays for nodes of the resulting model
+    valid_ridges = np.empty((0,1)).astype(int)
+    valid_ridge_nodes = np.empty((0,2)).astype(int)
+    valid_ridge_vertices = np.empty((0,2)).astype(int)
+
+    # selecting points
+    for ir,r in enumerate(vor.ridge_points):
+        if ((nodePositions[r[0]]>0 and nodePositions[r[1]]>0)):
+            plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='green', alpha = 0.5)
+            plt.text(vor.points[ r[0],0 ], vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
+            plt.text(vor.points[ r[1],0 ], vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
+
+            valid_ridges = np.vstack((valid_ridges, ir))
+            valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
+            valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
+
+
+        if ((nodePositions[r[0]]*nodePositions[r[1]]<0)):
+            plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='red', alpha = 0.5)
+            plt.text(vor.points[ r[0],0 ], vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
+            plt.text(vor.points[ r[1],0 ], vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
+
+            valid_ridges = np.vstack((valid_ridges, ir))
+            valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
+            valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
+
+            #perImages.append( np.array([ min( nodePositions[r[0]], nodePositions[r[1]] ) , 0  ]) )
+
+
+    plt.show()
+    print('done.')
+
+    #input("Press Enter to continue...")
+
+    print ('Renumbering nodes...', end = '')
+    valid_ridges = valid_ridges.flatten()
+    valid_ridge_nodes = valid_ridge_nodes.flatten()
+    valid_ridge_nodes = np.unique(valid_ridge_nodes)
+    validNodesDict = {}
+    for i in range (len(valid_ridge_nodes)):
+        validNodesDict.update( {  int(valid_ridge_nodes[i]) : int(i)  } )
+
+    node_count = len(valid_ridge_nodes)
+    print('done.')
+
+
+    cpldNds = []
+    #coupledNodes = []
+    for i in range (len(coupledNodes)):
+        if ( coupledNodes[i][0] in valid_ridge_nodes and coupledNodes[i][1] in valid_ridge_nodes ):
+            plt.plot( [vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][1],0 ]], [vor.points[ coupledNodes[i][0],1 ] , vor.points[ coupledNodes[i][1],1 ]] ,'ro-', color='red')
+            plt.text(vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][0],1 ]  , nodePositions[coupledNodes[i][0]], fontsize=11)
+            plt.text(vor.points[ coupledNodes[i][1],0 ] , vor.points[ coupledNodes[i][1],1 ]  , nodePositions[coupledNodes[i][1]], fontsize=11)
+
+            cpldNds.append ( np.array( [ validNodesDict[int(coupledNodes[i][0])]    ,   validNodesDict[int(coupledNodes[i][1])]     ]    )   )
+
+    plt.show()
+    print ('done.')
+    print('filtering done.')
+
+    print('Extracting the geometry of 2d periodic torus...')
+    sys.stdout.flush()
+    nodes_out = np.zeros( (node_count, (2 + 1 + 1 )))
+
+    for i in range (node_count):
+        nodes_out [i, 0:2] = vor.points[ valid_ridge_nodes[i], : ]
+
+    """
+    print ('Node valid nr %s' %nd)
+    print ('in vor idx %s' % valid_ridge_nodes[nd])
+    print ('in out dict %s' %validNodesDict[valid_ridge_nodes[nd]])
+
+    print ('crds orig %s' %vor.points[ valid_ridge_nodes[nd] ,: ])
+    print ('crds save %s' %nodes_out[ validNodesDict[valid_ridge_nodes[nd]] ,:] )
+
+    #plt.plot(vor.points[:,0], vor.points[:,1], 'x', color='red')
+    #plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
+    #plt.plot(vor.points[0,0], vor.points[0,1], '*', color='green')
+
+    #print (len(valid_ridge_nodes))
+    #print (len(nodes_out))
+    #print (len(vor.points))
+    #"""
+
+    nodes_out[:, dim] = 0
+    nodes_out[:, dim + 1] = 0
+
+    ########################################################################################
+    validRidgeIdxs = []
+    for i in range (vor.ridge_points.shape[0]):
+        pr = False
+        if ( vor.ridge_points[i][0] in validNodesDict and vor.ridge_points[i][1] in validNodesDict):
+                pr=True
+        if (pr):
+           validRidgeIdxs.append(i)
+          # print (vor.points[vor.ridge_points[i][p]])
+
+
+    validRidgeIdxs = np.asarray(validRidgeIdxs)
+    ########################################################################################
+    # vertices: [xA,yA,zA] [origIdx]
+    #vertices_out = []
+    # dictionary of original and new indices of vertices
+    verticesIdxDict = {}
+    # ridges: nodeAidx, nodeBidx, trsprtBC, vertIdx
+    ridges_out = []
+    #auxiliary nodes
+    aux_nodes = []
+
+    #vertices
+    vertices_out = []
+    ####################################################
+    #list of vertices, list of beams
+    for i in valid_ridges:
+        #input("Press Enter to continue...")
+        #print()
+        #print(i)
+    #for i in range (validRidgeIdxs.size):
+        #array for two vertices A and B
+        vrtxA = np.zeros ( (dim  +1 +1 ) )
+        vrtxB = np.zeros ( (dim  +1 +1 ) )
+
+        #original indices of vertices A and B
+        vertA = vor.ridge_vertices[i][0]
+        vertB = vor.ridge_vertices[i][1]
+
+        # copying of coordinates of vertices A and B
+        for d in range (dim):
+            vrtxA [d] = vor.vertices[vertA][d]
+            vrtxB [d] = vor.vertices[vertB][d]
+
+        #copying of original indices of vertices A and B
+        vrtxA[dim] = vertA
+        vrtxB[dim] = vertB
+
+        vrtxA[dim+1] = 0
+        vrtxB[dim+1] = 0
+
+        #duplicity check
+        addVrtxA = True
+        addVrtxB = True
+        for j in range (len(vertices_out)):
+            if (vertices_out[j][0] ==  vor.vertices[vertA][0] and vertices_out[j][1] ==  vor.vertices[vertA][1]):
+                addVrtxA = False
+            if (vertices_out[j][0] ==  vor.vertices[vertB][0] and vertices_out[j][1] ==  vor.vertices[vertB][1]):
+                addVrtxB = False
+
+        #adding the vertices into the list of vertices if new
+        if (addVrtxA == True):
+            verticesIdxDict.update( { vertA : len(vertices_out)  } )
+            vrtxA [dim] = len(vertices_out)
+            vertices_out.append(vrtxA)
+
+        if (addVrtxB == True):
+            verticesIdxDict.update( { vertB : len(vertices_out)  } )
+            vrtxB [dim] = len(vertices_out)
+            vertices_out.append(vrtxB)
+        #"""
+        #ridges
+        ########################################################
+        #Array for ridge nAidx, nBidx, nrVrt, vertAidx, vertBidx
+        rdg = np.zeros ( (2 + 1 +  2) )
+
+        #indices of two nodes that are divided by the ridge
+        pointA = vor.ridge_points[i,0]
+        pointB = vor.ridge_points[i,1]
+
+        #
+        #new_validNodesDict = dict([(value, key) for key, value in validNodesDict.items()])
+        #
+        #print (new_validNodesDict)
+        key = pointA
+        #print ('node %d to dict %d' %(key, validNodesDict[key]))
+        rdg[0] = int(validNodesDict[key])
+        key = pointB
+        #print ('node %d to dict %d' %(key, validNodesDict[key]) )
+        rdg[1] = int(validNodesDict[key])
+
+        #number of vertices
+        rdg[2] = 2
+
+        #indices of vertices
+        key = vertA
+        #print ('vert %d to dict %d' %(key, verticesIdxDict[key]) )
+        rdg[3] = verticesIdxDict[vertA]
+        key = vertB
+        #print ('vert %d to dict %d' %(key, verticesIdxDict[key]) )
+        rdg[4] = verticesIdxDict[vertB]
+        #adding the ridge into the list of ridges
+        ridges_out.append(rdg)
+
+        """
+        print ('rdg %s' %rdg)
+        #print ('crds orig %s' %vor.points[ pointA ,: ])
+        print ('crds %s' %nodes_out[ int(rdg[0]) ,: ])
+        print ('crds %s' %nodes_out[ int(rdg[1]) ,: ])
+        print ('vr %s' %vor.vertices[vertA])
+        print ('vr %s' %vor.vertices[vertB])
+        print ('vor %s' %vertices_out[ int(rdg[3])])
+        print ('vor %s' %vertices_out[ int(rdg[4])])
+        #print ('vrt %s' %)
+        #"""
+    #
+    aux_nodes = []
+    v_count = len (vertices_out)
+    vertIdxStart = node_count + len(aux_nodes)
+    print ('vertIdxStart %d' %vertIdxStart)
+
+    for i in range (len(ridges_out)):
+        ridges_out[i][3] += vertIdxStart
+        ridges_out[i][4] += vertIdxStart
+
+    print('done.')
+    sys.stdout.flush()
+    #output: nodes_out, aux_nodes, vertices_out, ridges_out
+
+    saveNodes(nodes_out, aux_nodes, dim)
+    saveVertices(vertices_out, dim, withoutTransport=True)
+    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    #saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+
+    savePeriodicBlock(cpldNds,maxLim, nodes_out)
+
+    return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
+
+
+
+
+def savePeriodicBlock (cpldNds, maxLim, nodes_out):
+    cf = open(os.path.join(master_folder,blocksFile),"w")
+
+    ndepend = len(cpldNds)
+    #ex ey gxy sx sy sxy
+    cf.write("BasicPeriodicBC\tsize\t2\t%e\t%e\tload\t%d\tey\t%d\tgxy\t%d\tpairs\t%d"%(maxLim[0],maxLim[1],2,0,1, ndepend))
+
+
+    for i in range(len(cpldNds)):
+        cf.write("\t%d\t%d"%(cpldNds[i][1], cpldNds[i][0]))
+
+        plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
+        plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
+        plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
+
+    cf.write(os.linesep)
+    cf.close()
+
+    plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
+
+    plt.show()
+
+
+
+
+
+
+
+
 
 
 
@@ -581,31 +871,45 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
     print('done.')
 
-def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, withoutTransport = False):
+def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, withoutTransport = False,
+periodic=False):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
-     fl.write("Dimension\t%d\n"%dim)
-     if (solver == 0):
-            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  maxStep, minStep, simTime))
+     if not periodic:
+         fl.write("Dimension\t%d\n"%dim)
+         if (solver == 0):
+                fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  maxStep, minStep, simTime))
 
-     fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
-     fl.write("MatFiles\t1\t%s\n"%materialsFile)
-     if (not withoutTransport):
-         fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+         fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
+         fl.write("MatFiles\t1\t%s\n"%materialsFile)
+         if (not withoutTransport):
+             fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+         else:
+             fl.write("ElemFiles\t1\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+
+         if (not withoutTransport):
+             fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+         else:
+             fl.write("BCFiles\t1\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+
+         fl.write("ICFiles\t2\t%s\t%s\n"%(mechICFile,trsprtICFile))
+         fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
+         fl.write("ExporterFiles\t1\t%s"%exportersFile)
      else:
-         fl.write("ElemFiles\t1\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+         fl.write("Dimension\t%d\n"%dim)
+         if (solver == 0):
+                fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  maxStep, minStep, simTime))
 
-     if (not withoutTransport):
-         fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
-     else:
-         fl.write("BCFiles\t1\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+         fl.write("NodeFiles\t2\t%s\t%s\n"%(nodesFile,verticesFile))
+         fl.write("MatFiles\t1\t%s\n"%materialsFile)
+         fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
+         fl.write("PBlockFiles\t1\t%s\n" %blocksFile)
 
-     fl.write("ICFiles\t2\t%s\t%s\n"%(mechICFile,trsprtICFile))
-     fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
-     fl.write("ExporterFiles\t1\t%s"%exportersFile)
 
+         fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
+         fl.write("ExporterFiles\t1\t%s"%exportersFile)
      #fl.write('INITMECH:\t%s\n' % initConditionsMechFile   )
      #fl.write('INITTRSPRT:\t%s\n' % initConditionsTrsprtFile   )
 
@@ -690,16 +994,17 @@ def saveNodes (nodes_out, aux_nodes, dim):
     fl.close()
 
     #writing aux nodes
-    if (dim == 2):
-        headerLine  = "Type\tnodeCrdX\tnodeCrdY"
-        fmt='AuxNode\t%.12f\t%.12f'
-    if (dim == 3):
-        headerLine  = "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ"
-        fmt='AuxNode\t%.12f\t%.12f\t%.12f'
+    if (len(aux_nodes) != 0):
+        if (dim == 2):
+            headerLine  = "Type\tnodeCrdX\tnodeCrdY"
+            fmt='AuxNode\t%.12f\t%.12f'
+        if (dim == 3):
+            headerLine  = "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ"
+            fmt='AuxNode\t%.12f\t%.12f\t%.12f'
 
-    fl=open(os.path.join(master_folder,auxNodesFile),'w')
-    np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
-    fl.close()
+        fl=open(os.path.join(master_folder,auxNodesFile),'w')
+        np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
+        fl.close()
     print('done.')
     sys.stdout.flush()
 
@@ -929,36 +1234,36 @@ def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
     sys.stdout.flush()
 
     auxNodesInitLength = len (aux_nodes)
-
-    print('Generating additional aux_nodes...', end='')
-    beamMidpoint = maxLim /2
-    for elem in transportElements:
-        if (elem.connectedNodes[0]>=node_count and elem.connectedNodes[len(elem.connectedNodes)-1]>=node_count):
-            #print('corner line: %s' %elem.getReducedString())
-            anodeA = np.asarray (aux_nodes[ int(elem.connectedNodes[0]-node_count) ][:])
-            anodeB = np.asarray (aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ][:])
-            #print( anodeA )
-            #print( anodeB )
-            nanode = np.zeros(3)
-            for i in range (dim):
-                if ( scipy.spatial.distance.euclidean(anodeB[i], beamMidpoint) >
-                     scipy.spatial.distance.euclidean(anodeA[i], beamMidpoint) ):
-                    nanode[i] = anodeB[i]
-                else:
-                    nanode[i] = anodeA[i]
-            #print('New aux node: %s' %nanode)
-            aux_nodes.append(nanode)
-            #
-            #adding new aux node to connected nodes
-            #print('old elem: %s' %elem.connectedNodes)
-            elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
-            elem.addSingleConnectedNode( node_count + len(aux_nodes) )
-            elem.addSingleConnectedNode( node_count + len(aux_nodes) )
-            elem.addSingleConnectedNode( elem.connectedNodes[0] )
-            #print('new elem: %s' %elem.connectedNodes)
-            #print()
-    print('done.')
-    sys.stdout.flush()
+    if (auxNodesInitLength != 0):
+        print('Generating additional aux_nodes...', end='')
+        beamMidpoint = maxLim /2
+        for elem in transportElements:
+            if (elem.connectedNodes[0]>=node_count and elem.connectedNodes[len(elem.connectedNodes)-1]>=node_count):
+                #print('corner line: %s' %elem.getReducedString())
+                anodeA = np.asarray (aux_nodes[ int(elem.connectedNodes[0]-node_count) ][:])
+                anodeB = np.asarray (aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ][:])
+                #print( anodeA )
+                #print( anodeB )
+                nanode = np.zeros(3)
+                for i in range (dim):
+                    if ( scipy.spatial.distance.euclidean(anodeB[i], beamMidpoint) >
+                         scipy.spatial.distance.euclidean(anodeA[i], beamMidpoint) ):
+                        nanode[i] = anodeB[i]
+                    else:
+                        nanode[i] = anodeA[i]
+                #print('New aux node: %s' %nanode)
+                aux_nodes.append(nanode)
+                #
+                #adding new aux node to connected nodes
+                #print('old elem: %s' %elem.connectedNodes)
+                elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
+                elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+                elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+                elem.addSingleConnectedNode( elem.connectedNodes[0] )
+                #print('new elem: %s' %elem.connectedNodes)
+                #print()
+        print('done.')
+        sys.stdout.flush()
 
     print('Another renumbering of vertices...', end='')
     auxNodesFinalLength = len (aux_nodes)

@@ -1,6 +1,6 @@
 from traits.api import *
 from traitsui.api import *
-from traitsui.menu import *
+#from traitsui.menu import *
 
 import utilitiesMech
 

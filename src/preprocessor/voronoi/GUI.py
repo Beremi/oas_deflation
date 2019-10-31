@@ -7,7 +7,7 @@ from MaterialTraits import *
 
 models = [
     #2D: Cantilever bending
-     #ModelType1(),
+    ModelType1(),
     #3D:Tube torsion
     ModelType37(mechMaterialSelector = MechMaterialSelector(), mechMaterialElaSelector = MechMaterialSelector(),  trsprtMaterialSelector = TrsprtMaterialSelector() )
 ]
@@ -30,6 +30,6 @@ class ModelSelector(HasTraits):
 
 
 if __name__ == '__main__':
-    print ('WORK IN PROGRESS GUI')
+    print ('WORK IN PROGRESS GUI USING TRAITS API')
     modelSelector = ModelSelector()
     modelSelector.configure_traits()

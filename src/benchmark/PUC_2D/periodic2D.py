@@ -12,7 +12,7 @@ if 1:
     dt = 24.*3600./nsteps
     d = 1
     w = 1
-    lmin = 0.05
+    lmin = 0.1
     nsteps = 1
     seed = 5
     Ex = 0
@@ -22,18 +22,22 @@ if 1:
     np.random.seed(seed)
 
     nodes = np.empty((0,2))
-    ids = np.empty(0).astype(int)    
+    ids = np.empty(0).astype(int)
 
     i = 0
     mastersize = np.array([w,d])
 
     periodicband = 3*lmin
 
-    #NODES    
+    #NODES
     while i<max(1000,len(nodes)):
         point = (np.random.rand(2)-0.5)*mastersize+mastersize/2.
-        if len(nodes) == 0: dist = 1E6
-        else: dist = min(np.sum(np.square(nodes-point),1))
+
+        if len(nodes) == 0:
+            dist = 1E6
+        else:
+            dist = min(np.sum(np.square(nodes-point),1))
+
         if dist>lmin*lmin:
             xplus = False
             yplus = False
@@ -42,11 +46,17 @@ if 1:
             k = len(nodes)+1
             nodes = np.vstack((nodes, point))
             ids = np.hstack((ids, k))
-            if(point[0]<periodicband): xplus = True
-            if(point[0]>w-periodicband): xmins = True
-            if(point[1]<periodicband): yplus = True
-            if(point[1]>d-periodicband): ymins = True
-            
+
+            if(point[0]<periodicband):
+                xplus = True
+            if(point[0]>w-periodicband):
+                xmins = True
+            if(point[1]<periodicband):
+                yplus = True
+            if(point[1]>d-periodicband):
+                ymins = True
+
+            #images due to one dimension
             if xplus:
                 nodes = np.vstack((nodes, point))
                 nodes[-1][0] += w
@@ -54,64 +64,91 @@ if 1:
             if xmins:
                 nodes = np.vstack((nodes, point))
                 nodes[-1][0] -= w
-                ids = np.hstack((ids, 0))   
+                ids = np.hstack((ids, 0))
             if yplus:
                 nodes = np.vstack((nodes, point))
                 nodes[-1][1] += d
-                ids = np.hstack((ids, -k))     
+                ids = np.hstack((ids, -k))
             if ymins:
                 nodes = np.vstack((nodes, point))
                 nodes[-1][1] -= d
-                ids = np.hstack((ids, 0))     
+                ids = np.hstack((ids, 0))
+
+            #diagonal images
             if xmins and ymins:
                 nodes = np.vstack((nodes, point))
-                nodes[-1][0] -= w; nodes[-1][1] -= d 
+                nodes[-1][0] -= w
+                nodes[-1][1] -= d
                 ids = np.hstack((ids, 0))
             if xmins and yplus:
                 nodes = np.vstack((nodes, point))
-                nodes[-1][0] -= w; nodes[-1][1] += d 
-                ids = np.hstack((ids, 0)) 
+                nodes[-1][0] -= w
+                nodes[-1][1] += d
+                ids = np.hstack((ids, 0))
             if xplus and ymins:
                 nodes = np.vstack((nodes, point))
-                nodes[-1][0] += w; nodes[-1][1] -= d 
+                nodes[-1][0] += w
+                nodes[-1][1] -= d
                 ids = np.hstack((ids, 0))
             if xplus and yplus:
                 nodes = np.vstack((nodes, point))
-                nodes[-1][0] += w; nodes[-1][1] += d 
-                ids = np.hstack((ids, -k)) 
+                nodes[-1][0] += w
+                nodes[-1][1] += d
+                ids = np.hstack((ids, -k))
 
             i = 0
-        else: i += 1
+            #print (len(nodes))
+        else:
+            i += 1
 
+    # number of nodes
     N = nodes.shape[0]
-
+    # voronoi diagram
     v = Voronoi(nodes)
 
+    # arrays for nodes of the resulting model
     valid_ridge_nodes = np.empty((0,2)).astype(int)
     valid_ridge_vertices = np.empty((0,2)).astype(int)
-    for ir,r in enumerate(v.ridge_points): 
-        if ((ids[r[0]]>0 and ids[r[1]]>0) or (ids[r[0]]*ids[r[1]]<0)): 
+
+    # selecting points
+    # 1/ both inside sample
+    # 2/ one inside, one mirrored
+    for ir,r in enumerate(v.ridge_points):
+        if ((ids[r[0]]>0 and ids[r[1]]>0) or (ids[r[0]]*ids[r[1]]<0)):
             valid_ridge_nodes = np.vstack((valid_ridge_nodes,r))
             valid_ridge_vertices = np.vstack((valid_ridge_vertices,v.ridge_vertices[ir]))
+
+    # unique indices
     valid_points = np.unique(valid_ridge_nodes.flatten())
+
+    # creating an array containing positions of nodes of model in valid points array
     inverse = np.zeros(len(nodes)).astype(int)
-    for k in range(len(valid_points)): inverse[valid_points[k]] = k  
+    for k in range(len(valid_points)):
+        inverse[valid_points[k]] = k
+
+    #
     valid_ridge_nodes = inverse[valid_ridge_nodes]
     valid_ids = ids[valid_points]
-    ind2 = np.where(valid_ids<0)[0]    
-    valid_ids[ind2] = -inverse[-valid_ids[ind2]-1]
+
+
+    ind2 = np.where(valid_ids<0)[0]
+    valid_ids[ind2] = -inverse[-valid_ids[ind2]-1]-1
     valid_nodes = nodes[valid_points]
+
 
 
     valid_vertices = np.unique(valid_ridge_vertices.flatten())
     inverse = np.zeros(len(v.vertices)).astype(int)
-    for k in range(len(valid_vertices)): inverse[valid_vertices[k]] = k  
+
+    for k in range(len(valid_vertices)):
+        inverse[valid_vertices[k]] = k
+
     valid_ridge_vertices = inverse[valid_ridge_vertices]
     valid_vertices = v.vertices[valid_vertices]
-        
+
 
     #plotting
-    """
+
     fig = plt.figure(figsize=[7,7])
     ax = fig.add_axes([0.05,0.05,0.8,0.9])
     for i in valid_nodes:
@@ -122,14 +159,14 @@ if 1:
         ax.plot(i[0],i[1],'ob', alpha = 0.5)
     for i in valid_ridge_vertices:
         ax.plot([valid_vertices[i[0],0],valid_vertices[i[1],0]],[valid_vertices[i[0],1],valid_vertices[i[1],1]],'k', alpha = 0.5)
-    for i in range(len(valid_ids)): 
+    for i in range(len(valid_ids)):
         if valid_ids[i]<0:
-            ax.plot([valid_nodes[i,0],valid_nodes[-valid_ids[i],0]],[valid_nodes[i,1],valid_nodes[-valid_ids[i],1]],'g', alpha = 0.5)
+            ax.plot([valid_nodes[i,0],valid_nodes[-valid_ids[i]-1,0]],[valid_nodes[i,1],valid_nodes[-valid_ids[i]-1,1]],'g', alpha = 0.5)
     plt.show()
     #"""
 
 
-    cf = open("master.inp","w") 
+    cf = open("master.inp","w")
     cf.write("Dimension 2"+os.linesep)
     cf.write("Solver	SteadyStateNonLinearSolver	time_step	0.1	total_time	16"+os.linesep)
     cf.write("NodeFiles	1	nodes.inp"+os.linesep)
@@ -140,40 +177,39 @@ if 1:
     cf.write("ExporterFiles	1	exporters.inp"+os.linesep)
     cf.close()
 
-    cf = open("nodes.inp","w") 
+    cf = open("nodes.inp","w")
     for i in valid_nodes:
         cf.write("Particle\t%.10e\t%.10e"%(i[0],i[1])+os.linesep)
     for i in valid_vertices:
         cf.write("AuxNode\t%.10e\t%.10e"%(i[0],i[1])+os.linesep)
     cf.close()
 
-    cf = open("materials.inp","w") 
+    cf = open("materials.inp","w")
     cf.write("FatigueShearMaterial	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6 m 0"+os.linesep)
     #cf.write("DisMechMaterial	E0	43.0e9	alpha	0.300000    density 2200.0"+os.linesep)
     cf.close()
 
-    cf = open("elems.inp","w") 
+    cf = open("elems.inp","w")
     nnodes = len(valid_nodes)
     for i in range(len(valid_ridge_vertices)):
         cf.write("LTCBEAM\t%d\t%d\t2\t%d\t%d\t0"%(valid_ridge_nodes[i,0],valid_ridge_nodes[i,1],valid_ridge_vertices[i,0]+nnodes,valid_ridge_vertices[i,1]+nnodes)+os.linesep)
     cf.close()
 
-    
-    cf = open("blocks.inp","w") 
+
+    cf = open("blocks.inp","w")
     ndepend = len(np.where(valid_ids<0)[0])
     #ex ey gxy sx sy sxy
     cf.write("BasicPeriodicBC\tsize\t2\t%e\t%e\tload\t%d\tey\t%d\tgxy\t%d\tpairs\t%d"%(w,d,2,0,1, ndepend))
-    for i in range(len(valid_ids)): 
-        if valid_ids[i]<0: cf.write("\t%d\t%d"%(i,-valid_ids[i]))
+    for i in range(len(valid_ids)):
+        if valid_ids[i]<0: cf.write("\t%d\t%d"%(i,-valid_ids[i]-1))
     cf.write(os.linesep)
     cf.close()
-    
-    cf = open("functions.inp","w") 
+
+    cf = open("functions.inp","w")
     cf.write("PWLFunction	1	0.000000	0"+os.linesep)
     cf.write("ConstSawToothFn value -5e-4 period 4"+os.linesep)
     cf.close()
 
-    cf = open("exporters.inp","w") 
+    cf = open("exporters.inp","w")
     cf.write("VTKElementExporter out  saveEvery 1e-20 0"+os.linesep)
     cf.close()
-

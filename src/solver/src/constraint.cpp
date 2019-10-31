@@ -252,6 +252,7 @@ void ConstraintContainer :: init(NodeContainer *nodes){
     // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
     if ( i < nodes->giveNumFreeDoFs() - constraints.size() ){
       std::cerr << "should never come here, constraint application unsuccesfull " << '\n';
+      jD->print();
       //exit(1);
     } else if ( i >= nodes->giveNumFreeDoFs() ){
       // Point A = jD->giveSlaveNode()->givePoint();

@@ -61,6 +61,17 @@ except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
+
+
+def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
+    return True
+try:
+    from point_generators_cython import generateNodesRectPeriodic_cython as generateNodesRectPeriodic
+    print('Using Cython version of point generator - generateNodesRectPeriodic.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
 #generates random points onto a set 3d line. No closer than minDst
 #catch corners: samples the boundary points first
 def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):

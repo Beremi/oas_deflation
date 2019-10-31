@@ -40,6 +40,11 @@ if __name__ == '__main__':
     print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
     start = time.time()
 
+    #type of periodic model, if any
+    periodicModel = 0
+    nodePositions = []
+    coupledNodes = []
+
     #type of solver. does not matter now
     solver = 0
 
@@ -47,7 +52,7 @@ if __name__ == '__main__':
     powerTes = 0
 
     #dimension
-    dim = 3
+    dim = 2
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
@@ -67,13 +72,12 @@ if __name__ == '__main__':
     if (dim == 2 ): maxLim = np.array([  Xdim   ,  Ydim ])
     if (dim == 3 ): maxLim = np.array([  Xdim,  Ydim,  Zdim ])
 
-
     #volume of the model (later for check)
     volume = np.sum(maxLim)
 
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
-    minDist = 0.05
+    minDist = 0.02
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -87,7 +91,7 @@ if __name__ == '__main__':
     print ('Expecting about %d nodes' %expNodes)
 
     #trials of random node positioning
-    trials = 50000
+    trials = 20000
 
     #lists for the model
     node_coords = []
@@ -97,6 +101,7 @@ if __name__ == '__main__':
     trsprtIC_merged = []
     functions = []
 
+    coupledNodes = None
 
     materialZones = []
     #matZone 1
@@ -125,8 +130,8 @@ if __name__ == '__main__':
     #creating the model. Select the prepared models.
     if (dim == 2):
         #cantilever bending
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
-        materialZones=None
+        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+        #materialZones=None
 
         #cantilever  pressure free contraction
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverUniTens(maxLim, minDist, trials)
@@ -143,6 +148,12 @@ if __name__ == '__main__':
         #diamond test
         #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 2)
 
+        #periodic shear test
+
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, nodePositions, coupledNodes   = utilitiesModeling.create2dPeriodicShear(maxLim, minDist, trials )
+        materialZones=None
+        periodicModel = 1
+        #"""
     if (dim == 3):
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
@@ -213,21 +224,26 @@ if __name__ == '__main__':
 
 
     #Deconstructing Voronoi diagram and saving the geometry
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas, mZ=materialZones)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes)
 
 
     # saving rest of input
     utilitiesGeom.saveMaterials(materials)
     utilitiesGeom.saveFunctions(functions)
-    utilitiesGeom.saveMechBC(dim, mechBC_merged)
+
+
+
+
+
+    if (len(mechBC_merged)>0): utilitiesGeom.saveMechBC(dim, mechBC_merged)
     if (len(mechIC_merged)>0):  utilitiesGeom.saveMechIC(dim, mechIC_merged)
-    utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
+    if (len(trsprtBC_merged)>0): utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
     if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
     utilitiesGeom.saveExporters()
 
     solStep = 1e-2
     simTime = 100
-    utilitiesGeom.saveMasterInput(dim, solver, solStep, 1e-4, 1e-1, simTime)
+    utilitiesGeom.saveMasterInput(dim, solver, solStep, 1e-4, 1e-1, simTime, periodic = periodicModel)
     end =  time.time() -end
     print('Saving done in %.3f secs.' %end)
 
