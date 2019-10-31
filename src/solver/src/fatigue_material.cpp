@@ -25,7 +25,7 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return slip.norm();
     } else if ( (code.compare("crack_sliding") == 0)) {
         RigidBodyContact *rbc = static_cast<RigidBodyContact *>( element );
-        return slip.norm() * damageShear * rbc->giveLength();
+        return slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
     } else if ( (code.compare("strainTY") == 0)) {
         return slip.getY();
     } else if ( (code.compare("strainTZ") == 0)) {
