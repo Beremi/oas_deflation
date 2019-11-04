@@ -283,6 +283,21 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     iss >> nodeid;
     slave_ids.push_back(nodeid);
   }
+
+  bool bw = false;
+  string param;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("which") == 0 ) {
+      iss >> which;
+      // std::cout << "which" << '\n';
+      bw = true;
+      std::cout << "using RigidPlate rigid in " << which << " direction, use proper BC for masterDoF (fix unused DoFs to zero)" << '\n';
+    }
+  }
+  if ( !bw ){
+    which = "xyz";
+  }
 }
 
 void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
@@ -303,7 +318,7 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer 
 
   for (auto const &sl_id : slave_ids){
     slave = nodes->giveNode(sl_id);
-    constrs->connectSlaveMaster(slave, master, ndim);
+    constrs->connectSlaveMaster(slave, master, ndim, which);
   }
 }
 
@@ -322,6 +337,20 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
   } else {
     std::cerr << "dimension " << d << " not implemented yet" << '\n';
     exit(1);
+  }
+  bool bw = false;
+  string param;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("which") == 0 ) {
+      iss >> which;
+      // std::cout << "which" << '\n';
+      bw = true;
+      std::cout << "using RigidPlate rigid in " << which << " direction, use proper BC for masterDoF (fix unused DoFs to zero)" << '\n';
+    }
+  }
+  if ( !bw ){
+    which = "xyz";
   }
 }
 
@@ -346,7 +375,7 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
       // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
       Particle *nn = dynamic_cast< Particle * >( nod );
       if ( nn ){
-        constrs->connectSlaveMaster(nod, master, ndim);
+        constrs->connectSlaveMaster(nod, master, ndim, which);
       }
     }
   }

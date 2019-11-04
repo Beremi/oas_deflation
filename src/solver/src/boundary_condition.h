@@ -70,8 +70,8 @@ public:
     vector< double >giveBlockedDoFValues(double time) const;
     vector< double >giveLoadedDoFValues(double time) const;
     BoundaryCondition *giveBC(unsigned i) { return BC [ i ]; };
-    void calculateDoFfields();  
-	size_t giveSize(){return BC.size();}
+    void calculateDoFfields();
+	  size_t giveSize(){return BC.size();}
     void addBoundaryCondition(BoundaryCondition *bc){BC.push_back(bc);}
 protected:
 };
