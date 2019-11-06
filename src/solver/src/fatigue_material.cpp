@@ -380,7 +380,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             // for coupled model (cumulative sliding + plasticity damage)
             bm = true;
             iss >> m;
-        } else if ( param.compare("use_slip") == 0 )    {
+        } else if ( param.compare("use_displacements") == 0 )    {
             use_slip = true;
         } else if ( param.compare("old_return_mapping") == 0 )    {
             check_retturn_mapping = false;
@@ -457,6 +457,10 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
 
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: init() {
+    RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
+    DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
+    strain_displ_multiplier = pow(rbc->giveLength(), int(m->useDispl()));
+
     damage = temp_damage = 0;
     epsN = temp_epsN = 0;
     epsNP = temp_epsNP = 0;
@@ -473,7 +477,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
   for (size_t i = 1; i < stress.size(); i++){
     stress[ i ] = stiff [ i ] * strain [ i ];
   }
-  temp_epsN = strain[ 0 ];
+  temp_epsN = strain[ 0 ] * strain_displ_multiplier;
 
   DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
 
@@ -603,6 +607,8 @@ Vector DamagePlasticMaterialStatus :: giveNormalShearStiffness(string type) cons
 void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
     DisMechMaterial :: readFromLine(iss); //read elastic parameters
 
+    use_displ = false;
+
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
@@ -629,6 +635,8 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("m") == 0 )    {
             bm = true;
             iss >> m;
+        } else if ( param.compare("use_displacements") == 0 )    {
+            use_displ = true;
         }
     }
     if ( !bfc ) {
@@ -666,7 +674,6 @@ MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e) {
 
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterial :: init() {
-
 };
 
 /////////////////////////////////////////////////////////
