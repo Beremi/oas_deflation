@@ -23,14 +23,14 @@ CFLAGS=-Wall -ansi -pedantic $(INC) -std=c++0x -ggdb -Wsign-compare -DEIGEN_MPL2
 OUT_DIR=$(BASE_DIR)/../../bin
 OUT_EXT=
 
-$(OUT_DIR): 
-	@mkdir -p $(OUT_DIR)
-
 # Tell make that these are phony targets
 .PHONY: all clean default voropp test dppc sasa_test
 
 #default target for eclipse
 default: all
+
+#mkdir_out: 
+#	@mkdir -p $(OUT_DIR)
 
 #build voro++ if necessary
 voropp:
@@ -53,7 +53,7 @@ dmgalpha:
 	g++ $(CFLAGS) dmgalpha.cpp -L3rd/voro -lvoro++ -o $(OUT_DIR)/dmgalpha$(OUT_EXT)	
 
 # Build all of the executable files
-all: voropp dmgalpha
+all: voropp # dmgalpha
 	
 	
 dmgaclean:
@@ -66,5 +66,3 @@ voroclean:
 
 # Clean up the executable files
 clean: voroclean dmgaclean
-
-	
