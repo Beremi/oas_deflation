@@ -43,6 +43,7 @@ private:
     vector<int> strainFunc;
     vector<int> stressFunc;
     double volume;
+    bool use_half_gammas;
 public:
     BasicPeriodicBC(){};
     virtual ~BasicPeriodicBC() {};
