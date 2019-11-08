@@ -1,7 +1,7 @@
 import logging
 import time
 from collections import defaultdict
-from pydmga.geometry import OrthogonalGeometry
+from pydmga.geometry import OrthogonalGeometry, BoxGeometry
 from pydmga.container import Container
 from pydmga.diagram import Diagram
 import numpy as np
@@ -91,26 +91,38 @@ class PowerTesselation(object):
            [-4,  1]])
     """
 
-    def __init__(self, points, weights=None, maxLim=None):
-        self._points = np.ascontiguousarray(points, dtype=np.double)
+    def __init__(self, points, weights=None, limits='unit'):
+        self._points = np.asarray(points, dtype=np.float64)
         self._npoints, self._ndim = points.shape
         if self._ndim not in [2, 3]:
             raise ValueError('Shape of array has to be (npoints, ndim) for ndim = [2, 3] but ndim = {}.'.format(self._ndim))
         self._weights = weights
         # convert points+weights to array for pydgma
         self._points_pydgma = self._get_points_pydgma()
-        if maxLim is None:
-            dx, dy, dz = 1, 1, 1
-        else:
-            dx = maxLim[0]
-            dy = maxLim[1]
+        if limits == 'auto':
             if self._ndim == 2:
-                dz = 1
+                xmin, ymin = points.min(axis=0) - 1
+                xmax, ymax = points.max(axis=0) + 1
+                zmin, zmax = 0, 1
             else:
-                dz = maxLim[2]
+                xmin, ymin, zmin = points.min(axis=0) - 1 # 0, 0, 0
+                xmax, ymax, zmax = points.max(axis=0) + 1 # 1, 1, 1
+        elif limits == 'unit':
+            xmin, ymin, zmin = 0, 0, 0
+            xmax, ymax, zmax = 1, 1, 1
+        else:
+            if self._ndim == 2:
+                xmin, ymin, xmax, ymax = limits
+                zmin, zmax = 0, 1
+            else:
+                xmin, ymin, zmin, xmax, ymax, zmax = limits
 
         start = time.time()
-        self.geometry = OrthogonalGeometry(dx, dy, dz, False, False, False)
+        #dx = xmax - xmin
+        #dy = ymax - ymin
+        #dz = zmax - zmin
+        #self.geometry = OrthogonalGeometry(dx, dy, dz, False, False, False)
+        self.geometry = BoxGeometry(xmin, ymin, zmin, xmax, ymax, zmax, False, False, False)
         self.container = Container(self.geometry)
         self.container.add(self._points_pydgma)
         self.diagram = Diagram(self.container, False)
@@ -269,5 +281,8 @@ class PowerTesselation(object):
 
 
 if __name__ == '__main__':
+    #points = np.array([[0.25, 0.5], [0.75, 0.5]])
+    #radii = np.array([.1, .1])
+    #vor = PowerTesselation(points, weights=radii)
     import doctest
     doctest.testmod()

@@ -14,7 +14,7 @@ PYTHON_FLAGS =
 all:
 	$(MAKE) -C src/dmga
 	@echo "*** dmga compiled sucessfuly!                                 ***"
-	cd src/dmga2py/; python setup.py install $(PYTHON_FLAGS)
+	cd src/dmga2py/; python3 setup.py install $(PYTHON_FLAGS)
 	@echo "*** dmga2py installed sucessfuly!                             ***"
 	@echo "*** pydmga is under src/pydmga. You may want to copy it to    ***"
 	@echo "*** where all your python packages are stored or to add it to ***"

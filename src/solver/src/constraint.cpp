@@ -260,7 +260,7 @@ void ConstraintContainer :: init(NodeContainer *nodes){
   unsigned i;  // row index =  slave DoF
   unsigned j, numM;  // column index = master DoF
   for (auto const &jD : constraints){
-    jD->print();
+    // jD->print();
     i = nodes->giveDoFid( jD->giveSlaveDoF() );
     //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", giveNumFreeDoFs() = " << nodes->giveNumFreeDoFs() << '\n';
     // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());

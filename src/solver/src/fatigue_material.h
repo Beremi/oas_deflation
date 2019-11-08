@@ -94,6 +94,8 @@ private:
     double temp_epsN, temp_damage, temp_epsNP, temp_alphaN, temp_zN, temp_rN; ///<temporary variables
     double stressN;
 
+    double strain_displ_multiplier;
+
     void print() const;
 public:
     DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e);
@@ -115,6 +117,8 @@ private:
     double gammaN;  ///< kinematic hardening modulus
     double Ad;  ///< brittlenes of damage evolution
     double m;  ///< hardening parameter
+    bool use_displ;  ///< whether to use absolute values of displacements instead of strains
+
 public:
     DamagePlasticMaterial() { name = "Damage Plastic material"; };
     ~DamagePlasticMaterial() {};
@@ -127,6 +131,8 @@ public:
     double giveAd() const { return Ad; }
     double giveM() const { return m; }
     virtual void init();
+
+    bool useDispl() const { return use_displ; }
 };
 
 ///////////////////////////////////////////////////////////
