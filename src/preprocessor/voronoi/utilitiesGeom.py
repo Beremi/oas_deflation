@@ -144,12 +144,12 @@ except:
 
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False, periodicModel = 0, nodePositions = None, coupledNodes = None):
+def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None):
     if (dim == 2):
         if (periodicModel == 0):
             vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
         if (periodicModel == 1):
-            vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mZ=mZ )
+            vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
     if (dim == 3):
         vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ, withoutTransport=withoutTransport, periodicModel = periodicModel)
 
@@ -300,8 +300,10 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
 
 
 #Extract geometry 2d periodic torus
-def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mZ=None):
+def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=None):
     dim = 2
+
+
 
     print('Filtering valid ridges of 2d periodic model...')
     print ('Filtering valid ridges...', end ='')
@@ -310,12 +312,13 @@ def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions
     valid_ridge_nodes = np.empty((0,2)).astype(int)
     valid_ridge_vertices = np.empty((0,2)).astype(int)
 
+    """
     # selecting points
     for ir,r in enumerate(vor.ridge_points):
         if ((nodePositions[r[0]]>0 and nodePositions[r[1]]>0)):
             plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='green', alpha = 0.5)
-            plt.text(vor.points[ r[0],0 ], vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
-            plt.text(vor.points[ r[1],0 ], vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
+            plt.text(vor.points[ r[0],0 ] , vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
+            plt.text(vor.points[ r[1],0 ] , vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
 
             valid_ridges = np.vstack((valid_ridges, ir))
             valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
@@ -331,11 +334,37 @@ def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions
             valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
             valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
 
-            #perImages.append( np.array([ min( nodePositions[r[0]], nodePositions[r[1]] ) , 0  ]) )
-
 
     plt.show()
     print('done.')
+    #"""
+
+    
+    #if (mirtype[r[0]]==0 and mirtype[r[1]]>=0) or (mirtype[r[1]]==0 and mirtype[r[0]]>=0) or mirtype[r[0]]*mirtype[r[1]]==2:
+    # selecting points
+    for ir,r in enumerate(vor.ridge_points):
+        if ((mirtype[r[1]]>=0 and mirtype[r[0]]==0) or (mirtype[r[1]]==0 and mirtype[r[0]]>=0)):
+            plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='green', alpha = 0.5)
+            plt.text(vor.points[ r[0],0 ] , vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
+            plt.text(vor.points[ r[1],0 ] , vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
+
+            valid_ridges = np.vstack((valid_ridges, ir))
+            valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
+            valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
+
+        if ( mirtype[r[0]]*mirtype[r[1]]==2 ):
+            plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='red', alpha = 0.5)
+            plt.text(vor.points[ r[0],0 ], vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
+            plt.text(vor.points[ r[1],0 ], vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
+
+            valid_ridges = np.vstack((valid_ridges, ir))
+            valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
+            valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
+
+    plt.show()
+    #"""
+    print('done.')
+
 
     #input("Press Enter to continue...")
 

@@ -44,6 +44,7 @@ if __name__ == '__main__':
     periodicModel = 0
     nodePositions = []
     coupledNodes = []
+    mirtype = []
 
     #type of solver. does not matter now
     solver = 0
@@ -77,7 +78,7 @@ if __name__ == '__main__':
 
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
-    minDist = 0.02
+    minDist = 0.01
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -91,7 +92,7 @@ if __name__ == '__main__':
     print ('Expecting about %d nodes' %expNodes)
 
     #trials of random node positioning
-    trials = 20000
+    trials = 10000
 
     #lists for the model
     node_coords = []
@@ -150,7 +151,7 @@ if __name__ == '__main__':
 
         #periodic shear test
 
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, nodePositions, coupledNodes   = utilitiesModeling.create2dPeriodicShear(maxLim, minDist, trials )
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype   = utilitiesModeling.create2dPeriodicShear(maxLim, minDist, trials )
         materialZones=None
         periodicModel = 1
         #"""
@@ -224,7 +225,7 @@ if __name__ == '__main__':
 
 
     #Deconstructing Voronoi diagram and saving the geometry
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype)
 
 
     # saving rest of input

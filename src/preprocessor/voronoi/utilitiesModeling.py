@@ -399,10 +399,10 @@ def create2dbeamConfinedPress(maxLim, minDist, trials ):
 #3d 3 point notch bend
 
 def create2dPeriodicShear(maxLim, minDist, trials ):
-    print('Creating 2d cantilever, uniform tension.')
+    print('Creating 2d periodic rectangle, shear loaded.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes = asssemble2dPeriodicShear(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype = asssemble2dPeriodicShear(maxLim, minDist, trials );
 
     print ('Conducting Voronoi tesselation...', end ='')
     vor = Voronoi(node_coords)
@@ -453,7 +453,7 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
         trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
 
 
 
@@ -1438,11 +1438,12 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
     #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
     #node_coords = np.loadtxt('test.out')
 
+    mirtype = []
     coupledNodes = []
     nodePositions = []
     for i in range (len(node_coords)):
         nodePositions.append(i+1)
-
+        mirtype.append(0)
     node_coords = np.asarray(node_coords)
     print(len(node_coords))
 
@@ -1476,11 +1477,13 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
             nodePositions.append(-k)
             node_coords = np.vstack(( node_coords, newPoint ))
             coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(1)
         if xminus:
             newPoint = np.copy(point)
             newPoint[0] -= maxLim[0]
             nodePositions.append(0)
             node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
         if yplus:
             #k = len(node_coords)+1
             newPoint = np.copy(point)
@@ -1489,11 +1492,13 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
             #plt.plot(  newPoint[0] , newPoint[1] ,'o', color='red')
             node_coords = np.vstack((node_coords, newPoint))
             coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(2)
         if yminus:
             newPoint = np.copy(point)
             newPoint[1] -= maxLim[1]
             nodePositions.append(0)
             node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
 
         if xplus and yplus:
             #k = len(node_coords)+1
@@ -1503,6 +1508,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
             nodePositions.append(-k)
             node_coords = np.vstack((node_coords, newPoint))
             coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(3)
 
         if xminus and yplus:
             newPoint = np.copy(point)
@@ -1510,18 +1516,22 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
             newPoint[1] += maxLim[1]
             nodePositions.append(0)
             node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
         if xplus and yminus:
             newPoint = np.copy(point)
             newPoint[0] += maxLim[0]
             newPoint[1] -= maxLim[1]
             nodePositions.append(0)
             node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+
         if xminus and yminus:
             newPoint = np.copy(point)
             newPoint[0] -= maxLim[0]
             newPoint[1] -= maxLim[1]
             nodePositions.append(0)
             node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
 
     plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
 
@@ -1538,7 +1548,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
 
 
 
-    return node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes
+    return node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype
 
 
 
