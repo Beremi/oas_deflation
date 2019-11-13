@@ -127,11 +127,11 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False):
+def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
     if (dim == 2):
-        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
+        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ, withoutTransport=withoutTransport)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
 
 
 
@@ -139,7 +139,7 @@ def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, 
 
 
 #Extract geometry 2d
-def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
+def output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -266,17 +266,24 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, mZ=None):
     sys.stdout.flush()
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
-    saveNodes(nodes_out, aux_nodes, dim)
-    saveVertices(vertices_out, dim)
-    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
-    saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    saveNodes(aux_nodes, "AuxNode",dim, auxNodesFile)
+    if activeMechanics: 
+        saveNodes(nodes_out, "Particle",dim, nodesFile)
+        saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    else:
+        saveNodes(nodes_out, "AuxNode",dim, nodesFile)    
+    if activeTransport: 
+        saveNodes(vertices_out, "TrsprtNode",dim, verticesFile)
+        saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    else:
+        saveNodes(vertices_out, "AuxNode",dim, verticesFile)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
 
 
 
 
-def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False):
+def output3D(node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
     dim = 3
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
@@ -469,9 +476,17 @@ def output3D(node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransp
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
 
-    saveNodes(nodes_out, aux_nodes,dim)
-    saveVertices(vertices_out, dim, withoutTransport=withoutTransport)
-    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    saveNodes(aux_nodes, "AuxNode",dim, auxNodesFile)
+    if activeMechanics: 
+        saveNodes(nodes_out, "Particle",dim, nodesFile)
+        saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    else:
+        saveNodes(nodes_out, "AuxNode",dim, nodesFile)    
+    if activeTransport: 
+        saveNodes(vertices_out, "TrsprtNode",dim, verticesFile)
+        saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    else:
+        saveNodes(vertices_out, "AuxNode",dim, verticesFile)
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -492,8 +507,24 @@ def returnSelectedPts (boundPtA , boundPtB, points):
         if (selected == True):
             selectedPointIdxs.append(i)
 
-    return selectedPointIdxs
+    return np.array(selectedPointIdxs).astype(int)
 
+def excludeSelectedPts (boundPtA , boundPtB, points):
+    dim = len (boundPtA)
+    #
+    selectedPointIdxs = []
+    #
+    for i in range (len(points)):
+        selected = False
+        #
+        for d in range (dim):
+            if (points[i][d] < boundPtA[d] or points[i][d] > boundPtB[d]):
+                selected = True
+        #
+        if (selected == True):
+            selectedPointIdxs.append(i)
+
+    return np.array(selectedPointIdxs).astype(int)
 
 
 def saveTransportIC(transportIC_merged):
@@ -581,26 +612,29 @@ def saveMechBC(dim, nodes_mechBCmerged):
 
     print('done.')
 
-def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, withoutTransport = False):
+def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
-     if (solver == 0):
-            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  maxStep, minStep, simTime))
+     if (solver == "SteadyStateLinearSolver"):
+            fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t%e\n' %(solStep, simTime))
+     if (solver == "SteadyStateNonLinearSolver"):
+            fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%e\n' %(solStep,  maxStep, minStep, simTime))
+
 
      fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
      fl.write("MatFiles\t1\t%s\n"%materialsFile)
-     if (not withoutTransport):
+     if (activeTransport and activeMechanics):
          fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
-     else:
-         fl.write("ElemFiles\t1\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
-
-     if (not withoutTransport):
          fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
-     else:
-         fl.write("BCFiles\t1\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+     elif  (activeTransport):
+         fl.write("ElemFiles\t1\t%s\n"%(trsprtElemsFile))
+         fl.write("BCFiles\t1\t%s\n"%(trsprtBCFile))
+     elif  (activeMechanics):
+         fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
+         fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
 
      fl.write("ICFiles\t2\t%s\t%s\n"%(mechICFile,trsprtICFile))
      fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
@@ -658,15 +692,18 @@ def saveTransportBC(transportBCmerged, verticesDict, vertIdxStart):
     print('done.')
 
 
-def saveExporters():
+def saveExporters(activeTransport, activeMechanics):
     print('Saving exporters...', end='')
     sys.stdout.flush()
     fl=open(os.path.join(master_folder,exportersFile),'w')
-    fl.write('#TXTNodalExporter translations 2 ux uy\n')
-    fl.write('#TXTNodalExporter pressure 1 pressure\n')
-    fl.write('VTKElementExporter out  timeEeach 5e-2 cellData 1 damage\n')
-    fl.write('#VTKRCExporter faces  timeEeach 1e-1 cellData 1 damage\n')
-    fl.write('TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
+    if activeMechanics:   
+        fl.write('#TXTNodalExporter translations 2 ux uy\n')
+        fl.write('#TXTNodalExporter pressure 1 pressure\n')
+        fl.write('VTKElementExporter out  timeEeach 5e-2 cellData 1 damage\n')
+        fl.write('#VTKRCExporter faces  timeEeach 1e-1 cellData 1 damage\n')
+        fl.write('TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
+    if activeTransport:   
+        fl.write('TXTNodalExporter pressure 1 pressure\n')
 
     fl.close()
 
@@ -674,54 +711,25 @@ def saveExporters():
 
 
 
-def saveNodes (nodes_out, aux_nodes, dim):
-    print('Saving nodes...', end='')
+def saveNodes (nodes_out, nodetype, dim, filename):
+    print('Saving nodes...', end='')    
     sys.stdout.flush()
+    nodes_out = np.array(nodes_out)
     #writing nodes
-    if (dim == 2):
-        headerLine  = "Type\tnodeCrdX\tnodeCrdY\tpowRadius"
-        fmt='Particle\t%.12f\t%.12f\t%.12f'
-    if (dim == 3):
-        headerLine  = "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ\tpowRadius"
-        fmt='Particle\t%.12f\t%.12f\t%.12f\t%.12f'
-
-    fl=open(os.path.join(master_folder,nodesFile),'w')
-    np.savetxt(fl,  nodes_out[:,  0:dim+1], delimiter='\t',   fmt=fmt,  header = headerLine)
-    fl.close()
-
-    #writing aux nodes
+    num = dim
     if (dim == 2):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY"
-        fmt='AuxNode\t%.12f\t%.12f'
-    if (dim == 3):
+        fmt= nodetype + '\t%.12f\t%.12f'
+    elif (dim == 3):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ"
-        fmt='AuxNode\t%.12f\t%.12f\t%.12f'
+        fmt= nodetype + '\t%.12f\t%.12f\t%.12f'
+    if nodetype=="Particle":
+        headerLine = headerLine + "\tpowRadius"
+        fmt = fmt + '\t%.12f'
+        num = num + 1
 
-    fl=open(os.path.join(master_folder,auxNodesFile),'w')
-    np.savetxt(fl,  aux_nodes, delimiter='\t',   fmt=fmt,  header = headerLine)
-    fl.close()
-    print('done.')
-    sys.stdout.flush()
-
-
-
-def saveVertices (vertices_out, dim, withoutTransport = False):
-    print('Saving vertices...', end='')
-    sys.stdout.flush()
-    if (dim == 2):
-        headerLine = 'Type\tvrtxCrdX\tvrtxCrdY'
-        fmt ='TrsprtNode\t%.12f\t%.12f'
-        if (withoutTransport):
-            fmt = 'AuxNode\t%.12f\t%.12f'
-    if (dim == 3):
-        headerLine = 'Type\tvrtxCrdX\tvrtxCrdY\tvrtxCrdZ'
-        fmt = 'TrsprtNode\t%.12f\t%.12f\t%.12f'
-        if (withoutTransport):
-            fmt = 'AuxNode\t%.12f\t%.12f\t%.12f'
-
-    vertices_print = np.asarray(vertices_out)
-    fl=open(os.path.join(master_folder,verticesFile),'w')
-    np.savetxt(fl, vertices_print[:, 0:dim], delimiter='\t', fmt = fmt, header = headerLine)
+    fl=open(os.path.join(master_folder,filename),'w')   
+    np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
     print('done.')
     sys.stdout.flush()
