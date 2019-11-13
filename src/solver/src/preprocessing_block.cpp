@@ -49,67 +49,145 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
         //connect translations
         diff = s->givePoint() - m->givePoint();
 
-        //direction X  (all gammaxy and gammaxy realized here)
-        if(dim==3){
-            vm.resize(4);
-            mults.resize(4);
-            dirs.resize(4,0);
-            dirs[2] = 0;
-            dirs[3] = 0;
-            vm[2] = nodes->giveNode(intialNodeNum+5); //gamma xy
-            vm[3] = nodes->giveNode(intialNodeNum+4); //gamma xz
-            mults[3] = diff.z;
-        }else if(dim==2){
-            vm.resize(3);
-            mults.resize(3);
-            dirs.resize(3,0);
-            dirs[2] = 0;
-            vm[2] = nodes->giveNode(intialNodeNum+2); //gamma xy
-        }
-        dirs[0] = 0;
-        dirs[1] = 0;
-        vm[0] = m; //master
-        vm[1] = nodes->giveNode(intialNodeNum); //eps x
-        mults[0] = 1;
-        mults[1] = diff.x;
-        mults[2] = diff.y;
-        jd = new JointDoF(s, dirs[0], vm, dirs, mults);
-        constrs->addConstraint(jd);
-
-        //direction Y  (gammaxz realized here)
-        if(dim==3){
-            vm.resize(3);
-            mults.resize(3);
-            dirs.resize(3,0);
-            vm[2] = nodes->giveNode(intialNodeNum+3); //gamma yz
-            mults[2] = diff.z;
-        }else if(dim==2){
-            vm.resize(2);
-            mults.resize(2);
-            dirs.resize(2,0);
-        }
-        dirs[0] = 1;
-        vm[0] = m; //master
-        vm[1] = nodes->giveNode(intialNodeNum+1); //eps y
-        mults[0] = 1;
-        mults[1] = diff.y;
-        dirs[0] = 1;
-        jd = new JointDoF(s, dirs[0], vm, dirs, mults);
-        constrs->addConstraint(jd);
-
-        //direction Z  (gammaxz realized here)
-        if(dim==3){
-            vm.resize(2);
-            mults.resize(2);
-            dirs.resize(2,0);
-            dirs[0] = 2;
+        if ( use_half_gammas ) {
+            //direction X  (all gammaxy and gammaxy realized here)
+            if(dim==3){
+                vm.resize(4);
+                mults.resize(4);
+                dirs.resize(4,0);
+                dirs[2] = 0;
+                dirs[3] = 0;
+                vm[2] = nodes->giveNode(intialNodeNum+5); //gamma xy
+                vm[3] = nodes->giveNode(intialNodeNum+4); //gamma xz
+                mults[3] = diff.z / 2;
+            }else if(dim==2){
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3,0);
+                dirs[2] = 0;
+                vm[2] = nodes->giveNode(intialNodeNum+2); //gamma xy
+            }
+            dirs[0] = 0;
+            dirs[1] = 0;
             vm[0] = m; //master
-            vm[1] = nodes->giveNode(intialNodeNum+2); //eps z
+            vm[1] = nodes->giveNode(intialNodeNum); //eps x
             mults[0] = 1;
-            mults[1] = diff.z;
-            dirs[0] = 2;
+            mults[1] = diff.x / 2;
+            mults[2] = diff.y / 2;
             jd = new JointDoF(s, dirs[0], vm, dirs, mults);
             constrs->addConstraint(jd);
+
+            //direction Y  (gammaxz realized here)
+            if(dim==3){
+                vm.resize(4);
+                mults.resize(4);
+                dirs.resize(4,0);
+                dirs[2] = 0;
+                dirs[3] = 0;
+                vm[2] = nodes->giveNode(intialNodeNum+5); //gamma xy
+                vm[3] = nodes->giveNode(intialNodeNum+3); //gamma yz
+                mults[3] = diff.z / 2;
+            }else if(dim==2){
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3,0);
+                dirs[2] = 0;
+                vm[2] = nodes->giveNode(intialNodeNum+2); //gamma xy
+            }
+            dirs[0] = 1;
+            dirs[1] = 0;
+            vm[0] = m; //master
+            vm[1] = nodes->giveNode(intialNodeNum+1); //eps y
+            mults[0] = 1;
+            mults[1] = diff.y;
+            mults[2] = diff.x / 2;
+            jd = new JointDoF(s, dirs[0], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Z  (gammaxz realized here)
+            if(dim==3){
+                vm.resize(4);
+                mults.resize(4);
+                dirs.resize(4,0);
+                dirs[2] = 0;
+                dirs[3] = 0;
+                vm[2] = nodes->giveNode(intialNodeNum+4); //gamma xy
+                vm[3] = nodes->giveNode(intialNodeNum+3); //gamma yz
+                mults[3] = diff.y / 2;
+
+                dirs[0] = 2;
+                dirs[1] = 0;
+                vm[0] = m; //master
+                vm[1] = nodes->giveNode(intialNodeNum+2); //eps y
+                mults[0] = 1;
+                mults[1] = diff.z;
+                mults[2] = diff.x / 2;
+                jd = new JointDoF(s, dirs[0], vm, dirs, mults);
+                constrs->addConstraint(jd);
+            }
+        } else {
+            //direction X  (all gammaxy and gammaxy realized here)
+            if(dim==3){
+                vm.resize(4);
+                mults.resize(4);
+                dirs.resize(4,0);
+                dirs[2] = 0;
+                dirs[3] = 0;
+                vm[2] = nodes->giveNode(intialNodeNum+5); //gamma xy
+                vm[3] = nodes->giveNode(intialNodeNum+4); //gamma xz
+                mults[3] = diff.z;
+            }else if(dim==2){
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3,0);
+                dirs[2] = 0;
+                vm[2] = nodes->giveNode(intialNodeNum+2); //gamma xy
+            }
+            dirs[0] = 0;
+            dirs[1] = 0;
+            vm[0] = m; //master
+            vm[1] = nodes->giveNode(intialNodeNum); //eps x
+            mults[0] = 1;
+            mults[1] = diff.x;
+            mults[2] = diff.y;
+            jd = new JointDoF(s, dirs[0], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Y  (gammaxz realized here)
+            if(dim==3){
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3,0);
+                vm[2] = nodes->giveNode(intialNodeNum+3); //gamma yz
+                mults[2] = diff.z;
+            }else if(dim==2){
+                vm.resize(2);
+                mults.resize(2);
+                dirs.resize(2,0);
+            }
+            dirs[0] = 1;
+            vm[0] = m; //master
+            vm[1] = nodes->giveNode(intialNodeNum+1); //eps y
+            mults[0] = 1;
+            mults[1] = diff.y;
+            dirs[0] = 1;  // JK: here should be dirs[1] = 0; shouldn't it...? probably stays form dir X, so it does not matter, but dirs[0] is aleready  defined 5 lines upper
+            jd = new JointDoF(s, dirs[0], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Z  (gammaxz realized here)
+            if(dim==3){
+                vm.resize(2);
+                mults.resize(2);
+                dirs.resize(2,0);
+                dirs[0] = 2;
+                vm[0] = m; //master
+                vm[1] = nodes->giveNode(intialNodeNum+2); //eps z
+                mults[0] = 1;
+                mults[1] = diff.z;
+                dirs[0] = 2;
+                jd = new JointDoF(s, dirs[0], vm, dirs, mults);
+                constrs->addConstraint(jd);
+            }
         }
     }
 
@@ -199,6 +277,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 
 //////////////////////////////////////////////////////////
 void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
+    use_half_gammas = false;
     dim = d;
     string param;
     unsigned num, hnum;
@@ -216,6 +295,8 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
             iss >> num;
             masters.resize(num); slaves.resize(num);
             for(unsigned i=0; i<num; i++) iss >> slaves[i] >> masters[i];
+        } else if ( param.compare("use_half_gammas") == 0 ) {
+            use_half_gammas = true;
         } else if ( param.compare("load") == 0 ) {
             loadB = true;
             iss >> num;

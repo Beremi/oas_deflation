@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 import voronoi_viewer
 from mpl_toolkits.mplot3d import Axes3D
 
+from scipy.spatial import Voronoi
+from scipy.spatial import voronoi_plot_2d
+from scipy.spatial import Delaunay
+
 def createSingleSpringTestModel(length):
     print ('Creating single spring test model.')
     #defining functions
@@ -343,8 +347,10 @@ def create2dbeamConfinedPress(maxLim, minDist, trials ):
     functions.append (fn)
 
     #1 loading function, single force top right, bilinear
-    fn1 = utilitiesNumeric.constantFunc(1e-3)#utilitiesNumeric.sawToothConstFunc(value = -0.5e-4, period = 10)
+    #fn1 = utilitiesNumeric.constantFunc(1e-3)#utilitiesNumeric.sawToothConstFunc(value = -0.5e-4, period = 10)
+    fn1 = utilitiesNumeric.sawToothConstFunc(value = -0.5e-4, period = 10)
     functions.append (fn1)
+    #functions.append (fn1)
 
     #transport function, leftFace, constant
     fn2 = utilitiesNumeric.constantFunc(0)
@@ -397,6 +403,67 @@ def create2dPatchTestTransport(maxLim, minDist, trials ):
     #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower (node_coords, radii, 2, maxLim)
     print('done.')
+
+#pokracovat v periodic shear
+#udelat rozdeleni damage pri 2d confined press
+#3d 3 point notch bend
+
+def create2dPeriodicShear(maxLim, minDist, trials ):
+    print('Creating 2d periodic rectangle, shear loaded.')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype = asssemble2dPeriodicShear(maxLim, minDist, trials );
+
+    print ('Conducting Voronoi tesselation...', end ='')
+    vor = Voronoi(node_coords)
+    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    print('done.')
+
+
+    fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, single force top right, bilinear
+    fn1 = utilitiesNumeric.sawToothConstFunc(value = -5e-4, period = 4)
+    functions.append (fn1)
+
+    mechIC_merged = []
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([2,-1])
+    #leftFaceIC = 25.6
+    boundA = np.array(  [-1e-8 , maxLim[1]/10*8] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+        #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
+        #transportIC_merged.append(trsIC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8 , - 1e-8] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]/10*2 ] )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
 
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
@@ -901,12 +968,14 @@ def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directi
     #print(*node_coords, sep='\n')
 
     #node_coords = np.asarray(node_coords)
+
     """
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
     plt.show()
     """
+
     print('Conducting Voronoi tesselation...', end='')
     ### conducting Voronoi tesselation
     vor, volumes = utilitiesNumeric.runCylinderMirroredVoronoi (node_coords, center, radius, height, directionDim)
@@ -1143,6 +1212,18 @@ def assemble2DCantileverUniTens (maxLim, minDist, trials):
         mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
         #print('adding')
+
+
+
+    ###############generating of nodes, supported top  vertical ###############
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False, False)
+
+    ###############generating of nodes, supported bottom  vertical ###############
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False, False)
+
+
+
+
 
     ##########################################generating of points, homogeneous volume
     rectBC = np.array([-1,-1,-1,-1,-1,-1])
@@ -1383,6 +1464,140 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
 
 
     return node_coords, mechBC_merged, mechInitC_merged
+
+
+
+
+
+
+
+def asssemble2dPeriodicShear (maxLim, minDist, trials):
+    dim = 2
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    periodicBand = 3 * minDist
+
+    ###########generating of points in rectangle
+    pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
+
+    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
+    #node_coords = np.loadtxt('test.out')
+
+    mirtype = []
+    coupledNodes = []
+    nodePositions = []
+    for i in range (len(node_coords)):
+        nodePositions.append(i+1)
+        mirtype.append(0)
+    node_coords = np.asarray(node_coords)
+    print(len(node_coords))
+
+    #plt.plot(node_coords[:,0]+1, node_coords[:,1], 'x', color='red');
+    ########### adding periodic points
+    print('Adding periodic points')
+    for i in range (len(node_coords)):
+        point = np.asarray(node_coords[i,:])
+        #
+        xplus = False
+        xminus = False
+        yplus = False
+        yminus = False
+        #
+        if(point[0]<periodicBand):
+            xplus = True
+        if(point[0]>maxLim[0]-periodicBand):
+            xminus = True
+        if(point[1]<periodicBand):
+            yplus = True
+        if(point[1]>maxLim[1]-periodicBand):
+            yminus = True
+
+        k = i+1# len(node_coords)+1
+
+        #images due to one dimension
+        if xplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            nodePositions.append(-k)
+            node_coords = np.vstack(( node_coords, newPoint ))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(1)
+        if xminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+        if yplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[1] += maxLim[1]
+            nodePositions.append(-k)
+            #plt.plot(  newPoint[0] , newPoint[1] ,'o', color='red')
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(2)
+        if yminus:
+            newPoint = np.copy(point)
+            newPoint[1] -= maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+
+        if xplus and yplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] += maxLim[1]
+            nodePositions.append(-k)
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(3)
+
+        if xminus and yplus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] += maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+        if xplus and yminus:
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] -= maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+
+        if xminus and yminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] -= maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+
+    plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+
+    #for i in range (len(coupledNodes)):
+    #    plt.plot( node_coords[ abs(coupledNodes[i][0]),0 ] , node_coords[ abs(coupledNodes[i][0]),1 ] ,'o', color='red')
+    #    plt.plot( node_coords[ abs(coupledNodes[i][1]),0 ] , node_coords[ abs(coupledNodes[i][1]),1 ] ,'o', color='green')
+
+    plt.show()
+
+    #print (len(node_coords))
+
+    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
+    #node_coords = np.loadtxt('test.out')
+
+
+
+    return node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype
+
 
 
 

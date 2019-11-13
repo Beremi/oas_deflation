@@ -52,7 +52,7 @@ dmgalpha:
 	g++ $(CFLAGS) dmgalpha.cpp -L3rd/voro -lvoro++ -o $(OUT_DIR)/dmgalpha$(OUT_EXT)	
 
 # Build all of the executable files
-all: voropp dmgalpha
+all: voropp # dmgalpha
 	
 	
 dmgaclean:

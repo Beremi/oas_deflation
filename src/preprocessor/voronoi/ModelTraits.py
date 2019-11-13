@@ -95,17 +95,31 @@ class ModelType37(ModelType):
     elasticZones = Bool(True)
     withoutTransport = Bool(True)
 
-    mechMaterialSelector = Instance( MechMaterialSelector )
-    mechMaterialElaSelector = Instance( MechMaterialSelector )
+    mechMaterialSelector = Instance ( MechMaterialSelector )
+    mechMaterialElaSelector = Instance ( MechMaterialSelector )
     trsprtMaterialSelector = Instance ( TrsprtMaterialSelector )
 
     mechMaterial = Instance ( MechMaterial )
     mechMaterialEla = Instance ( MechMaterial )
     trsprtMaterial = Instance ( TrsprtMaterial )
 
+    mechGroup = Group(
+        UItem('mechMaterialSelector', style='custom'),
+        show_border = True, show_labels=True, label = 'Main mechanical material'
+    )
+    mechElaGroup = Group(
+        UItem('mechMaterialElaSelector', style='custom'),
+        show_border = True, show_labels=True, label = 'Ela zone mechanical material'
+    )
+    trsprtGroup = Group(
+        UItem('trsprtMaterialSelector', style='custom'),
+        show_border = True, show_labels=True, label = 'Transport material'
+    )
+
+
     traits_view = View(
         Group(
-                (
+                (Group(
                     Item('trials', label = 'Trials'),
                     Item('length'),
                     Item('outerRadius'),
@@ -114,23 +128,13 @@ class ModelType37(ModelType):
                     Item('rotAng'),
                     Item('elasticZones', label = 'ElaZones'),
                     Item('withoutTransport', label = 'NO Trsprt'),
-                    UItem('runButton')
-                ),
-                (   Group(
-                        UItem('mechMaterialSelector', style='custom'),
-                        show_border = True, show_labels=True, label = 'Main mechanical material'
-                        )
-                ),
-                (   Group(
-                        UItem('mechMaterialElaSelector', style='custom'),
-                        show_border = True, show_labels=True, label = 'Ela zone mechanical material'
-                        )
-                ),
-                ( Group(
-                    UItem('trsprtMaterialSelector', style='custom'),
-                    show_border = True, show_labels=True, label = 'Transport material'
+                    UItem('runButton'),
+                    show_border = True, show_labels=True, label = 'Model properties'
                     )
-                ), orientation='horizontal', columns = 4
+                ),
+                ( mechGroup   ),
+                ( mechElaGroup ),
+                ( trsprtGroup ), orientation='horizontal', columns = 4
                 )
             )
 
