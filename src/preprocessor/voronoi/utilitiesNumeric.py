@@ -6,7 +6,7 @@ import matplotlib.pylab as plt
 from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
-import voronoi
+import voronoi, power
 
 #2d voronoi a teselace
 from scipy.spatial import Voronoi
@@ -15,7 +15,7 @@ from scipy.spatial import Delaunay
 
 ##run voronoi, mirrored data
 def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
-    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts))
+    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts)[:,:dim]) #the last column might be present representing radii
 
     if (dim == 2):
         regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim, shifts = shifts)
@@ -23,6 +23,15 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
     if (dim == 3):
         volumes = voronoi.voronoi_3d(vor, maxLim);
         return vor, volumes
+
+##run power, mirrored data
+def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
+    if (dim == 2):        
+        regions, vertices, polygons, areas, centroids, points = power.power_2d(node_coords, radii, dim, maxLim)
+        return vor, regions, vertices, polygons, areas, centroids, points
+    if (dim == 3):
+        print("not implemented yet")
+        exit(1)
 
 def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim):
     vor = Voronoi(voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim))

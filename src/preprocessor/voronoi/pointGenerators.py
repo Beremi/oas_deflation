@@ -62,7 +62,43 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
+def fuller2D(d, dmax):
+    return (1.065*np.sqrt(d/dmax)-0.053*np.power(d/dmax,4)-0.012*np.power(d/dmax,6)-0.0045*np.power(d/dmax,8)-0.0025*np.power(d/dmax,10))
 
+def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
+        gap = 0.1
+        Volume = np.prod(maxLim)
+        d = np.flipud(np.linspace(minDiam,maxDiam,20))  #20 different diameters
+        prob = volumeRatio*fuller2D(d, maxDiam)
+        num = ((prob[:-1]-prob[1:])*Volume/(np.pi*np.square(d[:-1]/2.))+1.).astype(int)
+
+        point = np.zeros(dim+1)
+        iters = 0
+        di = 0
+        numi= 0
+        while (d[di]>minDiam and iters<trials):
+            if numi<num[di]:
+                point = np.random.rand(2)*(maxLim-d[di]) + d[di]/2.
+                radius = d[di]/2.
+                if len(node_coords) == 0:                     
+                    node_coords = np.vstack((node_coords,point)); 
+                    radii = np.hstack((radii, radius));
+                    numi += 1
+                    continue     
+     
+                dist = min(np.sum(np.square(node_coords-point),1)-np.square((1+gap)*(radii+radius)))
+                if dist>0.:
+                    node_coords = np.vstack((node_coords, point));
+                    radii = np.hstack((radii, radius));
+                    iters = 0
+                    numi += 1
+                else: iters += 1 
+            else:
+                di += 1
+                numi = 0.
+
+        return node_coords, radii
+        
 def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
     return True
 try:

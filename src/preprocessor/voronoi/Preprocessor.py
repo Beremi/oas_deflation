@@ -47,7 +47,8 @@ if __name__ == '__main__':
     mirtype = []
 
     #type of solver. does not matter now
-    solver = 0
+    #solver = "SteadyStateNonLinearSolver"
+    solver = "SteadyStateLinearSolver"
 
     #power tesselation on/off  does not matter now
     powerTes = 0
@@ -57,7 +58,9 @@ if __name__ == '__main__':
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
-    coupled = 0
+    activeTransport = 1
+    activeMechanics = 0
+
 
     #dimensions of rectangle model
     Xdim = 1.
@@ -78,7 +81,8 @@ if __name__ == '__main__':
 
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
-    minDist = 0.01
+
+    minDist = 0.1
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -92,7 +96,9 @@ if __name__ == '__main__':
     print ('Expecting about %d nodes' %expNodes)
 
     #trials of random node positioning
-    trials = 10000
+
+    trials = 500000
+
 
     #lists for the model
     node_coords = []
@@ -130,6 +136,10 @@ if __name__ == '__main__':
 
     #creating the model. Select the prepared models.
     if (dim == 2):
+
+        #patch test
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions  = utilitiesModeling.create2dPatchTestTransport(maxLim, minDist, trials )
+
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
         #materialZones=None
@@ -232,19 +242,15 @@ if __name__ == '__main__':
     utilitiesGeom.saveMaterials(materials)
     utilitiesGeom.saveFunctions(functions)
 
-
-
-
-
     if (len(mechBC_merged)>0): utilitiesGeom.saveMechBC(dim, mechBC_merged)
     if (len(mechIC_merged)>0):  utilitiesGeom.saveMechIC(dim, mechIC_merged)
     if (len(trsprtBC_merged)>0): utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
     if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
-    utilitiesGeom.saveExporters()
+    utilitiesGeom.saveExporters(activeTransport, activeMechanics)
 
     solStep = 1e-2
-    simTime = 100
-    utilitiesGeom.saveMasterInput(dim, solver, solStep, 1e-4, 1e-1, simTime, periodic = periodicModel)
+    simTime = 1e-2
+    utilitiesGeom.saveMasterInput(dim, solver, solStep, 1e-4, 1e-1, simTime, activeTransport, activeMechanics, periodic = periodicModel)
     end =  time.time() -end
     print('Saving done in %.3f secs.' %end)
 

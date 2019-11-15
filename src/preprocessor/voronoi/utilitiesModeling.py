@@ -393,6 +393,16 @@ def create2dbeamConfinedPress(maxLim, minDist, trials ):
 
 
 
+def create2dPatchTestTransport(maxLim, minDist, trials ):
+    print('Creating 2d patch test')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, radii, mechBC_merged, mechIC_merged  = assemble2dPatchTestTransport(maxLim, minDist, trials );
+
+    print('Conducting Voronoi tesselation...', end = '')
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower (node_coords, radii, 2, maxLim)
+    print('done.')
 
 #pokracovat v periodic shear
 #udelat rozdeleni damage pri 2d confined press
@@ -455,15 +465,28 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
 
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    functions = []
 
+    ### selecting vertices on the left surface
+    boundA = np.array(  [-1e-8 , -1e-8] )
+    boundB = np.array(  [maxLim[0]+1e-8, maxLim[1]+1e-8]  )
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+    boundA = np.array(  [1e-8 , 1e-8] )
+    boundB = np.array(  [maxLim[0]-1e-8, maxLim[1]-1e-8]  )
+    faces0 = utilitiesGeom.excludeSelectedPts(boundA, boundB, vert)
+    faces = faces1[faces0]
 
+    for i,k in enumerate(faces):
+        fn1 = utilitiesNumeric.constantFunc(np.sin(vor.vertices[k,0])*np.exp(vor.vertices[k,1]))
+        functions.append (fn1)
+        trsBC = utilitiesMech.transportBC(k,[i,-1])
+        transportBC_merged.append(trsBC)
 
-
-
-
-
-
-
+    return node_coords, [], transportBC_merged, vor, areas, functions
 
 
 def assembleTwoNodeSpringTest (maxLim, idt):
@@ -1325,6 +1348,31 @@ def assemble2dbeamConfinedPress (maxLim, minDist, trials):
     ####################################################################################################
 
     return node_coords,  mechBC_merged, mechIC_merged
+
+
+def assemble2dPatchTestTransport (maxLim, minDist, trials):
+    dim = 2
+    #lists for the model
+    node_coords = np.zeros((0,dim))
+    radii = np.zeros(0)
+    mechBC_merged = []
+    mechIC_merged = []
+
+    ##########################################generating of points, homogeneous volume
+    rectBC = np.array([-1,-1,-1,-1,-1,-1])
+    #rect
+    oldLen = len(node_coords)
+    #pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+    node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.5, dim, trials, node_coords, radii)
+    #
+    newLen = len(node_coords)-1
+
+   # print (nrOfPoints)
+  #  mBC = utilitiesGeom.mechanicalBC(dim, kvadrBC, oldLen, newLen)
+   # mechBC_merged.append(mBC)
+    ####################################################################################################
+
+    return node_coords, radii, mechBC_merged, mechIC_merged
 
 
 
