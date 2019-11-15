@@ -716,7 +716,9 @@ FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e) :
 
 //////////////////////////////////////////////////////////
 double FatigueMaterialStatus :: giveValue(string code) const {
-    if ( code.back() == 'N' ) {  // last char of string
+    if ( code.compare("energy_total") == 0) {
+      return DamagePlasticMaterialStatus :: giveValue("energy_totalN") + FatigueShearMaterialStatus :: giveValue("energy_totalT");
+    } else if ( code.back() == 'N' ) {  // last char of string
         return DamagePlasticMaterialStatus :: giveValue(code);
     } else {
       return FatigueShearMaterialStatus :: giveValue(code);
