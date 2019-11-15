@@ -35,6 +35,8 @@ private:
 
     bool checkReturnMap;
 
+    double energy_PL, energy_D, energy_Kin, energy_Iso;
+
     void print() const;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e);
@@ -95,6 +97,11 @@ private:
     double stressN;
 
     double strain_displ_multiplier;
+
+    double prev_damage, prev_zN, prev_epsNP, prev_alphaN;
+
+    double energy_PL, energy_D, energy_Kin, energy_Iso;
+    double Y_next;
 
     void print() const;
 public:

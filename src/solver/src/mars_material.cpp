@@ -44,7 +44,7 @@ void MarsMaterialStatus :: init() {
 
     if ( Ks < 0 || Kt < 0 ) {
         cerr << "Error " << name << ": snap back occured" << endl;
-        exit(0);
+        exit(1);
     }
 }
 
