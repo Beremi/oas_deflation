@@ -208,16 +208,16 @@ void BCContainer :: calculateDoFfields() {
     }
 
     // NOTE know which fns are actually used //JE WHY? What is this information for? Nobody cares. // JK to prevent restricting time step in extreme points of unused fns, it is probably not necessary and if anyone does not comment (or remove fn from fn file) fn that is not used it is his problem, can be removed then
-    for (auto const &f_id : dirichF ){
-      if ( !functions->isActive(f_id) ){
-        functions->setActive(f_id);
-      }
-    }
-    for (auto const &f_id : neumannF ){
-      if ( !functions->isActive(f_id) ){
-        functions->setActive(f_id);
-      }
-    }
+    // for (auto const &f_id : dirichF ){
+    //   if ( !functions->isActive(f_id) ){
+    //     functions->setActive(f_id);
+    //   }
+    // }
+    // for (auto const &f_id : neumannF ){
+    //   if ( !functions->isActive(f_id) ){
+    //     functions->setActive(f_id);
+    //   }
+    // }
 }
 
 //////////////////////////////////////////////////////////
