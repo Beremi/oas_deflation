@@ -30,21 +30,6 @@ double PieceWiseLinearFunction :: giveY(double t)  {
 	return y[x.size() - 1];
 
 
-	/*  Tohle je spatne poradi podminek: index i vzdy presahne delku pole a vznikne neopravneny pristup do pameti
-    unsigned i = 0;
-    // while ( x [ i ] < t && i < x.size() ) {
-    // ok, this way would also be sufficient
-    while ( i < x.size() && x [ i ] < t ) {
-        i++;
-    }
-    if ( i == 0 ) {
-        return 0.;
-    } else if ( i == x.size() ) {
-        return y [ x.size() - 1 ];
-    } else {
-        return y [ i - 1 ] + ( y [ i ] - y [ i - 1 ] ) / ( x [ i ] - x [ i - 1 ] ) * ( t - x [ i - 1 ] );
-    }
-	*/
 }
 
 //////////////////////////////////////////////////////////
@@ -58,19 +43,6 @@ double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
 	}
 
 	return INFINITY;
-
-  /*  Tohle je spatne poradi podminek: index i vzdy presahne delku pole a vznikne neopravneny pristup do pameti
-  unsigned i = 0;
-  // while ( x[i] <= t && i < x.size()) {
-  while ( i < x.size() && x[i] <= t) {
-      i++;
-  }
-  if ( i == 0 || i == x.size() ) {
-	  return INFINITY;
-  } else {
-    return x [ i ];
-  }
-  */
 
 }
 

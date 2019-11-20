@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
             now = std :: chrono :: system_clock :: now();
 
             elapsed_seconds = now - start_part;
-            std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl;
+            std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl; cout.flush();
         }
     }
 

@@ -83,7 +83,6 @@ double MechNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 // TRANSPORT NODE - pressure DoF
 double TrsNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
     if ( code.compare("pressure") == 0 ) {
-        cout << "pressure" << " " << DoFs [ firstDoF ] << endl;
         return DoFs [ firstDoF ];
     } else {
         return Node :: giveDoFBasedValue(code, DoFs);
