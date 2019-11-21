@@ -104,6 +104,8 @@ private:
     double energy_PL, energy_D, energy_Kin, energy_Iso;
     double Y_next;
 
+    bool symmetric;
+
     void print() const;
 public:
     DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e);
@@ -127,6 +129,8 @@ private:
     double m;  ///< hardening parameter
     bool use_displ;  ///< whether to use absolute values of displacements instead of strains
 
+    bool sym;
+
 public:
     DamagePlasticMaterial() { name = "Damage Plastic material"; };
     ~DamagePlasticMaterial() {};
@@ -141,6 +145,7 @@ public:
     virtual void init();
 
     bool useDispl() const { return use_displ; }
+    bool isSym() const { return sym; }
 };
 
 ///////////////////////////////////////////////////////////
