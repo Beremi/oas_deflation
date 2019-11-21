@@ -1,7 +1,7 @@
 #include "fatigue_material.h"
 #include "element.h"
 
-#define ITER true
+#define ITER false
 
 template <typename T> int sgn(T &val) {
     // NOTE this returns 1 for val = 0 (this is an intention, do not repair it!!)
