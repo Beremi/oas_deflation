@@ -128,12 +128,6 @@ except:
 
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
-    if (dim == 2):
-        vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
-    if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
-
 #check mutual distances between particles using loops in a periodic domain
 def checkMutDistancesLoopsPeriodic (dim, minDist, currentNodes, newNode, maxLim):
     distIsGood = True
@@ -147,17 +141,14 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-
-
-
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, mZ=None, withoutTransport=False, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None):
+def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None):
     if (dim == 2):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ)
+            vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, mZ=mZ, withoutTransport=withoutTransport, periodicModel = periodicModel)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, periodicModel = periodicModel)
     return vert_count, verticesIdxDict, vertIdxStart
 
 
@@ -963,8 +954,8 @@ def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, activeTrans
          fl.write("MatFiles\t1\t%s\n"%materialsFile)
          fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
          fl.write("PBlockFiles\t1\t%s\n" %blocksFile)
-         fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
-         fl.write("ExporterFiles\t1\t%s"%exportersFile)
+     fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
+     fl.write("ExporterFiles\t1\t%s"%exportersFile)
      #fl.write('INITMECH:\t%s\n' % initConditionsMechFile   )
      #fl.write('INITTRSPRT:\t%s\n' % initConditionsTrsprtFile   )
 

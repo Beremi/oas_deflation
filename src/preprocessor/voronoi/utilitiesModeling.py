@@ -400,9 +400,35 @@ def create2dPatchTestTransport(maxLim, minDist, trials ):
     node_coords, radii, mechBC_merged, mechIC_merged  = assemble2dPatchTestTransport(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...', end = '')
-    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
-    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower (node_coords, radii, 2, maxLim)
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower (node_coords, radii, 2, maxLim)
     print('done.')
+
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    functions = []
+
+    ### selecting vertices on the left surface
+    boundA = np.array(  [-1e-8 , -1e-8] )
+    boundB = np.array(  [maxLim[0]+1e-8, maxLim[1]+1e-8]  )
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+    boundA = np.array(  [1e-8 , 1e-8] )
+    boundB = np.array(  [maxLim[0]-1e-8, maxLim[1]-1e-8]  )
+    faces0 = utilitiesGeom.excludeSelectedPts(boundA, boundB, vert)
+    faces = faces1[faces0]
+
+    for i,k in enumerate(faces):
+        fn1 = utilitiesNumeric.constantFunc(np.sin(vor.vertices[k,0])*np.exp(vor.vertices[k,1]))
+        functions.append (fn1)
+        trsBC = utilitiesMech.transportBC(k,[i,-1])
+        transportBC_merged.append(trsBC)
+
+    return node_coords, [], transportBC_merged, vor, areas, functions
 
 #pokracovat v periodic shear
 #udelat rozdeleni damage pri 2d confined press
