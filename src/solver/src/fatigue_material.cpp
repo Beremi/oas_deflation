@@ -673,7 +673,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
 
     }
     if ( this->symmetric ){
-      stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP ) * ( strain[ 0 ] / abs( strain[ 0 ] ) );
+      stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP ) * ( sgn( strain[ 0 ] ) );
     } else {
       stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP );
     }
