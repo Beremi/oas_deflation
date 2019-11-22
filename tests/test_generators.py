@@ -5,7 +5,7 @@ from scipy.spatial.distance import pdist
 from pointGenerators import generateNodesRect
 
 dim = 2
-maxlim = np.array([10., 1.])
+maxlim = np.array([1., 1.])
 minDist = 0.07
 trials = 5000
 node_coords = [[5, 1], [0, 0], [10, 0]]

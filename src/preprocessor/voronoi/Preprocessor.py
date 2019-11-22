@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-#
-# In[1]:
-
 import os
 import sys
 import time
@@ -63,7 +58,7 @@ if __name__ == '__main__':
 
 
     #dimensions of rectangle model
-    Xdim = 1.
+    Xdim = 10.
     Ydim = 1.
     Zdim = 1.
 
