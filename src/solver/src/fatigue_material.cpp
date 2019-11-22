@@ -1,8 +1,6 @@
 #include "fatigue_material.h"
 #include "element.h"
 
-#define ITER false
-
 template <typename T> int sgn(T &val) {
     // NOTE this returns 1 for val = 0 (this is an intention, do not repair it!!)
     return (T(0) <= val) - (val < T(0));
@@ -193,184 +191,73 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
   } else {
 
-    double deltaS = (temp_slip - slip).norm();
-    double gamma_paramD = 1.0;
-    double gamma_paramS = 1.0;
-    double gamma_paramA = 1.0;
-    double gamma_paramZ = 1.0;
+    // TODO move some of these into materialstatus not to calculate them everytime again
+    int num_per_elastic_part = 10;
+    double deltaS_full = (temp_slip - slip).norm();
+    double elastic_part = 1e6;
+    // double elastic_part = m->giveTauBar();
+    double deltaS_part = strain_slip_multiplier * ( elastic_part / m->giveE0() ) / num_per_elastic_part;
+    int divide_by = 1;
+    Point slip_increment;
+    Point slip_cur = slip;
+    Point tauTildaPiTrial;
 
-    //compute trials
-    Point tauTildaPiTrial = (temp_slip - sPi) * stiff [1];
+    temp_damageShear = damageShear;
+    temp_sPi = sPi;
+    temp_alphaKin = alphaKin;
+    temp_zIso = zIso;
 
-    f_trial = (tauTildaPiTrial - alphaKin * m->giveGamma()).norm() - (m->giveKin() * zIso) - (m->giveTauBar() - (m->giveM() * stress [ 0 ]));
+    if ( deltaS_full > deltaS_part ){
+      divide_by = (deltaS_full / deltaS_part) + 1;
+    }
+    slip_increment = (temp_slip - slip) / divide_by;
 
-    if ( f_trial <= 0 || deltaS == 0 ){
-      // internal variables unchanged
-      // it is necessary to asign them to temp, because temp values could have been changed in the previous iterration
-      temp_zIso = zIso;
-      temp_alphaKin = alphaKin;
-      temp_damageShear = damageShear;
-      temp_sPi = sPi;
-      stressT =  tauTildaPiTrial * (1 - damageShear); //shear stress
-    } else {
+    for ( unsigned i = 0; i < divide_by; i++ ){
 
-      if ( ITER ) {
-        // //itterative procedure over ftrial:
-        // double damage_iter = damageShear;  // damage in current iteration
-        // double zIso_iter = zIso;
-        // Point alphaKin_iter = alphaKin;
-        // Point stressT_iter = stressT;
-        // Point sPi_iter = sPi;
-        // double f_trial_iter;
-        // //iterations (max 100)
-        // for(unsigned iterD = 0; iterD<10000 ; iterD++) {
-        // // while (f_trial >= 1e-6){
-        // // while (true){
-        //
-        //   if ( useAnaliticalLambda ){
-        //     dLambda = get_Lambda(stiff[1], m->giveKin(), this->alphaKin.norm(), m->giveGamma(), damage_iter, this->temp_slip.norm(), sPi_iter.norm());
-        //   } else {
-        //     dLambda = f_trial_iter / ((stiff[1] / (1 - damage_iter)) + m->giveGamma() + m->giveKin());
-        //   }
-        //
-        //   Point h = tauTildaPiTrial - alphaKin_iter * m->giveGamma();
-        //   sgn1 = h / h.norm();
-        //   sPi_iter = sPi + sgn1 * dLambda / (1 - damage_iter);
-        //
-        //   Ynext = 0.5 * stiff[1] * (temp_slip - sPi_iter).sqNorm(); // sqNorm = self dot product
-        //
-        //   part1 = pow(1 - damage_iter, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
-        //   damage_iter = damageShear + dLambda * part1;
-        //   // damage_iter = fmin(1-1e-10, fmax(0, damageShear + dLambda * part1)); //limited by <0 1>
-        //
-        //   zIso_iter = zIso + dLambda;
-        //   alphaKin_iter = alphaKin + sgn1 * dLambda;
-        //
-        //   stressT_iter = (temp_slip - sPi_iter) * (1 - damage_iter) * stiff[ 1 ];
-        //
-        //   tauTildaPiTrial = (temp_slip - sPi_iter) * stiff [1];
-        //   f_trial_iter = (tauTildaPiTrial - alphaKin_iter * m->giveGamma()).norm() - (m->giveKin() * zIso_iter) - (m->giveTauBar() - (m->giveM() * stress [ 0 ]));
-        //   // std::cout << "d_f_trial = " << f_trial_iter - f_trial << '\t' << f_trial << '\t' << f_trial_iter << ", damage_iter = " << damage_iter << '\n';
-        //   // if (damage_iter >= 1-1e-10) break;
-        //   // if (f_trial_iter - f_trial <= 1e-6) break;
-        //   // if (f_trial_iter <= 1e-6) break;
-        //   if (((stressT - stressT_iter)/(stressT - stressT_iter).norm()).norm() <= 0.01) break;
-        //   stressT = stressT_iter;
-        // }
-        // // std::cout << "-------------------------------------" << '\n';
-        // temp_damageShear = damage_iter;
-        // temp_zIso = zIso_iter;
-        // temp_alphaKin = alphaKin_iter;
-        // stressT = stressT_iter;
-        // temp_sPi = sPi_iter;
+      slip_cur += slip_increment;
 
-        double delta_omega = 100;
-        double omega_iter = damageShear;
-        for ( unsigned ui = 0; ui < 100001; ui++){
-        // while ( delta_omega > 0.01 ) {
+      //compute trials
+      tauTildaPiTrial = (slip_cur - temp_sPi) * stiff [1];
 
-          Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
-          sgn1 = h / h.norm();
+      f_trial = (tauTildaPiTrial - temp_alphaKin * m->giveGamma()).norm() - (m->giveKin() * temp_zIso) - (m->giveTauBar() - (m->giveM() * stress [ 0 ]));
 
-          if ( useAnaliticalLambda ){
-            dLambda = get_Lambda(stiff[1], m->giveKin(), this->alphaKin.norm(), m->giveGamma(), omega_iter, this->temp_slip.norm(), this->sPi.norm());
-          } else {
-            dLambda = f_trial / ((stiff[1] / (1 - omega_iter)) + m->giveGamma() + m->giveKin());
-            // dLambda =  dot((temp_slip - slip) * stiff[1], sgn1) / (( stiff[1] / (1 - damageShear) + m->giveKin() + m->giveGamma() ));
-          }
-
-          temp_sPi = sPi + sgn1 * dLambda / (1 - damageShear);
-
-          Ynext = 0.5 * stiff[1] * (temp_slip - temp_sPi).sqNorm(); // sqNorm = self dot product
-          // Ynext = 0.5 * stiff[1] * (temp_slip - (temp_sPi + sPi) * 0.5).sqNorm();
-
-          part1 = pow(1 - damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
-          temp_damageShear = fmax(1e-10,fmin(1-1e-10, damageShear + dLambda * part1)); //limited by <0 1>
-          // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
-
-          delta_omega = abs( temp_damageShear - omega_iter ) / temp_damageShear;
-
-          // std::cout << "delta_omega = " << delta_omega << ", omega_iter = " << omega_iter << ", temp_damageShear = " << temp_damageShear << '\n';
-
-          omega_iter = temp_damageShear;
-
-        }
-
-        // std::cout << "-------------------------------------------------" << '\n';
-
-
-        temp_zIso = zIso + dLambda;
-        temp_alphaKin = alphaKin + sgn1 * dLambda;
-
-        stressT = (temp_slip - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
-
+      if ( f_trial <= 0 ){
+        // internal variables unchanged
+        // it is necessary to asign them to temp, because temp values could have been changed in the previous iterration
+        temp_zIso = zIso;
+        temp_alphaKin = alphaKin;
+        temp_damageShear = damageShear;
+        temp_sPi = sPi;
+        stressT =  tauTildaPiTrial * (1 - temp_damageShear); //shear stress
       } else {
-        // /*
+
+        // initial non-iterative procedure
         Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
         sgn1 = h / h.norm();
 
         if ( useAnaliticalLambda ){
           dLambda = get_Lambda(stiff[1], m->giveKin(), this->alphaKin.norm(), m->giveGamma(), this->damageShear, this->temp_slip.norm(), this->sPi.norm());
         } else {
-          dLambda = f_trial / ((stiff[1] / (1 - damageShear)) + m->giveGamma() + m->giveKin());
+          dLambda = f_trial / ((stiff[1] / (1 - temp_damageShear)) + m->giveGamma() + m->giveKin());
           // dLambda =  dot((temp_slip - slip) * stiff[1], sgn1) / (( stiff[1] / (1 - damageShear) + m->giveKin() + m->giveGamma() ));
         }
 
-        temp_sPi = sPi + sgn1 * dLambda / (1 - damageShear);
+        temp_sPi += sgn1 * dLambda / (1 - damageShear);
 
-        Ynext = 0.5 * stiff[1] * (temp_slip - temp_sPi).sqNorm(); // sqNorm = self dot product
+        Ynext = 0.5 * stiff[1] * (slip_cur - temp_sPi).sqNorm(); // sqNorm = self dot product
         // Ynext = 0.5 * stiff[1] * (temp_slip - (temp_sPi + sPi) * 0.5).sqNorm();
 
-        part1 = pow(1 - damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
-        temp_damageShear = fmax(1e-10,fmin(1-1e-10, damageShear + dLambda * part1)); //limited by <0 1>
+        part1 = pow(1 - temp_damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
+        temp_damageShear = fmax(1e-10,fmin(1-1e-10, temp_damageShear + dLambda * part1)); //limited by <0 1>
         // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
-        temp_zIso = zIso + dLambda;
-        temp_alphaKin = alphaKin + sgn1 * dLambda;
+        temp_zIso += dLambda;
+        temp_alphaKin += sgn1 * dLambda;
 
-        stressT = (temp_slip - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
-        //*/
-
-        // Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
-        // sgn1 = h / h.norm();
-        //
-        // if ( useAnaliticalLambda ){
-        //   dLambda = get_Lambda(stiff[1], m->giveKin(), this->alphaKin.norm(), m->giveGamma(), this->damageShear, this->temp_slip.norm(), this->sPi.norm());
-        // } else {
-        //   dLambda = f_trial / ((stiff[1] / (1 - damageShear)) + m->giveGamma() + m->giveKin());
-        //   // dLambda =  dot((temp_slip - slip) * stiff[1], sgn1) / (( stiff[1] / (1 - damageShear) + m->giveKin() + m->giveGamma() ));
-        // }
-        //
-        // temp_sPi = sPi + (((sgn1 * dLambda / (1 - damageShear)) * gamma_paramS / deltaS) +
-        //            ( sPi - prev_sPi ) * ( 1 - gamma_paramS ) / deltaS) * deltaS;
-        //
-        // Ynext = 0.5 * stiff[1] * (temp_slip - temp_sPi).sqNorm(); // sqNorm = self dot product
-        // // Ynext = 0.5 * stiff[1] * (temp_slip - (temp_sPi + sPi) * 0.5).sqNorm(); // sqNorm = self dot product
-        //
-        // part1 = pow(1 - damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
-        // temp_damageShear = damageShear + (gamma_paramD * (dLambda * part1) / deltaS +
-        //               ( 1 - gamma_paramD ) * (damageShear - prev_damageShear) / deltaS) * deltaS;
-        // temp_damageShear = fmin(1-1e-10, fmax(0, temp_damageShear));
-        // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
-        //
-        // temp_zIso = zIso + (gamma_paramZ * dLambda +
-        //           (1 - gamma_paramZ) * (zIso - prev_zIso) / deltaS) * deltaS;
-        // temp_alphaKin = alphaKin + (((sgn1 * dLambda) * gamma_paramA / deltaS) +
-        //           (alphaKin - prev_alphaKin) * (1 - gamma_paramA) / deltaS) * deltaS;
-        //
-        // stressT = (temp_slip - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
-        // // stressT = (temp_slip - temp_sPi) * (1 - (temp_damageShear + damageShear) * 0.5) * stiff[ 1 ];
-        // // stressT = (temp_slip - (temp_sPi + sPi) * 0.5) * (1 - (temp_damageShear + damageShear) * 0.5) * stiff[ 1 ];
-        // // stressT = (temp_slip - (temp_sPi * 0.34 + sPi * 0.66)) * (1 - (temp_damageShear * 0.66 + damageShear * 0.34)) * stiff[ 1 ];
-        // // stressT = (temp_slip - (temp_sPi * 0.66 + sPi * 0.34)) * (1 - (temp_damageShear * 0.34 + damageShear * 0.66)) * stiff[ 1 ];
-        // // (temp_slip - slip).print();
-        // // temp_slip.print();
-        // // slip.print();
-        // // std::cout << "deltaS = " << deltaS << ", dLambda = " << dLambda << ", sPi = " << temp_sPi.norm() << ", damage = " << temp_damageShear << ", alphaKin = " << temp_alphaKin.norm() << ", zIso = " << temp_zIso << '\n';
-
-
+        stressT = (slip_cur - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
       }
     }
+    temp_slip = slip_cur;
   }
   // calculate algorithmic (tangent) shear stifness
   //computed here only for convenience
