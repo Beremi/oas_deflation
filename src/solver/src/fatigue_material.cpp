@@ -643,8 +643,6 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
     for ( unsigned i = 1; i < strain.size(); i++){
       stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] );
     }
-    stressN = stress[ 0 ];
-    return stress;
   } else {
     Heaviside = 0;
     SigmaTilda = ( 1 - Heaviside * damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
@@ -672,19 +670,20 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
       temp_epsNP = epsNP + dLambda * sgn1;
 
     }
-    if ( this->symmetric ){
-      stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP ) * ( sgn( strain[ 0 ] ) );
-    } else {
-      stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP );
-    }
-
-    // // apply the same in shear direction
-    // for ( unsigned i = 1; i < strain.size(); i++){
-    //   // stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] - (strain[ i ]/temp_epsN)*temp_epsNP );
-    // }
-    stressN = stress[ 0 ];
-    return stress;
   }
+  if ( this->symmetric ){
+    stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP ) * sgn( strain[ 0 ] );
+    temp_epsN *= sgn( strain[ 0 ] );
+    // std::cout << "strain = " << strain[ 0 ] << ", sgn( strain[ 0 ] ) = " << sgn( strain[ 0 ] ) << ", stress = " << stress[ 0 ] << '\n';
+  } else {
+    stress[ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - temp_epsNP );
+  }
+  // apply the same in shear direction
+  // for ( unsigned i = 1; i < strain.size(); i++){
+  //   // stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] - (strain[ i ]/temp_epsN)*temp_epsNP );
+  // }
+  stressN = stress[ 0 ];
+  return stress;
 }
 
 //////////////////////////////////////////////////////////
