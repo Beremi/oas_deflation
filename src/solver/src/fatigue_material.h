@@ -20,7 +20,7 @@ private:
     double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
 
     Point temp_sPi, temp_slip, temp_alphaKin;
-    Point stressT;
+    Point stressT, temp_stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
     double prev_damageShear, prev_zIso;
@@ -35,7 +35,9 @@ private:
 
     bool checkReturnMap, useAnaliticalLambda;
 
+    // the following are all densities ()
     double energy_PL, energy_D, energy_Kin, energy_Iso;
+    double work_tot;
 
     void print() const;
 public:
@@ -95,13 +97,13 @@ private:
     double rN;
 
     double temp_epsN, temp_damage, temp_epsNP, temp_alphaN, temp_zN, temp_rN; ///<temporary variables
-    double stressN;
+    double temp_stressN, stressN;
 
     double strain_displ_multiplier;
 
     double prev_damage, prev_zN, prev_epsNP, prev_alphaN;
 
-    double energy_PL, energy_D, energy_Kin, energy_Iso;
+    double energy_PL, energy_D, energy_Kin, energy_Iso, work_tot;
     double Y_next;
 
     bool symmetric;

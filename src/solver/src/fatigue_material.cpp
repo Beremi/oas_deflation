@@ -36,7 +36,7 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return stressT.getY();
     } else if ( (code.compare("stressTZ") == 0)) {
         return stressT.getZ();
-    } else if ( (code.compare("energy_totalT") == 0)) {
+    } else if ( (code.compare("energy_totalT") == 0) || (code.compare("energy_total") == 0)) {
         return energy_PL + energy_D + energy_Kin + energy_Iso;
     } else if ( (code.compare("energy_PLT") == 0)) {
         return energy_PL;
@@ -46,6 +46,12 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return energy_Kin;
     } else if ( (code.compare("energy_IsoT") == 0)) {
         return energy_Iso;
+    } else if ( (code.compare("work_totT") == 0) || (code.compare("work_tot") == 0)) {
+        return work_tot;
+    } else if ( (code.compare("work_elaT") == 0) || (code.compare("work_ela") == 0)) {
+        return dot( slip - sPi, stressT ) * 0.5;
+    } else if ( (code.compare("work_dissipT") == 0) || (code.compare("work_dissip") == 0)) {
+        return work_tot - this->giveValue("work_ela");
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -64,10 +70,11 @@ void FatigueShearMaterialStatus :: init() {
     lambda = temp_lambda = 0;
     zIso = prev_zIso = temp_zIso = 0;
     sPi = prev_sPi = temp_sPi = Point();
+    stressT = temp_stressT = Point();
     alphaKin = prev_alphaKin = temp_alphaKin = Point();
     slip = temp_slip = Point();
 
-    energy_PL = energy_D = energy_Kin = energy_Iso = 0;
+    energy_PL = energy_D = energy_Kin = energy_Iso = work_tot = 0;
 }
 
 double get_Lambda(const double &E_b, const double &K, const double &alpha, const double &gamma, const double &omega, const double &s, const double &sPi) {
@@ -146,7 +153,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
           temp_alphaKin = alpha_k;
           temp_damageShear = omega_k;
           temp_sPi = s_pi_k;
-          stressT =  tau_trial; //shear stress
+          temp_stressT =  tau_trial; //shear stress
           break;
         } else {
 
@@ -185,7 +192,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
       temp_alphaKin = alpha_k;
       temp_zIso = z_k;
-      stressT = tau_trial;
+      temp_stressT = tau_trial;
       temp_sPi = s_pi_k;
       Ynext = Y;
 
@@ -209,6 +216,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
     if ( deltaS_full > deltaS_part ){
       divide_by = (deltaS_full / deltaS_part) + 1;
+      // std::cout << "step divided into " << divide_by << " substeps " << '\n';
     }
     slip_increment = (temp_slip - slip) / divide_by;
 
@@ -224,11 +232,12 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       if ( f_trial <= 0 ){
         // internal variables unchanged
         // it is necessary to asign them to temp, because temp values could have been changed in the previous iterration
-        temp_zIso = zIso;
-        temp_alphaKin = alphaKin;
-        temp_damageShear = damageShear;
-        temp_sPi = sPi;
-        stressT =  tauTildaPiTrial * (1 - temp_damageShear); //shear stress
+        // in this case of substeps, the values cannot be assigned to initial state (at the beginning of step) - because these could have been changed previously
+        // temp_zIso = zIso;
+        // temp_alphaKin = alphaKin;
+        // temp_damageShear = damageShear;
+        // temp_sPi = sPi;
+        temp_stressT =  tauTildaPiTrial * (1 - temp_damageShear); //shear stress
       } else {
 
         // initial non-iterative procedure
@@ -254,7 +263,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
         temp_zIso += dLambda;
         temp_alphaKin += sgn1 * dLambda;
 
-        stressT = (slip_cur - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
+        temp_stressT = (slip_cur - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
       }
     }
     temp_slip = slip_cur;
@@ -271,8 +280,8 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
   // tau trial units are MPa * m in case of slip in absolute values (displacement instead of strain)
 
   for (unsigned i = 1; i < strain.size(); i++){
-    if (i == 1) stress[ i ] = stressT.getY();
-    else if (i == 2) stress[ i ] = stressT.getZ();
+    if (i == 1) stress[ i ] = temp_stressT.getY();
+    else if (i == 2) stress[ i ] = temp_stressT.getZ();
     else {
       std::cerr << "should never get here, exit" << '\n';
       exit(1);
@@ -289,14 +298,17 @@ void FatigueShearMaterialStatus :: update() {
   prev_alphaKin = alphaKin;
   prev_zIso = zIso;
 
+  work_tot += dot(temp_slip - slip, (temp_stressT + stressT) * 0.5);
+
   damageShear = temp_damageShear;
   sPi = temp_sPi;
   alphaKin = temp_alphaKin;
   zIso = temp_zIso;
   slip = temp_slip;
   lambda = temp_lambda;
+  stressT = temp_stressT;
 
-  energy_PL += dot(stressT, sPi - prev_sPi);
+  energy_PL += dot(temp_stressT, sPi - prev_sPi);
   energy_D += Ynext * (damageShear - prev_damageShear);
   FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
   energy_Kin += dot(alphaKin * m->giveGamma(), (alphaKin - prev_alphaKin));
@@ -452,7 +464,7 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
         return stressN;
     } else if ( (code.compare("strainPL") == 0) || (code.compare("strainPLN") == 0) ) {
         return epsNP;
-    } else if ( (code.compare("energy_totalN") == 0)) {
+    } else if ( (code.compare("energy_totalN") == 0) || (code.compare("energy_total") == 0)) {
         return energy_PL + energy_D + energy_Kin + energy_Iso;
     } else if ( (code.compare("energy_PLN") == 0)) {
         return energy_PL;
@@ -462,6 +474,12 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
         return energy_Kin;
     } else if ( (code.compare("energy_IsoN") == 0)) {
         return energy_Iso;
+    } else if ( (code.compare("work_totN") == 0) || (code.compare("work_tot") == 0)) {
+        return work_tot;
+    } else if ( (code.compare("work_elaN") == 0) || (code.compare("work_ela") == 0)) {
+        return epsN * epsNP * 0.5;
+    } else if ( (code.compare("work_dissipN") == 0) || (code.compare("work_dissip") == 0)) {
+        return work_tot - this->giveValue("work_ela");
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -480,8 +498,9 @@ void DamagePlasticMaterialStatus :: init() {
     zN = temp_zN = prev_zN = 0;
     rN = temp_rN = 0;
     Y_next = 0;
+    stressN = temp_stressN = 0;
 
-    energy_PL = energy_D = energy_Kin = energy_Iso = 0;
+    energy_PL = energy_D = energy_Kin = energy_Iso = work_tot = 0;
 
     symmetric = m->isSym();
 }
@@ -569,7 +588,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
   // for ( unsigned i = 1; i < strain.size(); i++){
   //   // stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] - (strain[ i ]/temp_epsN)*temp_epsNP );
   // }
-  stressN = stress[ 0 ];
+  temp_stressN = stress[ 0 ];
   return stress;
 }
 
@@ -580,15 +599,18 @@ void DamagePlasticMaterialStatus :: update() {
   prev_zN = zN;
   prev_alphaN = alphaN;
 
+  work_tot += (temp_epsN - epsN) * (temp_stressN + stressN) * 0.5;
+
   damage = temp_damage;
   epsN = temp_epsN;
   epsNP = temp_epsNP;
   alphaN = temp_alphaN;
   zN = temp_zN;
   rN = temp_rN;
+  stressN = temp_stressN;
 
   energy_PL += stressN * (temp_epsNP - prev_epsNP);
-  energy_D += Y_next * (temp_damage - prev_damage);
+  energy_D += Y_next * (damage - prev_damage);
   DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
   energy_Kin += (alphaN * m->giveGammaN()) * (temp_alphaN - prev_alphaN);
   energy_Iso += m->giveKinN() * (temp_zN - prev_zN);
@@ -731,6 +753,12 @@ FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e) :
 double FatigueMaterialStatus :: giveValue(string code) const {
     if ( code.compare("energy_total") == 0) {
       return DamagePlasticMaterialStatus :: giveValue("energy_totalN") + FatigueShearMaterialStatus :: giveValue("energy_totalT");
+    } else if  ( code.compare("work_total") == 0) {
+      return DamagePlasticMaterialStatus :: giveValue("work_totalN") + FatigueShearMaterialStatus :: giveValue("work_totalT");
+    } else if  ( code.compare("work_ela") == 0) {
+      return DamagePlasticMaterialStatus :: giveValue("work_elaN") + FatigueShearMaterialStatus :: giveValue("work_elaT");
+    } else if  ( code.compare("work_dissip") == 0) {
+      return DamagePlasticMaterialStatus :: giveValue("work_dissipN") + FatigueShearMaterialStatus :: giveValue("work_dissipT");
     } else if ( code.back() == 'N' ) {  // last char of string
         return DamagePlasticMaterialStatus :: giveValue(code);
     } else {

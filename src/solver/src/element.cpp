@@ -103,7 +103,10 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     return area * length / ndim;
   } else if ( code.compare("energy_per_volume") == 0 )       {
     FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
-    return fmstat->giveValue("energy")  / (area * length / ndim);
+    return fmstat->giveValue("energy_total")  / (area * length / ndim);
+  } else if ( code.compare("work_per_volume") == 0 )       {
+    FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
+    return fmstat->giveValue("work_dissip")  / (area * length / ndim);
   } else {
     return MechanicalElement :: giveIPValue(code, ipnum);
   }
