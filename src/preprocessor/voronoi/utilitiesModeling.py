@@ -400,8 +400,8 @@ def create2dPatchTestTransport(maxLim, minDist, trials ):
     node_coords, radii, mechBC_merged, mechIC_merged  = assemble2dPatchTestTransport(maxLim, minDist, trials );
 
     print('Conducting Voronoi tesselation...', end = '')
-    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
-    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower (node_coords, radii, 2, maxLim)
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)

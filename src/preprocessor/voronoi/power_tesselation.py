@@ -158,11 +158,11 @@ class PowerTesselation(object):
 
     @property
     def vertices(self):
-        return np.array(self._vertices)[:, 1:(self._ndim + 1)]
+        return self._vertices
 
     @property
     def ridge_points(self):
-        return np.array(self._ridge_points)
+        return self._ridge_points
 
     @property
     def ridge_vertices(self):
@@ -203,7 +203,7 @@ class PowerTesselation(object):
 
             vertex_start_num += cell.vertices.size()
         self._ridge_vertices = ridge_vertices
-        self._vertices = vertices
+        self._vertices = np.array(vertices)[:, 1:(self._ndim + 1)]
         self._regions = regions
         self._ridge_points = connection_list
         self._point_region = point_region
@@ -241,12 +241,19 @@ class PowerTesselation(object):
                     ridge_vertices.append(np.array(side.as_list()) + vertex_start_num)
 
             vertex_start_num += cell.vertices.size()
+        
         self._ridge_vertices = ridge_vertices
         self._vertices = vertices
         self._regions = regions
-        self._ridge_points = connection_list
+        #self._ridge_points = connection_list
         self._point_region = point_region
         self._merge_duplicate_vertices()
+        
+        ridge_points = np.array(connection_list)
+        neg = ridge_points < 0
+        ridge_points[neg] = np.max(ridge_points) - ridge_points[neg]
+        self._ridge_points = ridge_points
+        self._vertices = np.array(self._vertices)[:, 1:(self._ndim + 1)]
 
     def _merge_duplicate_vertices(self):
         def replace(val, dict_):
