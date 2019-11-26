@@ -54,7 +54,7 @@ if __name__ == '__main__':
     powerTes = 0
 
     #dimension
-    dim = 2
+    dim = 3
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.1
+    minDist = 0.15
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -173,7 +173,7 @@ if __name__ == '__main__':
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
 
         #cantilever uniform pressure, confined
-        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
 
         #cylinder uniform pressure free
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderTorsionFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
 
         #tube torsion free
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dtubeTorsionFree(np.zeros(3), cylinderRad, cylinderHeight, tubeThickness, minDist, trials, 0 )
+        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dtubeTorsionFree(np.zeros(3), cylinderRad, cylinderHeight, tubeThickness, minDist, trials, 0 )
 
     node_coords = np.asarray(node_coords)
     node_count = len(node_coords)

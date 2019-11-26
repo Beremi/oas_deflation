@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import os
-import pydmga
+#import pydmga
 
 #VORONOI PY#
 from shapely.geometry import Polygon, Point
@@ -15,22 +15,22 @@ def mirror_data(nodes, radii, maxLim):
     dist = np.max(radii)*2.
     ind = np.where(nodesO[:,0]<dist)[0]
     n3 = nodesO[ind,:]
-    r3 = radiiO[ind]    
-    n3[:,0] = - n3[:,0] - delta    
+    r3 = radiiO[ind]
+    n3[:,0] = - n3[:,0] - delta
     ind = np.where(nodesO[:,0]>maxLim[0]-dist)[0]
-    n4 = nodesO[ind,:] 
-    r4 = radiiO[ind]        
-    n4[:,0] = 2*maxLim[0] - n4[:,0] + delta    
+    n4 = nodesO[ind,:]
+    r4 = radiiO[ind]
+    n4[:,0] = 2*maxLim[0] - n4[:,0] + delta
     nodes2 = np.vstack((nodesO,n3, n4))
-    radii2 = np.hstack((radiiO,r3, r4))    
+    radii2 = np.hstack((radiiO,r3, r4))
     ind = np.where(nodesO[:,1]<dist)[0]
-    n3 = nodesO[ind,:] 
-    r3 = radiiO[ind]    
-    n3[:,1] = - n3[:,1] - delta    
+    n3 = nodesO[ind,:]
+    r3 = radiiO[ind]
+    n3[:,1] = - n3[:,1] - delta
     ind = np.where(nodesO[:,1]>maxLim[1]-dist)[0]
-    n4 = nodesO[ind,:] 
-    r4 = radiiO[ind]    
-    n4[:,1] = 2*maxLim[1] - n4[:,1] + delta    
+    n4 = nodesO[ind,:]
+    r4 = radiiO[ind]
+    n4[:,1] = 2*maxLim[1] - n4[:,1] + delta
     nodes2 = np.vstack((nodes2,n3, n4))
     radii2 = np.hstack((radii2,r3, r4))
     return nodes2, radii2
@@ -44,12 +44,12 @@ def power_2d(nodes, radii, dim, maxLim):
     data = [ (i, mirnodes[i,0], mirnodes[i,1], 0, mirradii[i]) for i in range(len(mirradii))]
     C.add(data)
     D = pydmga.diagram.Diagram(C, False)
-    
+
     polygons = []
     new_regions = []
     areas = []
     centroids = []
-    points = []    
+    points = []
 
     polArr = np.array([(0.,0), (0,maxLim[1]), (maxLim[0],maxLim[1]), (maxLim[0],0)])
     pol=Polygon(polArr)
@@ -60,7 +60,7 @@ def power_2d(nodes, radii, dim, maxLim):
         print(S,i)
         C = D.get_cell(i)
         print(i)
-        
+
         for side in C.sides:
             print(side)
             if i<side.neighbour: idsX = i*10000+side.neighbour
@@ -74,7 +74,7 @@ def power_2d(nodes, radii, dim, maxLim):
 
     return beams
 
-    
+
 
 
     polArr = np.array([(0.,0), (0,maxLim[1]), (maxLim[0],maxLim[1]), (maxLim[0],0)])
@@ -102,4 +102,3 @@ def power_2d(nodes, radii, dim, maxLim):
         print('Area errror', np.sum(areas))
 
     return new_regions, np.asarray(new_vertices), polygons, np.asarray(areas), np.asarray(centroids), np.asarray(points)
-
