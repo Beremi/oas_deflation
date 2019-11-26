@@ -23,6 +23,7 @@ plt.rcParams.update({'font.serif': 'Times New Roman'})
 
 BASEDIR = pathlib.Path('.').resolve()
 
+
 def loadNodes(filename):
     filename = filename
     nodes = np.loadtxt(BASEDIR.joinpath(filename), usecols=[1, 2], skiprows=1)
@@ -34,20 +35,11 @@ def loadVariables(filename, step):
     return np.loadtxt(filename)
 
 
-def plotData(ax, cax, nodes, values):
+def plotData(fig, ax, cax, nodes, values):
+    sc = ax.scatter(nodes[:, 0], nodes[:, 1], c=values, cmap=plt.cm.jet,
+                    vmin=min(values), vmax=max(values))
 
-    cmap = matplotlib.cm.get_cmap('jet')
-    norm = matplotlib.colors.Normalize(vmin=min(values), vmax=max(values))
-    m = cm.ScalarMappable(norm=norm, cmap=cmap)
-    ax.scatter(nodes[:, 0], nodes[:, 1], color=cmap(norm(values)))\
-    #vmin = min(values)
-    #vmax = max(values)
-    #c = ax.scatter(nodes[:, 0], nodes[:, 1], cmap=cmap, vmin=vmin, vmax=vmax)
-
-    #cbar = plt.colorbar(c, cax=cax, orientation="horizontal")
-
-    cbar = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm,
-                                            orientation="horizontal")
+    cbar = fig.colorbar(sc, cax=cax, orientation="horizontal")
     cbar.solids.set_rasterized(True)
     cbar.solids.set_edgecolor("face")
 
@@ -59,7 +51,6 @@ def plotData(ax, cax, nodes, values):
     ax.axis("off")
 
 
-######################################################################
 def masterPlot(step, nodes, values, labels, xylim):
 
     print ("plotting step %d" % step)
@@ -85,10 +76,11 @@ def masterPlot(step, nodes, values, labels, xylim):
                             cbardepth/figdepth/2])
         plt.figtext((i+0.5)*axwidth/figwidth, 0.99, labels[i], fontsize=30,
                     ha="center", va="top")
-        plotData(ax, cax, nodes[i], values[i])
+        plotData(fig, ax, cax, nodes[i], values[i])
     fig.savefig(OUTPUTDIR.joinpath("step_%04d.png" % step))
     plt.show()
     plt.close(fig)
+
 
 def init_parser():
     # Create the parser

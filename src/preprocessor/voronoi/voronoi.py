@@ -83,7 +83,7 @@ def copy_data_general_full(data):
     return new_data
 
 
-def mirror_dataBeam(data, dim, sizes, shifts=0):
+def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
     '''Mirror data 2D and 3D'''
     if (dim == 2):
         dataOut= np.vstack((
@@ -105,6 +105,9 @@ def mirror_dataBeam(data, dim, sizes, shifts=0):
         ))
 
     dataOut += shifts
+    if weights is not None:
+        weightsOut = np.hstack([weights]*5)
+        return dataOut, weightsOut
     return dataOut
 
 def mirror_dataCylinder(data, center, radius, height, directionDim):

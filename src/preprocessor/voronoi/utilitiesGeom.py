@@ -4,6 +4,7 @@ import scipy
 import math
 import sys
 import os
+import time
 
 import utilitiesMech
 
@@ -165,17 +166,23 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, acti
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area error: %.5e ' %(relAreaError)  )
     ########################################################################################
-    validRidgeIdxs = []
-    for i in range (vor.ridge_points.shape[0]):
-        pr = False
-        for p in range (2):
-            if (vor.ridge_points[i][p] < node_count):
-                pr=True
+    cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
+    validRidgeIdxs = np.where(cond)[0]
+    print(validRidgeIdxs.shape)
+    print(validRidgeIdxs)
+    
+    #REMOVE
+    #validRidgeIdxs = []
+    #for i in range (vor.ridge_points.shape[0]):
+        #pr = False
+        #for p in range (2):
+            #if (vor.ridge_points[i][p] < node_count):
+                #pr=True
 
-        if (pr):
-           validRidgeIdxs.append(i)
+        #if (pr):
+           #validRidgeIdxs.append(i)
 
-    validRidgeIdxs = np.asarray(validRidgeIdxs)
+    #validRidgeIdxs = np.asarray(validRidgeIdxs)
     ########################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
