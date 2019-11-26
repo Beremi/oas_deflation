@@ -82,7 +82,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.1
+    minDist = 0.0125
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2

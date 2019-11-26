@@ -37,6 +37,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     Transp1D *newelem = new Transp1D(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("TranspPolyhedral") == 0 )    {
+                    TranspPolyhedral *newelem = new TranspPolyhedral(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else  {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(0);

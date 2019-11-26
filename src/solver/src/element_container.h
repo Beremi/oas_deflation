@@ -2,6 +2,7 @@
 #define _ELEMENT_C_H
 
 #include "element.h"
+#include "element_polyhedral.h"
 #include "node_container.h"
 
 //////////////////////////////////////////////////////////

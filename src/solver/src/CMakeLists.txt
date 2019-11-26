@@ -4,6 +4,7 @@ set (solver_files
     data_exporter.cpp
     element_container.cpp
     element.cpp
+    element_polyhedral.cpp
     linear_algebra.cpp
     #main.cpp
     material_container.cpp
