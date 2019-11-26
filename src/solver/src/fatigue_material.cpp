@@ -141,7 +141,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
       // proposed return mapping: check the threshold fn until it gets back into the
 
-      for ( unsigned k = 0; k < 100000; k++ ){
+      for ( unsigned k = 0; k < 1000; k++ ){
       // while (f_trial > 1e-6){
         tau_trial = ( slip_cur - s_pi_k ) * ( 1 - omega_k ) * E_b;
         tau_tilda_trial = ( slip_cur - s_pi_k ) * E_b;
@@ -203,6 +203,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     double deltaS_full = (temp_slip - slip).norm();
     double elastic_part = 1e6;
     // double elastic_part = m->giveTauBar();
+    // double deltaS_part = 1e-6;
     double deltaS_part = strain_slip_multiplier * ( elastic_part / m->giveE0() ) / num_per_elastic_part;
     int divide_by = 1;
     Point slip_increment;
@@ -215,7 +216,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     temp_zIso = zIso;
 
     if ( deltaS_full > deltaS_part ){
-      divide_by = (deltaS_full / deltaS_part) + 1;
+      divide_by = (deltaS_full / (deltaS_part)) + 1;
       // std::cout << "step divided into " << divide_by << " substeps " << '\n';
     }
     slip_increment = (temp_slip - slip) / divide_by;
@@ -229,17 +230,17 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
       f_trial = (tauTildaPiTrial - temp_alphaKin * m->giveGamma()).norm() - (m->giveKin() * temp_zIso) - (m->giveTauBar() - (m->giveM() * stress [ 0 ]));
 
-      if ( f_trial <= 0 ){
+      if ( f_trial < 0 ){
+        // std::cout << " elastic" << '\t';
         // internal variables unchanged
-        // it is necessary to asign them to temp, because temp values could have been changed in the previous iterration
         // in this case of substeps, the values cannot be assigned to initial state (at the beginning of step) - because these could have been changed previously
         // temp_zIso = zIso;
         // temp_alphaKin = alphaKin;
         // temp_damageShear = damageShear;
         // temp_sPi = sPi;
-        temp_stressT =  tauTildaPiTrial * (1 - temp_damageShear); //shear stress
+        // temp_stressT =  tauTildaPiTrial * (1 - temp_damageShear); //shear stress
       } else {
-
+        // std::cout << " nonlinear" << '\t';
         // initial non-iterative procedure
         Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
         sgn1 = h / h.norm();
@@ -251,20 +252,20 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
           // dLambda =  dot((temp_slip - slip) * stiff[1], sgn1) / (( stiff[1] / (1 - damageShear) + m->giveKin() + m->giveGamma() ));
         }
 
-        temp_sPi += sgn1 * dLambda / (1 - damageShear);
+        temp_sPi += sgn1 * dLambda / (1 - temp_damageShear);
 
         Ynext = 0.5 * stiff[1] * (slip_cur - temp_sPi).sqNorm(); // sqNorm = self dot product
         // Ynext = 0.5 * stiff[1] * (temp_slip - (temp_sPi + sPi) * 0.5).sqNorm();
 
         part1 = pow(1 - temp_damageShear, m->giveC()) * (m->giveTauBar()/(m->giveTauBar() - m->giveM() * stress[0])) * pow(Ynext / m->giveS(), m->giveR());
-        temp_damageShear = fmax(1e-10,fmin(1-1e-10, temp_damageShear + dLambda * part1)); //limited by <0 1>
+        temp_damageShear = fmax(0,fmin(1-1e-10, temp_damageShear + dLambda * part1)); //limited by <0 1)
         // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
         temp_zIso += dLambda;
         temp_alphaKin += sgn1 * dLambda;
 
-        temp_stressT = (slip_cur - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
       }
+      temp_stressT = (slip_cur - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
     }
     temp_slip = slip_cur;
   }
@@ -317,16 +318,16 @@ void FatigueShearMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: print() const {
-  std::cout << "damageShear = " << damageShear << '\n';
-  std::cout << "temp_damageShear = " << temp_damageShear << '\n';
-  std::cout << "sPi = " << sPi.norm() << '\n';
-  std::cout << "temp_sPi = " << temp_sPi.norm() << '\n';
-  std::cout << "alphaKin = " << alphaKin.norm() << '\n';
-  std::cout << "temp_alphaKin = " << temp_alphaKin.norm() << '\n';
-  std::cout << "zIso = " << zIso << '\n';
-  std::cout << "temp_zIso = " << temp_zIso << '\n';
-  std::cout << "slip = " << slip.norm() << '\n';
-  std::cout << "temp_slip = " << temp_slip.norm() << '\n';
+  std::cout << " damageShear = " << damageShear;// << '\n';
+  std::cout << " temp_damageShear = " << temp_damageShear;// << '\n';
+  std::cout << " sPi = " << sPi.norm();// << '\n';
+  std::cout << " temp_sPi = " << temp_sPi.norm();// << '\n';
+  std::cout << " alphaKin = " << alphaKin.norm();// << '\n';
+  std::cout << " temp_alphaKin = " << temp_alphaKin.norm();// << '\n';
+  std::cout << " zIso = " << zIso;// << '\n';
+  std::cout << " temp_zIso = " << temp_zIso;// << '\n';
+  std::cout << " slip = " << slip.norm();// << '\n';
+  std::cout << " temp_slip = " << temp_slip.norm() << '\n';
 }
 
 
