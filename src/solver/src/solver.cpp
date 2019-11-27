@@ -192,6 +192,7 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     string param;
     bool bdt, bdtmax, bdtmin, bttime, berr;
     bdt = bttime = bdtmax = bdtmin = berr = false;
+    maxIt = 30;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -215,6 +216,14 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
             berr = true;
             iss >> limitDisErr;
             limitEneErr = limitResErr = limitDisErr;
+        } else if ( param.compare("maxIt") == 0 )    {
+            iss >> maxIt;
+            if ( maxIt < 1 ){
+              std::cout << "number of itteration cannot be smaller than 1!!!, setting to default value" << '\n';
+              maxIt = 30;
+            } else if ( maxIt < 3 ){
+              std::cout << "solver parameter maxIt set to " << maxIt << ", be carefull with such a small number" << '\n';
+            }
         }
     }
     if ( !bdt ) {
@@ -266,7 +275,7 @@ void SteadyStateNonLinearSolver :: solve() {
       computeInternalExternalForces(trial_r);
 
       unsigned it = 0;
-      unsigned maxIt = 30;
+      // unsigned maxIt = 30;
       while ( !converged && it < maxIt ) {
           K = Kini;
           elems->updateSteadyStateMatrices(K, "secant");
