@@ -13,6 +13,7 @@ TranspPolyhedral :: TranspPolyhedral(const unsigned dim) {
     ip_locs.resize(1);
     stats.resize(1);
     name = "TranspPolyhedral";
+    ip_type = "quad";
 }
 
 //////////////////////////////////////////////////////////
@@ -54,8 +55,8 @@ void TranspPolyhedral :: sort2D() {
 
 //////////////////////////////////////////////////////////
 Vector TranspPolyhedral :: WachspressShapeF(Point x) const{
-    Vector h = Vector(nnodes);
-    Vector w = Vector(nnodes);    
+    Vector h(nnodes);
+    Vector w(nnodes);    
     Point oldNormal = normals[nnodes-1]; 
     for(unsigned i=0; i<nnodes; i++){
         h[i] = abs(dot(nodes[faces[i][0]]->givePoint()-x,normals[i]));
@@ -75,32 +76,57 @@ Vector TranspPolyhedral :: WachspressShapeF(Point x) const{
 //////////////////////////////////////////////////////////
 Matrix TranspPolyhedral :: WachspressShapeFGrad(Point x) const{
     Vector phi = WachspressShapeF(x);
-    Matrix R;
+    Matrix R(nnodes,2);
+    Matrix phiGrad(nnodes,2);
 
-    /*
-        R = np.divide(np.vstack((self.normals[-1,:],self.normals[:-1,:])),np.tile(np.hstack((h[-1],h[:-1])),(2,1)).T) + np.divide(self.normals,np.tile(h,(2,1)).T)
-        phiR = np.multiply(np.tile(phi,(2,1)).T,R)
-        return np.multiply(np.tile(phi,(2,1)).T,R-np.tile(np.sum(phiR,axis=0),(self.nn,1)))
-
-
-    vector < double > h, w;
-    Point oldNormal = normals[nnodes-1]; 
-    for(unsigned i=0; i<nnodes; i++){
-        h[i] = abs(dot(nodes[faces[i][0]]->givePoint()-x,normals[i]));
-        w[i] = abs(oldNormal.x*normals[i].y-oldNormal.y*normals[i].x);                
-        oldNormal = normals[i];
+    Vector h(nnodes);
+    for(unsigned i=0; i<nnodes; i++) h[i] = abs(dot(nodes[faces[i][0]]->givePoint()-x,normals[i]));
+    unsigned oldi = nnodes-1;
+    Vector phiR(2); phiR[0] = 0; phiR[1] = 0;
+    for(unsigned i=0; i<nnodes; i++) {
+        R[i][0] = normals[oldi].getX()/h[oldi] + normals[i].getX()/h[i];
+        R[i][1] = normals[oldi].getY()/h[oldi] + normals[i].getY()/h[i];
+        phiR[0] += R[i][0]*phi[i];
+        phiR[1] += R[i][1]*phi[i];
+        oldi = i;
     }
-    double oldh = h[nnodes-1];
-    double sumW = 0;
-    for(unsigned i=0; i<nnodes; i++){
-        w[i] /= oldh*h[i];
-        sumW += w[i];
-        oldh = h[i];
+    for(unsigned i=0; i<nnodes; i++) {
+        for(unsigned j=0; j<2; j++) phiGrad[i][j] = phi[i]*(R[i][j]-phiR[j]);
+    }  
+    return phiGrad;   
+}
+
+//////////////////////////////////////////////////////////
+void TranspPolyhedral :: findIntegrationPoints(){
+    if(ip_type.compare("quad")==0){
+        //based on quadrilateral isoparametric elements
+        ip_locs.resize(4*nnodes);
+        ip_weights.resize(4*nnodes);
+        stats.resize(4*nnodes);
+        Point a = (nodes[faces[nnodes-1][0]]->givePoint() + nodes[faces[nnodes-1][1]]->givePoint())/2;
+        Point b,c,d, derxyr, derxys;
+        double detJ;
+        d = centroid;
+        double r = 1./sqrt(3.);
+
+        for(unsigned i=0; i<nnodes; i++) {
+            c = (nodes[faces[i][0]]->givePoint() + nodes[faces[i][1]]->givePoint())/2;
+            b = nodes[i]->givePoint();  
+            for(int k =-1; k<2; k=k+2){
+                for(int l =-1; l<2; l=l+2){
+                    ip_locs[4*i+(k+1)+(l+1)/2]= (a*((1+k*r)*(1+l*r)) + b*((1-k*r)*(1+l*r)) + c*((1-k*r)*(1-l*r)) + d*((1+k*r)*(1-l*r)) )/4.;
+                    derxyr = (a*(1+l*r)-b*(1+l*r)-c*(1-l*r)+d*(1-l*r))/4.;
+                    derxys = (a*(1+k*r)+b*(1-k*r)-c*(1-k*r)-d*(1+k*r))/4.;
+                    detJ = derxyr.x*derxys.y-derxyr.y*derxys.x;
+                    ip_weights[4*i+(k+1)+(l+1)/2] = detJ;
+                    stats [4*i+(k+1)+(l+1)/2] = mat->giveNewMaterialStatus(this); 
+                }
+            }
+            a = c;
+        }
+    }else{
+        cerr<< "Error in " << name << ": ip_type '" << ip_type << "' not implemented" << endl;
     }
-    for(unsigned i=0; i<nnodes; i++) w[i] /= sumW;
-    return w;   
-    */
-    return R;
 }
 
 //////////////////////////////////////////////////////////
@@ -124,7 +150,6 @@ void TranspPolyhedral :: init() {
 
     volume = 0;
     double triVolume;
-    centroid = Point(0.,0.,0.);
     if ( ndim == 2 ) {
         if ( nodes.size() <3 ) {
             cerr << "Error: more than 2 nodes must be involved, " << nodes.size() << " provided" << endl;
@@ -139,16 +164,17 @@ void TranspPolyhedral :: init() {
         normals.resize(nnodes);
         areas.resize(nnodes);
         Point cpoint = centroid;
+        centroid = Point(0.,0.,0.);
         Point diff;
         for (unsigned i = 0; i< nnodes; i++){
             faces[i].resize(2);
-            faces[i][0] = (i == 0) ? -1 : i-1;
-            faces[i][1] = i; 
-            diff = nodes[i]->givePoint() - nodes[faces[i][0]]->givePoint(); 
+            faces[i][0] = i;
+            faces[i][1] = (i == nnodes-1) ? 0 : i+1; 
+            diff = nodes[faces[i][1]]->givePoint() - nodes[faces[i][0]]->givePoint(); 
             areas[i] = diff.norm();
             normals[i] = Point(diff.y/areas[i], -diff.x/areas[i],0);  
-            triVolume = triArea(nodes[faces[i][0]]->givePoint(),nodes[i]->givePoint(), cpoint);
-            centroid += (nodes[faces[i][0]]->givePoint() + nodes[i]->givePoint() + cpoint) * triVolume;
+            triVolume = triArea(nodes[faces[i][0]]->givePoint(),nodes[faces[i][1]]->givePoint(), cpoint);
+            centroid += (nodes[faces[i][0]]->givePoint() + nodes[faces[i][1]]->givePoint() + cpoint) * triVolume;
             volume += triVolume;
         }
         centroid /= volume*3.;
@@ -157,32 +183,20 @@ void TranspPolyhedral :: init() {
         cerr << name << ": 3rd dimension not implemented yet" << endl; 
         exit(1);
     }
-  
 
-    /*
-    stats [ 0 ] = mat->giveNewMaterialStatus(this);
-    normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
-    length = normal.norm();
-    normal = normal / length;
-
-    if ( abs(normal * t) > 1e-4) {
-        cout << v0.x << " " <<  v0.y <<  " X " << v1.x << " " <<  v1.y << endl;
-        cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
-        cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
-        exit(1);
-    }
-    */
+    findIntegrationPoints();
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspPolyhedral :: giveConductivityMatrix(string matrixType) const {    
-    Matrix C(2, 2);
-    /*
-    TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    double c = area * tstats->giveConductivity() / length;
-    C [ 0 ] [ 0 ] = C [ 1 ] [ 1 ] = c;
-    C [ 1 ] [ 0 ] = C [ 0 ] [ 1 ] = -c;
-    */
+Matrix TranspPolyhedral :: giveConductivityMatrix(string matrixType) const { 
+    Matrix C(nnodes, nnodes);
+    Matrix phiGrad;
+    TrsprtMaterialStatus *tstats;
+    for(size_t i=0; i<ip_weights.size(); i++){
+            phiGrad = WachspressShapeFGrad(ip_locs[i]);            
+            tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
+            C += matrix_multiply(phiGrad,phiGrad.transpose())*(ip_weights[i]*tstats->giveConductivity());
+    }
     return C;
 }
 

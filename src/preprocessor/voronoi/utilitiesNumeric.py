@@ -7,6 +7,7 @@ from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import voronoi, power
+from power_tesselation import PowerTesselation
 
 #2d voronoi a teselace
 from scipy.spatial import Voronoi
@@ -26,8 +27,22 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
 
 ##run power, mirrored data
 def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
+    points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
+    vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
+    
+    fig, ax = plt.subplots()
+    voronoi_plot_2d(vor, ax=ax)
+    ax.scatter(vor.vertices[:, 0], vor.vertices[:, 1], color='r', zorder=100)
+    for (x, y), r in zip(points, radii):
+        circle = plt.Circle((x, y), r, color='r', fill=False)
+        ax.add_artist(circle)
+    ax.set_xlim(0, maxLim[0])
+    ax.set_ylim(0, maxLim[1])
+    ax.set_aspect('equal')
+    plt.show()
+    
     if (dim == 2):        
-        regions, vertices, polygons, areas, centroids, points = power.power_2d(node_coords, radii, dim, maxLim)
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim, shifts = shifts) #power.power_2d(node_coords, radii, dim, maxLim)
         return vor, regions, vertices, polygons, areas, centroids, points
     if (dim == 3):
         print("not implemented yet")

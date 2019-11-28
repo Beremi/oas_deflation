@@ -4,6 +4,7 @@ import scipy
 import math
 import sys
 import os
+import time
 
 import utilitiesMech
 
@@ -148,7 +149,7 @@ def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, activeTra
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, periodicModel = periodicModel)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
     return vert_count, verticesIdxDict, vertIdxStart
 
 
@@ -165,17 +166,23 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, acti
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area error: %.5e ' %(relAreaError)  )
     ########################################################################################
-    validRidgeIdxs = []
-    for i in range (vor.ridge_points.shape[0]):
-        pr = False
-        for p in range (2):
-            if (vor.ridge_points[i][p] < node_count):
-                pr=True
+    cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
+    validRidgeIdxs = np.where(cond)[0]
+    print(validRidgeIdxs.shape)
+    print(validRidgeIdxs)
+    
+    #REMOVE
+    #validRidgeIdxs = []
+    #for i in range (vor.ridge_points.shape[0]):
+        #pr = False
+        #for p in range (2):
+            #if (vor.ridge_points[i][p] < node_count):
+                #pr=True
 
-        if (pr):
-           validRidgeIdxs.append(i)
+        #if (pr):
+           #validRidgeIdxs.append(i)
 
-    validRidgeIdxs = np.asarray(validRidgeIdxs)
+    #validRidgeIdxs = np.asarray(validRidgeIdxs)
     ########################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
@@ -279,12 +286,12 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, acti
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
     saveNodes(aux_nodes, "AuxNode",dim, auxNodesFile)
-    if activeMechanics: 
+    if activeMechanics:
         saveNodes(nodes_out, "Particle",dim, nodesFile)
         saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
     else:
-        saveNodes(nodes_out, "AuxNode",dim, nodesFile)    
-    if activeTransport: 
+        saveNodes(nodes_out, "AuxNode",dim, nodesFile)
+    if activeTransport:
         saveNodes(vertices_out, "TrsprtNode",dim, verticesFile)
         saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
     else:
@@ -334,7 +341,7 @@ def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions
     print('done.')
     #"""
 
-    
+
     #if (mirtype[r[0]]==0 and mirtype[r[1]]>=0) or (mirtype[r[1]]==0 and mirtype[r[0]]>=0) or mirtype[r[0]]*mirtype[r[1]]==2:
     # selecting points
     for ir,r in enumerate(vor.ridge_points):
@@ -775,7 +782,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas, activeTransport, activ
 
 
     newAuxNodes = 0
-    if (not withoutTransport):
+    if (activeTransport):
         newAuxNodes = saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
     vertIdxStart += newAuxNodes
 
@@ -785,12 +792,12 @@ def output3D(node_count, maxLim, vor, node_coords, areas, activeTransport, activ
             ridges_out[i][l] += newAuxNodes
 
     saveNodes(aux_nodes, "AuxNode",dim, auxNodesFile)
-    if activeMechanics: 
+    if activeMechanics:
         saveNodes(nodes_out, "Particle",dim, nodesFile)
         saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
     else:
-        saveNodes(nodes_out, "AuxNode",dim, nodesFile)    
-    if activeTransport: 
+        saveNodes(nodes_out, "AuxNode",dim, nodesFile)
+    if activeTransport:
         saveNodes(vertices_out, "TrsprtNode",dim, verticesFile)
         saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
     else:
@@ -1012,13 +1019,13 @@ def saveExporters(activeTransport, activeMechanics):
     print('Saving exporters...', end='')
     sys.stdout.flush()
     fl=open(os.path.join(master_folder,exportersFile),'w')
-    if activeMechanics:   
+    if activeMechanics:
         fl.write('#TXTNodalExporter translations 2 ux uy\n')
         fl.write('#TXTNodalExporter pressure 1 pressure\n')
         fl.write('VTKElementExporter out  timeEeach 5e-2 cellData 1 damage\n')
         fl.write('#VTKRCExporter faces  timeEeach 1e-1 cellData 1 damage\n')
         fl.write('TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
-    if activeTransport:   
+    if activeTransport:
         fl.write('TXTNodalExporter pressure 1 pressure\n')
 
     fl.close()
@@ -1028,7 +1035,7 @@ def saveExporters(activeTransport, activeMechanics):
 
 
 def saveNodes (nodes_out, nodetype, dim, filename):
-    print('Saving nodes...', end='')    
+    print('Saving nodes...', end='')
     sys.stdout.flush()
     nodes_out = np.array(nodes_out)
     #writing nodes
@@ -1044,7 +1051,7 @@ def saveNodes (nodes_out, nodetype, dim, filename):
         fmt = fmt + '\t%.12f'
         num = num + 1
 
-    fl=open(os.path.join(master_folder,filename),'w')   
+    fl=open(os.path.join(master_folder,filename),'w')
     np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
     print('done.')

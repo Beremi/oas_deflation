@@ -18,7 +18,8 @@ protected:
     vector< Node * >nodes;
     string name;
     Material *mat;
-    vector< Point >ip_locs;
+    vector< Point > ip_locs;
+    vector< double > ip_weights;
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
 public:

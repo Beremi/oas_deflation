@@ -16,6 +16,7 @@ private:
     vector<vector < unsigned > > faces;
     vector<Point> normals;
     vector<double> areas;
+    string ip_type;
 
 public:
     TranspPolyhedral(const unsigned dim);
@@ -28,7 +29,7 @@ public:
     Matrix giveTransientMatrix() const { return giveCapacityMatrix(); };
     virtual Vector giveInternalForces(const Vector &DoFs) const;
     void sort2D();
-
+    void findIntegrationPoints();
     Vector WachspressShapeF(Point x) const;
     Matrix WachspressShapeFGrad(Point x) const;
 };
