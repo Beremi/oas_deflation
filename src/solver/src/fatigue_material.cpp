@@ -223,7 +223,11 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
     for ( unsigned i = 0; i < divide_by; i++ ){
 
-      slip_cur += slip_increment;
+      if ( i == (divide_by - 1)){
+        slip_cur = temp_slip;
+      } else {
+        slip_cur += slip_increment;
+      }
 
       //compute trials
       tauTildaPiTrial = (slip_cur - temp_sPi) * stiff [1];
@@ -267,7 +271,6 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       }
       temp_stressT = (slip_cur - temp_sPi) * (1 - temp_damageShear) * stiff[ 1 ];
     }
-    temp_slip = slip_cur;
   }
   // calculate algorithmic (tangent) shear stifness
   //computed here only for convenience
