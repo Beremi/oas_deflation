@@ -554,6 +554,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
       stress[ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain[ i ] );
     }
   } else {
+    temp_damage = damage;
     Heaviside = 0;
     SigmaTilda = ( 1 - Heaviside * damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
     double Xn = m->giveGammaN() * alphaN;
