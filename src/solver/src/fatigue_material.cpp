@@ -237,12 +237,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
       if ( f_trial < 0 ){
         // std::cout << " elastic" << '\t';
         // internal variables unchanged
-        // in this case of substeps, the values cannot be assigned to initial state (at the beginning of step) - because these could have been changed previously
-        // temp_zIso = zIso;
-        // temp_alphaKin = alphaKin;
-        // temp_damageShear = damageShear;
-        // temp_sPi = sPi;
-        // temp_stressT =  tauTildaPiTrial * (1 - temp_damageShear); //shear stress
+        // in the case of substeps, the values cannot be assigned to initial state (at the beginning of step) - because these could have been changed previously
       } else {
         // std::cout << " nonlinear" << '\t';
         // initial non-iterative procedure
@@ -732,7 +727,7 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
         m = 0.0;
     }
     ;
-};
+}
 
 //////////////////////////////////////////////////////////
 MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e) {
@@ -1131,6 +1126,10 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain){
       temp_alphaKin = alphaKin + deltaEps * ( 1 - temp_damage );
     } else {
       temp_damage = damage;
+      temp_epsPi = epsPi;
+      temp_Y = Y;
+      temp_zIso = zIso;
+      temp_alphaKin = alphaKin;
     }
 
     stress[ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
