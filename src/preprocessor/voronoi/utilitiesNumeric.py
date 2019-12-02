@@ -30,6 +30,7 @@ def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
     points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
     vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
     
+    """
     fig, ax = plt.subplots()
     voronoi_plot_2d(vor, ax=ax)
     ax.scatter(vor.vertices[:, 0], vor.vertices[:, 1], color='r', zorder=100)
@@ -40,6 +41,7 @@ def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
     ax.set_ylim(0, maxLim[1])
     ax.set_aspect('equal')
     plt.show()
+    """
     
     if (dim == 2):        
         regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim, shifts = shifts) #power.power_2d(node_coords, radii, dim, maxLim)

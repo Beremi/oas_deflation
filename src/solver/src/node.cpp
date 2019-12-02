@@ -17,7 +17,7 @@ void Node :: readFromLine(istringstream &iss) {
     double x, y, z;
     if ( dim == 2 ) {
         iss >> x >> y;
-        point = Point(x, y);
+        point = Point(x, y, 0.);
     } else if ( dim == 3 )      {
         iss >> x >> y >> z;
         point = Point(x, y, z);
@@ -31,7 +31,7 @@ void MasterDoF :: readFromLine(istringstream &iss){
   double x, y, z;
   if ( dim == 2 ) {
       iss >> x >> y;
-      point = Point(x, y);
+      point = Point(x, y, 0.);
   } else if ( dim == 3 )      {
       iss >> x >> y >> z;
       point = Point(x, y, z);
@@ -96,7 +96,7 @@ void Particle :: readFromLine(istringstream &iss) {
     double x, y, z;
     if ( dim == 2 ) {
         iss >> x >> y >> r;
-        point = Point(x, y);
+        point = Point(x, y, 0);
     } else if ( dim == 3 )      {
         iss >> x >> y >> z >> r;
         point = Point(x, y, z);

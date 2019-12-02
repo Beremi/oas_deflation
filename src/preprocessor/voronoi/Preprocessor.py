@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy
 from IPython.display import clear_output
+import sys
 
 import math
 from sklearn import preprocessing
@@ -35,6 +36,11 @@ if __name__ == '__main__':
     print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
     start = time.time()
 
+    if len(sys.argv)>0: 
+        seed = int(sys.argv[1])
+    else : seed = np.random.randint(0)
+    np.random.seed(seed=seed)
+
     #type of periodic model, if any
     periodicModel = 0
     nodePositions = []
@@ -49,7 +55,7 @@ if __name__ == '__main__':
     powerTes = 0
 
     #dimension
-    dim = 3
+    dim = 2
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
@@ -58,7 +64,7 @@ if __name__ == '__main__':
 
 
     #dimensions of rectangle model
-    Xdim = 10.
+    Xdim = 1.
     Ydim = 1.
     Zdim = 1.
 
@@ -77,7 +83,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.15
+    minDist = 0.4
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -102,8 +108,19 @@ if __name__ == '__main__':
     trsprtBC_merged = []
     trsprtIC_merged = []
     functions = []
+    radii = []
 
     coupledNodes = None
+
+    master_folder = "power_%.4f_%02d"%(minDist,seed)
+    try:
+        if not os.path.exists(master_folder):
+            os.makedirs(master_folder)
+    except:
+        print('Please create directory %s! Code Exited.'%master_folder)
+        sys.exit()
+
+
 
     materialZones = []
     #matZone 1
@@ -133,7 +150,7 @@ if __name__ == '__main__':
     if (dim == 2):
 
         #patch test
-        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions  = utilitiesModeling.create2dPatchTestTransport(maxLim, minDist, trials )
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.create2dPatchTestTransport(maxLim, minDist, trials )
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
@@ -230,22 +247,24 @@ if __name__ == '__main__':
 
 
     #Deconstructing Voronoi diagram and saving the geometry
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(master_folder, dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype)
 
 
     # saving rest of input
-    utilitiesGeom.saveMaterials(materials)
-    utilitiesGeom.saveFunctions(functions)
+    utilitiesGeom.saveMaterials(master_folder, materials)
+    utilitiesGeom.saveFunctions(master_folder, functions)
 
-    if (len(mechBC_merged)>0): utilitiesGeom.saveMechBC(dim, mechBC_merged)
-    if (len(mechIC_merged)>0):  utilitiesGeom.saveMechIC(dim, mechIC_merged)
-    if (len(trsprtBC_merged)>0): utilitiesGeom.saveTransportBC(trsprtBC_merged, verticesIdxDict, vertIdxStart)
-    if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(trsprtIC_merged)
-    utilitiesGeom.saveExporters(activeTransport, activeMechanics)
+    if (len(mechBC_merged)>0): utilitiesGeom.saveMechBC(master_folder, dim, mechBC_merged)
+    if (len(mechIC_merged)>0):  utilitiesGeom.saveMechIC(master_folder, dim, mechIC_merged)
+    if (len(trsprtBC_merged)>0): utilitiesGeom.saveTransportBC(master_folder, trsprtBC_merged, verticesIdxDict, vertIdxStart)
+    if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(master_folder, trsprtIC_merged)
+    utilitiesGeom.saveExporters(master_folder, activeTransport, activeMechanics)
+
+    if (len(radii)>0): utilitiesGeom.saveRadii(master_folder, radii)
 
     solStep = 1e-2
     simTime = 1e-2
-    utilitiesGeom.saveMasterInput(dim, solver, solStep, 1e-4, 1e-1, simTime, activeTransport, activeMechanics, periodic = periodicModel)
+    utilitiesGeom.saveMasterInput(master_folder, dim, solver, solStep, 1e-4, 1e-1, simTime, activeTransport, activeMechanics, periodic = periodicModel)
     end =  time.time() -end
     print('Saving done in %.3f secs.' %end)
 

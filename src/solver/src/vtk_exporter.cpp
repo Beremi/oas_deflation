@@ -9,8 +9,7 @@ void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
 }
 
 //////////////////////////////////////////////////////////
-void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
-  dim = dimension;
+void VTKExporter :: readFromLine(istringstream &iss){
   string param;
   unsigned num;
   vector< string > cell_data, point_data;
@@ -42,7 +41,7 @@ void VTKExporter :: readFromLine(istringstream &iss, unsigned dimension){
   for (auto const &po : point_data){
     codes[ num++ ] = po;
   }
-  DataExporter :: readFromLine(iss, dimension);
+  DataExporter :: readFromLine(iss);
 }
 
 void exportAdditionalCellData(const ElementContainer * elems, const Vector &DoFs, const vector<bool> &codes_positions, const vector< string > &codes, vector< vector< double > > &cell_data, bool doubled=false, bool rbcOnly=false){
@@ -192,6 +191,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
   if ( outputfile.is_open() ) {
       outputfile << std :: scientific;
+      outputfile.precision(precision);
       outputfile << "<?xml version=\"1.0\"?>\n";
       outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
       outputfile << "<UnstructuredGrid>" << '\n';
@@ -371,6 +371,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
 
   if ( outputfile.is_open() ) {
       outputfile << std :: scientific;
+      outputfile.precision(precision);
       outputfile << "<?xml version=\"1.0\"?>\n";
       outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
       outputfile << "<UnstructuredGrid>" << '\n';
@@ -538,6 +539,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
 
   if ( outputfile.is_open() ) {
       outputfile << std :: scientific;
+      outputfile.precision(precision);
       outputfile << "<?xml version=\"1.0\"?>\n";
       outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
       outputfile << "<UnstructuredGrid>" << '\n';

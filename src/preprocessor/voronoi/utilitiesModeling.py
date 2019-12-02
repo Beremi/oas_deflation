@@ -428,7 +428,7 @@ def create2dPatchTestTransport(maxLim, minDist, trials ):
         trsBC = utilitiesMech.transportBC(k,[i,-1])
         transportBC_merged.append(trsBC)
 
-    return node_coords, [], transportBC_merged, vor, areas, functions
+    return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
 #pokracovat v periodic shear
 #udelat rozdeleni damage pri 2d confined press
@@ -1389,7 +1389,7 @@ def assemble2dPatchTestTransport (maxLim, minDist, trials):
     #rect
     oldLen = len(node_coords)
     #pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
-    node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.5, dim, trials, node_coords, radii)
+    node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.8, dim, trials, node_coords, radii)
     #
     newLen = len(node_coords)-1
 
