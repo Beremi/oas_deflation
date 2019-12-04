@@ -1,4 +1,4 @@
-import os
+import Preprocessor
 import sys
 import time
 import numpy as np
@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy
 from IPython.display import clear_output
 import sys
+import os
 
 import math
 from sklearn import preprocessing
@@ -36,10 +37,14 @@ if __name__ == '__main__':
     print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
     start = time.time()
 
-    if len(sys.argv)>0: 
+    if len(sys.argv)>1: 
         seed = int(sys.argv[1])
     else : seed = np.random.randint(0)
     np.random.seed(seed=seed)
+
+    if len(sys.argv)>1: 
+        minDist = float(sys.argv[2])
+    else : minDist = 0.2
 
     #type of periodic model, if any
     periodicModel = 0
@@ -83,7 +88,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.4
+    #minDist = 0.4
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2

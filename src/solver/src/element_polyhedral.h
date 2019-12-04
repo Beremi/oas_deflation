@@ -1,5 +1,5 @@
-#ifndef _ELEMENT_POLYGONAL_H
-#define _ELEMENT_POLYGONAL_H
+#ifndef _ELEMENT_POLYHEDRAL_H
+#define _ELEMENT_POLYHEDRAL_H
 
 #include "element.h"
 
@@ -8,7 +8,7 @@
 //////////////////////////////////////////////////////////
 class TranspPolyhedral : public transportElement
 {
-private:
+protected:
     double volume;
     Point centroid;
     unsigned nnodes;
@@ -18,6 +18,10 @@ private:
     vector<double> areas;
     string ip_type;
 
+    void sort2D();
+    void findIntegrationPoints();
+    Vector WachspressShapeF(Point x) const;
+    Matrix WachspressShapeFGrad(Point x) const;
 public:
     TranspPolyhedral(const unsigned dim);
     ~TranspPolyhedral() {};
@@ -28,10 +32,17 @@ public:
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
     Matrix giveTransientMatrix() const { return giveCapacityMatrix(); };
     virtual Vector giveInternalForces(const Vector &DoFs) const;
-    void sort2D();
-    void findIntegrationPoints();
-    Vector WachspressShapeF(Point x) const;
-    Matrix WachspressShapeFGrad(Point x) const;
 };
 
-#endif  /* _ELEMENT_POLYGONAL_H */
+class TranspVirtPolyhedral : public TranspPolyhedral
+{
+private:
+    Matrix V1, V2;
+public:
+    TranspVirtPolyhedral(const unsigned dim);
+    ~TranspVirtPolyhedral() {};
+    void init();
+    Matrix giveConductivityMatrix(string matrixType) const;
+};
+
+#endif  /* _ELEMENT_POLYHEDRAL_H */
