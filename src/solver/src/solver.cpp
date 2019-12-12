@@ -146,7 +146,7 @@ void SteadyStateLinearSolver :: solve() {
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: computeInternalExternalForces(Vector &rr) {
     elems->giveInternalForces(rr, f_int);
-    nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
+    nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
     if (nodes->giveConstraints()->isActive()){
       // also ddr must be updated, because displacement error is calculated from relative change (||ddr||/||r||)
       // matters especially when force control on master is applied

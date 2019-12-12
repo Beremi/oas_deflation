@@ -156,17 +156,6 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
 
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, const Vector &bDoFs, Vector &fullDoFs) const {
-    for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
-            fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
-        } else {
-            fullDoFs [ i ] = bDoFs [ DoFid [ i ] - freeDoFs ];
-        }
-    }
-}
-
-//////////////////////////////////////////////////////////
 void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
         if ( DoFid [ i ] < freeDoFs ) {
@@ -185,7 +174,7 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExteranlForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const {
+void NodeContainer :: updateExternalForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const {
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
         if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {
