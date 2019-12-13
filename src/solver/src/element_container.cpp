@@ -148,7 +148,7 @@ void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix
 
     for(size_t i=0; i<K.RowCount; i++){
         if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
-            cerr<< "Error in ElementContainer: stiffness matrix has zero on diagonal " << endl; 
+            cerr<< "Error in ElementContainer: stiffness matrix has zero on diagonal " << endl;
             exit(1);
         }
     }
@@ -160,9 +160,11 @@ void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
     vector< unsigned >elDoFs;
     full_f *= 0;  // clear array
 
-    if (nodes->giveConstraints()->isActive()){
-      nodes->giveConstraints()->calculateDependentDoFs(full_r);
-    }
+    // #constr_old
+    // JK moved to nodeContainer :: giveFullDoFArray
+    // if (nodes->giveConstraints()->isActive()){
+    //   nodes->giveConstraints()->calculateDependentDoFs(full_r);
+    // }
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
@@ -176,9 +178,11 @@ void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
         }
     }
 
-    if (nodes->giveConstraints()->isActive()){
-      nodes->giveConstraints()->calculateMasterForces(full_f);
-    }
+    // #constr_old
+    // JK moved to nodeContainer :: updateExteranlForcesByReactions
+    // if (nodes->giveConstraints()->isActive()){
+    //   nodes->giveConstraints()->calculateMasterForces(full_f);
+    // }
 }
 
 //////////////////////////////////////////////////////////

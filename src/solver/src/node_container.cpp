@@ -140,8 +140,9 @@ void NodeContainer :: establishDoFArray() {
 void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
     vector< double >loaded = BC->giveLoadedDoFValues(time);
     for ( unsigned k = 0; k < loaded.size(); k++ ) {
-        // QUESTION why is here += when after every step load *= 0. Can loadedDoFid[k] indeces repeat? or can any value appear in place of other than loaded DoF?
+        // JK QUESTION why is here += when after every step load *= 0. Can loadedDoFid[k] indeces repeat? or can any value appear in place of other than loaded DoF?
         //  in case not, I would remove load *= 0 after every step and here replace += with just =
+        // JK ANSWER (based on discussion with JE): in future, more stuff will be necessary to add to load and it will be nonzero
         RHS [ loadedDoFid [ k ] ] += loaded [ k ];
     }
 }
@@ -152,19 +153,12 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
     for ( unsigned k = 0; k < blocked.size(); k++ ) {
         r [ blockedDoFid [ k ] ] = blocked [ k ];
     }
-}
 
-
-//////////////////////////////////////////////////////////
-void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, const Vector &bDoFs, Vector &fullDoFs) const {
-    for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
-            fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
-        } else {
-            fullDoFs [ i ] = bDoFs [ DoFid [ i ] - freeDoFs ];
-        }
+    if (this->giveConstraints()->isActive()){
+      this->giveConstraints()->calculateDependentDoFs(r);
     }
 }
+
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const {
@@ -172,6 +166,10 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
         if ( DoFid [ i ] < freeDoFs ) {
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
         }
+    }
+    // #constr_new
+    if (this->giveConstraints()->isActive()){
+      this->giveConstraints()->calculateDependentDoFs(fullDoFs);
     }
 }
 
@@ -185,7 +183,12 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExteranlForcesByReactions(const Vector &f_int, const Vector &load, Vector &f_ext) const {
+void NodeContainer :: updateExteranlForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const {
+    // #constr_new
+    if (this->giveConstraints()->isActive()){
+      this->giveConstraints()->calculateMasterForces(f_int);
+    }
+
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
         if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {
