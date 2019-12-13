@@ -8,14 +8,6 @@ import time
 
 import utilitiesMech
 
-master_folder = "coupled_problem"
-try:
-    if not os.path.exists(master_folder):
-        os.makedirs(master_folder)
-except:
-    print('Please create directory %s! Code Exited.'%master_folder)
-    sys.exit()
-
 masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
 verticesFile                = "vertices.inp"
@@ -142,19 +134,19 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None):
     if (dim == 2):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart = output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
+            vert_count, verticesIdxDict, vertIdxStart = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
         if (periodicModel == 1):
-            vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
+            vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
     if (dim == 3):
         vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
     return vert_count, verticesIdxDict, vertIdxStart
 
 
 #Extract geometry 2d
-def output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
+def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -285,24 +277,24 @@ def output2D(node_count,  maxLim, vor, node_coords, areas, activeTransport, acti
     sys.stdout.flush()
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
-    saveNodes(aux_nodes, "AuxNode",dim, auxNodesFile)
+    saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
-        saveNodes(nodes_out, "Particle",dim, nodesFile)
-        saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+        saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
     else:
-        saveNodes(nodes_out, "AuxNode",dim, nodesFile)
+        saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
-        saveNodes(vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+        saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
     else:
-        saveNodes(vertices_out, "AuxNode",dim, verticesFile)
+        saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
 
 
 
 #Extract geometry 2d periodic torus
-def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=None):
+def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=None):
     dim = 2
 
 
@@ -552,19 +544,19 @@ def output2DPeriodic(node_count,  maxLim, vor, node_coords, areas, nodePositions
     sys.stdout.flush()
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
-    saveNodes(nodes_out, aux_nodes, dim)
-    saveVertices(vertices_out, dim, withoutTransport=True)
-    saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
-    #saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+    saveNodes(master_folder, nodes_out, aux_nodes, dim)
+    saveVertices(master_folder, vertices_out, dim, withoutTransport=True)
+    saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
 
-    savePeriodicBlock(cpldNds,maxLim, nodes_out)
+    savePeriodicBlock(master_folder,cpldNds,maxLim, nodes_out)
 
     return v_count, verticesIdxDict, vertIdxStart#, nodes_out, aux_nodes, vertices_out, ridges_out
 
 
 
 
-def savePeriodicBlock (cpldNds, maxLim, nodes_out):
+def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
     cf = open(os.path.join(master_folder,blocksFile),"w")
 
     ndepend = len(cpldNds)
@@ -842,7 +834,7 @@ def excludeSelectedPts (boundPtA , boundPtB, points):
     return np.array(selectedPointIdxs).astype(int)
 
 
-def saveTransportIC(transportIC_merged):
+def saveTransportIC(master_folder,transportIC_merged):
     print('Saving TRSPRT initial conditions...', end ='')
     sys.stdout.flush()
     trsprtIC_out = []
@@ -861,7 +853,7 @@ def saveTransportIC(transportIC_merged):
 
 
 
-def saveMechIC(dim, nodes_mechICmerged):
+def saveMechIC(master_folder,dim, nodes_mechICmerged):
     print('Saving MECH initial conditions...', end='')
     sys.stdout.flush()
     mechIC_out = []
@@ -891,10 +883,13 @@ def saveMechIC(dim, nodes_mechICmerged):
 
     print('done.')
 
+def saveRadii(master_folder,radii):
+    headerLine = 'radii'
+    fl=open(os.path.join(master_folder,"radii.out") ,'w')
+    np.savetxt(fl, radii, fmt='%e', header = headerLine)
+    fl.close()
 
-
-
-def saveMechBC(dim, nodes_mechBCmerged):
+def saveMechBC(master_folder,dim, nodes_mechBCmerged):
     print('Saving MECH boundary conditions...', end='')
     sys.stdout.flush()
 
@@ -928,7 +923,7 @@ def saveMechBC(dim, nodes_mechBCmerged):
     print('done.')
 
 
-def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False):
+def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
@@ -969,7 +964,7 @@ def saveMasterInput(dim, solver, solStep, minStep, maxStep, simTime, activeTrans
      fl.close()
      print('done.')
 
-def saveMaterials (materials):
+def saveMaterials (master_folder,materials):
     print ('Saving materials...', end='')
     sys.stdout.flush()
     ### MATERIALS
@@ -981,7 +976,7 @@ def saveMaterials (materials):
           # print (item.getString())
     print('done')
 
-def saveFunctions (functions):
+def saveFunctions (master_folder,functions):
     print ('Saving functions...', end='')
     sys.stdout.flush()
     ### FUNCTIONS
@@ -995,7 +990,7 @@ def saveFunctions (functions):
 
 
 
-def saveTransportBC(transportBCmerged, verticesDict, vertIdxStart):
+def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart):
     print('Saving TRSPRT boundary conditions...', end = '')
     sys.stdout.flush()
     trsptBC_out = []
@@ -1015,7 +1010,7 @@ def saveTransportBC(transportBCmerged, verticesDict, vertIdxStart):
     print('done.')
 
 
-def saveExporters(activeTransport, activeMechanics):
+def saveExporters(master_folder,activeTransport, activeMechanics):
     print('Saving exporters...', end='')
     sys.stdout.flush()
     fl=open(os.path.join(master_folder,exportersFile),'w')
@@ -1034,7 +1029,7 @@ def saveExporters(activeTransport, activeMechanics):
 
 
 
-def saveNodes (nodes_out, nodetype, dim, filename):
+def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     print('Saving nodes...', end='')
     sys.stdout.flush()
     nodes_out = np.array(nodes_out)
@@ -1058,7 +1053,7 @@ def saveNodes (nodes_out, nodetype, dim, filename):
     sys.stdout.flush()
 
 
-def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
+def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
@@ -1131,7 +1126,7 @@ def saveMechanicalElements (ridges_out, node_count, dim, nodes, mZ=None):
     sys.stdout.flush()
 
 
-def saveTransportElements(ridges_out, dim, node_count, aux_nodes, maxLim):
+def saveTransportElements(master_folder,ridges_out, dim, node_count, aux_nodes, maxLim):
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []

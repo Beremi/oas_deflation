@@ -254,7 +254,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
     }
     for(unsigned i=0; i<gname.size(); i++){
         n[0] = intialNodeNum+i;
-        fg = new ForceGauge(name,gname[i],codes, n, nodes, 1./volume);
+        fg = new ForceGauge(name,gname[i],codes, n, nodes, 1./volume, dim);
         ex->addExporter(fg);
     }
     DoFGauge *dg;
@@ -265,7 +265,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
         gname[3] = "gamma_yz";  gname[4] = "gamma_xz";  gname[5] = "gamma_xy";
     }
     for(unsigned i=0; i<gname.size(); i++){
-        dg = new DoFGauge(name, gname[i], intialNodeNum+i, 0, nodes, 1.);
+        dg = new DoFGauge(name, gname[i], intialNodeNum+i, 0, nodes, 1., dim);
         ex->addExporter(dg);
     }
 

@@ -263,7 +263,7 @@ class PowerTesselation(object):
         for id_, x, y, z in self._vertices:
             if (self._ndim == 2) and (z != 0):
                 continue
-            key = tuple(round(i, 13) for i in (x, y, z))
+            key = tuple(round(i, 10) for i in (x, y, z))
             unique_dict[key].append(id_)
         replace_dict = {}
         vertices_unique = []

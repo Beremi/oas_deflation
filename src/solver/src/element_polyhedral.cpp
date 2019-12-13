@@ -10,8 +10,6 @@ double triArea(const Point a, const Point b, const Point c){ //points in counter
 // TRANSPORT POLYHEDRAL ELEMENT
 TranspPolyhedral :: TranspPolyhedral(const unsigned dim) {
     ndim = dim;
-    ip_locs.resize(1);
-    stats.resize(1);
     name = "TranspPolyhedral";
     ip_type = "quad";
 }
@@ -131,6 +129,8 @@ void TranspPolyhedral :: findIntegrationPoints(){
 
 //////////////////////////////////////////////////////////
 void TranspPolyhedral :: init() {
+    //reorder nodes before calling base calls initialization
+    sort2D();
     Element :: init(); //calling base class method;
 
     //check that nodes are TrsNodes
@@ -155,9 +155,6 @@ void TranspPolyhedral :: init() {
             cerr << "Error: more than 2 nodes must be involved, " << nodes.size() << " provided" << endl;
             exit(1);
         }
-
-        //reorder nodes
-        sort2D();
 
         //area,centroid, faces, ...
         faces.resize(nnodes);
@@ -214,5 +211,53 @@ Matrix TranspPolyhedral :: giveCapacityMatrix() const {
 
 //////////////////////////////////////////////////////////
 Vector TranspPolyhedral :: giveInternalForces(const Vector &DoFs) const {
-    return giveConductivityMatrix("elastic") * DoFs;
+    return giveConductivityMatrix("secant") * DoFs;
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSPORT VIRTUAL POLYHEDRAL ELEMENT
+
+TranspVirtPolyhedral :: TranspVirtPolyhedral(const unsigned dim):TranspPolyhedral(dim) {
+    name = "TranspVirtPolyhedral";
+}
+
+//////////////////////////////////////////////////////////
+void TranspVirtPolyhedral :: init() {
+    TranspPolyhedral :: init(); //calling base class method;
+
+    Matrix R(nnodes,ndim);
+    unsigned j = nnodes-1;
+    for(unsigned i=0; i<nnodes; i++){
+        R[i][0] = (normals[i].x*areas[i] + normals[j].x*areas[j])/2.; 
+        R[i][1] = (normals[i].y*areas[i] + normals[j].y*areas[j])/2.;
+        j = i;
+    }
+
+    Matrix N(nnodes,ndim);
+    Point x;
+    for(unsigned i=0; i<nnodes; i++){
+        x = nodes[i]->givePoint();
+        N[i][0] = x.x;
+        N[i][1] = x.y;
+    }
+
+    Matrix I(nnodes,nnodes);
+    for(unsigned i=0; i<nnodes; i++) I[i][i] = 1.;
+
+    Matrix P0(nnodes,nnodes);
+    for(unsigned i=0; i<nnodes; i++) for(unsigned j=0; j<nnodes; j++) P0[i][j] = 1./nnodes;
+    
+    Matrix H = matrix_multiply(N,R.transpose())/volume;
+    Matrix P =  H +  matrix_multiply(P0,I - H);
+
+    V1 = matrix_multiply(R,R.transpose())/volume;
+    V2 = I - P;
+}
+
+//////////////////////////////////////////////////////////
+Matrix TranspVirtPolyhedral :: giveConductivityMatrix(string matrixType) const { 
+    Matrix C = TranspPolyhedral :: giveConductivityMatrix(matrixType);
+    TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
+    return V1*tstats->giveConductivity() + matrix_multiply(matrix_multiply(V2.transpose(),C),V2);
+}

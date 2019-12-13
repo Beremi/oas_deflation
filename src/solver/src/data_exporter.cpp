@@ -9,7 +9,7 @@ void DataExporter :: giveFileName(unsigned step, char *buffer) const {
 }
 
 //////////////////////////////////////////////////////////
-void DataExporter :: readFromLine(istringstream &iss, unsigned dimension){
+void DataExporter :: readFromLine(istringstream &iss){
   iss.clear(); // clear string stream
   iss.seekg(0, iss.beg); //reset position in string stream
   string param;
@@ -19,6 +19,8 @@ void DataExporter :: readFromLine(istringstream &iss, unsigned dimension){
     if ( param.compare("saveEvery")==0 || param.compare("timeEach")==0 ){
       iss >> time_each;
       bte = true;
+    } else if ( param.compare("precision")==0 ){
+      iss >> precision;
     }
   }
   if( !bte ){
@@ -39,7 +41,7 @@ bool DataExporter :: doExportNow(const double &time){
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM NODES TO TXT
-void TXTNodalExporter :: readFromLine(istringstream &iss, unsigned dimension) {
+void TXTNodalExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
     iss >> num;
@@ -47,7 +49,7 @@ void TXTNodalExporter :: readFromLine(istringstream &iss, unsigned dimension) {
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> codes [ i ];
     }
-    DataExporter :: readFromLine(iss, dimension);
+    DataExporter :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
@@ -59,6 +61,7 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
+        outputfile.precision(precision);
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             nn = nodes->giveNode(n);
             for ( vector< string > :: const_iterator c = codes.begin(); c != codes.end(); ++c ) {
@@ -77,7 +80,7 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM ELEMENTS TO TXT
-void TXTElementExporter :: readFromLine(istringstream &iss, unsigned dimension) {
+void TXTElementExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
     iss >> num;
@@ -85,12 +88,13 @@ void TXTElementExporter :: readFromLine(istringstream &iss, unsigned dimension) 
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> codes [ i ];
     }
+    DataExporter :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
-void TXTGaussPointExporter :: readFromLine(istringstream &iss, unsigned dimension) {
+void TXTGaussPointExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
     iss >> num;
@@ -98,7 +102,7 @@ void TXTGaussPointExporter :: readFromLine(istringstream &iss, unsigned dimensio
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> codes [ i ];
     }
-    DataExporter :: readFromLine(iss, dimension);
+    DataExporter :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
@@ -112,6 +116,7 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
 
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
+        outputfile.precision(precision);
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             ee = elems->giveElement(e);
             nIP = ee->giveIPNum();
@@ -141,7 +146,7 @@ void Gauge :: giveFileName(unsigned step, char *buffer) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF FORCES
-void ForceGauge :: readFromLine(istringstream &iss, unsigned dimension) {
+void ForceGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
     codes.resize(1);
@@ -152,10 +157,11 @@ void ForceGauge :: readFromLine(istringstream &iss, unsigned dimension) {
     for ( unsigned i = 0; i < num; i++ ) {
         iss >> n [ i ];
     }
+    DataExporter :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge::ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc, double m){
+ForceGauge::ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc, double m, unsigned dimension):Gauge(dimension){
     nodes = nc;
     filename = f;
     name = gname;
@@ -202,6 +208,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
     outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
+        outputfile.precision(precision);
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
             value += reactions [ DoFs [ i ] ];
         }
@@ -213,15 +220,16 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DEGREES OF FREEDOM
-void DoFGauge :: readFromLine(istringstream &iss, unsigned dimension) {
+void DoFGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
     iss >> nodenum;
     iss >> direction;
+    DataExporter :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
-DoFGauge::DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m){
+DoFGauge::DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension):Gauge(dimension){
     filename = f;
     name = gname;
     direction = dir;
@@ -247,6 +255,7 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
     outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
+        outputfile.precision(precision);
         outputfile << "\t" <<  full_f[DoF]*multiplier;
     }
     outputfile.close();
@@ -255,7 +264,7 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
-void DisplacementGauge :: readFromLine(istringstream &iss, unsigned dim) {
+void DisplacementGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
     codes.resize(1);
@@ -272,6 +281,7 @@ void DisplacementGauge :: readFromLine(istringstream &iss, unsigned dim) {
         iss >> x >> y >> z;
         pointB = Point(x, y, z);
     }
+    DataExporter :: readFromLine(iss);
 }
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: init() {
@@ -292,6 +302,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
     outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
+        outputfile.precision(precision);
         value = nodeB->giveDoFBasedValue(codes [ 0 ], DoFs) - nodeA->giveDoFBasedValue(codes [ 0 ], DoFs);
         outputfile << "\t" << value*multiplier;
     }
@@ -321,41 +332,41 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             iss >> exptype;
             if ( !exptype.rfind("#", 0) == 0 ) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {
-                    TXTNodalExporter *newexp = new TXTNodalExporter(n);
-                    newexp->readFromLine(iss, dimension);
+                    TXTNodalExporter *newexp = new TXTNodalExporter(n, dimension);
+                    newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTElementExporter") == 0 )    {
-                    TXTElementExporter *newexp = new TXTElementExporter(e);
-                    newexp->readFromLine(iss, dimension);
+                    TXTElementExporter *newexp = new TXTElementExporter(e, dimension);
+                    newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("ForceGauge") == 0 )    {
-                    ForceGauge *newexp = new ForceGauge(n);
-                    newexp->readFromLine(iss, dimension);
+                    ForceGauge *newexp = new ForceGauge(n, dimension);
+                    newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("DisplacementGauge") == 0 )    {
-                    DisplacementGauge *newexp = new DisplacementGauge(n, e);
-                    newexp->readFromLine(iss, dimension);
+                    DisplacementGauge *newexp = new DisplacementGauge(n, e, dimension);
+                    newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTGaussPointExporter") == 0 )    {
-                    TXTGaussPointExporter *newexp = new TXTGaussPointExporter(e);
-                    newexp->readFromLine(iss, dimension);
+                    TXTGaussPointExporter *newexp = new TXTGaussPointExporter(e, dimension);
+                    newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKElementExporter") == 0 )    {
-                    VTKElementExporter *newexp = new VTKElementExporter(e, n);
-                    newexp->readFromLine(iss, dimension);
+                    VTKElementExporter *newexp = new VTKElementExporter(e, n, dimension);
+                    newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKRBExporter") == 0 )    {
                     if ( dimension == 2 ){
-                      VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n);
-                      newexp->readFromLine(iss, dimension);
+                      VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n, dimension);
+                      newexp->readFromLine(iss);
                       exporters.push_back(newexp);
                     } else {
                       std::cout << "no rigid body exporter for dimension " << dimension << '\n';
                     }
                 } else if ( exptype.compare("VTKRCExporter") == 0 )    {
                     if ( dimension == 2 || dimension == 3){
-                      VTKRCExporter *newexp = new VTKRCExporter(e, n);
-                      newexp->readFromLine(iss, dimension);
+                      VTKRCExporter *newexp = new VTKRCExporter(e, n, dimension);
+                      newexp->readFromLine(iss);
                       exporters.push_back(newexp);
                     } else {
                       std::cout << "no rigid body contacts exporter for dimension " << dimension << '\n';

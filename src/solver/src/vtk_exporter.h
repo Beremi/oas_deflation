@@ -12,14 +12,13 @@ class VTKExporter : public DataExporter
 private:
 
 public:
-    VTKExporter() {};
+    VTKExporter(unsigned dimension):DataExporter(dimension){};
     virtual ~VTKExporter() {};
-    virtual void readFromLine(istringstream &iss, unsigned dimension);
+    virtual void readFromLine(istringstream &iss);
     virtual void giveFileName(unsigned step, char *buffer) const;
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const = 0;
 protected:
     unsigned cell_data_size;
-    unsigned dim;
 };
 
 
@@ -32,9 +31,9 @@ private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKElementExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
+    VTKElementExporter(ElementContainer *e, NodeContainer *n, unsigned dimension):VTKExporter(dimension) { elems = e; nodes = n; };
     ~VTKElementExporter() {};
-    // virtual void readFromLine(istringstream &iss, unsigned dimension);
+    // virtual void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
 protected:
 };
@@ -49,7 +48,7 @@ private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKRB2DExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
+    VTKRB2DExporter(ElementContainer *e, NodeContainer *n, unsigned dimension):VTKExporter(dimension) { elems = e; nodes = n; };
     ~VTKRB2DExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -66,7 +65,7 @@ private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKRCExporter(ElementContainer *e, NodeContainer *n) { elems = e; nodes = n; };
+    VTKRCExporter(ElementContainer *e, NodeContainer *n, unsigned dimension):VTKExporter(dimension) { elems = e; nodes = n; };
     ~VTKRCExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
