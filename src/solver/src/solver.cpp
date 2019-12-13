@@ -186,15 +186,16 @@ void SteadyStateNonLinearSolver :: init() {
     residual = Vector(totalDoFnum);
     W_ext_old = 0;
     W_int_old = 0;
-    disErr = resErr = eneErr = 1e-2;
 }
 
 //////////////////////////////////////////////////////////
 Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     string param;
-    bool bdt, bdtmax, bdtmin, bttime, berr;
-    bdt = bttime = bdtmax = bdtmin = berr = false;
+    bool bdt, bdtmax, bdtmin, bttime;
+    bdt = bttime = bdtmax = bdtmin = false;
     maxIt = 100;
+    disErr = resErr = eneErr = 1e-2;
+    limitEneErr = limitResErr = limitDisErr = 0;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -214,8 +215,10 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
             iss >> conj_grad_precission;
         } else if ( param.compare("conj_grad_relative_maxit") == 0 )    {
             iss >> conj_grad_relative_maxit;
+        } else if ( param.compare("tolerance") == 0 )    {
+            iss >> disErr;
+            resErr = eneErr = disErr;
         } else if ( param.compare("limit_tolerance") == 0 )    {
-            berr = true;
             iss >> limitDisErr;
             limitEneErr = limitResErr = limitDisErr;
         } else if ( param.compare("maxIt") == 0 )    {
@@ -246,10 +249,6 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     if ( !bdtmin ) {
         // cout << name << ": solver parameter 'min_time_step' was not specified, setting to timestep" << endl;
         dtmin = dt;
-    }
-    if ( !berr ) {
-        // cout << name << ": solver parameter 'min_time_step' was not specified, setting to timestep" << endl;
-        limitEneErr = limitResErr = limitDisErr = 0;
     }
     ;
     cout << name << " succesfully loaded, ";
@@ -320,7 +319,8 @@ void SteadyStateNonLinearSolver :: solve() {
           //compute errors
           residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
           displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
-          energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
+          double help_double = abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) );
+          energy_error =  help_double / max(max(W_ext, W_int), EPS2);
 
           cout << setw(6) << it << setw(15) << residu_error;
           if ( it == 0 ) {
@@ -329,6 +329,11 @@ void SteadyStateNonLinearSolver :: solve() {
               cout << setw(15) << displa_error;
           }
           cout << setw(15) << energy_error;
+
+          // JK check difference in numerator of energy error and residual
+          cout << setw(15) << l2_norm(residual);
+          cout << setw(15) << help_double;
+
           cout << endl;
 
           if (std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ){
