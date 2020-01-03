@@ -45,6 +45,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     TranspVirtPolyhedral *newelem = new TranspVirtPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 )    {
+                    TranspCondensedPolyhedral *newelem = new TranspCondensedPolyhedral(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else  {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(0);

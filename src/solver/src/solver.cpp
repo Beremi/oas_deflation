@@ -140,6 +140,14 @@ void SteadyStateLinearSolver :: solve() {
         r [ i ] += full_ddr [ i ];
     }
 
+    /*
+    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+        for ( unsigned j = 0; j < freeDoFnum; j++ ) cout << K [ i ][j] << "\t";
+        cout << "|\t" << ddr[i] << "\t=\t" << f[i] << endl;
+    }
+    exit(1);
+    */
+
     computeInternalExternalForces(r);
 }
 
