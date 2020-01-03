@@ -78,6 +78,7 @@ protected:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve();
+    void printAllVectors();
 private:
 
 public:

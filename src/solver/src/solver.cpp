@@ -154,19 +154,20 @@ void SteadyStateLinearSolver :: solve() {
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: computeInternalExternalForces(Vector &rr) {
     elems->giveInternalForces(rr, f_int);
-    nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
-    if (nodes->giveConstraints()->isActive()){
-      // also ddr must be updated, because displacement error is calculated from relative change (||ddr||/||r||)
-      // matters especially when force control on master is applied
-      nodes->giveConstraints()->calculateDependentDoFs(full_ddr);
-    }
+    nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
+    // #constr_old
+    // if (nodes->giveConstraints()->isActive()){
+    //   // also ddr must be updated, because displacement error is calculated from relative change (||ddr||/||r||)
+    //   // matters especially when force control on master is applied
+    //   nodes->giveConstraints()->calculateDependentDoFs(full_ddr);
+    // }
 }
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runBeforeEachStep() {
     Solver :: runBeforeEachStep();
     cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
-    load = load * 0.;  //clear nodal load
+    load *= 0;  //clear nodal load
 }
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runAfterEachStep() {
@@ -193,15 +194,16 @@ void SteadyStateNonLinearSolver :: init() {
     residual = Vector(totalDoFnum);
     W_ext_old = 0;
     W_int_old = 0;
-    disErr = resErr = eneErr = 1e-2;
 }
 
 //////////////////////////////////////////////////////////
 Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     string param;
-    bool bdt, bdtmax, bdtmin, bttime, berr;
-    bdt = bttime = bdtmax = bdtmin = berr = false;
-    maxIt = 30;
+    bool bdt, bdtmax, bdtmin, bttime;
+    bdt = bttime = bdtmax = bdtmin = false;
+    maxIt = 100;
+    disErr = resErr = eneErr = 1e-2;
+    limitEneErr = limitResErr = limitDisErr = 0;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -221,8 +223,10 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
             iss >> conj_grad_precission;
         } else if ( param.compare("conj_grad_relative_maxit") == 0 )    {
             iss >> conj_grad_relative_maxit;
+        } else if ( param.compare("tolerance") == 0 )    {
+            iss >> disErr;
+            resErr = eneErr = disErr;
         } else if ( param.compare("limit_tolerance") == 0 )    {
-            berr = true;
             iss >> limitDisErr;
             limitEneErr = limitResErr = limitDisErr;
         } else if ( param.compare("maxIt") == 0 )    {
@@ -254,10 +258,6 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
         // cout << name << ": solver parameter 'min_time_step' was not specified, setting to timestep" << endl;
         dtmin = dt;
     }
-    if ( !berr ) {
-        // cout << name << ": solver parameter 'min_time_step' was not specified, setting to timestep" << endl;
-        limitEneErr = limitResErr = limitDisErr = 0;
-    }
     ;
     cout << name << " succesfully loaded, ";
     ;
@@ -283,6 +283,9 @@ void SteadyStateNonLinearSolver :: solve() {
       nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
       computeInternalExternalForces(trial_r);
 
+      // std::cout << " ---------------------- initial " << '\n';
+      // this->printAllVectors();
+
       unsigned it = 0;
       // unsigned maxIt = 30;
       while ( !converged && it < maxIt ) {
@@ -297,6 +300,7 @@ void SteadyStateNonLinearSolver :: solve() {
               cerr << "Conjugate gradients did not converge" << endl;
               return;
           }
+          // sem přidat constraint z elem container
           nodes->giveFullDoFArray(ddr, full_ddr);
 
           //update DoFs
@@ -304,8 +308,12 @@ void SteadyStateNonLinearSolver :: solve() {
               trial_r [ i ] += full_ddr [ i ];
           }
 
+          // std::cout << "before ----------------------" << '\n';
+          // this->printAllVectors();
           //compute internal forces
           computeInternalExternalForces(trial_r);
+          // std::cout << "after ----------------------" << '\n';
+          // this->printAllVectors();
 
           //compute residuals
           W_int = W_int_old;
@@ -319,7 +327,8 @@ void SteadyStateNonLinearSolver :: solve() {
           //compute errors
           residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
           displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
-          energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
+          double help_double = abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) );
+          energy_error =  help_double / max(max(W_ext, W_int), EPS2);
 
           cout << setw(6) << it << setw(15) << residu_error;
           if ( it == 0 ) {
@@ -328,6 +337,11 @@ void SteadyStateNonLinearSolver :: solve() {
               cout << setw(15) << displa_error;
           }
           cout << setw(15) << energy_error;
+
+          // JK check difference in numerator of energy error and residual
+          cout << setw(15) << l2_norm(residual);
+          cout << setw(15) << help_double;
+
           cout << endl;
 
           if (std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ){
@@ -381,6 +395,22 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
     cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
     cout << setw(6) << " " << setw(15) << resErr << setw(15) << disErr << setw(15) << eneErr << endl;
     cout << "----------------------------------------------------" << endl;
+}
+
+void SteadyStateNonLinearSolver :: printAllVectors(){
+    std::cout << "trial_r\t r\t full_ddr\t ddr\t f_int\t f_ext\t load\t f_reduced\t" << '\n';
+    for ( unsigned i = 0; i < trial_r.size(); i++ ){
+        std::cout << trial_r[ i ] << '\t';
+        std::cout << r[ i ] << '\t';
+        std::cout << full_ddr[ i ] << '\t';
+        if ( i < ddr.size()) std::cout << ddr[ i ] << '\t';
+        else std::cout << 'H' << '\t';
+        std::cout << f_int[ i ] << '\t';
+        std::cout << f_ext[ i ] << '\t';
+        std::cout << load[ i ] << '\t';
+        if ( i < f.size()) std::cout << f[ i ] << '\n';
+        else std::cout << 'H' << '\n';
+    }
 }
 
 //////////////////////////////////////////////////////////
