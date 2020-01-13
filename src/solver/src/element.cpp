@@ -348,11 +348,11 @@ Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveInertiaMatrix() const {
-    Matrix S(12, 12);
-    //TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);
+Matrix RigidBodyContact :: giveMassMatrix() const {
+    Matrix M(12, 12);
+    DisMechMaterialStatus *tstats = static_cast<DisMechMaterialStatus *>(stats[0]);
     //TO BE DONE
-    return S;
+    return M;
 }
 
 //////////////////////////////////////////////////////////
@@ -399,7 +399,7 @@ Matrix Truss :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix Truss :: giveInertiaMatrix() const {
+Matrix Truss :: giveMassMatrix() const {
     Matrix S(6, 6);
     //TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);
     //TO BE DONE

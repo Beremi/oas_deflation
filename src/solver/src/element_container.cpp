@@ -80,15 +80,19 @@ void ElementContainer :: updateMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K) const {
+void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
 
     map< pair< size_t, size_t >, double >indices11;
-    //map<pair<size_t, size_t>, double> indices12;
 
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        if (matrixType.compare("mass")==0){
+            if (! dynamic_cast< MechanicalElement * >( *e)) continue;
+        }else if (matrixType.compare("capacity")==0){
+            if (! dynamic_cast< TransportElement * >( *e)) continue;
+        }
         elDoFs = ( * e )->giveDoFs();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
@@ -104,30 +108,54 @@ void ElementContainer :: prepareSteadyStateMatrices(CoordinateIndexedSparseMatri
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
                         indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
                         indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
-                    }//else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFi, DoFj-nfreeDoFs), 0.0));
-                     //else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) indices12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (DoFj, DoFi-nfreeDoFs), 0.0));
+                    }
                 }
             }
         }
     }
 
     K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
-    //K12 = CoordinateIndexedSparseMatrix(indices12, nfreeDoFs, nDoFs-nfreeDoFs);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const {
-    // K = K * 0.;
-    //K12 = K12*0.;
+void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K) const {
+    prepareSteadyStateMatrix(K, "");
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: prepareCapacityMatrix(CoordinateIndexedSparseMatrix &C) const {
+    prepareSteadyStateMatrix(C, "capacity");
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const {
+    prepareSteadyStateMatrix(M, "mass");
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
 
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     Vector elDoFValues;
     Matrix k;
+    MechanicalElement * me;
+    TransportElement  * te;
+
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        if (matrixType.compare("mass")==0){
+            me = dynamic_cast< MechanicalElement * >( *e);
+            if (me) k = me->giveMassMatrix();
+            else continue;
+        }else if (matrixType.compare("capacity")==0){
+            te = dynamic_cast< TransportElement * >( *e);
+            if (te) k = te->giveCapacityMatrix();
+            else continue;
+        }
+        else k = ( * e )->giveSteadyStateMatrix(matrixType);
         elDoFs = ( * e )->giveDoFs();
-        k = ( * e )->giveSteadyStateMatrix(matrixType);
+
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
                 DoFi = nodes->giveDoFid(elDoFs [ i ]);
@@ -143,23 +171,33 @@ void ElementContainer :: updateSteadyStateMatrices(CoordinateIndexedSparseMatrix
                         K [ DoFi ] [ DoFj ] += k [ i ] [ j ];
                         K [ DoFj ] [ DoFi ] += k [ j ] [ i ];
                     }
-                    //else if (DoFi < nfreeDoFs && DoFj >= nfreeDoFs) K12[DoFi][DoFj-nfreeDoFs] += k[i][j];
-                    //else if (DoFj < nfreeDoFs && DoFi >= nfreeDoFs) K12[DoFj][DoFi-nfreeDoFs] += k[j][i];
                 }
             }
         }
     }
-    // cout << "Steady state matrices updated" << endl;
+
     if (nodes->giveConstraints()->isActive()){
       nodes->giveConstraints()->transformToConstraintSpace(K);
     }
 
+    /*
     for(size_t i=0; i<K.RowCount; i++){
         if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
             cerr<< "Error in ElementContainer: stiffness matrix has zero on diagonal " << endl;
             exit(1);
         }
     }
+    */
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateCapacityMatrix(CoordinateIndexedSparseMatrix &C) const {
+    updateSteadyStateMatrix(C, "capacity");
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) const {
+    updateSteadyStateMatrix(M, "mass");
 }
 
 //////////////////////////////////////////////////////////

@@ -6,7 +6,7 @@
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-class TranspPolyhedral : public transportElement
+class TranspPolyhedral : public TransportElement
 {
 protected:
     double volume;
@@ -32,7 +32,6 @@ public:
     virtual Matrix giveConductivityMatrix(string matrixType) const;
     virtual Matrix giveCapacityMatrix() const;
     virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
-    virtual Matrix giveTransientMatrix() const { return giveCapacityMatrix(); };
     virtual Vector giveInternalForces(const Vector &DoFs) const;
 };
 

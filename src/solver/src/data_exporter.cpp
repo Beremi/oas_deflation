@@ -347,6 +347,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     DisplacementGauge *newexp = new DisplacementGauge(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("DoFGauge") == 0 )    {
+                    DoFGauge *newexp = new DoFGauge(n, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTGaussPointExporter") == 0 )    {
                     TXTGaussPointExporter *newexp = new TXTGaussPointExporter(e, dimension);
                     newexp->readFromLine(iss);
