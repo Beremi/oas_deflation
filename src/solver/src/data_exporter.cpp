@@ -311,6 +311,47 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EXPORT OF DISPLACEMENTS
+void ValueGauge :: readFromLine(istringstream &iss) {
+    iss >> filename;
+    iss >> name;
+    codes.resize(1);
+    iss >> codes [ 0 ];
+    DataExporter :: readFromLine(iss);
+}
+//////////////////////////////////////////////////////////
+void ValueGauge :: init() {
+    time_each = 0;
+    time_last = 0;
+}
+
+//////////////////////////////////////////////////////////
+void ValueGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+    char buffer [ 100 ];
+    double value = calcValue();
+    giveFileName(step, buffer);
+    ofstream outputfile;
+    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+    if ( outputfile.good() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+        outputfile << "\t" << value*multiplier;
+    }
+    outputfile.close();
+}
+
+double ValueGauge :: calcValue() const {
+  double value = 0;
+  for ( auto const & e : *elems ){
+    for ( unsigned i = 0; i < e->giveIPNum(); i ++){
+      value += e->giveIPValue( codes[ 0 ], i );
+    }
+  }
+  return value;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // CONTAINER FOR EXPORTERS
 ExporterContainer :: ~ExporterContainer() {
     for ( vector< DataExporter * > :: iterator e = exporters.begin(); e != exporters.end(); ++e ) {
@@ -345,6 +386,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("DisplacementGauge") == 0 )    {
                     DisplacementGauge *newexp = new DisplacementGauge(n, e, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
+                } else if ( exptype.compare("ValueGauge") == 0 )    {
+                    ValueGauge *newexp = new ValueGauge(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("DoFGauge") == 0 )    {
@@ -458,14 +503,14 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
         outputfile.close();
     }
 
-    //export
+    // export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
         if ( ( * d )->doExportNow(time) || exportAll){
           ( * d )->exportData(step, DoFs, reactions);
         }
     }
 
-    //add end line to gauge exporter files
+    // add end line to gauge exporter files
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;

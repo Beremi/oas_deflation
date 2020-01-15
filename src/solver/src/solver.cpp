@@ -207,7 +207,7 @@ void SteadyStateNonLinearSolver :: init() {
 //////////////////////////////////////////////////////////
 Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
 
-    SteadyStateLinearSolver:readFromLine(iss);
+    SteadyStateLinearSolver :: readFromLine(iss);
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
@@ -216,7 +216,7 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     bool bdtmin = false;
     bool bdtmax = false;
     maxIt = 100;
-    disErr = resErr = eneErr = 1e-2;
+    disErr = resErr = eneErr = 1e-5;
     limitEneErr = limitResErr = limitDisErr = 0;
 
     while ( !iss.eof() ) {
@@ -237,7 +237,7 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
             iss >> maxIt;
             if ( maxIt < 1 ){
               std::cout << "number of itteration cannot be smaller than 1!!!, setting to default value" << '\n';
-              maxIt = 30;
+              maxIt = 100;
             } else if ( maxIt < 3 ){
               std::cout << "solver parameter maxIt set to " << maxIt << ", be carefull with such a small number" << '\n';
             }
@@ -311,8 +311,7 @@ void SteadyStateNonLinearSolver :: solve() {
           //compute errors
           residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
           displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2);   //error in displacement change, only from second iteration
-          double help_double = abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) );
-          energy_error =  help_double / max(max(W_ext, W_int), EPS2);
+          energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
 
           cout << setw(6) << it << setw(15) << residu_error;
           if ( it == 0 ) {
@@ -321,10 +320,6 @@ void SteadyStateNonLinearSolver :: solve() {
               cout << setw(15) << displa_error;
           }
           cout << setw(15) << energy_error;
-
-          // JK check difference in numerator of energy error and residual
-          cout << setw(15) << l2_norm(residual);
-          cout << setw(15) << help_double;
 
           cout << endl;
 
@@ -418,9 +413,9 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
 // TRANSIENT LINEAR MECHANICAL SOLVER
 TransientLinearMechanicalSolver :: TransientLinearMechanicalSolver() {
     name = "TransientLinearMechanicalSolver";
-    
+
     applySpectralRadius(0.8);
- 
+
 }
 
 //////////////////////////////////////////////////////////
@@ -433,18 +428,18 @@ void TransientLinearMechanicalSolver :: init() {
     elems->updateMassMatrix(M);
     C = M*0 + K*0; //no damping, possibly change to something if needed
     updateKeff();
-   
+
     r = Vector(totalDoFnum); //initial conitions, assumed zero for now
     r_old = r;
-    v = Vector(totalDoFnum); //initial conitions, assumed zero for now    
-    r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs()); 
+    v = Vector(totalDoFnum); //initial conitions, assumed zero for now
+    r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
     nodes->giveReducedDoFArray(r, r_red);
-    v_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs()); 
+    v_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
     nodes->giveReducedDoFArray(v, v_red);
 
     //compute initial acceleration
     a = Vector(totalDoFnum);
-    nodes->addRHS_nodalLoad(load, 0);  
+    nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r,0);
     computeInternalExternalForces(r); //at time 0
     nodes->giveReducedDoFArray(f_ext - f_int, f);
@@ -473,8 +468,8 @@ Solver *TransientLinearMechanicalSolver :: readFromLine(istringstream &iss) {
         } else if ( param.compare("spectral_radius") == 0 )    {
             double rhoinfty;
             iss >> rhoinfty;
-            applySpectralRadius(rhoinfty); 
-        }                       
+            applySpectralRadius(rhoinfty);
+        }
     }
     if ( alpha_m > 0.5 ) {
         cerr << "Error in solver: alpha_m (" << alpha_m << ") cannot exceed 0.5" << endl;
@@ -523,16 +518,16 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty){
         cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
         exit(1);
     }
-    
+
     alpha_m = 0.5*(3.-rhoinfty)/(1.+rhoinfty);
     alpha_f = 1./(1.+rhoinfty);
-    gamma = 1. / 2. - alpha_m + alpha_f; 
+    gamma = 1. / 2. - alpha_m + alpha_f;
     beta = 0.25*pow(1.+alpha_m-alpha_f,2);
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver::updateKeff(){
-    Keff = K * ( 1. - alpha_f ) + C * ( ( 1 - alpha_f ) * gamma / dt / beta )+ M * ( ( 1 - alpha_m ) / dt / dt / beta ) ;  
+    Keff = K * ( 1. - alpha_f ) + C * ( ( 1 - alpha_f ) * gamma / dt / beta )+ M * ( ( 1 - alpha_m ) / dt / dt / beta ) ;
 }
 
 //////////////////////////////////////////////////////////
@@ -558,7 +553,7 @@ void TransientLinearMechanicalSolver:: updateFieldVariables(){
 // TRANSIENT LINEAR TRANSPORT SOLVER
 TransientLinearTransportSolver :: TransientLinearTransportSolver() {
     name = "TransientLinearTransportSolver";
-    
+
     applySpectralRadius(0.8);
 }
 
@@ -571,15 +566,15 @@ void TransientLinearTransportSolver :: init() {
     elems->prepareCapacityMatrix(C);
     elems->updateCapacityMatrix(C);
     updateKeff();
-   
-    r = Vector(totalDoFnum); //initial conitions, assumed zero for now    
-    r_old = r;    
-    r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs()); 
+
+    r = Vector(totalDoFnum); //initial conitions, assumed zero for now
+    r_old = r;
+    r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
     nodes->giveReducedDoFArray(r, r_red);
 
     //compute initial presure derivative
     v = Vector(totalDoFnum);
-    nodes->addRHS_nodalLoad(load, 0);  
+    nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r,0);
     computeInternalExternalForces(r); //at time 0
     nodes->giveReducedDoFArray(f_ext - f_int, f);
@@ -593,21 +588,21 @@ void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty){
         cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
         exit(1);
     }
-    
+
     alpha_m = (2.*rhoinfty-1.)/(1.+rhoinfty);
     alpha_f = rhoinfty/(1.+rhoinfty);
-    gamma = 1. / 2. - alpha_m + alpha_f; 
+    gamma = 1. / 2. - alpha_m + alpha_f;
     beta = 1.; //not used
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver::updateKeff(){    
-    Keff = C * ( ( 1. - alpha_m ) / ( dt * gamma) ) + K * ( 1. - alpha_f ) ;  
+void TransientLinearTransportSolver::updateKeff(){
+    Keff = C * ( ( 1. - alpha_m ) / ( dt * gamma) ) + K * ( 1. - alpha_f ) ;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver::updateFeff(){
-    feff = f - (C * v_red) * ( 1. + ( alpha_m -1. ) / gamma) ; 
+    feff = f - (C * v_red) * ( 1. + ( alpha_m -1. ) / gamma) ;
 }
 
 //////////////////////////////////////////////////////////
@@ -623,4 +618,3 @@ void TransientLinearTransportSolver:: updateFieldVariables(){
         cout << r[i] << endl;
     }
 }
- 

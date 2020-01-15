@@ -132,6 +132,24 @@ protected:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EXPORT OF SUM OF VALUES
+class ValueGauge : public Gauge
+{
+private:
+    NodeContainer *nodes;
+    ElementContainer *elems;
+    double calcValue() const ;
+public:
+    ValueGauge(NodeContainer *n, ElementContainer *e, unsigned dimension):Gauge(dimension) { nodes = n; elems = e;  multiplier = 1;};
+    ~ValueGauge() {};
+    void readFromLine(istringstream &iss);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void init();
+protected:
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // EXPORT OF DoFs
 class DoFGauge : public Gauge
 {
