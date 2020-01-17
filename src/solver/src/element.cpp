@@ -101,10 +101,10 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     return R[ 2 ][ 2 ];
   } else if ( code.compare("volume") == 0 )       {
     return area * length / ndim;
-  } else if ( code.compare("energy_per_volume") == 0 )       {
+  } else if ( code.compare("energy_total") == 0 )       {
     FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
     return fmstat->giveValue("energy_total")  * (area * length / ndim);
-  } else if ( code.compare("work_per_volume") == 0 )       {
+  } else if ( code.compare("work_dissip") == 0 )       {
     FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
     return fmstat->giveValue("work_dissip")  * (area * length / ndim);
   } else {
