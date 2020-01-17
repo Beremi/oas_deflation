@@ -393,15 +393,16 @@ def create2dbeamConfinedPress(maxLim, minDist, trials ):
 
 
 
-def create2dPatchTestTransport(maxLim, minDist, trials ):
-    print('Creating 2d patch test')
+def createPatchTestTransport(maxLim, minDist, trials, dim):
+    print('Creating patch test')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, radii, mechBC_merged, mechIC_merged  = assemble2dPatchTestTransport(maxLim, minDist, trials );
+    node_coords, radii, mechBC_merged, mechIC_merged  = assemblePatchTestTransport(maxLim, minDist, trials,dim);
 
     print('Conducting Voronoi tesselation...', end = '')
-    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
-    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
+    if (dim==2): vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    else: vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
@@ -412,13 +413,14 @@ def create2dPatchTestTransport(maxLim, minDist, trials ):
     transportBC_merged = []
     functions = []
 
+
     ### selecting vertices on the left surface
-    boundA = np.array(  [-1e-8 , -1e-8] )
-    boundB = np.array(  [maxLim[0]+1e-8, maxLim[1]+1e-8]  )
+    boundA = np.zeros(dim)-1e-8
+    boundB = maxLim + 1e-8
     faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     vert = vor.vertices[faces1,:]
-    boundA = np.array(  [1e-8 , 1e-8] )
-    boundB = np.array(  [maxLim[0]-1e-8, maxLim[1]-1e-8]  )
+    boundA = np.zeros(dim)+1e-8
+    boundB = maxLim - 1e-8
     faces0 = utilitiesGeom.excludeSelectedPts(boundA, boundB, vert)
     faces = faces1[faces0]
 
@@ -1376,8 +1378,7 @@ def assemble2dbeamConfinedPress (maxLim, minDist, trials):
     return node_coords,  mechBC_merged, mechIC_merged
 
 
-def assemble2dPatchTestTransport (maxLim, minDist, trials):
-    dim = 2
+def assemblePatchTestTransport (maxLim, minDist, trials, dim):
     #lists for the model
     node_coords = np.zeros((0,dim))
     radii = np.zeros(0)

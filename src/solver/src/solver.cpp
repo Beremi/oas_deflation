@@ -598,6 +598,7 @@ void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty){
     alpha_f = rhoinfty/(1.+rhoinfty);
     gamma = 1. / 2. - alpha_m + alpha_f; 
     beta = 1.; //not used
+      
 }
 
 //////////////////////////////////////////////////////////
@@ -619,8 +620,5 @@ void TransientLinearTransportSolver:: updateFieldVariables(){
     nodes->giveFullDoFArray(r_red, r);
     nodes->giveFullDoFArray(v_red, v);
 
-    for(int i=0; i<totalDoFnum; i++){
-        cout << r[i] << endl;
-    }
 }
  

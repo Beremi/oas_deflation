@@ -78,7 +78,7 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         numi= 0
         while (d[di]>minDiam and iters<trials):
             if numi<num[di]:
-                point = np.random.rand(2)*(maxLim-d[di]) + d[di]/2.
+                point = np.random.rand(dim)*(maxLim-d[di]) + d[di]/2.
                 radius = d[di]/2.
                 if len(node_coords) == 0:                     
                     node_coords = np.vstack((node_coords,point)); 

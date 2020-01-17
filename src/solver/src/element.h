@@ -130,6 +130,7 @@ class Transp1D : public TransportElement
 private:
     vector< Node * >vert;
     bool bound;
+    Point normal;
     double length, area;
 public:
     Transp1D(const unsigned dim);
