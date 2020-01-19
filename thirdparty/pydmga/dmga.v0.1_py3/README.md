@@ -3,14 +3,21 @@ Prerequisities
 
 For quick installation execute 
 
-make all 
-
+```bash
+$ make all
+```
 in the command line under the main directory (where Makefile and this README file is).
 
-Add the path to src/pydmga to system PATH variable. 
+Follow the instructions of the makefile script - "src/pydmga copy to your python packages" (e.g. '/home/kelidas/anaconda3/lib/python3.7/site-packages').
+
+```bash
+$ python -m site
+```
+(OR Add the path to src/pydmga to system PATH variable.)
 
 Now you can test the first program:
 
+```python
 from pydmga.geometry import OrthogonalGeometry
 from pydmga.container import Container
 from pydmga.diagram import Diagram
@@ -22,9 +29,6 @@ container.add(2,8,2,2)
 diagram = Diagram(container)
 volume = 0.0
 for cell in diagram:
-	volume += cell.volume()
+    volume += cell.volume()
 print("volume is", volume, "should be", 10*10*10)
-
-Other examples are under 
-
-Some programs that we developed for analysis of lipid bilayers are in src/programs directory. 
+```
