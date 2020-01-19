@@ -283,10 +283,6 @@ void ConstraintContainer :: init(NodeContainer *nodes){
         // master DoF is free
         indeces11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (i, j), jD->giveMultipliers()[ ind ]));
       }
-      // else if ( j > freeDoFs ){
-      //   // displacement boundary condition on a master DoF
-      //   indeces12.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (i, j - freeDoFs), jD.giveMultipliers()[ ind ]));
-      // }
     }
   }
 
@@ -296,15 +292,8 @@ void ConstraintContainer :: init(NodeContainer *nodes){
     // fill the matrix with 1 for each unrestrained DoF (diagonal)
     indeces11.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (i, i), 1));
   }
-  // for (i = 0; i < totalDoFs - freeDoFs; i++){
-  //   // fill the matrix with 1 for each boundary condition DoF (diagonal)
-  //   indeces22.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (i, i), 1));
-  // }
   X = CoordinateIndexedSparseMatrix( indeces11, nodes->giveNumFreeDoFs(), nodes->giveNumFreeDoFs() - constraints.size());
   // X.print();
-  // *X12 = CoordinateIndexedSparseMatrix( indeces12, freeDoFs, totalDoFs - freeDoFs);
-  // *X22 = CoordinateIndexedSparseMatrix( indeces22, totalDoFs - freeDoFs, totalDoFs - freeDoFs);
-  // exit(1);
 }
 
 
@@ -327,6 +316,8 @@ void ConstraintContainer :: calculateMasterForces(Vector &fullForces){
   for (auto const &jD : constraints){
     for (unsigned i = 0; i < jD->giveMasterDoFs().size(); i++){
       fullForces [jD->giveMasterDoFs()[ i ]->giveStartingDoF() + jD->giveDirs()[ i ] ] += fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
+      // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
+      // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept
     }
   }
 }

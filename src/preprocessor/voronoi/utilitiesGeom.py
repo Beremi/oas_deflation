@@ -141,7 +141,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart = output3D(node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
+        vert_count, verticesIdxDict, vertIdxStart = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
     return vert_count, verticesIdxDict, vertIdxStart
 
 
@@ -589,7 +589,7 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
 
 
 
-def output3D(node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
+def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
 
     dim = 3
     print('Extracting the geometry...',  end ='')
@@ -775,7 +775,7 @@ def output3D(node_count, maxLim, vor, node_coords, areas, activeTransport, activ
 
     newAuxNodes = 0
     if (activeTransport):
-        newAuxNodes = saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
     vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):
@@ -783,17 +783,17 @@ def output3D(node_count, maxLim, vor, node_coords, areas, activeTransport, activ
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
 
-    saveNodes(aux_nodes, "AuxNode",dim, auxNodesFile)
+    saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
-        saveNodes(nodes_out, "Particle",dim, nodesFile)
-        saveMechanicalElements(ridges_out, node_count, dim, nodes_out, mZ=mZ)
+        saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
     else:
-        saveNodes(nodes_out, "AuxNode",dim, nodesFile)
+        saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
-        saveNodes(vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(ridges_out,dim, node_count, aux_nodes, maxLim)
+        saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
     else:
-        saveNodes(vertices_out, "AuxNode",dim, verticesFile)
+        saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -1037,13 +1037,13 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     num = dim
     if (dim == 2):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY"
-        fmt= nodetype + '\t%.12f\t%.12f'
+        fmt= nodetype + '\t%.15e\t%.15e'
     elif (dim == 3):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ"
-        fmt= nodetype + '\t%.12f\t%.12f\t%.12f'
+        fmt= nodetype + '\t%.15e\t%.15e\t%.15e'
     if nodetype=="Particle":
         headerLine = headerLine + "\tpowRadius"
-        fmt = fmt + '\t%.12f'
+        fmt = fmt + '\t%.15e'
         num = num + 1
 
     fl=open(os.path.join(master_folder,filename),'w')

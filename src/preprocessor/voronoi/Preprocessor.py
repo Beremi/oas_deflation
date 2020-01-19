@@ -1,4 +1,4 @@
-import os
+import Preprocessor
 import sys
 import time
 import numpy as np
@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy
 from IPython.display import clear_output
 import sys
+import os
 
 import math
 from sklearn import preprocessing
@@ -36,10 +37,14 @@ if __name__ == '__main__':
     print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
     start = time.time()
 
-    if len(sys.argv)>0: 
+    if len(sys.argv)>1: 
         seed = int(sys.argv[1])
-    else : seed = np.random.randint(0)
+    else : seed = np.random.randint(1e3)
     np.random.seed(seed=seed)
+
+    if len(sys.argv)>1: 
+        minDist = float(sys.argv[2])
+    else : minDist = 0.3
 
     #type of periodic model, if any
     periodicModel = 0
@@ -55,7 +60,7 @@ if __name__ == '__main__':
     powerTes = 0
 
     #dimension
-    dim = 2
+    dim = 3
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
@@ -65,8 +70,8 @@ if __name__ == '__main__':
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 1.
-    Zdim = 1.
+    Ydim = 1.5
+    Zdim = 2
 
     #dimensions of cylinder model
     cylinderRad = 0.2
@@ -83,7 +88,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.4
+    #minDist = 0.4
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -98,7 +103,7 @@ if __name__ == '__main__':
 
     #trials of random node positioning
 
-    trials = 500000
+    trials = 5000
 
 
     #lists for the model
@@ -149,8 +154,8 @@ if __name__ == '__main__':
     #creating the model. Select the prepared models.
     if (dim == 2):
 
-        #patch test
-        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.create2dPatchTestTransport(maxLim, minDist, trials )
+        #patch test for Transport
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
@@ -178,14 +183,18 @@ if __name__ == '__main__':
         #periodicModel = 1
         #"""
     if (dim == 3):
+
+        #patch test for Transport
+        #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
+
         #cantilever bending
-        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
 
         #cantilever uniform pressure, free contraction
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
 
         #cantilever uniform pressure, confined
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
+        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressConfined(maxLim, minDist, trials )
 
         #cylinder uniform pressure free
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dcylinderUniPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )

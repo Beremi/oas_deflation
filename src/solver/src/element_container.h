@@ -19,8 +19,13 @@ public:
     void init();
 	size_t giveSize() const { return elems.size(); }
     void updateMaterialStatuses();
-    void prepareSteadyStateMatrices(CoordinateIndexedSparseMatrix &K) const;
-    void updateSteadyStateMatrices(CoordinateIndexedSparseMatrix &K, string matrixType) const;
+    void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const;
+    void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K) const;
+    void updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const;
+    void prepareCapacityMatrix(CoordinateIndexedSparseMatrix &C) const;
+    void updateCapacityMatrix(CoordinateIndexedSparseMatrix &C) const;
+    void prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const;
+    void updateMassMatrix(CoordinateIndexedSparseMatrix &M) const;
     void addBodyForces(Vector &R, double time) const;
     void giveInternalForces(Vector &full_r, Vector &full_f);
     Element *giveElement(unsigned const num) { return elems [ num ]; }

@@ -10,8 +10,6 @@ double triArea(const Point a, const Point b, const Point c){ //points in counter
 // TRANSPORT POLYHEDRAL ELEMENT
 TranspPolyhedral :: TranspPolyhedral(const unsigned dim) {
     ndim = dim;
-    ip_locs.resize(1);
-    stats.resize(1);
     name = "TranspPolyhedral";
     ip_type = "quad";
 }
@@ -49,7 +47,9 @@ void TranspPolyhedral :: sort2D() {
     sort(angles.begin(), angles.end());  
     vector< Node * > newnodes;
     newnodes.resize(nnodes);
-    for ( unsigned i=0; i<nnodes; i++) newnodes[i] = nodes[angles[i].second];
+    //do NOT change node ordering, the fisrt face should run through +-pi axis
+    for ( unsigned i=0; i<nnodes-1; i++) newnodes[i+1] = nodes[angles[i].second];
+    newnodes[0] = nodes[angles[nnodes-1].second];
     nodes = newnodes;    
 }
 
@@ -77,7 +77,7 @@ Vector TranspPolyhedral :: WachspressShapeF(Point x) const{
 Matrix TranspPolyhedral :: WachspressShapeFGrad(Point x) const{
     Vector phi = WachspressShapeF(x);
     Matrix R(nnodes,2);
-    Matrix phiGrad(nnodes,2);
+    Matrix phiGrad(2,nnodes);
 
     Vector h(nnodes);
     for(unsigned i=0; i<nnodes; i++) h[i] = abs(dot(nodes[faces[i][0]]->givePoint()-x,normals[i]));
@@ -91,7 +91,7 @@ Matrix TranspPolyhedral :: WachspressShapeFGrad(Point x) const{
         oldi = i;
     }
     for(unsigned i=0; i<nnodes; i++) {
-        for(unsigned j=0; j<2; j++) phiGrad[i][j] = phi[i]*(R[i][j]-phiR[j]);
+        for(unsigned j=0; j<2; j++) phiGrad[j][i] = phi[i]*(R[i][j]-phiR[j]);
     }  
     return phiGrad;   
 }
@@ -124,6 +124,25 @@ void TranspPolyhedral :: findIntegrationPoints(){
             }
             a = c;
         }
+    }else if(ip_type.compare("tri")==0){
+        //based on triangular isoparametric elements
+        ip_locs.resize(3*nnodes);
+        ip_weights.resize(3*nnodes);
+        stats.resize(3*nnodes);
+        Point a,b;
+
+        for(unsigned i=0; i<nnodes; i++) {
+            a = nodes[faces[i][0]]->givePoint();
+            b = nodes[faces[i][1]]->givePoint();
+            double tarea = triArea(a,b,centroid);
+            ip_locs[3*i  ] = b*(1.-1./6.-1./6.) + a/6. + centroid/6.;
+            ip_locs[3*i+1] = b*(1.-2./3.-1./6.) + a*2./3. + centroid/6.;
+            ip_locs[3*i+2] = b*(1.-1./6.-2./3.) + a/6. + centroid*2./3.;
+            for(unsigned t=0; t<3; t++){
+                ip_weights[3*i+t] = tarea/3.;
+                stats[3*i+t] = mat->giveNewMaterialStatus(this);
+            }
+        }
     }else{
         cerr<< "Error in " << name << ": ip_type '" << ip_type << "' not implemented" << endl;
     }
@@ -131,6 +150,8 @@ void TranspPolyhedral :: findIntegrationPoints(){
 
 //////////////////////////////////////////////////////////
 void TranspPolyhedral :: init() {
+    //reorder nodes before calling base calls initialization
+    sort2D();
     Element :: init(); //calling base class method;
 
     //check that nodes are TrsNodes
@@ -155,9 +176,6 @@ void TranspPolyhedral :: init() {
             cerr << "Error: more than 2 nodes must be involved, " << nodes.size() << " provided" << endl;
             exit(1);
         }
-
-        //reorder nodes
-        sort2D();
 
         //area,centroid, faces, ...
         faces.resize(nnodes);
@@ -193,11 +211,11 @@ Matrix TranspPolyhedral :: giveConductivityMatrix(string matrixType) const {
     Matrix phiGrad;
     TrsprtMaterialStatus *tstats;
     for(size_t i=0; i<ip_weights.size(); i++){
-            phiGrad = WachspressShapeFGrad(ip_locs[i]);            
+            phiGrad = shapeFGrad(ip_locs[i]);            
             tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-            C += matrix_multiply(phiGrad,phiGrad.transpose())*(ip_weights[i]*tstats->giveConductivity());
+            C += matrix_multiply(phiGrad.transpose(),phiGrad)*(ip_weights[i]*tstats->giveConductivity());
     }
-    return C;
+    return C;    
 }
 
 //////////////////////////////////////////////////////////
@@ -214,5 +232,133 @@ Matrix TranspPolyhedral :: giveCapacityMatrix() const {
 
 //////////////////////////////////////////////////////////
 Vector TranspPolyhedral :: giveInternalForces(const Vector &DoFs) const {
-    return giveConductivityMatrix("elastic") * DoFs;
+    return giveConductivityMatrix("secant") * DoFs;
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSPORT VIRTUAL POLYHEDRAL ELEMENT
+
+TranspVirtPolyhedral :: TranspVirtPolyhedral(const unsigned dim):TranspPolyhedral(dim) {
+    name = "TranspVirtPolyhedral";
+}
+
+//////////////////////////////////////////////////////////
+void TranspVirtPolyhedral :: init() {
+    TranspPolyhedral :: init(); //calling base class method;
+
+    Matrix R(nnodes,ndim);
+    unsigned j = nnodes-1;
+    for(unsigned i=0; i<nnodes; i++){
+        R[i][0] = (normals[i].x*areas[i] + normals[j].x*areas[j])/2.; 
+        R[i][1] = (normals[i].y*areas[i] + normals[j].y*areas[j])/2.;
+        j = i;
+    }
+
+    Matrix N(nnodes,ndim);
+    Point x;
+    for(unsigned i=0; i<nnodes; i++){
+        x = nodes[i]->givePoint();
+        N[i][0] = x.x;
+        N[i][1] = x.y;
+    }
+
+    Matrix I(nnodes,nnodes);
+    for(unsigned i=0; i<nnodes; i++) I[i][i] = 1.;
+
+    Matrix P0(nnodes,nnodes);
+    for(unsigned i=0; i<nnodes; i++) for(unsigned j=0; j<nnodes; j++) P0[i][j] = 1./nnodes;
+    
+    Matrix H = matrix_multiply(N,R.transpose())/volume;
+    Matrix P =  H +  matrix_multiply(P0,I - H);
+
+    V1 = matrix_multiply(R,R.transpose())/volume;
+    V2 = I - P;
+}
+
+//////////////////////////////////////////////////////////
+Matrix TranspVirtPolyhedral :: giveConductivityMatrix(string matrixType) const { 
+    Matrix C = TranspPolyhedral :: giveConductivityMatrix(matrixType);
+    TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
+    return V1*tstats->giveConductivity() + matrix_multiply(matrix_multiply(V2.transpose(),C),V2);
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSPORT POLYHEDRAL ELEMENT CONSTRUCTED BY STATIC CONDENSATION OF ISOPARAMETRIC TRIANGLES
+
+TranspCondensedPolyhedral :: TranspCondensedPolyhedral(const unsigned dim):TranspPolyhedral(dim) {
+    name = "TranspCondensedPolyhedral";
+    ip_type = "tri";
+}
+
+//////////////////////////////////////////////////////////
+Vector TranspCondensedPolyhedral :: fullTriShapeF(Point x) const{
+    double alpha = atan2(x.getY()-centroid.getY(),x.getX()-centroid.getX());
+    unsigned face;
+    for(face=0; face<nnodes; face++) if(alpha<angles[faces[face][1]]) break;
+    if (face==nnodes) face=0;
+    Vector phi(0.,nnodes+1); //include the centroid
+    double tarea = triArea(centroid,nodes[faces[face][0]]->givePoint(),nodes[faces[face][1]]->givePoint());
+    phi[faces[face][1]] = triArea(x,centroid,nodes[faces[face][0]]->givePoint())/tarea;
+    phi[faces[face][0]] = triArea(x,nodes[faces[face][1]]->givePoint(),centroid)/tarea;
+    phi[nnodes] = triArea(x,nodes[faces[face][0]]->givePoint(),nodes[faces[face][1]]->givePoint())/tarea;
+    return phi;
+}
+
+//////////////////////////////////////////////////////////
+Matrix TranspCondensedPolyhedral :: fullTriShapeFGrad(Point x) const{
+    double alpha = atan2(x.getY()-centroid.getY(),x.getX()-centroid.getX());
+    unsigned face;
+    for(face=0; face<nnodes; face++) if(alpha<angles[faces[face][1]]) break;
+    if (face==nnodes) face=0;
+    Matrix phiGrad(ndim,nnodes+1); //include the centroid
+    double tarea = triArea(centroid,nodes[faces[face][0]]->givePoint(),nodes[faces[face][1]]->givePoint());
+    phiGrad[0][faces[face][1]] = 0.5*(centroid.getY() - nodes[faces[face][0]]->givePoint().getY())/tarea;
+    phiGrad[1][faces[face][1]] = 0.5*(nodes[faces[face][0]]->givePoint().getX() - centroid.getX())/tarea;
+    phiGrad[0][faces[face][0]] = 0.5*(nodes[faces[face][1]]->givePoint().getY() - centroid.getY())/tarea;
+    phiGrad[1][faces[face][0]] = 0.5*(centroid.getX() - nodes[faces[face][1]]->givePoint().getX())/tarea;
+    phiGrad[0][nnodes]         = 0.5*(nodes[faces[face][0]]->givePoint().getY() - nodes[faces[face][1]]->givePoint().getY())/tarea;
+    phiGrad[1][nnodes]         = 0.5*(nodes[faces[face][1]]->givePoint().getX() - nodes[faces[face][0]]->givePoint().getX())/tarea;
+    return phiGrad;
+}
+
+//////////////////////////////////////////////////////////
+Vector TranspCondensedPolyhedral :: condTriShapeF(Point x) const{
+    Vector full = fullTriShapeF(x);
+    Vector reduced(nnodes);
+    for(unsigned i=0; i<nnodes; i++) reduced[i] = full[i] + full[nnodes]*red2full[i];
+    return reduced;
+}
+
+//////////////////////////////////////////////////////////
+Matrix TranspCondensedPolyhedral :: condTriShapeFGrad(Point x) const{
+    Matrix full = fullTriShapeFGrad(x);
+    Matrix reduced(ndim,nnodes);
+    for(unsigned d=0; d<ndim; d++){
+        for(unsigned i=0; i<nnodes; i++) reduced[d][i] = full[d][i] + full[d][nnodes]*red2full[i];
+    }
+    return reduced;
+}
+
+//////////////////////////////////////////////////////////
+void TranspCondensedPolyhedral :: init() {
+    TranspPolyhedral :: init(); //calling base class method;
+    angles.resize(nnodes); 
+
+    for ( unsigned i=0; i<nnodes; i++) angles[i] = atan2(nodes[i]->givePoint().getY() - centroid.getY(),nodes[i]->givePoint().getX() - centroid.getX()); 
+
+    //build transformation matrix allowing to calculate inner degree of freedom
+    Matrix FullK(nnodes+1, nnodes+1);
+    Matrix phiGrad;
+    for(size_t i=0; i<ip_weights.size(); i++){
+            phiGrad = fullTriShapeFGrad(ip_locs[i]);
+            FullK += matrix_multiply(phiGrad.transpose(),phiGrad)*ip_weights[i];
+    }   
+    
+    red2full.resize(nnodes);
+    for(unsigned i=0; i<nnodes; i++){
+        red2full[i] = -FullK[i][nnodes]/FullK[nnodes][nnodes];
+    }
+}

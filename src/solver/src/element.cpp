@@ -101,10 +101,10 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     return R[ 2 ][ 2 ];
   } else if ( code.compare("volume") == 0 )       {
     return area * length / ndim;
-  } else if ( code.compare("energy_per_volume") == 0 )       {
+  } else if ( code.compare("energy_total") == 0 )       {
     FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
     return fmstat->giveValue("energy_total")  * (area * length / ndim);
-  } else if ( code.compare("work_per_volume") == 0 )       {
+  } else if ( code.compare("work_dissip") == 0 )       {
     FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
     return fmstat->giveValue("work_dissip")  * (area * length / ndim);
   } else {
@@ -348,11 +348,11 @@ Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveInertiaMatrix() const {
-    Matrix S(12, 12);
-    //TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);
+Matrix RigidBodyContact :: giveMassMatrix() const {
+    Matrix M(12, 12);
+    DisMechMaterialStatus *tstats = static_cast<DisMechMaterialStatus *>(stats[0]);
     //TO BE DONE
-    return S;
+    return M;
 }
 
 //////////////////////////////////////////////////////////
@@ -399,7 +399,7 @@ Matrix Truss :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix Truss :: giveInertiaMatrix() const {
+Matrix Truss :: giveMassMatrix() const {
     Matrix S(6, 6);
     //TrsprtMaterialStatus *tstats = static_cast<TrsprtMaterialStatus *>(stats[0]);
     //TO BE DONE
@@ -492,111 +492,112 @@ void Transp1D :: init() {
         exit(1);
     }
 
-    Point v0, v1, t, normal;
+
+    cout << "XXXXXXXXXXXXXXXXXXXXXx" << endl;
+    for (unsigned int i=0; i<vert.size(); i++){
+      cout << vert [i]->givePoint().x << " " << vert [i]->givePoint().y << " " << vert [i]->givePoint().z << endl;
+    }
+
+
+    Point t;
     if ( ndim == 2 ) {
         if ( !( vert.size() == 2 ) ) {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         }
 
-        v0 = vert [ 0 ]->givePoint();
-        v1 = vert [ 1 ]->givePoint();
-
-        ip_locs [ 0 ] = ( v0 + v1 ) / 2.;
-        t = v1 - v0;
+        ip_locs [ 0 ] = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
+        t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
         t = t / area;
     } else   {
-      //JM: Coplanarity test of connected "vertices"
-      double maxErr = 0.0;
-      double currErr = 0.0;
-      //
-      for (unsigned int i=0; i<vert.size()-3; i++){
-        currErr = checkCoplanarity(  vert[i]->givePoint(), vert[i+1]->givePoint(), vert[i+2]->givePoint(), vert[i+3]->givePoint()  );
+        //JM: Coplanarity check for vertices on the face
+        //JM: checking coplanarity of every consecutive 4 nodes
+        double maxErr = 0.0;
+        double currErr = 0.0;
+        //
+        for (unsigned int i=0; i<vert.size()-3; i++){
+          currErr = checkCoplanarity(  vert[i]->givePoint(), vert[i+1]->givePoint(), vert[i+2]->givePoint(), vert[i+3]->givePoint()  );
+          if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
+        }
+        //JM: also checking if the beam midpoint is coplanar with the face
+        Point midPoint = (nodes [1]->givePoint() + nodes [0]->givePoint())/2.;
+        currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), midPoint );
         if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
-      }
-      //JM: also checking if the beam midpoint is coplanar with the face
-      Point midPoint = (nodes [1]->givePoint() + nodes [0]->givePoint())/2.;
-      currErr = checkCoplanarity(  vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), midPoint );
-      if (abs(currErr) > maxErr){ maxErr = abs(currErr); }
-      //
-      //JM: coplanarity is not perfect
-      if (maxErr > 1e-5){
-        cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
-      //  exit(1);
-      }
+        //
+        if (maxErr > 1e-5){
+          cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
+          exit(1);
+        }
 
-      //JM: face normal vector made from first 3 vertices
-      //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-      Point n = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
-      n /= n.norm();
-      Point t2 ;
-      if( fabs (n.x ) > fabs (n.z )) t2 = Point (-n.y , n.x , 0.0f );
-      else t2 = Point (0.0f , -n.z , n.y );
-      t = cross (t2 , n);
-      t /= t.norm();
+        //JM: face normal vector made from first 3 vertices
+        //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
+        Point n = cross(vert[1]->givePoint()-vert[0]->givePoint() , vert[2]->givePoint()-vert[0]->givePoint());
+        n /= n.norm();
+        Point t2;
+        if( fabs (n.x ) > fabs (n.z )) t2 = Point (-n.y , n.x , 0.0f );
+        else t2 = Point (0.0f , -n.z , n.y );
+        t = cross (t2 , n);
+        t /= t.norm();
 
-      //JM: Perpendicularity check of the beam and face directions
-      //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
-      //JM: perpendicularity check: cross (beam, face)=>0
-      Point prp = (nodes [1]->givePoint() - nodes [0]->givePoint())* t ;
-      if (prp.norm() > 1e-5){
-        cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
-      //  exit(1);
-      }
+        //JM: Perpendicularity check of the beam and face directions
+        //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
+        //JM: perpendicularity check: cross (beam, face)=>0
+        Point prp = (nodes [1]->givePoint() - nodes [0]->givePoint())* t ;
+        if (prp.norm() > 1e-6){
+          cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+        //  exit(1);
+        }
 
-      //JM: finding position of the SINGLE integration point -> center of gravity of the face polygon
-      //JM: average point of the polygon for triangulation
-      Point avgPoint = Point(0.0, 0.0, 0.0);
-      for (unsigned int i=0; i<vert.size(); i++){ avgPoint += vert[i]->givePoint(); }
-      avgPoint /= vert.size();
+        //JM: finding position of the SINGLE integration point -> center of gravity of the face polygon
+        //JM: average point of the polygon for triangulation
+        Point avgPoint = Point(0.0, 0.0, 0.0);
+        for (unsigned int i=0; i<vert.size(); i++){ avgPoint += vert[i]->givePoint(); }
+        avgPoint /= vert.size();
 
-      //JM: integration point coordinates as an average of CGs of face triangles weighted by areas
-      ip_locs[0] = Point(0.0, 0.0, 0.0);
-      area = 0.0;
-      double ai = 0.0;
-      unsigned int j = 0;
-      for (unsigned int i=0; i<vert.size(); i++){
-        j=i+1;
-        if (i==vert.size()-1){ j=0; }
-        //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-        ai = (cross(vert[i]->givePoint() - avgPoint,   vert[j]->givePoint() - avgPoint) ).norm();
-        area += ai;
-        //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
-        ip_locs[0] += ( avgPoint +vert[i]->givePoint() +vert[j]->givePoint() )/3.0 * ai;
-      }
-      ip_locs[0] /= area;
+        //JM: integration point coordinates as an average of CGs of face triangles weighted by areas
+        ip_locs[0] = Point(0.0, 0.0, 0.0);
+        area = 0.0;
+        double ai = 0.0;
+        unsigned int j = 0;
+        for (unsigned int i=0; i<vert.size(); i++){
+          j=i+1;
+          if (i==vert.size()-1){ j=0; }
+          //triangle area computed as a_i = norm(cross(AB, AC)) / 2
+          ai = (cross(vert[i]->givePoint() - avgPoint,   vert[j]->givePoint() - avgPoint) ).norm();
+          area += ai;
+          //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
+          ip_locs[0] += ( avgPoint +vert[i]->givePoint() +vert[j]->givePoint() )/3.0 * ai;
+        }
+        ip_locs[0] /= area;
 
-      //JM: Check if integration point is coplanar with face
-      currErr = checkCoplanarity( vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
-      if (abs(currErr) > 1e-4){
-        cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
-      //  exit(1);
-      }
-      //Work in progress
-      //cerr << "Dimension " << ndim << " transport implementation is in progress. JM" << endl;
-
-      //exit(0);
+        //JM: Check if integration point is coplanar with face
+        currErr = checkCoplanarity( vert[0]->givePoint(), vert[1]->givePoint(), vert[2]->givePoint(), ip_locs[0] );
+        if (abs(currErr) > 1e-6){
+          cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
+          exit(1);
+        }
     }
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-
-    if ( abs(normal * t) > 1e-4) {
-        cout << v0.x << " " <<  v0.y <<  " X " << v1.x << " " <<  v1.y << endl;
+    if ( abs(normal * t) > 1e-5 ) {
+        cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
         exit(1);
     }
+
+    cout << "DONE" << endl;
 }
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
-    Matrix C(2, 2);
     TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    double c = area * tstats->giveConductivity() / length;
+    double c = area * tstats->giveConductivity() / length;    
+    Matrix C(2, 2);
     C [ 0 ] [ 0 ] = C [ 1 ] [ 1 ] = c;
     C [ 1 ] [ 0 ] = C [ 0 ] [ 1 ] = -c;
     return C;

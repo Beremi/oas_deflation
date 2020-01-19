@@ -30,7 +30,6 @@ public:
     void initMaterialStatuses();
     void updateMaterialStatuses();
     virtual Matrix giveSteadyStateMatrix(string matrixType) const = 0;
-    virtual Matrix giveTransientMatrix() const = 0;
     vector< unsigned >giveDoFs() { return DoFids; };
     virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
     virtual double giveValue(string code) const;
@@ -45,13 +44,13 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT ELEMENT
-class transportElement : public Element
+class TransportElement : public Element
 {
 private:
 
 public:
-    transportElement() {}
-    ~transportElement() {};
+    TransportElement() {}
+    ~TransportElement() {};
     virtual Matrix giveConductivityMatrix(string matrixType) const = 0;
     virtual Matrix giveCapacityMatrix() const = 0;
 };
@@ -68,9 +67,8 @@ public:
     MechanicalElement() {}
     ~MechanicalElement() {};
     virtual Matrix giveStiffnessMatrix(string matrixType) const = 0;
-    virtual Matrix giveInertiaMatrix() const = 0;
+    virtual Matrix giveMassMatrix() const = 0;
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveStiffnessMatrix(matrixType); };
-    Matrix giveTransientMatrix() const { return giveInertiaMatrix(); };
     Matrix giveGeomMMatrix() const { return GeomM; };
     virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
 };
@@ -95,7 +93,7 @@ public:
     void init();
     vector< Node * > giveVertices() const { return vert; };
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
-    virtual Matrix giveInertiaMatrix() const;
+    virtual Matrix giveMassMatrix() const;
     Matrix giveRMatrix() const {return R;};
     virtual Matrix giveAMatrix(Point a, Point x) const;
     double giveLength() const { return length; }
@@ -120,18 +118,19 @@ public:
     virtual Matrix giveAMatrix(Point a, Point x) const;
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
-    virtual Matrix giveInertiaMatrix() const;
+    virtual Matrix giveMassMatrix() const;
 };
 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 1D TRANSPORT ELEMENT
-class Transp1D : public transportElement
+class Transp1D : public TransportElement
 {
 private:
     vector< Node * >vert;
     bool bound;
+    Point normal;
     double length, area;
 public:
     Transp1D(const unsigned dim);
@@ -141,7 +140,6 @@ public:
     Matrix giveConductivityMatrix(string matrixType) const;
     Matrix giveCapacityMatrix() const;
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
-    Matrix giveTransientMatrix() const { return giveCapacityMatrix(); };
     virtual Vector giveInternalForces(const Vector &DoFs) const;
 };
 
