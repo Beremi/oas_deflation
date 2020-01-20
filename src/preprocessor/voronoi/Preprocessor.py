@@ -37,12 +37,12 @@ if __name__ == '__main__':
     print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
     start = time.time()
 
-    if len(sys.argv)>1: 
+    if len(sys.argv)>1:
         seed = int(sys.argv[1])
     else : seed = np.random.randint(1e3)
     np.random.seed(seed=seed)
 
-    if len(sys.argv)>1: 
+    if len(sys.argv)>1:
         minDist = float(sys.argv[2])
     else : minDist = 0.3
 
@@ -70,8 +70,8 @@ if __name__ == '__main__':
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 1.5
-    Zdim = 2
+    Ydim = 2.
+    Zdim = 0.5
 
     #dimensions of cylinder model
     cylinderRad = 0.2
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    #minDist = 0.4
+    minDist = 0.1
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -272,10 +272,16 @@ if __name__ == '__main__':
     if (len(radii)>0): utilitiesGeom.saveRadii(master_folder, radii)
 
     solStep = 1e-2
-    simTime = 1e-2
+    simTime = 10e-2
     utilitiesGeom.saveMasterInput(master_folder, dim, solver, solStep, 1e-4, 1e-1, simTime, activeTransport, activeMechanics, periodic = periodicModel)
     end =  time.time() -end
     print('Saving done in %.3f secs.' %end)
+
+    print('\nThe model contains:')
+    print('Mech nodes: %d' %node_count)
+    print('Aux nodes: %d' %(vertIdxStart-node_count))
+    print('Vertices: %d' %vert_count)
+
 
     end =  time.time() -start
     print('\nAll done in %.3f secs.' %end)

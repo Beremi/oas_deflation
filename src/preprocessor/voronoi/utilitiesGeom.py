@@ -162,7 +162,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     validRidgeIdxs = np.where(cond)[0]
     print(validRidgeIdxs.shape)
     print(validRidgeIdxs)
-    
+
     #REMOVE
     #validRidgeIdxs = []
     #for i in range (vor.ridge_points.shape[0]):
@@ -285,7 +285,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
@@ -775,7 +775,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     newAuxNodes = 0
     if (activeTransport):
-        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim)
     vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):
@@ -791,7 +791,9 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
+        #JM: save elements uz je volane drive
+        # je potreba, aby bylo volane prvni, protoze jeste generuje nove aux nodes
+        #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
@@ -1030,7 +1032,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
 
 
 def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
-    print('Saving nodes...', end='')
+    print('Saving nodes: %s...' %nodetype, end='')
     sys.stdout.flush()
     nodes_out = np.array(nodes_out)
     #writing nodes
@@ -1063,11 +1065,15 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
             mechElemRidges.append( ridges_out[m].copy() )
     print ('Mech elements: %d' %len(mechElemRidges))
 
+    onlyMechNodesConnected = True
 
     if (mZ!=None and len(mZ)>0):
         for i in range (len(mechElemRidges)):
             nodeA = nodes[int(mechElemRidges[i][0])]
             nodeB = nodes[int(mechElemRidges[i][1])]
+
+            if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count):
+                onlyMechNodesConnected = False
 
             if (dim==2):
                 if ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
@@ -1105,6 +1111,11 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         for i in range (len(mechElemRidges)):
             mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
+    if (onlyMechNodesConnected):
+        print ('MechElems connect only MechNodes. That is ok.')
+    else:
+        print ('MechElems CONNECT WRONG NODES !!!')
+
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
@@ -1126,11 +1137,19 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
     sys.stdout.flush()
 
 
-def saveTransportElements(master_folder,ridges_out, dim, node_count, aux_nodes, maxLim):
+def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim):
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
     ridges_out = np.asarray(ridges_out)
+
+    onlyVerticesConnected = True
+
+    nds = node_count
+    aux = len(aux_nodes)
+    vrt = vertCount
+
+
     if (dim == 2):
         for i in range (len(ridges_out)):
             connNds = []
@@ -1140,9 +1159,19 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, aux_nodes, 
             vrtB = ridges_out[i,4]
             trp = utilitiesMech.transportPath (vrtA, vrtB, connNds, 1)
             transportElements.append (trp)
+
+            if (vrtA <node_count or vrtA>=(nds+aux+vrt)) or  (vrtB <node_count or vrtB>=(nds+aux+vrt)):
+                onlyVerticesConnected = False
+
     if (dim==3):
         for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
+
+            vrtA = ro[3]
+            vrtB = ro[4]
+            if (vrtA <node_count or vrtA>=(nds+aux+vrt)) or  (vrtB <node_count or vrtB>=(nds+aux+vrt)):
+                onlyVerticesConnected = False
+
             #print (ro)
             for n in range (3, len(ro)):
                 newPath = True
@@ -1166,6 +1195,10 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, aux_nodes, 
                     #    print ('both aux')
                     transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
     print('done.')
+    if (onlyVerticesConnected):
+        print('Transport elements connect only vertices. That is ok.\n')
+    else:
+        print('Transport elements CONNECT WRONG POINTS !!!!\n')
     sys.stdout.flush()
 
     #  i[b], i[a] = i[a], i[b]
