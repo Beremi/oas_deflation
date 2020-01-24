@@ -521,7 +521,7 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                 }
                 else  {
                     cerr << "Error: preprocessor block '" <<  ftype <<  "' is not implemented yet." << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -529,6 +529,6 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
         cout << "Input file '" <<  filename << "' succesfully loaded; " << blocks.size() - origsize << " preprocessing blocks found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }

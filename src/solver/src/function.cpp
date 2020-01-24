@@ -168,7 +168,7 @@ void LinSawToothFunction :: readFromLine(istringstream &iss) {
       // std::cout << "timo = " << timo << ", value = " << val << ", time_multiplier = " << time_multiplier << '\n';
     } else {
       cerr << " function parameter 'time_multiplier' for function " << typeid(this).name() << " was not specified" << endl;
-      exit(0);
+      exit(EXIT_FAILURE);
     }
   }
 }
@@ -326,11 +326,11 @@ void SinusFunction :: readFromLine(istringstream &iss) {
   }
   if ( !bper ) {
     cerr << " function parameter 'period' for function " << typeid(this).name() << " was not specified" << endl;
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   if ( !bamp ) {
     cerr << " function parameter 'amplitude' for function " << typeid(this).name() << " was not specified" << endl;
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   if ( !bshift ) {
     // cout << " function parameter 'shift' (optional) for function " << typeid(this).name() << " was not specified" << endl;
@@ -402,7 +402,7 @@ void FunctionContainer :: readFromFile(const string filename) {
                 }
                 else  {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -410,7 +410,7 @@ void FunctionContainer :: readFromFile(const string filename) {
         cout << "Input file '" <<  filename << "' succesfully loaded; " << functions.size() - origsize << " functions found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 

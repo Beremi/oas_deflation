@@ -231,4 +231,5 @@ int main(int argc, char **argv) {
     return terminationStatus;
     // JK: why is this deleted? does it cause memory leak? after that, the calculation is teminated, it should not cause any problems, without deleting it, main coul just return solver terminationStatus as following (instead of three previous rows)
     // return solver->giveTerminationStatus();
+    return 0;
 }

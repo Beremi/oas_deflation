@@ -50,7 +50,7 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     nodes.push_back(newnode);
                 } else  {
                     cerr << "Error: node type '" <<  nodeType <<  "' does not exists" << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -58,7 +58,7 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
         cout << "Input file '" <<  filename << "' succesfully loaded; " << nodes.size() - origsize << " nodes found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 

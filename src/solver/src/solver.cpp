@@ -23,7 +23,7 @@ Solver *Solver :: readFromLine(istringstream &iss) {
         return newsolver;
     } else  {
         cerr << "Error: Solver " << param << " is not implemented" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     };
 }
 
@@ -117,12 +117,12 @@ Solver *SteadyStateLinearSolver :: readFromLine(istringstream &iss) {
     }
     if ( !bdt ) {
         cerr << name << ": solver parameter 'time_step' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     ;
     if ( !bttime ) {
         cerr << name << ": solver parameter 'total_time' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     ;
     cout << name << " succesfully loaded" << endl;

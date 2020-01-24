@@ -34,7 +34,7 @@ void MarsMaterialStatus :: init() {
         L = rbc->giveLength();
     } else {
         cerr << "Material " << name << " can be used only for RigidBodyContact elements" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 
     MarsMaterial *m = static_cast< MarsMaterial * >( mat );
@@ -225,12 +225,12 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bft ) {
         cerr << name << ": material parameter 'ft' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     ;
     if ( !bGt ) {
         cerr << name << ": material parameter 'Gt' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     ;
 };

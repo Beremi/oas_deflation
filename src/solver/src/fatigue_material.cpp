@@ -402,19 +402,19 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !btau ) {
         cerr << name << ": material parameter 'tauBar' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bkin ) {
         cerr << name << ": material parameter 'Kin' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bgam ) {
         cerr << name << ": material parameter 'gamma' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bs ) {
         cerr << name << ": material parameter 'S' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bc ) {
         cout << name << ": material parameter 'c' was not specified, taking c = 1.0" << endl;
@@ -704,23 +704,23 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bfc ) {
         cerr << name << ": material parameter 'fc' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bft ) {
         cerr << name << ": material parameter 'ft' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bkin ) {
         cerr << name << ": material parameter 'KinN' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bgam ) {
         cerr << name << ": material parameter 'gammaN' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bAd ) {
         cerr << name << ": material parameter 'Ad' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bm ) {
         cout << name << ": material parameter 'm' was not specified, taking m = 0.0" << endl;

@@ -226,7 +226,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
           readCoordRigidPlate(iss, ndim, nodes);
         } else {
           cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << endl;
-          exit(0);
+          exit(EXIT_FAILURE);
         }
       }
     }

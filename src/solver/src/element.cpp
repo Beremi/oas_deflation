@@ -306,7 +306,7 @@ void RigidBodyContact :: init() {
         R [ 2 ] [ 2 ] = t2.z;
     } else  {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     GeomM = R * B;
 }
@@ -328,7 +328,7 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
         A [ 1 ] [ 2 ] = x.x - a.x;
     } else  {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     return A;
 }
@@ -379,7 +379,7 @@ Matrix Truss :: giveAMatrix(Point a, Point x) const {
         A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = 1;
     else  {
         cerr << "Error - Truss: dimension " << ndim << "not implemented" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     return A;
 }

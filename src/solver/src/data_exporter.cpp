@@ -189,7 +189,7 @@ void ForceGauge :: init() {
         DoFpos = 5;
     } else                                                                                                                    {
         cerr << "Error: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 
     DoFs.resize(n.size() );
@@ -422,7 +422,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     }
                 } else  {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -430,7 +430,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
         cout << "Input file '" <<  filename << "' succesfully loaded; " << exporters.size() - origsize << " exporters found" << endl;
     } else {
         cerr << "Error ExporterContainer: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 
