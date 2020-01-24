@@ -62,6 +62,7 @@ Recommended structure
     \code{.sh}
       cmake --build . -- -j 4
       make -j 4
+      cmake --build . -- /M      [Visual Studio]
     \endcode
 -# build documentation
   \code{.sh}
