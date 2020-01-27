@@ -57,7 +57,7 @@ if __name__ == '__main__':
     solver = "SteadyStateLinearSolver"
 
     #power tesselation on/off  does not matter now
-    powerTes = 0
+    powerTes = False
 
     #dimension
     dim = 3
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.1
+    minDist = 0.8
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     if (dim == 2):
 
         #patch test for Transport
-        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
@@ -185,10 +185,10 @@ if __name__ == '__main__':
     if (dim == 3):
 
         #patch test for Transport
-        #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
 
         #cantilever bending
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
+        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
 
         #cantilever uniform pressure, free contraction
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
