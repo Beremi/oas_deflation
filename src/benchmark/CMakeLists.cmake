@@ -68,6 +68,12 @@ add_test(
   COMMAND $<TARGET_FILE:DiscreteModel> benchmark/SpringMechanicsShear/master.inp
   )
 
+add_test(
+  NAME SpringMechElastic
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark/SpringMechElastic
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/benchmark/check.py $<TARGET_FILE:DiscreteModel>
+  )
+
 set_tests_properties(
   2DUniPressConfined
   2DUniPressFree
@@ -78,6 +84,7 @@ set_tests_properties(
   DiamondTest
   RectangleTest
   SpringMechanicsShear
+  SpringMechElastic
   PROPERTIES
     LABELS "benchmark"
     TIMEOUT 10
