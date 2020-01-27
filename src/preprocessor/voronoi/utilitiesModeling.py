@@ -397,12 +397,15 @@ def createPatchTestTransport(maxLim, minDist, trials, dim):
     print('Creating patch test')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, radii, mechBC_merged, mechIC_merged  = assemblePatchTestTransport(maxLim, minDist, trials,dim);
+    node_coords, radii, mechBC_merged, mechIC_merged  = assemblePatchTestTransport(maxLim, minDist, trials, dim);
 
     print('Conducting Voronoi tesselation...', end = '')
-    if (dim==2): vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
-    else: vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
-    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
+    #if (dim==2): vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    #else: vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    if (dim==2):
+        vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
+    else:
+        vor, areas = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim)
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
