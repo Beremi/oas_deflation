@@ -31,8 +31,6 @@ import utilitiesNumeric
 import voronoi
 
 
-
-
 if __name__ == '__main__':
     print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
     start = time.time()
@@ -60,17 +58,17 @@ if __name__ == '__main__':
     powerTes = False
 
     #dimension
-    dim = 3
+    dim = 2
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
-    activeTransport = 1
-    activeMechanics = 0
+    activeTransport = 0
+    activeMechanics = 1
 
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 2.
+    Ydim = 1
     Zdim = 0.5
 
     #dimensions of cylinder model
@@ -88,7 +86,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.8
+    minDist = 0.01
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -103,7 +101,7 @@ if __name__ == '__main__':
 
     #trials of random node positioning
 
-    trials = 5000
+    trials = 50000
 
 
     #lists for the model
@@ -151,11 +149,12 @@ if __name__ == '__main__':
         matZ.append (boundB1)
         materialZones.append(matZ)
 
+    notchNodes = None
     #creating the model. Select the prepared models.
     if (dim == 2):
 
         #patch test for Transport
-        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+        #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
@@ -177,11 +176,17 @@ if __name__ == '__main__':
         #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 2)
 
         #periodic shear test
-
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype   = utilitiesModeling.create2dPeriodicShear(maxLim, minDist, trials )
-        materialZones=None
+        #materialZones=None
         #periodicModel = 1
         #"""
+
+        #simply supported NOTCHED beam, uniform load
+        notchH = 0.1 #notch height in percentage of total beam height
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notchNodes  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH)
+        materialZones=None
+        print(notchNodes)
+
     if (dim == 3):
 
         #patch test for Transport
@@ -256,7 +261,7 @@ if __name__ == '__main__':
 
 
     #Deconstructing Voronoi diagram and saving the geometry
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(master_folder, dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(master_folder, dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype, notchNodes = notchNodes)
 
 
     # saving rest of input
