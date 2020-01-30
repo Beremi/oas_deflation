@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 1
+    Ydim = 0.4
     Zdim = 0.5
 
     #dimensions of cylinder model
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         matZ.append (boundB1)
         materialZones.append(matZ)
 
-    notchNodes = None
+    notches = None
     #creating the model. Select the prepared models.
     if (dim == 2):
 
@@ -182,10 +182,10 @@ if __name__ == '__main__':
         #"""
 
         #simply supported NOTCHED beam, uniform load
-        notchH = 0.1 #notch height in percentage of total beam height
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notchNodes  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH)
+        notchH = 0.2 #notch height in percentage of total beam height
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notches  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH)
         materialZones=None
-        print(notchNodes)
+        print(notches)
 
     if (dim == 3):
 
@@ -261,7 +261,7 @@ if __name__ == '__main__':
 
 
     #Deconstructing Voronoi diagram and saving the geometry
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(master_folder, dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype, notchNodes = notchNodes)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(master_folder, dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype, notches = notches)
 
 
     # saving rest of input
@@ -277,7 +277,7 @@ if __name__ == '__main__':
     if (len(radii)>0): utilitiesGeom.saveRadii(master_folder, radii)
 
     solStep = 1e-2
-    simTime = 10e-2
+    simTime = 1
     utilitiesGeom.saveMasterInput(master_folder, dim, solver, solStep, 1e-4, 1e-1, simTime, activeTransport, activeMechanics, periodic = periodicModel)
     end =  time.time() -end
     print('Saving done in %.3f secs.' %end)

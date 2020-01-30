@@ -1418,23 +1418,31 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch):
     mechInitC_merged = []
 
     #an indent due to mirroring of the data for voronoi tess.
-    notchNodes=[]
+    notches=[]
     indent = 1e-8
     notchWidth = 1e-3 /2
     #generating notch points
     if (notch > 0):
+        notchSide0 = []
         nodeA = np.array([maxLim[0]/2-notchWidth, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch])
         oldLen = len(node_coords)
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
-        notchNodes.append((len(node_coords)) - oldLen)
+        for i in range (oldLen, len(node_coords), 1):
+            notchSide0.append(i)
 
+        notchSide1 = []
         nodeA = np.array([maxLim[0]/2+indent, indent])
         nodeB = np.array([maxLim[0]/2+indent, maxLim[1]*notch])
-
+        oldLen = len(node_coords)
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
-        notchNodes.append((len(node_coords)) - oldLen)
+        for i in range (oldLen, len(node_coords), 1):
+            notchSide1.append(i)
 
+        notch = []
+        notch.append(notchSide0)
+        notch.append(notchSide1)
+        notches.append(notch)
 
     #width of the supports
     supportWidth = maxLim[0] / 80
@@ -1507,7 +1515,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch):
     newLen = len(node_coords)-1
 
 
-    return node_coords, mechBC_merged, mechInitC_merged, notchNodes
+    return node_coords, mechBC_merged, mechInitC_merged, notches
 
 
 
