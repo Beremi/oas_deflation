@@ -102,10 +102,10 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
   } else if ( code.compare("volume") == 0 )       {
     return area * length / ndim;
   } else if ( code.compare("energy_total") == 0 )       {
-    FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
+    MaterialStatus * fmstat = static_cast< MaterialStatus * >( stats[ipnum] );
     return fmstat->giveValue("energy_total")  * (area * length / ndim);
   } else if ( code.compare("work_dissip") == 0 )       {
-    FatigueShearMaterialStatus * fmstat = static_cast< FatigueShearMaterialStatus * >( stats[ipnum] );
+    MaterialStatus * fmstat = static_cast< MaterialStatus * >( stats[ipnum] );
     return fmstat->giveValue("work_dissip")  * (area * length / ndim);
   } else {
     return MechanicalElement :: giveIPValue(code, ipnum);
@@ -596,7 +596,7 @@ void Transp1D :: init() {
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
     TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    double c = area * tstats->giveConductivity() / length;    
+    double c = area * tstats->giveConductivity() / length;
     Matrix C(2, 2);
     C [ 0 ] [ 0 ] = C [ 1 ] [ 1 ] = c;
     C [ 1 ] [ 0 ] = C [ 0 ] [ 1 ] = -c;

@@ -476,7 +476,7 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
     } else if ( (code.compare("work_totN") == 0) || (code.compare("work_tot") == 0)) {
         return work_tot;
     } else if ( (code.compare("work_elaN") == 0) || (code.compare("work_ela") == 0)) {
-        return epsN * epsNP * 0.5;
+        return (epsN - epsNP) * stressN * 0.5;
     } else if ( (code.compare("work_dissipN") == 0) || (code.compare("work_dissip") == 0)) {
         return work_tot - this->giveValue("work_ela");
     } else {
