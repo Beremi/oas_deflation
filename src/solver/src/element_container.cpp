@@ -15,8 +15,8 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     string line, elemType;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile >> std::ws, line) ) {
-            if ( line.empty() ){
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
                 continue;
             }
             if ( line.at(0) == '#' ) {
@@ -29,27 +29,27 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     RigidBodyContact *newelem = new RigidBodyContact(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("Truss") == 0 )    {
+                } else if ( elemType.compare("Truss") == 0 ) {
                     Truss *newelem = new Truss(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("LTCTRSP") == 0 )    {
+                } else if ( elemType.compare("LTCTRSP") == 0 ) {
                     Transp1D *newelem = new Transp1D(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("TranspPolyhedral") == 0 )    {
+                } else if ( elemType.compare("TranspPolyhedral") == 0 ) {
                     TranspPolyhedral *newelem = new TranspPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("TranspVirtPolyhedral") == 0 )    {
+                } else if ( elemType.compare("TranspVirtPolyhedral") == 0 ) {
                     TranspVirtPolyhedral *newelem = new TranspVirtPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 )    {
+                } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 ) {
                     TranspCondensedPolyhedral *newelem = new TranspCondensedPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else  {
+                } else {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(0);
                 }
@@ -81,17 +81,20 @@ void ElementContainer :: updateMaterialStatuses() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
-
     map< pair< size_t, size_t >, double >indices11;
 
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-        if (matrixType.compare("mass")==0){
-            if (! dynamic_cast< MechanicalElement * >( *e)) continue;
-        }else if (matrixType.compare("capacity")==0){
-            if (! dynamic_cast< TransportElement * >( *e)) continue;
+        if ( matrixType.compare("mass") == 0 ) {
+            if ( !dynamic_cast< MechanicalElement * >( * e ) ) {
+                continue;
+            }
+        } else if ( matrixType.compare("capacity") == 0 )      {
+            if ( !dynamic_cast< TransportElement * >( * e ) ) {
+                continue;
+            }
         }
         elDoFs = ( * e )->giveDoFs();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -103,7 +106,7 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
                     if ( DoFi < nfreeDoFs ) {
                         indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
                     }
-                } else  {
+                } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
                         indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
@@ -134,26 +137,32 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) con
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
-
     unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     Vector elDoFValues;
     Matrix k;
-    MechanicalElement * me;
-    TransportElement  * te;
+    MechanicalElement *me;
+    TransportElement *te;
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-        if (matrixType.compare("mass")==0){
-            me = dynamic_cast< MechanicalElement * >( *e);
-            if (me) k = me->giveMassMatrix();
-            else continue;
-        }else if (matrixType.compare("capacity")==0){
-            te = dynamic_cast< TransportElement * >( *e);
-            if (te) k = te->giveCapacityMatrix();
-            else continue;
+        if ( matrixType.compare("mass") == 0 ) {
+            me = dynamic_cast< MechanicalElement * >( * e );
+            if ( me ) {
+                k = me->giveMassMatrix();
+            } else {
+                continue;
+            }
+        } else if ( matrixType.compare("capacity") == 0 )      {
+            te = dynamic_cast< TransportElement * >( * e );
+            if ( te ) {
+                k = te->giveCapacityMatrix();
+            } else {
+                continue;
+            }
+        } else   {
+            k = ( * e )->giveSteadyStateMatrix(matrixType);
         }
-        else k = ( * e )->giveSteadyStateMatrix(matrixType);
         elDoFs = ( * e )->giveDoFs();
 
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -165,7 +174,7 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
                     if ( DoFi < nfreeDoFs ) {
                         K [ DoFi ] [ DoFi ] += k [ i ] [ i ];
                     }
-                } else  {
+                } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
                         K [ DoFi ] [ DoFj ] += k [ i ] [ j ];
@@ -176,18 +185,18 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
         }
     }
 
-    if (nodes->giveConstraints()->isActive()){
-      nodes->giveConstraints()->transformToConstraintSpace(K);
+    if ( nodes->giveConstraints()->isActive() ) {
+        nodes->giveConstraints()->transformToConstraintSpace(K);
     }
 
     /*
-    for(size_t i=0; i<K.RowCount; i++){
-        if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
-            cerr<< "Error in ElementContainer: stiffness matrix has zero on diagonal " << endl;
-            exit(1);
-        }
-    }
-    */
+     * for(size_t i=0; i<K.RowCount; i++){
+     *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
+     *      cerr<< "Error in ElementContainer: stiffness matrix has zero on diagonal " << endl;
+     *      exit(1);
+     *  }
+     * }
+     */
 }
 
 //////////////////////////////////////////////////////////
@@ -233,6 +242,8 @@ void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: addBodyForces(Vector &R, double time) const {
+    ( void ) R;
+    ( void ) time;
     //here comes distributed load, self weight
     //TO BE DONE
 }

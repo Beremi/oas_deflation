@@ -18,14 +18,14 @@ protected:
     vector< Node * >nodes;
     string name;
     Material *mat;
-    vector< Point > ip_locs;
-    vector< double > ip_weights;
+    vector< Point >ip_locs;
+    vector< double >ip_weights;
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
 public:
     Element() { name = "basic element"; }
     virtual ~Element();
-    virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {};
+    virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
@@ -36,8 +36,8 @@ public:
     virtual string giveName() const { return name; }
     virtual size_t giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
-    virtual vector < Node * > giveNodes() const { return nodes;}
-    virtual Material* giveMaterial() const { return mat; }
+    virtual vector< Node * >giveNodes() const { return nodes; }
+    virtual Material *giveMaterial() const { return mat; }
 };
 
 
@@ -91,13 +91,13 @@ public:
     ~RigidBodyContact() {};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     void init();
-    vector< Node * > giveVertices() const { return vert; };
+    vector< Node * >giveVertices() const { return vert; };
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Matrix giveMassMatrix() const;
-    Matrix giveRMatrix() const {return R;};
+    Matrix giveRMatrix() const { return R; };
     virtual Matrix giveAMatrix(Point a, Point x) const;
     double giveLength() const { return length; }
-    double giveArea() const { return area ; }
+    double giveArea() const { return area; }
     virtual Vector giveInternalForces(const Vector &DoFs) const;
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
@@ -113,7 +113,7 @@ protected:
     virtual void checkNodeType() const;
     virtual Matrix giveBMatrix() const;
 public:
-    Truss(const unsigned dim) : RigidBodyContact(dim){name = "Truss";};
+    Truss(const unsigned dim) : RigidBodyContact(dim) { name = "Truss"; };
     ~Truss() {};
     virtual Matrix giveAMatrix(Point a, Point x) const;
     virtual Matrix giveStiffnessMatrix(string matrixType) const;

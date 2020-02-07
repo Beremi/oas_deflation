@@ -24,21 +24,21 @@ using namespace std;
 
 #define PRINT_TIME true
 
-fs::path GlobPaths::INPUT;
-fs::path GlobPaths::INPUTFILENAME;
-fs::path GlobPaths::BASEDIR;
-fs::path GlobPaths::RESULTDIR;
+fs :: path GlobPaths :: INPUT;
+fs :: path GlobPaths :: INPUTFILENAME;
+fs :: path GlobPaths :: BASEDIR;
+fs :: path GlobPaths :: RESULTDIR;
 
 string convertTimeToString(std :: chrono :: duration< double >time_interval) {
     int hours = time_interval.count() / 3600;
     int minutes = time_interval.count() / 60 - hours * 60;
     int seconds = time_interval.count() - hours * 3600 - minutes * 60;
-    int miliseconds = (time_interval.count() - hours * 3600 - minutes * 60 - seconds) * 100;
+    int miliseconds = ( time_interval.count() - hours * 3600 - minutes * 60 - seconds ) * 100;
     stringstream ss;
-    ss << std::setw(2) << std::setfill('0') << hours << ":"
-       << std::setw(2) << std::setfill('0') << minutes << ":"
-       << std::setw(2) << std::setfill('0') << seconds << "."
-       << std::setw(3) << std::setfill('0') << miliseconds;
+    ss << std :: setw(2) << std :: setfill('0') << hours << ":"
+       << std :: setw(2) << std :: setfill('0') << minutes << ":"
+       << std :: setw(2) << std :: setfill('0') << seconds << "."
+       << std :: setw(3) << std :: setfill('0') << miliseconds;
     return ss.str();
 }
 
@@ -47,69 +47,69 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
     string istr, line;
     int iint, dimension;
     Solver *newsolver = nullptr;
-    ifstream inputfile((GlobPaths::BASEDIR / filename).string() );
+    ifstream inputfile( ( GlobPaths :: BASEDIR / filename ).string() );
     if ( inputfile.is_open() ) {
-        while ( getline( inputfile >> std::ws, line) ) {
-            if ( line.empty() ){
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
                 continue;
             }
             if ( line.at(0) == '#' ) {
                 continue;
             }
             istringstream iss(line);
-            iss >> std::skipws >> istr;
+            iss >> std :: skipws >> istr;
             if ( istr.compare("Dimension") == 0 ) {
                 iss >> dimension;
-            } else if ( istr.compare("NodeFiles") == 0 )    {
+            } else if ( istr.compare("NodeFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    nodes->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension);
+                    nodes->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), dimension );
                 }
-            } else if ( istr.compare("MatFiles") == 0 )    {
+            } else if ( istr.compare("MatFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    matrs->readFromFile((GlobPaths::BASEDIR / istr).string());
+                    matrs->readFromFile( ( GlobPaths :: BASEDIR / istr ).string() );
                 }
-            } else if ( istr.compare("ElemFiles") == 0 )    {
+            } else if ( istr.compare("ElemFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension, matrs);
+                    elems->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), dimension, matrs );
                 }
-            } else if ( istr.compare("ConstrFiles") == 0 )    {
+            } else if ( istr.compare("ConstrFiles") == 0 ) {
                 // read constraint files
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    constr->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension, nodes);
+                    constr->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), dimension, nodes );
                 }
-            } else if ( istr.compare("BCFiles") == 0 )    {
+            } else if ( istr.compare("BCFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes);
+                    bconds->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), nodes );
                 }
-            } else if ( istr.compare("FunctionFiles") == 0 )    {
-                iss >> std::skipws >> iint;
+            } else if ( istr.compare("FunctionFiles") == 0 ) {
+                iss >> std :: skipws >> iint;
                 for ( int i = 0; i < iint; i++ ) {
-                    iss >> std::skipws >> istr;
-                    funcs->readFromFile((GlobPaths::BASEDIR / istr).string());
+                    iss >> std :: skipws >> istr;
+                    funcs->readFromFile( ( GlobPaths :: BASEDIR / istr ).string() );
                 }
-            } else if ( istr.compare("ExporterFiles") == 0 )    {
+            } else if ( istr.compare("ExporterFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters->readFromFile((GlobPaths::BASEDIR / istr).string(), nodes, elems, dimension);
+                    exporters->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), nodes, elems, dimension );
                 }
-            }else if ( istr.compare("PBlockFiles") == 0 )    {
+            } else if ( istr.compare("PBlockFiles") == 0 )  {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    pblocks->readFromFile((GlobPaths::BASEDIR / istr).string(), dimension);
+                    pblocks->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), dimension );
                 }
-            } else if ( istr.compare("Solver") == 0 )    {
+            } else if ( istr.compare("Solver") == 0 ) {
                 Solver auxs;
                 newsolver = auxs.readFromLine(iss);
                 newsolver->setElementContainer(elems);
@@ -150,24 +150,24 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    GlobPaths::INPUT = fs::absolute(argv[ 1 ]);
-    GlobPaths::INPUTFILENAME = GlobPaths::INPUT.filename();
-    GlobPaths::BASEDIR = GlobPaths::INPUT.parent_path();
-    GlobPaths::RESULTDIR = GlobPaths::BASEDIR / "results";
+    GlobPaths :: INPUT = fs :: absolute(argv [ 1 ]);
+    GlobPaths :: INPUTFILENAME = GlobPaths :: INPUT.filename();
+    GlobPaths :: BASEDIR = GlobPaths :: INPUT.parent_path();
+    GlobPaths :: RESULTDIR = GlobPaths :: BASEDIR / "results";
 
     /*cout << GlobPaths::INPUTFILE << endl
-         << GlobPaths::BASEDIR << endl
-         << GlobPaths::RESULTDIR << endl;*/
+     *   << GlobPaths::BASEDIR << endl
+     *   << GlobPaths::RESULTDIR << endl;*/
     // create directory for results
-    fs::create_directories(GlobPaths::RESULTDIR);
+    fs :: create_directories(GlobPaths :: RESULTDIR);
 
-    ofstream outputfile((GlobPaths::RESULTDIR / "version.txt").string());
+    ofstream outputfile( ( GlobPaths :: RESULTDIR / "version.txt" ).string() );
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         outputfile << version_info();
         outputfile << endl;
-        }
-        outputfile.close();
+    }
+    outputfile.close();
 
     auto start = std :: chrono :: system_clock :: now();
     auto now = start;
@@ -190,8 +190,8 @@ int main(int argc, char **argv) {
     elems.setNodeContainer(& nodes);
     ExporterContainer exporters;
     PBlockContainer pblocks;
-    pblocks.setContainers(& nodes,& elems,& bconds,& constr, & funcs, & exporters);
-    Solver *solver = readMasterFile(GlobPaths::INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bconds, & constr, & exporters, & pblocks);
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
+    Solver *solver = readMasterFile(GlobPaths :: INPUTFILENAME.string(), & nodes, & matrs, & elems, & funcs, & bconds, & constr, & exporters, & pblocks);
 
     //initialization
     pblocks.apply();
@@ -206,12 +206,13 @@ int main(int argc, char **argv) {
     while ( !solver->isTerminated() ) {
         start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated());
+        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
         if ( PRINT_TIME ) {
             now = std :: chrono :: system_clock :: now();
 
             elapsed_seconds = now - start_part;
-            std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl; cout.flush();
+            std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl;
+            cout.flush();
         }
     }
 
@@ -226,7 +227,7 @@ int main(int argc, char **argv) {
     }
 
     int terminationStatus = solver->giveTerminationStatus();
-    std::cout << "termination status = " << terminationStatus << '\n';
+    std :: cout << "termination status = " << terminationStatus << '\n';
     delete solver;
     return terminationStatus;
     // JK: why is this deleted? does it cause memory leak? after that, the calculation is teminated, it should not cause any problems, without deleting it, main coul just return solver terminationStatus as following (instead of three previous rows)

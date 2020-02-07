@@ -8,7 +8,6 @@
 //////////////////////////////////////////////////////////
 // DIRICHLET AND NEUMANN BOUNDARY CONDITION
 void BoundaryCondition :: init() {
-
     node->setBC(this);
 
     blockedDoFNum = 0;
@@ -62,8 +61,8 @@ vector< unsigned >BoundaryCondition :: giveBlockedFunctions() const {
     vector< unsigned >blocked;
     blocked.resize(blockedDoFNum);
     unsigned s = 0;
-    for ( size_t i=0; i<dirichBC.size(); i++) {
-        if ( dirichBC[i] >= 0 ) {
+    for ( size_t i = 0; i < dirichBC.size(); i++ ) {
+        if ( dirichBC [ i ] >= 0 ) {
             blocked [ s ] = dirichBC [ i ];
             s++;
         }
@@ -77,8 +76,8 @@ vector< unsigned >BoundaryCondition :: giveLoadedFunctions() const {
     vector< unsigned >loaded;
     loaded.resize(loadedDoFNum);
     unsigned s = 0;
-    for ( size_t i=0; i<neumannBC.size(); i++) {
-        if ( neumannBC[i] >= 0 ) {
+    for ( size_t i = 0; i < neumannBC.size(); i++ ) {
+        if ( neumannBC [ i ] >= 0 ) {
             loaded [ s ] = neumannBC [ i ];
             s++;
         }
@@ -92,8 +91,8 @@ vector< double >BoundaryCondition :: giveBlockedMultipliers() const {
     vector< double >blocked;
     blocked.resize(blockedDoFNum);
     unsigned s = 0;
-    for ( size_t i=0; i<dirichBC.size(); i++) {
-        if ( dirichBC[i] >= 0 ) {
+    for ( size_t i = 0; i < dirichBC.size(); i++ ) {
+        if ( dirichBC [ i ] >= 0 ) {
             blocked [ s ] = multipliers [ i ];
             s++;
         }
@@ -107,8 +106,8 @@ vector< double >BoundaryCondition :: giveLoadedMultipliers() const {
     vector< double >loaded;
     loaded.resize(loadedDoFNum);
     unsigned s = 0;
-    for ( size_t i=0; i<neumannBC.size(); i++) {
-        if ( neumannBC[i] >= 0 ) {
+    for ( size_t i = 0; i < neumannBC.size(); i++ ) {
+        if ( neumannBC [ i ] >= 0 ) {
             loaded [ s ] = multipliers [ i ];
             s++;
         }
@@ -128,15 +127,15 @@ BCContainer :: ~BCContainer() {
 
 //////////////////////////////////////////////////////////
 void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
-	size_t origsize = BC.size();
+    size_t origsize = BC.size();
     string line, aux;
     unsigned intnum, nDoFs;
     vector< int >dirichBC, neumannBC;
     Node *node;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile >> std::ws, line) ) {
-            if ( line.empty() ){
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
                 continue;
             }
             if ( line.at(0) == '#' ) {
@@ -175,7 +174,6 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
 
 //////////////////////////////////////////////////////////
 void BCContainer :: init() {
-
     dirichDoFs.resize(0);
     neumannDoFs.resize(0);
     dirichF.resize(0);
@@ -224,7 +222,7 @@ void BCContainer :: calculateDoFfields() {
 vector< double >BCContainer :: giveBlockedDoFValues(double t) const {
     vector< double >blocked(dirichDoFs.size() );
     for ( unsigned h = 0; h < dirichDoFs.size(); h++ ) {
-        blocked [ h ] = functions->giveY(dirichF [ h ], t)*dirichMultipliers[h];
+        blocked [ h ] = functions->giveY(dirichF [ h ], t) * dirichMultipliers [ h ];
     }
     return blocked;
 }
@@ -233,7 +231,7 @@ vector< double >BCContainer :: giveBlockedDoFValues(double t) const {
 vector< double >BCContainer :: giveLoadedDoFValues(double t) const {
     vector< double >loaded(neumannDoFs.size() );
     for ( unsigned h = 0; h < neumannDoFs.size(); h++ ) {
-        loaded [ h ] = functions->giveY(neumannF [ h ], t)*neumannMultipliers[h];
+        loaded [ h ] = functions->giveY(neumannF [ h ], t) * neumannMultipliers [ h ];
     }
     return loaded;
 }

@@ -139,7 +139,7 @@ public:
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);
     double giveYieldStress() const { return fc; }
-    double giveElasticLimit() const { return ft/giveE0(); }
+    double giveElasticLimit() const { return ft / giveE0(); }
     double giveGammaN() const { return gammaN; }
     double giveKinN() const { return KinN; }
     double giveAd() const { return Ad; }

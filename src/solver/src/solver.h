@@ -26,7 +26,7 @@ protected:
     virtual void setNextStepTime();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
-    virtual void solve(){};
+    virtual void solve() {};
 
 public:
     Solver() { name = "basic solver"; };
@@ -43,7 +43,7 @@ public:
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
-    int giveTerminationStatus() const { return ( termination_time - time > 1e-15); };
+    int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
 };
 
 //////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////
-class SteadyStateNonLinearSolver : public SteadyStateLinearSolver 
+class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 {
 protected:
     double dtmax, dtmin;  // for adaptive step

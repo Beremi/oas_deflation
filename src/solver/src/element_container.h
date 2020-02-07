@@ -17,7 +17,7 @@ public:
     void setNodeContainer(NodeContainer *n) { nodes = n; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
-	size_t giveSize() const { return elems.size(); }
+    size_t giveSize() const { return elems.size(); }
     void updateMaterialStatuses();
     void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const;
     void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K) const;
@@ -30,10 +30,10 @@ public:
     void giveInternalForces(Vector &full_r, Vector &full_f);
     Element *giveElement(unsigned const num) { return elems [ num ]; }
 
-    vector< Element * > :: iterator begin(){return elems.begin();}
-    vector< Element * > :: iterator end(){return elems.end();}
-    vector< Element * > :: const_iterator begin() const {return elems.begin();}
-    vector< Element * > :: const_iterator end() const {return elems.end();}
+    vector< Element * > :: iterator begin() { return elems.begin(); }
+    vector< Element * > :: iterator end() { return elems.end(); }
+    vector< Element * > :: const_iterator begin() const { return elems.begin(); }
+    vector< Element * > :: const_iterator end() const { return elems.end(); }
 };
 
 

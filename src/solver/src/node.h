@@ -50,7 +50,7 @@ public:
     string giveName() const { return name; }
     bool doesMechanics() const { return isMechanical; };
     bool doesTransport() const { return isTransport; };
-    virtual double giveDoFBasedValue(string code, const Vector &DoFs) const { return 0; };
+    virtual double giveDoFBasedValue(string code, const Vector &DoFs) const { ( void ) code; ( void ) DoFs; return 0; };
 };
 
 //////////////////////////////////////////////////////////
@@ -90,7 +90,7 @@ private:
 
 protected:
 public:
-    MasterNode(unsigned dimension) { dim = dimension; name = "Master Node"; nDoFs = 3 * (dim - 1); };
+    MasterNode(unsigned dimension) { dim = dimension; name = "Master Node"; nDoFs = 3 * ( dim - 1 ); };
     virtual ~MasterNode() {};
     void readFromLine(istringstream &iss);
 };

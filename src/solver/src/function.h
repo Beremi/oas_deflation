@@ -22,8 +22,8 @@ public:
     virtual double giveY(double t)  = 0;
     virtual void readFromLine(istringstream &iss) = 0;
     virtual double giveNextEtreme(const double &t) const = 0;
-    virtual void setActive(){ active = true; };
-    virtual bool isActive() const { return active;};
+    virtual void setActive() { active = true; };
+    virtual bool isActive() const { return active; };
 protected:
 };
 
@@ -37,11 +37,11 @@ private:
     vector< double >y;
 public:
     PieceWiseLinearFunction() {};
-    PieceWiseLinearFunction(vector< double > nx, vector< double > ny) {x = nx; y = ny;};
+    PieceWiseLinearFunction(vector< double >nx, vector< double >ny) { x = nx; y = ny; };
     virtual ~PieceWiseLinearFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) ;
-    virtual double giveNextEtreme(const double &t) const ;
+    double giveY(double t);
+    virtual double giveNextEtreme(const double &t) const;
 protected:
 };
 
@@ -57,8 +57,8 @@ public:
     ConstSawToothFunction() {};
     virtual ~ConstSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) ;
-    virtual double giveNextEtreme(const double &t) const ;
+    double giveY(double t);
+    virtual double giveNextEtreme(const double &t) const;
 protected:
 };
 
@@ -74,7 +74,7 @@ public:
     LinSawToothFunction() {};
     virtual ~LinSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) ;
+    double giveY(double t);
 protected:
 };
 
@@ -91,7 +91,7 @@ public:
     VaryingSawToothFunction() {};
     virtual ~VaryingSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) ;
+    double giveY(double t);
 protected:
 };
 
@@ -109,9 +109,9 @@ private:
 public:
     ConstSawToothRotationFunction() {};
     virtual ~ConstSawToothRotationFunction() {};
-    void readFromLine( istringstream &iss);
-    double giveY(double t) ;
-    void setCurrentTime (double t);
+    void readFromLine(istringstream &iss);
+    double giveY(double t);
+    void setCurrentTime(double t);
 protected:
 };
 
@@ -123,15 +123,15 @@ class ConstSawToothShearFunction : public ConstSawToothFunction
 private:
     Point initNodePosition;
     Point governingPoint;
-    unsigned int displacementType ;
+    unsigned int displacementType;
     double currentTime;
     double previousTime;
 public:
-    ConstSawToothShearFunction () {};
+    ConstSawToothShearFunction() {};
     virtual ~ConstSawToothShearFunction() {};
-    void readFromLine( istringstream &iss );
+    void readFromLine(istringstream &iss);
     double giveY(double t);
-    void setCurrentTime (double t);
+    void setCurrentTime(double t);
 protected:
 };
 
@@ -147,8 +147,8 @@ public:
     SinusFunction() {};
     virtual ~SinusFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t) ;
-    virtual double giveNextEtreme(const double &t) const ;
+    double giveY(double t);
+    virtual double giveNextEtreme(const double &t) const;
 protected:
 };
 
@@ -163,12 +163,12 @@ public:
     FunctionContainer() {};
     virtual ~FunctionContainer();
     void readFromFile(const string filename);
-    double giveY(unsigned f, double t) ;
+    double giveY(unsigned f, double t);
     double giveTimeOfNextExtreme(const double &t) const;
-    void setActive(const unsigned &fid) { functions[ fid ]->setActive(); };
-    bool isActive(const unsigned &fid) const { return functions[ fid ]->isActive(); };
-	size_t giveSize() const { return functions.size(); };
-    void addFunction(Function *f) { functions.push_back(f);};
+    void setActive(const unsigned &fid) { functions [ fid ]->setActive(); };
+    bool isActive(const unsigned &fid) const { return functions [ fid ]->isActive(); };
+    size_t giveSize() const { return functions.size(); };
+    void addFunction(Function *f) { functions.push_back(f); };
 protected:
 };
 

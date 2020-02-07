@@ -32,7 +32,7 @@ void TrsprtMaterial :: readFromLine(istringstream &iss) {
         if ( param.compare("capacity") == 0 ) {
             bcapacity = true;
             iss >> capacity;
-        } else if ( param.compare("conductivity") == 0 )    {
+        } else if ( param.compare("conductivity") == 0 ) {
             bconductivity = true;
             iss >> conductivity;
         }
@@ -102,10 +102,10 @@ void DisMechMaterial :: readFromLine(istringstream &iss) {
         if ( param.compare("E0") == 0 ) {
             bE0 = true;
             iss >> E0;
-        } else if ( param.compare("alpha") == 0 )    {
+        } else if ( param.compare("alpha") == 0 ) {
             balpha = true;
             iss >> alpha;
-        } else if ( param.compare("density") == 0 )    {
+        } else if ( param.compare("density") == 0 ) {
             bdensity = true;
             iss >> density;
         }

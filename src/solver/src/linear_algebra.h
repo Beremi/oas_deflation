@@ -375,7 +375,7 @@ inline const Vector matrix_vector_multiply(const Matrix &m, const Vector &v) {
 
     for ( size_t i = 0; i < m.numRows(); i++ ) {
         const Cslice_iter< double > &ri = m.row(i);
-        ret [ i ] = inner_product(& ri[0], & ri[ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
+        ret [ i ] = inner_product(& ri [ 0 ], & ri [ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
     }
     return ret;
 }
@@ -387,7 +387,7 @@ inline const Vector operator*(const Vector &v, const Matrix &m) {
 
     for ( size_t i = 0; i < m.numCols(); i++ ) {
         const Cslice_iter< double > &ri = m.column(i);
-        ret [ i ] = inner_product(& ri[0], & ri[ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
+        ret [ i ] = inner_product(& ri [ 0 ], & ri [ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
     }
     return ret;
 }
@@ -398,14 +398,14 @@ struct SparseVector
 {
 public:
     Vector &val;
-    valarray< unsigned int > &idx;
+    valarray< unsigned > &idx;
     const size_t length;
     const size_t start;
 
     double zero;
 
 public:
-    SparseVector(Vector &v, valarray< unsigned int > &idx, const size_t l, const size_t s);
+    SparseVector(Vector &v, valarray< unsigned > &idx, const size_t l, const size_t s);
 
     double operator[](const size_t) const;
     double &operator[](const size_t);
@@ -423,17 +423,17 @@ struct ConstSparseVector
 {
 public:
     const Vector &val;
-    const valarray< unsigned int > &idx;
+    const valarray< unsigned > &idx;
     const size_t length;
     const size_t start;
 
 public:
-    ConstSparseVector(const Vector &v,  const valarray< unsigned int > &idx, const size_t l, const size_t s);
+    ConstSparseVector(const Vector &v,  const valarray< unsigned > &idx, const size_t l, const size_t s);
 
     inline double operator[](const size_t i) const
     {
-        const unsigned int *i_index_pointer = find(& idx [ start ], & idx [ min(start + length, idx.size() ) ], i);
-        unsigned int offset = i_index_pointer - & idx [ start ];
+        const unsigned *i_index_pointer = find(& idx [ start ], & idx [ min(start + length, idx.size() ) ], i);
+        unsigned offset = i_index_pointer - & idx [ start ];
         if ( i_index_pointer != & idx [ min(start + length, idx.size() ) ] ) {
             return ( val [ start + offset ] );
         }
@@ -479,15 +479,15 @@ class CoordinateIndexedSparseMatrix
 {
 public:
     Vector array;
-    int RowCount;
-    int ColumnCount;
-    valarray< unsigned int >column_index;
-    valarray< unsigned int >row_size;
-    valarray< unsigned int >accumulated_row_size;
+    unsigned RowCount;
+    unsigned ColumnCount;
+    valarray< unsigned >column_index;
+    valarray< unsigned >row_size;
+    valarray< unsigned >accumulated_row_size;
 public:
-    CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, double > &source, int RowCountI, int ColumnCountI);
-    CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, Matrix > &source, int RowCountI, int ColumnCountI);
-    CoordinateIndexedSparseMatrix(const valarray< unsigned int > &, const valarray< unsigned int > &, int RowCountI, int ColumnCountI);
+    CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, double > &source, unsigned RowCountI, unsigned ColumnCountI);
+    CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, Matrix > &source, unsigned RowCountI, unsigned ColumnCountI);
+    CoordinateIndexedSparseMatrix(const valarray< unsigned > &, const valarray< unsigned > &, unsigned RowCountI, unsigned ColumnCountI);
     CoordinateIndexedSparseMatrix(const CoordinateIndexedSparseMatrix &source);
     CoordinateIndexedSparseMatrix();
 
@@ -518,7 +518,7 @@ public:
     double froebeniusNorm() const;
     double infinityNorm() const;
 
-    void print(int size1, int size2);
+    void print(unsigned size1, unsigned size2);
     void print();
 };
 

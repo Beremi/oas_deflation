@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     if len(sys.argv)>1:
         minDist = float(sys.argv[2])
-    else : minDist = 0.3
+    else : minDist = 0.2
 
     #type of periodic model, if any
     periodicModel = 0
@@ -70,8 +70,8 @@ if __name__ == '__main__':
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 2.
-    Zdim = 0.5
+    Ydim = 1.
+    Zdim = 1.
 
     #dimensions of cylinder model
     cylinderRad = 0.2
@@ -88,9 +88,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.1
     radius = minDist / 2
-
     elaX = minDist / Xdim * 2
 
     if (dim == 2):
@@ -185,10 +183,10 @@ if __name__ == '__main__':
     if (dim == 3):
 
         #patch test for Transport
-        #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
 
         #cantilever bending
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
+        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
 
         #cantilever uniform pressure, free contraction
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )

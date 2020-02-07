@@ -13,9 +13,9 @@ protected:
     Point centroid;
     unsigned nnodes;
     unsigned nfaces;
-    vector<vector < unsigned > > faces;
-    vector<Point> normals;
-    vector<double> areas;
+    vector< vector< unsigned > >faces;
+    vector< Point >normals;
+    vector< double >areas;
     string ip_type;
 
     void sort2D();
@@ -26,8 +26,8 @@ public:
     TranspPolyhedral(const unsigned dim);
     ~TranspPolyhedral() {};
     virtual void init();
-    virtual Vector shapeF(Point x) const {return WachspressShapeF(x);};
-    virtual Matrix shapeFGrad(Point x) const {return WachspressShapeFGrad(x);};
+    virtual Vector shapeF(Point x) const { return WachspressShapeF(x); };
+    virtual Matrix shapeFGrad(Point x) const { return WachspressShapeFGrad(x); };
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual Matrix giveConductivityMatrix(string matrixType) const;
     virtual Matrix giveCapacityMatrix() const;
@@ -54,7 +54,7 @@ class TranspCondensedPolyhedral : public TranspPolyhedral
 {
 private:
     Vector red2full;
-    vector<double> angles;
+    vector< double >angles;
     Vector fullTriShapeF(Point x) const;
     Matrix fullTriShapeFGrad(Point x) const;
     Vector condTriShapeF(Point x) const;
@@ -62,8 +62,8 @@ private:
 public:
     TranspCondensedPolyhedral(const unsigned dim);
     ~TranspCondensedPolyhedral() {};
-    virtual Vector shapeF(Point x) const {return condTriShapeF(x);};
-    virtual Matrix shapeFGrad(Point x) const {return condTriShapeFGrad(x);};
+    virtual Vector shapeF(Point x) const { return condTriShapeF(x); };
+    virtual Matrix shapeFGrad(Point x) const { return condTriShapeFGrad(x); };
     virtual void init();
 };
 
