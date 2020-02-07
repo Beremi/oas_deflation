@@ -106,7 +106,10 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
 
     dataOut += shifts
     if weights is not None:
-        weightsOut = np.hstack([weights]*5)
+        if dim == 2:
+            weightsOut = np.hstack([weights]*5)
+        else:
+            weightsOut = np.hstack([weights]*7)
         return dataOut, weightsOut
     return dataOut
 

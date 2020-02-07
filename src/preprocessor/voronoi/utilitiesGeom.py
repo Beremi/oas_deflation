@@ -7,6 +7,7 @@ import os
 import time
 
 import utilitiesMech
+import Preprocessor as prepro
 
 masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
@@ -134,10 +135,10 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None, notches = None):
     if (dim == 2):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ)
+            vert_count, verticesIdxDict, vertIdxStart = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches)
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
     if (dim == 3):
@@ -146,7 +147,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
 
 
 #Extract geometry 2d
-def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None):
+def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -280,7 +281,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
@@ -1055,7 +1056,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     sys.stdout.flush()
 
 
-def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None):
+def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None, notches = None):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
@@ -1115,6 +1116,21 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         print ('MechElems connect only MechNodes. That is ok.')
     else:
         print ('MechElems CONNECT WRONG NODES !!!')
+
+    if (notches!=None ):
+        print('Checking for notch nodes...', end='')
+        for notch in notches:
+            elementsWithoutNotch = []
+            for i in range (len(mechElemRidges)):
+                nA = mechElemRidges[i][0]
+                nB = mechElemRidges[i][1]
+                
+                if not ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
+                    elementsWithoutNotch.append(mechElemRidges[i])
+
+            mechElemRidges = elementsWithoutNotch
+        print('done.')
+
 
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'

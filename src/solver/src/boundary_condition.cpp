@@ -157,7 +157,7 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
                 if ( neumannBC [ i ] >= 0 && dirichBC [ i ] >= 0 ) {
                     cerr << "Error: Dirichlet and Neumann boundary conditions assigned simulatneuosly" << endl;
                     cerr << line << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
             ;
@@ -168,7 +168,7 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
         cout << "Input file '" <<  filename << "' succesfully loaded; " << BC.size() - origsize << " boundary conditions found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 

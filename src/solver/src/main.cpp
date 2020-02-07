@@ -103,7 +103,7 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                     iss >> istr;
                     exporters->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), nodes, elems, dimension );
                 }
-            } else if ( istr.compare("PBlockFiles") == 0 )  {
+            } else if ( istr.compare("PBlockFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
@@ -156,8 +156,8 @@ int main(int argc, char **argv) {
     GlobPaths :: RESULTDIR = GlobPaths :: BASEDIR / "results";
 
     /*cout << GlobPaths::INPUTFILE << endl
-     *   << GlobPaths::BASEDIR << endl
-     *   << GlobPaths::RESULTDIR << endl;*/
+    *   << GlobPaths::BASEDIR << endl
+    *   << GlobPaths::RESULTDIR << endl;*/
     // create directory for results
     fs :: create_directories(GlobPaths :: RESULTDIR);
 
@@ -230,6 +230,8 @@ int main(int argc, char **argv) {
     std :: cout << "termination status = " << terminationStatus << '\n';
     delete solver;
     return terminationStatus;
+
     // JK: why is this deleted? does it cause memory leak? after that, the calculation is teminated, it should not cause any problems, without deleting it, main coul just return solver terminationStatus as following (instead of three previous rows)
     // return solver->giveTerminationStatus();
+    return 0;
 }

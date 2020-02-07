@@ -94,9 +94,14 @@ class PowerTesselation(object):
     def __init__(self, points, weights=None, limits='unit'):
         self._points = np.asarray(points, dtype=np.float64)
         self._npoints, self._ndim = points.shape
+        if weights is None:
+            self._weights = np.zeros(self._npoints)
+        else:
+            self._weights = np.asarray(weights, dtype=np.float64)
         if self._ndim not in [2, 3]:
             raise ValueError('Shape of array has to be (npoints, ndim) for ndim = [2, 3] but ndim = {}.'.format(self._ndim))
-        self._weights = weights
+        if not self._points.shape[0] == self._weights.shape[0]:
+            raise ValueError('Number of points is not eqaul to number of weights {} != {}.'.format(points.shape[0], weights.shape[0]))
         # convert points+weights to array for pydgma
         self._points_pydgma = self._get_points_pydgma()
         if limits == 'auto':
@@ -134,11 +139,16 @@ class PowerTesselation(object):
         if self._ndim == 3:
             self._generate_voronoi_parts_3d()
         logging.info('Time to generate voronoi parts = {} s'.format(time.time() - start))
+        print('#'*50)
+        print('points:', self.points)
+        print('vertices:', self.vertices)
+        print('ridge_points:', self.ridge_points)
+        print('ridge_vertices:', self.ridge_vertices)
+        print('regions:', self.regions)
+        print('point_region:', self.point_region)
 
     def _get_points_pydgma(self):
         points_pydgma = []
-        if self._weights is None:
-            self._weights = np.zeros(self._npoints)
         for idx, row in enumerate(self._points):
             row_tmp = [idx]
             row_tmp.extend(row.tolist())
@@ -202,12 +212,19 @@ class PowerTesselation(object):
             regions.append(region)
 
             vertex_start_num += cell.vertices.size()
+        self._vertices = vertices
+
         self._ridge_vertices = ridge_vertices
-        self._vertices = np.array(vertices)[:, 1:(self._ndim + 1)]
         self._regions = regions
-        self._ridge_points = connection_list
+        #self._ridge_points = connection_list
         self._point_region = point_region
         self._merge_duplicate_vertices()
+
+        ridge_points = np.array(connection_list)
+        neg = ridge_points < 0
+        ridge_points[neg] = np.max(ridge_points) - ridge_points[neg]
+        self._ridge_points = ridge_points
+        self._vertices = np.array(self._vertices)[:, 1:(self._ndim + 1)]
 
     def _generate_voronoi_parts_2d(self):
         self._total_volume = 0.0
@@ -241,14 +258,14 @@ class PowerTesselation(object):
                     ridge_vertices.append(np.array(side.as_list()) + vertex_start_num)
 
             vertex_start_num += cell.vertices.size()
-        
+
         self._ridge_vertices = ridge_vertices
         self._vertices = vertices
         self._regions = regions
         #self._ridge_points = connection_list
         self._point_region = point_region
         self._merge_duplicate_vertices()
-        
+
         ridge_points = np.array(connection_list)
         neg = ridge_points < 0
         ridge_points[neg] = np.max(ridge_points) - ridge_points[neg]
@@ -260,17 +277,19 @@ class PowerTesselation(object):
             return dict_[val] if val in dict_ else -1
         replace = np.vectorize(replace)
         unique_dict = defaultdict(list)
+        orig_dict = {}
         for id_, x, y, z in self._vertices:
             if (self._ndim == 2) and (z != 0):
                 continue
             key = tuple(round(i, 10) for i in (x, y, z))
             unique_dict[key].append(id_)
+            orig_dict[key] = (x, y, z)
         replace_dict = {}
         vertices_unique = []
         for idx, (key, val) in enumerate(sorted(unique_dict.items())):
             for v in val:
                 replace_dict[v] = idx
-            vertices_unique.append([idx] + list(key))
+            vertices_unique.append([idx] + list(orig_dict[key]))
 
         self._vertices = vertices_unique
 

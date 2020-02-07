@@ -31,8 +31,6 @@ import utilitiesNumeric
 import voronoi
 
 
-
-
 if __name__ == '__main__':
     print('\n%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
     start = time.time()
@@ -57,21 +55,21 @@ if __name__ == '__main__':
     solver = "SteadyStateLinearSolver"
 
     #power tesselation on/off  does not matter now
-    powerTes = 0
+    powerTes = False
 
     #dimension
-    dim = 3
+    dim = 2
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
-    activeTransport = 1
-    activeMechanics = 0
+    activeTransport = 0
+    activeMechanics = 1
 
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 1.
-    Zdim = 1.
+    Ydim = 0.4
+    Zdim = 0.5
 
     #dimensions of cylinder model
     cylinderRad = 0.2
@@ -101,7 +99,7 @@ if __name__ == '__main__':
 
     #trials of random node positioning
 
-    trials = 5000
+    trials = 50000
 
 
     #lists for the model
@@ -149,11 +147,12 @@ if __name__ == '__main__':
         matZ.append (boundB1)
         materialZones.append(matZ)
 
+    notches = None
     #creating the model. Select the prepared models.
     if (dim == 2):
 
         #patch test for Transport
-        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
+        #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
@@ -175,15 +174,21 @@ if __name__ == '__main__':
         #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions = utilitiesModeling.createDiamondTestModel(1, 2)
 
         #periodic shear test
-
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype   = utilitiesModeling.create2dPeriodicShear(maxLim, minDist, trials )
-        materialZones=None
+        #materialZones=None
         #periodicModel = 1
         #"""
+
+        #simply supported NOTCHED beam, uniform load
+        notchH = 0.2 #notch height in percentage of total beam height
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notches  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH)
+        materialZones=None
+        print(notches)
+
     if (dim == 3):
 
         #patch test for Transport
-        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim)
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
@@ -254,7 +259,7 @@ if __name__ == '__main__':
 
 
     #Deconstructing Voronoi diagram and saving the geometry
-    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(master_folder, dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype)
+    vert_count, verticesIdxDict, vertIdxStart = utilitiesGeom.extractGeometry(master_folder, dim, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=materialZones, periodicModel = periodicModel, nodePositions = nodePositions, coupledNodes = coupledNodes, mirtype = mirtype, notches = notches)
 
 
     # saving rest of input
@@ -270,7 +275,7 @@ if __name__ == '__main__':
     if (len(radii)>0): utilitiesGeom.saveRadii(master_folder, radii)
 
     solStep = 1e-2
-    simTime = 10e-2
+    simTime = 1
     utilitiesGeom.saveMasterInput(master_folder, dim, solver, solStep, 1e-4, 1e-1, simTime, activeTransport, activeMechanics, periodic = periodicModel)
     end =  time.time() -end
     print('Saving done in %.3f secs.' %end)

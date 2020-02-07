@@ -134,7 +134,7 @@ void TranspPolyhedral :: findIntegrationPoints() {
             }
             a = c;
         }
-    } else if ( ip_type.compare("tri") == 0 )       {
+    } else if ( ip_type.compare("tri") == 0 ) {
         //based on triangular isoparametric elements
         ip_locs.resize(3 * nnodes);
         ip_weights.resize(3 * nnodes);
@@ -153,7 +153,7 @@ void TranspPolyhedral :: findIntegrationPoints() {
                 stats [ 3 * i + t ] = mat->giveNewMaterialStatus(this);
             }
         }
-    } else  {
+    } else {
         cerr << "Error in " << name << ": ip_type '" << ip_type << "' not implemented" << endl;
     }
 }
@@ -206,7 +206,7 @@ void TranspPolyhedral :: init() {
             volume += triVolume;
         }
         centroid /= volume * 3.;
-    } else if ( ndim == 3 )  {
+    } else if ( ndim == 3 ) {
         cerr << name << ": 3rd dimension not implemented yet" << endl;
         exit(1);
     }

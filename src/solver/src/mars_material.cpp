@@ -34,7 +34,7 @@ void MarsMaterialStatus :: init() {
         L = rbc->giveLength();
     } else {
         cerr << "Material " << name << " can be used only for RigidBodyContact elements" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 
     MarsMaterial *m = static_cast< MarsMaterial * >( mat );
@@ -184,13 +184,13 @@ Vector MarsMaterialStatus :: giveNormalShearStiffness(string type) const {
     Vector stiff = giveElasticNormalShearStiffness();
     if ( type.compare("elastic") == 0 ) {
         return stiff;
-    } else if ( type.compare("secant") == 0 )  {
+    } else if ( type.compare("secant") == 0 ) {
         return stiff * ( 1 - temp_damage );
-    } else if ( type.compare("unloading") == 0 )                                                                                  {
+    } else if ( type.compare("unloading") == 0 ) {
         return stiff * ( 1 - temp_damage );
-    } else if ( type.compare("tangent") == 0 )                                                                                                                                                                     {
+    } else if ( type.compare("tangent") == 0 ) {
         return stiff * ( 1 - temp_damage );                                   //not implemented, used unloading
-    } else                                                                                                                   {
+    } else {
         cerr << "Error: MarsMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
@@ -229,12 +229,12 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bft ) {
         cerr << name << ": material parameter 'ft' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     ;
     if ( !bGt ) {
         cerr << name << ": material parameter 'Gt' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     ;
 };

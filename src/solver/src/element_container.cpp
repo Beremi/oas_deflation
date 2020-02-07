@@ -24,7 +24,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
             }
             istringstream iss(line);
             iss >> elemType;
-            if ( !elemType.rfind("#", 0) == 0 ) {
+            if ( !( elemType.rfind("#", 0) == 0 ) ) {
                 if ( elemType.compare("LTCBEAM") == 0 ) {
                     RigidBodyContact *newelem = new RigidBodyContact(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
@@ -51,7 +51,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     elems.push_back(newelem);
                 } else {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -59,7 +59,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
         cout << "Input file '" <<  filename << "' succesfully loaded; " << elems.size() - origsize << " elements found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -91,7 +91,7 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
             if ( !dynamic_cast< MechanicalElement * >( * e ) ) {
                 continue;
             }
-        } else if ( matrixType.compare("capacity") == 0 )      {
+        } else if ( matrixType.compare("capacity") == 0 ) {
             if ( !dynamic_cast< TransportElement * >( * e ) ) {
                 continue;
             }
@@ -153,14 +153,14 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
             } else {
                 continue;
             }
-        } else if ( matrixType.compare("capacity") == 0 )      {
+        } else if ( matrixType.compare("capacity") == 0 ) {
             te = dynamic_cast< TransportElement * >( * e );
             if ( te ) {
                 k = te->giveCapacityMatrix();
             } else {
                 continue;
             }
-        } else   {
+        } else {
             k = ( * e )->giveSteadyStateMatrix(matrixType);
         }
         elDoFs = ( * e )->giveDoFs();

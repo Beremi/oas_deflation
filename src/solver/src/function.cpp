@@ -172,7 +172,7 @@ void LinSawToothFunction :: readFromLine(istringstream &iss) {
             // std::cout << "timo = " << timo << ", value = " << val << ", time_multiplier = " << time_multiplier << '\n';
         } else {
             cerr << " function parameter 'time_multiplier' for function " << typeid( this ).name() << " was not specified" << endl;
-            exit(0);
+            exit(EXIT_FAILURE);
         }
     }
 }
@@ -238,10 +238,10 @@ void ConstSawToothRotationFunction :: readFromLine(istringstream &iss) {
         if ( param.compare("rotAngles") == 0 ) {
             iss >> angX >> angY >> angZ;
             rotationAngles = Point(angX, angY, angZ);
-        } else if ( param.compare("initNodeCrds") == 0 )    {
+        } else if ( param.compare("initNodeCrds") == 0 ) {
             iss >> nodeX >> nodeY >> nodeZ;
             initNodePosition = Point(nodeX, nodeY, nodeZ);
-        } else if ( param.compare("displType") == 0 )    {
+        } else if ( param.compare("displType") == 0 ) {
             iss >> displacementType;
         }
     }
@@ -325,13 +325,14 @@ void SinusFunction :: readFromLine(istringstream &iss) {
             bshift = true;
         }
     }
+
     if ( !bper ) {
         cerr << " function parameter 'period' for function " << typeid( this ).name() << " was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bamp ) {
         cerr << " function parameter 'amplitude' for function " << typeid( this ).name() << " was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bshift ) {
         // cout << " function parameter 'shift' (optional) for function " << typeid(this).name() << " was not specified" << endl;
@@ -400,9 +401,9 @@ void FunctionContainer :: readFromFile(const string filename) {
                     ConstSawToothRotationFunction *newf = new ConstSawToothRotationFunction();
                     newf->readFromLine(iss);
                     functions.push_back(newf);
-                } else   {
+                } else {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -410,7 +411,7 @@ void FunctionContainer :: readFromFile(const string filename) {
         cout << "Input file '" <<  filename << "' succesfully loaded; " << functions.size() - origsize << " functions found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 

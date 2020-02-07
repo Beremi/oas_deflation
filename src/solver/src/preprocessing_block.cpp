@@ -61,7 +61,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
                 vm [ 2 ] = nodes->giveNode(intialNodeNum + 5); //gamma xy
                 vm [ 3 ] = nodes->giveNode(intialNodeNum + 4); //gamma xz
                 mults [ 3 ] = diff.z / 2;
-            } else if ( dim == 2 )       {
+            } else if ( dim == 2 ) {
                 vm.resize(3);
                 mults.resize(3);
                 dirs.resize(3, 0);
@@ -88,7 +88,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
                 vm [ 2 ] = nodes->giveNode(intialNodeNum + 5); //gamma xy
                 vm [ 3 ] = nodes->giveNode(intialNodeNum + 3); //gamma yz
                 mults [ 3 ] = diff.z / 2;
-            } else if ( dim == 2 )       {
+            } else if ( dim == 2 ) {
                 vm.resize(3);
                 mults.resize(3);
                 dirs.resize(3, 0);
@@ -137,7 +137,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
                 vm [ 2 ] = nodes->giveNode(intialNodeNum + 5); //gamma xy
                 vm [ 3 ] = nodes->giveNode(intialNodeNum + 4); //gamma xz
                 mults [ 3 ] = diff.z;
-            } else if ( dim == 2 )       {
+            } else if ( dim == 2 ) {
                 vm.resize(3);
                 mults.resize(3);
                 dirs.resize(3, 0);
@@ -161,7 +161,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
                 dirs.resize(3, 0);
                 vm [ 2 ] = nodes->giveNode(intialNodeNum + 3); //gamma yz
                 mults [ 2 ] = diff.z;
-            } else if ( dim == 2 )       {
+            } else if ( dim == 2 ) {
                 vm.resize(2);
                 mults.resize(2);
                 dirs.resize(2, 0);
@@ -251,7 +251,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
         gname [ 0 ] = "sigma_x";
         gname [ 1 ] = "sigma_y";
         gname [ 2 ] = "tau_xy";
-    } else if ( dim == 3 )       {
+    } else if ( dim == 3 ) {
         gname.resize(3);
         gname [ 0 ] = "sigma_x";
         gname [ 1 ] = "sigma_y";
@@ -270,7 +270,7 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
         gname [ 0 ] = "eps_x";
         gname [ 1 ] = "eps_y";
         gname [ 2 ] = "gamma_xy";
-    } else if ( dim == 3 )       {
+    } else if ( dim == 3 ) {
         gname [ 0 ] = "eps_x";
         gname [ 1 ] = "eps_y";
         gname [ 2 ] = "eps_z";
@@ -328,15 +328,15 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
                         strainFunc [ 0 ] = hnum;
                     } else if ( param.compare("ey") == 0 ) {
                         strainFunc [ 1 ] = hnum;
-                    } else if ( param.compare("gxy") == 0 )                                                 {
+                    } else if ( param.compare("gxy") == 0 ) {
                         strainFunc [ 2 ] = hnum;
-                    } else if ( param.compare("sx") == 0 )                                                                                                                    {
+                    } else if ( param.compare("sx") == 0 ) {
                         stressFunc [ 0 ] = hnum;
-                    } else if ( param.compare("sy") == 0 )                                                                                                                                                                                      {
+                    } else if ( param.compare("sy") == 0 ) {
                         stressFunc [ 1 ] = hnum;
-                    } else if ( param.compare("txy") == 0 )                                                                                                                                                                                                                                                        {
+                    } else if ( param.compare("txy") == 0 ) {
                         stressFunc [ 2 ] = hnum;
-                    } else                                                                                                                                                                                                                                                                                                                          {
+                    } else {
                         cout << "Error in PeriodicBoundaryCondition: loaded by " << param << " not implemented yet" << '\n';
                         exit(1);
                     }
@@ -345,33 +345,33 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
                         strainFunc [ 0 ] = hnum;
                     } else if ( param.compare("ey") == 0 ) {
                         strainFunc [ 1 ] = hnum;
-                    } else if ( param.compare("ez") == 0 )                                                 {
+                    } else if ( param.compare("ez") == 0 ) {
                         strainFunc [ 2 ] = hnum;
-                    } else if ( param.compare("gyz") == 0 )                                                                                                                   {
+                    } else if ( param.compare("gyz") == 0 ) {
                         strainFunc [ 3 ] = hnum;
-                    } else if ( param.compare("gxz") == 0 )                                                                                                                                                                                      {
+                    } else if ( param.compare("gxz") == 0 ) {
                         strainFunc [ 4 ] = hnum;
-                    } else if ( param.compare("gxy") == 0 )                                                                                                                                                                                                                                                         {
+                    } else if ( param.compare("gxy") == 0 ) {
                         strainFunc [ 5 ] = hnum;
-                    } else if ( param.compare("sx") == 0 )                                                                                                                                                                                                                                                                                                                            {
+                    } else if ( param.compare("sx") == 0 ) {
                         stressFunc [ 0 ] = hnum;
-                    } else if ( param.compare("sy") == 0 )                                                                                                                                                                                                                                                                                                                                                                                              {
+                    } else if ( param.compare("sy") == 0 ) {
                         stressFunc [ 1 ] = hnum;
-                    } else if ( param.compare("sz") == 0 )                                                                                                                                                                                                                                                                                                                                                                                                                                                                {
+                    } else if ( param.compare("sz") == 0 ) {
                         stressFunc [ 2 ] = hnum;
-                    } else if ( param.compare("tyz") == 0 )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  {
+                    } else if ( param.compare("tyz") == 0 ) {
                         stressFunc [ 3 ] = hnum;
-                    } else if ( param.compare("txz") == 0 )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     {
+                    } else if ( param.compare("txz") == 0 ) {
                         stressFunc [ 4 ] = hnum;
-                    } else if ( param.compare("txy") == 0 )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        {
+                    } else if ( param.compare("txy") == 0 ) {
                         stressFunc [ 5 ] = hnum;
-                    } else                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          {
+                    } else {
                         cout << "Error in PeriodicBoundaryCondition: loaded by " << param << " not implemented yet" << '\n';
                         exit(1);
                     }
                 }
             }
-        } else if ( param.compare("size") == 0 )  {
+        } else if ( param.compare("size") == 0 ) {
             sizeB = true;
             iss >> num;
             PUCsize.resize(num);
@@ -570,9 +570,9 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     CoordRigidPlate *newblock = new CoordRigidPlate();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
-                } else   {
+                } else {
                     cerr << "Error: preprocessor block '" <<  ftype <<  "' is not implemented yet." << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -580,6 +580,6 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
         cout << "Input file '" <<  filename << "' succesfully loaded; " << blocks.size() - origsize << " preprocessing blocks found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }

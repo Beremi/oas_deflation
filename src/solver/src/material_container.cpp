@@ -64,7 +64,7 @@ void MaterialContainer :: readFromFile(const string filename) {
                     matrs.push_back( ( DesmoratMaterial * ) newmat );
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -72,6 +72,6 @@ void MaterialContainer :: readFromFile(const string filename) {
         cout << "Input file '" <<  filename << "' succesfully loaded; " << matrs.size() - origsize << " materials found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }

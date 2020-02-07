@@ -130,10 +130,10 @@ def createDiamondTestModel(width, height):
 
 
 
-def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
+def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1 ):
     print('Creating 2d simply supported beam, uniform load.')
     #
-    node_coords, mechBC_merged, mechInitC_merged  = assemble2DSSBeamBending(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, notchNodes  = assemble2DSSBeamBending(maxLim, minDist, trials, notch);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -196,7 +196,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials ):
         transportBC_merged.append(trsBC)
 
 
-    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
+    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, notchNodes
 
 
 def create2dCantileverBending(maxLim, minDist, trials ):
@@ -393,16 +393,23 @@ def create2dbeamConfinedPress(maxLim, minDist, trials ):
 
 
 
-def createPatchTestTransport(maxLim, minDist, trials, dim):
+def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     print('Creating patch test')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, radii, mechBC_merged, mechIC_merged  = assemblePatchTestTransport(maxLim, minDist, trials,dim);
+    node_coords, radii, mechBC_merged, mechIC_merged  = assemblePatchTestTransport(maxLim, minDist, trials, dim);
 
     print('Conducting Voronoi tesselation...', end = '')
-    if (dim==2): vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
-    else: vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
-    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
+    if not powerTes:
+        if (dim==2):
+            vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+        else:
+            vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    else:
+        if (dim==2):
+            vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
+        else:
+            vor, areas = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim)
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
@@ -1403,7 +1410,7 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
 
 
 
-def assemble2DSSBeamBending (maxLim, minDist, trials):
+def assemble2DSSBeamBending (maxLim, minDist, trials, notch):
     dim = 2
     #lists for the model
     node_coords = []
@@ -1411,7 +1418,31 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     mechInitC_merged = []
 
     #an indent due to mirroring of the data for voronoi tess.
+    notches=[]
     indent = 1e-8
+    notchWidth = 1e-3 /2
+    #generating notch points
+    if (notch > 0):
+        notchSide0 = []
+        nodeA = np.array([maxLim[0]/2-notchWidth, indent])
+        nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch])
+        oldLen = len(node_coords)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        for i in range (oldLen, len(node_coords), 1):
+            notchSide0.append(i)
+
+        notchSide1 = []
+        nodeA = np.array([maxLim[0]/2+indent, indent])
+        nodeB = np.array([maxLim[0]/2+indent, maxLim[1]*notch])
+        oldLen = len(node_coords)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        for i in range (oldLen, len(node_coords), 1):
+            notchSide1.append(i)
+
+        notch = []
+        notch.append(notchSide0)
+        notch.append(notchSide1)
+        notches.append(notch)
 
     #width of the supports
     supportWidth = maxLim[0] / 80
@@ -1463,21 +1494,15 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     nodeA =  np.array([indent , maxLim[1] - indent])
     nodeB =  np.array([maxLim[0] - indent , maxLim[1] - indent])
 
-    #nodeA =  np.array([maxLim[0]/2 - maxLim[0]/1000  , maxLim[1] - indent])
-    #nodeB =  np.array([maxLim[0]/2 + maxLim[0]/1000  , maxLim[1] - indent])
 
     oldLen = len(node_coords)
     pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
     nrOfPoints =  (len(node_coords)) - oldLen
-    #print (nrOfPoints)
 
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
         mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
         mechBC_merged.append(mBC)
-        #print('adding')
-        #mIC = utilitiesGeom.mechanicalIC(dim, oldLen + n, lineIC)
-        #mechInitC_merged.append(mIC)
 
 
     ##########################################generating of points, homogeneous volume
@@ -1490,7 +1515,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials):
     newLen = len(node_coords)-1
 
 
-    return node_coords, mechBC_merged, mechInitC_merged
+    return node_coords, mechBC_merged, mechInitC_merged, notches
 
 
 

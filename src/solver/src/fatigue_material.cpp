@@ -121,7 +121,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
             y = strain [ i ];
         } else if ( i == 2 ) {
             z = strain [ i ];
-        } else                                       {
+        } else {
             std :: cerr << "should never get here, exit" << '\n';
             exit(1);
         }
@@ -280,7 +280,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
             stress [ i ] = temp_stressT.getY();
         } else if ( i == 2 ) {
             stress [ i ] = temp_stressT.getZ();
-        } else                                                         {
+        } else {
             std :: cerr << "should never get here, exit" << '\n';
             exit(1);
         }
@@ -333,16 +333,16 @@ Vector FatigueShearMaterialStatus :: giveNormalShearStiffness(string type) const
     Vector stiff = giveElasticNormalShearStiffness() * strain_slip_multiplier;
     if ( type.compare("elastic") == 0 ) {
         return stiff;
-    } else if ( type.compare("secant") == 0 )  {//not implemented, used unloading
+    } else if ( type.compare("secant") == 0 ) { //not implemented, used unloading
         stiff [ 1 ] *= ( 1 - temp_damageShear ); // normal stiffness stays elastic
         return stiff;
-    } else if ( type.compare("unloading") == 0 )       {
+    } else if ( type.compare("unloading") == 0 ) {
         stiff [ 1 ] *= ( 1 - temp_damageShear ); // normal stiffness stays elastic
         return stiff;
-    } else if ( type.compare("tangent") == 0 )       {
+    } else if ( type.compare("tangent") == 0 ) {
         stiff [ 1 ] *= tang_stiff; // normal stiffness stays elastic
         return stiff;
-    } else   {
+    } else {
         cerr << "Error: FatigueShearMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
@@ -399,19 +399,19 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !btau ) {
         cerr << name << ": material parameter 'tauBar' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bkin ) {
         cerr << name << ": material parameter 'Kin' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bgam ) {
         cerr << name << ": material parameter 'gamma' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bs ) {
         cerr << name << ": material parameter 'S' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bc ) {
         cout << name << ": material parameter 'c' was not specified, taking c = 1.0" << endl;
@@ -698,23 +698,23 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bfc ) {
         cerr << name << ": material parameter 'fc' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bft ) {
         cerr << name << ": material parameter 'ft' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bkin ) {
         cerr << name << ": material parameter 'KinN' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bgam ) {
         cerr << name << ": material parameter 'gammaN' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bAd ) {
         cerr << name << ": material parameter 'Ad' was not specified" << endl;
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     if ( !bm ) {
         cout << name << ": material parameter 'm' was not specified, taking m = 0.0" << endl;
@@ -952,7 +952,7 @@ Vector AllicheMaterialStatus :: giveNormalShearStiffness(string type) const {
 
     if ( type.compare("elastic") == 0 ) {
         return stiff;
-    } else if ( type.compare("secant") == 0 )  {//not implemented, used unloading
+    } else if ( type.compare("secant") == 0 ) { //not implemented, used unloading
         stiff [ 0 ] *= ( 1 - temp_damage.getX() );
         stiff [ 1 ] *= ( 1 -  0.5 * ( temp_damage.getY() + temp_damage.getZ() ) );
         return stiff;
@@ -1090,13 +1090,13 @@ Vector DesmoratMaterialStatus :: giveNormalShearStiffness(string type) const {
     Vector stiff = giveElasticNormalShearStiffness();
     if ( type.compare("elastic") == 0 ) {
         return stiff;
-    } else if ( type.compare("secant") == 0 )    {
+    } else if ( type.compare("secant") == 0 ) {
         return stiff * ( 1 - temp_damage );
-    } else if ( type.compare("unloading") == 0 )                                                                                    {
+    } else if ( type.compare("unloading") == 0 ) {
         return stiff * ( 1 - temp_damage );
-    } else if ( type.compare("tangent") == 0 )                                                                                                                                                                       {
+    } else if ( type.compare("tangent") == 0 ) {
         return stiff * ( 1 - temp_damage );                                 //not implemented, used unloading
-    } else                                                                                                                 {
+    } else {
         cerr << "Error: DesmoratMatStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
@@ -1109,9 +1109,9 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain) {
     for ( unsigned i = 0; i < strain.size(); i++ ) {
         if ( i == 0 ) {
             epsN = strain [ i ];
-        } else if ( i == 1 )                                      {
+        } else if ( i == 1 ) {
             epsT.setY(strain [ i ]);
-        } else if ( i == 2 )                                                                                      {
+        } else if ( i == 2 ) {
             epsT.setZ(strain [ i ]);
         }
     }

@@ -226,15 +226,15 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
                     readCoordRigidPlate(iss, ndim, nodes);
                 } else {
                     cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << endl;
-                    exit(0);
+                    exit(EXIT_FAILURE);
                 }
+                inputfile.close();
+                cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << endl;
+            } else {
+                cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
+                exit(1);
             }
         }
-        inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << endl;
-    } else {
-        cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(1);
     }
 }
 
