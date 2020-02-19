@@ -102,12 +102,42 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
         return R [ 2 ] [ 2 ];
     } else if ( code.compare("volume") == 0 ) {
         return area * length / ndim;
-    } else if ( code.compare("energy_total") == 0 ) {
+    } else if ( code.compare("energy_total_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_total")  * ( area * length / ndim );
-    } else if ( code.compare("work_dissip") == 0 ) {
+    } else if ( code.compare("energy_totalT_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_totalT")  * ( area * length / ndim );
+    } else if ( code.compare("energy_totalN_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_totalN")  * ( area * length / ndim );
+    } else if ( code.compare("work_dissip_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_dissip")  * ( area * length / ndim );
+    } else if ( code.compare("work_dissipN_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_dissipN")  * ( area * length / ndim );
+    } else if ( code.compare("work_dissipT_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_dissipT")  * ( area * length / ndim );
+    } else if ( code.compare("work_total_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_total")  * ( area * length / ndim );
+    } else if ( code.compare("work_ela_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_ela")  * ( area * length / ndim );
+    } else if ( code.compare("work_total_elemT") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_totalT")  * ( area * length / ndim );
+    } else if ( code.compare("work_ela_elemT") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_elaT")  * ( area * length / ndim );
+    } else if ( code.compare("work_total_elemN") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_totalN")  * ( area * length / ndim );
+    } else if ( code.compare("work_ela_elemN") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("work_elaN")  * ( area * length / ndim );
     } else {
         return MechanicalElement :: giveIPValue(code, ipnum);
     }
