@@ -144,7 +144,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
         Point tau_trial;
         Point tau_tilda_trial;
-        double Y;
+        double Y = Ynext;
 
         // proposed return mapping: check the threshold fn until it gets back into the
 
@@ -208,7 +208,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
         // double elastic_part = m->giveTauBar();
         // double deltaS_part = 1e-6;
         double deltaS_part = strain_slip_multiplier * ( elastic_part / m->giveE0() ) / num_per_elastic_part;
-        int divide_by = 1;
+        unsigned divide_by = 1;
         Point slip_increment;
         Point slip_cur = slip;
         Point tauTildaPiTrial;

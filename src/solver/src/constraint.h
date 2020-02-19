@@ -41,10 +41,6 @@ private:
 public:
     ConstraintContainer() {};
     ~ConstraintContainer() {};
-    [ [ deprecated("rigid plates moved to preprocessing_block, specify them in any of PBlockFiles instead of ConstrFiles") ] ]
-    void readRigidPlate(istringstream &iss, const unsigned ndim, NodeContainer *nodes);
-    [ [ deprecated("rigid plates moved to preprocessing_block, specify them in any of PBlockFiles instead of ConstrFiles") ] ]
-    void readCoordRigidPlate(istringstream &iss, const unsigned ndim, NodeContainer *nodes);
     void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);
     void init(NodeContainer *nodes); // here matrix X will be created
