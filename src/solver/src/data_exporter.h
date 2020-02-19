@@ -133,15 +133,15 @@ protected:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF SUM OF VALUES
-class ValueGauge : public Gauge
+class StructuralExporter : public Gauge
 {
 private:
     NodeContainer *nodes;
     ElementContainer *elems;
     double calcValue() const;
 public:
-    ValueGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
-    ~ValueGauge() {};
+    StructuralExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
+    ~StructuralExporter() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     virtual void init();
