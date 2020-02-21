@@ -23,12 +23,10 @@ private:
 protected:
     unsigned dim;
 public:
-    PBlock(){};
+    PBlock() {};
     virtual ~PBlock() {};
     virtual void apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex)  = 0;
     virtual void readFromLine(istringstream &iss, unsigned d) = 0;
-
-
 };
 
 //////////////////////////////////////////////////////////
@@ -37,15 +35,15 @@ public:
 class BasicPeriodicBC : public PBlock
 {
 private:
-    vector<double> PUCsize;
-    vector<unsigned> masters;
-    vector<unsigned> slaves;
-    vector<int> strainFunc;
-    vector<int> stressFunc;
+    vector< double >PUCsize;
+    vector< unsigned >masters;
+    vector< unsigned >slaves;
+    vector< int >strainFunc;
+    vector< int >stressFunc;
     double volume;
     bool use_half_gammas;
 public:
-    BasicPeriodicBC(){};
+    BasicPeriodicBC() {};
     virtual ~BasicPeriodicBC() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
@@ -59,9 +57,9 @@ protected:
 class RigidPlate : public PBlock
 {
 private:
-    std :: vector<unsigned> slave_ids;
+    std :: vector< unsigned >slave_ids;
 public:
-    RigidPlate(){};
+    RigidPlate() {};
     virtual ~RigidPlate() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
@@ -75,7 +73,7 @@ class CoordRigidPlate : public RigidPlate
 private:
     Point leftBottom, rightTop;
 public:
-    CoordRigidPlate(){};
+    CoordRigidPlate() {};
     virtual ~CoordRigidPlate() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
@@ -89,7 +87,7 @@ protected:
 class PBlockContainer
 {
 private:
-    vector< PBlock * > blocks;
+    vector< PBlock * >blocks;
     NodeContainer *nodes;
     ElementContainer *elems;
     BCContainer *bcs;

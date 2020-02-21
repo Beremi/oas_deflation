@@ -18,7 +18,7 @@ void Node :: readFromLine(istringstream &iss) {
     if ( dim == 2 ) {
         iss >> x >> y;
         point = Point(x, y, 0.);
-    } else if ( dim == 3 )      {
+    } else if ( dim == 3 ) {
         iss >> x >> y >> z;
         point = Point(x, y, z);
     }
@@ -27,40 +27,40 @@ void Node :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
-void MasterDoF :: readFromLine(istringstream &iss){
-  double x, y, z;
-  if ( dim == 2 ) {
-      iss >> x >> y;
-      point = Point(x, y, 0.);
-  } else if ( dim == 3 )      {
-      iss >> x >> y >> z;
-      point = Point(x, y, z);
-  }
-  unsigned i;
-  iss >> i;
-  nDoFs = i;
+void MasterDoF :: readFromLine(istringstream &iss) {
+    double x, y, z;
+    if ( dim == 2 ) {
+        iss >> x >> y;
+        point = Point(x, y, 0.);
+    } else if ( dim == 3 ) {
+        iss >> x >> y >> z;
+        point = Point(x, y, z);
+    }
+    unsigned i;
+    iss >> i;
+    nDoFs = i;
 }
 
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
-MasterDoF :: MasterDoF(Point c, unsigned n){
-  point = c;
-  nDoFs = n;
-  name = "Master DoF";
+MasterDoF :: MasterDoF(Point c, unsigned n) {
+    point = c;
+    nDoFs = n;
+    name = "Master DoF";
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER Node - GOVERN multiple dependent DOFs
-void MasterNode :: readFromLine(istringstream &iss){
-  double x, y, z;
-  if ( dim == 2 ) {
-      iss >> x >> y;
-      point = Point(x, y);
-  } else if ( dim == 3 )      {
-      iss >> x >> y >> z;
-      point = Point(x, y, z);
-  }
+void MasterNode :: readFromLine(istringstream &iss) {
+    double x, y, z;
+    if ( dim == 2 ) {
+        iss >> x >> y;
+        point = Point(x, y);
+    } else if ( dim == 3 ) {
+        iss >> x >> y >> z;
+        point = Point(x, y, z);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -69,11 +69,11 @@ void MasterNode :: readFromLine(istringstream &iss){
 double MechNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
     if ( code.compare("ux") == 0 ) {
         return DoFs [ firstDoF ];
-    } else if (dim>1 && code.compare("uy") == 0 ) {
+    } else if ( dim > 1 && code.compare("uy") == 0 ) {
         return DoFs [ firstDoF + 1 ];
-    } else if (dim>2 && code.compare("uz") == 0 )                                                                    {
-            return DoFs [ firstDoF + 2 ];
-    } else                                                                                                                                          {
+    } else if ( dim > 2 && code.compare("uz") == 0 ) {
+        return DoFs [ firstDoF + 2 ];
+    } else {
         return Node :: giveDoFBasedValue(code, DoFs);
     }
 };
@@ -97,7 +97,7 @@ void Particle :: readFromLine(istringstream &iss) {
     if ( dim == 2 ) {
         iss >> x >> y >> r;
         point = Point(x, y, 0);
-    } else if ( dim == 3 )      {
+    } else if ( dim == 3 ) {
         iss >> x >> y >> z >> r;
         point = Point(x, y, z);
     }
@@ -105,13 +105,13 @@ void Particle :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
-    if (dim>1 && code.compare("rotz") == 0 ) {
+    if ( dim > 1 && code.compare("rotz") == 0 ) {
         return DoFs [ firstDoF + 3 ];
-    } else if (dim>2 && code.compare("roty") == 0 )   {
+    } else if ( dim > 2 && code.compare("roty") == 0 ) {
         return DoFs [ firstDoF + 4 ];
-    } else if (dim>2 && code.compare("rotx") == 0 )                                                                           {
+    } else if ( dim > 2 && code.compare("rotx") == 0 ) {
         return DoFs [ firstDoF + 5 ];
-    } else                                                                                                                                              {
+    } else {
         return MechNode :: giveDoFBasedValue(code, DoFs);
     }
 };

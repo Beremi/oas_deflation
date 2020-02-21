@@ -25,7 +25,7 @@ public:
     Material *giveMaterial() { return mat; };
     virtual void init() {};
     virtual void update() {};
-    virtual double giveValue(string code) const { return 0; };
+    virtual double giveValue(string code) const { ( void ) code; return 0; };
 protected:
     Element *element;
     string name;
@@ -41,7 +41,7 @@ private:
 public:
     Material() { name = "basic material"; };
     virtual ~Material() {};
-    virtual void readFromLine(istringstream &iss) {};
+    virtual void readFromLine(istringstream &iss) { ( void ) iss; };
     virtual MaterialStatus *giveNewMaterialStatus(Element *e) { MaterialStatus *newStatus = new MaterialStatus(this, e); return newStatus; };
     string giveName() { return name; }
     virtual void init() {};
@@ -90,7 +90,7 @@ public:
     DisMechMaterialStatus(DisMechMaterial *m, Element *e);
     virtual ~DisMechMaterialStatus() {};
     Vector giveElasticNormalShearStiffness() const;
-    virtual Vector giveNormalShearStiffness(string type) const { return giveElasticNormalShearStiffness(); }   //only elastic
+    virtual Vector giveNormalShearStiffness(string type) const { ( void ) type; return giveElasticNormalShearStiffness(); }   //only elastic
     virtual Vector giveNormalShearStiffness(string type, const Vector &strain) { giveStress(strain); return giveNormalShearStiffness(type); }
     virtual Vector giveStress(const Vector &strain);
     double giveDensity() const;

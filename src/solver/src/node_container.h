@@ -19,7 +19,7 @@ private:
     BCContainer *BC;
 
     // #constraint
-	size_t constrDoFs;
+    size_t constrDoFs;
     vector< unsigned >constrainedDoFid;  //mapping from particle order to DoF order for constrained DoFs
     ConstraintContainer *constr;
 
@@ -31,7 +31,7 @@ public:
 
     void readFromFile(const string filename, const int dim);
     Node *giveNode(unsigned const num) { return nodes [ num ]; }
-	size_t giveSize() { return nodes.size(); };
+    size_t giveSize() { return nodes.size(); };
     unsigned giveDoFid(unsigned i) const { return DoFid [ i ]; }
     void establishDoFArray(BCContainer *BC);
     unsigned giveTotalNumDoFs() const { return totalDoFs; };
@@ -43,16 +43,16 @@ public:
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
     void updateExteranlForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
-    void addNode(Node *n){ nodes.push_back(n); };
+    void addNode(Node *n) { nodes.push_back(n); };
 
-	size_t giveNumConstrDoFs() const { return constrDoFs; };
+    size_t giveNumConstrDoFs() const { return constrDoFs; };
     ConstraintContainer *giveConstraints() const { return constr; };
-    void setConstraintContainer(ConstraintContainer *c){ constr = c; }
+    void setConstraintContainer(ConstraintContainer *c) { constr = c; }
 
-    vector< Node * > :: iterator begin(){return nodes.begin();}
-    vector< Node * > :: iterator end(){return nodes.end();}
-    vector< Node * > :: const_iterator begin() const {return nodes.begin();}
-    vector< Node * > :: const_iterator end() const {return nodes.end();}
+    vector< Node * > :: iterator begin() { return nodes.begin(); }
+    vector< Node * > :: iterator end() { return nodes.end(); }
+    vector< Node * > :: const_iterator begin() const { return nodes.begin(); }
+    vector< Node * > :: const_iterator end() const { return nodes.end(); }
 
 protected:
 };

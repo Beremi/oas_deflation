@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     if len(sys.argv)>1:
         minDist = float(sys.argv[2])
-    else : minDist = 0.3
+    else : minDist = 0.2
 
     #type of periodic model, if any
     periodicModel = 0
@@ -87,8 +87,8 @@ if __name__ == '__main__':
     #be cautious with small grains!
 
     minDist = 0.02
-    radius = minDist / 2
 
+    radius = minDist / 2
     elaX = minDist / Xdim * 2
 
     if (dim == 2):

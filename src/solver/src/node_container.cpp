@@ -9,12 +9,12 @@ NodeContainer :: ~NodeContainer() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: readFromFile(const string filename, const int dim) {
-	size_t origsize = nodes.size();
+    size_t origsize = nodes.size();
     string line, nodeType;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile >> std::ws, line) ) {
-            if ( line.empty() ){
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
                 cout << "EMPTY LINE" << endl;
                 continue;
             }
@@ -22,33 +22,33 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                 continue;
             }
             istringstream iss(line);
-            iss >> std::ws >> nodeType;
+            iss >> std :: ws >> nodeType;
             if ( !nodeType.rfind("#", 0) == 0 ) {
                 if ( nodeType.compare("TrsprtNode") == 0 ) {
                     TrsNode *newnode = new TrsNode(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else if ( nodeType.compare("MechNode") == 0 )    {
+                } else if ( nodeType.compare("MechNode") == 0 ) {
                     MechNode *newnode = new MechNode(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else if ( nodeType.compare("Particle") == 0 )    {
+                } else if ( nodeType.compare("Particle") == 0 ) {
                     Particle *newnode = new Particle(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else if ( nodeType.compare("AuxNode") == 0 )    {
+                } else if ( nodeType.compare("AuxNode") == 0 ) {
                     AuxNode *newnode = new AuxNode(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else if ( nodeType.compare("MasterDoF") == 0 )    {
+                } else if ( nodeType.compare("MasterDoF") == 0 ) {
                     MasterDoF *newnode = new MasterDoF(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else if ( nodeType.compare("MasterNode") == 0 )    {
+                } else if ( nodeType.compare("MasterNode") == 0 ) {
                     MasterNode *newnode = new MasterNode(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else  {
+                } else {
                     cerr << "Error: node type '" <<  nodeType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
                 }
@@ -91,10 +91,10 @@ void NodeContainer :: establishDoFArray() {
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-    cstr.resize(constr->giveSize());
-    for (unsigned j = 0; j < constr->giveSize(); j++){
-      cstr[j].first = constr->giveConstraint( j )->giveSlaveDoF();
-      cstr[j].second = j;
+    cstr.resize(constr->giveSize() );
+    for ( unsigned j = 0; j < constr->giveSize(); j++ ) {
+        cstr [ j ].first = constr->giveConstraint(j)->giveSlaveDoF();
+        cstr [ j ].second = j;
     }
     sort(cstr.begin(), cstr.end() );
 
@@ -102,10 +102,10 @@ void NodeContainer :: establishDoFArray() {
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
-    a.resize(blocked.size());
+    a.resize(blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
-        a[i].first = blocked [ i ];
-        a[i].second = i;
+        a [ i ].first = blocked [ i ];
+        a [ i ].second = i;
     }
     sort(a.begin(), a.end() );
 
@@ -117,16 +117,16 @@ void NodeContainer :: establishDoFArray() {
             * d = freeDoFs + k;
             blockedDoFid [ a [ k ].second ] = id;
             k++;
-            if(cs < cstr.size() && id == cstr [ cs ].first){
-                std::cerr << "Error in establishDoFArray: cannot assign Dirichlet BC to slave node" << '\n';
+            if ( cs < cstr.size() && id == cstr [ cs ].first ) {
+                std :: cerr << "Error in establishDoFArray: cannot assign Dirichlet BC to slave node" << '\n';
                 exit(1);
             }
-        } else if ( cs < cstr.size() && id == cstr [ cs ].first) {
+        } else if ( cs < cstr.size() && id == cstr [ cs ].first ) {
             // #constraint
             * d = freeDoFs - constrDoFs + cs;
             constrainedDoFid [ cstr [ cs ].second ] = id;
             cs++;
-        } else   {
+        } else {
             * d = id - k - cs;
         }
     }
@@ -154,8 +154,8 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
         r [ blockedDoFid [ k ] ] = blocked [ k ];
     }
 
-    if (this->giveConstraints()->isActive()){
-      this->giveConstraints()->calculateDependentDoFs(r);
+    if ( this->giveConstraints()->isActive() ) {
+        this->giveConstraints()->calculateDependentDoFs(r);
     }
 }
 
@@ -168,8 +168,8 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
         }
     }
     // #constr_new
-    if (this->giveConstraints()->isActive()){
-      this->giveConstraints()->calculateDependentDoFs(fullDoFs);
+    if ( this->giveConstraints()->isActive() ) {
+        this->giveConstraints()->calculateDependentDoFs(fullDoFs);
     }
 }
 
@@ -185,8 +185,8 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 //////////////////////////////////////////////////////////
 void NodeContainer :: updateExteranlForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const {
     // #constr_new
-    if (this->giveConstraints()->isActive()){
-      this->giveConstraints()->calculateMasterForces(f_int);
+    if ( this->giveConstraints()->isActive() ) {
+        this->giveConstraints()->calculateMasterForces(f_int);
     }
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {

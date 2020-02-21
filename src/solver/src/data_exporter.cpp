@@ -9,33 +9,33 @@ void DataExporter :: giveFileName(unsigned step, char *buffer) const {
 }
 
 //////////////////////////////////////////////////////////
-void DataExporter :: readFromLine(istringstream &iss){
-  iss.clear(); // clear string stream
-  iss.seekg(0, iss.beg); //reset position in string stream
-  string param;
-  bool bte = false;
-  while ( !iss.eof() ) {
-    iss >> param;
-    if ( param.compare("saveEvery")==0 || param.compare("timeEach")==0 ){
-      iss >> time_each;
-      bte = true;
-    } else if ( param.compare("precision")==0 ){
-      iss >> precision;
+void DataExporter :: readFromLine(istringstream &iss) {
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+    string param;
+    bool bte = false;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("saveEvery") == 0 || param.compare("timeEach") == 0 ) {
+            iss >> time_each;
+            bte = true;
+        } else if ( param.compare("precision") == 0 ) {
+            iss >> precision;
+        }
     }
-  }
-  if( !bte ){
-    time_each = 0;
-  }
-  time_last = 0;
+    if ( !bte ) {
+        time_each = 0;
+    }
+    time_last = 0;
 }
 
-bool DataExporter :: doExportNow(const double &time){
-  if (time < time_last + time_each) {
-    return false;
-  } else {
-    time_last = time;
-    return true;
-  }
+bool DataExporter :: doExportNow(const double &time) {
+    if ( time < time_last + time_each ) {
+        return false;
+    } else {
+        time_last = time;
+        return true;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -54,11 +54,12 @@ void TXTNodalExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+    ( void ) reactions;
     char buffer [ 100 ];
     Node *nn;
     double value;
     giveFileName(step, buffer);
-    ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
+    ofstream outputfile( ( GlobPaths :: RESULTDIR / buffer ).string() );
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -107,12 +108,14 @@ void TXTGaussPointExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+    ( void ) DoFs;
+    ( void ) reactions;
     char buffer [ 100 ];
     Element *ee;
     double value;
-	size_t nIP;
+    size_t nIP;
     giveFileName(step, buffer);
-    ofstream outputfile((GlobPaths::RESULTDIR / buffer).string());
+    ofstream outputfile( ( GlobPaths :: RESULTDIR / buffer ).string() );
 
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
@@ -139,6 +142,7 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
 //////////////////////////////////////////////////////////
 // GAUGE EXPORTERS
 void Gauge :: giveFileName(unsigned step, char *buffer) const {
+    ( void ) step;
     sprintf(buffer, "%s.out", filename.c_str() );
 }
 
@@ -161,7 +165,7 @@ void ForceGauge :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge::ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc, double m, unsigned dimension):Gauge(dimension){
+ForceGauge :: ForceGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
     nodes = nc;
     filename = f;
     name = gname;
@@ -187,7 +191,7 @@ void ForceGauge :: init() {
         DoFpos = 4;
     } else if ( codes [ 0 ].compare("mz") == 0 ) {
         DoFpos = 5;
-    } else                                                                                                                    {
+    } else {
         cerr << "Error: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge" << endl;
         exit(EXIT_FAILURE);
     }
@@ -201,18 +205,19 @@ void ForceGauge :: init() {
 
 //////////////////////////////////////////////////////////
 void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions) const {
+    ( void ) full_f;
     char buffer [ 100 ];
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
             value += reactions [ DoFs [ i ] ];
         }
-        outputfile <<  "\t" << value*multiplier;
+        outputfile <<  "\t" << value * multiplier;
     }
     outputfile.close();
 }
@@ -229,7 +234,7 @@ void DoFGauge :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-DoFGauge::DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension):Gauge(dimension){
+DoFGauge :: DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension) : Gauge(dimension) {
     filename = f;
     name = gname;
     direction = dir;
@@ -241,7 +246,7 @@ DoFGauge::DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeConta
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
     n = nodes->giveNode(nodenum);
-    DoF = n->giveStartingDoF()+direction;
+    DoF = n->giveStartingDoF() + direction;
     time_each = 0;
     time_last = 0;
 }
@@ -249,14 +254,16 @@ void DoFGauge :: init() {
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions) const {
+    ( void ) step;
+    ( void ) reactions;
     char buffer [ 100 ];
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        outputfile << "\t" <<  full_f[DoF]*multiplier;
+        outputfile << "\t" <<  full_f [ DoF ] * multiplier;
     }
     outputfile.close();
 }
@@ -275,7 +282,7 @@ void DisplacementGauge :: readFromLine(istringstream &iss) {
         pointA = Point(x, y);
         iss >> x >> y;
         pointB = Point(x, y);
-    } else if ( dim == 3 )      {
+    } else if ( dim == 3 ) {
         iss >> x >> y >> z;
         pointA = Point(x, y, z);
         iss >> x >> y >> z;
@@ -295,16 +302,17 @@ void DisplacementGauge :: init() {
 
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+    ( void ) reactions;
     char buffer [ 100 ];
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         value = nodeB->giveDoFBasedValue(codes [ 0 ], DoFs) - nodeA->giveDoFBasedValue(codes [ 0 ], DoFs);
-        outputfile << "\t" << value*multiplier;
+        outputfile << "\t" << value * multiplier;
     }
     outputfile.close();
 }
@@ -312,7 +320,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
-void ValueGauge :: readFromLine(istringstream &iss) {
+void StructuralExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
     codes.resize(1);
@@ -320,34 +328,36 @@ void ValueGauge :: readFromLine(istringstream &iss) {
     DataExporter :: readFromLine(iss);
 }
 //////////////////////////////////////////////////////////
-void ValueGauge :: init() {
+void StructuralExporter :: init() {
     time_each = 0;
     time_last = 0;
 }
 
 //////////////////////////////////////////////////////////
-void ValueGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void StructuralExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+    ( void ) DoFs;
+    ( void ) reactions;
     char buffer [ 100 ];
     double value = calcValue();
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        outputfile << "\t" << value*multiplier;
+        outputfile << "\t" << value * multiplier;
     }
     outputfile.close();
 }
 
-double ValueGauge :: calcValue() const {
-  double value = 0;
-  for ( auto const & e : *elems ){
-    for ( unsigned i = 0; i < e->giveIPNum(); i ++){
-      value += e->giveIPValue( codes[ 0 ], i );
+double StructuralExporter :: calcValue() const {
+    double value = 0;
+    for ( auto const &e : * elems ) {
+        for ( unsigned i = 0; i < e->giveIPNum(); i++ ) {
+            value += e->giveIPValue(codes [ 0 ], i);
+        }
     }
-  }
-  return value;
+    return value;
 }
 
 //////////////////////////////////////////////////////////
@@ -361,7 +371,7 @@ ExporterContainer :: ~ExporterContainer() {
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
-	size_t origsize = exporters.size();
+    size_t origsize = exporters.size();
     string line, exptype;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
@@ -376,51 +386,52 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     TXTNodalExporter *newexp = new TXTNodalExporter(n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("TXTElementExporter") == 0 )    {
+                } else if ( exptype.compare("TXTElementExporter") == 0 ) {
                     TXTElementExporter *newexp = new TXTElementExporter(e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("ForceGauge") == 0 )    {
+                } else if ( exptype.compare("ForceGauge") == 0 ) {
                     ForceGauge *newexp = new ForceGauge(n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("DisplacementGauge") == 0 )    {
+                } else if ( exptype.compare("DisplacementGauge") == 0 ) {
                     DisplacementGauge *newexp = new DisplacementGauge(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("ValueGauge") == 0 )    {
-                    ValueGauge *newexp = new ValueGauge(n, e, dimension);
+                } else if ( exptype.compare("ValueGauge") == 0 ||
+                            exptype.compare("StructuralExporter") == 0 ) {
+                    StructuralExporter *newexp = new StructuralExporter(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("DoFGauge") == 0 )    {
+                } else if ( exptype.compare("DoFGauge") == 0 ) {
                     DoFGauge *newexp = new DoFGauge(n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("TXTGaussPointExporter") == 0 )    {
+                } else if ( exptype.compare("TXTGaussPointExporter") == 0 ) {
                     TXTGaussPointExporter *newexp = new TXTGaussPointExporter(e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("VTKElementExporter") == 0 )    {
+                } else if ( exptype.compare("VTKElementExporter") == 0 ) {
                     VTKElementExporter *newexp = new VTKElementExporter(e, n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("VTKRBExporter") == 0 )    {
-                    if ( dimension == 2 ){
-                      VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n, dimension);
-                      newexp->readFromLine(iss);
-                      exporters.push_back(newexp);
+                } else if ( exptype.compare("VTKRBExporter") == 0 ) {
+                    if ( dimension == 2 ) {
+                        VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n, dimension);
+                        newexp->readFromLine(iss);
+                        exporters.push_back(newexp);
                     } else {
-                      std::cout << "no rigid body exporter for dimension " << dimension << '\n';
+                        std :: cout << "no rigid body exporter for dimension " << dimension << '\n';
                     }
-                } else if ( exptype.compare("VTKRCExporter") == 0 )    {
-                    if ( dimension == 2 || dimension == 3){
-                      VTKRCExporter *newexp = new VTKRCExporter(e, n, dimension);
-                      newexp->readFromLine(iss);
-                      exporters.push_back(newexp);
+                } else if ( exptype.compare("VTKRCExporter") == 0 ) {
+                    if ( dimension == 2 || dimension == 3 ) {
+                        VTKRCExporter *newexp = new VTKRCExporter(e, n, dimension);
+                        newexp->readFromLine(iss);
+                        exporters.push_back(newexp);
                     } else {
-                      std::cout << "no rigid body contacts exporter for dimension " << dimension << '\n';
+                        std :: cout << "no rigid body contacts exporter for dimension " << dimension << '\n';
                     }
-                } else  {
+                } else {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
                 }
@@ -458,7 +469,7 @@ void ExporterContainer :: init() {
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open((GlobPaths::RESULTDIR / buffer).string());
+        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string() );
         if ( outputfile.good() ) {
             outputfile << "#step" << "\t" << "time";
         }
@@ -470,7 +481,7 @@ void ExporterContainer :: init() {
         if ( g ) {
             ( * d )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+            outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
             if ( outputfile.good() ) {
                 outputfile << "\t" << g->giveName();
             }
@@ -481,7 +492,7 @@ void ExporterContainer :: init() {
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << endl;
         }
@@ -496,7 +507,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << step << "\t" << time;
         }
@@ -505,8 +516,8 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 
     // export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        if ( ( * d )->doExportNow(time) || exportAll){
-          ( * d )->exportData(step, DoFs, reactions);
+        if ( ( * d )->doExportNow(time) || exportAll ) {
+            ( * d )->exportData(step, DoFs, reactions);
         }
     }
 
@@ -514,7 +525,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open((GlobPaths::RESULTDIR / buffer).string(), ios :: app);
+        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << endl;
         }

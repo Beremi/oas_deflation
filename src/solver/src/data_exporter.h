@@ -16,7 +16,7 @@ class DataExporter
 {
 private:
 public:
-    DataExporter(unsigned dimension) {dim = dimension; precision = 6;};
+    DataExporter(unsigned dimension) { dim = dimension; precision = 6; };
     virtual ~DataExporter() {};
     virtual void readFromLine(istringstream &iss);
     virtual bool doExportNow(const double &time);
@@ -40,7 +40,7 @@ class TXTNodalExporter : public DataExporter
 private:
     NodeContainer *nodes;
 public:
-    TXTNodalExporter(NodeContainer *n, unsigned dimension):DataExporter(dimension) { nodes = n; };
+    TXTNodalExporter(NodeContainer *n, unsigned dimension) : DataExporter(dimension) { nodes = n; };
     ~TXTNodalExporter() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -55,10 +55,10 @@ class TXTElementExporter : public DataExporter
 private:
     ElementContainer *elems;
 public:
-    TXTElementExporter(ElementContainer *e, unsigned dimension):DataExporter(dimension) { elems = e; };
+    TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     ~TXTElementExporter() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {};
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const { ( void ) step; ( void ) DoFs; ( void ) reactions; };
 protected:
 };
 
@@ -70,7 +70,7 @@ class TXTGaussPointExporter : public DataExporter
 private:
     ElementContainer *elems;
 public:
-    TXTGaussPointExporter(ElementContainer *e, unsigned dimension):DataExporter(dimension) { elems = e; };
+    TXTGaussPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     ~TXTGaussPointExporter() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -86,7 +86,7 @@ protected:
     string name;
     double multiplier;
 public:
-    Gauge(unsigned dimension):DataExporter(dimension) {};
+    Gauge(unsigned dimension) : DataExporter(dimension) {};
     ~Gauge() {};
     virtual void giveFileName(unsigned step, char *buffer) const;
     string giveName() { return name; };
@@ -102,8 +102,8 @@ private:
     vector< unsigned >DoFs;
     vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *n, unsigned dimension):Gauge(dimension) { nodes = n; multiplier = 1;};
-    ForceGauge(string &f, string &gname, vector<string> &c, vector<unsigned> &nn, NodeContainer *nc, double m, unsigned dimension);
+    ForceGauge(NodeContainer *n, unsigned dimension) : Gauge(dimension) { nodes = n; multiplier = 1; };
+    ForceGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -122,7 +122,7 @@ private:
     Node *nodeA, *nodeB;
     Point pointA, pointB;
 public:
-    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension):Gauge(dimension) { nodes = n; elems = e;  multiplier = 1;};
+    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
     ~DisplacementGauge() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
@@ -133,15 +133,15 @@ protected:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF SUM OF VALUES
-class ValueGauge : public Gauge
+class StructuralExporter : public Gauge
 {
 private:
     NodeContainer *nodes;
     ElementContainer *elems;
-    double calcValue() const ;
+    double calcValue() const;
 public:
-    ValueGauge(NodeContainer *n, ElementContainer *e, unsigned dimension):Gauge(dimension) { nodes = n; elems = e;  multiplier = 1;};
-    ~ValueGauge() {};
+    StructuralExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
+    ~StructuralExporter() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
     virtual void init();
@@ -160,7 +160,7 @@ private:
     unsigned nodenum;
     NodeContainer *nodes;
 public:
-    DoFGauge(NodeContainer *nn, unsigned dimension):Gauge(dimension) {nodes = nn; multiplier = 1;};
+    DoFGauge(NodeContainer *nn, unsigned dimension) : Gauge(dimension) { nodes = nn; multiplier = 1; };
     DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension);
     ~DoFGauge() {};
     void readFromLine(istringstream &iss);
@@ -182,8 +182,8 @@ public:
     ~ExporterContainer();
     void readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
     void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const;
-    void addExporter(DataExporter *de) {exporters.push_back(de);};
-	size_t giveSize(){return exporters.size();}
+    void addExporter(DataExporter *de) { exporters.push_back(de); };
+    size_t giveSize() { return exporters.size(); }
     void init();
 protected:
 };

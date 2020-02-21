@@ -23,12 +23,12 @@ private:
     Node *node;
     vector< int >dirichBC; //kinematic - pressure BC
     vector< int >neumannBC; //static - flux BC
-    vector<double>multipliers; //multipliers of functions
+    vector< double >multipliers; //multipliers of functions
     unsigned blockedDoFNum, loadedDoFNum;
 public:
     BoundaryCondition() {};
-    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC, vector< double >m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m;};
-    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(),1.);};
+    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC, vector< double >m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m; };
+    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.); };
     ~BoundaryCondition() {};
     void init();
     unsigned giveNumberOfBlockedDoFs() const { return blockedDoFNum; };
@@ -71,8 +71,8 @@ public:
     vector< double >giveLoadedDoFValues(double time) const;
     BoundaryCondition *giveBC(unsigned i) { return BC [ i ]; };
     void calculateDoFfields();
-	  size_t giveSize(){return BC.size();}
-    void addBoundaryCondition(BoundaryCondition *bc){BC.push_back(bc);}
+    size_t giveSize() { return BC.size(); }
+    void addBoundaryCondition(BoundaryCondition *bc) { BC.push_back(bc); }
 protected:
 };
 

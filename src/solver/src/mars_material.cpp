@@ -61,11 +61,11 @@ double MarsMaterialStatus :: giveS0tension(double omega) const {
     double sa = .5 * ft * ( pow(fs / ( m->giveMu() * ft ), 2) - 1. );
 
 
-    if (omega == atan(sqrt(m->giveAlpha())/m->giveMu())){
-      // for this anle, the later equation is undetermined, but hyperbola eq. gives this (see Two Scale Study - Cusatis 2007 doi.org/10.1016/j.engfracmech.2006.01.021)
-      return .5 * ( ft + 2 * sa ) * ft / ( ( ft + sa ) * s);
+    if ( omega == atan(sqrt(m->giveAlpha() ) / m->giveMu() ) ) {
+        // for this anle, the later equation is undetermined, but hyperbola eq. gives this (see Two Scale Study - Cusatis 2007 doi.org/10.1016/j.engfracmech.2006.01.021)
+        return .5 * ( ft + 2 * sa ) * ft / ( ( ft + sa ) * s );
     } else {
-      return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
+        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
     }
 }
 
@@ -108,7 +108,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     double epsT;
     if ( strain.size() == 2 ) {
         epsT = abs(strain [ 1 ]);                //2D
-    } else                                                         {
+    } else {
         epsT = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) ); //3D
     }
     double epsEQ = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) ); //equivalent strain
@@ -119,7 +119,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
             omega = atan(epsN / ( sqrt(m->giveAlpha() ) * epsT ) );
         } else if ( epsN > 0 ) {
             omega = 0.5 * M_PI;
-        } else                                       {
+        } else {
             omega = -0.5 * M_PI;
         }
 
@@ -182,12 +182,16 @@ void MarsMaterialStatus :: update() {
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveNormalShearStiffness(string type) const {
     Vector stiff = giveElasticNormalShearStiffness();
-    if (type.compare("elastic")==0) return stiff;
-    else if (type.compare("secant")==0) return  stiff * ( 1 - temp_damage );
-    else if (type.compare("unloading")==0) return  stiff * ( 1 - temp_damage );
-    else if (type.compare("tangent")==0) return  stiff * ( 1 - temp_damage ); //not implemented, used unloading
-    else{
-        cerr << "Error: MarsMaterialStatus does not provide '"<< type << "' stiffness";
+    if ( type.compare("elastic") == 0 ) {
+        return stiff;
+    } else if ( type.compare("secant") == 0 ) {
+        return stiff * ( 1 - temp_damage );
+    } else if ( type.compare("unloading") == 0 ) {
+        return stiff * ( 1 - temp_damage );
+    } else if ( type.compare("tangent") == 0 ) {
+        return stiff * ( 1 - temp_damage );                                   //not implemented, used unloading
+    } else {
+        cerr << "Error: MarsMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
 }
@@ -218,7 +222,7 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
         if ( param.compare("Gt") == 0 ) {
             bGt = true;
             iss >> Gt;
-        } else if ( param.compare("ft") == 0 )    {
+        } else if ( param.compare("ft") == 0 ) {
             bft = true;
             iss >> ft;
         }

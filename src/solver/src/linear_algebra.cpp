@@ -20,7 +20,7 @@ Point :: Point(double ox) {
 Point :: Point(double ox, double oy) {
     x = ox;
     y = oy;
-	z = 0.0;
+    z = 0.0;
 }
 
 Point :: Point(double ox, double oy, double oz) {
@@ -248,12 +248,12 @@ double determinant(const Point &u, const Point &v, const Point &w) {
 }
 
 //JM: Coplanarity check of 4 points (for 3d faces)
-double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD){
+double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD) {
     Point AB = ptB - ptA;
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = dot(  AB, cross(AC,AD)  );
+    double coplanarityError = dot(AB, cross(AC, AD) );
     return coplanarityError;
 }
 
@@ -457,17 +457,17 @@ MtV :: operator const Vector() {
 }
 
 
-SparseVector :: SparseVector(Vector &v, valarray< unsigned int > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
+SparseVector :: SparseVector(Vector &v, valarray< unsigned > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
 {
     zero = 0;
 }
 
 double SparseVector :: operator[](size_t i) const
 {
-    unsigned int *__start__       = & idx [ start ];
-    unsigned int *__end__         = & idx [ start + length ];
-    unsigned int *i_index_pointer = lower_bound(__start__, __end__, i);
-    unsigned int offset            = i_index_pointer - __start__;
+    unsigned *__start__       = & idx [ start ];
+    unsigned *__end__         = & idx [ start + length ];
+    unsigned *i_index_pointer = lower_bound(__start__, __end__, i);
+    unsigned offset            = i_index_pointer - __start__;
 
     if ( binary_search(__start__, __end__, i) ) {
         return val [ start + offset ];
@@ -479,10 +479,10 @@ double SparseVector :: operator[](size_t i) const
 double &SparseVector :: operator[](const size_t i)
 {
     zero = 0;
-    unsigned int *__start__       = & idx [ start ];
-    unsigned int *__end__         = & idx [ start + length ];
-    unsigned int *i_index_pointer = lower_bound(__start__, __end__, i);
-    unsigned int offset            = i_index_pointer - __start__;
+    unsigned *__start__       = & idx [ start ];
+    unsigned *__end__         = & idx [ start + length ];
+    unsigned *i_index_pointer = lower_bound(__start__, __end__, i);
+    unsigned offset            = i_index_pointer - __start__;
 
     if ( binary_search(__start__, __end__, i) ) {
         return val [ start + offset ];
@@ -551,17 +551,17 @@ double innerProduct(const SparseVector &v0, const SparseVector &v1, const size_t
 {
     double ret = 0;
 
-    unsigned int i = 0;
-    unsigned int j = 0;
-    unsigned int *i_index_pointer = lower_bound(& v0.idx [ v0.start ], & v0.idx [ v0.start + v0.length ], end);
-    unsigned int *j_index_pointer = lower_bound(& v1.idx [ v1.start ], & v1.idx [ v1.start + v1.length ], end);
-    unsigned int i_end = i_index_pointer - & v0.idx [ v0.start ];
-    unsigned int j_end = j_index_pointer - & v1.idx [ v1.start ];
+    unsigned i = 0;
+    unsigned j = 0;
+    unsigned *i_index_pointer = lower_bound(& v0.idx [ v0.start ], & v0.idx [ v0.start + v0.length ], end);
+    unsigned *j_index_pointer = lower_bound(& v1.idx [ v1.start ], & v1.idx [ v1.start + v1.length ], end);
+    unsigned i_end = i_index_pointer - & v0.idx [ v0.start ];
+    unsigned j_end = j_index_pointer - & v1.idx [ v1.start ];
 
     if ( v0.idx [ v0.start ] > v1.idx [ v1.start ] ) {
         j_index_pointer = lower_bound(& v1.idx [ v1.start + j ], & v1.idx [ v1.start + v1.length ], v0.idx [ v0.start + i ]);
         j = j_index_pointer - & v1.idx [ v1.start ];
-    } else if ( v0.idx [ v0.start ] < v1.idx [ v1.start ] )            {
+    } else if ( v0.idx [ v0.start ] < v1.idx [ v1.start ] ) {
         i_index_pointer = lower_bound(& v0.idx [ v0.start + i ], & v0.idx [ v0.start + v0.length ], v1.idx [ v1.start + j ]);
         i = i_index_pointer - & v0.idx [ v0.start ];
     }
@@ -574,7 +574,7 @@ double innerProduct(const SparseVector &v0, const SparseVector &v1, const size_t
         if ( v0.idx [ v0.start + i ] > v1.idx [ v1.start + j ] ) {
             j_index_pointer = lower_bound(& v1.idx [ v1.start + j ], & v1.idx [ v1.start + v1.length ], v0.idx [ v0.start + i ]);
             j = j_index_pointer - & v1.idx [ v1.start ];
-        } else if ( v0.idx [ v0.start + i ] < v1.idx [ v1.start + j ] )                {
+        } else if ( v0.idx [ v0.start + i ] < v1.idx [ v1.start + j ] ) {
             i_index_pointer = lower_bound(& v0.idx [ v0.start + i ], & v0.idx [ v0.start + v0.length ], v1.idx [ v1.start + j ]);
             i = i_index_pointer - & v0.idx [ v0.start ];
         }
@@ -651,7 +651,7 @@ Vector SparseVector :: operator+(const Vector &v) const
 }
 
 
-ConstSparseVector :: ConstSparseVector(const Vector &v, const valarray< unsigned int > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
+ConstSparseVector :: ConstSparseVector(const Vector &v, const valarray< unsigned > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
 {}
 
 // double ConstSparseVector::operator [](const size_t i) const
@@ -808,17 +808,17 @@ Vector ConstSparseVector :: operator+(const Vector &v) const
 
 
 
-CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, double > &source, int RowCountI, int ColumnCountI) {
+CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, double > &source, unsigned RowCountI, unsigned ColumnCountI) {
     RowCount = RowCountI;
     ColumnCount = ColumnCountI;
 
     vector< double >temp_array;
-    vector< unsigned int >temp_column_index;
-    vector< unsigned int >temp_row_size;
+    vector< unsigned >temp_column_index;
+    vector< unsigned >temp_row_size;
     map< pair< size_t, size_t >, double > :: const_iterator previous =
         source.begin();
     size_t r_s = 0;
-    int k = previous->first.first;
+    unsigned k = previous->first.first;
     // add initail rows
     while ( k > 0 ) {
         temp_row_size.push_back(r_s);
@@ -860,15 +860,15 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t
     }
 }
 
-CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, Matrix > &source, int RowCountI, int ColumnCountI) :
+CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, Matrix > &source, unsigned RowCountI, unsigned ColumnCountI) :
     row_size( ( source.rbegin()->first.first + 1 ) * source.begin()->second.numRows() ) {
     size_t ddl = source.begin()->second.numRows();
 
     vector< double >temp_array;
-    vector< unsigned int >temp_column_index;
+    vector< unsigned >temp_column_index;
     map< pair< size_t, size_t >, Matrix > :: const_iterator previous = source.begin();
     vector< vector< double > >to_linerarise(ddl);
-    vector< vector< unsigned int > >col_to_linerarise(ddl);
+    vector< vector< unsigned > >col_to_linerarise(ddl);
 
 
     for ( map< pair< size_t, size_t >, Matrix > :: const_iterator ij = source.begin(); ij != source.end(); ) {
@@ -943,7 +943,7 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(const CoordinateI
     this->ColumnCount = source.ColumnCount;
 }
 
-CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(const valarray< unsigned int > &rs, const valarray< unsigned int > &ci, int RowCountI, int ColumnCountI) : array(0., ci.size() ), column_index(ci), row_size(rs), accumulated_row_size(rs.size() ) {
+CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(const valarray< unsigned > &rs, const valarray< unsigned > &ci, unsigned RowCountI, unsigned ColumnCountI) : array(0., ci.size() ), column_index(ci), row_size(rs), accumulated_row_size(rs.size() ) {
     //  accumulated_row_size[1] = row_size[0] ;
     for ( size_t i = 1; i < accumulated_row_size.size(); i++ ) {
         accumulated_row_size [ i ] += accumulated_row_size [ i - 1 ] + row_size [ i - 1 ];
@@ -965,7 +965,7 @@ double CoordinateIndexedSparseMatrix :: infinityNorm() const {
     return abs(array).max();
 }
 
-void CoordinateIndexedSparseMatrix :: print(int size1, int size2) {
+void CoordinateIndexedSparseMatrix :: print(unsigned size1, unsigned size2) {
     cout << endl;
     if ( size1 > RowCount ) {
         size1 = RowCount;
@@ -974,15 +974,15 @@ void CoordinateIndexedSparseMatrix :: print(int size1, int size2) {
         size2 = ColumnCount;
     }
 
-    for ( int i = 0; i < size1; i++ ) {
+    for ( unsigned i = 0; i < size1; i++ ) {
         if ( i == 0 ) {
-            for ( int j = 0; j < size2; j++ ) {
+            for ( unsigned j = 0; j < size2; j++ ) {
                 cout << " " << j << flush;
             }
         }
         cout << endl;
         cout << i << " " << flush;
-        for ( int j = 0; j < size2; j++ ) {
+        for ( unsigned j = 0; j < size2; j++ ) {
             cout << ( * this ) [ i ] [ j ] << " " << flush;
         }
         cout << endl;
@@ -1127,16 +1127,16 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator*(const C
     //    B = this;
     //}
     map< pair< size_t, size_t >, double >indeces;
-    unsigned int start_i_A, start_i_B;
-    unsigned int row_numA = A->row_size.size();
-    unsigned int row_numB = B->row_size.size();
-    unsigned int col_numA;
-    unsigned int col_numB;
-    unsigned int max_col_numB = B->ColumnCount;
-    vector< unsigned int >col_index, column_pointer, sum_column;
+    unsigned start_i_A, start_i_B;
+    unsigned row_numA = A->row_size.size();
+    unsigned row_numB = B->row_size.size();
+    unsigned col_numA;
+    unsigned col_numB;
+    unsigned max_col_numB = B->ColumnCount;
+    vector< unsigned >col_index, column_pointer, sum_column;
     vector< double >values, sum;
 
-    for ( unsigned int rowA = 0; rowA < row_numA; rowA++ ) {
+    for ( unsigned rowA = 0; rowA < row_numA; rowA++ ) {
         values.clear();
         col_index.clear();
         column_pointer.clear();
@@ -1147,24 +1147,24 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator*(const C
         sum_column.resize(1);
         col_numA = A->row_size [ rowA ];
         start_i_A = A->accumulated_row_size [ rowA ];
-        for ( unsigned int cAi = 0; cAi < col_numA && A->column_index [ start_i_A + cAi ] < row_numB; cAi++ ) {
+        for ( unsigned cAi = 0; cAi < col_numA && A->column_index [ start_i_A + cAi ] < row_numB; cAi++ ) {
             col_numB = B->row_size [ A->column_index [ start_i_A + cAi ] ];
             start_i_B = B->accumulated_row_size [ A->column_index [ start_i_A + cAi ] ];
-            for ( unsigned int i = 0; i < col_numB; i++ ) {
+            for ( unsigned i = 0; i < col_numB; i++ ) {
                 col_index.push_back(B->column_index [ start_i_B + i ]);
                 values.push_back(A->array [ start_i_A + cAi ] * B->array [ start_i_B + i ]);
             }
         }
-        for ( unsigned int i = 0; i < values.size(); i++ ) {
+        for ( unsigned i = 0; i < values.size(); i++ ) {
             if ( column_pointer [ col_index [ i ] ] == 0 ) {
                 column_pointer [ col_index [ i ] ] = sum.size();
                 sum.push_back(values [ i ]);
                 sum_column.push_back(col_index [ i ]);
-            } else  {
+            } else {
                 sum [ column_pointer [ col_index [ i ] ] ] += values [ i ];
             }
         }
-        for ( unsigned int i = 1; i < sum.size(); i++ ) {
+        for ( unsigned i = 1; i < sum.size(); i++ ) {
             indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(rowA, sum_column [ i ]), sum [ i ]) );
         }
     }
@@ -1183,7 +1183,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
     const CoordinateIndexedSparseMatrix *B = & b;
 
     map< pair< size_t, size_t >, double >indeces;
-    int col, row, ari;
+    unsigned col, row, ari;
 
     ari = 0;
     for ( size_t i = 0; i < A->array.size(); i++ ) {
@@ -1228,56 +1228,9 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
     return AplusB;
 }
 
-/*
- * CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix::operator -(const CoordinateIndexedSparseMatrix & b) const {
- *
- *  if(this->ColumnCount != b.ColumnCount) cerr << "Matrix sizes did not match for summation" << endl;
- *  if(this->RowCount != b.RowCount) cerr << "Matrix sizes did not match for summation" << endl;
- *  const CoordinateIndexedSparseMatrix *A = this;
- *  const CoordinateIndexedSparseMatrix *B = &b;
- *
- *  map<pair<size_t, size_t>, double> indeces;
- *  int col, row, ari;
- *
- *  ari = 0;
- *  for (int i = 0; i < A->array.size(); i++){
- *      col = A->column_index[i];
- *      while (ari<A->row_size.size()-1 && A->accumulated_row_size[ari+1]==i) ari++;
- *      row = ari;
- *      indeces.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (row, col), 0.));
- *  }
- *  ari = 0;
- *  for (int i = 0; i < B->array.size(); i++){
- *      col = B->column_index[i];
- *      while (ari<B->row_size.size()-1 && B->accumulated_row_size[ari+1]==i) ari++;
- *      row = ari;
- *      indeces.insert(pair<pair<size_t, size_t>, double>(pair<size_t, size_t > (row, col), 0.));
- *  }
- *
- *  CoordinateIndexedSparseMatrix AminusB(indeces, this->RowCount, this->ColumnCount);
- *
- *  ari = 0;
- *  for (int i = 0; i < A->array.size(); i++){
- *      col = A->column_index[i];
- *      while (ari<A->row_size.size()-1 && A->accumulated_row_size[ari+1]==i) ari++;
- *      row = ari;
- *      AminusB[row][col] += A->array[i];
- *  }
- *  ari = 0;
- *  for (int i = 0; i < B->array.size(); i++){
- *      col = B->column_index[i];
- *      while (ari<B->row_size.size()-1 && B->accumulated_row_size[ari+1]==i) ari++;
- *      row = ari;
- *      AminusB[row][col] -= B->array[i];
- *  }
- *
- *  return AminusB;
- * }
- */
-
 CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: transpose() const {
     map< pair< size_t, size_t >, double >indeces;
-    int col, row, ari;
+    unsigned col, row, ari;
 
     ari = 0;
     for ( size_t i = 0; i < array.size(); i++ ) {
@@ -1298,7 +1251,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendColumn(cons
     const CoordinateIndexedSparseMatrix *A = this;
 
     map< pair< size_t, size_t >, double >indeces;
-    int col, row, ari;
+    unsigned col, row, ari;
 
     ari = 0;
     for ( size_t i = 0; i < A->array.size(); i++ ) {
@@ -1309,7 +1262,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendColumn(cons
         row = ari;
         indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), A->array [ i ]) );
     }
-    for ( int i = 0; i < this->RowCount; i++ ) {
+    for ( unsigned i = 0; i < this->RowCount; i++ ) {
         indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(this->ColumnCount, i), c [ i ]) );
     }
 
@@ -1324,7 +1277,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const V
     const CoordinateIndexedSparseMatrix *A = this;
 
     map< pair< size_t, size_t >, double >indeces;
-    int col, row, ari;
+    unsigned col, row, ari;
 
     ari = 0;
     for ( size_t i = 0; i < A->array.size(); i++ ) {
@@ -1347,7 +1300,7 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     size_t nit = 0;
     size_t Maxit;
     double eps = precision;
-    Maxit = b.size()*relmaxit;
+    Maxit = b.size() * relmaxit;
 
     double bnorm = l2_norm(b);
 
@@ -1427,28 +1380,32 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
 
 bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0) {
     double precision = 1e-16;
-    double  relmaxit = 0.9;
-    if (b.size()<50) relmaxit = 1.2;  // NOTE using constraint, more iterations are needed (maybe size of original system should be used...?)
+    double relmaxit = 0.9;
+    if ( b.size() < 50 ) {
+        relmaxit = 1.2;               // NOTE using constraint, more iterations are needed (maybe size of original system should be used...?)
+    }
     return ConjGrad(A, x, b, x0, precision, relmaxit);
 }
 
 
 
-bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A){
+bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
     size_t nit = 0;
     size_t Maxit;
     double eps = 1e-26;
     size_t size = A.RowCount;
-    Maxit = size*0.99;
+    Maxit = size * 0.99;
 
     //check diagonal
-    for(unsigned i=0; i<Maxit; i++){
-        if(A[i][i]<1e-30) return 1;
+    for ( unsigned i = 0; i < Maxit; i++ ) {
+        if ( A [ i ] [ i ] < 1e-30 ) {
+            return 1;
+        }
     }
 
     Vector b, x;
-    b.resize(size,1.e6);
-    x.resize(size,0.);
+    b.resize(size, 1.e6);
+    x.resize(size, 0.);
     double bnorm = l2_norm(b);
 
     //Inverse Diagonal Preconditioner
