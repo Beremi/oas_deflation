@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     #coupled problem?
     activeTransport = 1
-    activeMechanics = 0
+    activeMechanics = 1
 
 
     #dimensions of rectangle model
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.02
+    minDist = 0.04
 
     radius = minDist / 2
     elaX = minDist / Xdim * 2
@@ -278,6 +278,9 @@ if __name__ == '__main__':
     print('Mech nodes: %d' %node_count)
     print('Aux nodes: %d' %(vertIdxStart-node_count))
     print('Vertices: %d' %vert_count)
+
+
+    utilitiesGeom.checkSavedModel(master_folder, dim)
 
 
     end =  time.time() -start

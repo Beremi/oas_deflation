@@ -550,7 +550,7 @@ void Transp1D :: init() {
     Point t;
     if ( ndim == 2 ) {
         if ( !( vert.size() == 2 ) ) {
-            cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
+            cerr << "TRSPRT: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         }
 
@@ -574,8 +574,8 @@ void Transp1D :: init() {
             }
             cout << maxErr << endl;
         }
-        if ( maxErr > 1e-2 ) {
-            cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
+        if ( maxErr > 1e-6 ) {
+            cerr << "TRSPRT: Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
             exit(1);
         }
 
@@ -597,7 +597,7 @@ void Transp1D :: init() {
         //JM: perpendicularity check: cross (beam, face)=>0
         Point prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ) * t;
         if ( prp.norm() > 1e-6 ) {
-            cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+            cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
             //  exit(1);
         }
 
@@ -630,7 +630,7 @@ void Transp1D :: init() {
         //JM: Check if integration point is coplanar with face
         currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), ip_locs [ 0 ]);
         if ( abs(currErr) > 1e-2 ) {
-            cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
+            cerr << "TRSPRT: Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
         }
     }
@@ -642,7 +642,7 @@ void Transp1D :: init() {
     if ( abs(normal * t) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
-        cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
+        cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
         exit(1);
     }
 

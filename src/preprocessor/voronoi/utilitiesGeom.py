@@ -680,6 +680,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         pointB = vor.ridge_points[validRidgeIdxs[i]][1]
 
         #auxiliary nodes if one of them is out of sample
+
         if(pointA >= node_count and pointB<node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
@@ -708,7 +709,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
 
         #coplanarity control
-        """
+        maxE = 0
         for v in range ( nrVertices-3 ):
             pA = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v]][:]
             pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
@@ -717,11 +718,12 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
             tol = 1e-10
             val = equation_plane(pA, pB, pC, pD)
+            if (np.abs(val) > maxE): maxE = np.abs(val)
             if ( val > tol):
                 allCoplanar = False
                 print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
             #else: print('Coplanar  %d' %i)
-        """
+
         #normal of the ridge surface from first three vertices
         planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
@@ -770,9 +772,9 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         ridges_out.append(rdg)
 
     if (allCoplanar):
-        print ('ALL ridges coplanar OK')
+        print ('ALL ridges coplanar OK, maxErr: %e' %maxE)
     else:
-        print ('!!! NOT ALL RIDGES COPLANAR !!!')
+        print ('!!! NOT ALL RIDGES COPLANAR, maxErr: %e' %maxE)
     print('done.')
     vertIdxStart = node_count + len(aux_nodes)
     v_count = len (vertices_out)
@@ -1455,8 +1457,8 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         #else:
         #    print('Ridge NOT COPLANAR  %d, %e' %(transportElements.index(element),val))
 
-    print(' done.')
-    print('Updated elems: %d' %updatedElems)
+    print('done. ', end='')
+    #print('Updated elems: %d' %updatedElems)
     print('Wrong elems: %d' %wrongRidges)
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
@@ -1471,3 +1473,150 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     print('done.')
 
     return newAuxNodes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def checkSavedModel(master_folder, dim):
+    print('\nChecking  generated files...')
+    allOK = True
+    cols = np.arange(1,dim+1)
+
+    print('Loading back node coords...', end='')
+    test_nodeCoords = np.genfromtxt(os.path.join(master_folder,nodesFile),  dtype= None, encoding='ascii', usecols=cols)
+    print('\t\t %d nodes loaded.' %len(test_nodeCoords))
+
+    print('Loading back aux node coords...', end='')
+    test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
+    print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
+
+    print('Loading back vertices coords...', end='')
+    test_verticesCoords = np.genfromtxt(os.path.join(master_folder,verticesFile),  dtype= None, encoding='ascii', usecols=cols)
+    print('\t\t %d vertices loaded.' %len(test_verticesCoords))
+
+    print('Loading back mechanical elements...', end='')
+    test_mechElems = []
+    with open(os.path.join(master_folder,mechElemsFile)) as f:
+        for line in f:
+            test_mechElems.append(line.split())
+    test_mechElems.pop(0)
+    print('\t %d MechElems loaded.' %len(test_mechElems))
+
+    print('Loading back transport elements...', end='')
+    test_trsprtElems = []
+    with open(os.path.join(master_folder,trsprtElemsFile)) as f:
+        for line in f:
+            test_trsprtElems.append(line.split())
+    test_trsprtElems.pop(0)
+    print('\t %d TrsprtElems loaded.' %len(test_trsprtElems))
+
+    test_solverNodeArray = np.vstack((test_nodeCoords, test_auxNodeCoords, test_verticesCoords))
+
+    print('Reassembling MechElems, checking face coplanarity... ', end='')
+    wrongElems = 0
+    for mechElem in test_mechElems:
+        #LTCBEAM	200	75	4	449	450	458	451	0	0
+        name = mechElem[0]
+        nA = test_solverNodeArray[int(mechElem[1])]
+        nB = test_solverNodeArray[int(mechElem[2])]
+        verticesNr = int(mechElem[3])
+        vertices = []
+        for v in range (verticesNr):
+            vertices.append(test_solverNodeArray [int(mechElem[4+v])] )
+        material =  int (mechElem[4+verticesNr])
+
+        #checking coplanarity
+        allCoplanar = checkCoplanarity(vertices, 1e-15)
+        if (allCoplanar == False):
+            wrongElems +=1
+            #a = input('').split(" ")[0]
+            #print(mechElem)
+            #print(mechElem[3:3+verticesNr])
+            #print(vertices)
+    if (wrongElems==0):
+        print('All faces coplanar. Mech Elems OK.')
+    else:
+        print ('Wrong faces: %d !!!!' %wrongElems)
+        allOK = False
+
+
+    print('Reassembling TrsprtElems, checking face coplanarity... ', end='')
+    wrongElems = 0
+    for trsprtElem in test_trsprtElems:
+        #LTCTRSP	436	435	3	213	154	196	1
+        #print(trsprtElem)
+        name = trsprtElem[0]
+        nA = test_solverNodeArray[int(trsprtElem[1])]
+        nB = test_solverNodeArray[int(trsprtElem[2])]
+        verticesNr = int(trsprtElem[3])
+        vertices = []
+        for v in range (verticesNr):
+            vertices.append(test_solverNodeArray [int(trsprtElem[4+v])] )
+        material =  int (trsprtElem[4+verticesNr])
+
+        #checking coplanarity
+        allCoplanar = checkCoplanarity(vertices, 1e-15)
+        if (allCoplanar == False):
+            wrongElems +=1
+            #a = input('').split(" ")[0]
+            #print(mechElem)
+            #print(mechElem[3:3+verticesNr])
+            #print(vertices)
+    if (wrongElems==0):
+        print('All faces coplanar. Trsprt Elems OK.')
+    else:
+        print ('Wrong faces: %d !!!!' %wrongElems)
+        allOK = False
+
+    if (allOK == True):
+        print('Model seems ok. All fine.')
+    else:
+        print('!!!!! Saved with problems !!!!!')
+
+
+def checkCoplanarity(points, maxError):
+    allCoplanar = True
+    nodesCoords = np.asarray(points)
+    #print('checking face: %s' %nodesCoords)
+    val = 0
+    for v in range ( len(nodesCoords)-3 ):
+        val = 0
+        pA = nodesCoords [v]
+        pB = nodesCoords [v+1]
+        pC = nodesCoords [v+2]
+        pD = nodesCoords [v+3]
+
+        val = equation_plane(pA, pB, pC, pD)
+        if (np.abs(val) > maxError):
+            print(val)
+            allCoplanar = False
+
+    return allCoplanar
+
+
+
+
+
+
+
+
+
+
+
+#
