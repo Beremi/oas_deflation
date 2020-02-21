@@ -58,17 +58,17 @@ if __name__ == '__main__':
     powerTes = False
 
     #dimension
-    dim = 2
+    dim = 3
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
-    activeTransport = 0
-    activeMechanics = 1
+    activeTransport = 1
+    activeMechanics = 0
 
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 0.4
+    Ydim = 0.3
     Zdim = 0.5
 
     #dimensions of cylinder model
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.01
+    minDist = 0.02
     radius = minDist / 2
 
     elaX = minDist / Xdim * 2
@@ -125,29 +125,7 @@ if __name__ == '__main__':
 
 
 
-    materialZones = []
-    #matZone 1
-    matZ = []
-    if (dim==2):
-        boundA = np.array(  [ -1e-8             , -1e-8          ] )
-        matZ.append (boundA)
-        boundB = np.array(  [ maxLim[0]*elaX    , maxLim[1] + 1e-8] )
-        matZ.append (boundB)
-        boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8] )
-        matZ.append (boundA1)
-        boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8]  )
-        matZ.append (boundB1)
-        materialZones.append(matZ)
-    if (dim==3):
-        boundA = np.array(  [ -1e-8   -maxLim[0]          , -1e-8    -maxLim[1]         , -1e8 -maxLim[2]] )
-        matZ.append (boundA)
-        boundB = np.array(  [ maxLim[0]*elaX    , maxLim[1] + 1e8   , maxLim[2] + 1e8  ] )
-        matZ.append (boundB)
-        boundA1 = np.array(  [ maxLim[0]-maxLim[0]*elaX , - 1e-8  -maxLim[1]      , -1e8-maxLim[2]] )
-        matZ.append (boundA1)
-        boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
-        matZ.append (boundB1)
-        materialZones.append(matZ)
+
 
     notches = None
     #creating the model. Select the prepared models.
@@ -182,15 +160,22 @@ if __name__ == '__main__':
         #"""
 
         #simply supported NOTCHED beam, uniform load
-        notchH = 0.2 #notch height in percentage of total beam height
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notches  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH)
+        """
+        notchH = 0.1 #notch height in percentage of total beam height
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notches  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.1)
         materialZones=None
         print(notches)
+        """
+
+        #2d dogbone
+        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dDogBone(minDist, trials, D=0.2 )
+        #materialZones=None
 
     if (dim == 3):
 
         #patch test for Transport
         node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+        materialZones=None
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
@@ -214,6 +199,13 @@ if __name__ == '__main__':
 
         #tube torsion free
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dtubeTorsionFree(np.zeros(3), cylinderRad, cylinderHeight, tubeThickness, minDist, trials, 0 )
+
+        #3d dogbone
+        """
+        D=0.2
+        materialZones = utilitiesModeling.assembleMaterialZones (minDist*2.5, 3, model='dogbone',  D=D, thickness=0.1)
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dDogBone(minDist, trials, D=D )
+        """
 
     node_coords = np.asarray(node_coords)
     node_count = len(node_coords)

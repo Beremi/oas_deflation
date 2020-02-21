@@ -25,6 +25,14 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
         volumes = voronoi.voronoi_3d(vor, maxLim);
         return vor, volumes
 
+##run voronoi, mirrored data
+def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
+    vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[:,:dim]) #the last column might be present representing radii
+    return vor
+
+
+
+
 ##run power, mirrored data
 def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
     points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
