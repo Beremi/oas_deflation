@@ -795,19 +795,21 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
 
-    saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
+
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+        saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
         saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
+
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        #JM: save elements uz je volane drive
+        saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
+        #JM: save transport elements uz je volane drive
         # je potreba, aby bylo volane prvni, protoze jeste generuje nove aux nodes
         #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
-    else:
-        saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
+    
 
     return v_count, verticesIdxDict, vertIdxStart
 

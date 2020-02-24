@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     #coupled problem?
     activeTransport = 1
-    activeMechanics = 0
+    activeMechanics = 1
 
 
     #dimensions of rectangle model
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
 
-    minDist = 0.04
+    minDist = 0.08
 
     radius = minDist / 2
     elaX = minDist / Xdim * 2
@@ -174,12 +174,13 @@ if __name__ == '__main__':
     if (dim == 3):
 
         #patch test for Transport
-        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
-        materialZones=None
+        #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+        #materialZones=None
 
         #cantilever bending
-        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
-
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverBending(maxLim, minDist, trials )
+        materialZones=None
+        
         #cantilever uniform pressure, free contraction
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dCantileverUniPressFree(maxLim, minDist, trials )
 
