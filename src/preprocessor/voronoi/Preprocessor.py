@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     #coupled problem?
     activeTransport = 1
-    activeMechanics = 1
+    activeMechanics = 0
 
 
     #dimensions of rectangle model
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     if (len(trsprtIC_merged)>0):utilitiesGeom.saveTransportIC(master_folder, trsprtIC_merged)
     utilitiesGeom.saveExporters(master_folder, activeTransport, activeMechanics)
 
-    if (len(radii)>0): utilitiesGeom.saveRadii(master_folder, radii)
+    if (len(radii)>0 and powerTes): utilitiesGeom.saveRadii(master_folder, radii)
 
     solStep = 1e-2
     simTime = 1
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     print('Vertices: %d' %vert_count)
 
 
-    utilitiesGeom.checkSavedModel(master_folder, dim)
+    utilitiesGeom.checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
 
     end =  time.time() -start
