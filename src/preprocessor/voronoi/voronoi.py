@@ -113,6 +113,65 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
         return dataOut, weightsOut
     return dataOut
 
+def mirror_dataDogBone(data, dim, D, thickness = None):
+    '''Mirror data dogbone 2D and 3D'''
+    if (dim == 2):
+        dataOut= np.vstack((
+        data,
+        np.array([0,0]) + data * np.array([1,-1]), #nahoru
+        np.array([0,6/4*D*2]) + data * np.array([1,-1]), #dolu
+        np.array([0,0]) + data * np.array([-1,1]), #doleva
+        np.array([D*2,0]) + data * np.array([-1,1]), #doprava
+
+        np.array([0,0]) + data * np.array([-1,-1]), #nahoru doleva
+        np.array([2*D,0]) + data * np.array([-1,-1]), #nahoru doprava
+        np.array([0,6/4*2*D]) + data * np.array([-1,-1]), #dolu doleva
+        np.array([2*D,6/4*2*D]) + data * np.array([-1,-1]), #dolu doprava
+        ))
+
+    if(dim==3):
+        dataOut= np.vstack((
+        data,
+        np.array([0,0,0]) + data * np.array([1,-1,1]), #nahoru c
+        np.array([0,6/4*D*2,0]) + data * np.array([1,-1,1]), #dolu c
+        np.array([0,0,0]) + data * np.array([-1,1,1]), #doleva c
+        np.array([D*2,0,0]) + data * np.array([-1,1,1]), #doprava c
+
+        np.array([0,0,0]) + data * np.array([-1,-1,1]), #nahoru doleva c
+        np.array([2*D,0,0]) + data * np.array([-1,-1,1]), #nahoru doprava c
+        np.array([0,6/4*2*D,0]) + data * np.array([-1,-1,1]), #dolu doleva c
+        np.array([2*D,6/4*2*D,0]) + data * np.array([-1,-1,1]), #dolu doprava c
+
+        np.array([0,0,0]) + data * np.array([1,-1,-1]), #nahoru dopredu
+        np.array([0,6/4*D*2,0]) + data * np.array([1,-1,-1]), #dolu dopredu
+        np.array([0,0,0]) + data * np.array([-1,1,-1]), #doleva dopredu
+        np.array([D*2,0,0]) + data * np.array([-1,1,-1]), #doprava dopredu
+
+        np.array([0,0,0]) + data * np.array([-1,-1,-1]), #nahoru doleva dopredu
+        np.array([2*D,0,0]) + data * np.array([-1,-1,-1]), #nahoru doprava dopredu
+        np.array([0,6/4*2*D,0]) + data * np.array([-1,-1,-1]), #dolu doleva dopredu
+        np.array([2*D,6/4*2*D,0]) + data * np.array([-1,-1,-1]), #dolu doprava dopredu
+
+        np.array([0,0,2*thickness]) + data * np.array([1,-1,-1]), #nahoru dozadu
+        np.array([0,6/4*D*2,2*thickness]) + data * np.array([1,-1,-1]), #dolu dozadu
+        np.array([0,0,2*thickness]) + data * np.array([-1,1,-1]), #doleva dozadu
+        np.array([D*2,0,2*thickness]) + data * np.array([-1,1,-1]), #doprava dozadu
+
+        np.array([0,0,2*thickness]) + data * np.array([-1,-1,-1]), #nahoru doleva dozadu
+        np.array([2*D,0,2*thickness]) + data * np.array([-1,-1,-1]), #nahoru doprava dozadu
+        np.array([0,6/4*2*D,2*thickness]) + data * np.array([-1,-1,-1]), #dolu doleva dozadu
+        np.array([2*D,6/4*2*D,2*thickness]) + data * np.array([-1,-1,-1]), #dolu doprava dozadu
+
+        ))
+
+    """
+    dataOut = np.asarray(dataOut)
+    fig, ax = plt.subplots()
+    ax.scatter(dataOut[:,0], dataOut[:,1])
+    plt.show()
+    """
+    return dataOut
+
 def mirror_dataCylinder(data, center, radius, height, directionDim):
     data = np.asarray(data)
     rad = radius + 1e-5
@@ -305,6 +364,24 @@ def voronoi_2d(vor, sizes, shifts=0):
 
     return new_regions, np.asarray(new_vertices), polygons, np.asarray(areas), np.asarray(centroids), np.asarray(points)
 
+def voronoi_2d_dogBone(vor, sizes):
+
+    if vor.points.shape[1] != 2:
+        raise ValueError("Requires 2D input")
+
+    volumes = []
+    #
+    for i in range (vor.points.shape[0]):
+        comp = True
+        for p in range (2):
+            if (vor.points[i][p] < 0 or vor.points[i][p] > sizes[p] ):
+                comp = False
+
+        if (comp):
+            vol = cellVolume3d(vor, i)
+            volumes.append(vol)
+
+    return volumes
 
 def voronoi_3d(vor, sizes):
 

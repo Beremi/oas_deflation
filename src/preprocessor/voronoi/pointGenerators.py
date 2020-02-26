@@ -80,25 +80,25 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
             if numi<num[di]:
                 point = np.random.rand(dim)*(maxLim-d[di]) + d[di]/2.
                 radius = d[di]/2.
-                if len(node_coords) == 0:                     
-                    node_coords = np.vstack((node_coords,point)); 
+                if len(node_coords) == 0:
+                    node_coords = np.vstack((node_coords,point));
                     radii = np.hstack((radii, radius));
                     numi += 1
-                    continue     
-     
+                    continue
+
                 dist = min(np.sum(np.square(node_coords-point),1)-np.square((1+gap)*(radii+radius)))
                 if dist>0.:
                     node_coords = np.vstack((node_coords, point));
                     radii = np.hstack((radii, radius));
                     iters = 0
                     numi += 1
-                else: iters += 1 
+                else: iters += 1
             else:
                 di += 1
                 numi = 0.
 
         return node_coords, radii
-        
+
 def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
     return True
 try:
@@ -319,23 +319,72 @@ def randPointInTube(center, radius, height, thickness, directionDim):
 
     return point
 
-def randPointOnCircle(center, radius, directionDim):
-    angle = np.random.uniform() * np.pi * 2
 
-    point = np.zeros(3)
-    point += center
+def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = None):
+    print ('Generating a 2d circle border. Ctr [%f, %f], Rad: %f, Angle limit +-%f' %(center[0],center[1], radius, np.degrees(angleLimitA-angleLimitB)))
 
-    if (directionDim == 0 ):
-        point[1] = radius * np.cos(angle)
-        point[2] = radius * np.sin(angle)
-    if (directionDim == 1):
-        point[0] = radius * np.cos(angle)
-        point[2] = radius * np.sin(angle)
-    if (directionDim == 2):
-        point[0] = radius * np.cos(angle)
-        point[1] = radius * np.sin(angle)
+    mirroredPoints = []
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            if (mirrorIndent != None):
+                coords, mirrored_coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
+            else:
+                coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+            if (mirrorIndent != None):
+                mirroredPoints.append(mirrored_coords)
 
-    return point
+    if (mirrorIndent != None):
+        return mirroredPoints
+
+def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = None):
+    if (angleLimitA == None): angle = np.random.uniform() * np.pi * 2
+    else:   angle = np.random.uniform(low=angleLimitA, high=angleLimitB) #* np.pi * 2
+
+    if (len(center) == 3):
+        point = np.zeros(3)
+        point += center
+
+        if (directionDim == 0 ):
+            point[1] = radius * np.cos(angle)
+            point[2] = radius * np.sin(angle)
+        if (directionDim == 1):
+            point[0] = radius * np.cos(angle)
+            point[2] = radius * np.sin(angle)
+        if (directionDim == 2):
+            point[0] = radius * np.cos(angle)
+            point[1] = radius * np.sin(angle)
+        return point
+
+    if (len(center) == 2):
+        point = np.zeros(2)
+        point += center
+        mirroredPoint = np.zeros(2)
+        mirroredPoint += center
+        point[0] += radius * np.cos(angle)
+        point[1] += radius * np.sin(angle)
+        if (mirrorIndent!=None):
+            mirroredPoint[0] += (radius-2*mirrorIndent) * np.cos(angle)
+            mirroredPoint[1] += (radius-2*mirrorIndent) * np.sin(angle)
+            return point,mirroredPoint
+        else:
+            return point
+
+
 
 def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d cylinder segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
@@ -359,8 +408,10 @@ def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDis
         if (tr < trials):
             node_coords.append(coords)
 
-def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials):
+def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials, angleLimitA=None, angleLimitB=None, mirrorIndent=None):
     print ('Generating a 3d cylinder surf segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+
+    mirroredPoints = []
 
     tr=0
     while (tr<trials):
@@ -368,8 +419,11 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
         #
         distIsGood = False
         while (distIsGood == False):
-            coords = randPointOnCilinder(center, radius, height, directionDim)
-            #
+            if (mirrorIndent == None):
+                coords = randPointOnCilinder(center, radius, height, directionDim, angleLimitA = angleLimitA, angleLimitB = angleLimitB ,mirrorIndent = mirrorIndent)
+            else:
+                coords, mirrored_coords = randPointOnCilinder(center, radius, height, directionDim, angleLimitA = angleLimitA, angleLimitB = angleLimitB ,mirrorIndent = mirrorIndent)
+
             distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
             #
             if (distIsGood == False):
@@ -380,7 +434,11 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
+            if (mirrorIndent != None):
+                mirroredPoints.append(mirrored_coords)
 
+    if (mirrorIndent != None):
+        return mirroredPoints
 
 def randPointInCilinder(center, radius, height, directionDim):
     angle = np.random.uniform() * np.pi * 2
@@ -405,26 +463,45 @@ def randPointInCilinder(center, radius, height, directionDim):
 
     return point
 
-def randPointOnCilinder(center, radius, height, directionDim):
-    angle = np.random.uniform() * np.pi * 2
+def randPointOnCilinder(center, radius, height, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = None):
+    #angle = np.random.uniform() * np.pi * 2
+    if (angleLimitA == None): angle = np.random.uniform() * np.pi * 2
+    else:   angle = np.random.uniform(low=angleLimitA, high=angleLimitB)
 
     point = np.zeros(3)
     point += center
+    mirroredPoint = np.zeros(3)
+    mirroredPoint += center
 
     if (directionDim == 0 ):
-        point[0] = height * np.random.uniform()
-        point[1] = radius * np.cos(angle)
-        point[2] = radius * np.sin(angle)
+        point[0] += height * np.random.uniform()
+        point[1] += radius * np.cos(angle)
+        point[2] += radius * np.sin(angle)
+        if (mirrorIndent!=None):
+            mirroredPoint[1] += (radius-2*mirrorIndent) * np.cos(angle)
+            mirroredPoint[2] += (radius-2*mirrorIndent) * np.sin(angle)
+            mirroredPoint[0] += height * np.random.uniform()
     if (directionDim == 1):
-        point[0] = radius * np.cos(angle)
-        point[1] = height * np.random.uniform()
-        point[2] = radius * np.sin(angle)
+        point[0] += radius * np.cos(angle)
+        point[1] += height * np.random.uniform()
+        point[2] += radius * np.sin(angle)
+        if (mirrorIndent!=None):
+            mirroredPoint[0] += (radius-2*mirrorIndent) * np.cos(angle)
+            mirroredPoint[2] += (radius-2*mirrorIndent) * np.sin(angle)
+            mirroredPoint[1] += height * np.random.uniform()
     if (directionDim == 2):
-        point[0] = radius * np.cos(angle)
-        point[1] = radius * np.sin(angle)
-        point[2] = height * np.random.uniform()
+        point[0] += radius * np.cos(angle)
+        point[1] += radius * np.sin(angle)
+        point[2] += height * np.random.uniform()
+        if (mirrorIndent!=None):
+            mirroredPoint[0] += (radius-2*mirrorIndent) * np.cos(angle)
+            mirroredPoint[1] += (radius-2*mirrorIndent) * np.sin(angle)
+            mirroredPoint[2] += height * np.random.uniform()
 
-    return point
+    if (mirrorIndent!=None):
+        return point,mirroredPoint
+    else:
+        return point
 
 #generate a single node in 2d or 3d
 def generateSingleNode(node, dim, node_coords):

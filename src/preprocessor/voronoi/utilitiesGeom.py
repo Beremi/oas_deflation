@@ -29,12 +29,20 @@ blocksFile                  = "blocks.inp"
 #
 #coplanarity test
 def equation_plane(pA, pB, pC, pD):
+    """
+    pA = np.array([0,1,0])
+    pB = np.array([1,1,0])
+    pC = np.array([0,1,4])
+    pD = np.array([0,0,0])
+    """
+
     a1 = pB[0] - pA[0]
     b1 = pB[1] - pA[1]
     c1 = pB[2] - pA[2]
     a2 = pC[0] - pA[0]
     b2 = pC[1] - pA[1]
     c2 = pC[2] - pA[2]
+
     a = b1 * c2 - b2 * c1
     b = a2 * c1 - a1 * c2
     c = a1 * b2 - b1 * a2
@@ -43,6 +51,8 @@ def equation_plane(pA, pB, pC, pD):
     # checking if the 4th point satisfies
     # equation of plane a*x + b*y + c*z = 0 #
     condition = a * pD[0] + b * pD[1] + c * pD[2] + d
+
+    #print('%f' %condition )
    # if(condition == 0 ):
         #print("Coplanar")
     #else:
@@ -286,7 +296,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
@@ -670,6 +680,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         pointB = vor.ridge_points[validRidgeIdxs[i]][1]
 
         #auxiliary nodes if one of them is out of sample
+
         if(pointA >= node_count and pointB<node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
@@ -698,7 +709,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
 
         #coplanarity control
-        """
+        maxE = 0
         for v in range ( nrVertices-3 ):
             pA = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v]][:]
             pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
@@ -707,11 +718,12 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
             tol = 1e-10
             val = equation_plane(pA, pB, pC, pD)
+            if (np.abs(val) > maxE): maxE = np.abs(val)
             if ( val > tol):
                 allCoplanar = False
                 print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
             #else: print('Coplanar  %d' %i)
-        """
+
         #normal of the ridge surface from first three vertices
         planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
                                      vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
@@ -760,10 +772,9 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         ridges_out.append(rdg)
 
     if (allCoplanar):
-        if (printout):print ('ALL ridges coplanar OK')
+        print ('ALL ridges coplanar OK, maxErr: %e' %maxE)
     else:
-        print ('!!! NOT ALL RIDGES COPLANAR !!!')
-    print('done.')
+        print ('!!! NOT ALL RIDGES COPLANAR, maxErr: %e' %maxE)
     vertIdxStart = node_count + len(aux_nodes)
     v_count = len (vertices_out)
 
@@ -776,7 +787,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     newAuxNodes = 0
     if (activeTransport):
-        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim)
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out)
     vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):
@@ -784,19 +795,21 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
 
-    saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
+
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+        saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
         saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
+
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        #JM: save elements uz je volane drive
+        saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
+        #JM: save transport elements uz je volane drive
         # je potreba, aby bylo volane prvni, protoze jeste generuje nove aux nodes
         #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
-    else:
-        saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
+    
 
     return v_count, verticesIdxDict, vertIdxStart
 
@@ -1069,6 +1082,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
     onlyMechNodesConnected = True
 
     if (mZ!=None and len(mZ)>0):
+        print('Material zones recognized.')
         for i in range (len(mechElemRidges)):
             nodeA = nodes[int(mechElemRidges[i][0])]
             nodeB = nodes[int(mechElemRidges[i][1])]
@@ -1086,25 +1100,28 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
-
+                    #print('found ela element')
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
             if (dim==3):
-                if ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
+                if ( mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
                       mZ[0][0][2] < nodeA[2] < mZ[0][1][2] and
                       mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
-                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ) or
-                      (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
+                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
+                      mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                      #print('node in A')
+                if (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][2] < nodeA[2] < mZ[0][3][2] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
-                      mZ[0][2][2] < nodeB[2] < mZ[0][3][2])   ):
-                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
-
+                      mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) :
+                      mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                      #print('node in B')
+                    #print('found ela element')
 
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
@@ -1124,7 +1141,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
             for i in range (len(mechElemRidges)):
                 nA = mechElemRidges[i][0]
                 nB = mechElemRidges[i][1]
-                
+
                 if not ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
                     elementsWithoutNotch.append(mechElemRidges[i])
 
@@ -1149,11 +1166,10 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
             sh = ro.shape[0]
             np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t0')
 
-    print('done.')
     sys.stdout.flush()
 
 
-def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim):
+def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out):
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
@@ -1210,11 +1226,10 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                     #if (ro[0]>node_count and ro[1]>node_count):
                     #    print ('both aux')
                     transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
-    print('done.')
     if (onlyVerticesConnected):
-        print('Transport elements connect only vertices. That is ok.\n')
+        print('Transport elements connect only vertices. That is ok.')
     else:
-        print('Transport elements CONNECT WRONG POINTS !!!!\n')
+        print('Transport elements CONNECT WRONG POINTS !!!!')
     sys.stdout.flush()
 
     #  i[b], i[a] = i[a], i[b]
@@ -1303,26 +1318,37 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     print('done.')
     sys.stdout.flush()
 
+
     auxNodesInitLength = len (aux_nodes)
+    #print(auxNodesInitLength)
+    updatedElems =0
+
     if (auxNodesInitLength != 0):
         print('Generating additional aux_nodes...', end='')
         beamMidpoint = maxLim /2
         for elem in transportElements:
-            if (elem.connectedNodes[0]>=node_count and elem.connectedNodes[len(elem.connectedNodes)-1]>=node_count):
-                #print('corner line: %s' %elem.getReducedString())
+
+            if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out)):
+                updatedElems +=1
+                #print(elem.connectedNodes)
+                #print('old elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
                 anodeA = np.asarray (aux_nodes[ int(elem.connectedNodes[0]-node_count) ][:])
                 anodeB = np.asarray (aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ][:])
+                #beamMidpoint = (anodeA + anodeB)/2
                 #print( anodeA )
                 #print( anodeB )
                 nanode = np.zeros(3)
+
                 for i in range (dim):
                     if ( scipy.spatial.distance.euclidean(anodeB[i], beamMidpoint) >
                          scipy.spatial.distance.euclidean(anodeA[i], beamMidpoint) ):
                         nanode[i] = anodeB[i]
                     else:
                         nanode[i] = anodeA[i]
+
+                nanode = (anodeA + anodeB)/2
                 #print('New aux node: %s' %nanode)
-                aux_nodes.append(nanode)
+
                 #
                 #adding new aux node to connected nodes
                 #print('old elem: %s' %elem.connectedNodes)
@@ -1330,7 +1356,11 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 elem.addSingleConnectedNode( node_count + len(aux_nodes) )
                 elem.addSingleConnectedNode( node_count + len(aux_nodes) )
                 elem.addSingleConnectedNode( elem.connectedNodes[0] )
-                #print('new elem: %s' %elem.connectedNodes)
+
+                aux_nodes.append(nanode)
+                #print('new elem: %s' %elem.getString())
+                #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
+                #print(elem.connectedNodes)
                 #print()
         print('done.')
         sys.stdout.flush()
@@ -1338,15 +1368,53 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     print('Another renumbering of vertices...', end='')
     auxNodesFinalLength = len (aux_nodes)
     newAuxNodes = auxNodesFinalLength - auxNodesInitLength
+    print('new aux nodes: %d' %newAuxNodes)
     for elem in transportElements:
         elem.vertexA += newAuxNodes
         elem.vertexB += newAuxNodes
-    print('done.')
     sys.stdout.flush()
 
+
+    print('Coplanarity control before saving...', end='')
+    wrongRidges = 0
+    nodes_out = np.asarray(nodes_out)
+    aux_nodes = np.asarray(aux_nodes)
+    #print(ndCrds[0])
+    #print(ndCrds[0, 0:dim])
+    for element in transportElements:
+
+        nodesCoords = []
+        #print(element.connectedNodes)
+        for nIdx in range(0,len(element.connectedNodes),2):
+            nIdx = int(element.connectedNodes[nIdx])
+
+            if (nIdx<len(nodes_out)):
+                nodesCoords.append(nodes_out[nIdx, 0:dim])
+            elif (nIdx<len(nodes_out)+auxNodesInitLength):
+                nodesCoords.append(aux_nodes[nIdx-node_count, 0:dim])
+            elif (nIdx<len(nodes_out)+auxNodesFinalLength):
+                nodesCoords.append(aux_nodes[nIdx-node_count, 0:dim])
+            else:
+                print('Unknown node nr %d ' %nIdx, end='')
+                print('Max idx: %d ' %(len(nodes_out)+len(aux_nodes)-1), end='')
+
+        nodesCoords = np.asarray(nodesCoords)
+        allCoplanar, val = checkCoplanarity(nodesCoords, 1e-15)
+        if ( not allCoplanar):
+            wrongRidges +=1
+            print('Wrong element!')
+            print(element.getStringyString(len(nodes_out), auxNodesInitLength))
+            allCoplanar = False
+            break;
+            print('Not coplanar!!! Ridge nr. %d, err: %.10e' %(transportElements.index(element), val ))
+
+
+    print('done. ', end='')
+    #print('Updated elems: %d' %updatedElems)
+    print('Wrong elems: %d' %wrongRidges)
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
-    print('Trsprt elements:%d' %len(transportElements))
+    print('Trsprt elements: %d' %len(transportElements))
     with open(os.path.join(master_folder,trsprtElemsFile), 'w') as f:
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
         f.write("%s\n" % headerLine )
@@ -1354,6 +1422,159 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             #print ("%s\n" % element.getString() )
             if (dim==2):f.write("%s\n" % element.getString() )
             if (dim==3): f.write("%s\n" % element.getReducedString() )
-    print('done.')
+
 
     return newAuxNodes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
+    print('\nChecking  generated files...')
+    allOK = True
+    cols = np.arange(1,dim+1)
+
+    print('Loading back node coords...', end='')
+    test_nodeCoords = np.genfromtxt(os.path.join(master_folder,nodesFile),  dtype= None, encoding='ascii', usecols=cols)
+    print('\t\t %d nodes loaded.' %len(test_nodeCoords))
+
+    print('Loading back aux node coords...', end='')
+    test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
+    print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
+
+    print('Loading back vertices coords...', end='')
+    test_verticesCoords = np.genfromtxt(os.path.join(master_folder,verticesFile),  dtype= None, encoding='ascii', usecols=cols)
+    print('\t\t %d vertices loaded.' %len(test_verticesCoords))
+
+    test_solverNodeArray = np.vstack((test_nodeCoords, test_auxNodeCoords, test_verticesCoords))
+
+    if (activeMechanics):
+        print('Loading back mechanical elements...', end='')
+        test_mechElems = []
+        with open(os.path.join(master_folder,mechElemsFile)) as f:
+            for line in f:
+                test_mechElems.append(line.split())
+        test_mechElems.pop(0)
+        print('\t %d MechElems loaded.' %len(test_mechElems))
+
+        print('Reassembling MechElems, checking face coplanarity... ')
+        maxErr = 0
+        wrongElems = 0
+        for mechElem in test_mechElems:
+            #LTCBEAM	200	75	4	449	450	458	451	0	0
+            name = mechElem[0]
+            nA = test_solverNodeArray[int(mechElem[1])]
+            nB = test_solverNodeArray[int(mechElem[2])]
+            verticesNr = int(mechElem[3])
+            vertices = []
+            for v in range (verticesNr):
+                vertices.append(test_solverNodeArray [int(mechElem[4+v])] )
+            material =  int (mechElem[4+verticesNr])
+
+            #checking coplanarity
+            allCoplanar, val = checkCoplanarity(vertices, 1e-15)
+            if (val > maxErr): maxErr = val
+            if (allCoplanar == False):
+                wrongElems +=1
+                #a = input('').split(" ")[0]
+                #print(mechElem)
+                #print(mechElem[3:3+verticesNr])
+                #print(vertices)
+        if (wrongElems==0):
+            print('All faces coplanar. Mech Elems OK. MaxErr: %e' %maxErr)
+        else:
+            print ('Wrong faces: %d !!!!' %wrongElems)
+            allOK = False
+
+
+    if (activeTransport):
+        print('Loading back transport elements...', end='')
+        test_trsprtElems = []
+        with open(os.path.join(master_folder,trsprtElemsFile)) as f:
+            for line in f:
+                test_trsprtElems.append(line.split())
+        test_trsprtElems.pop(0)
+        print('\t %d TrsprtElems loaded.' %len(test_trsprtElems))
+
+        print('Reassembling TrsprtElems, checking face coplanarity... ')
+        maxErr = 0
+        wrongElems = 0
+        for trsprtElem in test_trsprtElems:
+            #LTCTRSP	436	435	3	213	154	196	1
+            #print(trsprtElem)
+            name = trsprtElem[0]
+            nA = test_solverNodeArray[int(trsprtElem[1])]
+            nB = test_solverNodeArray[int(trsprtElem[2])]
+            verticesNr = int(trsprtElem[3])
+            vertices = []
+            for v in range (verticesNr):
+                vertices.append(test_solverNodeArray [int(trsprtElem[4+v])] )
+            material =  int (trsprtElem[4+verticesNr])
+
+            #checking coplanarity
+            allCoplanar, val = checkCoplanarity(vertices, 1e-15)
+            if (val > maxErr): maxErr = val
+            if (allCoplanar == False):
+                wrongElems +=1
+                #a = input('').split(" ")[0]
+                #print(mechElem)
+                #print(mechElem[3:3+verticesNr])
+                #print(vertices)
+        if (wrongElems==0):
+            print('All faces coplanar. Trsprt Elems OK. MaxErr: %e' %maxErr)
+        else:
+            print ('Wrong faces: %d !!!!' %wrongElems)
+            allOK = False
+
+        if (allOK == True):
+            print('Model seems ok. All fine.')
+        else:
+            print('!!!!! Saved with problems !!!!!')
+
+
+def checkCoplanarity(points, maxError):
+    allCoplanar = True
+    nodesCoords = np.asarray(points)
+    #print('checking face: %s' %nodesCoords)
+    val = 0
+    for v in range ( len(nodesCoords)-3 ):
+        val = 0
+        pA = nodesCoords [v]
+        pB = nodesCoords [v+1]
+        pC = nodesCoords [v+2]
+        pD = nodesCoords [v+3]
+
+        val = equation_plane(pA, pB, pC, pD)
+        if (np.abs(val) > maxError):
+            #print(val)
+            allCoplanar = False
+
+    return allCoplanar, np.abs(val)
+
+
+
+
+
+
+
+
+
+
+
+#

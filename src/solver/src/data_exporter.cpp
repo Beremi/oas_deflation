@@ -320,7 +320,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
-void ValueGauge :: readFromLine(istringstream &iss) {
+void StructuralExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
     codes.resize(1);
@@ -328,13 +328,13 @@ void ValueGauge :: readFromLine(istringstream &iss) {
     DataExporter :: readFromLine(iss);
 }
 //////////////////////////////////////////////////////////
-void ValueGauge :: init() {
+void StructuralExporter :: init() {
     time_each = 0;
     time_last = 0;
 }
 
 //////////////////////////////////////////////////////////
-void ValueGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void StructuralExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
     ( void ) DoFs;
     ( void ) reactions;
     char buffer [ 100 ];
@@ -350,7 +350,7 @@ void ValueGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &r
     outputfile.close();
 }
 
-double ValueGauge :: calcValue() const {
+double StructuralExporter :: calcValue() const {
     double value = 0;
     for ( auto const &e : * elems ) {
         for ( unsigned i = 0; i < e->giveIPNum(); i++ ) {
@@ -398,8 +398,9 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     DisplacementGauge *newexp = new DisplacementGauge(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("ValueGauge") == 0 ) {
-                    ValueGauge *newexp = new ValueGauge(n, e, dimension);
+                } else if ( exptype.compare("ValueGauge") == 0 ||
+                            exptype.compare("StructuralExporter") == 0 ) {
+                    StructuralExporter *newexp = new StructuralExporter(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("DoFGauge") == 0 ) {

@@ -116,35 +116,6 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
     }
 }
 
-
-void ConstraintContainer :: readRigidPlate(istringstream &iss, const unsigned ndim, NodeContainer *nodes) {
-    // jointDoF jD;
-    unsigned nodeid, nslaves;
-    Node *master;
-    Node *slave;
-    //////////////////////////////////////////////////////////
-    // read the line "masterId numSlaves slaveId1, slaveId2...."
-    iss >> nodeid >> nslaves;
-    master = nodes->giveNode(nodeid);
-    // check if it is master node
-    MasterNode *n = dynamic_cast< MasterNode * >( master );
-    if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be MasterDoF, " << master->giveName() << " provided" << endl;
-        exit(1);
-    }
-    if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
-        exit(1);
-    }
-
-    for ( unsigned i = 0; i < nslaves; i++ ) {
-        iss >> nodeid;
-        slave = nodes->giveNode(nodeid);
-        connectSlaveMaster(slave, master, ndim, "xyz");
-    }
-}
-
-
 bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
     double tol = 1e-9; // NOTE this should be raltive to lmin or something
     if ( ( leftBottom.getX() - P.getX() ) < tol && ( P.getX() - rightTop.getX() ) < tol ) {
@@ -158,48 +129,6 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
 }
 
 
-void ConstraintContainer :: readCoordRigidPlate(istringstream &iss, const unsigned ndim, NodeContainer *nodes) {
-    // jointDoF jD;
-    unsigned nodeid;
-    double x0, x1, y0, y1, z0, z1;
-    Node *master;
-    Point leftBottom, rightTop;
-    //////////////////////////////////////////////////////////
-    // read the line "masterId numSlaves slaveId1, slaveId2...."
-    if ( ndim == 2 ) {
-        iss >> nodeid >> x0 >> x1 >> y0 >> y1;
-        leftBottom = Point(x0, y0, 0);
-        rightTop = Point(x1, y1, 0);
-    } else if ( ndim == 3 ) {
-        iss >> nodeid >> x0 >> x1 >> y0 >> y1 >> z0 >> z1;
-        leftBottom = Point(x0, y0, z0);
-        rightTop = Point(x1, y1, z1);
-    } else {
-        std :: cerr << "dimension " << ndim << " not implemented yet" << '\n';
-        exit(1);
-    }
-    master = nodes->giveNode(nodeid);
-    // check if it is master node
-    MasterNode *n = dynamic_cast< MasterNode * >( master );
-    if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be MasterDoF, " << master->giveName() << " provided" << endl;
-        exit(1);
-    }
-    if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
-        exit(1);
-    }
-
-    for ( auto const &nod : * nodes ) {
-        if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ) {
-            // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
-            Particle *nn = dynamic_cast< Particle * >( nod );
-            if ( nn ) {
-                connectSlaveMaster(nod, master, ndim, "xyz");
-            }
-        }
-    }
-}
 
 void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes) {
     unsigned origsize = constraints.size();
@@ -220,10 +149,6 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
                     JointDoF *newJD = new JointDoF();
                     newJD->readFromLine(iss, nodes);
                     constraints.push_back(newJD);
-                } else if ( ConstrType.compare("RigidPlate") == 0 ) {
-                    readRigidPlate(iss, ndim, nodes);
-                } else if ( ConstrType.compare("CoordRigidPlate") == 0 ) {
-                    readCoordRigidPlate(iss, ndim, nodes);
                 } else {
                     cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);

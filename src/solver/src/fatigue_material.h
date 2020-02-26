@@ -104,9 +104,9 @@ private:
     double prev_damage, prev_zN, prev_epsNP, prev_alphaN;
 
     double energy_PL, energy_D, energy_Kin, energy_Iso, work_tot;
-    double Y_next;
+    double temp_Y, prev_Y, Y_next;
 
-    bool symmetric;
+    bool symmetric;  ///> if true, symmetric behavior tension/compression is applied
 
     void print() const;
 public:

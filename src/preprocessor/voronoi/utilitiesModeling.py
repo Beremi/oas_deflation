@@ -13,6 +13,60 @@ from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
 
+
+def assembleMaterialZones (elaX, dim, model='box',  D=None, thickness=None):
+    materialZones = []
+    #matZone 1
+    matZ = []
+    if (model=='box'):
+        if (dim==2):
+            boundA = np.array(  [ -1e-8             , -1e-8          ] )
+            matZ.append (boundA)
+            boundB = np.array(  [ elaX    , maxLim[1] + 1e-8] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ maxLim[0]-elaX , - 1e-8] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8]  )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+        if (dim==3):
+            boundA = np.array(  [ -1e-8   -maxLim[0]          , -1e-8    -maxLim[1]         , -1e8 -maxLim[2]] )
+            matZ.append (boundA)
+            boundB = np.array(  [ elaX    , maxLim[1] + 1e8   , maxLim[2] + 1e8  ] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ maxLim[0]-elaX , - 1e-8  -maxLim[1]      , -1e8-maxLim[2]] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+
+    if (model=='dogbone'):
+        if (dim==2):
+            boundA = np.array(  [ -1e-8    , -1e-8  ] )
+            matZ.append (boundA)
+            boundB = np.array(  [ D+1e-8   ,  elaX] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ -1e-8, 6/4*D+1e-8] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ D  , 6/4*D - elaX]  )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+        if (dim==3):
+            boundA = np.array(  [ -1e-8    , -1e-8, -1e-8  ] )
+            matZ.append (boundA)
+            boundB = np.array(  [ D+1e-8   ,  elaX, thickness+1e-8] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ -1e-8   , 6/4*D - elaX, -1e-8]  )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ 2*D, 2*D, thickness*2] )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+
+    return materialZones
+
+
+
+
 def createSingleSpringTestModel(length):
     print ('Creating single spring test model.')
     #defining functions
@@ -130,10 +184,10 @@ def createDiamondTestModel(width, height):
 
 
 
-def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1 ):
+def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1 ):
     print('Creating 2d simply supported beam, uniform load.')
     #
-    node_coords, mechBC_merged, mechInitC_merged, notchNodes  = assemble2DSSBeamBending(maxLim, minDist, trials, notch);
+    node_coords, mechBC_merged, mechInitC_merged, notchNodes  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -543,6 +597,106 @@ def assembleTwoNodeSpringTest (maxLim, idt):
 
 
     return node_coords,  mechBC_merged
+
+
+
+
+
+
+def create2dDogBone(minDist, trials, D=1.0 ):
+    print('Creating 2d dog bone....')
+    #
+    node_coords, mechBC_merged, mechInitC_merged, node_count  = assemble2dDogBone(D, minDist, trials);
+
+    node_coords = np.asarray(node_coords)
+    """
+    fig, ax = plt.subplots()
+    ax.scatter(node_coords[:,0], node_coords[:,1])
+    plt.show()
+    """
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords, 2, D)
+    print('done.')
+
+    node_coords = node_coords[0:node_count]
+    areas = []
+    for i in range (node_count): areas.append(0)
+    areas = np.asarray(areas)
+
+    fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
+    plt.show()
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-3]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+
+
+    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
+
+
+def create3dDogBone(minDist, trials, D=1.0 ):
+    print('Creating 3sd dog bone....')
+    #
+    node_coords, mechBC_merged, mechInitC_merged, node_count  = assemble3dDogBone(D, minDist, trials);
+
+    node_coords = np.asarray(node_coords)
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], c = 'b', marker='o')
+    plt.show()
+    """
+    print('Conducting Voronoi tesselation...', end = '')
+    vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords, 3, D, thickness = 0.1)
+    print('done.')
+
+    node_coords = node_coords[0:node_count]
+    areas = []
+    for i in range (node_count): areas.append(0)
+    areas = np.asarray(areas)
+
+    #fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
+    #splt.show()
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-3]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+
+
+    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
+
+
 
 
 
@@ -1410,7 +1564,7 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
 
 
 
-def assemble2DSSBeamBending (maxLim, minDist, trials, notch):
+def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth):
     dim = 2
     #lists for the model
     node_coords = []
@@ -1491,8 +1645,8 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch):
     #lineIC = np.array([12.1 , 24.2  , 36.3])
 
     #defining points of the line
-    nodeA =  np.array([indent , maxLim[1] - indent])
-    nodeB =  np.array([maxLim[0] - indent , maxLim[1] - indent])
+    nodeA =  np.array([indent + 0.5*maxLim[0]*(1-loadWidth) , maxLim[1] - indent])
+    nodeB =  np.array([maxLim[0] - indent - 0.5*maxLim[0]*(1-loadWidth) , maxLim[1] - indent])
 
 
     oldLen = len(node_coords)
@@ -1518,6 +1672,167 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch):
     return node_coords, mechBC_merged, mechInitC_merged, notches
 
 
+
+
+
+def assemble2dDogBone(D, minDist, trials):
+    dim = 2
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    indent = 1e-5
+
+    #top line of dogbone
+    topLineBC = np.array([0,1,0,-1,-1,-1])
+    #
+    nodeA = np.array([indent, indent])
+    nodeB = np.array([indent+D, indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials, True, False)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, topLineBC)
+        mechBC_merged.append(mBC)
+
+    #bottom line of dogbone
+    botLineBC = np.array([0,0,0,-1,-1,-1])
+    #
+    nodeA = np.array([indent,  6/4 * D - indent])
+    nodeB = np.array([D-indent, 6/4 * D - indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials, True, False)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, botLineBC)
+        mechBC_merged.append(mBC)
+
+    #sampling on circular borders
+    centreA = np.array( [-0.525 * D, 3/4 * D] )
+    centreB = np.array( [ 1.525 * D, 3/4 * D] )
+    radius = 0.725*D
+    angleLimit =   np.arcsin( 0.5*D / radius)
+    mirroredPointsA = pointGenerators.generateNodesCircle2dRand(centreA, radius+indent, minDist*0.9, node_coords, trials, angleLimitA=-angleLimit, angleLimitB=angleLimit, mirrorIndent = indent )
+    mirroredPointsB = pointGenerators.generateNodesCircle2dRand(centreB, radius+indent, minDist*0.9, node_coords, trials, angleLimitA=np.pi-angleLimit, angleLimitB=np.pi+angleLimit, mirrorIndent = indent)
+
+
+    #rectangle of dogbone
+    ectBC = np.array([-1,-1,-1,-1,-1,-1])
+    oldLen = len(node_coords)
+    maxLim = np.array([  D    ,  6/4*D ])
+    pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
+    nrOfPoints =  (len(node_coords)) - oldLen
+
+    #dumping points outside bone
+
+    radius = np.linalg.norm( centreB - np.array([D, 1/4*D]))
+    print('Dumping points within bordering circles...')
+    node_coords_out = []
+    for node in node_coords:
+        distA = np.linalg.norm( node - centreA)
+        distB = np.linalg.norm( node - centreB)
+        if (distA > radius and distB > radius):
+            node_coords_out.append(node)
+
+    print('done.')
+
+    #mirrored circles. Not to be in the model at the end
+    node_count = len(node_coords_out)
+    node_coords_out = np.vstack( (node_coords_out, mirroredPointsA, mirroredPointsB) )
+
+
+
+    return node_coords_out, mechBC_merged, mechInitC_merged, node_count
+
+
+
+
+def assemble3dDogBone(D, minDist, trials):
+    dim = 3
+    thickness = 0.1
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    node_coords_out = []
+
+    indent = 1e-5
+
+    topPointBC = np.array([0,1,0, 0,0,0, -1,-1,-1,-1,-1,-1])
+    node_coords.append(np.array([(D-indent)/2, indent, thickness/2]))
+    mBC = utilitiesMech.mechanicalBC(dim, 0, topPointBC)
+    mechBC_merged.append(mBC)
+
+    botPointBC = np.array([0,0,0, 0,0,0, -1,-1,-1,-1,-1,-1])
+    node_coords.append(np.array([(D-indent)/2, 6/4 * D - indent, thickness/2]))
+    mBC = utilitiesMech.mechanicalBC(dim, 1, botPointBC)
+    mechBC_merged.append(mBC)
+
+    #top surface of dogbone
+    #topLineBC = np.array([0,1,0,0,0,0, -1,-1,-1,-1,-1,-1])
+    topLineBC = np.array([-1,1,-1, -1,-1,-1, -1,-1,-1,-1,-1,-1])
+    #
+    nodeA = np.array([indent, indent, indent])
+    nodeB = np.array([D-indent, indent, thickness-indent ])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, topLineBC)
+        mechBC_merged.append(mBC)
+
+    #bottom surface of dogbone
+    botLineBC = np.array([-1,0,-1,  -1,-1,-1, -1,-1,-1,-1,-1,-1])
+    #
+    nodeA = np.array([indent,  6/4 * D - indent, indent])
+    nodeB = np.array([D-indent, 6/4 * D - indent, thickness-indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+    nrOfPoints =  (len(node_coords)) - oldLen
+    for n in range ( nrOfPoints ):
+        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, botLineBC)
+        mechBC_merged.append(mBC)
+
+
+    #sampling on circular borders
+    centreA = np.array( [-0.525 * D, 3/4 * D, indent] )
+    centreB = np.array( [ 1.525 * D, 3/4 * D, indent] )
+    radius = 0.725*D
+    angleLimit =   np.arcsin( 0.5*D / radius)
+    mirroredPointsA = pointGenerators.generateNodesOrtoCilinderSurf3dRand(centreA, radius+indent, thickness, 2, minDist*0.9, node_coords, trials, angleLimitA=-angleLimit, angleLimitB=angleLimit, mirrorIndent = indent )
+
+    mirroredPointsB = pointGenerators.generateNodesOrtoCilinderSurf3dRand(centreB, radius+indent, thickness, 2, minDist*0.9, node_coords, trials, angleLimitA=np.pi-angleLimit, angleLimitB=np.pi+angleLimit, mirrorIndent = indent)
+
+
+    #rectangle of dogbone
+    # xrectBC = np.array([-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1])
+    oldLen = len(node_coords)
+    maxLim = np.array([  D    ,  6/4*D, thickness ])
+    pointGenerators.generateNodesRect(maxLim, minDist, 3, trials, node_coords)
+    nrOfPoints =  (len(node_coords)) - oldLen
+
+    #dumping points outside bone
+
+    radius = np.linalg.norm( centreB[0:2] - np.array([D, 1/4*D]))
+    print('Dumping points within bordering circles...')
+    node_coords_out = []
+    for node in node_coords:
+        distA = np.linalg.norm( node[0:2] - centreA[0:2])
+        distB = np.linalg.norm( node[0:2] - centreB[0:2])
+        if (distA > radius and distB > radius):
+            node_coords_out.append(node)
+
+    print('done.')
+    #mirrored circles. Not to be in the model at the end
+    node_count = len(node_coords_out)
+    node_coords_out = np.vstack( (node_coords_out, mirroredPointsA, mirroredPointsB) )
+
+
+    #snode_coords_out = node_coords
+    node_count = len(node_coords_out)
+
+    return node_coords_out, mechBC_merged, mechInitC_merged, node_count
 
 
 
