@@ -1,0 +1,9 @@
+Dimension	3
+Solver SteadyStateNonLinearSolver time_step 1e-2 max_time_step 1e-05 total_time 101 tolerance 1e-5 maxIt 200
+NodeFiles	4	nodes.inp auxNodes.inp vertices.inp govNodes.inp
+MatFiles	1	materials.inp
+ElemFiles	1	mechElems.inp
+PBlockFiles 1   PBlocks.inp
+BCFiles	1	mechBC.inp
+FunctionFiles	1	functions.inp
+ExporterFiles	1	exporters.inp
