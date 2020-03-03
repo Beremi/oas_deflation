@@ -6,6 +6,36 @@ from IPython.display import clear_output
 
 
 
+class RigidPlate:
+    def __init__ (self, govNodeIdx, dim, limits):
+        self.govNodeIdx = govNodeIdx
+        self.dim = dim
+        self.limits = limits
+
+    def getString (self):
+        line = 'CoordRigidPlate\t%d\t' %self.govNodeIdx
+        line += '%e\t' %self.limits[0] #xmin
+        line += '%e\t' %self.limits[1] #xmax
+        line += '%e\t' %self.limits[2] #ymin
+        line += '%e\t' %self.limits[3] #ymax
+        if (self.dim == 3):
+            line += '%e\t' %self.limits[4] #zmin
+            line += '%e\t' %self.limits[5] #zmax
+
+        return line
+
+    def getNodesAffected (self, nodes):
+        nodesAffected = []
+        for n in range(len(nodes)):
+            coords = nodes[n][0:self.dim]
+            if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
+                coords[1]>self.limits[2] and coords[1]<self.limits[3] and
+                coords[2]>self.limits[4] and coords[2]<self.limits[5]):
+                nodesAffected.append(n)
+        return nodesAffected
+
+
+
 #
 ##################################################
 #### MECHANICAL BEAM ELEMENT FOR LATTICE MODEL ###

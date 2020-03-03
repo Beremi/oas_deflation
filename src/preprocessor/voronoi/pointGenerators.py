@@ -11,9 +11,17 @@ import utilitiesGeom
 
 
 
-def randPointInRectangle(dim, maxLim):
-    coords = np.random.random(dim)
-    coords *= maxLim
+def randPointInRectangle(dim, maxLim, useLowBound=False):
+
+    if not useLowBound:
+        coords = np.random.random(dim)
+        coords *= maxLim
+    else:
+        topBound = maxLim[0:dim]
+        lowBound = maxLim[dim:2*dim]
+        coords = lowBound + np.random.random(dim) * (topBound-lowBound)
+
+
     return coords
 
 def randPointOnLine(dim, nodeA, nodeB):
@@ -26,7 +34,7 @@ def randPointOnLine(dim, nodeA, nodeB):
 # generates random points no closer to each other than minDist
 # into 2d or 3d block
 # maxLim: n-d array of dimensions
-def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
+def generateNodesRect(maxLim, minDist, dim, trials, node_coords, useLowBound=False):
     if (dim==2):
         print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. \nAlthough attempt to use the Cython solution by Vasek!!!' %(maxLim[0], maxLim[1]) )
     if (dim==3):
@@ -37,7 +45,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords):
         tr = 0
         distIsGood = False
         while (distIsGood == False):
-            coords = randPointInRectangle(dim, maxLim)
+            coords = randPointInRectangle(dim, maxLim,useLowBound=useLowBound)
             distIsGood = True
             #
             distIsGood = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords, coords)
@@ -110,7 +118,7 @@ except:
 
 #generates random points onto a set 3d line. No closer than minDst
 #catch corners: samples the boundary points first
-def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners):
+def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners, equidist):
     print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
 
@@ -118,30 +126,47 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
         node_coords.append(np.copy(nodeA))
         node_coords.append(np.copy(nodeB))
 
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
-        distIsGood = False
-        while (distIsGood == False):
-            coords = randPointOnLine(dim, nodeA, nodeB)
+    if not equidist:
+        tr=0
+        while (tr<trials):
+            tr = 0;
             #
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
-            #
-            if (distIsGood == False):
-                tr += 1
+            distIsGood = False
+            while (distIsGood == False):
+                coords = randPointOnLine(dim, nodeA, nodeB)
+                #
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
+                #
+                if (distIsGood == False):
+                    tr += 1
+                if (tr > trials): break
             if (tr > trials): break
-        if (tr > trials): break
-        #
-        #Adding node coords
-        if (tr < trials):
+            #
+            #Adding node coords
+            if (tr < trials):
+                node_coords.append(coords)
+
+    else:
+        #print('Equid')
+        mD = minDist * 1.6
+        length = np.linalg.norm(nodeA - nodeB)
+        nodeNr = int (length / mD)
+        indnt = (length-(nodeNr-1)*mD) / 2
+        for i in range (nodeNr):
+            coords = np.zeros(3)
+            coords[0] = (nodeB[0] - nodeA[0])*indnt/length +(nodeB[0] - nodeA[0])*mD/length*i  + nodeA[0]
+            coords[1] = (nodeB[1] - nodeA[1])*indnt/length +(nodeB[1] - nodeA[1])*mD/length*i  + nodeA[1]
+            coords[2] = (nodeB[2] - nodeA[2])*indnt/length +(nodeB[2] - nodeA[2])*mD/length*i  + nodeA[2]
             node_coords.append(coords)
 
 
-
-def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials):
+def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, minDistAmongNewPoints=False):
     print('Generating 3d surface segment from [%f; %f; %f] to [%f; %f; %f]'
      %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
+
+    if (minDistAmongNewPoints == True):
+        new_points = []
+        new_points.append(nodeA)
 
     tr=0
     while (tr<trials):
@@ -155,8 +180,11 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
                     coords[c] = nodeA[c]
                 else:
                     coords[c] = (nodeB[c] - nodeA[c])*np.random.uniform()  + nodeA[c]
+            if (minDistAmongNewPoints == True):
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, new_points, coords)
+            else:
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
 
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
             if (distIsGood == False):
                 tr += 1
             if (tr > trials): break
@@ -164,7 +192,11 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
         #
         #Adding node coords
         if (tr < trials):
+            if (minDistAmongNewPoints == True): new_points.append(coords)
             node_coords.append(coords)
+
+
+
 
 
 def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials):
