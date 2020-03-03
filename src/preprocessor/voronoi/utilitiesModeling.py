@@ -14,7 +14,7 @@ from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
 
 
-def assembleMaterialZones (elaX, dim, model='box',  D=None, thickness=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None):
     materialZones = []
     #matZone 1
     matZ = []
@@ -771,47 +771,7 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
-    #transport function, leftFace, constant
-    fn2 = utilitiesNumeric.constantFunc(20)
-    functions.append (fn2)
 
-    #transport function, rightFace, bilinear
-    func3 = []
-    func3.append( np.array([0,0]) )
-    func3.append( np.array([50, 500]) )
-    fn3 = utilitiesNumeric.generalFunc(func3)
-    functions.append (fn3)
-
-    #function from txt data_table
-    #funcFromTxt = utilitiesNumeric.PWLFuncFromTxt('data_table.txt')
-    #functions.append(funcFromTxt)
-
-    ########################################################################
-    ### indirect setting of transportBCs by spatial selection of vertices
-    transportBC_merged = []
-    transportIC_merged = []
-    ### selecting vertices on the left surface
-    leftFaceBC = np.array([2,-1])
-    #leftFaceIC = 25.6
-    boundA = np.array(  [-1e-8 , maxLim[1]/10*8] )
-    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
-    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    #print(leftFace)
-    for i in range (len(leftFace)):
-        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
-        transportBC_merged.append(trsBC)
-        #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
-        #transportIC_merged.append(trsIC)
-
-    ### selecting vertices on the right surface
-    rightFaceBC = np.array([3,-1])
-    boundA = np.array(  [maxLim[0] - 1e-8 , - 1e-8] )
-    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]/10*2 ] )
-    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    #print(rightFace)
-    for i in range (len(rightFace)):
-        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
-        transportBC_merged.append(trsBC)
 
 
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions, notchNodes, govNodes, govNodesMechBC, rigidPlates
@@ -1275,6 +1235,56 @@ def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directi
 
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+
+
+def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim ):
+
+    ########################################################################
+    functions = []
+    ### creating functions
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, pressure X
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -50e3]) )
+    func1.append( np.array([2, -50e3]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    #1 loading function, rotation X
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, 0]) )
+    func2.append( np.array([1, 50e3]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates  = assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions )
+
+    """
+    node_coords = np.asarray(node_coords)
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+    """
+
+    print('Conducting Voronoi tesselation...', end='')
+    ### conducting Voronoi tesselation
+    vor, volumes = utilitiesNumeric.runCylinderMirroredVoronoi (node_coords, center, radius, height, directionDim)
+    ### extracting characteristics of the Vor diagram
+    print('done.')
+
+
+
+    return node_coords, mechBC_merged,  vor, volumes, functions,govNodes, govNodesMechBC, rigidPlates
 
 
 
@@ -2624,6 +2634,73 @@ def assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, direc
 
     return node_coords, mechBC_merged, mechInitC_merged
 
+
+
+def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions):
+    indent = 1e-5
+    dim=3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+    node_coords.append( center+indent)
+
+
+    ##################### CONSTRAINTS AND RIGID PLATES
+    #rigid plate left support
+    indentRP = 1e-3
+    leftRigidPlateMechBC = np.array([0,0,0, 0,0,0,  -1,-1,-1,-1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 3,
+    np.array([ -indentRP,
+     2*indentRP,
+     -2*radius,
+      2*radius,
+      -2*radius,
+       2*radius ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ indent, 0, 0]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+    #rigid plate left support
+    rightRigidPlateMechBC = np.array([-1,-1,-1, -1,-1,-1,  1,-1,-1, 2,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-2, 3,np.array([
+    height-2*indentRP,
+    height+2*indentRP,
+     -2*radius,
+      2*radius,
+      -2*radius,
+       2*radius ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ height-indent, 0, 0]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+
+
+    ###############generating of points supported surface left face ###############
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials)
+
+    ###############generating of points loaded surface right face ###############
+    nodeA = center.copy()
+    nodeA[directionDim] += height
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius,  directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius,  directionDim, minDist, node_coords, trials)
+
+
+    ###############generating of points cylinder surf###############
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+
+    #######################################################################
+
+    ###############generating of points cylinder volume ###############
+    pointGenerators.generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist,  node_coords, trials)
+    #######################################################################
+
+
+    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
 
 
 def assemble3dcylinderUniPressConfined(center, radius, height, minDist, trials, directionDim):

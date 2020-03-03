@@ -57,13 +57,13 @@ if __name__ == '__main__':
     activeMechanics = 1
 
     #dimensions of rectangle model
-    Xdim = 2.0
+    Xdim = 1.0
     Ydim = 0.2
     Zdim = 0.2
 
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
-    minDist = 0.08
+    minDist = 0.07
 
     #trials of random node positioning
     trials = 40000
@@ -195,9 +195,17 @@ if __name__ == '__main__':
         """
 
         #3d ss 3PB
+        """
         notchH = 0.15
         node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.1,fracZoneWidth = 0.2)
         materialZones = None
+        """
+
+        #DURHAM - cylinder torsion, press
+        materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, 3, model='box', maxLim=maxLim)
+        node_coords, mechBC_merged,  vor, areas, functions,govNodes, govNodesMechBC, rigidPlates    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
+
+
 
     node_coords = np.asarray(node_coords)
     node_count = len(node_coords)
