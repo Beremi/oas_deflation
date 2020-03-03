@@ -40,8 +40,8 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return
         energy_PL
         + energy_D
-        + energy_Kin
-        + energy_Iso;
+        - energy_Kin
+        - energy_Iso;
     } else if ( ( code.compare("energy_PLT") == 0 ) ) {
         return energy_PL;
     } else if ( ( code.compare("energy_DT") == 0 ) ) {
@@ -313,8 +313,8 @@ void FatigueShearMaterialStatus :: update() {
     energy_PL += dot(temp_stressT, sPi - prev_sPi);
     energy_D += Ynext * ( damageShear - prev_damageShear );
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
-    energy_Kin -= dot(alphaKin * m->giveGamma(), ( alphaKin - prev_alphaKin ) );
-    energy_Iso -= (zIso * m->giveKin()) * ( zIso - prev_zIso );
+    energy_Kin += dot(alphaKin * m->giveGamma(), ( alphaKin - prev_alphaKin ) );
+    energy_Iso += (zIso * m->giveKin()) * ( zIso - prev_zIso );
 }
 
 //////////////////////////////////////////////////////////
@@ -466,8 +466,8 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
         return
         energy_PL
         + energy_D
-        + energy_Kin
-        + energy_Iso
+        - energy_Kin
+        - energy_Iso
         ;
     } else if ( ( code.compare("energy_PLN") == 0 ) ) {
         return energy_PL;
@@ -557,7 +557,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
     } else {
         temp_damage = damage;
         Heaviside = 0;
-        temp_Y = Y_next;
+        temp_Y = 0;
         SigmaTilda = ( 1 - Heaviside * damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
         double Xn = m->giveGammaN() * alphaN;
         double Zn = m->giveKinN() * zN;
@@ -615,8 +615,8 @@ void DamagePlasticMaterialStatus :: update() {
     energy_PL += stressN * ( epsNP - prev_epsNP );
     energy_D += Y_next * ( damage - prev_damage );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
-    energy_Kin -= ( alphaN * m->giveGammaN() ) * ( alphaN - prev_alphaN );
-    energy_Iso -= ( zN * m->giveKinN() ) * ( zN - prev_zN );
+    energy_Kin += ( alphaN * m->giveGammaN() ) * ( alphaN - prev_alphaN );
+    energy_Iso += ( zN * m->giveKinN() ) * ( zN - prev_zN );
 }
 
 //////////////////////////////////////////////////////////
