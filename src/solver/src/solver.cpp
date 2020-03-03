@@ -363,6 +363,7 @@ void SteadyStateNonLinearSolver :: solve() {
             dt = fmin(dt * .8, dtmax);
             std :: cout << "shortening step, timestep = " << dt << '\n';
         }
+        // std::cerr << "number of iterations: " << it << '\n';
     }
 }
 

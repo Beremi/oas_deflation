@@ -103,6 +103,7 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("volume") == 0 ) {
         return area * length / ndim;
     } else if ( code.compare("energy_total_elem") == 0 ) {
+        // TODO all following repair in the way that anything ending by _elem would be multiplied by area mat->giveValue(code without '_elem') * ( area * length / ndim )
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_total")  * ( area * length / ndim );
     } else if ( code.compare("energy_totalT_elem") == 0 ) {
@@ -111,6 +112,18 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("energy_totalN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_totalN")  * ( area * length / ndim );
+    } else if ( code.compare("energy_PLN_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_PLN")  * ( area * length / ndim );
+    } else if ( code.compare("energy_DN_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_DN")  * ( area * length / ndim );
+    } else if ( code.compare("energy_KinN_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_KinN")  * ( area * length / ndim );
+    } else if ( code.compare("energy_IsoN_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_IsoN")  * ( area * length / ndim );
     } else if ( code.compare("work_dissip_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_dissip")  * ( area * length / ndim );
@@ -126,16 +139,16 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("work_ela_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_ela")  * ( area * length / ndim );
-    } else if ( code.compare("work_total_elemT") == 0 ) {
+    } else if ( code.compare("work_totalT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_totalT")  * ( area * length / ndim );
-    } else if ( code.compare("work_ela_elemT") == 0 ) {
+    } else if ( code.compare("work_elaT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_elaT")  * ( area * length / ndim );
-    } else if ( code.compare("work_total_elemN") == 0 ) {
+    } else if ( code.compare("work_totalN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_totalN")  * ( area * length / ndim );
-    } else if ( code.compare("work_ela_elemN") == 0 ) {
+    } else if ( code.compare("work_elaN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_elaN")  * ( area * length / ndim );
     } else {
@@ -301,7 +314,7 @@ void RigidBodyContact :: init() {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
-        exit(1);
+        // exit(1);
     }
 
     //Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130

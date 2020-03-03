@@ -1,0 +1,12 @@
+#FuncTyped
+PWLFunction	1	0.000000	0.000000
+## UNUSED fns
+# PWLFunction	2	0.000000 100.0	0.0 1.0
+# PWLFunction	2	0.000000 100.0	0.0 -1.0e-2
+##  rotation BC - linear increase
+# PWLFunction	3	0.000000 1.0 101.0	0.0 0.0 finalRotation
+PWLFunction	3	0.000000 1.0 101.0	0.0 0.0 1e-2
+## compressive force - initially increasing, then constant
+# peak load is 4.070066 MN
+# PWLFunction	3	0.000000 1.0 101.0	0.0 forceValue forceValue
+PWLFunction	3	0.000000 1.0 101.0	0.0 -1e6 -1e6
