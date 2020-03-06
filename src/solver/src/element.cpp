@@ -106,12 +106,14 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
         // TODO all following repair in the way that anything ending by _elem would be multiplied by area mat->giveValue(code without '_elem') * ( area * length / ndim )
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_total")  * ( area * length / ndim );
+
     } else if ( code.compare("energy_totalT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_totalT")  * ( area * length / ndim );
     } else if ( code.compare("energy_totalN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_totalN")  * ( area * length / ndim );
+
     } else if ( code.compare("energy_PLN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_PLN")  * ( area * length / ndim );
@@ -124,6 +126,20 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("energy_IsoN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_IsoN")  * ( area * length / ndim );
+
+      } else if ( code.compare("energy_PLT_elem") == 0 ) {
+          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+          return fmstat->giveValue("energy_PLT")  * ( area * length / ndim );
+      } else if ( code.compare("energy_DT_elem") == 0 ) {
+          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+          return fmstat->giveValue("energy_DT")  * ( area * length / ndim );
+      } else if ( code.compare("energy_KinT_elem") == 0 ) {
+          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+          return fmstat->giveValue("energy_KinT")  * ( area * length / ndim );
+      } else if ( code.compare("energy_IsoT_elem") == 0 ) {
+          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+          return fmstat->giveValue("energy_IsoT")  * ( area * length / ndim );
+
     } else if ( code.compare("work_dissip_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_dissip")  * ( area * length / ndim );
@@ -133,6 +149,7 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("work_dissipT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_dissipT")  * ( area * length / ndim );
+
     } else if ( code.compare("work_total_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_total")  * ( area * length / ndim );
@@ -142,6 +159,7 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("work_totalT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_totalT")  * ( area * length / ndim );
+
     } else if ( code.compare("work_elaT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_elaT")  * ( area * length / ndim );

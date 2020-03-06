@@ -105,7 +105,7 @@ void FatigueShearMaterialInteractedStatus::init() {
 
 //////////////////////////////////////////////////////////
 Vector FatigueShearMaterialInteractedStatus::giveStress(const Vector& strain) {
-    // 
+    //
     ////////////////////////////////////////////////////////
 
     Vector stiff = giveElasticNormalShearStiffness();
@@ -338,8 +338,8 @@ void FatigueShearMaterialInteractedStatus::update() {
     energy_PL += dot(temp_stressT, sPi - prev_sPi);
     energy_D += Ynext * (damageShear - prev_damageShear);
     FatigueShearMaterialInteracted* m = static_cast<FatigueShearMaterialInteracted*>(mat);
-    energy_Kin -= dot(alphaKin * m->giveGamma(), (alphaKin - prev_alphaKin));
-    energy_Iso -= (zIso * m->giveKin()) * (zIso - prev_zIso);
+    energy_Kin += dot(alphaKin * m->giveGamma(), (alphaKin - prev_alphaKin));
+    energy_Iso += (zIso * m->giveKin()) * (zIso - prev_zIso);
 }
 
 //////////////////////////////////////////////////////////
@@ -540,8 +540,9 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         return
         energy_PL
         + energy_D
-        - energy_Kin
-        - energy_Iso;
+        // - energy_Kin
+        // - energy_Iso
+        ;
     } else if ( ( code.compare("energy_PLT") == 0 ) ) {
         return energy_PL;
     } else if ( ( code.compare("energy_DT") == 0 ) ) {
@@ -569,6 +570,8 @@ void FatigueShearMaterialStatus :: init() {
     regularization_multiplier_area = pow(rbc->giveArea(), int( m->useSlip() ) );
     checkReturnMap = m->checkReturnMap();
     useAnaliticalLambda = m->analyticalLambda();
+    newIter = m->newIterativeApproachOn();
+    bisectionMeth = m->bisectionMethOn();
 
     damageShear = prev_damageShear = temp_damageShear = 0;
     lambda = temp_lambda = 0;
@@ -700,8 +703,182 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
         temp_stressT = tau_trial;
         temp_sPi = s_pi_k;
         Ynext = Y;
-    } else {
-        // TODO move some of these into materialstatus not to calculate them everytime again
+    }
+    // else if ( bisectionMeth ){
+    //   // damage is calculated to satisfy conditioon omega_n+1 = omega_n + dLambda(omega_n+1) using bisection method starting from interval <omega_n, 1>
+    //
+    //   Point slip_cur = slip;
+    //   Point tauTildaPiTrial;
+    //
+    //   temp_damageShear = damageShear;
+    //   temp_sPi = sPi;
+    //   temp_alphaKin = alphaKin;
+    //   temp_zIso = zIso;
+    //
+    //   slip_cur = temp_slip;
+    //
+    //   double damage_iter = temp_damageShear;
+    //
+    //   //compute trials
+    //   tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiff [ 1 ];
+    //
+    //   f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - ( m->giveM() * stress [ 0 ] ) );
+    //
+    //   if ( f_trial < 0 ) {
+    //
+    //   } else {
+    //       // initial non-iterative procedure
+    //       Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
+    //       sgn1 = h / h.norm();
+    //
+    //       bool conv = false;
+    //       double f1, f2; // values to calculate numerical derivative
+    //
+    //       // compute initital value of Damage
+    //
+    //       dLambda = f_trial / ( ( stiff [ 1 ] / ( 1 - damage_iter ) ) + m->giveGamma() + m->giveKin() );
+    //
+    //       temp_sPi = sPi + sgn1 * dLambda / ( 1 - damage_iter );
+    //
+    //       Ynext = 0.5 * stiff [ 1 ] * ( slip_cur - temp_sPi ).sqNorm();
+    //
+    //       part1 = pow(1 - damage_iter, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveM() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+    //
+    //       f1 = damageShear + dLambda * part1 - damageShear;
+    //
+    //       damage_iter = fmax(0, fmin(1 - 1e-10, damageShear + dLambda * part1) ); //limited by <0 1)
+    //
+    //       while ( !conv ) {
+    //
+    //         // calculate new values
+    //
+    //         dLambda = f_trial / ( ( stiff [ 1 ] / ( 1 - damage_iter ) ) + m->giveGamma() + m->giveKin() );
+    //
+    //         temp_sPi = sPi + sgn1 * dLambda / ( 1 - damage_iter );
+    //
+    //         Ynext = 0.5 * stiff [ 1 ] * ( slip_cur - temp_sPi ).sqNorm();
+    //
+    //         part1 = pow(1 - damage_iter, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveM() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+    //
+    //         f2 = damageShear + dLambda * part1 - damage_iter;
+    //
+    //         // calculate new value based on the numerical derivative
+    //
+    //         damage_iter -= f2 / ( (f2 - f1) / (dLambda * part1) );
+    //
+    //         conv = abs( f1 - f2 ) / f1 < 1e-6;
+    //
+    //         f1 = f2;
+    //
+    //       }
+    //
+    //       temp_damageShear = damage_iter;
+    //
+    //       // final update of state variables
+    //
+    //       dLambda = f_trial / ( ( stiff [ 1 ] / ( 1 - temp_damageShear ) ) + m->giveGamma() + m->giveKin() );
+    //
+    //       temp_sPi = sPi + sgn1 * dLambda / ( 1 - temp_damageShear );
+    //
+    //       Ynext = 0.5 * stiff [ 1 ] * ( slip_cur - temp_sPi ).sqNorm(); // sqNorm = self dot product
+    //
+    //       temp_zIso += dLambda;
+    //       temp_alphaKin += sgn1 * dLambda;
+    //   }
+    //   temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - temp_damageShear ) * stiff [ 1 ];
+    // }
+    else if ( newIter ){
+        // direct process - damage omega_n+1 is directly calculated (using iterative newton scheme)
+
+        Point slip_cur = slip;
+        Point tauTildaPiTrial;
+
+        temp_damageShear = damageShear;
+        temp_sPi = sPi;
+        temp_alphaKin = alphaKin;
+        temp_zIso = zIso;
+
+        slip_cur = temp_slip;
+
+        double damage_iter = temp_damageShear;
+        double damage_iter_prev = temp_damageShear;
+        double damage_calc = temp_damageShear;
+
+        //compute trials
+        tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiff [ 1 ];
+
+        f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - ( m->giveM() * stress [ 0 ] ) );
+
+        if ( f_trial < 0 ) {
+
+        } else {
+            Point h = tauTildaPiTrial - temp_alphaKin * m->giveGamma();
+            sgn1 = h / h.norm();
+
+            double f1, f2; // values to calculate numerical derivative
+
+            dLambda = f_trial / ( ( stiff [ 1 ] / ( 1 - damage_iter ) ) + m->giveGamma() + m->giveKin() );
+
+            temp_sPi = sPi + sgn1 * dLambda / ( 1 - damage_iter );
+
+            Ynext = 0.5 * stiff [ 1 ] * ( slip_cur - temp_sPi ).sqNorm();
+
+            part1 = pow(1 - damage_iter, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveM() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+
+            damage_iter = fmax(0, fmin(1 - 1e-10, damageShear + dLambda * part1) ); //limited by <0 1)
+            damage_iter_prev = damage_iter;
+            damage_calc = damage_iter;
+
+            f1 = f_trial;
+
+            while ( f_trial > 0 ) {
+              // calculate new values
+
+              dLambda = f_trial / ( ( stiff [ 1 ] / ( 1 - damage_calc ) ) + m->giveGamma() + m->giveKin() );
+
+              temp_sPi = sPi + sgn1 * dLambda / ( 1 - damage_calc );
+
+              Ynext = 0.5 * stiff [ 1 ] * ( slip_cur - temp_sPi ).sqNorm();
+
+              part1 = pow(1 - damage_iter, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveM() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+              damage_iter = fmax(0, fmin(1 - 1e-10, damageShear + dLambda * part1) );
+
+              // //compute trials
+              tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiff [ 1 ] * (1 - damage_iter);
+
+              f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - ( m->giveM() * stress [ 0 ] ) );
+              f2 = f_trial;
+
+              // calculate new value based on the numerical derivative
+              std::cout <<
+              " damage_iter_prev = " << damage_iter_prev << " f1 = " << f1 <<
+              " damage_iter = " << damage_iter << " f2 = " << f2 <<
+              '\n';
+
+              damage_calc = damage_iter_prev - f2 / ( (f1 - f2) / (damage_iter_prev - damage_iter) );
+
+
+              damage_iter_prev = damage_iter;
+              f1 = f2;
+            }
+
+            temp_damageShear = damage_iter;
+
+            // final update of state variables
+
+            dLambda = f_trial / ( ( stiff [ 1 ] / ( 1 - temp_damageShear ) ) + m->giveGamma() + m->giveKin() );
+
+            temp_sPi = sPi + sgn1 * dLambda / ( 1 - temp_damageShear );
+
+            Ynext = 0.5 * stiff [ 1 ] * ( slip_cur - temp_sPi ).sqNorm(); // sqNorm = self dot product
+
+            temp_zIso += dLambda;
+            temp_alphaKin += sgn1 * dLambda;
+        }
+        temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - temp_damageShear ) * stiff [ 1 ];
+    }
+    else {
+        // sub-stepping process - long step is cutted in a certain number of substeps
         int num_per_elastic_part = 10;
         double deltaS_full = ( temp_slip - slip ).norm();
         double elastic_part = 1e6;
@@ -861,6 +1038,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     use_slip = false;
     check_retturn_mapping = false;
     analytical_lambda = false;
+    newIterOn = false;
+    bisecOn = false;
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -899,6 +1078,10 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             check_retturn_mapping = true;
         } else if ( param.compare("analytical_lambda") == 0 ) {
             analytical_lambda = true;
+        } else if ( param.compare("new_iter_approach") == 0 ) {
+            newIterOn = true;
+        } else if ( param.compare("bisection_method") == 0 ) {
+            bisecOn = true;
         }
     }
     if ( !btau ) {
@@ -966,8 +1149,8 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
         return
         energy_PL
         + energy_D
-        - energy_Kin
-        - energy_Iso
+        // - energy_Kin
+        // - energy_Iso
         ;
     } else if ( ( code.compare("energy_PLN") == 0 ) ) {
         return energy_PL;
@@ -1263,9 +1446,10 @@ double FatigueMaterialStatus :: giveValue(string code) const {
         return DamagePlasticMaterialStatus :: giveValue("work_dissipN") + FatigueShearMaterialStatus :: giveValue("work_dissipT");
     } else if ( code.back() == 'N' ) {  // last char of string
         return DamagePlasticMaterialStatus :: giveValue(code);
-    } else {
+    } else if ( code.back() == 'T' ) {
         return FatigueShearMaterialStatus :: giveValue(code);
-        // return 0;
+    } else {
+        return 0;
         // return DisMechMaterialStatus :: giveValue(code);
     }
 }

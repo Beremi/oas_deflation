@@ -33,7 +33,7 @@ private:
     double strain_slip_multiplier;
     double regularization_multiplier_area;
 
-    bool checkReturnMap, useAnaliticalLambda;
+    bool checkReturnMap, useAnaliticalLambda, newIter, bisectionMeth;
 
     // the following are all densities ()
     double energy_PL, energy_D, energy_Kin, energy_Iso;
@@ -60,7 +60,7 @@ private:
     double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
     double m;  ///< parameter controling the pressure sensitivity
-    bool use_slip, check_retturn_mapping, analytical_lambda;
+    bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -78,6 +78,8 @@ public:
     bool useSlip() const { return use_slip; }
     bool checkReturnMap() const { return check_retturn_mapping; }
     bool analyticalLambda() const { return analytical_lambda; }
+    bool newIterativeApproachOn() const { return newIterOn; }
+    bool bisectionMethOn() const { return bisecOn; }
 };
 
 
