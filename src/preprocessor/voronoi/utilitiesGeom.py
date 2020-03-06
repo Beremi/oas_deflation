@@ -1058,7 +1058,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
     if activeMechanics:
         fl.write('#TXTNodalExporter translations 2 ux uy\n')
         fl.write('#TXTNodalExporter pressure 1 pressure\n')
-        fl.write('VTKElementExporter out  saveEvery 1e-3 cellData 1 damage\n')
+        fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage\n')
         fl.write('#VTKRCExporter faces  saveEvery 1e-1 cellData 1 damage\n')
         fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
     if activeTransport:
@@ -1160,17 +1160,27 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         print ('MechElems CONNECT WRONG NODES !!!')
 
     if (notches!=None ):
-        print('Filtering out elements connecting notch...', end='')
-        for notch in notches:
-            elementsWithoutNotch = []
-            for i in range (len(mechElemRidges)):
-                nA = mechElemRidges[i][0]
-                nB = mechElemRidges[i][1]
+        print('Filtering out elements connecting notches...' )
+        n = 0
+        elementsWithoutNotch = []
+        for i in range (len(mechElemRidges)):
+            nA = mechElemRidges[i][0]
+            nB = mechElemRidges[i][1]
 
-                if not ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
-                    elementsWithoutNotch.append(mechElemRidges[i])
+            addElem = True
+            n=0
+            for notch in notches:
+                if ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
+                    print('%d'%n)
+                    addElem = False
+                    break
+                n+=1
 
-            mechElemRidges = elementsWithoutNotch
+            if addElem == True:
+                elementsWithoutNotch.append(mechElemRidges[i])
+
+        mechElemRidges = elementsWithoutNotch
+
         print('done.')
 
 

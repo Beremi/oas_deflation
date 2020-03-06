@@ -57,13 +57,13 @@ if __name__ == '__main__':
     activeMechanics = 1
 
     #dimensions of rectangle model
-    Xdim = 1.0
-    Ydim = 0.2
-    Zdim = 0.2
+    Xdim = 0.25
+    Ydim = 0.06
+    Zdim = 0.05
 
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
-    minDist = 0.07
+    minDist = 0.012
 
     #trials of random node positioning
     trials = 40000
@@ -152,8 +152,8 @@ if __name__ == '__main__':
         """
 
         #2d dogbone
-        #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dDogBone(minDist, trials, D=0.2 )
-        #materialZones=None
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, govNodes, govNodesMechBC, rigidPlates   = utilitiesModeling.create2dDogBone(minDist, trials, D=0.2 )
+        materialZones=None
 
     if (dim == 3):
 
@@ -190,21 +190,31 @@ if __name__ == '__main__':
         #3d dogbone
         """
         D=0.2
-        materialZones = utilitiesModeling.assembleMaterialZones (minDist*2.5, 3, model='dogbone',  D=D, thickness=0.1)
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create3dDogBone(minDist, trials, D=D )
+        materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, 3, model='dogbone',  D=D, thickness=0.1)
+        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, govNodes, govNodesMechBC, rigidPlates   = utilitiesModeling.create3dDogBone(minDist, trials, D=D )
         """
 
         #3d ss 3PB
         """
         notchH = 0.15
-        node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.1,fracZoneWidth = 0.2)
+        node_coords, mechBC_merged, mechIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.1,fracZoneWidth = 0.2)
         materialZones = None
         """
 
+        """
         #DURHAM - cylinder torsion, press
+        #Cusatis "Lattice discrete particle model: Calibration and validation 2011"
         materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, 3, model='box', maxLim=maxLim)
         node_coords, mechBC_merged,  vor, areas, functions,govNodes, govNodesMechBC, rigidPlates    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
+        """
 
+        #DURHAM - prism tension 250x60x50
+        #Reinhardt "Tensile tests and failure analysis of concrete 1986"
+
+        maxLim = np.array([0.25,0.06,0.05])
+        materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, dim, model='box', maxLim=maxLim)
+        node_coords, mechBC_merged, mechIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dReinhardtTension(maxLim, minDist, trials,fracZoneWidth = 0.25)
+        materialZones = None
 
 
     node_coords = np.asarray(node_coords)

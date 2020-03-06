@@ -28,10 +28,16 @@ class RigidPlate:
         nodesAffected = []
         for n in range(len(nodes)):
             coords = nodes[n][0:self.dim]
-            if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
-                coords[1]>self.limits[2] and coords[1]<self.limits[3] and
-                coords[2]>self.limits[4] and coords[2]<self.limits[5]):
-                nodesAffected.append(n)
+            if self.dim==2:
+                if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
+                    coords[1]>self.limits[2] and coords[1]<self.limits[3]):
+                    nodesAffected.append(n)
+            if self.dim==3:
+                if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
+                    coords[1]>self.limits[2] and coords[1]<self.limits[3] and
+                    coords[2]>self.limits[4] and coords[2]<self.limits[5]):
+                    nodesAffected.append(n)
+
         return nodesAffected
 
 
