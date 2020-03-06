@@ -1171,7 +1171,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
             n=0
             for notch in notches:
                 if ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
-                    print('%d'%n)
+                    #print('%d'%n)
                     addElem = False
                     break
                 n+=1

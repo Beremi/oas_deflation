@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
-    minDist = 0.012
+    minDist = 0.01
 
     #trials of random node positioning
     trials = 40000
@@ -213,7 +213,7 @@ if __name__ == '__main__':
 
         maxLim = np.array([0.25,0.06,0.05])
         materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, dim, model='box', maxLim=maxLim)
-        node_coords, mechBC_merged, mechIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dReinhardtTension(maxLim, minDist, trials,fracZoneWidth = 0.25)
+        node_coords, mechBC_merged, mechIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dReinhardtTension(maxLim, minDist, trials,fracZoneWidth = 0.3)
         materialZones = None
 
 

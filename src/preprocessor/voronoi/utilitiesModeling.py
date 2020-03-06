@@ -2471,7 +2471,7 @@ def assemble3DReinhardtTension (maxLim, minDist, trials, fracZoneWidth = 0.15):
     govNodes.append(np.array([ indent, maxLim[1]/2 , maxLim[2]/2 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
     #rigid plate left support
-    rightRigidPlateMechBC = np.array([0,0,0, 0,0,0,  1,-1,-1,-1,-1,-1])
+    rightRigidPlateMechBC = np.array([-1,0,0, 0,0,0,  1,-1,-1,-1,-1,-1])
     rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
     -indentRP+maxLim[0],
     +indentRP+maxLim[0],
