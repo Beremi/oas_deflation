@@ -581,7 +581,7 @@ void FatigueShearMaterialStatus :: init() {
     lambda = temp_lambda = 0;
     zIso = prev_zIso = temp_zIso = 0;
     sPi = prev_sPi = temp_sPi = Point();
-    stressT = temp_stressT = Point();
+    prev_stressT = stressT = temp_stressT = Point();
     alphaKin = prev_alphaKin = temp_alphaKin = Point();
     slip = temp_slip = Point();
 
@@ -742,6 +742,7 @@ void FatigueShearMaterialStatus :: update() {
     prev_sPi = sPi;
     prev_alphaKin = alphaKin;
     prev_zIso = zIso;
+    prev_stressT = stressT;
 
     work_tot += dot(temp_slip - slip, ( temp_stressT + stressT ) * 0.5);
 
@@ -753,7 +754,7 @@ void FatigueShearMaterialStatus :: update() {
     lambda = temp_lambda;
     stressT = temp_stressT;
 
-    energy_PL += dot(temp_stressT, sPi - prev_sPi);
+    energy_PL += dot((temp_stressT + prev_stressT) * 0.5, sPi - prev_sPi);
     energy_D += Ynext * ( damageShear - prev_damageShear );
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     energy_Kin += dot(alphaKin * m->giveGamma(), ( alphaKin - prev_alphaKin ) );
@@ -954,7 +955,7 @@ void DamagePlasticMaterialStatus :: init() {
     zN = temp_zN = prev_zN = 0;
     rN = temp_rN = 0;
     temp_Y = prev_Y = Y_next = 0;
-    stressN = temp_stressN = 0;
+    prev_stressN = stressN = temp_stressN = 0;
 
     energy_PL = energy_D = energy_Kin = energy_Iso = work_tot = 0;
 
@@ -971,6 +972,8 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
     }
 
     if ( this->symmetric ) {
+        // symetric const law can be prescribed on the input
+        // this means the same behavior in compression as in tension (according to tensile parameters (positive strain))
         temp_epsN = abs(strain [ 0 ] * strain_displ_multiplier);
     } else {
         temp_epsN = strain [ 0 ] * strain_displ_multiplier;
@@ -1053,6 +1056,7 @@ void DamagePlasticMaterialStatus :: update() {
     prev_zN = zN;
     prev_alphaN = alphaN;
     prev_Y = Y_next;
+    prev_stressN = stressN;
 
     work_tot += ( temp_epsN - epsN ) * ( temp_stressN + stressN ) * 0.5;
 
@@ -1065,7 +1069,7 @@ void DamagePlasticMaterialStatus :: update() {
     stressN = temp_stressN;
     Y_next = temp_Y;
 
-    energy_PL += stressN * ( epsNP - prev_epsNP );
+    energy_PL += 0.5 * (stressN + prev_stressN) * ( epsNP - prev_epsNP );
     energy_D += Y_next * ( damage - prev_damage );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     energy_Kin += ( alphaN * m->giveGammaN() ) * ( alphaN - prev_alphaN );
