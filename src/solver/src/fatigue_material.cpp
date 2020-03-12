@@ -544,7 +544,11 @@ double FatigueShearMaterialStatus :: giveValue(string code) const {
         // - energy_Iso
         ;
     } else if ( ( code.compare("energy_PLT") == 0 ) ) {
-        return energy_PL;
+        return
+        energy_PL
+        - energy_Kin
+        - energy_Iso
+        ;
     } else if ( ( code.compare("energy_DT") == 0 ) ) {
         return energy_D;
     } else if ( ( code.compare("energy_KinT") == 0 ) ) {
@@ -915,7 +919,11 @@ double DamagePlasticMaterialStatus :: giveValue(string code) const {
         // - energy_Iso
         ;
     } else if ( ( code.compare("energy_PLN") == 0 ) ) {
-        return energy_PL;
+        return
+        energy_PL
+        - energy_Kin
+        - energy_Iso
+        ;
     } else if ( ( code.compare("energy_DN") == 0 ) ) {
         return energy_D;
     } else if ( ( code.compare("energy_KinN") == 0 ) ) {
