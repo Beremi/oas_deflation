@@ -102,6 +102,10 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
         return R [ 2 ] [ 2 ];
     } else if ( code.compare("volume") == 0 ) {
         return area * length / ndim;
+    } else if ( code.compare("area") == 0 ) {
+        return area;
+    } else if ( code.compare("length") == 0 ) {
+        return length;
     } else if ( code.compare("energy_total_elem") == 0 ) {
         // TODO all following repair in the way that anything ending by _elem would be multiplied by area mat->giveValue(code without '_elem') * ( area * length / ndim )
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
