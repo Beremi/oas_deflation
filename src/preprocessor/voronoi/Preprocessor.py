@@ -22,7 +22,7 @@ import utilitiesGeom, utilitiesMech, utilitiesModeling, utilitiesNumeric, vorono
 
 
 if __name__ == '__main__':
-    nrOfModels = 20
+    nrOfModels = 1
     for model in range (nrOfModels):
         print('\nCreating model nr %d' %model)
         print('%%%%%%%%% LATTICE PREPROCESSOR STARTED %%%%%%%%%')
