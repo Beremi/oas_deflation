@@ -29,10 +29,12 @@ if __name__ == '__main__':
         file = sys.argv[1]
         print('Loading %s' %file)
         printAvaiableData(file)
+        print('Now call me again and add indices x0 y0 x1 y1 ... xi yi.')
+        print('For reversing values, use negative indices.')
         sys.exit()
 
     else:
-        print('Give me FILENAME as an argument!')
+        print('Give me FILENAME as first argument and call me again!')
         sys.exit()
 
 
@@ -48,7 +50,7 @@ if __name__ == '__main__':
     for pl in plotIdxs:
         ix = pl[0]
         iy = pl[1]
-        
+
         dx = np.copy(data[:,np.abs(ix)])
         if (ix<0): dx *= -1
         titleX += '%s, ' %header.split('\t')[np.abs(ix)]

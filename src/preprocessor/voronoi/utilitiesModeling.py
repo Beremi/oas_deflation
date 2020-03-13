@@ -47,6 +47,15 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None):
         coordsB = np.array([ maxLim[0], 0, 0 ])
         measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'total', True))
 
+    if(type=='3pb2d'):
+        coordsA = np.array([ maxLim[0]/2, maxLim[1]])
+        coordsB = np.array([ 0, 0 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
+
+    if(type=='3pb3d'):
+        coordsA = np.array([ maxLim[0]/2, maxLim[1], maxLim[2]])
+        coordsB = np.array([ 0, 0, 0 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
 
     return measuringGauges
     """
@@ -237,7 +246,7 @@ def createDiamondTestModel(width, height):
 def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1 ):
     print('Creating 2d simply supported beam, uniform load.')
     #
-    node_coords, mechBC_merged, mechInitC_merged, notchNodes  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -250,57 +259,16 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1 ):
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
 
-    #1 loading function, single force top right, bilinear
+    #1 loading function
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([50, -50e4]) )
+    func1.append( np.array([1, -1e-2]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
-    #transport function, leftFace, constant
-    fn2 = utilitiesNumeric.constantFunc(20)
-    functions.append (fn2)
-
-    #transport function, rightFace, bilinear
-    func3 = []
-    func3.append( np.array([0,0]) )
-    func3.append( np.array([50, 500]) )
-    fn3 = utilitiesNumeric.generalFunc(func3)
-    functions.append (fn3)
-
-    #function from txt data_table
-    #funcFromTxt = utilitiesNumeric.PWLFuncFromTxt('data_table.txt')
-    #functions.append(funcFromTxt)
-
-    ########################################################################
-    ### indirect setting of transportBCs by spatial selection of vertices
-    transportBC_merged = []
-    transportIC_merged = []
-    ### selecting vertices on the left surface
-    leftFaceBC = np.array([2,-1])
-    #leftFaceIC = 25.6
-    boundA = np.array(  [-1e-8 , maxLim[1]/10*8] )
-    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
-    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    #print(leftFace)
-    for i in range (len(leftFace)):
-        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
-        transportBC_merged.append(trsBC)
-        #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
-        #transportIC_merged.append(trsIC)
-
-    ### selecting vertices on the right surface
-    rightFaceBC = np.array([3,-1])
-    boundA = np.array(  [maxLim[0] - 1e-8 , - 1e-8] )
-    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]/10*2 ] )
-    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    #print(rightFace)
-    for i in range (len(rightFace)):
-        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
-        transportBC_merged.append(trsBC)
 
 
-    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, notchNodes
+    return node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates
 
 
 def create2dCantileverBending(maxLim, minDist, trials ):
@@ -795,7 +763,7 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15 ):
     print('Creating 3d simply supported beam, uniform load.')
     #govNodes, rigidPlates
-    node_coords, mechBC_merged, mechInitC_merged, notchNodes, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth);
     node_coords = np.asarray(node_coords)
     """
     fig = plt.figure()
@@ -818,14 +786,14 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     #1 loading function, top surface,
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([1, -50e3]) )
+    func1.append( np.array([1, -1e-2]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
 
 
 
-    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notchNodes, govNodes, govNodesMechBC, rigidPlates
+    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates
 
 
 
@@ -1745,6 +1713,9 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth):
     node_coords = []
     mechBC_merged = []
     mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
 
     #an indent due to mirroring of the data for voronoi tess.
     notches=[]
@@ -1756,7 +1727,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth):
         nodeA = np.array([maxLim[0]/2-notchWidth, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch])
         oldLen = len(node_coords)
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
         for i in range (oldLen, len(node_coords), 1):
             notchSide0.append(i)
 
@@ -1764,87 +1735,94 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth):
         nodeA = np.array([maxLim[0]/2+indent, indent])
         nodeB = np.array([maxLim[0]/2+indent, maxLim[1]*notch])
         oldLen = len(node_coords)
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
         for i in range (oldLen, len(node_coords), 1):
             notchSide1.append(i)
 
-        notch = []
-        notch.append(notchSide0)
-        notch.append(notchSide1)
-        notches.append(notch)
+        notchA = []
+        notchA.append(notchSide0)
+        notchA.append(notchSide1)
+        notches.append(notchA)
 
     #width of the supports
     supportWidth = maxLim[0] / 80
 
-    ###############generating of nodes, left horizontal support ###############
-    #mech bc
-    lineBC = np.array([0,0,-1,-1,-1,-1])
 
+    ##################### CONSTRAINTS AND RIGID PLATES
+    #rigid plate left support
+    indentRP = 1e-3
+    leftRigidPlateMechBC = np.array([0,0,-1, -1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([ -indentRP, supportWidth+indentRP, -indentRP, 2*indentRP ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ indent+supportWidth/2, indent ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+    #rigid plate left support
+    rightRigidPlateMechBC = np.array([-1,0,-1, -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-2, 2, np.array([ maxLim[0] - 2*indentRP-supportWidth, maxLim[0] + indentRP, -indentRP, 2*indentRP ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0]-indent-supportWidth/2, indent ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+    #rigid plate top load
+    topRigidPlateMechBC = np.array([-1,1,-1, -1,-1,-1])
+    topRigidPlate = utilitiesMech.RigidPlate(-3, 2,
+    np.array([
+     0.5*maxLim[0]*(1-loadWidth)-indentRP,
+    maxLim[0]  - 0.5*maxLim[0]*(1-loadWidth)+indentRP,
+    maxLim[1] - 2*indentRP,
+    maxLim[1] + 2*indentRP  ]))
+    rigidPlates.append(topRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2, maxLim[1]-indent ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -3, topRigidPlateMechBC))
+    ####################
+
+
+
+    ###############generating of nodes, left horizontal support ###############
     #defining points of the line
     nodeA = np.array([indent, indent])
     nodeB = np.array([indent + supportWidth, indent])
-
-    oldLen = len(node_coords)
     pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
-    nrOfPoints =  (len(node_coords)) - oldLen
-    #print (nrOfPoints)
-
-    #adding mech boundary conditions
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
-        mechBC_merged.append(mBC)
-
-        #print('adding')
-
     ###############generating of nodes, right horizontal support ###############
-    #mech bc
-    lineBC = np.array([-1,0,-1,-1,-1,-1])
-
     #defining points of the line
     nodeA = np.array([maxLim[0] - supportWidth -indent, indent])
     nodeB = np.array([maxLim[0] - indent, indent])
-
-    oldLen = len(node_coords)
     pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
-    nrOfPoints =  (len(node_coords)) - oldLen
-    #print (nrOfPoints)
-
-    #adding mech boundary conditions
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
-        mechBC_merged.append(mBC)
-        #print('adding')
-
     ############### loaded top face ###############
-    lineBC = np.array([-1,-1,-1,-1, 1,-1])
-    #lineIC = np.array([12.1 , 24.2  , 36.3])
-
-    #defining points of the line
     nodeA =  np.array([indent + 0.5*maxLim[0]*(1-loadWidth) , maxLim[1] - indent])
     nodeB =  np.array([maxLim[0] - indent - 0.5*maxLim[0]*(1-loadWidth) , maxLim[1] - indent])
-
-
-    oldLen = len(node_coords)
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, True)
-    nrOfPoints =  (len(node_coords)) - oldLen
-
-    #adding mech boundary conditions
-    for n in range ( nrOfPoints ):
-        mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
-        mechBC_merged.append(mBC)
-
-
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/4, dim, node_coords,  trials, True, True)
     ##########################################generating of points, homogeneous volume
-    rectBC = np.array([-1,-1,-1,-1,-1,-1])
+
+
+    fracZoneWidth = 0.08
+    ##########################################generating of points, fracture zone
+    maxLimF = np.array([
+    maxLim[0] - indent - 0.5*maxLim[0]*(1-fracZoneWidth),
+    maxLim[1] - indent,
+    indent + 0.5*maxLim[0]*(1-fracZoneWidth),
+    maxLim[1]*notch*0.8])
+    pointGenerators.generateNodesRect(maxLimF, minDist/3, dim, trials, node_coords, useLowBound=True)
+    ##########################################generating of points, left support
+    maxLimF = np.array([
+    supportWidth*2,
+    supportWidth*2,
+    indent,
+    indent])
+    pointGenerators.generateNodesRect(maxLimF, minDist/3, dim, trials, node_coords, useLowBound=True)
+    ##########################################generating of points, right support
+    maxLimF = np.array([
+    maxLim[0],
+    supportWidth*2,
+    maxLim[0]-supportWidth*2,
+    indent])
+    pointGenerators.generateNodesRect(maxLimF, minDist/3, dim, trials, node_coords, useLowBound=True)
+
 
     #rect
-    oldLen = len(node_coords)
     pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
-    #
-    newLen = len(node_coords)-1
 
 
-    return node_coords, mechBC_merged, mechInitC_merged, notches
+    return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
 
 
 
@@ -2209,27 +2187,27 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     #an indent due to mirroring of the data for voronoi tess.
     notches=[]
     indent = 1e-8
-    notchWidth = 10e-3/2
+    notchWidth = 5e-3/2
     #generating notch points
     if (notch > 0):
         notchSide0 = []
         oldLen = len(node_coords)
         nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/3, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
         nodeA = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/3, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
         nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch, indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/3, dim, node_coords, trials, catchCorners=False, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
         nodeA = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/3, dim, node_coords, trials, catchCorners=False, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
 
         nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch, maxLim[2]-indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/3, dim, node_coords, trials,minDistAmongNewPoints=True)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials,minDistAmongNewPoints=True)
         for i in range (oldLen, len(node_coords), 1):
             notchSide0.append(i)
 
@@ -2269,7 +2247,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     """
 
     #width of the supports
-    supportWidth = maxLim[0] / 40
+    supportWidth = maxLim[0] / 80
 
     ##################### CONSTRAINTS AND RIGID PLATES
     #rigid plate left support
@@ -2286,7 +2264,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     govNodes.append(np.array([ maxLim[0]-indent-supportWidth/2, indent, maxLim[2]/2 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
     #rigid plate top load
-    topRigidPlateMechBC = np.array([-1,-1,-1, -1,-1,-1,  -1,1,-1,-1,-1,-1])
+    topRigidPlateMechBC = np.array([-1,1,-1, -1,-1,-1,  -1,-1,-1,-1,-1,-1])
     topRigidPlate = utilitiesMech.RigidPlate(-3, 3,
     np.array([
      0.5*maxLim[0]*(1-loadWidth)-indentRP,
@@ -2339,7 +2317,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     lineBC = np.array([-1,-1,-1,-1,-1,-1,  -1, 1,-1,-1,-1,-1])
     nodeA =  np.array([indent + 0.5*maxLim[0]*(1-loadWidth), maxLim[1] - indent, indent])
     nodeB =  np.array([maxLim[0] - indent - 0.5*maxLim[0]*(1-loadWidth), maxLim[1] - indent, maxLim[2] - indent])
-    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials)
 
     #front surf
     nodeA =  np.array([indent , maxLim[1] - indent, indent])
@@ -2378,7 +2356,34 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     maxLim[1] - indent,
     maxLim[2] - indent,
     indent + 0.5*maxLim[0]*(1-fracZoneWidth),
-    maxLim[1]*notch/2*0+indent,
+    maxLim[1]*notch*0.8+indent,
+    indent])
+    pointGenerators.generateNodesRect(maxLimF, minDist/2, dim, trials, node_coords, useLowBound=True)
+    ##########################################generating of points, fracture zone
+    maxLimF = np.array([
+    maxLim[0] - indent - 0.5*maxLim[0]*(1-fracZoneWidth),
+    maxLim[1] - indent,
+    maxLim[2] - indent,
+    indent + 0.5*maxLim[0]*(1-fracZoneWidth),
+    indent,
+    indent])
+    pointGenerators.generateNodesRect(maxLimF, minDist/2, dim, trials, node_coords, useLowBound=True)
+    ##########################################generating of points, left support
+    maxLimF = np.array([
+    supportWidth*2,
+    supportWidth*2,
+    maxLim[2]-indent,
+    indent,
+    indent,
+    indent])
+    pointGenerators.generateNodesRect(maxLimF, minDist/2, dim, trials, node_coords, useLowBound=True)
+    ##########################################generating of points, right support
+    maxLimF = np.array([
+    maxLim[0],
+    supportWidth*2,
+    maxLim[2]-indent,
+    maxLim[0]-supportWidth*2,
+    indent,
     indent])
     pointGenerators.generateNodesRect(maxLimF, minDist/2, dim, trials, node_coords, useLowBound=True)
 

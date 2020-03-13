@@ -1,0 +1,26 @@
+#TXTNodalExporter translations 2 ux uy
+#TXTNodalExporter pressure 1 pressure
+VTKElementExporter out  saveEvery 1e-4 cellData 1 damage
+#VTKRCExporter faces  saveEvery 1e-1 cellData 1 damage
+#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ
+ForceGauge LD fx#5219 fx 1 5219
+ForceGauge LD fy#5219 fy 1 5219
+ForceGauge LD fz#5219 fz 1 5219
+ForceGauge LD mx#5219 mx 1 5219
+ForceGauge LD my#5219 my 1 5219
+ForceGauge LD mz#5219 mz 1 5219
+ForceGauge LD fx#5220 fx 1 5220
+ForceGauge LD fy#5220 fy 1 5220
+ForceGauge LD fz#5220 fz 1 5220
+ForceGauge LD mx#5220 mx 1 5220
+ForceGauge LD my#5220 my 1 5220
+ForceGauge LD mz#5220 mz 1 5220
+ForceGauge LD fx#5221 fx 1 5221
+ForceGauge LD fy#5221 fy 1 5221
+ForceGauge LD fz#5221 fz 1 5221
+ForceGauge LD mx#5221 mx 1 5221
+ForceGauge LD my#5221 my 1 5221
+ForceGauge LD mz#5221 mz 1 5221
+DisplacementGauge LD ux#totalLS	ux	6.930000e-01	3.000000e-01	0.000000e+00	0.000000e+00
+DisplacementGauge LD uy#totalLS	uy	6.930000e-01	3.000000e-01	0.000000e+00	0.000000e+00
+DisplacementGauge LD uz#totalLS	uz	6.930000e-01	3.000000e-01	0.000000e+00	0.000000e+00

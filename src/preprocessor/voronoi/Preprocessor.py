@@ -59,14 +59,22 @@ if __name__ == '__main__':
         activeTransport = 0
         activeMechanics = 1
 
+        #Cusatis 3PB:
+        #A: 1.131 / 0.2 / 0.1
+        #B: 1.386 / 0.3 / 0.1
+        #C: 0.8 / 0.1 / 0.1
+        #Cusatis torsion-compression cylinder:
+        # X: 0.4445, diameter: 0.2286
+
         #dimensions of rectangle model
-        Xdim = 0.25 #also length of cylinder
-        Ydim = 0.1 #also diameter of cylinder
-        Zdim = 0.05
+        Xdim = 1.386             #also length of cylinder
+        Ydim = 0.3              #also diameter of cylinder
+        Zdim = 0.1
 
         #size of grains (minimum distance between nodes)
         #be cautious with small grains!
-        minDist = 0.004
+        #for 3PB insert 2xmindist
+        minDist = 0.016
 
         #trials of random node positioning
         trials = 30000
@@ -147,19 +155,22 @@ if __name__ == '__main__':
             #"""
 
             #simply supported NOTCHED beam, uniform load
-            """
-            notchH = 0.1 #notch height in percentage of total beam height
-            node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, notches  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.1)
-            materialZones=None
-            print(notches)
-            """
 
+            notchH = 0.5 #notch height in percentage of total beam height
+            node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05)
+            materialZones=None
+            measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=maxLim)
+            #print(notches)
+
+
+            """
             #2d dogbone
             #A=0.05, B=0.1, C=0.2, D=0.4, E=0.8, F=1.6
             D=0.1
             node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions, govNodes, govNodesMechBC, rigidPlates   = utilitiesModeling.create2dDogBone(minDist, trials, D=D )
             materialZones=None
             measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=D)
+            """
 
         if (dim == 3):
 
@@ -207,9 +218,10 @@ if __name__ == '__main__':
             """
 
             #3d ss 3PB
-            """
-            notchH = 0.15
-            node_coords, mechBC_merged, mechIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.1,fracZoneWidth = 0.2)
+
+            notchH = 0.5
+            node_coords, mechBC_merged, mechIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05,fracZoneWidth = 0.15)
+            measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=maxLim)
             materialZones = None
             #"""
 
@@ -221,7 +233,7 @@ if __name__ == '__main__':
             measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=maxLim)
             #"""
 
-
+            """
             #DURHAM - prism tension 250x60x50
             #Reinhardt "Tensile tests and failure analysis of concrete 1986"
             maxLim = np.array([0.25,0.06,0.05])
