@@ -481,17 +481,17 @@ def randPointInCilinder(center, radius, height, directionDim):
     rn = np.random.uniform()
 
     if (directionDim == 0 ):
-        point[0] = height * rn
+        point[0] = height * np.random.uniform()
         point[1] = radius * np.cos(angle) * rn
         point[2] = radius * np.sin(angle) * rn
     if (directionDim == 1):
         point[0] = radius * np.cos(angle) * rn
-        point[1] = height * rn
+        point[1] = height * np.random.uniform()
         point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
         point[0] = radius * np.cos(angle) * rn
         point[1] = radius * np.sin(angle) * rn
-        point[2] = height * rn
+        point[2] = height * np.random.uniform()
 
     return point
 

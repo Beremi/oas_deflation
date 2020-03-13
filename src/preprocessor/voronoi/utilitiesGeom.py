@@ -977,6 +977,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
          else:
              fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile))
+             fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
          fl.write("MatFiles\t1\t%s\n"%materialsFile)
          if (activeTransport and activeMechanics):
              fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
@@ -987,7 +988,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
          elif  (activeMechanics):
              fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
              fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
-         fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
+
      else:
          fl.write("Dimension\t%d\n"%dim)
          if (solver == 0):
@@ -1476,22 +1477,24 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount):
     print('done.')
 
 
-#DisplacementGauge LD elongation ux 0 0.5 1 0.5
-#ForceGauge LD load fx 1 2502
-#ForceGauge LD react fx 1 2501
-def saveForceGauge(master_folder, dir, nodeIdx):
+## ForceGauge file_name gauge_name which_force how_many node_ids
+#ForceGauge LD reactF fx 1 5678
+def saveForceGauge(master_folder, dir,columnName, nodeIdx):
     print('Saving force %s gauge for node %d' %(dir, nodeIdx) )
     fl=open(os.path.join(master_folder,exportersFile),'a')
-    fl.write('ForceGauge LD %s 1 %d\n' %(dir, nodeIdx))
+    fl.write('ForceGauge LD %s %s 1 %d\n' %(dir, columnName, nodeIdx))
     fl.close()
 
-def saveDisplacementGauge(master_folder, dir, coords):
-    print('Saving displacement %s gauge for coords %d' %(dir, coords) )
+### displacement gauge uy x1coord y1coord x2coord y2coord
+#DisplacementGauge LD phiX rotx 0 0 0 1.0 0 0
+#DisplacementGauge LD uX ux 0 0 0 1.0 0 0
+def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
+    print('Saving displacement %s gauge between point %s and %s' %(dir, coordsA, coordsB) )
     fl=open(os.path.join(master_folder,exportersFile),'a')
-    if (len(coords)==4):
-        fl.write('DisplacementGauge\tLD\telongation\t%s\t%e\t%e\t%e\t%e\n' %(dir, coords[0],coords[1], coords[2], coords[3]))
-    if (len(coords)==6):
-        fl.write('DisplacementGauge\tLD\telongation\t%s\t%e\t%e\t%e\t%e\t%e\t%e\n' %(dir, coords[0],coords[1], coords[2], coords[3],coords[4], coords[5]))
+    if (len(coordsA)==2):
+        fl.write('DisplacementGauge LD %s\t%s\t%e\t%e\t%e\t%e\n' %(columnName, dir, coordsA[0],coordsA[1],coordsB[0],coordsB[1]))
+    if (len(coordsA)==3):
+        fl.write('DisplacementGauge LD %s\t%s\t%e\t%e\t%e\t%e\t%e\t%e\n' %(columnName, dir, coordsA[0],coordsA[1], coordsA[2],coordsB[0],coordsB[1], coordsB[2]))
     fl.close()
 
 def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes):
@@ -1503,13 +1506,10 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
         m.nodeIdx = totalNodeCount + i
     saveMechBC(master_folder,dim, govNodesMechBC, govNodesBC = True)
 
-    """
-    for m in govNodesMechBC:
-        saveForceGauge(master_folder, 'fx', m.nodeIdx )
-        saveForceGauge(master_folder, 'fy', m.nodeIdx )
-        saveForceGauge(master_folder, 'fz', m.nodeIdx )
-        #saveDisplacementGauge(master_folder, dir, np.array[])
-    """
+    #saving force gauges for rigid plates
+    for i in range (len(govNodesMechBC)):
+        saveForceGauges(master_folder, govNodesMechBC[i].nodeIdx)
+
     #saving rigid plates
     saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount)
 
@@ -1519,13 +1519,30 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
 
 
 
+def saveForceGauges(master_folder, nodeIdx, moments=True):
+    saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
+    saveForceGauge(master_folder, 'fy#%d'%nodeIdx, 'fy', nodeIdx )
+    saveForceGauge(master_folder, 'fz#%d'%nodeIdx, 'fz', nodeIdx )
+    if moments == True:
+        saveForceGauge(master_folder, 'mx#%d'%nodeIdx , 'mx', nodeIdx )
+        saveForceGauge(master_folder, 'my#%d'%nodeIdx, 'my', nodeIdx )
+        saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
+
+#saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
+def saveDisplacementGauges(master_folder, name, coordsA, coordsB, rotations = False):
+    saveDisplacementGauge(master_folder, 'ux#%s'%name, 'ux', coordsA, coordsB )
+    saveDisplacementGauge(master_folder, 'uy#%s'%name, 'uy', coordsA, coordsB )
+    saveDisplacementGauge(master_folder, 'uz#%s'%name, 'uz', coordsA, coordsB )
+    if rotations == True:
+        saveDisplacementGauge(master_folder, 'rotx#%s'%name , 'rotx', coordsA, coordsB )
+        saveDisplacementGauge(master_folder, 'roty#%s'%name, 'roty', coordsA, coordsB )
+        saveDisplacementGauge(master_folder, 'rotz#%s'%name, 'rotz', coordsA, coordsB )
 
 
-
-
-
-
-
+def saveMeasuringGauges(master_folder, measuringGauges):
+    print('Saving measuring gauges...')
+    for mg in measuringGauges:
+        saveDisplacementGauges(master_folder,  mg.name, mg.coordsA, mg.coordsB, rotations = mg.rotation)
 
 
 def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):

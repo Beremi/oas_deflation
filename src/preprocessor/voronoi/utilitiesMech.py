@@ -4,7 +4,12 @@ import scipy
 import math
 from IPython.display import clear_output
 
-
+class MeasuringGauge:
+    def __init__ (self, coordsA, coordsB, name, rotation):
+        self.coordsA = coordsA
+        self.coordsB = coordsB
+        self.name = name
+        self.rotation = rotation
 
 class RigidPlate:
     def __init__ (self, govNodeIdx, dim, limits):
