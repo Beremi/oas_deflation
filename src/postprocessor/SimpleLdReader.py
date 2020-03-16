@@ -46,6 +46,8 @@ if __name__ == '__main__':
     fig.subplots_adjust(bottom=0.2, left=0.2)
     titleX = ''
     titleY = ''
+    plottedData = []
+    headerLine = ''
 
     for pl in plotIdxs:
         ix = pl[0]
@@ -54,11 +56,15 @@ if __name__ == '__main__':
         dx = np.copy(data[:,np.abs(ix)])
         if (ix<0): dx *= -1
         titleX += '%s, ' %header.split('\t')[np.abs(ix)]
+        headerLine += '%s\t' %header.split('\t')[np.abs(ix)]
 
         dy = np.copy(data[:,np.abs(iy)])
         if (iy<0): dy *= -1
         titleY += '%s, ' %header.split('\t')[np.abs(iy)]
+        headerLine += '%s\t' %header.split('\t')[np.abs(iy)]
 
+        plottedData.append(dx)
+        plottedData.append(dy)
         ax.plot(dx, dy, label= 'X:%s / Y:%s' %(header.split('\t')[np.abs(ix)], header.split('\t')[np.abs(iy)]))
 
 
@@ -66,6 +72,14 @@ if __name__ == '__main__':
     ax.grid()
     leg = ax.legend()
     fig.savefig("%s-%s.png" %(titleX, titleY))
+
+    fl=open('plottedData.txt','w')
+    plottedData = np.asarray(plottedData).transpose()
+    #print(plottedData)
+    np.savetxt(fl,  plottedData, delimiter='\t',   header = headerLine)
+    fl.close()
+    print('plottedData.txt saved')
+
     plt.show()
 
 
