@@ -58,17 +58,17 @@ if __name__ == '__main__':
     powerTes = False
 
     #dimension
-    dim = 3
+    dim = 2
     print('Creating a %dd lattice model...' %dim)
 
     #coupled problem?
     activeTransport = 1
-    activeMechanics = 1
+    activeMechanics = 0
 
 
     #dimensions of rectangle model
     Xdim = 1.
-    Ydim = 0.3
+    Ydim = 1.
     Zdim = 0.5
 
     #dimensions of cylinder model
@@ -85,8 +85,6 @@ if __name__ == '__main__':
 
     #size of grains (minimum distance between nodes)
     #be cautious with small grains!
-
-    minDist = 0.08
 
     radius = minDist / 2
     elaX = minDist / Xdim * 2
@@ -132,7 +130,8 @@ if __name__ == '__main__':
     if (dim == 2):
 
         #patch test for Transport
-        #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+        node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+        materialZones=None
 
         #cantilever bending
         #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )

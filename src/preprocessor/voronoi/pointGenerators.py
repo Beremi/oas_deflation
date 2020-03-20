@@ -97,6 +97,17 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
                 di += 1
                 numi = 0.
 
+        """
+        print(node_coords.shape, radii.shape)
+        node_coords = np.zeros((400,2))
+        radii = np.zeros(400)
+        for i in range(20):
+            for j in range(20):
+                node_coords[20*i+j,0] = (i+0.5)/20+np.random.rand()/1000.
+                node_coords[20*i+j,1] = (j+0.5)/20+np.random.rand()/1000.
+        print(node_coords.shape, radii.shape)
+        """
+
         return node_coords, radii
 
 def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
