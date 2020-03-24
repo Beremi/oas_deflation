@@ -1306,8 +1306,8 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
     #1 loading function, pressure X
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([0.5, -50e3]) )
-    func1.append( np.array([1, -50e3]) )
+    func1.append( np.array([0.5, -1e-3]) )
+    func1.append( np.array([1, -1e-3]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
@@ -1315,7 +1315,7 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
     func2 = []
     func2.append( np.array([0,0]) )
     func2.append( np.array([0.5, 0]) )
-    func2.append( np.array([1, 10e3]) )
+    func2.append( np.array([1, 1e-3]) )
     fn2 = utilitiesNumeric.generalFunc(func2)
     functions.append (fn2)
 
@@ -3071,7 +3071,7 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
 
     ### nodes for gauges
     node_coords.append( center+indent)
-    #node_coords.append( np.array([height-indent, 0, 0])  )
+    #node_coords.append( np.array([height-2*indent, 0, 0])  )
 
     ##################### CONSTRAINTS AND RIGID PLATES
     #rigid plate left support
@@ -3085,10 +3085,10 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
       -2*radius,
        2*radius ]))
     rigidPlates.append(leftRigidPlate)
-    govNodes.append(np.array([ indent, 0, 0]))
+    govNodes.append(np.array([ 0, 0, 0]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
     #rigid plate left support
-    rightRigidPlateMechBC = np.array([-1,-1,-1, -1,-1,-1,  1,-1,-1, 2,-1,-1])
+    rightRigidPlateMechBC = np.array([1,-1,-1, -1,0,0,  -1,-1,-1, -1,-1,-1])
     rightRigidPlate = utilitiesMech.RigidPlate(-2, 3,np.array([
     height-2*indentRP,
     height+2*indentRP,
@@ -3097,7 +3097,7 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
       -2*radius,
        2*radius ]))
     rigidPlates.append(rightRigidPlate)
-    govNodes.append(np.array([ height-indent, 0, 0]))
+    govNodes.append(np.array([ height, 0, 0]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
 
 

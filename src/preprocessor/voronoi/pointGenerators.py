@@ -440,6 +440,15 @@ def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDis
         if (tr < trials):
             node_coords.append(coords)
 
+try:
+    from point_generators_cython import generateNodesOrtoCilinder3dRand_cython as generateNodesOrtoCilinder3dRand
+    print('Using Cython version of point generator - generateNodesOrtoCilinder3dRand.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
+
+
 def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials, angleLimitA=None, angleLimitB=None, mirrorIndent=None):
     print ('Generating a 3d cylinder surf segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
@@ -471,6 +480,8 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
 
     if (mirrorIndent != None):
         return mirroredPoints
+
+
 
 def randPointInCilinder(center, radius, height, directionDim):
     angle = np.random.uniform() * np.pi * 2
