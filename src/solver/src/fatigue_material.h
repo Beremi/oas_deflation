@@ -24,7 +24,7 @@ private:
     double temp_damageShear, temp_zIso; ///<temporary variables
 
     double prev_damageShear, prev_zIso;
-    Point prev_sPi, prev_alphaKin, prev_stressT;
+    Point prev_sPi, prev_alphaKin, prev_stressT, prev_slip;
 
     double Ynext;
     double lambda;
@@ -190,7 +190,7 @@ private:
 
     double strain_displ_multiplier;
 
-    double prev_damage, prev_zN, prev_epsNP, prev_alphaN, prev_stressN;
+    double prev_damage, prev_zN, prev_epsNP, prev_alphaN, prev_stressN, prev_epsN;
 
     double energy_PL, energy_D, energy_Kin, energy_Iso, work_tot;
     double temp_Y, prev_Y, Y_next;
