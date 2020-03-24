@@ -266,7 +266,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1 ):
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
-
+    print('Nody pred returnem: %d' %len(node_coords))
 
     return node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates
 

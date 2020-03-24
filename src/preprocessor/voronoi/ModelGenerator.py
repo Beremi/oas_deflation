@@ -140,10 +140,12 @@ class Model:
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
+        print('Nody po returnu: %d' %len(self.node_coords))
         if (len(self.node_coords))==0:
             print('Nody se neprenesly!!')
             sys.exit()
         else:
+            print('Nody OK!!')
             print(self.node_coords)
             sys.exit()
 
