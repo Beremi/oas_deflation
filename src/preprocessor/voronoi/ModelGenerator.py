@@ -14,13 +14,26 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import utilitiesGeom, utilitiesMech, utilitiesModeling, utilitiesNumeric, voronoi
 
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 
 
 class Model:
     def __init__ (self, row):
         print('Setting model...', end='')
-        self.seed = np.random.randint(1000.0)
+
+        self.nr_models = 1
+        self.printout = False
+        self.userSeed = -1
+        self.seed = -1
+        self.master_folder = ''
+
         self.trials = 3e4
 
         self.powerTes = False
@@ -38,11 +51,11 @@ class Model:
 
         self.node_coords = []
 
-        self.mechBC_merged = []
-        self.mechIC_merged = []
-        self.trsprtBC_merged = []
-        self.trsprtIC_merged = []
-        self.govNodesMechBC = []
+        self.mechBC_merged = None
+        self.mechIC_merged = None
+        self.trsprtBC_merged = None
+        self.trsprtIC_merged = None
+        self.govNodesMechBC = None
 
         self.functions = []
         self.radii = []
@@ -60,14 +73,22 @@ class Model:
         self.vertIdxStart = -1
         #"""
         r = row.split()
+        self.modelType = r[1]
+        self.dimension = int(r[1][0])
+        self.maxLim = np.zeros((self.dimension))
+
         for i in range (len(r)):
-            self.modelType = r[1]
+
+            if (r[i]=='printout'):
+                if r[i+1] == 1:
+                    print('print')
+                    self.printout = True
+
+            if (r[i]=='nr_models'):
+                self.nr_models = int(r[i+1])
 
             if (r[i]=='seed'):
-                self.seed = r[i+1]
-            if (r[i]=='dimension'):
-                self.dimension = int(r[i+1])
-                self.maxLim = np.zeros((self.dimension))
+                self.userSeed = r[i+1]
             if (r[i]=='Xsize'):
                 self.maxLim[0] = float(r[i+1])
             if (r[i]=='Ysize'):
@@ -79,6 +100,7 @@ class Model:
                 self.minDist = float(r[i+1])
             if (r[i]=='trials'):
                 self.trials = int(r[i+1])
+
 
             if (r[i]=='powerTes'):
                 if (int(r[i+1])==1): self.powerTes = True
@@ -92,7 +114,12 @@ class Model:
             if (r[i]=='periodicModel'):
                 if (int(r[i+1])==1): self.periodicModel = True
                 if (int(r[i+1])==0): self.periodicModel = False
-
+            #"""
+            """
+            keys = ['powerTes', 'activeMechanics', 'activeTransport', 'periodicModel']
+            if r[i] in keys:
+                setattr(self, r[i], bool(r[i+1]))
+            """
             if (r[i]=='cylinderRad'):
                 self.cylinderRad = float(r[i+1])
             if (r[i]=='cylinderHeight'):
@@ -100,13 +127,26 @@ class Model:
             if (r[i]=='tubeThickness'):
                 self.tubeThickness = float(r[i+1])
             if (r[i]=='dogboneD'):
-                self.tubeThickness = float(r[i+1])
+                self.dogboneD = float(r[i+1])
+            if (r[i]=='dogboneExcentricityFrac'):
+                self.dogboneExcentricityFrac = float(r[i+1])
             if (r[i]=='notchH'):
                 self.notchH = float(r[i+1])
             if (r[i]=='loadWidth'):
                 self.loadWidth = float(r[i+1])
+            if (r[i]=='fracZoneWidth'):
+                self.fracZoneWidth = float(r[i+1])
 
-        np.random.seed(seed=self.seed)
+
+        print('done.')
+
+    def setDirectory(self):
+        if self.userSeed == -1:
+            self.seed = np.random.randint(1000.0)
+            np.random.seed(seed=self.seed)
+        else:
+            np.random.seed(seed=self.userSeed)
+
         self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
         try:
             if not os.path.exists(self.master_folder):
@@ -115,50 +155,98 @@ class Model:
             print('Please create directory %s! Code Exited.' % self.master_folder)
             sys.exit()
 
-        print('done.')
-
-
 
     def createModel(self):
-        print ('Creating model %s...' %self.modelType)
+        print ('Creating model %s' %self.modelType)
         #
+        #if (self.printout == False): blockPrint()
+        if self.modelType == '2d_transportPatchTest':
+            self.run_2d_transportPatchTest()
+        if self.modelType == '3d_transportPatchTest':
+            self.run_3d_transportPatchTest()
+
         if self.modelType == '2d_notched3pb':
             self.run_2d_notched3pb()
+        if self.modelType == '3d_notched3pb':
+            self.run_3d_notched3pb()
+
+        if self.modelType == '2d_dogbone':
+            self.run_2d_dogbone()
+        if self.modelType == '3d_dogbone':
+            self.run_3d_dogbone()
+
+        if self.modelType == '3d_cylinderTorsionPress':
+            self.run_3d_torsionPress()
+
+        if self.modelType == '3d_ReinhardtTension':
+            self.run_3d_ReinhardtTension()
+
+        if self.modelType == '2d_periodicShear':
+            self.run_2d_periodicShear()
+
+
+
+        #if (self.printout == False): enablePrint()
+
 
 
     def run_2d_notched3pb(self):
-        self.node_coords,
-        self.mechBC_merged,
-        self.mechIC_merged,
-        self.vor,
-        self.areas,
-        self.functions,
-        self.notches,
-        self.govNodes,
-        self.govNodesMechBC,
-        self.rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth)
-
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
+        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
-        print('Nody po returnu: %d' %len(self.node_coords))
-        if (len(self.node_coords))==0:
-            print('Nody se neprenesly!!')
-            sys.exit()
-        else:
-            print('Nody OK!!')
-            print(self.node_coords)
-            sys.exit()
+    def run_3d_notched3pb(self):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth)
+        measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
+        materialZones = None
+
+    def run_2d_dogbone(self):
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac )
+        self.materialZones=None
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
+
+    def run_3d_dogbone(self):
+        self.maxLim = np.array([self.dogboneD, 6/4*self.dogboneD, 0.1])
+        #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='dogbone',  D=self.dogboneD, thickness=0.1)
+        self.materialZones = None
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)   = utilitiesModeling.create3dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac )
 
 
+    def run_3d_torsionPress(self):
+        self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
+        #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='box', maxLim=self.maxLim)
+        (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, 0 )
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
+        self.materialZones =  None
+
+    def run_3d_ReinhardtTension(self):
+        #DURHAM - prism tension 250x60x50
+        #Reinhardt "Tensile tests and failure analysis of concrete 1986"
+        #maxLim = np.array([0.25,0.06,0.05])
+        self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, self.dimension, model='box', maxLim=self.maxLim)
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dReinhardtTension(self.maxLim, self.minDist, self.trials, fracZoneWidth=self.fracZoneWidth)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('reinhardt3d', maxLim=self.maxLim)
+
+    def run_2d_periodicShear(self):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        self.materialZones=None
+        self.periodicModel = 1
+
+    def run_2d_transportPatchTest(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
+
+    def run_3d_transportPatchTest(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
 
 
-
-
-    def extractGeometry(self):
-        self.vert_count,
+    def saveGeometry(self):
+        print('Extracting geometry...', end='')
+        #if (self.printout == False): blockPrint()
+        self.node_coords = np.asarray(self.node_coords)
+        (self.vert_count,
         self.verticesIdxDict,
         self.vertIdxStart,
-        self.totalNodeCount = utilitiesGeom.extractGeometry(
+        self.totalNodeCount) = utilitiesGeom.extractGeometry(
             self.master_folder,
             self.dimension,
             len(self.node_coords),
@@ -170,7 +258,45 @@ class Model:
             nodePositions=self.nodePositions, coupledNodes=self.coupledNodes,
             mirtype=self.mirtype, notches=self.notches)
 
+        #if (self.printout == False): enablePrint()
+        print ('done.')
 
+    def saveRest(self, solver):
+        print('Saving files...', end='')
+        #if (self.printout == False): blockPrint()
+        # saving rest of input
+        utilitiesGeom.saveMaterials(self.master_folder, self.materials)
+        utilitiesGeom.saveFunctions(self.master_folder, self.functions)
+        if self.activeMechanics:
+            utilitiesGeom.saveMechBC(self.master_folder, self.dimension, self.mechBC_merged)
+            if (self.mechIC_merged != None and len(self.mechIC_merged)>0):
+                utilitiesGeom.saveMechIC(self.master_folder, self.dimension, self.mechIC_merged)
+        if self.activeTransport:
+            utilitiesGeom.saveTransportBC(self.master_folder, self.trsprtBC_merged, self.verticesIdxDict, self.vertIdxStart)
+            if (self.trsprtIC_merged != None and len(self.trsprtIC_merged)>0):
+                utilitiesGeom.saveTransportIC(self.master_folder, self.trsprtIC_merged)
+
+        utilitiesGeom.saveExporters(self.master_folder, self.activeTransport, self.activeMechanics)
+
+        if self.govNodes != None:
+            if self.rigidPlates != None:
+                if self.govNodesMechBC != None:
+                    #print(totalNodeCount)
+                    utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
+                    self.constraint = True
+
+        if (self.measuringGauges!=None):
+            utilitiesGeom.saveMeasuringGauges(self.master_folder, self.measuringGauges)
+
+        if len(self.radii) > 0:
+            if self.powerTes:
+                utilitiesGeom.saveRadii(self.master_folder, self.radii)
+
+        utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint,
+        limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt)
+
+        #if (self.printout == False): enablePrint()
+        print ('done.')
 
 
     def addMaterial(self, row):
@@ -221,13 +347,25 @@ class Model:
 
         #MarsMaterial
         if (r[1]=='MarsMaterial'):
-            #
+
             young = None
             alpha = None
             density = None
             ft = None
             Gt = None
-            #
+            #"""
+            """
+            params_list=['young', 'alpha', 'density', 'ft', 'Gt']
+            params = {param: None for param in params_list}
+            for i in range (len(r)):
+                if r[i] in params:
+                    setattr(params, r[i], bool(r[i+1]))
+
+            if None in params.values():
+                print ('!! MarsMaterial incomplete. Exiting. !!')
+                exit()
+
+            #"""
             for i in range (len(r)):
                 if (r[i]=='young'):
                     young = float(r[i+1])
@@ -239,7 +377,7 @@ class Model:
                     ft = float(r[i+1])
                 if (r[i]=='Gt'):
                     Gt = float(r[i+1])
-            #
+            #"""
             if (young == None or alpha == None or density == None or ft == None or  Gt == None):
                 print ('!! MarsMaterial incomplete. Exiting. !!')
                 sys.exit()
@@ -317,29 +455,6 @@ class Model:
             fatigueMaterial = utilitiesMech.FatigueMaterial(young, alpha, density, fc, ft, KinN, gammaN, m, Ad, tauBar, Kin, gamma, S, a)
             self.materials.append(fatigueMaterial)
             print('done.')
-
-    """
-    def run_2d_notched3pb(self):
-        self.node_coords,
-        self.mechBC_merged,
-        self.mechIC_merged,
-        self.vor,
-        self.areas,
-        self.functions,
-        self.notches,
-        self.govNodes,
-        self.govNodesMechBC,
-        self.rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth)
-
-        self.materialZones=None
-        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
-
-        print(node_coords)
-    #"""
-
-
-
-
 
 
 
@@ -421,7 +536,9 @@ if __name__ == '__main__':
         print('Missing input master file in argument! Exiting.')
         sys.exit()
 
-    #print('Extracting data from master file...')
+    model = None
+    solver = None
+
     f = open (file, 'r')
     for row in f:
         if not (row[0]=='#'):
@@ -432,12 +549,29 @@ if __name__ == '__main__':
             if (r[0]=='Solver'):
                 solver = Solver(row)
             if (r[0]=='Material'):
-                model.addMaterial(row)
+                if model != None:
+                    model.addMaterial(row)
 
+    if model == None:
+        print ('Missing model!! Exiting...')
+        sys.exit()
 
-    if Model != None:
-        model.createModel()
-        model.extractGeometry()
+    if solver == None:
+        print ('Missing solver!! Exiting...')
+        sys.exit()
+
+    if len(model.materials)==0:
+        print ('Missing some material!! Exiting...')
+        sys.exit()
+
+    if model != None:
+        for i in range (model.nr_models):
+            print('\nCreating model #%d' %i)
+            model.setDirectory()
+            model.createModel()
+            model.saveGeometry()
+            model.saveRest(solver)
+
 
 
     print('\n%%%%%%%%% LATTICE PREPROCESSOR DONE %%%%%%%%%')

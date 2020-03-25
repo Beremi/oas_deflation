@@ -243,10 +243,10 @@ def createDiamondTestModel(width, height):
 
 
 
-def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1 ):
+def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15 ):
     print('Creating 2d simply supported beam, uniform load.')
     #
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -266,7 +266,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1 ):
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
-    print('Nody pred returnem: %d' %len(node_coords))
+
 
     return node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates
 
@@ -527,7 +527,7 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
     print('done.')
 
 
-    fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    #fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
     #plt.show()
 
     ########################################################################
@@ -621,10 +621,10 @@ def assembleTwoNodeSpringTest (maxLim, idt):
 
 
 
-def create2dDogBone(minDist, trials, D=1.0 ):
+def create2dDogBone(minDist, trials, D=1.0, excentricity = 20 ):
     print('Creating 2d dog bone....')
     #
-    node_coords, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials);
+    node_coords, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity);
 
     node_coords = np.asarray(node_coords)
     """
@@ -669,10 +669,10 @@ def create2dDogBone(minDist, trials, D=1.0 ):
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions,  govNodes, govNodesMechBC, rigidPlates
 
 
-def create3dDogBone(minDist, trials, D=1.0 ):
+def create3dDogBone(minDist, trials, D=1.0, excentricity = 20 ):
     print('Creating 3sd dog bone....')
     #
-    node_coords, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates  = assemble3dDogBone(D, minDist, trials);
+    node_coords, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates  = assemble3dDogBone(D, minDist, trials, excentricity = excentricity);
 
     node_coords = np.asarray(node_coords)
     """
@@ -1707,7 +1707,7 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
 
 
 
-def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth):
+def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZoneWidth):
     dim = 2
     #lists for the model
     node_coords = []
@@ -1794,7 +1794,6 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth):
     ##########################################generating of points, homogeneous volume
 
 
-    fracZoneWidth = 0.08
     ##########################################generating of points, fracture zone
     maxLimF = np.array([
     maxLim[0] - indent - 0.5*maxLim[0]*(1-fracZoneWidth),
@@ -1828,7 +1827,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth):
 
 
 
-def assemble2dDogBone(D, minDist, trials):
+def assemble2dDogBone(D, minDist, trials, excentricity = 20):
     dim = 2
     #lists for the model
     node_coords = []
@@ -1841,8 +1840,8 @@ def assemble2dDogBone(D, minDist, trials):
     indent = 1e-5
 
     #####################nodes of interest
-    node_coords.append(np.array([  D/2,  indent*2   ])) #top mid
-    node_coords.append(np.array([  D/2,  6/4*D   ]))  #bottom mid
+    node_coords.append(np.array([  D/2,  indent   ])) #top mid
+    node_coords.append(np.array([  D/2,  6/4*D - indent  ]))  #bottom mid
     #gauges B
     if (D==0.1):
         node_coords.append( np.array([ D/2,        3/4*D-0.075/2 ])  )#mid LS
@@ -1870,7 +1869,7 @@ def assemble2dDogBone(D, minDist, trials):
     -indentRP,
      +indentRP  ]))
     rigidPlates.append(topRigidPlate)
-    govNodes.append(np.array([ D/2+D/20, indent ]))
+    govNodes.append(np.array([ D/2+D/excentricity, indent ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
     #bottom rigid plate
     bottomRigidPlateMechBC = np.array([0,0,-1,   -1,-1,-1])
@@ -1880,7 +1879,7 @@ def assemble2dDogBone(D, minDist, trials):
     -indentRP+6/4 * D,
      +indentRP+6/4 * D  ]))
     rigidPlates.append(bottomRigidPlate)
-    govNodes.append(np.array([ D/2+D/20, 6/4 * D-indent ]))
+    govNodes.append(np.array([ D/2+D/excentricity, 6/4 * D-indent ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, bottomRigidPlateMechBC))
     #####################
 
@@ -1936,7 +1935,7 @@ def assemble2dDogBone(D, minDist, trials):
 
 
 
-def assemble3dDogBone(D, minDist, trials):
+def assemble3dDogBone(D, minDist, trials, excentricity = 20):
     dim = 3
     thickness = 0.1
     #lists for the model
@@ -1966,7 +1965,7 @@ def assemble3dDogBone(D, minDist, trials):
      -indentRP,
      thickness+indentRP  ]))
     rigidPlates.append(topRigidPlate)
-    govNodes.append(np.array([ D/2+D/20, indent, thickness/2 ]))
+    govNodes.append(np.array([ D/2+D/excentricity, indent, thickness/2 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
     #bottom rigid plate
     bottomRigidPlateMechBC =  np.array([0,0,0,  -1,-1,-1, -1,-1,-1, -1,-1,-1,])
@@ -1978,7 +1977,7 @@ def assemble3dDogBone(D, minDist, trials):
      -indentRP,
      thickness+indentRP  ]))
     rigidPlates.append(bottomRigidPlate)
-    govNodes.append(np.array([ D/2+D/20, 6/4 * D-indent, thickness/2 ]))
+    govNodes.append(np.array([ D/2+D/excentricity, 6/4 * D-indent, thickness/2 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, bottomRigidPlateMechBC))
     #####################
 
@@ -2146,13 +2145,13 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
             node_coords = np.vstack((node_coords, newPoint))
             mirtype.append(-1)
 
-    plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+    #plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
 
     #for i in range (len(coupledNodes)):
     #    plt.plot( node_coords[ abs(coupledNodes[i][0]),0 ] , node_coords[ abs(coupledNodes[i][0]),1 ] ,'o', color='red')
     #    plt.plot( node_coords[ abs(coupledNodes[i][1]),0 ] , node_coords[ abs(coupledNodes[i][1]),1 ] ,'o', color='green')
 
-    plt.show()
+    #plt.show()
 
     #print (len(node_coords))
 
@@ -2671,7 +2670,7 @@ def assemble3DReinhardtTension (maxLim, minDist, trials, fracZoneWidth = 0.15):
     indent + 0.5*maxLim[0]*(1-fracZoneWidth),
     maxLim[1]*notch/2*0+indent,
     indent])
-    pointGenerators.generateNodesRect(maxLimF, minDist/1.5, dim, trials, node_coords, useLowBound=True)
+    pointGenerators.generateNodesRect(maxLimF, minDist/2, dim, trials, node_coords, useLowBound=True)
 
 
 
