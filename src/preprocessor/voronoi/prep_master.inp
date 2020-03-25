@@ -13,7 +13,7 @@
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.2 loadWidth 0.05 minDist 0.06 fracZoneWidth 0.15 activeMechanics 1 
 #
 # Dogbones
-Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 200 activeMechanics 1 
+Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 20 activeMechanics 1 
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 20 activeMechanics 1
 #
 # Cusatis torsion press
