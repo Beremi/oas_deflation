@@ -202,6 +202,13 @@ void SteadyStateNonLinearSolver :: init() {
     residual = Vector(totalDoFnum);
     W_ext_old = 0;
     W_int_old = 0;
+
+    maxIt = 30;
+    disErr = resErr = eneErr = 1e-5;
+    limitEneErr = limitResErr = limitDisErr = 0;
+    step_increase = 1.25;
+    step_decrease = 0.8;
+    critical_step_decrease = 0.5;
 }
 
 //////////////////////////////////////////////////////////
@@ -214,9 +221,7 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     dtmax = dtmin = dt;
     bool bdtmin = false;
     bool bdtmax = false;
-    maxIt = 100;
-    disErr = resErr = eneErr = 1e-5;
-    limitEneErr = limitResErr = limitDisErr = 0;
+    double valueIN;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -235,11 +240,33 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
         } else if ( param.compare("maxIt") == 0 ) {
             iss >> maxIt;
             if ( maxIt < 1 ) {
-                std :: cout << "number of itteration cannot be smaller than 1!!!, setting to default value" << '\n';
-                maxIt = 100;
+              std :: cerr << "number of itteration cannot be smaller than " << maxIt << "!!!,";
+              maxIt = 30;
+              std::cout << " setting to default value: maxIt = " << maxIt << '\n';
             } else if ( maxIt < 3 ) {
-                std :: cout << "solver parameter maxIt set to " << maxIt << ", be carefull with such a small number" << '\n';
+              std :: cout << "solver parameter maxIt set to " << maxIt << ", be carefull with such a small number" << '\n';
             }
+        } else if ( param.compare("step_increase") == 0 ) {
+            iss >> valueIN;
+            if (valueIN < 1){
+              std::cerr << "step_increase cannot be smaller than 1! leaving default value " << step_increase << '\n';
+            } else {
+              step_increase = valueIN;
+            }
+        } else if ( param.compare("step_decrease") == 0 ) {
+            iss >> valueIN;
+            if (valueIN > 1){
+              std::cerr << "step_decrease cannot be greater than 1! leaving default value " << step_decrease << '\n';
+            } else {
+              step_decrease = valueIN;
+            }
+        } else if ( param.compare("critical_step_decrease") == 0 ) {
+          iss >> valueIN;
+          if (valueIN > 1){
+            std::cerr << "critical_step_decrease cannot be greater than 1! leaving default value " << critical_step_decrease << '\n';
+          } else {
+            critical_step_decrease = valueIN;
+          }
         }
     }
     cout << name << " succesfully loaded, ";
@@ -338,7 +365,7 @@ void SteadyStateNonLinearSolver :: solve() {
         }
         if ( !converged && dt > dtmin ) {
             time -= dt;
-            dt = fmax(dt / 2, dtmin);
+            dt = fmax(dt * critical_step_decrease, dtmin);
             time += dt;
             cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
             restarted = true;
@@ -357,10 +384,10 @@ void SteadyStateNonLinearSolver :: solve() {
                 // exit(1);
             }
         } else if ( ( !restarted ) && converged && it < maxIt / 3 && dt < dtmax ) {
-            dt = fmin(dt / .8, dtmax);
+            dt = fmin(dt * step_increase, dtmax);
             std :: cout << "enlarging step, timestep = " << dt << '\n';
         } else if ( converged && it > maxIt / 2 && dt > dtmin ) {
-            dt = fmin(dt * .8, dtmax);
+            dt = fmin(dt * step_decrease, dtmax);
             std :: cout << "shortening step, timestep = " << dt << '\n';
         }
         // std::cerr << "number of iterations: " << it << '\n';

@@ -27,27 +27,30 @@ double FatigueShearMaterialInteractedStatus::giveValue(string code) const {
     else if ((code.compare("strainT") == 0) || (code.compare("strain") == 0)) {
         return slip.norm();
     }
-    else if ((code.compare("crack_sliding") == 0)) {
+    else if ((code.compare("crack_sliding") == 0) || (code.compare("crack_slidingT") == 0)) {
         RigidBodyContact* rbc = static_cast<RigidBodyContact*>(element);
         return slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
     }
-    else if ((code.compare("strainTY") == 0)) {
+    else if ((code.compare("strainYT") == 0)) {
         return slip.getY();
     }
-    else if ((code.compare("strainTZ") == 0)) {
+    else if ((code.compare("strainZT") == 0)) {
         return slip.getZ();
     }
-    else if ((code.compare("strainPLTY") == 0)) {
+    else if ((code.compare("strainYPLT") == 0)) {
         return sPi.getY();
     }
-    else if ((code.compare("strainPLTZ") == 0)) {
+    else if ((code.compare("strainZPLT") == 0)) {
         return sPi.getZ();
     }
-    else if ((code.compare("stressTY") == 0)) {
+    else if ((code.compare("stressYT") == 0)) {
         return stressT.getY();
     }
-    else if ((code.compare("stressTZ") == 0)) {
+    else if ((code.compare("stressZT") == 0)) {
         return stressT.getZ();
+    }
+    else if ((code.compare("stressT") == 0)) {
+        return stressT.norm();
     }
     else if ((code.compare("energy_totalT") == 0) || (code.compare("energy_total") == 0)) {
         return
@@ -517,24 +520,26 @@ FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m
 double FatigueShearMaterialStatus :: giveValue(string code) const {
     if ( ( code.compare("damage") == 0 ) ||  ( code.compare("damageT") == 0 ) ) {
         return damageShear;
-    } else if ( ( code.compare("strainPL") == 0 ) ||  ( code.compare("strainPLT") == 0 ) ) {
-        return sPi.norm();
-    } else if ( ( code.compare("strainT") == 0 ) ||  ( code.compare("strain") == 0 ) ) {
-        return slip.norm();
     } else if ( ( code.compare("crack_sliding") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
         return slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
-    } else if ( ( code.compare("strainTY") == 0 ) ) {
+    } else if ( ( code.compare("strainT") == 0 ) ||  ( code.compare("strain") == 0 ) ) {
+        return slip.norm();
+    } else if ( ( code.compare("strainYT") == 0 ) ) {
         return slip.getY();
-    } else if ( ( code.compare("strainTZ") == 0 ) ) {
+    } else if ( ( code.compare("strainZT") == 0 ) ) {
         return slip.getZ();
-    } else if ( ( code.compare("strainPLTY") == 0 ) ) {
+    } else if ( ( code.compare("strainPL") == 0 ) ||  ( code.compare("strainPLT") == 0 ) ) {
+        return sPi.norm();
+    } else if ( ( code.compare("strainYPLT") == 0 ) ) {
         return sPi.getY();
-    } else if ( ( code.compare("strainPLTZ") == 0 ) ) {
+    } else if ( ( code.compare("strainZPLT") == 0 ) ) {
         return sPi.getZ();
-    } else if ( ( code.compare("stressTY") == 0 ) ) {
+    } else if ( ( code.compare("stressT") == 0 ) ) {
+        return stressT.norm();
+    } else if ( ( code.compare("stressYT") == 0 ) ) {
         return stressT.getY();
-    } else if ( ( code.compare("stressTZ") == 0 ) ) {
+    } else if ( ( code.compare("stressZT") == 0 ) ) {
         return stressT.getZ();
     } else if ( ( code.compare("energy_totalT") == 0 ) || ( code.compare("energy_total") == 0 ) ) {
         return
