@@ -202,13 +202,6 @@ void SteadyStateNonLinearSolver :: init() {
     residual = Vector(totalDoFnum);
     W_ext_old = 0;
     W_int_old = 0;
-
-    maxIt = 30;
-    disErr = resErr = eneErr = 1e-5;
-    limitEneErr = limitResErr = limitDisErr = 0;
-    step_increase = 1.25;
-    step_decrease = 0.8;
-    critical_step_decrease = 0.5;
 }
 
 //////////////////////////////////////////////////////////
@@ -216,6 +209,13 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     SteadyStateLinearSolver :: readFromLine(iss);
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
+
+    maxIt = 30;
+    disErr = resErr = eneErr = 1e-5;
+    limitEneErr = limitResErr = limitDisErr = 0;
+    step_increase = 1.25;
+    step_decrease = 0.8;
+    critical_step_decrease = 0.5;
 
     string param;
     dtmax = dtmin = dt;
@@ -235,8 +235,8 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
             iss >> disErr;
             resErr = eneErr = disErr;
         } else if ( param.compare("limit_tolerance") == 0 ) {
-            iss >> limitDisErr;
-            limitEneErr = limitResErr = limitDisErr;
+            iss >> valueIN;
+            limitEneErr = limitResErr = limitDisErr = valueIN;
         } else if ( param.compare("maxIt") == 0 ) {
             iss >> maxIt;
             if ( maxIt < 1 ) {

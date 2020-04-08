@@ -338,6 +338,7 @@ void FatigueShearMaterialInteractedStatus::update() {
     lambda = temp_lambda;
     stressT = temp_stressT;
 
+    // TODO here should be some term coming from coupling of terms
     energy_PL += dot(temp_stressT, sPi - prev_sPi);
     energy_D += Ynext * (damageShear - prev_damageShear);
     FatigueShearMaterialInteracted* m = static_cast<FatigueShearMaterialInteracted*>(mat);
