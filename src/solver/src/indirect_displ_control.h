@@ -17,6 +17,7 @@ protected:
     ElementContainer *elems;
     NodeContainer *nodes;
     Function *func;
+    unsigned nummaxunit;
     vector <unsigned> c_nodes;
     vector <unsigned> c_dirs;
     vector <unsigned> c_DoFs;
@@ -26,7 +27,7 @@ public:
     IndirectDC() { name = "indirect displacement controller"; };
     virtual ~IndirectDC() {};
     virtual void init();
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromStream(ifstream &inputfile);
 };
 
 #endif

@@ -6,3 +6,6 @@ total_time	1.000000e+00
 tolerance 1e-5
 limit_tolerance	1.000000e-01
 maxIt	150
+indirect_displacement_control
+number_of_units_to_maximizeX 8
+

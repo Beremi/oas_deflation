@@ -1,28 +1,18 @@
 #include "indirect_displ_control.h"
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: readFromLine(istringstream &iss) {
-    string param;
-    iss >> param;
+void IndirectDC :: readFromStream(ifstream& inputfile) {
+    
+    cout << "INSIDE IndirectDC" << endl; cout.flush();
+    string param, line;
     /*
-    if ( param.compare("SteadyStateLinearSolver") == 0 ) {
-        SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
-        newsolver->readFromLine(iss);
-        return newsolver;
-    } else if ( param.compare("SteadyStateNonLinearSolver") == 0 ) {
-        SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
-        newsolver->readFromLine(iss);
-        return newsolver;
-    } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
-        TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
-        newsolver->readFromLine(iss);
-        return newsolver;
-    } else if ( param.compare("TransientLinearTransportSolver") == 0 ) {
-        TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
-        newsolver->readFromLine(iss);
-        return newsolver;
+    getline(inputfile >> std :: ws, line);
+    istringstream iss(line);
+    iss >> param;
+    if (param.compare("number_of_units_to_maximize") == 0 ) {
+        iss >> nummaxunit;
     } else {
-        cerr << "Error: Solver " << param << " is not implemented" << endl;
+        cerr << "Error in Indirect displacement contorl: number_of_units_to_maximize is not specified" << endl;
         exit(EXIT_FAILURE);
     };
     */

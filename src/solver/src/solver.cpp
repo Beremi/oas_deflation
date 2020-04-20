@@ -267,6 +267,10 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
             } else if ( param.compare("tolerance") == 0 ) {
                 iss >> disErr;
                 resErr = eneErr = disErr;
+            } else if ( param.compare("indirect_displacement_control") == 0 ) {
+                cout << "before passing stream to IDC" << endl; cout.flush();
+                idc->readFromStream(inputfile);
+                cout << "after passing stream to IDC" << endl; cout.flush();
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
