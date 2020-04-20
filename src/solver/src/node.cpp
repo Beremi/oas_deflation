@@ -105,11 +105,11 @@ void Particle :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
-    if ( dim > 1 && code.compare("rotz") == 0 ) {
+    if ( dim > 1 && code.compare("rotx") == 0 ) {
         return DoFs [ firstDoF + 3 ];
     } else if ( dim > 2 && code.compare("roty") == 0 ) {
         return DoFs [ firstDoF + 4 ];
-    } else if ( dim > 2 && code.compare("rotx") == 0 ) {
+    } else if ( dim > 2 && code.compare("rotz") == 0 ) {
         return DoFs [ firstDoF + 5 ];
     } else {
         return MechNode :: giveDoFBasedValue(code, DoFs);

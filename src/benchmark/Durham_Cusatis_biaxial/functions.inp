@@ -1,0 +1,5 @@
+#FuncTyped
+PWLFunction	1	0.0	0.0
+PWLFunction	2	0.0	1.0	0.0	0.001
+PWLFunction	2	0.0	1.0	0.0	-0.001
+# PWLFunction	1	0.0	0

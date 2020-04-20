@@ -7,7 +7,7 @@ from libc.stdio cimport printf
 from libc.stdlib cimport rand, RAND_MAX
 from libcpp.vector cimport vector
 from cpprandom cimport mt19937_64, uniform_real_distribution
-
+from libcpp cimport bool
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
@@ -16,7 +16,8 @@ def generateNodesRect_cython(double[:] maxLim,
                       float minDist,
                       int dim,
                       int trials,
-                      list node_coords):
+                      list node_coords,
+                      bool useLowBound=False):
     print('Generating {:d}d block segment of size: {}'.format(dim, ' / '.join('{:f}'.format(i) for i in maxLim)))
     cdef:
         int generatedPoints = 0
@@ -36,15 +37,21 @@ def generateNodesRect_cython(double[:] maxLim,
         for node in node_coords:
             for d in range(dim):
                 node_coords_temp.push_back(node[d])
-
+    
     while (tr < trials):
         tr = 0
         distIsGood = False
         while (not distIsGood) and (tr < trials):
-            #for d in range(dim):
-            #    coords[d] = dist(gen) * maxLim[d]
-            for d in range(dim):
-                 coords[d] = random.random() * maxLim[d]
+            if (useLowBound==True):
+                topBound = maxLim[0:dim]
+                lowBound = maxLim[dim:2*dim]
+                for d in range(dim):
+                    coords[d] = lowBound[d] + random.random() * (topBound[d]-lowBound[d])
+
+            else:
+                for d in range(dim):
+                    coords[d] = random.random() * maxLim[d]
+
             distIsGood = True
 
             for p in range(node_coords_input_len + generatedPoints):

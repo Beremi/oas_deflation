@@ -24,7 +24,7 @@ private:
     double temp_damageShear, temp_zIso; ///<temporary variables
 
     double prev_damageShear, prev_zIso;
-    Point prev_sPi, prev_alphaKin;
+    Point prev_sPi, prev_alphaKin, prev_stressT;
 
     double Ynext;
     double lambda;
@@ -33,7 +33,7 @@ private:
     double strain_slip_multiplier;
     double regularization_multiplier_area;
 
-    bool checkReturnMap, useAnaliticalLambda;
+    bool checkReturnMap, useAnaliticalLambda, newIter, bisectionMeth;
 
     // the following are all densities ()
     double energy_PL, energy_D, energy_Kin, energy_Iso;
@@ -60,7 +60,7 @@ private:
     double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
     double m;  ///< parameter controling the pressure sensitivity
-    bool use_slip, check_retturn_mapping, analytical_lambda;
+    bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -78,7 +78,96 @@ public:
     bool useSlip() const { return use_slip; }
     bool checkReturnMap() const { return check_retturn_mapping; }
     bool analyticalLambda() const { return analytical_lambda; }
+    bool newIterativeApproachOn() const { return newIterOn; }
+    bool bisectionMethOn() const { return bisecOn; }
 };
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////
+// material with interacted sliding-decohesion cumulative damage
+//////////////////////////////////////////////////////////
+// MATERIAL ACCORDING TO ALGORITHM ...under development
+
+class FatigueShearMaterialInteracted;
+class FatigueShearMaterialInteractedStatus : public DisMechMaterialStatus
+{
+private:
+    Point slip; ///< slip
+    Point sPi; ///< irreversible slip
+    Point alphaKin;  ///< kinematic hardening variable
+    double damageShear; ///< damage in tangential direction
+    double zIso;  ///< isotropic hardening variable
+    double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
+
+    Point temp_sPi, temp_slip, temp_alphaKin;
+    Point stressT, temp_stressT;
+    double temp_damageShear, temp_zIso; ///<temporary variables
+
+    double prev_damageShear, prev_zIso;
+    Point prev_sPi, prev_alphaKin;
+
+    double Ynext;
+    double lambda;
+    double temp_lambda;
+
+    double strain_slip_multiplier;
+    double regularization_multiplier_area;
+
+    bool checkReturnMap, useAnaliticalLambda;
+
+    // the following are all densities ()
+    double energy_PL, energy_D, energy_Kin, energy_Iso;
+    double work_tot;
+
+    void print() const;
+public:
+    FatigueShearMaterialInteractedStatus(FatigueShearMaterialInteracted* m, Element* e);
+    virtual ~FatigueShearMaterialInteractedStatus() {};
+    void init();
+    virtual void update();
+    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Vector giveStress(const Vector& strain);
+    virtual double giveValue(string code) const;
+};
+
+
+class FatigueShearMaterialInteracted : public DisMechMaterial
+{
+private:
+    double tauBar; ///< reversibility limit
+    double Kin;  ///< isotropic hardening modulus
+    double gamma;  ///< kinematic hardening modulus
+    double S;  ///< damage strength
+    double c, r;  // parameters controling the damage acumullation, c >= 1.0
+    double m;  ///< parameter controling the pressure sensitivity
+    bool use_slip, check_retturn_mapping, analytical_lambda;
+public:
+    FatigueShearMaterialInteracted() { name = "Fatigue Shear material"; };
+    ~FatigueShearMaterialInteracted() {};
+    void readFromLine(istringstream& iss);
+    MaterialStatus* giveNewMaterialStatus(Element* e);
+    double giveTauBar() const { return tauBar; }
+    double giveKin() const { return Kin; }
+    double giveGamma() const { return gamma; }
+    double giveS() const { return S; }
+    double giveC() const { return c; }
+    double giveR() const { return r; }
+    double giveM() const { return m; }
+    virtual void init();
+
+    bool useSlip() const { return use_slip; }
+    bool checkReturnMap() const { return check_retturn_mapping; }
+    bool analyticalLambda() const { return analytical_lambda; }
+};
+
+
+
+
 
 
 //////////////////////////////////////////////////////////
@@ -101,7 +190,7 @@ private:
 
     double strain_displ_multiplier;
 
-    double prev_damage, prev_zN, prev_epsNP, prev_alphaN;
+    double prev_damage, prev_zN, prev_epsNP, prev_alphaN, prev_stressN;
 
     double energy_PL, energy_D, energy_Kin, energy_Iso, work_tot;
     double temp_Y, prev_Y, Y_next;
