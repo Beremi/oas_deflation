@@ -13,20 +13,19 @@ void DataExporter :: readFromLine(istringstream &iss) {
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
     string param;
-    bool bte = false;
+    // initiate variables in case they are not specified
+    time_each = 0;
+    time_last = 0;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("saveEvery") == 0 || param.compare("timeEach") == 0 ) {
             iss >> time_each;
-            bte = true;
+        } else if ( param.compare("timeShift") == 0 ) {
+            iss >> time_last;
         } else if ( param.compare("precision") == 0 ) {
             iss >> precision;
         }
     }
-    if ( !bte ) {
-        time_each = 0;
-    }
-    time_last = 0;
 }
 
 bool DataExporter :: doExportNow(const double &time) {

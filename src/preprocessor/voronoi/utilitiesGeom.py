@@ -174,8 +174,8 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     ########################################################################################
     cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
     validRidgeIdxs = np.where(cond)[0]
-    print(validRidgeIdxs.shape)
-    print(validRidgeIdxs)
+    #print(validRidgeIdxs.shape)
+    #print(validRidgeIdxs)
 
     #REMOVE
     #validRidgeIdxs = []
@@ -354,24 +354,24 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
     # selecting points
     for ir,r in enumerate(vor.ridge_points):
         if ((mirtype[r[1]]>=0 and mirtype[r[0]]==0) or (mirtype[r[1]]==0 and mirtype[r[0]]>=0)):
-            plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='green', alpha = 0.5)
-            plt.text(vor.points[ r[0],0 ] , vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
-            plt.text(vor.points[ r[1],0 ] , vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
+            #plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='green', alpha = 0.5)
+            #plt.text(vor.points[ r[0],0 ] , vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
+            #plt.text(vor.points[ r[1],0 ] , vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
 
             valid_ridges = np.vstack((valid_ridges, ir))
             valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
             valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
 
         if ( mirtype[r[0]]*mirtype[r[1]]==2 ):
-            plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='red', alpha = 0.5)
-            plt.text(vor.points[ r[0],0 ], vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
-            plt.text(vor.points[ r[1],0 ], vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
+            #plt.plot( [vor.points[ r[0],0 ] , vor.points[r[1],0 ]], [vor.points[ r[0],1 ] , vor.points[r[1],1 ]] , 'ro-', color='red', alpha = 0.5)
+            #plt.text(vor.points[ r[0],0 ], vor.points[ r[0],1 ] , nodePositions[r[0]], fontsize=11)
+            #plt.text(vor.points[ r[1],0 ], vor.points[ r[1],1 ] , nodePositions[r[1]], fontsize=11)
 
             valid_ridges = np.vstack((valid_ridges, ir))
             valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
             valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
 
-    plt.show()
+    #plt.show()
     #"""
     print('done.')
 
@@ -394,13 +394,13 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
     #coupledNodes = []
     for i in range (len(coupledNodes)):
         if ( coupledNodes[i][0] in valid_ridge_nodes and coupledNodes[i][1] in valid_ridge_nodes ):
-            plt.plot( [vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][1],0 ]], [vor.points[ coupledNodes[i][0],1 ] , vor.points[ coupledNodes[i][1],1 ]] ,'ro-', color='red')
-            plt.text(vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][0],1 ]  , nodePositions[coupledNodes[i][0]], fontsize=11)
-            plt.text(vor.points[ coupledNodes[i][1],0 ] , vor.points[ coupledNodes[i][1],1 ]  , nodePositions[coupledNodes[i][1]], fontsize=11)
+            #plt.plot( [vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][1],0 ]], [vor.points[ coupledNodes[i][0],1 ] , vor.points[ coupledNodes[i][1],1 ]] ,'ro-', color='red')
+            #plt.text(vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][0],1 ]  , nodePositions[coupledNodes[i][0]], fontsize=11)
+            #plt.text(vor.points[ coupledNodes[i][1],0 ] , vor.points[ coupledNodes[i][1],1 ]  , nodePositions[coupledNodes[i][1]], fontsize=11)
 
             cpldNds.append ( np.array( [ validNodesDict[int(coupledNodes[i][0])]    ,   validNodesDict[int(coupledNodes[i][1])]     ]    )   )
 
-    plt.show()
+    #plt.show()
     print ('done.')
     print('filtering done.')
 
@@ -560,8 +560,11 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
     sys.stdout.flush()
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
-    saveNodes(master_folder, nodes_out, aux_nodes, dim)
-    saveVertices(master_folder, vertices_out, dim, withoutTransport=True)
+    saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+    #saveNodes(master_folder, nodes_out, aux_nodes, dim)
+    #saveNodes(master_folder, aux_nodes, "AuxNode",dim, verticesFile)
+#   saveVertices(master_folder, vertices_out, dim, withoutTransport=True)
+    saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
     saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
     #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
 
@@ -584,16 +587,16 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
     for i in range(len(cpldNds)):
         cf.write("\t%d\t%d"%(cpldNds[i][1], cpldNds[i][0]))
 
-        plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
-        plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
-        plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
+        #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
+        #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
+        #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
 
     cf.write(os.linesep)
     cf.close()
 
-    plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
+    #plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
 
-    plt.show()
+    #plt.show()
 
 
 
@@ -1076,6 +1079,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     sys.stdout.flush()
     nodes_out = np.array(nodes_out)
     #writing nodes
+    #print(len(nodes_out))
     num = dim
     if (dim == 2):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY"

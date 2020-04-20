@@ -44,7 +44,7 @@ if __name__ == '__main__':
         coupledNodes = []
         mirtype = []
 
-        #type of solver. does not matter now
+        #type of solver
         #solver = "SteadyStateNonLinearSolver"
         solver = 'SteadyStateNonLinearSolver'
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         powerTes = False
 
         #dimension
-        dim = 2
+        dim = 3
 
         print('Creating a %dd lattice model...' % dim)
         #coupled problem?
@@ -67,14 +67,14 @@ if __name__ == '__main__':
         # X: 0.4445, diameter: 0.2286
 
         #dimensions of rectangle model
-        Xdim = 1.386             #also length of cylinder
-        Ydim = 0.3              #also diameter of cylinder
-        Zdim = 0.1
+        Xdim = 0.4445            #also length of cylinder
+        Ydim = 0.2286             #also diameter of cylinder
+        Zdim = 0.2286
 
         #size of grains (minimum distance between nodes)
         #be cautious with small grains!
         #for 3PB insert 2xmindist
-        minDist = 0.016
+        minDist = 0.02
 
         #trials of random node positioning
         trials = 30000
@@ -218,19 +218,20 @@ if __name__ == '__main__':
             """
 
             #3d ss 3PB
-
+            """
             notchH = 0.5
             node_coords, mechBC_merged, mechIC_merged, vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates = utilitiesModeling.create3dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05,fracZoneWidth = 0.15)
             measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=maxLim)
             materialZones = None
             #"""
 
-            """
+
             #DURHAM - cylinder torsion, press
             #Cusatis "Lattice discrete particle model: Calibration and validation 2011"
             materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, 3, model='box', maxLim=maxLim)
             node_coords, mechBC_merged,  vor, areas, functions,govNodes, govNodesMechBC, rigidPlates    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
             measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=maxLim)
+            materialZones =  None
             #"""
 
             """
