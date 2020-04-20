@@ -1,6 +1,0 @@
-# Type	nodeCrdX	nodeCrdY	powRadius
-Particle	0	0	0
-Particle	1	1	0
-Particle	1	-1	0
-Particle	-1	-1	0
-Particle	-1	1	0

@@ -1,4 +1,0 @@
-#FuncType	numberOfDefPoints	pointvalues
-PWLFunction	1	0.000000	0.000000
-PWLFunction	2	0.000000	50.000000	0.000000	-50.000000
-PWLFunction	2	0.000000	1	0.000000	-200e6

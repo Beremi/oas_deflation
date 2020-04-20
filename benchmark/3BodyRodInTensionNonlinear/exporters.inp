@@ -1,4 +1,0 @@
-TXTNodalExporter translations 1 ux
-DisplacementGauge LD elongation ux -0.05 0 0.05 0
-ForceGauge LD reaction fx 1 0
-ForceGauge LD load fx 1 2

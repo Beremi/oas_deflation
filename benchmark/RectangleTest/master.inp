@@ -1,9 +1,0 @@
-Dimension	2
-Solver	SteadyStateNonLinearSolver	time_step	1.000000e-1	total_time	50
-NodeFiles	3	nodes.inp	auxNodes.inp	vertices.inp
-MatFiles	1	materials.inp
-ElemFiles	1	mechElems.inp	trsprtElems.inp
-BCFiles	1	mechBC.inp	trsprtBC.inp
-ICFiles	1	mechIC.inp	trsprtIC.inp
-FunctionFiles	1	functions.inp
-ExporterFiles	1	exporters.inp

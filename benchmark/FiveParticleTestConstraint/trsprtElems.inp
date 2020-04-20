@@ -1,8 +1,0 @@
-# ElemType	vrtxAIdx	vrtxBIdx	nrOfNodes	nodeAidx	nodeBidx	Material
-LTCTRSP	8	9	2	0	2	1
-LTCTRSP	8	10	2	0	3	1
-LTCTRSP	9	11	2	0	4	1
-LTCTRSP	11	10	2	0	1	1
-LTCTRSP	12	13	2	5	1	1
-LTCTRSP	11	12	2	6	1	1
-LTCTRSP	10	13	2	1	7	1
