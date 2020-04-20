@@ -1,0 +1,5 @@
+# type      node    direction   numMasters master1 multiplier1 master2...
+jointDoF 1  0   2   13  1   14  0
+jointDoF 2  0   2   13  1   14  2
+jointDoF 1  2   1   14  1
+jointDoF 2  2   1   14  1

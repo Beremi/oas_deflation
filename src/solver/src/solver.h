@@ -8,6 +8,7 @@
 #include "linear_algebra.h"
 #include "element_container.h"
 #include "node_container.h"
+#include "indirect_displ_control.h"
 
 //////////////////////////////////////////////////////////
 class Solver
@@ -23,16 +24,19 @@ protected:
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
     bool terminated;
+    IndirectDC* idc;
     virtual void setNextStepTime();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve() {};
+    virtual void computeInternalExternalForces(Vector &rr);
+    virtual void computeInternalExternalForcesWithFrozenIntVariables(Vector &rr);
 
 public:
     Solver() { name = "basic solver"; };
     virtual ~Solver() {};
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
+    virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
     void setElementContainer(ElementContainer *e) { elems = e; }
     void setNodeContainer(NodeContainer *n) { nodes = n; };
@@ -61,8 +65,7 @@ public:
     SteadyStateLinearSolver();
     virtual ~SteadyStateLinearSolver();     //destructor
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
-    virtual void computeInternalExternalForces(Vector &rr);
+    virtual Solver *readFromFile(const string filename);
 };
 
 //////////////////////////////////////////////////////////
@@ -91,7 +94,7 @@ public:
     SteadyStateNonLinearSolver();
     virtual ~SteadyStateNonLinearSolver();     //destructor
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
+    virtual Solver *readFromFile(const string filename);
     virtual Vector giveNodalForces() { return f_ext_old; };
 };
 
@@ -113,7 +116,7 @@ public:
     TransientLinearMechanicalSolver();
     virtual ~TransientLinearMechanicalSolver();     //destructor
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
+    virtual Solver *readFromFile(const string filename);
 };
 
 //////////////////////////////////////////////////////////

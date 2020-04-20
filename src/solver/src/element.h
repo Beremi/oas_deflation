@@ -31,7 +31,7 @@ public:
     void updateMaterialStatuses();
     virtual Matrix giveSteadyStateMatrix(string matrixType) const = 0;
     vector< unsigned >giveDoFs() { return DoFids; };
-    virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const = 0;
     virtual double giveValue(string code) const;
     virtual string giveName() const { return name; }
     virtual size_t giveIPNum() const { return ip_locs.size(); };
@@ -70,7 +70,7 @@ public:
     virtual Matrix giveMassMatrix() const = 0;
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveStiffnessMatrix(matrixType); };
     Matrix giveGeomMMatrix() const { return GeomM; };
-    virtual Vector giveInternalForces(const Vector &DoFs) const = 0;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const = 0;
 };
 
 //////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ public:
     virtual Matrix giveAMatrix(Point a, Point x) const;
     double giveLength() const { return length; }
     double giveArea() const { return area; }
-    virtual Vector giveInternalForces(const Vector &DoFs) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
@@ -140,7 +140,7 @@ public:
     Matrix giveConductivityMatrix(string matrixType) const;
     Matrix giveCapacityMatrix() const;
     Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
-    virtual Vector giveInternalForces(const Vector &DoFs) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 
 #endif  /* _ELEMENT_STRUCT_H */

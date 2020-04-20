@@ -1,0 +1,5 @@
+TXTNodalExporter translations 2 ux uy
+TXTGaussPointExporter damage 3 x y damage
+DisplacementGauge LD displ uy 0 0 3 1
+ForceGauge LD load fy 1 6
+VTKElementExporter elems time_every 1e-20 cellData 1 damage pointData 1 pressure

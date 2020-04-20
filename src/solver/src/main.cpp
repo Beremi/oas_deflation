@@ -110,8 +110,9 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
                     pblocks->readFromFile( ( GlobPaths :: BASEDIR / istr ).string(), dimension );
                 }
             } else if ( istr.compare("Solver") == 0 ) {
+                iss >> istr;
                 Solver auxs;
-                newsolver = auxs.readFromLine(iss);
+                newsolver = auxs.readFromFile( ( GlobPaths :: BASEDIR / istr ).string());
                 newsolver->setElementContainer(elems);
                 newsolver->setNodeContainer(nodes);
                 newsolver->setFunctionContainer(funcs);

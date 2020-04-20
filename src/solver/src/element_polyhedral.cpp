@@ -241,7 +241,8 @@ Matrix TranspPolyhedral :: giveCapacityMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector TranspPolyhedral :: giveInternalForces(const Vector &DoFs) const {
+Vector TranspPolyhedral :: giveInternalForces(const Vector &DoFs, bool frozen) const {
+    ( void ) frozen;
     return giveConductivityMatrix("secant") * DoFs;
 };
 

@@ -2,29 +2,47 @@
 #define EPS2 1e-30
 
 //////////////////////////////////////////////////////////
-Solver *Solver :: readFromLine(istringstream &iss) {
-    string param;
-    iss >> param;
+Solver *Solver :: readFromFile(const string filename) {
+    string param, line;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
+            if ( line.at(0) == '#' ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> param;
+            break;
+        }    
+        inputfile.close();
+    }
     if ( param.compare("SteadyStateLinearSolver") == 0 ) {
         SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
-        newsolver->readFromLine(iss);
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
         return newsolver;
     } else if ( param.compare("SteadyStateNonLinearSolver") == 0 ) {
         SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
-        newsolver->readFromLine(iss);
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
         return newsolver;
     } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
         TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
-        newsolver->readFromLine(iss);
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
         return newsolver;
     } else if ( param.compare("TransientLinearTransportSolver") == 0 ) {
         TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
-        newsolver->readFromLine(iss);
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
         return newsolver;
     } else {
         cerr << "Error: Solver " << param << " is not implemented" << endl;
         exit(EXIT_FAILURE);
-    };
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -96,24 +114,34 @@ void SteadyStateLinearSolver :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Solver *SteadyStateLinearSolver :: readFromLine(istringstream &iss) {
-    string param;
+Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
+    string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("time_step") == 0 ) {
-            bdt = true;
-            iss >> dt;
-        } else if ( param.compare("total_time") == 0 ) {
-            bttime = true;
-            iss >> termination_time;
-        } else if ( param.compare("conj_grad_precission") == 0 ) {
-            iss >> conj_grad_precission;
-        } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
-            iss >> conj_grad_relative_maxit;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
+            if ( line.at(0) == '#' ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> param;
+            if ( param.compare("time_step") == 0 ) {
+                bdt = true;
+                iss >> dt;
+            } else if ( param.compare("total_time") == 0 ) {
+                bttime = true;
+                iss >> termination_time;
+            } else if ( param.compare("conj_grad_precission") == 0 ) {
+                iss >> conj_grad_precission;
+            } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
+                iss >> conj_grad_relative_maxit;
+            }
         }
+        inputfile.close();
     }
     if ( !bdt ) {
         cerr << name << ": solver parameter 'time_step' was not specified" << endl;
@@ -124,8 +152,7 @@ Solver *SteadyStateLinearSolver :: readFromLine(istringstream &iss) {
         cerr << name << ": solver parameter 'total_time' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
-    ;
-    cout << name << " succesfully loaded" << endl;
+
     return this;
 };
 
@@ -160,15 +187,15 @@ void SteadyStateLinearSolver :: solve() {
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: computeInternalExternalForces(Vector &rr) {
-    elems->giveInternalForces(rr, f_int);
+void Solver :: computeInternalExternalForces(Vector &rr) {
+    elems->giveInternalForces(rr, f_int, false);
     nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
-    // #constr_old
-    // if (nodes->giveConstraints()->isActive()){
-    //   // also ddr must be updated, because displacement error is calculated from relative change (||ddr||/||r||)
-    //   // matters especially when force control on master is applied
-    //   nodes->giveConstraints()->calculateDependentDoFs(full_ddr);
-    // }
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: computeInternalExternalForcesWithFrozenIntVariables(Vector &rr) {
+    elems->giveInternalForces(rr, f_int, true);
+    nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
 }
 
 //////////////////////////////////////////////////////////
@@ -205,10 +232,8 @@ void SteadyStateNonLinearSolver :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
-    SteadyStateLinearSolver :: readFromLine(iss);
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
+Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
+    SteadyStateLinearSolver :: readFromFile(filename);
 
     maxIt = 30;
     disErr = resErr = eneErr = 1e-5;
@@ -217,60 +242,68 @@ Solver *SteadyStateNonLinearSolver :: readFromLine(istringstream &iss) {
     step_decrease = 0.8;
     critical_step_decrease = 0.5;
 
-    string param;
+    string param, line;
     dtmax = dtmin = dt;
     bool bdtmin = false;
     bool bdtmax = false;
     double valueIN;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("max_time_step") == 0 ) {
-            bdtmax = true;
-            iss >> dtmax;
-        } else if ( param.compare("min_time_step") == 0 ) {
-            bdtmin = true;
-            iss >> dtmin;
-        } else if ( param.compare("tolerance") == 0 ) {
-            iss >> disErr;
-            resErr = eneErr = disErr;
-        } else if ( param.compare("limit_tolerance") == 0 ) {
-            iss >> valueIN;
-            limitEneErr = limitResErr = limitDisErr = valueIN;
-        } else if ( param.compare("maxIt") == 0 ) {
-            iss >> maxIt;
-            if ( maxIt < 1 ) {
-              std :: cerr << "number of itteration cannot be smaller than " << maxIt << "!!!,";
-              maxIt = 30;
-              std::cout << " setting to default value: maxIt = " << maxIt << '\n';
-            } else if ( maxIt < 3 ) {
-              std :: cout << "solver parameter maxIt set to " << maxIt << ", be carefull with such a small number" << '\n';
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
+                continue;
             }
-        } else if ( param.compare("step_increase") == 0 ) {
-            iss >> valueIN;
-            if (valueIN < 1){
-              std::cerr << "step_increase cannot be smaller than 1! leaving default value " << step_increase << '\n';
-            } else {
-              step_increase = valueIN;
+            if ( line.at(0) == '#' ) {
+                continue;
             }
-        } else if ( param.compare("step_decrease") == 0 ) {
-            iss >> valueIN;
-            if (valueIN > 1){
-              std::cerr << "step_decrease cannot be greater than 1! leaving default value " << step_decrease << '\n';
-            } else {
-              step_decrease = valueIN;
+            istringstream iss(line);
+            iss >> param;
+            if ( param.compare("max_time_step") == 0 ) {
+                bdtmax = true;
+                iss >> dtmax;
+            } else if ( param.compare("min_time_step") == 0 ) {
+                bdtmin = true;
+                iss >> dtmin;
+            } else if ( param.compare("tolerance") == 0 ) {
+                iss >> disErr;
+                resErr = eneErr = disErr;
+            } else if ( param.compare("limit_tolerance") == 0 ) {
+                iss >> valueIN;
+                limitEneErr = limitResErr = limitDisErr = valueIN;
+            } else if ( param.compare("maxIt") == 0 ) {
+                iss >> maxIt;
+                if ( maxIt < 1 ) {
+                  std :: cerr << "number of itteration cannot be smaller than " << maxIt << "!!!,";
+                  maxIt = 30;
+                  std::cout << " setting to default value: maxIt = " << maxIt << '\n';
+                } else if ( maxIt < 3 ) {
+                  std :: cout << "solver parameter maxIt set to " << maxIt << ", be carefull with such a small number" << '\n';
+                }
+            } else if ( param.compare("step_increase") == 0 ) {
+                iss >> valueIN;
+                if (valueIN < 1){
+                  std::cerr << "step_increase cannot be smaller than 1! leaving default value " << step_increase << '\n';
+                } else {
+                  step_increase = valueIN;
+                }
+            } else if ( param.compare("step_decrease") == 0 ) {
+                iss >> valueIN;
+                if (valueIN > 1){
+                  std::cerr << "step_decrease cannot be greater than 1! leaving default value " << step_decrease << '\n';
+                } else {
+                  step_decrease = valueIN;
+                }
+            } else if ( param.compare("critical_step_decrease") == 0 ) {
+              iss >> valueIN;
+              if (valueIN > 1){
+                std::cerr << "critical_step_decrease cannot be greater than 1! leaving default value " << critical_step_decrease << '\n';
+              } else {
+                critical_step_decrease = valueIN;
+              }
             }
-        } else if ( param.compare("critical_step_decrease") == 0 ) {
-          iss >> valueIN;
-          if (valueIN > 1){
-            std::cerr << "critical_step_decrease cannot be greater than 1! leaving default value " << critical_step_decrease << '\n';
-          } else {
-            critical_step_decrease = valueIN;
-          }
         }
+        inputfile.close();
     }
-    cout << name << " succesfully loaded, ";
-    ;
     if ( !bdtmin && !bdtmax ) {
         cout << "fixed time step used" << endl;
     } else if ( bdtmin || bdtmax ) {
@@ -293,7 +326,7 @@ void SteadyStateNonLinearSolver :: solve() {
         //setup loading
         nodes->addRHS_nodalLoad(load, time); //add nodal load
         nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-        computeInternalExternalForces(trial_r);
+        computeInternalExternalForcesWithFrozenIntVariables(trial_r);
 
         // std::cout << " ---------------------- initial " << '\n';
         // this->printAllVectors();
@@ -475,35 +508,46 @@ void TransientLinearMechanicalSolver :: init() {
     a = Vector(totalDoFnum);
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r); //at time 0
+    computeInternalExternalForcesWithFrozenIntVariables(r); //at time 0
     nodes->giveReducedDoFArray(f_ext - f_int, f);
     terminated = !ConjGrad(M, a_red, f - C * v_red,  a_red, conj_grad_precission, conj_grad_relative_maxit);
 }
 
 //////////////////////////////////////////////////////////
-Solver *TransientLinearMechanicalSolver :: readFromLine(istringstream &iss) {
-    string param;
+Solver *TransientLinearMechanicalSolver ::  readFromFile(const string filename) {
 
-    SteadyStateLinearSolver :: readFromLine(iss);
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
+    SteadyStateLinearSolver :: readFromFile(filename);
 
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("alpha_f") == 0 ) {
-            iss >> alpha_f;
-        } else if ( param.compare("alpha_m") == 0 ) {
-            iss >> alpha_m;
-        } else if ( param.compare("gamma") == 0 ) {
-            iss >> gamma;
-        } else if ( param.compare("beta") == 0 ) {
-            iss >> gamma;
-        } else if ( param.compare("spectral_radius") == 0 ) {
-            double rhoinfty;
-            iss >> rhoinfty;
-            applySpectralRadius(rhoinfty);
+    string param, line;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
+            if ( line.at(0) == '#' ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> param;
+
+            if ( param.compare("alpha_f") == 0 ) {
+                iss >> alpha_f;
+            } else if ( param.compare("alpha_m") == 0 ) {
+                iss >> alpha_m;
+            } else if ( param.compare("gamma") == 0 ) {
+                iss >> gamma;
+            } else if ( param.compare("beta") == 0 ) {
+                iss >> gamma;
+            } else if ( param.compare("spectral_radius") == 0 ) {
+                double rhoinfty;
+                iss >> rhoinfty;
+                applySpectralRadius(rhoinfty);
+            }
         }
+        inputfile.close();
     }
+
     if ( alpha_m > 0.5 ) {
         cerr << "Error in solver: alpha_m (" << alpha_m << ") cannot exceed 0.5" << endl;
         exit(1);
@@ -524,7 +568,6 @@ Solver *TransientLinearMechanicalSolver :: readFromLine(istringstream &iss) {
         cerr << "Error in solver: beta (" << beta << ") must be larger than 0.25 + 0.5*(alpha_f-alpha_m)" << endl;
         exit(1);
     }
-    cout << name << " succesfully loaded, ";
     return this;
 };
 

@@ -1,5 +1,5 @@
 Dimension	3
-Solver	SteadyStateNonLinearSolver	time_step	1.000000e-06	max_time_step	1.000000e-01	min_time_step	1.000000e-06	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	20
+Solver	solver.inp
 NodeFiles	4	nodes.inp	auxNodes.inp	vertices.inp	govNodes.inp
 PBlockFiles	1	constraint.inp
 MatFiles	1	materials.inp

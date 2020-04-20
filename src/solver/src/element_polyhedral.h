@@ -32,7 +32,7 @@ public:
     virtual Matrix giveConductivityMatrix(string matrixType) const;
     virtual Matrix giveCapacityMatrix() const;
     virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
-    virtual Vector giveInternalForces(const Vector &DoFs) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 
 class TranspVirtPolyhedral : public TranspPolyhedral
