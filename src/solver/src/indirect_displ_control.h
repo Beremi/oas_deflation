@@ -8,26 +8,36 @@
 #include "linear_algebra.h"
 #include "element_container.h"
 #include "node_container.h"
+#include "function.h"
 
 //////////////////////////////////////////////////////////
 class IndirectDC
 {
 protected:
     string name;
-    ElementContainer *elems;
-    NodeContainer *nodes;
     Function *func;
+    double target_value;
+    int funcnum;
     unsigned nummaxunit;
-    vector <unsigned> c_nodes;
-    vector <unsigned> c_dirs;
-    vector <unsigned> c_DoFs;
-    vector <double> c_weights;
+    vector <bool> coords_active;
+    vector <bool> nodes_active;
+    vector < vector<unsigned> > c_nodes;
+    vector < vector<unsigned> > c_dirs;
+    vector < vector<unsigned> > c_DoFs;
+    vector < vector<double> > xcoords;
+    vector < vector<double> > ycoords;
+    vector < vector<double> > zcoords;
+    vector < vector<double> > c_weights;
+
+    double givePrescribedDisplacement(double time);
 
 public:
-    IndirectDC() { name = "indirect displacement controller"; };
-    virtual ~IndirectDC() {};
-    virtual void init();
-    virtual void readFromStream(ifstream &inputfile);
+    IndirectDC();
+    ~IndirectDC() {};
+    void init(NodeContainer *nodes, FunctionContainer *funcs);
+    void readFromStream(unsigned num, ifstream &inputfile);
+    double giveMultiplierCorrection(Vector &prev_displ, Vector &displ_d, Vector &displ_f, double time);
+    double giveControlValue(Vector &displ);   
 };
 
 #endif

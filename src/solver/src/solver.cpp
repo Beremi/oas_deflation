@@ -92,7 +92,7 @@ void Solver :: init() {
     r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
     f = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
-    ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
+    ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
     full_ddr = Vector(totalDoFnum);
 }
 
@@ -215,10 +215,13 @@ void SteadyStateLinearSolver :: runAfterEachStep() {
 
 SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     name = "SteadyStateNonLinearSolver";
+    idc = nullptr;
 }
 
 //////////////////////////////////////////////////////////
-SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {}
+SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
+     if (idc) delete idc; 
+}
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: init() {
@@ -229,6 +232,16 @@ void SteadyStateNonLinearSolver :: init() {
     residual = Vector(totalDoFnum);
     W_ext_old = 0;
     W_int_old = 0;
+
+    if (idc) {
+        idc->init(nodes, funcs);   //indirect displacement control
+        ddf = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
+        full_ddf = Vector(totalDoFnum);
+        f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
+        idc_time = 0;
+        idc_dt = 1e-5;
+        idc_time_converged = 0;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -241,11 +254,12 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
     step_increase = 1.25;
     step_decrease = 0.8;
     critical_step_decrease = 0.5;
-
+    
     string param, line;
     dtmax = dtmin = dt;
     bool bdtmin = false;
     bool bdtmax = false;
+    unsigned helpuint;
     double valueIN;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
@@ -267,10 +281,6 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
             } else if ( param.compare("tolerance") == 0 ) {
                 iss >> disErr;
                 resErr = eneErr = disErr;
-            } else if ( param.compare("indirect_displacement_control") == 0 ) {
-                cout << "before passing stream to IDC" << endl; cout.flush();
-                idc->readFromStream(inputfile);
-                cout << "after passing stream to IDC" << endl; cout.flush();
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
@@ -304,6 +314,10 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
               } else {
                 critical_step_decrease = valueIN;
               }
+            } else if ( param.compare("indirect_displacement_control") == 0 ) {
+                iss >> helpuint;
+                if (not idc) idc = new IndirectDC();
+                idc->readFromStream(helpuint, inputfile);
             }
         }
         inputfile.close();
@@ -321,6 +335,7 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
+    double load_mult;
     bool converged = false;
     bool restarted = false;
     double displa_error = 0;
@@ -328,9 +343,12 @@ void SteadyStateNonLinearSolver :: solve() {
     double residu_error = 0;
     while ( !converged ) {
         //setup loading
-        nodes->addRHS_nodalLoad(load, time); //add nodal load
-        nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-        computeInternalExternalForcesWithFrozenIntVariables(trial_r);
+
+        if (! idc) {
+            nodes->addRHS_nodalLoad(load, time); //add nodal load
+            nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
+            computeInternalExternalForcesWithFrozenIntVariables(trial_r);   
+        }
 
         // std::cout << " ---------------------- initial " << '\n';
         // this->printAllVectors();
@@ -341,18 +359,46 @@ void SteadyStateNonLinearSolver :: solve() {
             K = Kini;
             elems->updateSteadyStateMatrix(K, "secant");
 
-            //solve linear system
             nodes->giveReducedDoFArray(f_ext - f_int, f);
-            // terminated = !ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
-            if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
-                terminated = true;
-                cerr << "Conjugate gradients did not converge" << endl;
-                return;
+
+            if (idc){       //indirect displacement control
+                f_last_iter = f;
+                load *= 0.;
+                nodes->addRHS_nodalLoad(load, idc_time+idc_dt); //add nodal load
+                nodes->updateDirrichletBC(trial_r, idc_time+idc_dt); //give prescribed DoFs
+                computeInternalExternalForcesWithFrozenIntVariables(trial_r);
+                nodes->giveReducedDoFArray(f_ext - f_int, f);
+
+                if ( ConjGrad(K, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                    terminated = true;
+                    cerr << "Conjugate gradients did not converge" << endl;
+                    return;
+                }
+                if ( ConjGrad(K, ddf, f - f_last_iter, ddf, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                    terminated = true;
+                    cerr << "Conjugate gradients did not converge" << endl;
+                    return;
+                }
+                nodes->giveFullDoFArray(ddr, full_ddr);
+                nodes->giveFullDoFArray(ddf, full_ddf);
+                load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
+                ddr = ddr + load_mult*ddf;
+                idc_time += idc_dt*load_mult;
+
+                load *= 0;
+                nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
+                nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs                
+
+            }else{          //direct controll
+                if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                    terminated = true;
+                    cerr << "Conjugate gradients did not converge" << endl;
+                    return;
+                }
             }
-            // sem přidat constraint z elem container
-            nodes->giveFullDoFArray(ddr, full_ddr);
 
             //update DoFs
+            nodes->giveFullDoFArray(ddr, full_ddr);
             for ( unsigned i = 0; i < totalDoFnum; i++ ) {
                 trial_r [ i ] += full_ddr [ i ];
             }
@@ -410,6 +456,7 @@ void SteadyStateNonLinearSolver :: solve() {
             f_int = f_int_old;
             f_ext = f_ext_old;
             load *= 0;
+            if (idc) idc_time = idc_time_converged;
         } else if ( !converged ) {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
                 std :: cout << "tolerance increased in this step" << '\n';
@@ -477,6 +524,8 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
         W_ext_old = W_ext;
         elems->updateMaterialStatuses();
         cout << "----------------------------------------------------" << endl;
+        
+        if(idc) idc_time_converged = idc_time;
     }
 }
 

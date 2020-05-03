@@ -1,11 +1,15 @@
 SteadyStateNonLinearSolver
-time_step	5.000000e-03
-max_time_step	1.000000e-02
+time_step	5.000000e-04
+max_time_step	5.000000e-03
 min_time_step	5.000000e-04
-total_time	1.000000e+00
-tolerance 1e-5
+total_time	0.100000e+00
+tolerance 1e-3
 limit_tolerance	1.000000e-01
+indirect_displacement_control 2
+idc_xcoords 0.39 0.41
+idc_ycoords 0. 0.
+idc_directions 0 0
+idc_weights -1 1
+idc_function 2
 maxIt	150
-indirect_displacement_control
-number_of_units_to_maximizeX 8
 
