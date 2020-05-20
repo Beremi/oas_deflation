@@ -210,16 +210,10 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) cons
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
+void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f, bool frozen) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f *= 0;  // clear array
-
-    // #constr_old
-    // JK moved to nodeContainer :: giveFullDoFArray
-    // if (nodes->giveConstraints()->isActive()){
-    //   nodes->giveConstraints()->calculateDependentDoFs(full_r);
-    // }
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
@@ -227,17 +221,21 @@ void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
         }
-        elForces = ( * e )->giveInternalForces(elDoFvalues);
+        elForces = ( * e )->giveInternalForces(elDoFvalues, frozen);
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             full_f [ elDoFs [ i ] ] += elForces [ i ];
         }
     }
+}
 
-    // #constr_old
-    // JK moved to nodeContainer :: updateExteranlForcesByReactions
-    // if (nodes->giveConstraints()->isActive()){
-    //   nodes->giveConstraints()->calculateMasterForces(full_f);
-    // }
+//////////////////////////////////////////////////////////
+void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
+    giveInternalForces(full_r, full_f, false);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: giveInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f) {
+    giveInternalForces(full_r, full_f, true);
 }
 
 //////////////////////////////////////////////////////////

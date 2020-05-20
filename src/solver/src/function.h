@@ -169,6 +169,7 @@ public:
     bool isActive(const unsigned &fid) const { return functions [ fid ]->isActive(); };
     size_t giveSize() const { return functions.size(); };
     void addFunction(Function *f) { functions.push_back(f); };
+    Function* giveFunction(unsigned k) { return functions[k]; };
 protected:
 };
 

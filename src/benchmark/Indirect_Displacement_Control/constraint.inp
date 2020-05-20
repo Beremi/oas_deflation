@@ -1,0 +1,4 @@
+#ConstraintType	GovNodeIdx	Xmin	Xmax	Ymin	Ymax
+CoordRigidPlate	1207	-1.000000e-03	1.100000e-02	-1.000000e-03	2.000000e-03	
+CoordRigidPlate	1208	7.880000e-01	8.010000e-01	-1.000000e-03	2.000000e-03	
+CoordRigidPlate	1209	3.790000e-01	4.210000e-01	9.800000e-02	1.020000e-01	

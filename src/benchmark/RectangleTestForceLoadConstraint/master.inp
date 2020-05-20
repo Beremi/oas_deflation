@@ -1,5 +1,5 @@
 Dimension	2
-Solver	SteadyStateNonLinearSolver	time_step	1e-01 max_time_step 1e-01 min_time_step 1e-3 total_time	50
+Solver	solver.inp
 NodeFiles	4	nodes.inp	auxNodes.inp	vertices.inp    govNodes.inp
 MatFiles	1	materials.inp
 ElemFiles	1	mechElems.inp	trsprtElems.inp
