@@ -375,10 +375,10 @@ void SteadyStateNonLinearSolver :: solve() {
             load *= 0;
         } else if ( !converged ) {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
-                std :: cout << "tolerance increased in this step" << '\n';
+                std :: cerr << "tolerance increased in this step" << '\n';
                 converged = true;
             } else {
-                cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
+                std :: cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
                 terminated = true;
                 return;
                 // exit(1);
