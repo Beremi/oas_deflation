@@ -16,7 +16,7 @@ Solver *Solver :: readFromFile(const string filename) {
             istringstream iss(line);
             iss >> param;
             break;
-        }    
+        }
         inputfile.close();
     }
     if ( param.compare("SteadyStateLinearSolver") == 0 ) {
@@ -220,7 +220,7 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
 
 //////////////////////////////////////////////////////////
 SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
-     if (idc) delete idc; 
+     if (idc) delete idc;
 }
 
 //////////////////////////////////////////////////////////
@@ -254,7 +254,7 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
     step_increase = 1.25;
     step_decrease = 0.8;
     critical_step_decrease = 0.5;
-    
+
     string param, line;
     dtmax = dtmin = dt;
     bool bdtmin = false;
@@ -326,6 +326,19 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
         cout << "fixed time step used" << endl;
     } else if ( bdtmin || bdtmax ) {
         cout << "adaptive time step used" << endl;
+        if ( dtmin > dtmax ){
+          std::cerr << "dtmin > dtmax, swapping values" << '\n';
+          double dm = dtmax;
+          dtmax = dtmin;
+          dtmin = dm;
+        }
+        if ( dt < dtmin ){
+          std::cerr << "dt < dtmin, setting dtmin = dt" << '\n';
+          dtmin = dt;
+        } else if ( dt > dtmax ){
+          std::cerr << "dt > dtmax, setting dtmax = dt" << '\n';
+          dtmax = dt;
+        }
     } else {
         cout << endl;
     }
@@ -347,7 +360,7 @@ void SteadyStateNonLinearSolver :: solve() {
         if (! idc) {
             nodes->addRHS_nodalLoad(load, time); //add nodal load
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-            computeInternalExternalForcesWithFrozenIntVariables(trial_r);   
+            computeInternalExternalForcesWithFrozenIntVariables(trial_r);
         }
 
         // std::cout << " ---------------------- initial " << '\n';
@@ -387,7 +400,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
                 load *= 0;
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
-                nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs                
+                nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
 
             }else{          //direct controll
                 if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
@@ -524,7 +537,7 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
         W_ext_old = W_ext;
         elems->updateMaterialStatuses();
         cout << "----------------------------------------------------" << endl;
-        
+
         if(idc) idc_time_converged = idc_time;
     }
 }
