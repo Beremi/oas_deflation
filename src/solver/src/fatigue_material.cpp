@@ -974,6 +974,13 @@ void DamagePlasticMaterialStatus :: init() {
 
     energy_PL = energy_D = energy_Kin = energy_Iso = work_tot = 0;
 
+    if ( m->giveGt() != 0 ){
+      Kt = 2 * m->giveE0() * pow(m->giveTensileStrength(), 2) * rbc->giveLength() /
+           ( 2 * m->giveE0() * m->giveGt() -
+            pow(m->giveTensileStrength(), 2) * rbc->giveLength()
+           );
+    }
+
     symmetric = m->isSym();
 }
 
@@ -1003,7 +1010,9 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
 
     int Heaviside;
     if ( temp_epsN - epsNP > 0 ) {
-        Heaviside = 1;
+      Heaviside = 1;
+      if (m->giveAd() != 0){
+        // using Ad parameter
         temp_Y = Heaviside * 0.5 * stiff [ 0 ] * pow(temp_epsN - epsNP, 2);
         double Y_n0 = 0.5 * stiff [ 0 ] * pow(m->giveElasticLimit(), 2);
         double Rn = ( 1 / m->giveAd() ) * ( -rN / ( 1 + rN ) );
@@ -1016,15 +1025,31 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
             // update tensile internal variables
             temp_damage = fmin(1 - 1e-10, fmax(0, 1 - 1 / ( 1 + m->giveAd() * ( temp_Y - Y_n0 ) ) ) );
             temp_rN = -temp_damage;
-        }
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
-        // apply damage also in shear direction
-        for ( unsigned i = 1; i < strain.size(); i++ ) {
-            stress [ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain [ i ] );
-        }
         temp_alphaN = alphaN;
         temp_zN = zN;
         temp_epsNP = epsNP;
+        }
+
+      } else if ( m->giveGt() != 0 ){
+        // using fracture energy Gt
+        if ( temp_epsN - epsNP < m->giveElasticLimit()){
+          temp_damage = 0;
+        } else {
+
+          double sigma_eq = m->giveTensileStrength() *
+                 exp((-Kt / m->giveTensileStrength()) *
+                 ((temp_epsN - epsNP) - m->giveElasticLimit() ) );
+          double dam = 1 - sigma_eq / ( m->giveE0() * (temp_epsN - epsNP));
+          temp_damage = fmin(1, fmax(0, dam));
+        }
+
+      }
+
+      stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
+      // apply damage also in shear direction
+      for ( unsigned i = 1; i < strain.size(); i++ ) {
+        stress [ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain [ i ] );
+      }
     } else {
         temp_damage = damage;
         Heaviside = 0;
@@ -1161,8 +1186,8 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     string param;
-    bool bfc, bft, bgam, bkin, bAd, bm;
-    bfc = bft = bgam = bkin = bAd = bm = false;
+    bool bfc, bft, bgam, bkin, bAd, bm, bGt;
+    bfc = bft = bgam = bkin = bAd = bm = bGt = false;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("fc") == 0 ) {
@@ -1180,6 +1205,9 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("Ad") == 0 ) {
             bAd = true;
             iss >> Ad;
+        } else if ( param.compare("Gt") == 0 ) {
+            bGt = true;
+            iss >> Gt;
         } else if ( param.compare("m") == 0 ) {
             bm = true;
             iss >> m;
@@ -1206,8 +1234,14 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
         exit(EXIT_FAILURE);
     }
     if ( !bAd ) {
-        cerr << name << ": material parameter 'Ad' was not specified" << endl;
-        exit(EXIT_FAILURE);
+        cerr << name << ": material parameter 'Ad' was not specified ";
+        if  ( !bGt ) {
+          cerr << "and not even material parameter 'Gt' was not specified" << endl;
+          exit(EXIT_FAILURE);
+        } else {
+          std::cout << "using material model with fracture energy Gt" << '\n';
+          Ad = 0;
+        }
     }
     if ( !bm ) {
         cout << name << ": material parameter 'm' was not specified, taking m = 0.0" << endl;
