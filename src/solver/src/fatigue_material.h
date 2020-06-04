@@ -221,6 +221,7 @@ private:
     ///< tensile part can be prescribed by Ad or Gt:
     double Ad;  ///< brittlenes of damage evolution
     double Gt;  ///< fracture energy
+    double Kt;  ///< initial slope of the softening curve
     double m;  ///< hardening parameter
     bool use_displ;  ///< whether to use absolute values of displacements instead of strains
 
@@ -238,6 +239,7 @@ public:
     double giveKinN() const { return KinN; }
     double giveAd() const { return Ad; }
     double giveGt() const { return Gt; }
+    double giveKt() const { return Kt; }
     double giveM() const { return m; }
     virtual void init();
 

@@ -979,6 +979,8 @@ void DamagePlasticMaterialStatus :: init() {
            ( 2 * m->giveE0() * m->giveGt() -
             pow(m->giveTensileStrength(), 2) * rbc->giveLength()
            );
+    } else if ( m->giveKt() != 0 ){
+      Kt = m->giveKt();
     }
 
     symmetric = m->isSym();
@@ -1030,8 +1032,9 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
         temp_epsNP = epsNP;
         }
 
-      } else if ( m->giveGt() != 0 ){
-        // using fracture energy Gt
+      } else if ( Kt != 0 ){
+        // using initial slope of the softening curve
+        // either from fracture energy or directly prescribed
         if ( temp_epsN - epsNP < m->giveElasticLimit()){
           temp_damage = 0;
         } else {
@@ -1181,13 +1184,14 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
 
     use_displ = false;
     sym = false;
+    Ad = Gt = Kt = 0;
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
     string param;
-    bool bfc, bft, bgam, bkin, bAd, bm, bGt;
-    bfc = bft = bgam = bkin = bAd = bm = bGt = false;
+    bool bfc, bft, bgam, bkin, bAd, bm, bGt, bKt;
+    bfc = bft = bgam = bkin = bAd = bm = bGt = bKt = false;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("fc") == 0 ) {
@@ -1208,6 +1212,9 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("Gt") == 0 ) {
             bGt = true;
             iss >> Gt;
+        } else if ( param.compare("Kt") == 0 ) {
+            bKt = true;
+            iss >> Kt;
         } else if ( param.compare("m") == 0 ) {
             bm = true;
             iss >> m;
@@ -1236,11 +1243,15 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
     if ( !bAd ) {
         cerr << name << ": material parameter 'Ad' was not specified ";
         if  ( !bGt ) {
-          cerr << "and not even material parameter 'Gt' was not specified" << endl;
-          exit(EXIT_FAILURE);
+          cerr << ", material parameter 'Gt' was not specified ";
+          if ( !bKt ) {
+                cerr << "and not even material parameter 'Kt' was specified" << endl;
+            exit(EXIT_FAILURE);
+          } else {
+            std::cerr << "using unregularized material model with initial slope of the softening curve 'Kt'" << '\n';
+          }
         } else {
-          std::cout << "using material model with fracture energy Gt" << '\n';
-          Ad = 0;
+          std::cerr << "using regularized tensile material model with fracture energy 'Gt'" << '\n';
         }
     }
     if ( !bm ) {
