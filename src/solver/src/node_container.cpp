@@ -15,7 +15,6 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
-                cout << "EMPTY LINE" << endl;
                 continue;
             }
             if ( line.at(0) == '#' ) {

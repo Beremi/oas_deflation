@@ -28,6 +28,7 @@ void DataExporter :: readFromLine(istringstream &iss) {
     }
 }
 
+//////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time) {
     if ( time < time_last + time_each ) {
         return false;
@@ -375,6 +376,9 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
             if ( line.at(0) == '#' ) {
                 continue;
             }

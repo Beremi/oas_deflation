@@ -53,12 +53,15 @@ public:
 class TranspCondensedPolyhedral : public TranspPolyhedral
 {
 private:
+    unsigned nodeMaxAngle;
     Vector red2full;
     vector< double >angles;
     Vector fullTriShapeF(Point x) const;
     Matrix fullTriShapeFGrad(Point x) const;
     Vector condTriShapeF(Point x) const;
     Matrix condTriShapeFGrad(Point x) const;
+
+    unsigned findFaceNumber(Point x) const;
 public:
     TranspCondensedPolyhedral(const unsigned dim);
     ~TranspCondensedPolyhedral() {};

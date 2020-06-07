@@ -49,7 +49,6 @@ void TranspPolyhedral :: sort2D() {
     sort(angles.begin(), angles.end() );
     vector< Node * >newnodes;
     newnodes.resize(nnodes);
-    //do NOT change node ordering, the fisrt face should run through +-pi axis
     for ( unsigned i = 0; i < nnodes - 1; i++ ) {
         newnodes [ i + 1 ] = nodes [ angles [ i ].second ];
     }
@@ -312,16 +311,7 @@ TranspCondensedPolyhedral :: TranspCondensedPolyhedral(const unsigned dim) : Tra
 
 //////////////////////////////////////////////////////////
 Vector TranspCondensedPolyhedral :: fullTriShapeF(Point x) const {
-    double alpha = atan2(x.getY() - centroid.getY(), x.getX() - centroid.getX() );
-    unsigned face;
-    for ( face = 0; face < nnodes; face++ ) {
-        if ( alpha < angles [ faces [ face ] [ 1 ] ] ) {
-            break;
-        }
-    }
-    if ( face == nnodes ) {
-        face = 0;
-    }
+    unsigned face = findFaceNumber(x);
     Vector phi(0., nnodes + 1); //include the centroid
     double tarea = triArea(centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
     phi [ faces [ face ] [ 1 ] ] = triArea(x, centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint() ) / tarea;
@@ -332,16 +322,7 @@ Vector TranspCondensedPolyhedral :: fullTriShapeF(Point x) const {
 
 //////////////////////////////////////////////////////////
 Matrix TranspCondensedPolyhedral :: fullTriShapeFGrad(Point x) const {
-    double alpha = atan2(x.getY() - centroid.getY(), x.getX() - centroid.getX() );
-    unsigned face;
-    for ( face = 0; face < nnodes; face++ ) {
-        if ( alpha < angles [ faces [ face ] [ 1 ] ] ) {
-            break;
-        }
-    }
-    if ( face == nnodes ) {
-        face = 0;
-    }
+    unsigned face = findFaceNumber(x);
     Matrix phiGrad(ndim, nnodes + 1); //include the centroid
     double tarea = triArea(centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
     phiGrad [ 0 ] [ faces [ face ] [ 1 ] ] = 0.5 * ( centroid.getY() - nodes [ faces [ face ] [ 0 ] ]->givePoint().getY() ) / tarea;
@@ -351,6 +332,18 @@ Matrix TranspCondensedPolyhedral :: fullTriShapeFGrad(Point x) const {
     phiGrad [ 0 ] [ nnodes ]         = 0.5 * ( nodes [ faces [ face ] [ 0 ] ]->givePoint().getY() - nodes [ faces [ face ] [ 1 ] ]->givePoint().getY() ) / tarea;
     phiGrad [ 1 ] [ nnodes ]         = 0.5 * ( nodes [ faces [ face ] [ 1 ] ]->givePoint().getX() - nodes [ faces [ face ] [ 0 ] ]->givePoint().getX() ) / tarea;
     return phiGrad;
+}
+
+//////////////////////////////////////////////////////////
+unsigned TranspCondensedPolyhedral :: findFaceNumber(Point x) const {
+    double alpha = atan2(x.getY() - centroid.getY(), x.getX() - centroid.getX() );
+    unsigned face;
+    for ( face = 0; face < nnodes; face++ ) {
+        if ( alpha < angles [ faces [ face ] [ 1 ] ] &&  alpha > angles [ faces [ face ] [ 0 ] ] ) {
+            return face;
+        }
+    }
+    return nodeMaxAngle;
 }
 
 //////////////////////////////////////////////////////////
@@ -380,8 +373,14 @@ void TranspCondensedPolyhedral :: init() {
     TranspPolyhedral :: init(); //calling base class method;
     angles.resize(nnodes);
 
+    nodeMaxAngle = 0;
+    double maxAngle = -2;
     for ( unsigned i = 0; i < nnodes; i++ ) {
         angles [ i ] = atan2(nodes [ i ]->givePoint().getY() - centroid.getY(), nodes [ i ]->givePoint().getX() - centroid.getX() );
+        if (maxAngle<angles [ i ]){
+            maxAngle = angles [ i ];
+            nodeMaxAngle = i;
+        }
     }
 
     //build transformation matrix allowing to calculate inner degree of freedom
