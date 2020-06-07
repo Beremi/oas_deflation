@@ -162,16 +162,7 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
-            //cout << "i =" << i << "fullDoFs" << fullDoFs.size() << "FDoFs" << fDoFs.size() << "DoFid" << DoFid.size() << "DoFid [ i ]" << DoFid [ i ] << endl;
-            if (fDoFs.size() <= DoFid [ i ] ){
-                cout << "Tady je problém giveFullDoFArray (DoFid vrací moc pro fDoFs): (" << DoFid [ i ] << "; " << fDoFs.size() << "): " << __FILE__ << ":" << __LINE__ << endl;
-                //continue;
-            }
-            else if (i >= fullDoFs.size() ){
-                cout << "Tady je problém giveFullDoFArray (i je moc velké pro fullDoFs):" << __FILE__ << ":" << __LINE__ << endl;
-                //continue;
-            }
+        if ( DoFid [ i ] < freeDoFs - constrDoFs ) {            
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
         }
     }
