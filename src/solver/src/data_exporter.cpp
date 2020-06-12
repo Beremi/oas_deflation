@@ -215,6 +215,10 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
+            if (DoFs[i] >= reactions.size()) {
+                cout << "Tady čtu mimo pole - DoFs[i] " << DoFs[i] << " reactions " << reactions.size() << endl;
+                //continue;
+            }
             value += reactions [ DoFs [ i ] ];
         }
         outputfile <<  "\t" << value * multiplier;
