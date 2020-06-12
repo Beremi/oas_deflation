@@ -703,7 +703,7 @@ Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
 Matrix Transp1D :: giveCapacityMatrix() const {
     Matrix S(2, 2);
     TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    double s = area * tstats->giveCapacity() * length / 6.;
+    double s = area * tstats->giveCapacity() * length / (6.);
     S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
     S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s;
     return S;

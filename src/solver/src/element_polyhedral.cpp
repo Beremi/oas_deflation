@@ -229,13 +229,20 @@ Matrix TranspPolyhedral :: giveConductivityMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Matrix TranspPolyhedral :: giveCapacityMatrix() const {
-    Matrix S(2, 2);
-    /*
-     * TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-     * double s = area * tstats->giveCapacity() * length / 6.;
-     * S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
-     * S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s;
-     */
+    Matrix S(nnodes, nnodes);
+    Vector phi;
+    TrsprtMaterialStatus *tstats;
+    double wc;
+    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
+        phi = shapeF(ip_locs [ i ]);
+        tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
+        wc = ip_weights [ i ] * tstats->giveConductivity();
+        for(unsigned p=0; p<nnodes; p++){
+            for(unsigned q=0; q<nnodes; q++){        
+                S[ p ][ q ] += phi[p] * phi[q] * wc;
+            }
+        }
+    }
     return S;
 }
 

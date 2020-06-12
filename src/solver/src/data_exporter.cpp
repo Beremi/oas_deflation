@@ -183,17 +183,23 @@ void ForceGauge :: init() {
         DoFpos = 0;
     } else if ( codes [ 0 ].compare("fy") == 0 ) {
         DoFpos = 1;
-    } else if ( codes [ 0 ].compare("fz") == 0 ) {
+    } else if ( codes [ 0 ].compare("fz") == 0 && dim>2 ) {
         DoFpos = 2;
-    } else if ( codes [ 0 ].compare("mx") == 0 ) {
+    } else if ( codes [ 0 ].compare("mx") == 0 && dim>2) {
         DoFpos = 3;
-    } else if ( codes [ 0 ].compare("my") == 0 ) {
+    } else if ( codes [ 0 ].compare("my") == 0 && dim>2 ) {
         DoFpos = 4;
     } else if ( codes [ 0 ].compare("mz") == 0 ) {
         DoFpos = 5;
+        if(dim==2) DoFpos = 2;
     } else {
-        cerr << "Error: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge" << endl;
-        exit(EXIT_FAILURE);
+        if(dim==3){
+            cerr << "Error in ForceGauge: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge in 3D model" << endl;
+            exit(EXIT_FAILURE);
+        } else if (dim==2){
+            cerr << "Error in ForceGauge: only 'fx', 'fy' or 'mz' can be exported by ForceGauge in 2D model" << endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     DoFs.resize(n.size() );
@@ -215,10 +221,6 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
-            if (DoFs[i] >= reactions.size()) {
-                cout << "Tady čtu mimo pole - DoFs[i] " << DoFs[i] << " reactions " << reactions.size() << endl;
-                //continue;
-            }
             value += reactions [ DoFs [ i ] ];
         }
         outputfile <<  "\t" << value * multiplier;
