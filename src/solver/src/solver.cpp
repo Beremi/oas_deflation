@@ -316,7 +316,7 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
               }
             } else if ( param.compare("indirect_displacement_control") == 0 ) {
                 iss >> helpuint;
-                if (not idc) idc = new IndirectDC();
+                if (! idc) idc = new IndirectDC();
                 idc->readFromStream(helpuint, inputfile);
             }
         }
