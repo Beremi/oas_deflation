@@ -27,7 +27,7 @@ exportersFile               = "exporters.inp"
 blocksFile                  = "blocks.inp"
 govNodesFile                = "govNodes.inp"
 constraintFile              = "constraint.inp"
-
+solverFile                  = "solver.inp"
 
 #
 #coplanarity test
@@ -963,6 +963,17 @@ def saveMechBC(master_folder,dim, nodes_mechBCmerged, govNodesBC = False):
 
     print('done.')
 
+def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance= 1e-1, maxIt=20):
+    f=open(os.path.join(master_folder,solverFile),'w')
+    f.write('%s\n'%solver)
+    f.write('time_step\t%e\n'%solStep)
+    f.write('min_time_step\t%e\n'%minStep)
+    f.write('max_time_step\t%e\n'%maxStep)
+    f.write('total_time\t%f\n'%simTime)
+    f.write('limit_tolerance\t%e\n'%limitTolerance)
+    f.write('maxIt\t%d\n'%maxIt)
+
+    f.close()
 
 def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, limitTolerance= 1e-1, maxIt=20):
      print('Saving master file...', end='')
@@ -971,10 +982,14 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
 
      if not periodic:
          fl.write("Dimension\t%d\n"%dim)
+         """
          if (solver == "SteadyStateLinearSolver"):
                 fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t%e\n' %(solStep, simTime))
          if (solver == "SteadyStateNonLinearSolver"):
                 fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%e\tlimit_tolerance\t%e\tmaxIt\t%d\n' %(solStep,  maxStep, minStep, simTime, limitTolerance, maxIt))
+         """
+         fl.write("Solver\t%s\n"%(solverFile))
+         saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt)
 
          if not constraint:
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
@@ -1512,7 +1527,7 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
 
     #saving force gauges for rigid plates
     for i in range (len(govNodesMechBC)):
-        saveForceGauges(master_folder, govNodesMechBC[i].nodeIdx)
+        saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx)
 
     #saving rigid plates
     saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount)
@@ -1523,30 +1538,30 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
 
 
 
-def saveForceGauges(master_folder, nodeIdx, moments=True):
+def saveForceGauges(master_folder, dimension, nodeIdx, moments=True):
     saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
     saveForceGauge(master_folder, 'fy#%d'%nodeIdx, 'fy', nodeIdx )
-    saveForceGauge(master_folder, 'fz#%d'%nodeIdx, 'fz', nodeIdx )
+    if (dimension==3): saveForceGauge(master_folder, 'fz#%d'%nodeIdx, 'fz', nodeIdx )
     if moments == True:
-        saveForceGauge(master_folder, 'mx#%d'%nodeIdx , 'mx', nodeIdx )
-        saveForceGauge(master_folder, 'my#%d'%nodeIdx, 'my', nodeIdx )
+        if (dimension==3): saveForceGauge(master_folder, 'mx#%d'%nodeIdx , 'mx', nodeIdx )
+        if (dimension==3): saveForceGauge(master_folder, 'my#%d'%nodeIdx, 'my', nodeIdx )
         saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
 
 #saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
-def saveDisplacementGauges(master_folder, name, coordsA, coordsB, rotations = False):
+def saveDisplacementGauges(master_folder, dimension, name, coordsA, coordsB, rotations = False):
     saveDisplacementGauge(master_folder, 'ux#%s'%name, 'ux', coordsA, coordsB )
     saveDisplacementGauge(master_folder, 'uy#%s'%name, 'uy', coordsA, coordsB )
-    saveDisplacementGauge(master_folder, 'uz#%s'%name, 'uz', coordsA, coordsB )
+    if (dimension==3): saveDisplacementGauge(master_folder, 'uz#%s'%name, 'uz', coordsA, coordsB )
     if rotations == True:
-        saveDisplacementGauge(master_folder, 'rotx#%s'%name , 'rotx', coordsA, coordsB )
-        saveDisplacementGauge(master_folder, 'roty#%s'%name, 'roty', coordsA, coordsB )
+        if (dimension==3): saveDisplacementGauge(master_folder, 'rotx#%s'%name , 'rotx', coordsA, coordsB )
+        if (dimension==3): saveDisplacementGauge(master_folder, 'roty#%s'%name, 'roty', coordsA, coordsB )
         saveDisplacementGauge(master_folder, 'rotz#%s'%name, 'rotz', coordsA, coordsB )
 
 
-def saveMeasuringGauges(master_folder, measuringGauges):
+def saveMeasuringGauges(master_folder, dimension, measuringGauges):
     print('Saving measuring gauges...')
     for mg in measuringGauges:
-        saveDisplacementGauges(master_folder,  mg.name, mg.coordsA, mg.coordsB, rotations = mg.rotation)
+        saveDisplacementGauges(master_folder, dimension, mg.name, mg.coordsA, mg.coordsB, rotations = mg.rotation)
 
 
 def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):

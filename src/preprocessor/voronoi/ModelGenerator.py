@@ -287,7 +287,7 @@ class Model:
                     self.constraint = True
 
         if (self.measuringGauges!=None):
-            utilitiesGeom.saveMeasuringGauges(self.master_folder, self.measuringGauges)
+            utilitiesGeom.saveMeasuringGauges(self.master_folder, self.dimension, self.measuringGauges)
 
         if len(self.radii) > 0:
             if self.powerTes:
