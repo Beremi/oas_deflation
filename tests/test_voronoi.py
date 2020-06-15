@@ -70,11 +70,14 @@ def test_power_voronoi_3d():
 
 def test_voronoi_3d():
     points, radii = generateTesC(10, 10, 10, seed=1234)
+    #points = np.array([[.1, .5, .5], [.7, .5, .5]])
+    #radii = np.array([.2, .4])
     points /= 10
     radii /= 10
     start = time.time()
     #vor = Voronoi(mirror_dataBeam(points, points.shape[1], points.shape[1]*[1]))
     vor = PowerTesselation(points)
+    #vor = PowerTesselation(mirror_dataBeam(points, points.shape[1], points.shape[1]*[1]))
     print('time =', time.time() - start)
     #print('#'*50)
     #print('points:', vor.points)
@@ -90,7 +93,7 @@ def test_voronoi_3d():
 def test_voronoi_3d_mlab():
     #points, radii = generateTesC(10, 10, 10, seed=1234)
     points = np.array([[.1, .1, .1], [.2, .2, .2], [.5, .6, .4], [.3, .8, .2], [.7, .9, .8]])
-    points /= 10
+    #points /= 10
     #radii /= 10
     start = time.time()
     vor = PowerTesselation(points)
@@ -104,9 +107,14 @@ def test_voronoi_3d_mlab():
     #print('point_region:', vor.point_region)
 
     voronoi_plot_3d_mlab(vor)
+    from mayavi import mlab
+    mlab.show()
 
 if __name__ == '__main__':
-    test_power_voronoi_2d()
-    test_voronoi_2d()
-    test_power_voronoi_3d()
+    #test_power_voronoi_2d()
+    #test_voronoi_2d()
+    test_voronoi_3d_mlab()
+    
     test_voronoi_3d()
+    test_power_voronoi_3d()
+    

@@ -197,6 +197,8 @@ private:
 
     bool symmetric;  ///> if true, symmetric behavior tension/compression is applied
 
+    double Kt;    ///>  initial slope of the softening curve (when Gt - fracture energy - used)
+
     void print() const;
 public:
     DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e);
@@ -216,7 +218,10 @@ private:
     double ft;  ///< tensile elastic limit
     double KinN;  ///< isotropic hardening modulus
     double gammaN;  ///< kinematic hardening modulus
+    ///< tensile part can be prescribed by Ad or Gt:
     double Ad;  ///< brittlenes of damage evolution
+    double Gt;  ///< fracture energy
+    double Kt;  ///< initial slope of the softening curve
     double m;  ///< hardening parameter
     bool use_displ;  ///< whether to use absolute values of displacements instead of strains
 
@@ -228,10 +233,13 @@ public:
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);
     double giveYieldStress() const { return fc; }
+    double giveTensileStrength() const { return ft; }
     double giveElasticLimit() const { return ft / giveE0(); }
     double giveGammaN() const { return gammaN; }
     double giveKinN() const { return KinN; }
     double giveAd() const { return Ad; }
+    double giveGt() const { return Gt; }
+    double giveKt() const { return Kt; }
     double giveM() const { return m; }
     virtual void init();
 

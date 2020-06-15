@@ -1,0 +1,5 @@
+# DisMechMaterial	E0	3.000000e+10	alpha	0.300000density	2200.000000
+# MarsMaterial	E0	3.000000e+10	alpha	0.300000    density	2200.0 ft 2e6 Gt 500
+FatigueShearMaterial	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6
+# DisMechMaterial	E0	3.000000e+10	alpha	0.300000	density	2200.000000
+TrsprtMaterial		capacity	11.000000	conductivity	22.000000

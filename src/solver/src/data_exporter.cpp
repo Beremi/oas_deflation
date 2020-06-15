@@ -13,22 +13,22 @@ void DataExporter :: readFromLine(istringstream &iss) {
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
     string param;
-    bool bte = false;
+    // initiate variables in case they are not specified
+    time_each = 0;
+    time_last = 0;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("saveEvery") == 0 || param.compare("timeEach") == 0 ) {
             iss >> time_each;
-            bte = true;
+        } else if ( param.compare("timeShift") == 0 ) {
+            iss >> time_last;
         } else if ( param.compare("precision") == 0 ) {
             iss >> precision;
         }
     }
-    if ( !bte ) {
-        time_each = 0;
-    }
-    time_last = 0;
 }
 
+//////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time) {
     if ( time < time_last + time_each ) {
         return false;
@@ -183,17 +183,23 @@ void ForceGauge :: init() {
         DoFpos = 0;
     } else if ( codes [ 0 ].compare("fy") == 0 ) {
         DoFpos = 1;
-    } else if ( codes [ 0 ].compare("fz") == 0 ) {
+    } else if ( codes [ 0 ].compare("fz") == 0 && dim>2 ) {
         DoFpos = 2;
-    } else if ( codes [ 0 ].compare("mx") == 0 ) {
+    } else if ( codes [ 0 ].compare("mx") == 0 && dim>2) {
         DoFpos = 3;
-    } else if ( codes [ 0 ].compare("my") == 0 ) {
+    } else if ( codes [ 0 ].compare("my") == 0 && dim>2 ) {
         DoFpos = 4;
     } else if ( codes [ 0 ].compare("mz") == 0 ) {
         DoFpos = 5;
+        if(dim==2) DoFpos = 2;
     } else {
-        cerr << "Error: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge" << endl;
-        exit(EXIT_FAILURE);
+        if(dim==3){
+            cerr << "Error in ForceGauge: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge in 3D model" << endl;
+            exit(EXIT_FAILURE);
+        } else if (dim==2){
+            cerr << "Error in ForceGauge: only 'fx', 'fy' or 'mz' can be exported by ForceGauge in 2D model" << endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     DoFs.resize(n.size() );
@@ -376,6 +382,9 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
             if ( line.at(0) == '#' ) {
                 continue;
             }

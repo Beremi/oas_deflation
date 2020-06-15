@@ -1,0 +1,8 @@
+SteadyStateNonLinearSolver
+time_step	1.000000e-06
+max_time_step	1.000000e-01
+min_time_step	1.000000e-06
+total_time	1.000000e+00
+limit_tolerance	1.000000e-01
+maxIt	20
+

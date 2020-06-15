@@ -15,7 +15,6 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
-                cout << "EMPTY LINE" << endl;
                 continue;
             }
             if ( line.at(0) == '#' ) {
@@ -163,7 +162,7 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
+        if ( DoFid [ i ] < freeDoFs - constrDoFs ) {            
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
         }
     }

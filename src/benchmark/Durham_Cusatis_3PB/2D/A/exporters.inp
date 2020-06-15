@@ -5,21 +5,12 @@ VTKElementExporter out  saveEvery 1e-4 cellData 1 damage
 #TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ
 ForceGauge LD fx#2938 fx 1 2938
 ForceGauge LD fy#2938 fy 1 2938
-ForceGauge LD fz#2938 fz 1 2938
-ForceGauge LD mx#2938 mx 1 2938
-ForceGauge LD my#2938 my 1 2938
 ForceGauge LD mz#2938 mz 1 2938
 ForceGauge LD fx#2939 fx 1 2939
 ForceGauge LD fy#2939 fy 1 2939
-ForceGauge LD fz#2939 fz 1 2939
-ForceGauge LD mx#2939 mx 1 2939
-ForceGauge LD my#2939 my 1 2939
 ForceGauge LD mz#2939 mz 1 2939
 ForceGauge LD fx#2940 fx 1 2940
 ForceGauge LD fy#2940 fy 1 2940
-ForceGauge LD fz#2940 fz 1 2940
-ForceGauge LD mx#2940 mx 1 2940
-ForceGauge LD my#2940 my 1 2940
 ForceGauge LD mz#2940 mz 1 2940
 DisplacementGauge LD ux#totalLS	ux	5.655000e-01	2.000000e-01	0.000000e+00	0.000000e+00
 DisplacementGauge LD uy#totalLS	uy	5.655000e-01	2.000000e-01	0.000000e+00	0.000000e+00

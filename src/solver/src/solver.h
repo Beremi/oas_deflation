@@ -8,6 +8,7 @@
 #include "linear_algebra.h"
 #include "element_container.h"
 #include "node_container.h"
+#include "indirect_displ_control.h"
 
 //////////////////////////////////////////////////////////
 class Solver
@@ -27,12 +28,14 @@ protected:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve() {};
+    virtual void computeInternalExternalForces(Vector &rr);
+    virtual void computeInternalExternalForcesWithFrozenIntVariables(Vector &rr);
 
 public:
-    Solver() { name = "basic solver"; };
+    Solver() { name = "basic solver";};
     virtual ~Solver() {};
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
+    virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
     void setElementContainer(ElementContainer *e) { elems = e; }
     void setNodeContainer(NodeContainer *n) { nodes = n; };
@@ -61,8 +64,7 @@ public:
     SteadyStateLinearSolver();
     virtual ~SteadyStateLinearSolver();     //destructor
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
-    virtual void computeInternalExternalForces(Vector &rr);
+    virtual Solver *readFromFile(const string filename);
 };
 
 //////////////////////////////////////////////////////////
@@ -76,6 +78,14 @@ protected:
     double disErr, resErr, eneErr;
     double limitDisErr, limitResErr, limitEneErr;
     unsigned maxIt;
+    ///> time step is changed according to actual fraction of number of iteration vs maxIt
+    double step_increase;  ///> increased in case the number of iteration is in lower 1/3
+    double step_decrease;  ///> decreased in case the number of iteration is in upper 1/2
+    double critical_step_decrease;  ///> decreased in case of step restart (not satisfying tolerance)
+
+    IndirectDC* idc;        //indirect displacement control
+    Vector ddf, full_ddf, f_last_iter; 
+    double idc_time, idc_dt, idc_time_converged; //time in which load advancements are masured
 
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -87,7 +97,7 @@ public:
     SteadyStateNonLinearSolver();
     virtual ~SteadyStateNonLinearSolver();     //destructor
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
+    virtual Solver *readFromFile(const string filename);
     virtual Vector giveNodalForces() { return f_ext_old; };
 };
 
@@ -109,7 +119,7 @@ public:
     TransientLinearMechanicalSolver();
     virtual ~TransientLinearMechanicalSolver();     //destructor
     virtual void init();
-    virtual Solver *readFromLine(istringstream &iss);
+    virtual Solver *readFromFile(const string filename);
 };
 
 //////////////////////////////////////////////////////////

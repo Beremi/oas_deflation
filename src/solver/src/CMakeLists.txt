@@ -18,6 +18,7 @@ set (solver_files
     constraint.cpp
     preprocessing_block.cpp
     function.cpp
+    indirect_displ_control.cpp
     )
 
 add_library(solver

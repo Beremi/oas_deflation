@@ -27,27 +27,30 @@ double FatigueShearMaterialInteractedStatus::giveValue(string code) const {
     else if ((code.compare("strainT") == 0) || (code.compare("strain") == 0)) {
         return slip.norm();
     }
-    else if ((code.compare("crack_sliding") == 0)) {
+    else if ((code.compare("crack_sliding") == 0) || (code.compare("crack_slidingT") == 0)) {
         RigidBodyContact* rbc = static_cast<RigidBodyContact*>(element);
         return slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
     }
-    else if ((code.compare("strainTY") == 0)) {
+    else if ((code.compare("strainYT") == 0)) {
         return slip.getY();
     }
-    else if ((code.compare("strainTZ") == 0)) {
+    else if ((code.compare("strainZT") == 0)) {
         return slip.getZ();
     }
-    else if ((code.compare("strainPLTY") == 0)) {
+    else if ((code.compare("strainYPLT") == 0)) {
         return sPi.getY();
     }
-    else if ((code.compare("strainPLTZ") == 0)) {
+    else if ((code.compare("strainZPLT") == 0)) {
         return sPi.getZ();
     }
-    else if ((code.compare("stressTY") == 0)) {
+    else if ((code.compare("stressYT") == 0)) {
         return stressT.getY();
     }
-    else if ((code.compare("stressTZ") == 0)) {
+    else if ((code.compare("stressZT") == 0)) {
         return stressT.getZ();
+    }
+    else if ((code.compare("stressT") == 0)) {
+        return stressT.norm();
     }
     else if ((code.compare("energy_totalT") == 0) || (code.compare("energy_total") == 0)) {
         return
@@ -335,6 +338,7 @@ void FatigueShearMaterialInteractedStatus::update() {
     lambda = temp_lambda;
     stressT = temp_stressT;
 
+    // TODO here should be some term coming from coupling of terms
     energy_PL += dot(temp_stressT, sPi - prev_sPi);
     energy_D += Ynext * (damageShear - prev_damageShear);
     FatigueShearMaterialInteracted* m = static_cast<FatigueShearMaterialInteracted*>(mat);
@@ -517,24 +521,26 @@ FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m
 double FatigueShearMaterialStatus :: giveValue(string code) const {
     if ( ( code.compare("damage") == 0 ) ||  ( code.compare("damageT") == 0 ) ) {
         return damageShear;
-    } else if ( ( code.compare("strainPL") == 0 ) ||  ( code.compare("strainPLT") == 0 ) ) {
-        return sPi.norm();
-    } else if ( ( code.compare("strainT") == 0 ) ||  ( code.compare("strain") == 0 ) ) {
-        return slip.norm();
     } else if ( ( code.compare("crack_sliding") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
         return slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
-    } else if ( ( code.compare("strainTY") == 0 ) ) {
+    } else if ( ( code.compare("strainT") == 0 ) ||  ( code.compare("strain") == 0 ) ) {
+        return slip.norm();
+    } else if ( ( code.compare("strainYT") == 0 ) ) {
         return slip.getY();
-    } else if ( ( code.compare("strainTZ") == 0 ) ) {
+    } else if ( ( code.compare("strainZT") == 0 ) ) {
         return slip.getZ();
-    } else if ( ( code.compare("strainPLTY") == 0 ) ) {
+    } else if ( ( code.compare("strainPL") == 0 ) ||  ( code.compare("strainPLT") == 0 ) ) {
+        return sPi.norm();
+    } else if ( ( code.compare("strainYPLT") == 0 ) ) {
         return sPi.getY();
-    } else if ( ( code.compare("strainPLTZ") == 0 ) ) {
+    } else if ( ( code.compare("strainZPLT") == 0 ) ) {
         return sPi.getZ();
-    } else if ( ( code.compare("stressTY") == 0 ) ) {
+    } else if ( ( code.compare("stressT") == 0 ) ) {
+        return stressT.norm();
+    } else if ( ( code.compare("stressYT") == 0 ) ) {
         return stressT.getY();
-    } else if ( ( code.compare("stressTZ") == 0 ) ) {
+    } else if ( ( code.compare("stressZT") == 0 ) ) {
         return stressT.getZ();
     } else if ( ( code.compare("energy_totalT") == 0 ) || ( code.compare("energy_total") == 0 ) ) {
         return
@@ -968,6 +974,15 @@ void DamagePlasticMaterialStatus :: init() {
 
     energy_PL = energy_D = energy_Kin = energy_Iso = work_tot = 0;
 
+    if ( m->giveGt() != 0 ){
+      Kt = 2 * m->giveE0() * pow(m->giveTensileStrength(), 2) * rbc->giveLength() /
+           ( 2 * m->giveE0() * m->giveGt() -
+            pow(m->giveTensileStrength(), 2) * rbc->giveLength()
+           );
+    } else if ( m->giveKt() != 0 ){
+      Kt = m->giveKt();
+    }
+
     symmetric = m->isSym();
 }
 
@@ -997,7 +1012,9 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
 
     int Heaviside;
     if ( temp_epsN - epsNP > 0 ) {
-        Heaviside = 1;
+      Heaviside = 1;
+      if (m->giveAd() != 0){
+        // using Ad parameter
         temp_Y = Heaviside * 0.5 * stiff [ 0 ] * pow(temp_epsN - epsNP, 2);
         double Y_n0 = 0.5 * stiff [ 0 ] * pow(m->giveElasticLimit(), 2);
         double Rn = ( 1 / m->giveAd() ) * ( -rN / ( 1 + rN ) );
@@ -1010,15 +1027,32 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
             // update tensile internal variables
             temp_damage = fmin(1 - 1e-10, fmax(0, 1 - 1 / ( 1 + m->giveAd() * ( temp_Y - Y_n0 ) ) ) );
             temp_rN = -temp_damage;
-        }
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
-        // apply damage also in shear direction
-        for ( unsigned i = 1; i < strain.size(); i++ ) {
-            stress [ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain [ i ] );
-        }
         temp_alphaN = alphaN;
         temp_zN = zN;
         temp_epsNP = epsNP;
+        }
+
+      } else if ( Kt != 0 ){
+        // using initial slope of the softening curve
+        // either from fracture energy or directly prescribed
+        if ( temp_epsN - epsNP < m->giveElasticLimit()){
+          temp_damage = 0;
+        } else {
+
+          double sigma_eq = m->giveTensileStrength() *
+                 exp((-Kt / m->giveTensileStrength()) *
+                 ((temp_epsN - epsNP) - m->giveElasticLimit() ) );
+          double dam = 1 - sigma_eq / ( m->giveE0() * (temp_epsN - epsNP));
+          temp_damage = fmin(1, fmax(0, dam));
+        }
+
+      }
+
+      stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiff [ 0 ] * ( temp_epsN - epsNP );
+      // apply damage also in shear direction
+      for ( unsigned i = 1; i < strain.size(); i++ ) {
+        stress [ i ] = ( 1 - Heaviside * temp_damage ) * stiff [ i ] * ( strain [ i ] );
+      }
     } else {
         temp_damage = damage;
         Heaviside = 0;
@@ -1150,13 +1184,14 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
 
     use_displ = false;
     sym = false;
+    Ad = Gt = Kt = 0;
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
     string param;
-    bool bfc, bft, bgam, bkin, bAd, bm;
-    bfc = bft = bgam = bkin = bAd = bm = false;
+    bool bfc, bft, bgam, bkin, bAd, bm, bGt, bKt;
+    bfc = bft = bgam = bkin = bAd = bm = bGt = bKt = false;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("fc") == 0 ) {
@@ -1174,6 +1209,12 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("Ad") == 0 ) {
             bAd = true;
             iss >> Ad;
+        } else if ( param.compare("Gt") == 0 ) {
+            bGt = true;
+            iss >> Gt;
+        } else if ( param.compare("Kt") == 0 ) {
+            bKt = true;
+            iss >> Kt;
         } else if ( param.compare("m") == 0 ) {
             bm = true;
             iss >> m;
@@ -1200,8 +1241,18 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
         exit(EXIT_FAILURE);
     }
     if ( !bAd ) {
-        cerr << name << ": material parameter 'Ad' was not specified" << endl;
-        exit(EXIT_FAILURE);
+        cerr << name << ": material parameter 'Ad' was not specified ";
+        if  ( !bGt ) {
+          cerr << ", material parameter 'Gt' was not specified ";
+          if ( !bKt ) {
+                cerr << "and not even material parameter 'Kt' was specified" << endl;
+            exit(EXIT_FAILURE);
+          } else {
+            std::cerr << "using unregularized material model with initial slope of the softening curve 'Kt'" << '\n';
+          }
+        } else {
+          std::cerr << "using regularized tensile material model with fracture energy 'Gt'" << '\n';
+        }
     }
     if ( !bm ) {
         cout << name << ": material parameter 'm' was not specified, taking m = 0.0" << endl;

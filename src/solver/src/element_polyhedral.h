@@ -32,7 +32,7 @@ public:
     virtual Matrix giveConductivityMatrix(string matrixType) const;
     virtual Matrix giveCapacityMatrix() const;
     virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
-    virtual Vector giveInternalForces(const Vector &DoFs) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 
 class TranspVirtPolyhedral : public TranspPolyhedral
@@ -53,12 +53,15 @@ public:
 class TranspCondensedPolyhedral : public TranspPolyhedral
 {
 private:
+    unsigned nodeMaxAngle;
     Vector red2full;
     vector< double >angles;
     Vector fullTriShapeF(Point x) const;
     Matrix fullTriShapeFGrad(Point x) const;
     Vector condTriShapeF(Point x) const;
     Matrix condTriShapeFGrad(Point x) const;
+
+    unsigned findFaceNumber(Point x) const;
 public:
     TranspCondensedPolyhedral(const unsigned dim);
     ~TranspCondensedPolyhedral() {};

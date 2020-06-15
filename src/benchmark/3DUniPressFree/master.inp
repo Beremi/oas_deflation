@@ -1,5 +1,5 @@
 Dimension	3
-Solver	SteadyStateNonLinearSolver	time_step	4.500000e-02	total_time	10.000000
+Solver	solver.inp
 NodeFiles	3	nodes.inp	auxNodes.inp	vertices.inp
 MatFiles	1	materials.inp
 ElemFiles	1	mechElems.inp	trsprtElems.inp

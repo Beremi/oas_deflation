@@ -110,6 +110,7 @@ def voronoi_plot_3d_vtk(vor):
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
     actor.GetProperty().SetColor(colors.GetColor3d('Silver'))
+    actor.GetProperty().SetOpacity(.5)
     #actor.GetProperty().SetColor([1.0, 0.0, 0.0])
     #actor.GetProperty().SetLineWidth(3)
     actor.GetProperty().EdgeVisibilityOn()

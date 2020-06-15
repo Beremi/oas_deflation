@@ -28,7 +28,8 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
     vector< Node * >vm;
     vector< unsigned >dirs;
     vector< double >mults;
-    Node *s, *m;
+    Node *s = nullptr;
+    Node *m = nullptr;
     Point diff;
     for ( unsigned i = 0; i < masters.size(); i++ ) {
         m = nodes->giveNode(masters [ i ]);

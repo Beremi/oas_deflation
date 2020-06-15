@@ -434,11 +434,15 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs) const {
-    Vector strainNT = giveContactStrainNT(DoFs);
-    DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
-    Vector stressNT = dmstats->giveStress(strainNT);
-    return GeomM.transpose() * ( stressNT * ( length * area ) );
+Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs, bool frozen) const {
+    if(frozen){ //frozen internal variables
+        return giveStiffnessMatrix("secant")*DoFs;
+    }else{      //evalution of internal variables
+        Vector strainNT = giveContactStrainNT(DoFs);
+        DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
+        Vector stressNT = dmstats->giveStress(strainNT);
+        return GeomM.transpose() * ( stressNT * ( length * area ) );
+    }
 };
 
 //////////////////////////////////////////////////////////
@@ -699,13 +703,14 @@ Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
 Matrix Transp1D :: giveCapacityMatrix() const {
     Matrix S(2, 2);
     TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    double s = area * tstats->giveCapacity() * length / 6.;
+    double s = area * tstats->giveCapacity() * length / (6.);
     S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
     S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s;
     return S;
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: giveInternalForces(const Vector &DoFs) const {
+Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen) const {
+    (void) frozen;
     return giveConductivityMatrix("elastic") * DoFs;
 };
