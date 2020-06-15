@@ -6,7 +6,7 @@ import sys
 import os
 import utilitiesMech
 import utilitiesGeom
-
+from mpl_toolkits.mplot3d import Axes3D
 
 
 
@@ -196,7 +196,68 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
             node_coords.append(coords)
 
 
+def ortho_grid(n, nvar):
+    nsim = n ** nvar
+    x = np.linspace(0.5 / n, 1 - 0.5 / n, n)
+    x_list = [x] * (nvar)
+    X = np.meshgrid(*x_list) # format later used in RBF
+    ortho_grid = np.array(X).reshape((nvar, nsim)).T
 
+    return X, ortho_grid
+
+
+def generateOrtogrid(maxLim, minDist, dim, node_coords):
+    print ('Generating orthogonal grid...', end='')
+    if (dim == 2):
+
+        n= 22
+        X, orthogrid = ortho_grid(n, dim)
+
+        xmin = maxLim[2]
+        xmax = maxLim[0]
+        ymin = maxLim[3]
+        ymax = maxLim[1]
+
+        orthogrid [:,0] *= (xmax-xmin)
+        orthogrid [:,1] *= (ymax-ymin)
+
+        orthogrid [:,0] += xmin
+        orthogrid [:,1] += ymin - 0.5/n*(ymax-ymin)
+
+    if (dim == 3):
+
+        n= 12
+        X, orthogrid = ortho_grid(n, dim)
+
+        xmin = maxLim[3]
+        xmax = maxLim[0]
+        ymin = maxLim[4]
+        ymax = maxLim[1]
+        zmin = maxLim[5]
+        zmax = maxLim[2]
+
+        orthogrid [:,0] *= (xmax-xmin)
+        orthogrid [:,1] *= (ymax-ymin)
+        orthogrid [:,2] *= (zmax-zmin)
+
+        orthogrid [:,0] += xmin
+        orthogrid [:,1] += ymin #- 0.5/n*(ymax-ymin)
+        orthogrid [:,2] += zmin
+
+        """
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.scatter(orthogrid[:,0],orthogrid[:,1],orthogrid[:,2])
+        plt.show()
+        #
+        #"""
+
+    print('done.')
+
+    for i in range(len(orthogrid)):
+        rnd = np.random.uniform(-1e-7, 1e-7)
+
+        node_coords.append(orthogrid[i,:])
 
 
 def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials):

@@ -1,5 +1,5 @@
 ####################################################################################
-# BETA !!!
+# BETA 
 ####################################################################################
 #
 ####################################################################################
@@ -8,25 +8,32 @@
 #MECHANICAL MODELS AVAILABLE 
 #
 # Notched 3PB
-# !! pro 3PB zadej 2*mindist !! protoze je to na procentualni sirce fracZonewidth a kolem podpor 2x jemnejsi
-#Model 2d_notched3pb Xsize 0.8 Ysize 0.1 notchH 0.2 loadWidth 0.05 minDist 0.01 fracZoneWidth 0.15 activeMechanics 1 
-#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.2 loadWidth 0.05 minDist 0.06 fracZoneWidth 0.15 activeMechanics 1 
+# !! pro 3PB zadej dvojnasobek mindist !! 
+Model 2d_notched3pb Xsize 0.8 Ysize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.01 fracZoneWidth 0.04 activeMechanics 1 orthogonalFracZone 0 trials 100000
+#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.025 fracZoneWidth 0.05 activeMechanics 1  orthogonalFracZone 1
 #
 # Dogbones
-Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 
-#Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
+#Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 
+#Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
-#Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.03 activeMechanics 1
+#Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.04 activeMechanics 1 trials 100000
 #
 # Reinhardt tension 
 #Model 3d_ReinhardtTension Xlim 0.25 Ylim 0.06 Zlim 0.05 minDist 0.001 fracZoneWidth 0.3 activeMechanics 1
+#
+#
+#Model 2d_singleSpring minDist 1 activeMechanics 1
+#
 #
 ####################################################################################
 #TRANSPORT MODELS AVAILABLE
 #
 #Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.01 activeTransport 1 
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 
+#
+#
+#
 #
 #
 #
@@ -40,7 +47,7 @@ Solver	SteadyStateNonLinearSolver	time_step	1.000000e-06	max_time_step	1.000000e
 #MATERIALS
 #
 # Mars material
-Material MarsMaterial young 30e9 alpha 0.3 density 2200 ft 2000000.0 Gt 500
+Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2600000.0 Gt 500
 #
 # Fatigue shear material
 #Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0

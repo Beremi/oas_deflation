@@ -26,7 +26,7 @@ def enablePrint():
 
 class Model:
     def __init__ (self, row):
-        print('Setting model...', end='')
+        #print('Setting model...', end='')
 
         self.nr_models = 1
         self.printout = False
@@ -36,9 +36,7 @@ class Model:
 
         self.trials = 3e4
 
-        self.powerTes = False
-        self.activeMechanics = False
-        self.activeTransport = False
+        self.powerTes = self.activeMechanics = self.activeTransport = False
         self.periodicModel = 0
 
         self.nodePositions = []
@@ -51,11 +49,7 @@ class Model:
 
         self.node_coords = []
 
-        self.mechBC_merged = None
-        self.mechIC_merged = None
-        self.trsprtBC_merged = None
-        self.trsprtIC_merged = None
-        self.govNodesMechBC = None
+        self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = None
 
         self.functions = []
         self.radii = []
@@ -136,6 +130,9 @@ class Model:
                 self.loadWidth = float(r[i+1])
             if (r[i]=='fracZoneWidth'):
                 self.fracZoneWidth = float(r[i+1])
+            if (r[i]=='orthogonalFracZone'):
+                if (int(r[i+1])==1): self.orthogonalFracZone = True
+                if (int(r[i+1])==0): self.orthogonalFracZone = False
 
 
         print('done.')
@@ -184,19 +181,23 @@ class Model:
         if self.modelType == '2d_periodicShear':
             self.run_2d_periodicShear()
 
-
+        if self.modelType == '2d_singleSpring':
+            self.run_2d_singleSpring()
 
         #if (self.printout == False): enablePrint()
 
-
+    def run_2d_singleSpring(self):
+        (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions,self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.createSingleSpringTestModel( self.minDist, self.master_folder )
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_singleSpring', maxLim=np.array([self.minDist, 1]) )
+        materialZones = None
 
     def run_2d_notched3pb(self):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth)
+        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth)
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone)
         measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
         materialZones = None
 
