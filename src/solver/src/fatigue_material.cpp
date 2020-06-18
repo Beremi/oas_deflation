@@ -1049,7 +1049,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
                  exp((-Kt / m->giveTensileStrength()) *
                  ((temp_epsN - epsNP) - m->giveElasticLimit() ) );
           double dam = 1 - sigma_eq / ( m->giveE0() * (temp_epsN - epsNP));
-          temp_damage = fmin(1, fmax(0, dam));
+          temp_damage = fmin(1, fmax(damage, dam));
         }
 
       }
