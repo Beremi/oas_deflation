@@ -1042,7 +1042,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
         // using initial slope of the softening curve
         // either from fracture energy or directly prescribed
         if ( temp_epsN - epsNP < m->giveElasticLimit()){
-          temp_damage = 0;
+          temp_damage = damage;
         } else {
 
           double sigma_eq = m->giveTensileStrength() *
