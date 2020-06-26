@@ -224,6 +224,7 @@ class Model:
         #DURHAM - prism tension 250x60x50
         #Reinhardt "Tensile tests and failure analysis of concrete 1986"
         #maxLim = np.array([0.25,0.06,0.05])
+        print(self.maxLim)
         self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, self.dimension, model='box', maxLim=self.maxLim)
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dReinhardtTension(self.maxLim, self.minDist, self.trials, fracZoneWidth=self.fracZoneWidth)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('reinhardt3d', maxLim=self.maxLim)

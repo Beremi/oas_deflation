@@ -52,11 +52,11 @@ if __name__ == '__main__':
         powerTes = False
 
         #dimension
-        dim = 3
+        dim = 2
 
         print('Creating a %dd lattice model...' % dim)
         #coupled problem?
-        activeTransport = 0
+        activeTransport = 1
         activeMechanics = 1
 
         #Cusatis 3PB:
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         #size of grains (minimum distance between nodes)
         #be cautious with small grains!
         #for 3PB insert 2xmindist
-        minDist = 0.02
+        minDist = 0.001
 
         #trials of random node positioning
         trials = 30000
@@ -155,13 +155,13 @@ if __name__ == '__main__':
             #"""
 
             #simply supported NOTCHED beam, uniform load
-
+            """
             notchH = 0.5 #notch height in percentage of total beam height
             node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05)
             materialZones=None
             measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=maxLim)
             #print(notches)
-
+            """
 
             """
             #2d dogbone
@@ -228,13 +228,14 @@ if __name__ == '__main__':
 
             #DURHAM - cylinder torsion, press
             #Cusatis "Lattice discrete particle model: Calibration and validation 2011"
+            """
             materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, 3, model='box', maxLim=maxLim)
             node_coords, mechBC_merged,  vor, areas, functions,govNodes, govNodesMechBC, rigidPlates    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
             measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=maxLim)
             materialZones =  None
             #"""
 
-            """
+
             #DURHAM - prism tension 250x60x50
             #Reinhardt "Tensile tests and failure analysis of concrete 1986"
             maxLim = np.array([0.25,0.06,0.05])

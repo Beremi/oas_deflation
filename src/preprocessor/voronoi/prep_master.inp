@@ -8,19 +8,20 @@
 #MECHANICAL MODELS AVAILABLE 
 #
 # Notched 3PB
-# !! pro 3PB zadej dvojnasobek mindist !! 
-Model 2d_notched3pb Xsize 0.8 Ysize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.01 fracZoneWidth 0.04 activeMechanics 1 orthogonalFracZone 0 trials 100000
-#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.025 fracZoneWidth 0.05 activeMechanics 1  orthogonalFracZone 1
+# !! pro 3PB zadej mindist ve fracture zone (zbytek bude hrubsi) !! 
+# A: 1131/200, B: 1386/300, C: 800/100
+#Model 2d_notched3pb Xsize 1.386 Ysize 0.3 notchH 0.5 loadWidth 0.02 minDist 0.008 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 1 trials 100000
+#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.02 fracZoneWidth 0.08 activeMechanics 1  orthogonalFracZone 0
 #
 # Dogbones
 #Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
-#Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.04 activeMechanics 1 trials 100000
+Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.02 activeMechanics 1 trials 20000
 #
 # Reinhardt tension 
-#Model 3d_ReinhardtTension Xlim 0.25 Ylim 0.06 Zlim 0.05 minDist 0.001 fracZoneWidth 0.3 activeMechanics 1
+Model 3d_ReinhardtTension Xsize 0.25 Ysize 0.06 Zsize 0.05 minDist 0.005 fracZoneWidth 0.3 activeMechanics 1 trials 5000
 #
 #
 #Model 2d_singleSpring minDist 1 activeMechanics 1
@@ -29,7 +30,7 @@ Model 2d_notched3pb Xsize 0.8 Ysize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.01 f
 ####################################################################################
 #TRANSPORT MODELS AVAILABLE
 #
-#Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.01 activeTransport 1 
+#Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.005 activeTransport 1 
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 
 #
 #
@@ -39,7 +40,7 @@ Model 2d_notched3pb Xsize 0.8 Ysize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.01 f
 #
 ####################################################################################
 #SOLVER SETUP
-Solver	SteadyStateNonLinearSolver	time_step	1.000000e-06	max_time_step	1.000000e-01	min_time_step	1.000000e-08	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	20
+Solver	SteadyStateNonLinearSolver	time_step	1.000000e-05	max_time_step	1.000000e-01	min_time_step	1.000000e-05	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	20
 #
 #
 #
