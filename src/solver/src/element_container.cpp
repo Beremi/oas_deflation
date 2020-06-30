@@ -116,8 +116,10 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
             }
         }
     }
+    if (nfreeDoFs > 0) {
+      K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
+    }
 
-    K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
 }
 
 //////////////////////////////////////////////////////////
