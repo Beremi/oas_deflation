@@ -1381,25 +1381,28 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         print('Generating additional aux_nodes (if 0th and last node are aux nodes, creating another auxNode in a corner)...', end='')
         beamMidpoint = maxLim /2
         for elem in transportElements:
-            print('\n\n new element')
+            #print('\n\n new element')
             nds = node_count
              #aux = len(aux_nodes)
             vertexA = vertices_out[int(elem.vertexA-node_count-aux)][0:dim]
             vertexB = vertices_out[int(elem.vertexB-node_count-aux)][0:dim]
 
+            diffIdx = -1
             equalCoords = 0
             for d in range(3):
                 if np.abs(vertexA[d]-vertexB[d])<1e-8:
-                    print(np.abs(vertexA[d]-vertexB[d]))
+                    #print(np.abs(vertexA[d]-vertexB[d]))
                     equalCoords +=1
+                else:
+                    diffIdx = d
 
 
             if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out)
             and (elem.connectedNodes[0]/node_count)
             != (elem.connectedNodes[len(elem.connectedNodes)-1]/node_count) and equalCoords ==2):
 
-                print((elem.connectedNodes[0]/node_count))
-                print((elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
+                #print((elem.connectedNodes[0]/node_count))
+                #print((elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
                 updatedElems +=1
                 #print(elem.connectedNodes)
                 #print('old elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
@@ -1410,16 +1413,16 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 #print( anodeB )
                 nanode = np.zeros(3)
 
-                print('vertexA %d array: %d' %(elem.vertexA, elem.vertexA-node_count-aux))
+            #    print('vertexA %d array: %d' %(elem.vertexA, elem.vertexA-node_count-aux))
                 vertexA = vertices_out[int(elem.vertexA-node_count-aux)][0:dim]
                 vertexB = vertices_out[int(elem.vertexB-node_count-aux)][0:dim]
 
-                print(elem.connectedNodes)
+                #print(elem.connectedNodes)
 
 
 
-                print(int(elem.connectedNodes[0]/node_count))
-                print(int(elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
+                #print(int(elem.connectedNodes[0]/node_count))
+                #print(int(elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
                 elemMidpoint = (vertexA + vertexB) /2
                 ridgeMidpoint = (anodeA + anodeB) /2
                 #vector from elem midpoint to ridge midpoint
@@ -1427,10 +1430,11 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
 
 
-                nanode = ridgeMidpoint + 1e-6
-                print('\nMidpoint aux node: %s' %nanode)
-                #nanode = elemMidpoint + 2*vecV
-                print('New aux node: %s' %nanode)
+                #nanode = ridgeMidpoint + 1e-6
+                #print('\nMidpoint aux node: %s' %nanode)
+                nanode = elemMidpoint
+                nanode[diffIdx] = anodeA[diffIdx]
+                #print('New aux node: %s' %nanode)
                 #
                 #adding new aux node to connected nodes
                 #print('old elem: %s' %elem.connectedNodes)
@@ -1442,6 +1446,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 aux_nodes.append(nanode)
                 newAuxNodesA.append(nanode)
 
+                """
                 #print(ridgeCoords)
                 ridgeCoords = []
                 lasti = -1
@@ -1462,7 +1467,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 ax.set_aspect('equal')
                 ax.plot3D([vertexA[0], vertexB[0]], [vertexA[1], vertexB[1]], [vertexA[2], vertexB[2]], marker='o')
                 #ax.plot3D([anodeA[0], anodeB[0]], [anodeA[1], anodeB[1]], [anodeA[2], anodeB[2]], marker='o')
-                ax.scatter3D(elemMidpoint[0], elemMidpoint[1], elemMidpoint[2])
+                #ax.scatter3D(elemMidpoint[0], elemMidpoint[1], elemMidpoint[2])
                 #ax.scatter3D(anodeA[0], anodeA[1], anodeA[2])
                 #ax.scatter3D(anodeB[0], anodeB[1], anodeB[2])
                 #ax.scatter3D(ridgeMidpoint[0], ridgeMidpoint[1], ridgeMidpoint[2])
@@ -1485,7 +1490,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
                 ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
                 plt.show()
-
+                """
                 #print('new elem: %s' %elem.getString())
                 #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
                 #print(elem.connectedNodes)
