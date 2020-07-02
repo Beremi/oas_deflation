@@ -1381,12 +1381,22 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         print('Generating additional aux_nodes (if 0th and last node are aux nodes, creating another auxNode in a corner)...', end='')
         beamMidpoint = maxLim /2
         for elem in transportElements:
+            print('\n\n new element')
             nds = node_count
              #aux = len(aux_nodes)
+            vertexA = vertices_out[int(elem.vertexA-node_count-aux)][0:dim]
+            vertexB = vertices_out[int(elem.vertexB-node_count-aux)][0:dim]
+
+            equalCoords = 0
+            for d in range(3):
+                if np.abs(vertexA[d]-vertexB[d])<1e-8:
+                    print(np.abs(vertexA[d]-vertexB[d]))
+                    equalCoords +=1
+
 
             if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out)
             and (elem.connectedNodes[0]/node_count)
-            != (elem.connectedNodes[len(elem.connectedNodes)-1]/node_count) ):
+            != (elem.connectedNodes[len(elem.connectedNodes)-1]/node_count) and equalCoords ==2):
 
                 print((elem.connectedNodes[0]/node_count))
                 print((elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
