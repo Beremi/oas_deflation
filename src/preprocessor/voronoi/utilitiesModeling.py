@@ -1866,9 +1866,9 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZone
 
     ## notch faces
     maxLimF = np.array([
-    maxLim[0]/2 - 0.5*maxLim[1]*(1-notch)*1.2,
+    maxLim[0]/2 - 0.5*maxLim[1]*(1-notch)*1.5,
     maxLim[1],
-    maxLim[0]/2 + 0.5*maxLim[1]*(1-notch)*1.2,
+    maxLim[0]/2 + 0.5*maxLim[1]*(1-notch)*1.5,
     indent+maxLim[1]*notch/2])
     pointGenerators.generateNodesRect(maxLimF, minDist*1.5, dim, trials, node_coords, useLowBound=True)
 
@@ -1887,14 +1887,14 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZone
     supportWidth*2,
     indent,
     indent])
-    pointGenerators.generateNodesRect(maxLimF, minDist*1.5, dim, trials, node_coords, useLowBound=True)
+    pointGenerators.generateNodesRect(maxLimF, minDist*1.2, dim, trials, node_coords, useLowBound=True)
     ##########################################generating of points, right support
     maxLimF = np.array([
     maxLim[0],
     supportWidth*2,
     maxLim[0]-supportWidth*2,
     indent])
-    pointGenerators.generateNodesRect(maxLimF, minDist*1.5, dim, trials, node_coords, useLowBound=True)
+    pointGenerators.generateNodesRect(maxLimF, minDist*1.2, dim, trials, node_coords, useLowBound=True)
 
 
     #rect

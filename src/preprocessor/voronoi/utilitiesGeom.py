@@ -5,7 +5,7 @@ import math
 import sys
 import os
 import time
-
+from mpl_toolkits.mplot3d import Axes3D
 import utilitiesMech
 import Preprocessor as prepro
 
@@ -299,7 +299,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
@@ -689,7 +689,6 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         pointB = vor.ridge_points[validRidgeIdxs[i]][1]
 
         #auxiliary nodes if one of them is out of sample
-
         if(pointA >= node_count and pointB<node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
@@ -796,7 +795,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     newAuxNodes = 0
     if (activeTransport):
-        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out)
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out)
     vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):
@@ -1224,7 +1223,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
     sys.stdout.flush()
 
 
-def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out):
+def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out):
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
@@ -1377,13 +1376,20 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     auxNodesInitLength = len (aux_nodes)
     #print(auxNodesInitLength)
     updatedElems =0
-
+    newAuxNodesA = []
     if (auxNodesInitLength != 0):
-        print('Generating additional aux_nodes...', end='')
+        print('Generating additional aux_nodes (if 0th and last node are aux nodes, creating another auxNode in a corner)...', end='')
         beamMidpoint = maxLim /2
         for elem in transportElements:
+            nds = node_count
+             #aux = len(aux_nodes)
 
-            if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out)):
+            if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out)
+            and (elem.connectedNodes[0]/node_count)
+            != (elem.connectedNodes[len(elem.connectedNodes)-1]/node_count) ):
+
+                print((elem.connectedNodes[0]/node_count))
+                print((elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
                 updatedElems +=1
                 #print(elem.connectedNodes)
                 #print('old elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
@@ -1394,16 +1400,27 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 #print( anodeB )
                 nanode = np.zeros(3)
 
-                for i in range (dim):
-                    if ( scipy.spatial.distance.euclidean(anodeB[i], beamMidpoint) >
-                         scipy.spatial.distance.euclidean(anodeA[i], beamMidpoint) ):
-                        nanode[i] = anodeB[i]
-                    else:
-                        nanode[i] = anodeA[i]
+                print('vertexA %d array: %d' %(elem.vertexA, elem.vertexA-node_count-aux))
+                vertexA = vertices_out[int(elem.vertexA-node_count-aux)][0:dim]
+                vertexB = vertices_out[int(elem.vertexB-node_count-aux)][0:dim]
 
-                nanode = (anodeA + anodeB)/2
-                #print('New aux node: %s' %nanode)
+                print(elem.connectedNodes)
 
+
+
+                print(int(elem.connectedNodes[0]/node_count))
+                print(int(elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
+                elemMidpoint = (vertexA + vertexB) /2
+                ridgeMidpoint = (anodeA + anodeB) /2
+                #vector from elem midpoint to ridge midpoint
+                vecV =  elemMidpoint - ridgeMidpoint
+
+
+
+                nanode = ridgeMidpoint + 1e-6
+                print('\nMidpoint aux node: %s' %nanode)
+                #nanode = elemMidpoint + 2*vecV
+                print('New aux node: %s' %nanode)
                 #
                 #adding new aux node to connected nodes
                 #print('old elem: %s' %elem.connectedNodes)
@@ -1413,6 +1430,52 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 elem.addSingleConnectedNode( elem.connectedNodes[0] )
 
                 aux_nodes.append(nanode)
+                newAuxNodesA.append(nanode)
+
+                #print(ridgeCoords)
+                ridgeCoords = []
+                lasti = -1
+                for i in ((elem.connectedNodes)):
+                    if (i!=lasti):
+                        print(i)
+                        if (i<len(nodes_out)):
+                            print(nodes_out[int(i),0:3])
+                            ridgeCoords.append(nodes_out[int(i),0:3])
+                        if (i>=len(nodes_out)):
+                            print(aux_nodes[int(i-len(nodes_out))][0:3])
+                            ridgeCoords.append(aux_nodes[int(i-len(nodes_out))][0:3])
+                    lasti=i
+                ridgeCoords = np.asarray(ridgeCoords)
+
+                fig = plt.figure()
+                ax = Axes3D(fig)
+                ax.set_aspect('equal')
+                ax.plot3D([vertexA[0], vertexB[0]], [vertexA[1], vertexB[1]], [vertexA[2], vertexB[2]], marker='o')
+                #ax.plot3D([anodeA[0], anodeB[0]], [anodeA[1], anodeB[1]], [anodeA[2], anodeB[2]], marker='o')
+                ax.scatter3D(elemMidpoint[0], elemMidpoint[1], elemMidpoint[2])
+                #ax.scatter3D(anodeA[0], anodeA[1], anodeA[2])
+                #ax.scatter3D(anodeB[0], anodeB[1], anodeB[2])
+                #ax.scatter3D(ridgeMidpoint[0], ridgeMidpoint[1], ridgeMidpoint[2])
+                for r in range (len(ridgeCoords)-1):
+                    ax.plot3D([ridgeCoords[r,0], ridgeCoords[r+1,0]], [ridgeCoords[r,1], ridgeCoords[r+1,1]], [ridgeCoords[r,2], ridgeCoords[r+1,2]], marker='x')
+                ax.plot3D([ridgeCoords[0,0], ridgeCoords[len(ridgeCoords)-1,0]], [ridgeCoords[0,1], ridgeCoords[len(ridgeCoords)-1,1]], [ridgeCoords[0,2], ridgeCoords[len(ridgeCoords)-1,2]], marker='x')
+
+                ax.plot3D([0,maxLim[0]], [0,0], [0,0], color='black')
+                ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [0,0], color='black')
+                ax.plot3D([0,maxLim[0]], [0,0], [maxLim[2],maxLim[2]], color='black')
+                ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+
+                ax.plot3D([0,0], [0,maxLim[1]], [0,0], color='black')
+                ax.plot3D([0,0], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+                ax.plot3D([0,0], [0,0], [0,maxLim[2]], color='black')
+                ax.plot3D([0,0], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
+
+                ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [0,0], color='black')
+                ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+                ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
+                ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
+                plt.show()
+
                 #print('new elem: %s' %elem.getString())
                 #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
                 #print(elem.connectedNodes)
@@ -1455,13 +1518,50 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
         nodesCoords = np.asarray(nodesCoords)
         allCoplanar, val = checkCoplanarity(nodesCoords, 1e-15)
+
         if ( not allCoplanar):
             wrongRidges +=1
             print('Wrong element!')
             print(element.getStringyString(len(nodes_out), auxNodesInitLength))
-            allCoplanar = False
-            break;
             print('Not coplanar!!! Ridge nr. %d, err: %.10e' %(transportElements.index(element), val ))
+            print(element.getReducedString())
+
+            vrtcs = []
+            ndss = []
+            for n in element.connectedNodes:
+                if (n<len(nodes_out)):
+                    print(nodes_out[int(n),0:3])
+                    vrtcs.append(nodes_out[int(n),0:3])
+                if (n>=len(nodes_out)):
+                    vrtcs.append(aux_nodes[int(n-len(nodes_out)), 0:3])
+            vrtcs = np.asarray(vrtcs)
+
+            vo = np.asarray(vertices_out)
+            ndss.append(vo[int(element.vertexA - len(nodes_out)-len(aux_nodes)),0:3])
+            ndss.append(vo[int(element.vertexB - len(nodes_out)-len(aux_nodes)),0:3])
+            ndss = np.asarray(ndss)
+
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            #ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
+            ax.scatter3D(vrtcs[:,0], vrtcs[:,1], vrtcs[:,2])
+            ax.scatter3D(ndss[:,0], ndss[:,1], ndss[:,2])
+
+            newAuxNodesA =np.asarray(newAuxNodesA)
+            ax.scatter3D(newAuxNodesA[:,0], newAuxNodesA[:,1], newAuxNodesA[:,2])
+            #ax.plot(ndss[0,:], ndss[1,:])
+
+            ax.plot3D([0,0,0], [maxLim[0],0,0])
+            ax.plot3D([0,maxLim[1],0], [maxLim[0],maxLim[1],0])
+            #ax.plot(np.array([0,0,maxLim[2]]), np.array([maxLim[0],0,maxLim[2]]))
+            #ax.plot(np.array([0,maxLim[1],maxLim[2]]), np.array([maxLim[0],maxLim[1],maxLim[2]]))
+
+            ax.scatter(vrtcs[len(vrtcs)-1,0], vrtcs[len(vrtcs)-1,1], vrtcs[len(vrtcs)-1,2])
+            plt.show()
+
+
+            allCoplanar = False
+
 
 
     print('done. ', end='')
