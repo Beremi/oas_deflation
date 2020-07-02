@@ -218,11 +218,11 @@ Matrix TranspPolyhedral :: giveConductivityMatrix(string matrixType) const {
     ( void ) matrixType;
     Matrix C(nnodes, nnodes);
     Matrix phiGrad;
-    TrsprtMaterialStatus *tstats;
+    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+    double m = tmat->giveConductivity();
     for ( size_t i = 0; i < ip_weights.size(); i++ ) {
         phiGrad = shapeFGrad(ip_locs [ i ]);
-        tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-        C += matrix_multiply(phiGrad.transpose(), phiGrad) * ( ip_weights [ i ] * tstats->giveConductivity() );
+        C += matrix_multiply(phiGrad.transpose(), phiGrad) * ( ip_weights [ i ] * m );
     }
     return C;
 }
@@ -231,18 +231,16 @@ Matrix TranspPolyhedral :: giveConductivityMatrix(string matrixType) const {
 Matrix TranspPolyhedral :: giveCapacityMatrix() const {
     Matrix S(nnodes, nnodes);
     Vector phi;
-    TrsprtMaterialStatus *tstats;
-    double wc;
+    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+    double m = tmat->giveCapacity() * tmat->giveDensity();
     for ( size_t i = 0; i < ip_weights.size(); i++ ) {
         phi = shapeF(ip_locs [ i ]);
-        tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-        wc = ip_weights [ i ] * tstats->giveConductivity();
         for(unsigned p=0; p<nnodes; p++){
             for(unsigned q=0; q<nnodes; q++){        
-                S[ p ][ q ] += phi[p] * phi[q] * wc;
+                S[ p ][ q ] += phi[p] * phi[q] * ip_weights [ i ]* m;
             }
         }
-    }
+    }    
     return S;
 }
 
@@ -302,8 +300,8 @@ void TranspVirtPolyhedral :: init() {
 //////////////////////////////////////////////////////////
 Matrix TranspVirtPolyhedral :: giveConductivityMatrix(string matrixType) const {
     Matrix C = TranspPolyhedral :: giveConductivityMatrix(matrixType);
-    TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    return V1 * tstats->giveConductivity() + matrix_multiply(matrix_multiply(V2.transpose(), C), V2);
+    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+    return V1 * tmat->giveConductivity() + matrix_multiply(matrix_multiply(V2.transpose(), C), V2);
 }
 
 

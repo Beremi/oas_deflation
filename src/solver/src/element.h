@@ -132,6 +132,7 @@ private:
     bool bound;
     Point normal;
     double length, area;
+    bool reducedCapacityMatrix;
 public:
     Transp1D(const unsigned dim);
     ~Transp1D() {};

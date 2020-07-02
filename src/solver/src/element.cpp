@@ -536,6 +536,7 @@ Transp1D :: Transp1D(const unsigned dim) {
     stats.resize(1);
     bound = false;
     name = "Transp1D";
+    reducedCapacityMatrix = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -556,6 +557,14 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
     }
     iss >> num;
     mat = fullmatrs->giveMaterial(num);
+
+    string code;
+    while (iss>>code){
+        
+        if (code.compare("reducedCapacityMatrix")==0){
+            reducedCapacityMatrix = true;
+        }
+    }
 
     //  cout<< "Loaded 1D trsprt: "<<nodes.size()<<" nodes, "<<vert.size()<<" vertices"<<endl;
 }
@@ -684,15 +693,13 @@ void Transp1D :: init() {
         cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
         exit(1);
     }
-
-    // JM Zakomentoval cout << "DONE" << endl;
 }
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
     ( void ) matrixType;
-    TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    double c = area * tstats->giveConductivity() / length;
+    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+    double c = area * tmat->giveConductivity() / length;
     Matrix C(2, 2);
     C [ 0 ] [ 0 ] = C [ 1 ] [ 1 ] = c;
     C [ 1 ] [ 0 ] = C [ 0 ] [ 1 ] = -c;
@@ -702,10 +709,15 @@ Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveCapacityMatrix() const {
     Matrix S(2, 2);
-    TrsprtMaterialStatus *tstats = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
-    double s = area * tstats->giveCapacity() * length / (6.);
-    S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
-    S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s;
+    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+    double s = area * tmat->giveCapacity() * tmat->giveDensity() * length / (12.);
+
+    if (reducedCapacityMatrix){     //derived based on assumption of constant pressure
+        S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 3 * s;
+    } else {    //derived based on linear assumption of pressure
+        S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
+        S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s;
+    }
     return S;
 }
 

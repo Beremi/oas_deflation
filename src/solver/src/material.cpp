@@ -10,22 +10,10 @@ TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : Ma
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: giveConductivity() const {
-    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    return tmat->giveConductivity();
-}
-
-//////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: giveCapacity() const {
-    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    return tmat->giveCapacity();
-}
-
-//////////////////////////////////////////////////////////
 void TrsprtMaterial :: readFromLine(istringstream &iss) {
     string param;
-    bool bcapacity, bconductivity;
-    bcapacity = bconductivity = false;
+    bool bcapacity, bconductivity, bdensity;
+    bcapacity = bconductivity = bdensity= false;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -35,18 +23,23 @@ void TrsprtMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("conductivity") == 0 ) {
             bconductivity = true;
             iss >> conductivity;
+        } else if ( param.compare("density") == 0 ) {
+            bdensity = true;
+            iss >> density;
         }
     }
     if ( !bcapacity ) {
         cerr << name << ": material parameter 'capacity' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
-    ;
     if ( !bconductivity ) {
         cerr << name << ": material parameter 'conductivity' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
-    ;
+    if ( !bdensity ) {
+        cerr << name << ": material parameter 'density' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
 };
 
 //////////////////////////////////////////////////////////

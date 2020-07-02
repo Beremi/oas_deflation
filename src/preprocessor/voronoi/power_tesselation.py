@@ -1,7 +1,7 @@
 import logging
 import time
 from collections import defaultdict
-from pydmga.geometry import OrthogonalGeometry, BoxGeometry
+from pydmga.geometry import BoxGeometry
 from pydmga.container import Container
 from pydmga.diagram import Diagram
 import numpy as np
@@ -126,7 +126,6 @@ class PowerTesselation(object):
         #dx = xmax - xmin
         #dy = ymax - ymin
         #dz = zmax - zmin
-        #self.geometry = OrthogonalGeometry(dx, dy, dz, False, False, False)
         self.geometry = BoxGeometry(xmin, ymin, zmin, xmax, ymax, zmax, False, False, False)
         self.container = Container(self.geometry)
         self.container.add(self._points_pydgma)

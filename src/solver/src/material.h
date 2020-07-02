@@ -59,20 +59,19 @@ class TrsprtMaterialStatus : public MaterialStatus
 public:
     TrsprtMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtMaterialStatus() {};
-    double giveConductivity() const;
-    double giveCapacity() const;
 };
 
 //////////////////////////////////////////////////////////
 class TrsprtMaterial : public Material
 {
 private:
-    double conductivity, capacity;
+    double conductivity, capacity, density;
 public:
     TrsprtMaterial() { name = "transport material"; };
     ~TrsprtMaterial() {};
     double giveConductivity() { return conductivity; };
     double giveCapacity() { return capacity; };
+    double giveDensity() { return density; };
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);
 };

@@ -49,15 +49,15 @@ if __name__ == '__main__':
         solver = 'SteadyStateNonLinearSolver'
 
         #power tesselation on/off  does not matter now
-        powerTes = False
+        powerTes = True
 
         #dimension
-        dim = 3
+        dim = 2
 
         print('Creating a %dd lattice model...' % dim)
         #coupled problem?
-        activeTransport = 0
-        activeMechanics = 1
+        activeTransport = 1
+        activeMechanics = 0
 
         #Cusatis 3PB:
         #A: 1.131 / 0.2 / 0.1
@@ -67,14 +67,9 @@ if __name__ == '__main__':
         # X: 0.4445, diameter: 0.2286
 
         #dimensions of rectangle model
-        Xdim = 0.4445            #also length of cylinder
-        Ydim = 0.2286             #also diameter of cylinder
-        Zdim = 0.2286
-
-        #size of grains (minimum distance between nodes)
-        #be cautious with small grains!
-        #for 3PB insert 2xmindist
-        minDist = 0.02
+        Xdim = 1            #also length of cylinder
+        Ydim = 1             #also diameter of cylinder
+        Zdim = 1
 
         #trials of random node positioning
         trials = 30000
@@ -127,7 +122,7 @@ if __name__ == '__main__':
         if (dim == 2):
 
             #patch test for Transport
-            #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+            node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
 
             #cantilever bending
             #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
@@ -156,10 +151,10 @@ if __name__ == '__main__':
 
             #simply supported NOTCHED beam, uniform load
 
-            notchH = 0.5 #notch height in percentage of total beam height
-            node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05)
-            materialZones=None
-            measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=maxLim)
+            #notchH = 0.5 #notch height in percentage of total beam height
+            #node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05)
+            #materialZones=None
+            #measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=maxLim)
             #print(notches)
 
 
