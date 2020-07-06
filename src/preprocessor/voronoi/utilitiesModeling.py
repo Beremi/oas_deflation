@@ -483,7 +483,7 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     transportBC_merged = []
     functions = []
 
-
+    """
     ### selecting vertices on the left surface
     boundA = np.zeros(dim)-1e-8
     boundB = maxLim + 1e-8
@@ -499,12 +499,42 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
         functions.append (fn1)
         trsBC = utilitiesMech.transportBC(k,[i,-1])
         transportBC_merged.append(trsBC)
+    """
+
+    #transport function, leftFace, constant
+    fn2 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn2)
+    fn3 = utilitiesNumeric.constantFunc(1)
+    functions.append (fn3)
+
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([0,-1])
+    boundA = np.array(  [-1e-8 , 0] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([1,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
 
     return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
-#pokracovat v periodic shear
-#udelat rozdeleni damage pri 2d confined press
-#3d 3 point notch bend
+
 
 def create2dPeriodicShear(maxLim, minDist, trials ):
     print('Creating 2d periodic rectangle, shear loaded.')
@@ -1707,6 +1737,14 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
   #  mBC = utilitiesGeom.mechanicalBC(dim, kvadrBC, oldLen, newLen)
    # mechBC_merged.append(mBC)
     ####################################################################################################
+
+
+
+
+
+
+
+
 
     return node_coords, radii, mechBC_merged, mechIC_merged
 

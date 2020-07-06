@@ -31,7 +31,7 @@
 #TRANSPORT MODELS AVAILABLE
 #
 #Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.005 activeTransport 1 
-Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.003 activeTransport 1 trials 50000
+Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.004 activeTransport 1 trials 50000
 #
 #
 #

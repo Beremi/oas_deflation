@@ -610,7 +610,7 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
 
 
 def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None):
-
+    start_time = time.time()
     dim = 3
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
@@ -778,7 +778,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         """
 
         ridges_out.append(rdg)
-
+    geom_time = time.time()
+    print ('done in %.1f seconds' %(geom_time-start_time))
     if (allCoplanar):
         print ('ALL ridges coplanar OK, maxErr: %e' %maxE)
     else:
@@ -1377,7 +1378,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     #print(auxNodesInitLength)
     updatedElems =0
     newAuxNodesA = []
-    if (auxNodesInitLength != 0):
+    if (auxNodesInitLength != 0 and dim==3):
         print('Generating additional aux_nodes (if 0th and last node are aux nodes, creating another auxNode in a corner)...', end='')
         beamMidpoint = maxLim /2
         for elem in transportElements:
@@ -1397,9 +1398,22 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                     diffIdx = d
 
 
-            if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out)
-            and (elem.connectedNodes[0]/node_count)
-            != (elem.connectedNodes[len(elem.connectedNodes)-1]/node_count) and equalCoords ==2):
+            if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out) and equalCoords == 1):
+                anodeA = np.asarray (aux_nodes[ int(elem.connectedNodes[0]-node_count) ][:])
+                anodeB = np.asarray (aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ][:])
+
+                nanode = (anodeA + anodeB) /2
+
+                elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
+                elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+                elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+                elem.addSingleConnectedNode( elem.connectedNodes[0] )
+
+                aux_nodes.append(nanode)
+                newAuxNodesA.append(nanode)
+
+
+            if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out) and equalCoords == 2):
 
                 #print((elem.connectedNodes[0]/node_count))
                 #print((elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
@@ -1419,6 +1433,37 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
                 #print(elem.connectedNodes)
 
+                ridgeCoords = []
+                lasti = -1
+                for i in ((elem.connectedNodes)):
+                    if (i!=lasti):
+                        #print(i)
+                        if (i<len(nodes_out)):
+                            #print(nodes_out[int(i),0:3])
+                            ridgeCoords.append(nodes_out[int(i),0:3])
+                        if (i>=len(nodes_out)):
+                            #print(aux_nodes[int(i-len(nodes_out))][0:3])
+                            ridgeCoords.append(aux_nodes[int(i-len(nodes_out))][0:3])
+                    lasti=i
+                ridgeCoords = np.asarray(ridgeCoords)
+
+                #face plane from first three points (nodes)
+                pA = ridgeCoords[0]
+                pB = ridgeCoords[1]
+                pC = ridgeCoords[2]
+                vecA = pB - pA
+                vecB = pC - pA
+                #planeN = np.dot(vecA,vecB)
+
+                #lineDir = vertexB - vertexA
+
+                #ndotu = np.dot(planeN, lineDir)
+                #w = vertexB - pA
+                #si = np.dot(-planeN, w) / ndotu
+                #psi = w + si * lineDir + pA
+                #print ('psi: %s' %psi)
+                #print ('pa: %s' %pA)
+
 
 
                 #print(int(elem.connectedNodes[0]/node_count))
@@ -1436,6 +1481,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 nanode[diffIdx] = anodeA[diffIdx]
                 #print('New aux node: %s' %nanode)
                 #
+                #nanode = psi
                 #adding new aux node to connected nodes
                 #print('old elem: %s' %elem.connectedNodes)
                 elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
@@ -1446,55 +1492,56 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 aux_nodes.append(nanode)
                 newAuxNodesA.append(nanode)
 
-                """
-                #print(ridgeCoords)
-                ridgeCoords = []
-                lasti = -1
-                for i in ((elem.connectedNodes)):
-                    if (i!=lasti):
-                        print(i)
-                        if (i<len(nodes_out)):
-                            print(nodes_out[int(i),0:3])
-                            ridgeCoords.append(nodes_out[int(i),0:3])
-                        if (i>=len(nodes_out)):
-                            print(aux_nodes[int(i-len(nodes_out))][0:3])
-                            ridgeCoords.append(aux_nodes[int(i-len(nodes_out))][0:3])
-                    lasti=i
-                ridgeCoords = np.asarray(ridgeCoords)
+            """
+            #print(ridgeCoords)
+            ridgeCoords = []
+            lasti = -1
+            for i in ((elem.connectedNodes)):
+                if (i!=lasti):
+                    print(i)
+                    if (i<len(nodes_out)):
+                        print(nodes_out[int(i),0:3])
+                        ridgeCoords.append(nodes_out[int(i),0:3])
+                    if (i>=len(nodes_out)):
+                        print(aux_nodes[int(i-len(nodes_out))][0:3])
+                        ridgeCoords.append(aux_nodes[int(i-len(nodes_out))][0:3])
+                lasti=i
+            ridgeCoords = np.asarray(ridgeCoords)
 
-                fig = plt.figure()
-                ax = Axes3D(fig)
-                ax.set_aspect('equal')
-                ax.plot3D([vertexA[0], vertexB[0]], [vertexA[1], vertexB[1]], [vertexA[2], vertexB[2]], marker='o')
-                #ax.plot3D([anodeA[0], anodeB[0]], [anodeA[1], anodeB[1]], [anodeA[2], anodeB[2]], marker='o')
-                #ax.scatter3D(elemMidpoint[0], elemMidpoint[1], elemMidpoint[2])
-                #ax.scatter3D(anodeA[0], anodeA[1], anodeA[2])
-                #ax.scatter3D(anodeB[0], anodeB[1], anodeB[2])
-                #ax.scatter3D(ridgeMidpoint[0], ridgeMidpoint[1], ridgeMidpoint[2])
-                for r in range (len(ridgeCoords)-1):
-                    ax.plot3D([ridgeCoords[r,0], ridgeCoords[r+1,0]], [ridgeCoords[r,1], ridgeCoords[r+1,1]], [ridgeCoords[r,2], ridgeCoords[r+1,2]], marker='x')
-                ax.plot3D([ridgeCoords[0,0], ridgeCoords[len(ridgeCoords)-1,0]], [ridgeCoords[0,1], ridgeCoords[len(ridgeCoords)-1,1]], [ridgeCoords[0,2], ridgeCoords[len(ridgeCoords)-1,2]], marker='x')
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            ax.set_aspect('equal')
+            ax.plot3D([vertexA[0], vertexB[0]], [vertexA[1], vertexB[1]], [vertexA[2], vertexB[2]], marker='o')
+            #ax.plot3D([anodeA[0], anodeB[0]], [anodeA[1], anodeB[1]], [anodeA[2], anodeB[2]], marker='o')
+            ax.scatter3D(nanode[0], nanode[1], nanode[2])
+            #ax.scatter3D(anodeA[0], anodeA[1], anodeA[2])
+            #ax.scatter3D(anodeB[0], anodeB[1], anodeB[2])
+            #ax.scatter3D(ridgeMidpoint[0], ridgeMidpoint[1], ridgeMidpoint[2])
+            for r in range (len(ridgeCoords)-1):
+                ax.plot3D([ridgeCoords[r,0], ridgeCoords[r+1,0]], [ridgeCoords[r,1], ridgeCoords[r+1,1]], [ridgeCoords[r,2], ridgeCoords[r+1,2]], marker='x')
+            ax.plot3D([ridgeCoords[0,0], ridgeCoords[len(ridgeCoords)-1,0]], [ridgeCoords[0,1], ridgeCoords[len(ridgeCoords)-1,1]], [ridgeCoords[0,2], ridgeCoords[len(ridgeCoords)-1,2]], marker='x')
 
-                ax.plot3D([0,maxLim[0]], [0,0], [0,0], color='black')
-                ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [0,0], color='black')
-                ax.plot3D([0,maxLim[0]], [0,0], [maxLim[2],maxLim[2]], color='black')
-                ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+            ax.plot3D([0,maxLim[0]], [0,0], [0,0], color='black')
+            ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [0,0], color='black')
+            ax.plot3D([0,maxLim[0]], [0,0], [maxLim[2],maxLim[2]], color='black')
+            ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [maxLim[2],maxLim[2]], color='black')
 
-                ax.plot3D([0,0], [0,maxLim[1]], [0,0], color='black')
-                ax.plot3D([0,0], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
-                ax.plot3D([0,0], [0,0], [0,maxLim[2]], color='black')
-                ax.plot3D([0,0], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
+            ax.plot3D([0,0], [0,maxLim[1]], [0,0], color='black')
+            ax.plot3D([0,0], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+            ax.plot3D([0,0], [0,0], [0,maxLim[2]], color='black')
+            ax.plot3D([0,0], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
 
-                ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [0,0], color='black')
-                ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
-                ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
-                ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
-                plt.show()
-                """
-                #print('new elem: %s' %elem.getString())
-                #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
-                #print(elem.connectedNodes)
-                #print()
+            ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [0,0], color='black')
+            ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+            ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
+            ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
+            plt.show()
+
+            #print('new elem: %s' %elem.getString())
+            #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
+            #print(elem.connectedNodes)
+            #print()
+            """
         print('done.')
         sys.stdout.flush()
 

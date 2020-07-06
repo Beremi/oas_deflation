@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy
 from IPython.display import clear_output
 import sys, os, math
+from shutil import copyfile
 from sklearn import preprocessing
 from scipy.ndimage import rotate
 from scipy.spatial import Voronoi
@@ -242,7 +243,7 @@ class Model:
 
 
     def saveGeometry(self):
-        print('Extracting geometry...', end='')
+        #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
         (self.vert_count,
@@ -263,7 +264,7 @@ class Model:
         #if (self.printout == False): enablePrint()
         print ('done.')
 
-    def saveRest(self, solver):
+    def saveRest(self, solver, master_file):
         print('Saving files...', end='')
         #if (self.printout == False): blockPrint()
         # saving rest of input
@@ -300,6 +301,9 @@ class Model:
         #if (self.printout == False): enablePrint()
         print ('done.')
 
+        print ('Copying prep_master used...', end='')
+        copyfile(master_file, os.path.join(self.master_folder,master_file))
+        print ('done.')
 
     def addMaterial(self, row):
         r = row.split()
@@ -572,7 +576,7 @@ if __name__ == '__main__':
             model.setDirectory()
             model.createModel()
             model.saveGeometry()
-            model.saveRest(solver)
+            model.saveRest(solver, file)
 
 
 
