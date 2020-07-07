@@ -138,13 +138,13 @@ class PowerTesselation(object):
         if self._ndim == 3:
             self._generate_voronoi_parts_3d()
         logging.info('Time to generate voronoi parts = {} s'.format(time.time() - start))
-        print('#'*50)
-        print('points:', self.points)
-        print('vertices:', self.vertices)
-        print('ridge_points:', self.ridge_points)
-        print('ridge_vertices:', self.ridge_vertices)
-        print('regions:', self.regions)
-        print('point_region:', self.point_region)
+        #print('#'*50)
+        #print('points:', self.points)
+        #print('vertices:', self.vertices)
+        #print('ridge_points:', self.ridge_points)
+        #print('ridge_vertices:', self.ridge_vertices)
+        #print('regions:', self.regions)
+        #print('point_region:', self.point_region)
 
     def _get_points_pydgma(self):
         points_pydgma = []

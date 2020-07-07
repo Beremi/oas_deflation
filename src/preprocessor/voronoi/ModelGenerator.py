@@ -82,7 +82,7 @@ class Model:
                 self.nr_models = int(r[i+1])
 
             if (r[i]=='seed'):
-                self.userSeed = r[i+1]
+                self.userSeed = int(r[i+1])
             if (r[i]=='Xsize'):
                 self.maxLim[0] = float(r[i+1])
             if (r[i]=='Ysize'):
@@ -142,7 +142,8 @@ class Model:
             self.seed = np.random.randint(1000.0)
             np.random.seed(seed=self.seed)
         else:
-            np.random.seed(seed=self.userSeed)
+            self.seed = self.userSeed
+            np.random.seed(seed=self.seed)
 
         self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
         try:
@@ -224,6 +225,7 @@ class Model:
         #DURHAM - prism tension 250x60x50
         #Reinhardt "Tensile tests and failure analysis of concrete 1986"
         #maxLim = np.array([0.25,0.06,0.05])
+        print(self.maxLim)
         self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, self.dimension, model='box', maxLim=self.maxLim)
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dReinhardtTension(self.maxLim, self.minDist, self.trials, fracZoneWidth=self.fracZoneWidth)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('reinhardt3d', maxLim=self.maxLim)

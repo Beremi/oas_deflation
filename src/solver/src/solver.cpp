@@ -484,7 +484,7 @@ void SteadyStateNonLinearSolver :: solve() {
             dt = fmin(dt * step_increase, dtmax);
             std :: cout << "enlarging step, timestep = " << dt << '\n';
         } else if ( converged && it > maxIt / 2 && dt > dtmin ) {
-            dt = fmin(dt * step_decrease, dtmax);
+            dt = fmin(dt * step_decrease, dtmin);
             std :: cout << "shortening step, timestep = " << dt << '\n';
         }
         // std::cerr << "number of iterations: " << it << '\n';

@@ -107,7 +107,7 @@ if __name__ == '__main__':
             titleY += '%s, ' %headers[file_names.index(file)].split('\t')[np.abs(iy)]
             headerLine += '%s\t' %headers[file_names.index(file)].split('\t')[np.abs(iy)]
 
-            tangent = dy[10] / dx[10]
+            tangent = dy[2] / dx[2]
 
             fileHeaders.append(headers[file_names.index(file)].split('\t')[np.abs(ix)]+'\t'+headers[file_names.index(file)].split('\t')[np.abs(iy)])
 
@@ -115,11 +115,12 @@ if __name__ == '__main__':
             pd.append(dx)
             pd.append(dy)
             plottedData.append(pd)
-            ax.plot(dx, dy, label= 'X:%s / Y:%s \next: x=%.4e; y=%.4e / tg: %.4e' %(headers[file_names.index(file)].split('\t')[np.abs(ix)], headers[file_names.index(file)].split('\t')[np.abs(iy)], extr[0], extr[1], tangent))
+            #ax.plot(dx, dy, label= 'X:%s / Y:%s \next: x=%.4e; y=%.4e / tg: %.4e' %(headers[file_names.index(file)].split('\t')[np.abs(ix)], headers[file_names.index(file)].split('\t')[np.abs(iy)], extr[0], extr[1], tangent))
+            ax.plot(dx, dy, label= 'X:%s / Y:%s' %(headers[file_names.index(file)].split('\t')[np.abs(ix)], headers[file_names.index(file)].split('\t')[np.abs(iy)]))
             ax.scatter(extr[0], extr[1])
             ax.text(extr[0], extr[1], '%.3e'%extr[1])
 
-    ax.set(xlabel=titleX, ylabel=titleY)
+    #ax.set(xlabel=titleX, ylabel=titleY)
     ax.grid()
     leg = ax.legend()
     ax.legend(loc=(-0.1,1.05))

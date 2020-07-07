@@ -30,7 +30,7 @@ void DataExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time) {
-    if ( time < time_last + time_each ) {
+    if ( time < time_last + time_each - 1e-12 ) {
         return false;
     } else {
         time_last = time;

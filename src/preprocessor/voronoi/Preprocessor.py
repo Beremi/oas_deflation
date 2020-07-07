@@ -52,7 +52,7 @@ if __name__ == '__main__':
         powerTes = True
 
         #dimension
-        dim = 2
+        dim = 3
 
         print('Creating a %dd lattice model...' % dim)
         #coupled problem?
@@ -151,12 +151,14 @@ if __name__ == '__main__':
 
             #simply supported NOTCHED beam, uniform load
 
-            #notchH = 0.5 #notch height in percentage of total beam height
-            #node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05)
-            #materialZones=None
-            #measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=maxLim)
+            """
+            notchH = 0.5 #notch height in percentage of total beam height
+            node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.create2dSSBeamUnifLoad(maxLim, minDist, trials, notch=notchH, loadWidth=0.05)
+            materialZones=None
+            measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=maxLim)
+>>>>>>> 9fa7710b414e29e953eb68eecd945e25d37ee403
             #print(notches)
-
+            """
 
             """
             #2d dogbone
@@ -170,7 +172,7 @@ if __name__ == '__main__':
         if (dim == 3):
 
             #patch test for Transport
-            #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+            node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
             #materialZones=None
 
             #cantilever bending
@@ -223,13 +225,14 @@ if __name__ == '__main__':
 
             #DURHAM - cylinder torsion, press
             #Cusatis "Lattice discrete particle model: Calibration and validation 2011"
+            """
             materialZones = utilitiesModeling.assembleMaterialZones (minDist*2, 3, model='box', maxLim=maxLim)
             node_coords, mechBC_merged,  vor, areas, functions,govNodes, govNodesMechBC, rigidPlates    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), cylinderRad, cylinderHeight,  minDist, trials, 0 )
             measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=maxLim)
             materialZones =  None
             #"""
 
-            """
+
             #DURHAM - prism tension 250x60x50
             #Reinhardt "Tensile tests and failure analysis of concrete 1986"
             maxLim = np.array([0.25,0.06,0.05])

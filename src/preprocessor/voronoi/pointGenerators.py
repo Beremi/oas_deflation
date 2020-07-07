@@ -217,15 +217,19 @@ def ortho_grid(n, nvar):
     return X, ortho_grid
 
 
-def generateOrtogrid(maxLim, minDist, dim, node_coords):
+def generateOrtogrid(maxLim, minDist, dim, node_coords, size):
     print ('Generating orthogonal grid...', end='')
     if (dim == 2):
 
-        n= 22
+        n= int (size/minDist)
+        if (n%2>0):
+            n+=1
+
+
         X, orthogrid = ortho_grid(n, dim)
 
-        xmin = maxLim[2]
-        xmax = maxLim[0]
+        xmin = maxLim[0]/2 - (n/2+0.5) * minDist  #maxLim[2]
+        xmax = maxLim[0]/2 + (n/2+0.5) * minDist  #maxLim[0]
         ymin = maxLim[3]
         ymax = maxLim[1]
 
