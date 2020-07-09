@@ -10,18 +10,18 @@
 # Notched 3PB
 # !! pro 3PB zadej mindist ve fracture zone (zbytek bude hrubsi) !! 
 # A: 1131/200, B: 1386/300, C: 800/100
-#Model 2d_notched3pb Xsize 1.386 Ysize 0.3 notchH 0.5 loadWidth 0.02 minDist 0.008 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 1 trials 100000
+Model 2d_notched3pb Xsize 0.8 Ysize 0.1 notchH 0.5 loadWidth 0.02 minDist 0.004 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 300000
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.02 fracZoneWidth 0.08 activeMechanics 1  orthogonalFracZone 0
 #
 # Dogbones
-#Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 
+#Model 2d_dogbone dogboneD 0.4 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
-Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.02 activeMechanics 1 trials 20000
+#Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.012 activeMechanics 1 trials 20000
 #
 # Reinhardt tension 
-Model 3d_ReinhardtTension Xsize 0.25 Ysize 0.06 Zsize 0.05 minDist 0.005 fracZoneWidth 0.3 activeMechanics 1 trials 5000
+#Model 3d_ReinhardtTension Xsize 0.25 Ysize 0.06 Zsize 0.05 minDist 0.005 fracZoneWidth 0.3 activeMechanics 1 trials 5000
 #
 #
 #Model 2d_singleSpring minDist 1 activeMechanics 1
@@ -31,7 +31,7 @@ Model 3d_ReinhardtTension Xsize 0.25 Ysize 0.06 Zsize 0.05 minDist 0.005 fracZon
 #TRANSPORT MODELS AVAILABLE
 #
 #Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.005 activeTransport 1 
-#Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 
+#Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
 #
 #
 #
@@ -54,4 +54,4 @@ Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2600000.0 Gt 500
 #Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0
 #
 # Transport material
-#Material TrsprtMaterial	transpC	11.000000	transpS	22.000000
+Material TrsprtMaterial	transpC	11.000000	transpS	22.000000

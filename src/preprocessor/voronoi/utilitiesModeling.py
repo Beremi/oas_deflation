@@ -16,24 +16,25 @@ from scipy.spatial import Delaunay
 def assembleMeasuringGauges(type, D=-1, maxLim = None):
     measuringGauges = []
     if (type == 'dogbone2d'):
-        if (D==0.1):
-            #total length LS
-            coordsA = np.array([ D/2, 0])
-            coordsB = np.array([ D/2, 6/4*D ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
+        #if (D==0.1):
+        #total length LS
+        coordsA = np.array([ D/2, 0])
+        coordsB = np.array([ D/2, 6/4*D ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
+        #mid LS
+        coordsA = np.array([ D/2, 3/4*D-D*0.6/2 ])
+        coordsB = np.array([ D/2, 3/4*D+D*0.6/2 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'midLS', False))
+        #left LC
+        coordsA = np.array([ 0.2*D, 3/4*D-D*0.6/2 ])
+        coordsB = np.array([ 0.2*D, 3/4*D+D*0.6/2 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'leftLS', False))
+        #right LC
+        coordsA = np.array([ D-0.2*D, 3/4*D-D*0.6/2 ])
+        coordsB = np.array([ D-0.2*D, 3/4*D+D*0.6/2 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS', False))
 
-            #mid LS
-            coordsA = np.array([ D/2, 3/4*D-0.075/2 ])
-            coordsB = np.array([ D/2, 3/4*D+0.075/2 ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'midLS', False))
-            #left LC
-            coordsA = np.array([ 0.2*D, 3/4*D-0.075/2 ])
-            coordsB = np.array([ 0.2*D, 3/4*D+0.075/2 ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'leftLS', False))
-            #right LC
-            coordsA = np.array([ D-0.2*D, 3/4*D-0.075/2 ])
-            coordsB = np.array([ D-0.2*D, 3/4*D+0.075/2 ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS', False))
+
 
     if(type=='reinhardt3d'):
         #total length
@@ -483,7 +484,7 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     transportBC_merged = []
     functions = []
 
-
+    """
     ### selecting vertices on the left surface
     boundA = np.zeros(dim)-1e-8
     boundB = maxLim + 1e-8
@@ -499,12 +500,42 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
         functions.append (fn1)
         trsBC = utilitiesMech.transportBC(k,[i,-1])
         transportBC_merged.append(trsBC)
+    """
+
+    #transport function, leftFace, constant
+    fn2 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn2)
+    fn3 = utilitiesNumeric.constantFunc(1)
+    functions.append (fn3)
+
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([0,-1])
+    boundA = np.array(  [-1e-8 , 0] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([1,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
 
     return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
-#pokracovat v periodic shear
-#udelat rozdeleni damage pri 2d confined press
-#3d 3 point notch bend
+
 
 def create2dPeriodicShear(maxLim, minDist, trials ):
     print('Creating 2d periodic rectangle, shear loaded.')
@@ -1708,6 +1739,14 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
    # mechBC_merged.append(mBC)
     ####################################################################################################
 
+
+
+
+
+
+
+
+
     return node_coords, radii, mechBC_merged, mechIC_merged
 
 
@@ -1866,9 +1905,9 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZone
 
     ## notch faces
     maxLimF = np.array([
-    maxLim[0]/2 - 0.5*maxLim[1]*(1-notch)*1.2,
+    maxLim[0]/2 - 0.5*maxLim[1]*(1-notch)*1.5,
     maxLim[1],
-    maxLim[0]/2 + 0.5*maxLim[1]*(1-notch)*1.2,
+    maxLim[0]/2 + 0.5*maxLim[1]*(1-notch)*1.5,
     indent+maxLim[1]*notch/2])
     pointGenerators.generateNodesRect(maxLimF, minDist*1.5, dim, trials, node_coords, useLowBound=True)
 
@@ -1887,14 +1926,14 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZone
     supportWidth*2,
     indent,
     indent])
-    pointGenerators.generateNodesRect(maxLimF, minDist*1.5, dim, trials, node_coords, useLowBound=True)
+    pointGenerators.generateNodesRect(maxLimF, minDist*1.2, dim, trials, node_coords, useLowBound=True)
     ##########################################generating of points, right support
     maxLimF = np.array([
     maxLim[0],
     supportWidth*2,
     maxLim[0]-supportWidth*2,
     indent])
-    pointGenerators.generateNodesRect(maxLimF, minDist*1.5, dim, trials, node_coords, useLowBound=True)
+    pointGenerators.generateNodesRect(maxLimF, minDist*1.2, dim, trials, node_coords, useLowBound=True)
 
 
     #rect
@@ -1923,14 +1962,15 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 20):
     node_coords.append(np.array([  D/2,  indent   ])) #top mid
     node_coords.append(np.array([  D/2,  6/4*D - indent  ]))  #bottom mid
     #gauges B
-    if (D==0.1):
-        node_coords.append( np.array([ D/2,        3/4*D-0.075/2 ])  )#mid LS
-        node_coords.append( np.array([ D/2,        3/4*D+0.075/2 ])  )
-        node_coords.append( np.array([ 0.2*D,  3/4*D-0.075/2 ])  ) #left LC
-        node_coords.append( np.array([ 0.2*D,  3/4*D+0.075/2 ])  )
-        node_coords.append( np.array([ D-0.2*D,  3/4*D-0.075/2 ])  )#right LC
-        node_coords.append( np.array([ D-0.2*D,  3/4*D+0.075/2 ])  )
+    #if (D==0.1):
+    node_coords.append( np.array([ D/2,         3/4*D-D*0.6/2 ])  )#mid LS
+    node_coords.append( np.array([ D/2,         3/4*D+D*0.6/2 ])  )
+    node_coords.append( np.array([ 0.2*D,       3/4*D-D*0.6/2 ])  ) #left LC
+    node_coords.append( np.array([ 0.2*D,       3/4*D+D*0.6/2 ])  )
+    node_coords.append( np.array([ D-0.2*D,     3/4*D-D*0.6/2 ])  )#right LC
+    node_coords.append( np.array([ D-0.2*D,     3/4*D+D*0.6/2 ])  )
     #gauges D
+    """
     if (D==0.4):
         node_coords.append( np.array([ D/2,        3/4*D-0.240/2 ])  )#mid LS
         node_coords.append( np.array([ D/2,        3/4*D+0.240/2 ])  )
@@ -1938,7 +1978,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 20):
         node_coords.append( np.array([ D/2-0.2*D,  3/4*D+0.240/2 ])  )
         node_coords.append( np.array([ D/2+0.2*D,  3/4*D-0.240/2 ])  )#right LC
         node_coords.append( np.array([ D/2+0.2*D,  3/4*D+0.240/2 ])  )
-
+    """
     ##################### CONSTRAINTS AND RIGID PLATES
     #top rigid plate
     indentRP = 1e-3
