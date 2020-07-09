@@ -448,7 +448,17 @@ void SteadyStateNonLinearSolver :: solve() {
             cout << endl;
 
             if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
-                cerr << "calculating with NaN - exit" << '\n';
+                cerr << "calculating with NaN in ";
+                if ( std :: isnan(residu_error) ){
+                  std::cerr << "\nresidua ";
+                }
+                if ( std :: isnan(displa_error) ){
+                  std::cerr << "\ndisplacements ";
+                }
+                if ( std :: isnan(energy_error) ){
+                  std::cerr << "\nenergies ";
+                }
+                std::cerr << "- exit" << '\n';
                 exit(1);
             }
 
