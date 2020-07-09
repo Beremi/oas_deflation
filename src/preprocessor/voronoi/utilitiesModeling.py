@@ -16,24 +16,25 @@ from scipy.spatial import Delaunay
 def assembleMeasuringGauges(type, D=-1, maxLim = None):
     measuringGauges = []
     if (type == 'dogbone2d'):
-        if (D==0.1):
-            #total length LS
-            coordsA = np.array([ D/2, 0])
-            coordsB = np.array([ D/2, 6/4*D ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
+        #if (D==0.1):
+        #total length LS
+        coordsA = np.array([ D/2, 0])
+        coordsB = np.array([ D/2, 6/4*D ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
+        #mid LS
+        coordsA = np.array([ D/2, 3/4*D-D*0.6/2 ])
+        coordsB = np.array([ D/2, 3/4*D+D*0.6/2 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'midLS', False))
+        #left LC
+        coordsA = np.array([ 0.2*D, 3/4*D-D*0.6/2 ])
+        coordsB = np.array([ 0.2*D, 3/4*D+D*0.6/2 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'leftLS', False))
+        #right LC
+        coordsA = np.array([ D-0.2*D, 3/4*D-D*0.6/2 ])
+        coordsB = np.array([ D-0.2*D, 3/4*D+D*0.6/2 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS', False))
 
-            #mid LS
-            coordsA = np.array([ D/2, 3/4*D-0.075/2 ])
-            coordsB = np.array([ D/2, 3/4*D+0.075/2 ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'midLS', False))
-            #left LC
-            coordsA = np.array([ 0.2*D, 3/4*D-0.075/2 ])
-            coordsB = np.array([ 0.2*D, 3/4*D+0.075/2 ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'leftLS', False))
-            #right LC
-            coordsA = np.array([ D-0.2*D, 3/4*D-0.075/2 ])
-            coordsB = np.array([ D-0.2*D, 3/4*D+0.075/2 ])
-            measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS', False))
+
 
     if(type=='reinhardt3d'):
         #total length
@@ -1961,14 +1962,15 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 20):
     node_coords.append(np.array([  D/2,  indent   ])) #top mid
     node_coords.append(np.array([  D/2,  6/4*D - indent  ]))  #bottom mid
     #gauges B
-    if (D==0.1):
-        node_coords.append( np.array([ D/2,        3/4*D-0.075/2 ])  )#mid LS
-        node_coords.append( np.array([ D/2,        3/4*D+0.075/2 ])  )
-        node_coords.append( np.array([ 0.2*D,  3/4*D-0.075/2 ])  ) #left LC
-        node_coords.append( np.array([ 0.2*D,  3/4*D+0.075/2 ])  )
-        node_coords.append( np.array([ D-0.2*D,  3/4*D-0.075/2 ])  )#right LC
-        node_coords.append( np.array([ D-0.2*D,  3/4*D+0.075/2 ])  )
+    #if (D==0.1):
+    node_coords.append( np.array([ D/2,         3/4*D-D*0.6/2 ])  )#mid LS
+    node_coords.append( np.array([ D/2,         3/4*D+D*0.6/2 ])  )
+    node_coords.append( np.array([ 0.2*D,       3/4*D-D*0.6/2 ])  ) #left LC
+    node_coords.append( np.array([ 0.2*D,       3/4*D+D*0.6/2 ])  )
+    node_coords.append( np.array([ D-0.2*D,     3/4*D-D*0.6/2 ])  )#right LC
+    node_coords.append( np.array([ D-0.2*D,     3/4*D+D*0.6/2 ])  )
     #gauges D
+    """
     if (D==0.4):
         node_coords.append( np.array([ D/2,        3/4*D-0.240/2 ])  )#mid LS
         node_coords.append( np.array([ D/2,        3/4*D+0.240/2 ])  )
@@ -1976,7 +1978,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 20):
         node_coords.append( np.array([ D/2-0.2*D,  3/4*D+0.240/2 ])  )
         node_coords.append( np.array([ D/2+0.2*D,  3/4*D-0.240/2 ])  )#right LC
         node_coords.append( np.array([ D/2+0.2*D,  3/4*D+0.240/2 ])  )
-
+    """
     ##################### CONSTRAINTS AND RIGID PLATES
     #top rigid plate
     indentRP = 1e-3

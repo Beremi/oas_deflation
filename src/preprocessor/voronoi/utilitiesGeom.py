@@ -1402,15 +1402,18 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 anodeA = np.asarray (aux_nodes[ int(elem.connectedNodes[0]-node_count) ][:])
                 anodeB = np.asarray (aux_nodes[ int(elem.connectedNodes[len(elem.connectedNodes)-1]-node_count) ][:])
 
-                nanode = (anodeA + anodeB) /2
+                #nanode = (anodeA + anodeB) /2
 
+                #print(elem.getString())
                 elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
-                elem.addSingleConnectedNode( node_count + len(aux_nodes) )
-                elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+                #elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+                #elem.addSingleConnectedNode( node_count + len(aux_nodes) )
                 elem.addSingleConnectedNode( elem.connectedNodes[0] )
 
-                aux_nodes.append(nanode)
-                newAuxNodesA.append(nanode)
+                #aux_nodes.append(nanode)
+                #newAuxNodesA.append(nanode)
+                #print(elem.getString())
+                #a = input('').split(" ")[0]
 
 
             if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out) and equalCoords == 2):
