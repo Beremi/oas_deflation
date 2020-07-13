@@ -632,19 +632,14 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     #print('ridge points')
     #adding ridges with at least one node in sample
-    for i in range (vor.ridge_points.shape[0]):
-        pr = False
-        for p in range (2):
-            if (vor.ridge_points[i][p] < node_count):
-                pr=True
-        if (pr):
-            validRidgeIdxs.append(i)
+    validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
 
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
     ########################################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
+    vertices_out_set = set()
     # dictionary of original and new indices of vertices
     verticesIdxDict = {}
     # ridges: nodeAidx, nodeBidx, trsprtBC, vertIdx
@@ -667,16 +662,12 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
             #
             vrtx[dim] = vor.ridge_vertices[validRidgeIdxs[i]][j]
             #
-            addVrtx = True
-            for j in range (len(vertices_out)):
-                if (vertices_out[j][dim] == vrtx[dim]):
-                    addVrtx = False
-
-            if (addVrtx == True):
+            if vrtx[dim] not in vertices_out_set:
                 verticesIdxDict.update( { vrtx[dim] : len(vertices_out)  } )
                 vrtx [dim +1] = len(vertices_out)
                 vrtx [dim +2] = 0
                 vertices_out.append(vrtx)
+                vertices_out_set.add(vrtx[dim])
 
         #ridges
         ########################################################
@@ -1228,6 +1219,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
+    transportElements_dict = {}
     ridges_out = np.asarray(ridges_out)
 
     onlyVerticesConnected = True
@@ -1265,22 +1257,22 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 m = n+1
                 if (n==len(ro)-1):
                     m = 3
+                path_ends = frozenset((ro[m], ro[n]))
                 #print('%d ; %d = %d ; %d' %(n,m, ro[n], ro[m]))
-                for elem in transportElements:
-                    if ( ((elem.vertexA == ro[n]) and (elem.vertexB == ro[m]))
-                      or ((elem.vertexA == ro[m]) and (elem.vertexB == ro[n])) ):
-                    #if ( elem.vertexA in ro and elem.vertexB in ro ):
-                        newPath = False
-                        elem.addConnectedNodes(ro)
-                        break
-                if (newPath == True):
+                elem = transportElements_dict.get((path_ends), None)
+                if elem:
+                    elem.addConnectedNodes(ro)
+                else:
                     connNds = []
                     connNds.clear()
                     connNds.append (ro[0])
                     connNds.append (ro[1])
                     #if (ro[0]>node_count and ro[1]>node_count):
                     #    print ('both aux')
-                    transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
+                    #transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
+                    transportElements_dict[path_ends] = utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1)
+            transportElements = transportElements_dict.values()
+            
     if (onlyVerticesConnected):
         print('Transport elements connect only vertices. That is ok.')
     else:
