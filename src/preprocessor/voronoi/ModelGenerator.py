@@ -162,6 +162,8 @@ class Model:
             self.run_2d_transportPatchTest()
         if self.modelType == '3d_transportPatchTest':
             self.run_3d_transportPatchTest()
+        if self.modelType == '3d_BiparvaTubeTransport':
+            self.run_3d_BiparvaTubeTransport()
 
         if self.modelType == '2d_notched3pb':
             self.run_2d_notched3pb()
@@ -240,6 +242,10 @@ class Model:
 
     def run_3d_transportPatchTest(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
+
+    def run_3d_BiparvaTubeTransport(self):
+        self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials)
 
 
     def saveGeometry(self):

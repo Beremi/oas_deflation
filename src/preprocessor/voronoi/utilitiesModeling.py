@@ -1444,6 +1444,68 @@ def create3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, 
 
 
 
+def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials):
+    center = np.zeros((3))
+    ########################################################################
+    functions = []
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+    fn1 = utilitiesNumeric.constantFunc(1)
+    functions.append (fn1)
+
+    ### sampling of nodes
+    node_coords, mechBC_merged, mechIC_merged = assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials)
+    node_coords = np.asarray(node_coords)
+
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+
+
+    print('Conducting Voronoi tesselation...', end='')
+    directionDim = 0
+    vor, volumes = utilitiesNumeric.runTubeMirroredVoronoi (node_coords, center, radius, height, thickness, directionDim)
+    print('done.')
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+
+    modelVertices = utilitiesGeom.returnSelectedPtsRadial (radius-thickness-1e-3 , radius+1e-3 , vor.vertices)
+    ### selecting vertices on the outer surface
+
+    outerFaceBC = np.array([1,-1])
+    outerFace = utilitiesGeom.returnSelectedPtsRadial (radius*0.98 , radius*1.02 , vor.vertices)
+    for i in range (len(outerFace)):
+        trsBC = utilitiesMech.transportBC(outerFace[i], outerFaceBC)
+        transportBC_merged.append(trsBC)
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
+    ax.scatter(vor.vertices[outerFace,0], vor.vertices[outerFace,1], vor.vertices[outerFace,2])
+    plt.show()
+
+    innerFaceBC = np.array([0,-1])
+    innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)*0.98  , (radius-thickness)*1.02, vor.vertices)
+    for i in range (len(innerFace)):
+        trsBC = utilitiesMech.transportBC(innerFace[i], innerFaceBC)
+        transportBC_merged.append(trsBC)
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
+    ax.scatter(vor.vertices[innerFace,0], vor.vertices[innerFace,1], vor.vertices[innerFace,2])
+    plt.show()
+
+
+    radii = np.zeros((len(node_coords))) + minDist
+
+    return node_coords, mechBC_merged, transportBC_merged, vor, volumes, functions, radii
+
 
 
 
@@ -3415,6 +3477,48 @@ def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials
     return node_coords, mechBC_merged, mechInitC_merged
 
 
+
+
+def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials):
+    print ('Assembling Biparva tube...', end='')
+    directionDim = 0
+    indent = 1e-5
+    dim=3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+    node_coords.append( np.array([  0,  radius-thickness/2,  0 ]))
+    mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    mechBC_merged.append(mBC)
+
+    ###############generating of points supported surface left face ###############
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-thickness, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
+
+    nodeA = center.copy()
+    nodeA[directionDim] += float(height)
+
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-thickness, directionDim, minDist, node_coords, trials)
+    pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
+
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness+1e-5, height, directionDim, minDist,  node_coords, trials)
+    #######################################################################
+
+    ###############generating of points rectangular volume ###############
+    pointGenerators.generateNodesOrtoTube3dRand(center, radius-1e-5, height, thickness, directionDim, minDist,  node_coords, trials)
+    #######################################################################
+
+
+    return node_coords, mechBC_merged, mechInitC_merged
 
 
 

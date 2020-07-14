@@ -826,6 +826,20 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount
 
 
+def returnSelectedPtsRadial (innerRad , outerRad, points, axisDim=0):
+    dim = 3
+    #
+    selectedPointIdxs = []
+    #
+    for i in range (len(points)):
+        if (axisDim == 0):
+            dist = np.sqrt(points[i,1]**2+points[i,2]**2)
+
+        if (dist > innerRad and dist < outerRad):
+            selectedPointIdxs.append(i)
+
+    return np.array(selectedPointIdxs).astype(int)
+
 
 def returnSelectedPts (boundPtA , boundPtB, points):
     dim = len (boundPtA)
@@ -1056,10 +1070,13 @@ def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart)
     trsptBC_out = []
 
     for i in range (len(transportBCmerged)):
-        bc = np.zeros ((1 + 1 + 1))
-        bc[0] = verticesDict[transportBCmerged[i].getNodeIdx()] + vertIdxStart
-        bc[1:] = transportBCmerged[i].getTrsprtBC()
-        trsptBC_out.append(bc)
+        idx = transportBCmerged[i].getNodeIdx()
+
+        if (idx in verticesDict):
+            bc = np.zeros ((1 + 1 + 1))
+            bc[0] = verticesDict[transportBCmerged[i].getNodeIdx()] + vertIdxStart
+            bc[1:] = transportBCmerged[i].getTrsprtBC()
+            trsptBC_out.append(bc)
 
     headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
     fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')

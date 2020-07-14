@@ -341,6 +341,14 @@ def generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim,
         if (tr < trials):
             node_coords.append(coords)
 
+try:
+    from point_generators_cython import generateNodesOrtoTube3dRand_cython as generateNodesOrtoTube3dRand
+    print('Using Cython version of point generator - generateNodesOrtoTube3dRand.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
+
 
 def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d circle border. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
@@ -557,6 +565,12 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
     if (mirrorIndent != None):
         return mirroredPoints
 
+try:
+    from point_generators_cython import generateNodesOrtoCylinderSurf3dRand_cython as generateNodesOrtoCilinderSurf3dRand
+    print('Using Cython version of point generator - generateNodesOrtoCilinderSurf3dRand.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
 
 
 def randPointInCilinder(center, radius, height, directionDim):
