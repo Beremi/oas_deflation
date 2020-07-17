@@ -1289,7 +1289,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                     #transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
                     transportElements_dict[path_ends] = utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1)
             transportElements = transportElements_dict.values()
-            
+
     if (onlyVerticesConnected):
         print('Transport elements connect only vertices. That is ok.')
     else:
@@ -1400,7 +1400,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             diffIdx = -1
             equalCoords = 0
             for d in range(3):
-                if np.abs(vertexA[d]-vertexB[d])<1e-8:
+                if np.abs(vertexA[d]-vertexB[d])<1e-12:
                     #print(np.abs(vertexA[d]-vertexB[d]))
                     equalCoords +=1
                 else:
@@ -1426,7 +1426,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
 
             if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out) and equalCoords == 2):
-
+                print('Adding corner node')
                 #print((elem.connectedNodes[0]/node_count))
                 #print((elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
                 updatedElems +=1
@@ -1734,6 +1734,7 @@ def saveDisplacementGauges(master_folder, dimension, name, coordsA, coordsB, rot
 
 def saveMeasuringGauges(master_folder, dimension, measuringGauges):
     print('Saving measuring gauges...')
+    print ('%d gauges' %len(measuringGauges))
     for mg in measuringGauges:
         saveDisplacementGauges(master_folder, dimension, mg.name, mg.coordsA, mg.coordsB, rotations = mg.rotation)
 

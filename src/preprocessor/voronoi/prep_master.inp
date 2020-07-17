@@ -11,7 +11,7 @@
 # !! pro 3PB zadej mindist ve fracture zone (zbytek bude hrubsi) !! 
 # A: 1131/200, B: 1386/300, C: 800/100
 #Model 2d_notched3pb Xsize 1.131 Ysize 0.2 notchH 0.5 loadWidth 0.005 minDist 0.004 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 100000
-#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.02 fracZoneWidth 0.08 activeMechanics 1  orthogonalFracZone 0
+Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.1 notchH 0.5 loadWidth 0.01 minDist 0.02 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 1 trials 1000
 #
 # Dogbones
 #Model 2d_dogbone dogboneD 1.6 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 50000
@@ -32,7 +32,7 @@
 #
 #Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.005 activeTransport 1 
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
-Model 3d_BiparvaTubeTransport minDist 0.008 cylinderRad 0.1 cylinderHeight 0.03 tubeThickness 0.02 activeTransport 1 trials 50000 activeMechanics 0
+#Model 3d_BiparvaTubeTransport minDist 0.01 cylinderRad 0.1 cylinderHeight 0.02 tubeThickness 0.02 activeTransport 1 trials 50000 activeMechanics 0
 #
 #
 #
