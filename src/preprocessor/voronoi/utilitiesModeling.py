@@ -1474,12 +1474,12 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
     transportIC_merged = []
-    """
+
     modelVertices = utilitiesGeom.returnSelectedPtsRadial (radius-thickness-1e-3 , radius+1e-3 , vor.vertices)
     ### selecting vertices on the outer surface
 
     outerFaceBC = np.array([1,-1])
-    outerFace = utilitiesGeom.returnSelectedPtsRadial (radius*0.98 , radius*1.02 , vor.vertices)
+    outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices)
     for i in range (len(outerFace)):
         trsBC = utilitiesMech.transportBC(outerFace[i], outerFaceBC)
         transportBC_merged.append(trsBC)
@@ -1491,7 +1491,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     plt.show()
 
     innerFaceBC = np.array([0,-1])
-    innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)*0.98  , (radius-thickness)*1.02, vor.vertices)
+    innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices)
     for i in range (len(innerFace)):
         trsBC = utilitiesMech.transportBC(innerFace[i], innerFaceBC)
         transportBC_merged.append(trsBC)
@@ -1501,7 +1501,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
     ax.scatter(vor.vertices[innerFace,0], vor.vertices[innerFace,1], vor.vertices[innerFace,2])
     plt.show()
-    """
+
 
 
     radii = np.zeros((len(node_coords))) + minDist

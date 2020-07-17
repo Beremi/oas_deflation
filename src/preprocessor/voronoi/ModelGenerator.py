@@ -202,7 +202,7 @@ class Model:
     def run_3d_notched3pb(self):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
-        
+
         materialZones = None
 
     def run_2d_dogbone(self):
@@ -250,6 +250,10 @@ class Model:
 
 
     def saveGeometry(self):
+        tube = False
+        if self.modelType == '3d_BiparvaTubeTransport':
+            tube = True
+        print ('bipa %s' %tube)
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
@@ -266,7 +270,7 @@ class Model:
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
             nodePositions=self.nodePositions, coupledNodes=self.coupledNodes,
-            mirtype=self.mirtype, notches=self.notches)
+            mirtype=self.mirtype, notches=self.notches, isTube=tube)
 
         #if (self.printout == False): enablePrint()
         print ('done.')
