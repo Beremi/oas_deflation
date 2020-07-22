@@ -58,6 +58,7 @@ class Model:
         self.notches = []
         self.materialZones= []
         self.measuringGauges = []
+        self.symmetric = False
 
         self.vor = None
         self.areas = None
@@ -135,6 +136,10 @@ class Model:
                 if (int(r[i+1])==1): self.orthogonalFracZone = True
                 if (int(r[i+1])==0): self.orthogonalFracZone = False
 
+            if (r[i]=='symmetric'):
+                if (int(r[i+1])==1): self.symmetric = True
+
+
 
         print('done.')
 
@@ -206,7 +211,7 @@ class Model:
         materialZones = None
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric )
         self.materialZones=None
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
