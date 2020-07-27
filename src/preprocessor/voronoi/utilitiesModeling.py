@@ -682,8 +682,8 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False):
     areas = np.asarray(areas)
 
 
-    fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
-    plt.show()
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
 
     ########################################################################
     functions = []
@@ -2132,8 +2132,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False):
     #mirrored circles. Not to be in the model at the end
     node_count = len(node_coords_out)
     nc = np.asarray(node_coords_out)
-    plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    plt.show()
+    #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
+    #plt.show()
 
 
     mirroredMiddle = []
@@ -2145,8 +2145,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False):
     node_coords_out = np.vstack( (node_coords_out, mirroredPointsA, mirroredPointsB, mirroredMiddle) )
 
     nc = np.asarray(node_coords_out)
-    plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    plt.show()
+    #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
+    #plt.show()
 
     sympoints = []
     """
@@ -2160,10 +2160,10 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False):
     """
     sympoints = np.asarray(sympoints)
 
-    if symmetric:
-        plt.plot(nc[:,0], nc[:,1], 'o', color='black');
+    #if symmetric:
+        #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
         #plt.plot(sympoints[:,0], sympoints[:,1], 'x', color='red');
-    plt.show()
+    #plt.show()
 
     nc = np.asarray(node_coords_out)
 
