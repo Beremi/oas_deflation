@@ -682,8 +682,8 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False):
     areas = np.asarray(areas)
 
 
-    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
+    plt.show()
 
     ########################################################################
     functions = []
@@ -2137,10 +2137,10 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False):
 
 
     mirroredMiddle = []
-    mirroredMiddle.append(np.array([  0.198*D,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.802,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  0.198*D,  3/4 * D - indent  -minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.802,  3/4 * D - indent  -minDist/2 ]))
+    mirroredMiddle.append(np.array([  0.2*D-1e-4,  3/4 * D - indent  +minDist/2 ]))
+    mirroredMiddle.append(np.array([  D*0.8+1e-4,  3/4 * D - indent  +minDist/2 ]))
+    mirroredMiddle.append(np.array([  0.2*D-1e-4,  3/4 * D - indent  -minDist/2 ]))
+    mirroredMiddle.append(np.array([  D*0.8+1e-4,  3/4 * D - indent  -minDist/2 ]))
 
     node_coords_out = np.vstack( (node_coords_out, mirroredPointsA, mirroredPointsB, mirroredMiddle) )
 
