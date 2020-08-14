@@ -6,7 +6,7 @@ import utilitiesNumeric
 import pointGenerators
 import voronoi
 import matplotlib.pyplot as plt
-import voronoi_viewer
+#import voronoi_viewer
 from mpl_toolkits.mplot3d import Axes3D
 
 from scipy.spatial import Voronoi
@@ -483,7 +483,7 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     transportBC_merged = []
     functions = []
 
-    """
+    #"""
     ### selecting vertices on the left surface
     boundA = np.zeros(dim)-1e-8
     boundB = maxLim + 1e-8
@@ -499,8 +499,8 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
         functions.append (fn1)
         trsBC = utilitiesMech.transportBC(k,[i,-1])
         transportBC_merged.append(trsBC)
+    #"""
     """
-
     #transport function, leftFace, constant
     fn2 = utilitiesNumeric.constantFunc(0)
     functions.append (fn2)
@@ -531,6 +531,7 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     for i in range (len(rightFace)):
         trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
+    """
 
     return node_coords, [], transportBC_merged, vor, areas, functions, radii
 

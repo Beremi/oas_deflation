@@ -37,10 +37,26 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     Transp1D *newelem = new Transp1D(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("TranspPolygonal") == 0 ) {
+                    TranspPolygonal *newelem = new TranspPolygonal(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("TranspVirtPolygonal") == 0 ) {
+                    TranspVirtPolygonal *newelem = new TranspVirtPolygonal(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("TranspCondensedPolygonal") == 0 ) {
+                    TranspCondensedPolygonal *newelem = new TranspCondensedPolygonal(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("PolyhedralFace") == 0 ) {
+                    PolyhedralFace *newelem = new PolyhedralFace(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("TranspPolyhedral") == 0 ) {
                     TranspPolyhedral *newelem = new TranspPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);
+                    elems.push_back(newelem);/*
                 } else if ( elemType.compare("TranspVirtPolyhedral") == 0 ) {
                     TranspVirtPolyhedral *newelem = new TranspVirtPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
@@ -48,7 +64,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                 } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 ) {
                     TranspCondensedPolyhedral *newelem = new TranspCondensedPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);
+                    elems.push_back(newelem);*/
                 } else {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);

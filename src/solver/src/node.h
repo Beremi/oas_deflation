@@ -40,6 +40,7 @@ public:
      */
     virtual void readFromLine(istringstream &iss);
     Point givePoint() const { return point; };
+    Point *givePointPointer() { return &point; };
     void setPoint(const Point &P) { point = P; };
     void setNumberOfDoFs(const int num) { nDoFs = num; };
     unsigned giveNumberOfDoFs() const { return nDoFs; };

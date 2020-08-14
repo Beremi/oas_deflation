@@ -43,6 +43,21 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// GEOMETRICAL ELEMENT - JUST TO REPRESENT GEOMETRICAL ENTITIES
+class GeometricalElement : public Element
+{
+private:
+
+public:
+    GeometricalElement() {mat = nullptr;}
+    ~GeometricalElement() {};
+    Matrix giveSteadyStateMatrix(string matrixType) const {(void)matrixType; return Matrix(0, 0);};
+    Vector giveInternalForces(const Vector &DoFs, bool frozen) const {(void)DoFs; (void)frozen; return Vector(0);};
+    double giveIPValue(string code, unsigned ipnum){(void) code; (void) ipnum; return 0;}
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // TRANSPORT ELEMENT
 class TransportElement : public Element
 {
