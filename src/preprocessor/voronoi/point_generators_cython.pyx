@@ -178,7 +178,174 @@ def generateNodesOrtoCilinder3dRand_cython(
 
 
 
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True)
+def generateNodesOrtoTube3dRand_cython(
+                      double[:] center,
+                      double outerRad,
+                      double height,
+                      double thickness,
+                      int directionDim,
+                      float minDist,
+                      list node_coords,
+                      int trials
+                      ):
+    print ('Generating a 3d tube segment. cython ')
+    cdef:
+        int generatedPoints = 0
+        int p, d
+        int tr = 0
+        int dim = 3
+        double distInt
+        double angle
+        vector[double] coords
+        int node_coords_input_len = len(node_coords)
+        vector[double] node_coords_temp
+        bint distIsGood
+        mt19937_64 gen = mt19937_64()
+        uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
+    for d in range(3):
+        coords.push_back(0.0)
 
+    if node_coords:
+        for node in node_coords:
+            for d in range(3):
+                node_coords_temp.push_back(node[d])
+
+    innerRad = outerRad - thickness
+    while (tr < trials):
+        tr = 0
+        distIsGood = False
+        while (not distIsGood) and (tr < trials):
+            angle = random.random()  * np.pi * 2
+            rn = random.random()
+            if (directionDim == 0 ):
+                coords[0] = center[0] + height * random.random()
+                coords[1] = center[1] + (innerRad + thickness * rn) * np.cos(angle)
+                coords[2] = center[2] + (innerRad + thickness * rn) * np.sin(angle)
+            if (directionDim == 1 ):
+                coords[0] = center[0] + (innerRad + thickness * rn) * np.cos(angle)
+                coords[1] = center[1] + height * random.random()
+                coords[2] = center[2] + (innerRad + thickness * rn) * np.sin(angle)
+            if (directionDim == 2 ):
+                coords[0] = center[0] + (outerRad + thickness * rn) * np.cos(angle)
+                coords[1] = center[1] + (outerRad + thickness * rn) * np.sin(angle)
+                coords[2] = center[2] + height * random.random()
+
+
+
+            distIsGood = True
+
+            for p in range(node_coords_input_len + generatedPoints):
+                distInt = 0
+                for d in range(3):
+                    dx = node_coords_temp[p*dim+d]
+                    dx -= coords[d]
+                    distInt += dx * dx
+                distInt = distInt**0.5
+                if (distInt < minDist):
+                    distIsGood = False
+                    tr += 1
+                    break
+
+        # Adding node coords
+        if distIsGood and (tr < trials):
+            for d in range(3):
+                node_coords_temp.push_back(coords[d])
+            generatedPoints += 1
+
+    # Copy back to lists
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
+        if (dim==2):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1]])
+        if (dim==3):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1], node_coords_temp[p*dim+2]])
+
+
+
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True)
+def generateNodesOrtoCylinderSurf3dRand_cython(
+                      double[:] center,
+                      double radius,
+                      double height,
+                      int directionDim,
+                      float minDist,
+                      list node_coords,
+                      int trials,
+                       angleLimitA=None, angleLimitB=None, mirrorIndent=None
+                      ):
+    print ('Generating a 3d cylinder surf cython. ')
+    cdef:
+        int generatedPoints = 0
+        int p, d
+        int tr = 0
+        int dim = 3
+        double distInt
+        double angle
+        vector[double] coords
+        int node_coords_input_len = len(node_coords)
+        vector[double] node_coords_temp
+        bint distIsGood
+        mt19937_64 gen = mt19937_64()
+        uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
+    for d in range(3):
+        coords.push_back(0.0)
+
+    if node_coords:
+        for node in node_coords:
+            for d in range(3):
+                node_coords_temp.push_back(node[d])
+
+    while (tr < trials):
+        tr = 0
+        distIsGood = False
+        while (not distIsGood) and (tr < trials):
+            angle = random.random()  * np.pi * 2
+            rn = random.random()
+            if (directionDim == 0 ):
+                coords[0] = center[0] + height * random.random()
+                coords[1] = center[1] + radius * np.cos(angle)
+                coords[2] = center[2] + radius * np.sin(angle)
+            if (directionDim == 1 ):
+                coords[0] = center[0] + radius * np.cos(angle)
+                coords[1] = center[1] + height * random.random()
+                coords[2] = center[2] + radius * np.sin(angle)
+            if (directionDim == 2 ):
+                coords[0] = center[0] + radius * np.cos(angle)
+                coords[1] = center[1] + radius * np.sin(angle)
+                coords[2] = center[2] + height * random.random()
+
+
+
+            distIsGood = True
+
+            for p in range(node_coords_input_len + generatedPoints):
+                distInt = 0
+                for d in range(3):
+                    dx = node_coords_temp[p*dim+d]
+                    dx -= coords[d]
+                    distInt += dx * dx
+                distInt = distInt**0.5
+                if (distInt < minDist):
+                    distIsGood = False
+                    tr += 1
+                    break
+
+        # Adding node coords
+        if distIsGood and (tr < trials):
+            for d in range(3):
+                node_coords_temp.push_back(coords[d])
+            generatedPoints += 1
+
+    # Copy back to lists
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
+        if (dim==2):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1]])
+        if (dim==3):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1], node_coords_temp[p*dim+2]])
 
 
 

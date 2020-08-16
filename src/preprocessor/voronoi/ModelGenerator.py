@@ -58,6 +58,7 @@ class Model:
         self.notches = []
         self.materialZones= []
         self.measuringGauges = []
+        self.symmetric = False
 
         self.vor = None
         self.areas = None
@@ -135,6 +136,10 @@ class Model:
                 if (int(r[i+1])==1): self.orthogonalFracZone = True
                 if (int(r[i+1])==0): self.orthogonalFracZone = False
 
+            if (r[i]=='symmetric'):
+                if (int(r[i+1])==1): self.symmetric = True
+
+
 
         print('done.')
 
@@ -162,6 +167,8 @@ class Model:
             self.run_2d_transportPatchTest()
         if self.modelType == '3d_transportPatchTest':
             self.run_3d_transportPatchTest()
+        if self.modelType == '3d_BiparvaTubeTransport':
+            self.run_3d_BiparvaTubeTransport()
 
         if self.modelType == '2d_notched3pb':
             self.run_2d_notched3pb()
@@ -199,11 +206,12 @@ class Model:
 
     def run_3d_notched3pb(self):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone)
-        measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
+
         materialZones = None
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric )
         self.materialZones=None
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
@@ -241,8 +249,16 @@ class Model:
     def run_3d_transportPatchTest(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
 
+    def run_3d_BiparvaTubeTransport(self):
+        self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
+
 
     def saveGeometry(self):
+        tube = False
+        if self.modelType == '3d_BiparvaTubeTransport':
+            tube = True
+        print ('bipa %s' %tube)
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
@@ -259,7 +275,7 @@ class Model:
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
             nodePositions=self.nodePositions, coupledNodes=self.coupledNodes,
-            mirtype=self.mirtype, notches=self.notches)
+            mirtype=self.mirtype, notches=self.notches, isTube=tube)
 
         #if (self.printout == False): enablePrint()
         print ('done.')

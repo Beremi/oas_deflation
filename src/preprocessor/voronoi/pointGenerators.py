@@ -241,11 +241,14 @@ def generateOrtogrid(maxLim, minDist, dim, node_coords, size):
 
     if (dim == 3):
 
-        n= 12
+        n= int (size/minDist)
+        if (n%2>0):
+            n+=1
+
         X, orthogrid = ortho_grid(n, dim)
 
-        xmin = maxLim[3]
-        xmax = maxLim[0]
+        xmin = maxLim[0]/2 - (n/2+0.5) * minDist
+        xmax = maxLim[0]/2 + (n/2+0.5) * minDist
         ymin = maxLim[4]
         ymax = maxLim[1]
         zmin = maxLim[5]
@@ -256,7 +259,92 @@ def generateOrtogrid(maxLim, minDist, dim, node_coords, size):
         orthogrid [:,2] *= (zmax-zmin)
 
         orthogrid [:,0] += xmin
-        orthogrid [:,1] += ymin #- 0.5/n*(ymax-ymin)
+        orthogrid [:,1] += ymin - 0.5/n*(ymax-ymin)
+        orthogrid [:,2] += zmin
+
+        """
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.scatter(orthogrid[:,0],orthogrid[:,1],orthogrid[:,2])
+        plt.show()
+        #
+        #"""
+
+    print('done.')
+
+    for i in range(len(orthogrid)):
+        rnd = np.random.uniform(-1e-7, 1e-7)
+
+        node_coords.append(orthogrid[i,:])
+
+
+def ortho_grid_variable(ns):
+     if isinstance(ns, int):
+         ns = [ns]
+     nvar = len(ns)
+     nsim = np.prod(ns)
+     x_list = [np.linspace(0.5 / n, 1 - 0.5 / n, n) for n in ns]
+     X = np.meshgrid(*x_list) # format later used in RBF
+     ortho_grid = np.array(X).reshape((nvar, nsim)).T
+     return X, ortho_grid
+#X, og = ortho_grid_variable((3, 4))
+
+
+def generateOrtogrid_variable(maxLim, minDist, node_coords, dimensions):
+    print ('Generating orthogonal grid...', end='')
+    """
+    if (len(dimensions) == 2):
+
+        n= int (size/minDist)
+        if (n%2>0):
+            n+=1
+
+        X, orthogrid = ortho_grid(n, dim)
+
+        xmin = maxLim[0]/2 - (n/2+0.5) * minDist  #maxLim[2]
+        xmax = maxLim[0]/2 + (n/2+0.5) * minDist  #maxLim[0]
+        ymin = maxLim[3]
+        ymax = maxLim[1]
+
+        orthogrid [:,0] *= (xmax-xmin)
+        orthogrid [:,1] *= (ymax-ymin)
+
+        orthogrid [:,0] += xmin
+        orthogrid [:,1] += ymin - 0.5/n*(ymax-ymin)
+    """
+    if (len(dimensions) == 3):
+        dimensions += minDist
+        n= dimensions/minDist
+        ints = []
+        for i in range (3):
+            ints.append (int (n[i]))
+
+        if (ints[0]%2>0):
+            ints[0]+=1
+
+        ints[1] +=1
+        ints[2] +=1
+
+
+
+        X, orthogrid = ortho_grid_variable((ints[0],ints[1],ints[2]))
+
+        xmin = (maxLim[0]+maxLim[3])/2 - (n[0]/2) * minDist
+        #xmax = (maxLim[0]+maxLim[3])/2 + (n[0]/2) * minDist
+        ymin = maxLim[4] - minDist /2
+        ymax = maxLim[1]
+        zmin = maxLim[5] - minDist /2
+        zmax = maxLim[2]
+        """
+        orthogrid [:,0] *= (xmax-xmin)
+        orthogrid [:,1] *= (ymax-ymin)
+        orthogrid [:,2] *= (zmax-zmin)
+        """
+
+        orthogrid *= dimensions
+
+        orthogrid [:,0] += xmin
+        orthogrid [:,1] += ymin #- 0.5/n[1]*(ymax-ymin)
         orthogrid [:,2] += zmin
 
         """
@@ -340,6 +428,14 @@ def generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim,
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
+
+try:
+    from point_generators_cython import generateNodesOrtoTube3dRand_cython as generateNodesOrtoTube3dRand
+    print('Using Cython version of point generator - generateNodesOrtoTube3dRand.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
 
 
 def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials):
@@ -557,6 +653,12 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
     if (mirrorIndent != None):
         return mirroredPoints
 
+try:
+    from point_generators_cython import generateNodesOrtoCylinderSurf3dRand_cython as generateNodesOrtoCilinderSurf3dRand
+    print('Using Cython version of point generator - generateNodesOrtoCilinderSurf3dRand.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
 
 
 def randPointInCilinder(center, radius, height, directionDim):
@@ -663,7 +765,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
     else:
         #print('Equid')
-        mD = minDist * 1.6
+        mD = minDist 
         length = np.linalg.norm(nodeA - nodeB)
         nodeNr = int (length / mD)
         indnt = (length-(nodeNr-1)*mD) / 2
