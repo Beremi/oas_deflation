@@ -33,10 +33,12 @@ solverFile                  = "solver.inp"
 #coplanarity test
 def equation_plane(pA, pB, pC, pD):
     """
-    pA = np.array([0,1,0])
-    pB = np.array([1,1,0])
-    pC = np.array([0,1,4])
-    pD = np.array([0,0,0])
+    >>> pA = np.array([0,1,0])
+    >>> pB = np.array([1,1,0])
+    >>> pC = np.array([0,1,4])
+    >>> pD = np.array([0,0,0])
+    >>> equation_plane(pA, pB, pC, pD)
+    4
     """
 
     a1 = pB[0] - pA[0]
@@ -84,14 +86,36 @@ def getPlaneNormalVector (pA, pB, pC):
     return  normal
 
 def angleBetweenVectors (vecA, vecB):
-    cos = dot(vecA,vecB)/norm(vecA)/norm(vecB)
-    angle = arccos(clip(c, -1, 1))
+    cos = np.dot(vecA,vecB) / np.norm(vecA) / np.norm(vecB)
+    angle = np.arccos(np.clip(c, -1, 1))
     print ('Angle is %f' %(ang))
 
 
 #check if any number in matrix is lower than
+def checkLowerThan_old(matrix, minDist):
+    '''
+    >>> matrix = np.array([[.3, .5], [.1, .2]]).flatten()
+    >>> minDist = .6
+    >>> checkLowerThan_old (matrix, minDist)
+    False
+    >>> minDist = .1
+    >>> checkLowerThan_old (matrix, minDist)
+    True
+    '''
+    return  all(i >= minDist for i in matrix)
+
+#check if any number in matrix is lower than
 def checkLowerThan (matrix, minDist):
-    return   all(i >= minDist for i in matrix)
+    '''
+    >>> matrix = np.array([[.3, .5], [.1, .2]])
+    >>> minDist = .6
+    >>> checkLowerThan (matrix, minDist)
+    False
+    >>> minDist = .1
+    >>> checkLowerThan (matrix, minDist)
+    True
+    '''
+    return np.all(matrix >= minDist)
 
 
 
@@ -101,7 +125,7 @@ def checkMutDistancesCdist(dim, minDist, currentNodes, newNode):
     crds = np.asarray(newNode)
     crds = np.reshape(crds, (-1, dim))
     dists = scipy.spatial.distance.cdist(crds, ncrds , 'euclidean')
-    dists = dists.flatten()
+    #dists = dists.flatten()
     distIsGood = checkLowerThan(dists, minDist)
     return distIsGood
 
@@ -601,14 +625,6 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
 
 
 
-
-
-
-
-
-
-
-
 def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False):
     start_time = time.time()
     dim = 3
@@ -832,7 +848,14 @@ def returnSelectedPtsRadial (innerRad , outerRad, points, axisDim=0):
     return np.array(selectedPointIdxs).astype(int)
 
 
-def returnSelectedPts (boundPtA , boundPtB, points):
+def returnSelectedPts_old (boundPtA , boundPtB, points):
+    '''
+    >>> boundPtA = np.array([0, 0])
+    >>> boundPtB = np.array([1, 1])
+    >>> points = np.array([[.5, .5], [.1, .9], [2, .1], [2, 3]])
+    >>> returnSelectedPts_old(boundPtA, boundPtB, points)
+    array([0, 1])
+    '''
     dim = len (boundPtA)
     #
     selectedPointIdxs = []
@@ -849,7 +872,26 @@ def returnSelectedPts (boundPtA , boundPtB, points):
 
     return np.array(selectedPointIdxs).astype(int)
 
-def excludeSelectedPts (boundPtA , boundPtB, points):
+
+def returnSelectedPts (boundPtA , boundPtB, points):
+    '''
+    >>> boundPtA = np.array([0, 0])
+    >>> boundPtB = np.array([1, 1])
+    >>> points = np.array([[.5, .5], [.1, .9], [2, .1], [2, 3]])
+    >>> returnSelectedPts(boundPtA, boundPtB, points)
+    array([0, 1])
+    '''
+    return np.where(np.all(~np.logical_or(points < boundPtA, points > boundPtB), axis=1))[0]
+
+
+def excludeSelectedPts_old (boundPtA , boundPtB, points):
+    '''
+    >>> boundPtA = np.array([0, 0])
+    >>> boundPtB = np.array([1, 1])
+    >>> points = np.array([[.5, .5], [.1, .9], [2, .1], [2, 3]])
+    >>> excludeSelectedPts_old(boundPtA, boundPtB, points)
+    array([2, 3])
+    '''
     dim = len (boundPtA)
     #
     selectedPointIdxs = []
@@ -865,6 +907,16 @@ def excludeSelectedPts (boundPtA , boundPtB, points):
             selectedPointIdxs.append(i)
 
     return np.array(selectedPointIdxs).astype(int)
+
+def excludeSelectedPts (boundPtA , boundPtB, points):
+    '''
+    >>> boundPtA = np.array([0, 0])
+    >>> boundPtB = np.array([1, 1])
+    >>> points = np.array([[.5, .5], [.1, .9], [2, .1], [2, 3]])
+    >>> excludeSelectedPts(boundPtA, boundPtB, points)
+    array([2, 3])
+    '''
+    return np.where(np.any(np.logical_or(points < boundPtA, points > boundPtB), axis=1))[0]
 
 
 def saveTransportIC(master_folder,transportIC_merged):
@@ -1152,10 +1204,10 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
-                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                    mechElemRidges[i] = mechElemRidges[i] + [2] # np.hstack( (mechElemRidges[i], np.array([2])) )
                     #print('found ela element')
                 else:
-                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+                    mechElemRidges[i] = mechElemRidges[i] + [0] # np.hstack( (mechElemRidges[i],  np.array([0])) )
 
             if (dim==3):
                 if ( mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
@@ -1164,7 +1216,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
                       mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
-                      mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                      mechElemRidges[i] = mechElemRidges[i] + [2] # np.hstack( (mechElemRidges[i], np.array([2])) )
                       #print('node in A')
                 if (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
@@ -1172,15 +1224,15 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
                       mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) :
-                      mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                      mechElemRidges[i] = mechElemRidges[i] + [2] # np.hstack( (mechElemRidges[i], np.array([2])) )
                       #print('node in B')
                     #print('found ela element')
 
                 else:
-                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+                    mechElemRidges[i] = mechElemRidges[i] + [0] # np.hstack( (mechElemRidges[i],  np.array([0])) )
     else:
         for i in range (len(mechElemRidges)):
-            mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+            mechElemRidges[i] = mechElemRidges[i] + [0] #np.hstack( (mechElemRidges[i],  np.array([0])) )
 
     if (onlyMechNodesConnected):
         print ('MechElems connect only MechNodes. That is ok.')
@@ -1224,10 +1276,9 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         ro = np.asarray(mechElemRidges[0])
         fl.write(headerLine)
         for i in range (len(mechElemRidges)):
-            ro = np.asarray(mechElemRidges[i])
+            ro = np.array(mechElemRidges[i], ndmin=2)
             fmt='LTCBEAM\t%d\t%d\t%d'
-            sh = ro.shape[0]
-            np.savetxt(fl,  ro.reshape(1, sh) , delimiter='\t', fmt=fmt+'\t%d'*(sh-3)+ '\t0')
+            np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
     sys.stdout.flush()
 
@@ -1865,7 +1916,9 @@ def checkCoplanarity(points, maxError):
 
 
 
-
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
 
 
 
