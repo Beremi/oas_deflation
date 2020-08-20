@@ -201,6 +201,7 @@ int main(int argc, char **argv) {
     constr.init(& nodes);
     matrs.init();
     elems.init();
+    elems.findElementFriends();
     exporters.init();
     solver->init();
     //solution

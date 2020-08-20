@@ -38,6 +38,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     TrsprtMaterial *newmat = new TrsprtMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("TrsprtCoupledMaterial") == 0 ) {
+                    TrsprtCoupledMaterial *newmat = new TrsprtCoupledMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("MarsMaterial") == 0 ) {
                     MarsMaterial *newmat = new MarsMaterial();
                     newmat->readFromLine(iss);

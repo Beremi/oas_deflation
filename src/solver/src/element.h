@@ -5,6 +5,7 @@
 #include "node_container.h"
 #include "material_container.h"
 
+class ElementContainer; //forward declaration;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -15,6 +16,7 @@ private:
 
 protected:
     unsigned ndim;
+    unsigned solution_order;
     vector< Node * >nodes;
     string name;
     Material *mat;
@@ -22,8 +24,9 @@ protected:
     vector< double >ip_weights;
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
+    unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs. 
 public:
-    Element() { name = "basic element"; }
+    Element() { name = "basic element"; solution_order = 0;}
     virtual ~Element();
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
     virtual void init();
@@ -31,22 +34,26 @@ public:
     void updateMaterialStatuses();
     virtual Matrix giveSteadyStateMatrix(string matrixType) const = 0;
     vector< unsigned >giveDoFs() { return DoFids; };
+    unsigned giveNumOutDoFs()const{return outDoFs; };
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const = 0;
     virtual double giveValue(string code) const;
-    virtual string giveName() const { return name; }
-    virtual size_t giveIPNum() const { return ip_locs.size(); };
+    string giveName() const { return name; }
+    size_t giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
-    virtual vector< Node * >giveNodes() const { return nodes; }
-    virtual Material *giveMaterial() const { return mat; }
+    vector< Node * >giveNodes() const { return nodes; }
+    Node* giveNode(unsigned k) const { return nodes[k]; }
+    Material *giveMaterial() const { return mat; }
+    virtual void findElementFriends(ElementContainer *elemcont) { (void) elemcont; }
+    unsigned giveSolutionOrder()const{return solution_order;}
 };
 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GEOMETRICAL ELEMENT - JUST TO REPRESENT GEOMETRICAL ENTITIES
-class GeometricalElement : public Element
+class GeometricalElement : virtual public Element
 {
-private:
+protected:
 
 public:
     GeometricalElement() {mat = nullptr;}
@@ -61,7 +68,7 @@ public:
 // TRANSPORT ELEMENT
 class TransportElement : public Element
 {
-private:
+protected:
 
 public:
     TransportElement() {}
@@ -98,6 +105,7 @@ protected:
     double length, area;
     Point normal;
     Matrix R;
+    double tempCrackOpening; //needed for coupled analysis;
 
     virtual void checkNodeType() const;
     virtual Matrix giveBMatrix() const;
@@ -117,6 +125,7 @@ public:
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
+    double giveCrackOpening(){return tempCrackOpening;};
 };
 
 //////////////////////////////////////////////////////////
@@ -142,7 +151,7 @@ public:
 // 1D TRANSPORT ELEMENT
 class Transp1D : public TransportElement
 {
-private:
+protected:
     vector< Node * >vert;
     bool bound;
     Point normal;
@@ -159,4 +168,21 @@ public:
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COUPLED 1D TRANSPORT ELEMENT
+class Transp1DCoupled : public Transp1D {
+private:
+    vector< RigidBodyContact* > friends; //mechanical elements involved in computation
+    vector< double > friendsweight; //weight of mechanical elements
+    
+    void findFriends2D(ElementContainer *elemcont);
+    void findFriends3D(ElementContainer *elemcont);
+public:
+    Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order=1;}; //coupled elements must be solved after all RBSN elements
+    void findElementFriends(ElementContainer *elemcont);
+    ~Transp1DCoupled() {};
+    void init();
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+};
 #endif  /* _ELEMENT_STRUCT_H */

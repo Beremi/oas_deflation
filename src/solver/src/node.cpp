@@ -27,7 +27,7 @@ void Node :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
-void MasterDoF :: readFromLine(istringstream &iss) {
+void MechMasterDoF :: readFromLine(istringstream &iss) {
     double x, y, z;
     if ( dim == 2 ) {
         iss >> x >> y;
@@ -43,24 +43,10 @@ void MasterDoF :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
-MasterDoF :: MasterDoF(Point c, unsigned n) {
+MechMasterDoF :: MechMasterDoF(Point c, unsigned n) {
     point = c;
     nDoFs = n;
     name = "Master DoF";
-}
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// MASTER Node - GOVERN multiple dependent DOFs
-void MasterNode :: readFromLine(istringstream &iss) {
-    double x, y, z;
-    if ( dim == 2 ) {
-        iss >> x >> y;
-        point = Point(x, y);
-    } else if ( dim == 3 ) {
-        iss >> x >> y >> z;
-        point = Point(x, y, z);
-    }
 }
 
 //////////////////////////////////////////////////////////

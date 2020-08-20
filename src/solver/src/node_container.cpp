@@ -39,12 +39,8 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     AuxNode *newnode = new AuxNode(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else if ( nodeType.compare("MasterDoF") == 0 ) {
-                    MasterDoF *newnode = new MasterDoF(dim);
-                    newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
-                } else if ( nodeType.compare("MasterNode") == 0 ) {
-                    MasterNode *newnode = new MasterNode(dim);
+                } else if ( nodeType.compare("MechMasterDoF") == 0 ) {
+                    MechMasterDoF *newnode = new MechMasterDoF(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else {
@@ -132,6 +128,21 @@ void NodeContainer :: establishDoFArray() {
     for ( unsigned i = 0; i < loaded.size(); i++ ) {
         loadedDoFid [ i ] = loaded [ i ];
     }
+
+    //identify whether the DoF is mechanical or Transport
+    mechDoFs.resize(totalDoFs);
+    transpDoFs.resize(totalDoFs);
+    unsigned i = 0;
+    unsigned ndofs;
+    for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+        ndofs = ( * n )->giveNumberOfDoFs();
+        for(unsigned k=0; k<ndofs; k++, i++){
+            mechDoFs[i]   = ( * n )->isDoFMechanical(k);
+            transpDoFs[i] = ( * n )->isDoFTransport(k);            
+        }
+    }
+
+
     cout << "Loaded problem contains " << freeDoFs - constrDoFs << " DoF; additional " << constrDoFs << " DoF are dictated by constraint and "  << totalDoFs - freeDoFs << " DoF are directly prescribed" << endl;
 }
 

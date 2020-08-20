@@ -1,4 +1,6 @@
 #include "element.h"
+#include "element_container.h"
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC ELEMENT - MASTER CLASS
@@ -23,6 +25,7 @@ void Element :: init() {
             DoFids [ i ] = k + s;
         }
     }
+    outDoFs = totalDoFs; //basic elems will alway have input = output
 }
 
 //////////////////////////////////////////////////////////
@@ -698,8 +701,8 @@ void Transp1D :: init() {
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
     ( void ) matrixType;
-    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    double c = area * tmat->giveConductivity() / length;
+    TrsprtMaterialStatus *tstat = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
+    double c = area * tstat->giveEffectiveConductivity(matrixType) / length;
     Matrix C(2, 2);
     C [ 0 ] [ 0 ] = C [ 1 ] [ 1 ] = c;
     C [ 1 ] [ 0 ] = C [ 0 ] [ 1 ] = -c;
@@ -724,5 +727,80 @@ Matrix Transp1D :: giveCapacityMatrix() const {
 //////////////////////////////////////////////////////////
 Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen) const {
     (void) frozen;
-    return giveConductivityMatrix("elastic") * DoFs;
+    Vector pressureGrad(1);
+    pressureGrad[0] = (DoFs[1]-DoFs[0])/length;
+    Vector flux = stats[0]->giveStress(pressureGrad);
+    Vector intf(2);
+    intf[0] = flux[0]*area;
+    intf[1] = -intf[0];
+    return intf;
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 1D TRANSPORT ELEMENT COUPLED WITH MECHANICS
+//////////////////////////////////////////////////////////
+void Transp1DCoupled :: init() {
+    Transp1D :: init(); //calling base class method;  
+}
+
+//////////////////////////////////////////////////////////
+void Transp1DCoupled :: findFriends2D(ElementContainer *elemcont) {
+
+    for(unsigned k=0; k<elemcont->giveSize(); k++){
+        RigidBodyContact* rbc = dynamic_cast<RigidBodyContact*>( elemcont->giveElement(k));
+        if(rbc){
+            if( (rbc->giveNode(0)==vert[0] && rbc->giveNode(1)==vert[1]) || (rbc->giveNode(0)==vert[1] && rbc->giveNode(1)==vert[0]) ){
+                friends.push_back(rbc);
+                friendsweight.push_back(rbc->giveArea());
+                break; //only one friend avalilable in 2D
+            }
+        }        
+    }
+}
+
+//////////////////////////////////////////////////////////
+void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
+    for(vector<Node*>::const_iterator b = vert.begin(); b!=vert.end(); ++b){
+
+    }
+    //for(unsigned k)
+}
+
+//////////////////////////////////////////////////////////
+void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont){
+    if(ndim==2) findFriends2D(elemcont);
+    else if(ndim==3) findFriends3D(elemcont);
+
+    //collect nodes from friend elements    
+    
+}
+
+//////////////////////////////////////////////////////////
+Vector Transp1DCoupled :: giveInternalForces(const Vector &DoFs, bool frozen) const {
+
+    if(frozen){ //frozen internal variables
+        return giveConductivityMatrix("secant")*DoFs;
+    }else{
+        Vector pressureGrad(2+2*friends.size());
+        pressureGrad[0] = (DoFs[1]-DoFs[0])/length; //the real pressure gradient
+        pressureGrad[1] = area; //area of the element face
+        double elem_crack_opening;
+        size_t m=0;
+        for(auto &f: friends){
+            elem_crack_opening = 0;
+            for(unsigned k=0; k<f->giveIPNum(); k++) {
+                elem_crack_opening += abs(f->giveIPValue("tempCrackOpening",k));
+            }
+            pressureGrad[2*m+2] += elem_crack_opening/f->giveIPNum(); //average crack opening in friend mechanical element
+            pressureGrad[2*m+3] = friendsweight[m]; //crack length in friend mechanical element
+            m ++;
+        }
+        Vector flux = stats[0]->giveStress(pressureGrad);
+        Vector intf(2);
+        intf[0] = flux[0]*area;
+        intf[1] = -intf[0];
+        return intf;
+    }
 };

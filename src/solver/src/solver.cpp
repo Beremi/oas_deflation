@@ -230,8 +230,10 @@ void SteadyStateNonLinearSolver :: init() {
     f_ext_old = Vector(totalDoFnum);
     trial_r = Vector(totalDoFnum);
     residual = Vector(totalDoFnum);
-    W_ext_old = 0;
-    W_int_old = 0;
+    W_ext_oldM = 0;
+    W_int_oldM = 0;
+    W_ext_oldT = 0;
+    W_int_oldT = 0;
 
     if (idc) {
         idc->init(nodes, funcs);   //indirect displacement control
@@ -347,6 +349,59 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
 };
 
 //////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: evaluateErrors( double *displa_error, double *energy_error, double *residu_error){
+    vector<bool> mechDoFs  = nodes->giveMechDoFsIndicator();   //these fields should be on input
+    vector<bool> transpDoFs = nodes->giveTranspDoFsIndicator();
+    double f_extM = 0;
+    double f_intM = 0;
+    double residualM = 0;
+    double full_ddrM = 0;
+    double trial_rM = 0;
+    double energyM = 0;
+    double f_extT = 0;
+    double f_intT = 0;
+    double residualT = 0;
+    double full_ddrT = 0;
+    double trial_rT = 0;
+    double energyT = 0;
+    W_intM = W_int_oldM;
+    W_extM = W_ext_oldM;
+    W_intT = W_int_oldT;
+    W_extT = W_ext_oldT;
+
+    for(unsigned i=0; i<totalDoFnum; i++){
+
+        residual [ i ] = f_int [ i ] - f_ext [ i ];
+
+        if(mechDoFs[i]){
+            residualM += pow(residual[i],2);
+            f_extM += pow(f_ext[i],2);
+            f_intM += pow(f_int[i],2);
+            full_ddrM += pow(full_ddr[i],2);
+            trial_rM += pow(trial_r[i],2);
+            energyM += abs(residual[i]*full_ddr[i]);
+            W_intM += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_extM += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        }
+        if(transpDoFs[i]){
+            residualT += pow(residual[i],2);
+            f_extT += pow(f_ext[i],2);
+            f_intT += pow(f_int[i],2);
+            full_ddrT += pow(full_ddr[i],2);
+            trial_rT += pow(trial_r[i],2);
+            energyT += abs(residual[i]*full_ddr[i]);
+            W_intT += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_extT += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        }
+    }
+
+    *residu_error = sqrt( residualM / max(max(f_extM, f_intM), EPS2) + residualT / max(max(f_extT, f_intT), EPS2));
+    *displa_error = sqrt( full_ddrM / max(trial_rM, EPS2) + full_ddrT / max(trial_rT, EPS2)); 
+    *energy_error = energyM / max(max(W_extM, W_intM), EPS2) + energyT / max(max(W_extT, W_intT), EPS2);
+  
+}
+
+//////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
     double load_mult;
     bool converged = false;
@@ -423,19 +478,9 @@ void SteadyStateNonLinearSolver :: solve() {
             // std::cout << "after ----------------------" << '\n';
             // this->printAllVectors();
 
-            //compute residuals
-            W_int = W_int_old;
-            W_ext = W_ext_old;
-            for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-                residual [ i ] = f_int [ i ] - f_ext [ i ];
-                W_int += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-                W_ext += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            }
-
-            //compute errors
-            residu_error =  l2_norm(residual) / max(max(l2_norm(f_ext), l2_norm(f_int) ), EPS2);
-            displa_error = ( it == 0 ) ? 0. : l2_norm(full_ddr) / max(l2_norm(trial_r), EPS2); //error in displacement change, only from second iteration
-            energy_error =  abs(inner_product(& residual [ 0 ], & residual [ totalDoFnum ], & full_ddr [ 0 ], ( double ) ( 0 ) ) ) / max(max(W_ext, W_int), EPS2);
+            //compute residual and errors
+            evaluateErrors( &displa_error, &energy_error, &residu_error);
+            if ( it == 0 ) displa_error = 0; //error in displacement change, only from second iteration
 
             cout << setw(6) << it << setw(15) << residu_error;
             if ( it == 0 ) {
@@ -448,7 +493,17 @@ void SteadyStateNonLinearSolver :: solve() {
             cout << endl;
 
             if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
-                cerr << "calculating with NaN - exit" << '\n';
+                cerr << "calculating with NaN in ";
+                if ( std :: isnan(residu_error) ){
+                  std::cerr << "\nresidua ";
+                }
+                if ( std :: isnan(displa_error) ){
+                  std::cerr << "\ndisplacements ";
+                }
+                if ( std :: isnan(energy_error) ){
+                  std::cerr << "\nenergies ";
+                }
+                std::cerr << "- exit" << '\n';
                 exit(1);
             }
 
@@ -533,8 +588,10 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
             f_int_old [ i ] = f_int [ i ];
             f_ext_old [ i ] = f_ext [ i ];
         }
-        W_int_old = W_int;
-        W_ext_old = W_ext;
+        W_int_oldM = W_intM;
+        W_ext_oldM = W_extM;
+        W_int_oldT = W_intT;
+        W_ext_oldT = W_extT;
         elems->updateMaterialStatuses();
         cout << "----------------------------------------------------" << endl;
 

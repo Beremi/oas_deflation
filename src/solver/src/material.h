@@ -25,6 +25,7 @@ public:
     Material *giveMaterial() { return mat; };
     virtual void init() {};
     virtual void update() {};
+    virtual Vector giveStress(const Vector &strain) {(void) strain; return Vector(0);};
     virtual double giveValue(string code) const { ( void ) code; return 0; };
 protected:
     Element *element;
@@ -56,24 +57,59 @@ protected:
 class TrsprtMaterial;
 class TrsprtMaterialStatus : public MaterialStatus
 {
+protected:
+    double effConductivity;
 public:
     TrsprtMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtMaterialStatus() {};
+    virtual Vector giveStress(const Vector &strain); //terminology from mechanics, it returns flux
+    virtual double giveEffectiveConductivity(string type) const {return effConductivity;};
 };
 
 //////////////////////////////////////////////////////////
 class TrsprtMaterial : public Material
 {
-private:
-    double conductivity, capacity, density;
+protected:
+    double permeability, viscosity, capacity, density;
 public:
     TrsprtMaterial() { name = "transport material"; };
     ~TrsprtMaterial() {};
-    double giveConductivity() { return conductivity; };
     double giveCapacity() { return capacity; };
     double giveDensity() { return density; };
+    double givePermeability() { return permeability; };
+    double giveViscosity() { return viscosity; };
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSPORT MATERIAL WITH COUPLING TERMS
+
+class TrsprtCoupledMaterial;
+class TrsprtCoupledMaterialStatus : public TrsprtMaterialStatus
+{
+protected:
+    double temp_effConductivity;
+public:
+    TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e);
+    virtual ~TrsprtCoupledMaterialStatus() {};
+    virtual Vector giveStress(const Vector &strain);
+    virtual double giveEffectiveConductivity(string type) const;
+    virtual void update();
+};
+
+//////////////////////////////////////////////////////////
+class TrsprtCoupledMaterial : public TrsprtMaterial
+{
+private:
+    double crack_turtuosity;
+public:
+    TrsprtCoupledMaterial() { name = "coupled transport material"; };
+    ~TrsprtCoupledMaterial() {};
+    void readFromLine(istringstream &iss);
+    MaterialStatus *giveNewMaterialStatus(Element *e);
+    double giveTurtuosity() { return crack_turtuosity; };
 };
 
 //////////////////////////////////////////////////////////

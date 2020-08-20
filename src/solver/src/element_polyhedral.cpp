@@ -239,11 +239,11 @@ Matrix TranspPolygonal :: giveConductivityMatrix(string matrixType) const {
     ( void ) matrixType;
     Matrix C(nnodes, nnodes);
     Matrix phiGrad;
-    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    double m = tmat->giveConductivity();
+    TrsprtMaterialStatus *stat;
     for ( size_t i = 0; i < ip_weights.size(); i++ ) {
+        stat = static_cast<TrsprtMaterialStatus *>(stats[i]);
         phiGrad = shapeFGrad(ip_locs [ i ]);
-        C += matrix_multiply(phiGrad.transpose(), phiGrad) * ( ip_weights [ i ] * m );
+        C += matrix_multiply(phiGrad.transpose(), phiGrad) * ( ip_weights [ i ] * stat->giveEffectiveConductivity("secant") );
     }
     return C;
 }
@@ -321,8 +321,13 @@ void TranspVirtPolygonal :: init() {
 //////////////////////////////////////////////////////////
 Matrix TranspVirtPolygonal :: giveConductivityMatrix(string matrixType) const {
     Matrix C = TranspPolygonal :: giveConductivityMatrix(matrixType);
-    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    return V1 * tmat->giveConductivity() + matrix_multiply(matrix_multiply(V2.transpose(), C), V2);
+    double cond = 0;
+    TrsprtMaterialStatus *stat;
+    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
+        stat = static_cast<TrsprtMaterialStatus *>(stats[i]);
+        cond += ip_weights [ i ]* stat->giveEffectiveConductivity("secant");
+    }    
+    return V1 * cond + matrix_multiply(matrix_multiply(V2.transpose(), C), V2);
 }
 
 

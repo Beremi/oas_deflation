@@ -11,6 +11,7 @@ class ElementContainer
 private:
     vector< Element * >elems;
     NodeContainer *nodes;
+    unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
 
 public:
     ElementContainer() {};
@@ -19,6 +20,7 @@ public:
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
     size_t giveSize() const { return elems.size(); }
+    void findElementFriends();
     void updateMaterialStatuses();
     void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const;
     void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K) const;

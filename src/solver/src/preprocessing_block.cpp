@@ -16,10 +16,10 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
     unsigned ex_num = ex->giveSize();
 
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
-    MasterDoF *mn;
+    MechMasterDoF *mn;
     unsigned intialNodeNum = nodes->giveSize();
     for ( unsigned i = 0; i < 3 * ( dim - 1 ); i++ ) {
-        mn = new MasterDoF(Point(0, 0, 0), 1);
+        mn = new MechMasterDoF(Point(0, 0, 0), 1);
         nodes->addNode(mn);
     }
 
@@ -418,7 +418,7 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
             iss >> which;
             // std::cout << "which" << '\n';
             bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for masterDoF (fix unused DoFs to zero)" << '\n';
+            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for MechMasterDoF (fix unused DoFs to zero)" << '\n';
         }
     }
     if ( !bw ) {
@@ -436,13 +436,13 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer 
     // read the line "masterId numSlaves slaveId1, slaveId2...."
     master = nodes->giveNode(master_id);
     // check if it is master node
-    MasterNode *n = dynamic_cast< MasterNode * >( master );
+    MechNode *n = dynamic_cast< MechNode * >( master );
     if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be MasterDoF, " << master->giveName() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": node must be MechMasterDoF, " << master->giveName() << " provided" << endl;
         exit(1);
     }
     if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": MechMasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
         exit(1);
     }
 
@@ -476,7 +476,7 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
             iss >> which;
             // std::cout << "which" << '\n';
             bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for masterDoF (fix unused DoFs to zero)" << '\n';
+            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for MechMasterDoF (fix unused DoFs to zero)" << '\n';
         }
     }
     if ( !bw ) {
@@ -494,13 +494,13 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 
     master = nodes->giveNode(master_id);
     // check if it is master node
-    MasterNode *n = dynamic_cast< MasterNode * >( master );
+    MechNode *n = dynamic_cast< MechNode * >( master );
     if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be MasterDoF, " << master->giveName() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": node must be MechMasterDoF, " << master->giveName() << " provided" << endl;
         exit(1);
     }
     if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": MechMasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
         exit(1);
     }
 

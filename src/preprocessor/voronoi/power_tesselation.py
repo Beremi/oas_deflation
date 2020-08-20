@@ -1,4 +1,5 @@
 import logging
+import datetime
 import time
 from collections import defaultdict
 from pydmga.geometry import BoxGeometry
@@ -6,8 +7,26 @@ from pydmga.container import Container
 from pydmga.diagram import Diagram
 import numpy as np
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(levelname)s - %(message)s')
+class TimeFilter(logging.Filter):
+
+    def filter(self, record):
+        try:
+          last = self.last
+        except AttributeError:
+          last = record.relativeCreated
+
+        delta = datetime.datetime.fromtimestamp(record.relativeCreated/1000.0) - datetime.datetime.fromtimestamp(last/1000.0)
+
+        record.relative = '{0:.6f}'.format(delta.seconds + delta.microseconds/1000000.0)
+
+        self.last = record.relativeCreated
+        return True
+
+logging.basicConfig(level=logging.INFO)
+fmt = logging.Formatter(fmt="%(asctime)s %(levelname)s (%(relative)ss) - %(message)s")
+log = logging.getLogger()
+[hndl.addFilter(TimeFilter()) for hndl in log.handlers]
+[hndl.setFormatter(fmt) for hndl in log.handlers]
 
 
 class PowerTesselation(object):
@@ -130,7 +149,7 @@ class PowerTesselation(object):
         self.container = Container(self.geometry)
         self.container.add(self._points_pydgma)
         self.diagram = Diagram(self.container, False)
-        logging.info('Time to generate diagram = {} s'.format(time.time() - start))
+        logging.info('Time to generate pydgma diagram = {} s'.format(time.time() - start))
 
         start = time.time()
         if self._ndim == 2:
@@ -188,11 +207,14 @@ class PowerTesselation(object):
     def _generate_voronoi_parts_3d(self):
         self._total_volume = 0.0
         connection_list = []
+        connection_set = set()
         ridge_vertices = []
         vertices = []
         vertex_start_num = 0
         regions = [[], ]
         point_region = []
+        start = time.time()
+        
         for i, cell in enumerate(self.diagram):
             region = []
             point_region.append(i + 1)
@@ -200,8 +222,9 @@ class PowerTesselation(object):
             self._total_volume += cell.volume()
             for side in cell.sides:
                 point_con = tuple(sorted((i, side.neighbour)))
-                if point_con not in connection_list:
+                if point_con not in connection_set:
                     connection_list.append(point_con)
+                    connection_set.add(point_con)
                     ridge_vertices.append(np.array(side.as_list()) + vertex_start_num)
 
             for vertex in cell.vertices:
@@ -211,13 +234,16 @@ class PowerTesselation(object):
             regions.append(region)
 
             vertex_start_num += cell.vertices.size()
+        logging.debug('Time to generate voronoi parts - part = {} s'.format(time.time() - start))
         self._vertices = vertices
 
         self._ridge_vertices = ridge_vertices
         self._regions = regions
         #self._ridge_points = connection_list
         self._point_region = point_region
+        start = time.time()
         self._merge_duplicate_vertices()
+        logging.debug('Time to generate voronoi parts - merge = {} s'.format(time.time() - start))
 
         ridge_points = np.array(connection_list)
         neg = ridge_points < 0
@@ -238,6 +264,7 @@ class PowerTesselation(object):
             (id_, x, y, z, r) = self.container.get(i)
             self._total_volume += cell.volume()
             for side in cell.sides:
+                # TODO: why not - if not np.allclose(np.array(side.as_coords())[:, -1], 0):
                 if not np.all(np.array(side.as_coords())[:, -1] == 0):
                     continue
                 else:

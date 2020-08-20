@@ -18,6 +18,8 @@ private:
     unsigned totalDoFs, freeDoFs;
     BCContainer *BC;
 
+    vector <bool> mechDoFs, transpDoFs; //tells if the DoF is mechanical or Transport
+
     // #constraint
     size_t constrDoFs;
     vector< unsigned >constrainedDoFid;  //mapping from particle order to DoF order for constrained DoFs
@@ -44,6 +46,8 @@ public:
     void updateExteranlForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
     void addNode(Node *n) { nodes.push_back(n); };
+    vector<bool> giveMechDoFsIndicator(){return mechDoFs;}
+    vector<bool> giveTranspDoFsIndicator(){return transpDoFs;}
 
     size_t giveNumConstrDoFs() const { return constrDoFs; };
     ConstraintContainer *giveConstraints() const { return constr; };

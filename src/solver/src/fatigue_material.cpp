@@ -619,7 +619,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
         }
-        temp_damageShear = 1;
+        temp_damageShear = 1 - 1e-10;
         tang_stiff = 0;
         return stress;
     }

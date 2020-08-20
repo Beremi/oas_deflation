@@ -74,7 +74,8 @@ protected:
     double dtmax, dtmin;  // for adaptive step
     Vector f_int_old, f_ext_old, residual;
     Vector trial_r;
-    double W_ext_old, W_int_old, W_ext, W_int;
+    double W_ext_oldM, W_int_oldM, W_extM, W_intM; //mechanics
+    double W_ext_oldT, W_int_oldT, W_extT, W_intT; //transport
     double disErr, resErr, eneErr;
     double limitDisErr, limitResErr, limitEneErr;
     unsigned maxIt;
@@ -91,6 +92,7 @@ protected:
     virtual void runAfterEachStep();
     virtual void solve();
     void printAllVectors();
+    void evaluateErrors( double *displa_error, double *energy_error, double *residu_error);
 private:
 
 public:

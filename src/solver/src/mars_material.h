@@ -14,6 +14,7 @@ private:
     double damage, temp_damage;
     double Kt, Ks, L, nt;
     double RAND_H;
+    double temp_crackOpening;
 
     double giveS0tension(double omega) const;
     double giveS0compression(double omega) const;
