@@ -351,20 +351,26 @@ class Model:
         #TransportMaterial
         if (r[1]=='TrsprtMaterial'):
             #
-            transpC = None
-            transpS = None
+            viscosity = None
+            permeability = None
+            density = None
+            capacity = None
             #
             for i in range (len(r)):
-                if (r[i]=='transpC'):
-                    transpC = float(r[i+1])
-                if (r[i]=='transpS'):
-                    transpS = float(r[i+1])
+                if (r[i]=='capacity'):
+                    capacity = float(r[i+1])
+                if (r[i]=='density'):
+                    density = float(r[i+1])
+                if (r[i]=='permeability'):
+                    permeability = float(r[i+1])
+                if (r[i]=='viscosity'):
+                    viscosity = float(r[i+1])
             #
-            if (transpC == None or transpS == None):
+            if (viscosity == None or permeability == None or density == None or capacity == None):
                 print ('!! TrsprtMaterial incomplete. Exiting. !!')
                 sys.exit()
 
-            transportMaterial = utilitiesMech.TransportMaterial(transpC, transpS)
+            transportMaterial = utilitiesMech.TransportMaterial(viscosity, permeability, density, capacity)
             self.materials.append(transportMaterial)
             print('done.')
 
