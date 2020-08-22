@@ -177,7 +177,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
         if (periodicModel == 0):
             vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches)
         if (periodicModel == 1):
-            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=mZ )
+            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, activeMechanics, activeTransport, mZ=mZ )
     if (dim == 3):
         vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube)
     return vert_count, verticesIdxDict, vertIdxStart, totalNodeCount
@@ -334,7 +334,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
 
 
 #Extract geometry 2d periodic torus
-def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, mZ=None):
+def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, activeMechanics, activeTransport, mZ=None):
     dim = 2
 
 
@@ -584,6 +584,7 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
     sys.stdout.flush()
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
+    """
     saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
     #saveNodes(master_folder, nodes_out, aux_nodes, dim)
     #saveNodes(master_folder, aux_nodes, "AuxNode",dim, verticesFile)
@@ -593,6 +594,19 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
     #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
 
     savePeriodicBlock(master_folder,cpldNds,maxLim, nodes_out)
+    totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
+    """
+    #saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
+    if activeMechanics:
+        saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    else:
+        saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
+    if activeTransport:
+        saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out)
+    else:
+        saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
 
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount#, nodes_out, aux_nodes, vertices_out, ridges_out
@@ -1204,10 +1218,10 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
-                    mechElemRidges[i] = mechElemRidges[i] + [2] # np.hstack( (mechElemRidges[i], np.array([2])) )
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
                     #print('found ela element')
                 else:
-                    mechElemRidges[i] = mechElemRidges[i] + [0] # np.hstack( (mechElemRidges[i],  np.array([0])) )
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
             if (dim==3):
                 if ( mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
@@ -1216,7 +1230,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
                       mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
-                      mechElemRidges[i] = mechElemRidges[i] + [2] # np.hstack( (mechElemRidges[i], np.array([2])) )
+                      mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
                       #print('node in A')
                 if (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
@@ -1224,15 +1238,15 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
                       mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) :
-                      mechElemRidges[i] = mechElemRidges[i] + [2] # np.hstack( (mechElemRidges[i], np.array([2])) )
+                      mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
                       #print('node in B')
                     #print('found ela element')
 
                 else:
-                    mechElemRidges[i] = mechElemRidges[i] + [0] # np.hstack( (mechElemRidges[i],  np.array([0])) )
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
     else:
         for i in range (len(mechElemRidges)):
-            mechElemRidges[i] = mechElemRidges[i] + [0] #np.hstack( (mechElemRidges[i],  np.array([0])) )
+            mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
     if (onlyMechNodesConnected):
         print ('MechElems connect only MechNodes. That is ok.')
@@ -1267,6 +1281,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
+        print(mechElemRidges[0])
         np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
 

@@ -14,7 +14,7 @@
 #Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0.5 loadWidth 0.01 minDist 0.01 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 1 trials 2000
 #
 # Dogbones
-Model 2d_dogbone dogboneD 0.4 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 50000 symmetric 1
+#Model 2d_dogbone dogboneD 0.2 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 50000 symmetric 1
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
@@ -23,9 +23,11 @@ Model 2d_dogbone dogboneD 0.4 minDist 0.006 dogboneExcentricityFrac 50 activeMec
 # Reinhardt tension 
 #Model 3d_ReinhardtTension Xsize 0.25 Ysize 0.06 Zsize 0.05 minDist 0.005 fracZoneWidth 0.3 activeMechanics 1 trials 5000
 #
-#
+#Single Spring
 #Model 2d_singleSpring minDist 1 activeMechanics 1
 #
+#
+Model 2d_periodicShear Xsize 0.05 Ysize 0.05 minDist 0.004 activeMechanics 1 activeTransport 1 trials 50000
 #
 ####################################################################################
 #TRANSPORT MODELS AVAILABLE
@@ -55,4 +57,4 @@ Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2600000.0 Gt 500
 #Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0
 #
 # Transport material
-Material TrsprtMaterial	transpC	11.000000	transpS	22.000000
+#Material TrsprtMaterial	viscosity 1 permeability 1 capacity 1 density 1
