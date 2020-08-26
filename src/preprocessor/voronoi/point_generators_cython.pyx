@@ -203,8 +203,8 @@ def generateNodesOrtoTube3dRand_cython(
         int node_coords_input_len = len(node_coords)
         vector[double] node_coords_temp
         bint distIsGood
-        mt19937_64 gen = mt19937_64()
-        uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
+        #mt19937_64 gen = mt19937_64()
+        #uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
     for d in range(3):
         coords.push_back(0.0)
 
@@ -289,8 +289,8 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
         int node_coords_input_len = len(node_coords)
         vector[double] node_coords_temp
         bint distIsGood
-        mt19937_64 gen = mt19937_64()
-        uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
+        #mt19937_64 gen = mt19937_64()
+        #uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
     for d in range(3):
         coords.push_back(0.0)
 
