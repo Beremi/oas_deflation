@@ -597,7 +597,7 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
         transportBC_merged.append(trsBC)
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
-
+"""
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
@@ -620,7 +620,7 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
         transportBC_merged.append(trsBC)
 
     return node_coords, [], transportBC_merged, vor, areas, functions
-
+"""
 
 def assembleTwoNodeSpringTest (maxLim, idt):
     node_coords = []

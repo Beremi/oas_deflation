@@ -72,7 +72,11 @@ public:
     virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSPORT POLYGONAL ELEMENT CONSTRUCTED BY STATIC CONDENSATION OF ISOPARAMETRIC TRIANGLES
 
+/*
 class PolyhedralFace : public GeometricalElement
 {
 protected:
@@ -84,6 +88,7 @@ public:
     void init();
     double giveValue(string code) const {return 0;};
 };
+*/
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -92,6 +97,8 @@ class TranspPolyhedral : public TranspPolygonal
 protected:
     vector< double >volumes;
     vector< Point > faceCenters;
+    vector< vector< int > > faceConnectivity;
+    vector< double > determinants;
 
     void findIntegrationPoints();
     Vector WachspressShapeF(Point x) const;

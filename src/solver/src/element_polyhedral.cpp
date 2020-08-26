@@ -428,6 +428,7 @@ void TranspCondensedPolygonal :: init() {
     }
 }
 
+/*
 //////////////////////////////////////////////////////////
 // 3 D
 //////////////////////////////////////////////////////////
@@ -459,6 +460,7 @@ void PolyhedralFace :: readFromLine(istringstream &iss, NodeContainer *fullnodes
 //////////////////////////////////////////////////////////
 void PolyhedralFace :: init(){
 }
+*/
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -492,6 +494,7 @@ void TranspPolyhedral :: readFromLine(istringstream &iss, NodeContainer *fullnod
     vector<unsigned> nv;
     nv.resize(nnodes);
     nodes.resize(nnodes);
+    faceConnectivity.resize(nnodes);
 
     unsigned i = 0;
     for(auto &n: nn){
@@ -499,74 +502,80 @@ void TranspPolyhedral :: readFromLine(istringstream &iss, NodeContainer *fullnod
         nodes[i] = fullnodes->giveNode(n);
         i++;
     }
-    for(auto &f: faces){
-        for(auto &n: f){
+    for(unsigned f = 0; f < nfaces; f++){
+        for(unsigned n = 0; n < faces[f].size(); n++){
             i=0;
-            while(nv[i]!=n && i<nv.size()) {
+            while(nv[i]!=faces[f][n] && i<nv.size()) {
                 i++;
             }
             if (i==nv.size()){
                 cerr << "Inconzistence in Polyhedral input file" << endl;
                 exit(1);
             }
-            n = i;
+            faces[f][n] = i;
+            faceConnectivity[i].push_back(f);
         }
     }
 }
 
+
 //////////////////////////////////////////////////////////
 Vector TranspPolyhedral :: WachspressShapeF(Point x) const {
-    /*
-    Vector h(nnodes);
+
+    //compute hf    
+    Vector h(nfaces);
+    for(unsigned i=0; i<nfaces; i++){
+            h[i] = dot(nodes[faces[i][0]]->givePoint() - x,normals[i]);
+    }    
+
+    //compute wf       
     Vector w(nnodes);
-    Point oldNormal = normals [ nnodes - 1 ];
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        h [ i ] = abs(dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - x, normals [ i ]) );
-        w [ i ] = abs(oldNormal.x * normals [ i ].y - oldNormal.y * normals [ i ].x);
-        oldNormal = normals [ i ];
-    }
-    double oldh = h [ nnodes - 1 ];
-    double sumW = 0;
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        w [ i ] /= oldh * h [ i ];
-        sumW += w [ i ];
-        oldh = h [ i ];
-    }
-    return w / sumW;
-    */
-    return Vector(0);
+    double sumW=0;
+    for(unsigned i=0; i<nnodes; i++){
+        w[i] = 1;
+        for (unsigned j=0; j<3; j++){   
+            w[i] *= h[faceConnectivity[i][j]];
+        }
+        w[i] = determinants[i]/w[i];
+        sumW += w[i];
+    }    
+    return w/sumW;
 }
 
 //////////////////////////////////////////////////////////
 Matrix TranspPolyhedral :: WachspressShapeFGrad(Point x) const {
-    /*
+    
     Vector phi = WachspressShapeF(x);
-    Matrix R(nnodes, 2);
-    Matrix phiGrad(2, nnodes);
+    Matrix R(nnodes, 3);
+    Matrix phiGrad(3, nnodes);
 
-    Vector h(nnodes);
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        h [ i ] = abs(dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - x, normals [ i ]) );
-    }
-    unsigned oldi = nnodes - 1;
-    Vector phiR(2);
-    phiR [ 0 ] = 0;
-    phiR [ 1 ] = 0;
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        R [ i ] [ 0 ] = normals [ oldi ].getX() / h [ oldi ] + normals [ i ].getX() / h [ i ];
-        R [ i ] [ 1 ] = normals [ oldi ].getY() / h [ oldi ] + normals [ i ].getY() / h [ i ];
+    Vector h(nfaces);
+    for(unsigned i=0; i<nfaces; i++){
+            h[i] = dot(nodes[faces[i][0]]->givePoint() - x,normals[i]);
+    }   
+
+    unsigned n;
+    Vector phiR(3);
+    phiR [ 0 ] = 0; phiR [ 1 ] = 0; phiR [ 2 ] = 0;
+    for(unsigned i=0; i<nnodes; i++){
+        R[i][0] = 0; R[i][1] = 0; R[i][2] = 0;
+        for (unsigned j=0; j<3; j++){   
+            n = faceConnectivity[i][0];
+            R[i][0] += normals[n].getX()/h[n];
+            R[i][1] += normals[n].getY()/h[n];
+            R[i][2] += normals[n].getZ()/h[n];
+        }
         phiR [ 0 ] += R [ i ] [ 0 ] * phi [ i ];
         phiR [ 1 ] += R [ i ] [ 1 ] * phi [ i ];
-        oldi = i;
+        phiR [ 2 ] += R [ i ] [ 2 ] * phi [ i ];
     }
+
     for ( unsigned i = 0; i < nnodes; i++ ) {
-        for ( unsigned j = 0; j < 2; j++ ) {
+        for ( unsigned j = 0; j < 3; j++ ) {
             phiGrad [ j ] [ i ] = phi [ i ] * ( R [ i ] [ j ] - phiR [ j ] );
         }
     }
     return phiGrad;
-    */
-    return Matrix(0,0);
 }
 
 //////////////////////////////////////////////////////////
@@ -635,7 +644,7 @@ void TranspPolyhedral :: init() {
             exit(1);
         }
     }
-    //check that material is DisMechMat
+    //check that material is TrsprtMaterial
     TrsprtMaterial *p = dynamic_cast< TrsprtMaterial * >( mat );
     if ( !p ) {
         cerr << "Error in " << name << ": material must be inherited from TrsprtMaterial, " << mat->giveName() << " provided" << endl;
@@ -701,9 +710,42 @@ void TranspPolyhedral :: init() {
             last = current;
         }
         i++;
+    }  
+
+    //normals
+    i = 0;
+    for (auto &f: faces){        
+        Point a = nodes[f[1]]->givePoint()-faceCenters[i];
+        Point b = nodes[f[0]]->givePoint()-faceCenters[i];
+        normals[i].setX(a.getY()*b.getZ()-a.getZ()*b.getY());
+        normals[i].setX(a.getZ()*b.getX()-a.getX()*b.getZ());
+        normals[i].setX(a.getX()*b.getY()-a.getY()*b.getX());
+        normals[i] /= normals[i].norm();
+        i++;
     }    
 
-    cout << volume << endl;
+    //check face connectivity and compute determinants from normals
+    i = 0;
+    determinants.resize(nnodes);
+    Point a,b,c;
+    for (auto &fc: faceConnectivity){        
+        if(fc.size()!=3){
+            cerr << "Error in TranspPolyhedral: each node must have 3 connected faces, "<< fc.size() << " found" << endl;
+            exit(EXIT_FAILURE);
+        }
+        a = nodes[fc[0]]->givePoint();
+        b = nodes[fc[1]]->givePoint();
+        c = nodes[fc[2]]->givePoint();
+        determinants[i] = a.getX()*(b.getY()*c.getZ()-b.getZ()*c.getY()) - b.getX()*(a.getY()*c.getZ()-a.getZ()*c.getY()) + c.getX()*(a.getY()*b.getZ()-a.getZ()*b.getY());
+        if (determinants[i]<0){
+            determinants[i] *= -1;
+            unsigned p = fc[1];
+            fc[1] = fc[2];
+            fc[2] = p;
+        }
+        i++;
+    }     
+
     findIntegrationPoints();
 }
 

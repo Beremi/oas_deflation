@@ -204,12 +204,14 @@ class FatigueMaterial:
 ##################################################
 #### Transport material ####
 class TransportMaterial:
-    def __init__ (self, transportC, transportS):
-        self.transportC = transportC
-        self.transportS = transportS
+    def __init__ (self, viscosity, permeability, density, capacity):
+        self.viscosity = viscosity
+        self.permeability = permeability
+        self.density = density
+        self.capacity = capacity
 
     def getString (self):
-        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%f'%(self.transportC)         + '\t' + 'conductivity\t%f'%(self.transportS)
+        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%f'%(self.capacity)  + '\t' + 'conductivity\t%f'%(self.transportS)  + '\t' + 'permeability\t%f'%(self.permeability)  + '\t' + 'viscosity\t%f'%(self.viscosity)
         return line
 
 

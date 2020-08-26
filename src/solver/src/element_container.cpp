@@ -52,11 +52,11 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                 } else if ( elemType.compare("TranspCondensedPolygonal") == 0 ) {
                     TranspCondensedPolygonal *newelem = new TranspCondensedPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);
+                    elems.push_back(newelem);/*
                 } else if ( elemType.compare("PolyhedralFace") == 0 ) {
                     PolyhedralFace *newelem = new PolyhedralFace(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);
+                    elems.push_back(newelem);*/
                 } else if ( elemType.compare("TranspPolyhedral") == 0 ) {
                     TranspPolyhedral *newelem = new TranspPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);

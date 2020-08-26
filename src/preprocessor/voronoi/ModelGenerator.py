@@ -1,3 +1,4 @@
+
 import Preprocessor, sys, time, numpy as np, random
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -240,6 +241,7 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('reinhardt3d', maxLim=self.maxLim)
 
     def run_2d_periodicShear(self):
+        print('2d periodic shear')
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
@@ -259,7 +261,7 @@ class Model:
         tube = False
         if self.modelType == '3d_BiparvaTubeTransport':
             tube = True
-        print ('bipa %s' %tube)
+        #print ('bipa %s' %tube)
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
@@ -572,6 +574,7 @@ if __name__ == '__main__':
     for row in f:
         if not (row[0]=='#'):
             r = row.split()
+            print(r)
             #
             if (r[0]=='Model'):
                 model = Model(row)

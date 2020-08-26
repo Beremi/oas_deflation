@@ -27,7 +27,7 @@ void TrsprtMaterial :: readFromLine(istringstream &iss) {
         if ( param.compare("capacity") == 0 ) {
             bcapacity = true;
             iss >> capacity;
-        } else if ( param.compare("viscosity") == 0 ) {
+        } else if ( param.compare("viscosity") == 0 ) {                                   
             bviscosity = true;
             iss >> viscosity;
         } else if ( param.compare("permeability") == 0 ) {
