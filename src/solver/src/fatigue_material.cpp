@@ -983,7 +983,7 @@ void DamagePlasticMaterialStatus :: init() {
         std::cerr << "Warning: snap-back occurs, use finer discretization or larger Gt, or use Kt instead" << '\n';
         std::cout << "current length = " << rbc->giveLength() << '\n';
         std::cout << "exit will be put here in future version" << '\n';
-        // exit(1);
+        exit(1);
       }
     } else if ( m->giveKt() != 0 ){
       Kt = m->giveKt();

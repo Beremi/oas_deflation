@@ -3,15 +3,15 @@
 
 //////////////////////////////////////////////////////////
 IndirectDC :: IndirectDC() {
-    name = "indirect displacement controller"; 
-    funcnum = -1; 
+    name = "indirect displacement controller";
+    funcnum = -1;
     func = nullptr;
     nummaxunit=0;
 };
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: readFromStream(unsigned num, ifstream& inputfile) {                   
-    
+void IndirectDC :: readFromStream(unsigned num, ifstream& inputfile) {
+
     nummaxunit ++;
     c_nodes.resize(nummaxunit);
     c_dirs.resize(nummaxunit);
@@ -27,12 +27,12 @@ void IndirectDC :: readFromStream(unsigned num, ifstream& inputfile) {
 
     c_nodes[nummaxunit-1].resize(num,0);
     c_dirs[nummaxunit-1].resize(num,0);
-    c_weights[nummaxunit-1].resize(num,0);     
-    xcoords[nummaxunit-1].resize(num,0); 
-    ycoords[nummaxunit-1].resize(num,0); 
-    zcoords[nummaxunit-1].resize(num,0); 
+    c_weights[nummaxunit-1].resize(num,0);
+    xcoords[nummaxunit-1].resize(num,0);
+    ycoords[nummaxunit-1].resize(num,0);
+    zcoords[nummaxunit-1].resize(num,0);
 
-    string param, line;    
+    string param, line;
 
     streampos oldpos = inputfile.tellg();  // stores the position
     while ( getline(inputfile >> std :: ws, line) ) {
@@ -56,8 +56,8 @@ void IndirectDC :: readFromStream(unsigned num, ifstream& inputfile) {
         else if (param.compare("idc_weights") == 0 ) for (unsigned j=0; j<num; j++) iss >> c_weights[nummaxunit-1][j];
         else if (param.compare("idc_function") == 0 ) iss >> funcnum;
         else {
-            inputfile.seekg (oldpos);   // get back to the position   
-            return;         
+            inputfile.seekg (oldpos);   // get back to the position
+            return;
         }
         oldpos = inputfile.tellg();  // stores the position
     }
@@ -78,21 +78,21 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs){
         }
         if(c_DoFs[c].size()<clength){
             c_DoFs[c].resize(clength);
-            if( nodes_active[c] ){      
+            if( nodes_active[c] ){
                 for(unsigned i=0; i<clength; i++){
-                    c_DoFs[c][i] = nodes->giveNode(c_nodes[c][i])->giveStartingDoF() + c_dirs[c][i];    
+                    c_DoFs[c][i] = nodes->giveNode(c_nodes[c][i])->giveStartingDoF() + c_dirs[c][i];
                 }
-            }else if( coords_active[c] ){         
+            }else if( coords_active[c] ){
                 for(unsigned i=0; i<clength; i++){
                     n = nodes->findClosestMechanicalNode(Point(xcoords[c][i],ycoords[c][i],zcoords[c][i]));
-                    c_DoFs[c][i] = n->giveStartingDoF() + c_dirs[c][i];   
+                    c_DoFs[c][i] = n->giveStartingDoF() + c_dirs[c][i];
                 }
             }else{
                 cerr << "Error: Indirect displacement controll was not correctly set" << endl;
                 exit(1);
             }
         }
-    }    
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -102,15 +102,15 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
     double m;
     for(unsigned c=0; c<nummaxunit; c++){
         m = 0;
-        for(unsigned i=0; i<c_weights[c].size(); i++) m += (prev_displ[c_DoFs[c][i]])*c_weights[c][i];   
+        for(unsigned i=0; i<c_weights[c].size(); i++) m += (prev_displ[c_DoFs[c][i]])*c_weights[c][i];
         if(m>dd){
             dd = m;
             df = 0;
-            for(unsigned i=0; i<c_weights[c].size(); i++) {                
-                df += displ_f[c_DoFs[c][i]]*c_weights[c][i]; 
+            for(unsigned i=0; i<c_weights[c].size(); i++) {
+                df += displ_f[c_DoFs[c][i]]*c_weights[c][i];
             }
         }
-    }    
+    }
     return (givePrescribedDisplacement(time) - dd)/df;
 }
 
@@ -120,9 +120,9 @@ double IndirectDC :: giveControlValue(Vector &displ){
     double m;
     for(unsigned c=0; c<nummaxunit; c++){
         m = 0;
-        for(unsigned i=0; i<c_weights[c].size(); i++) m += displ[c_DoFs[c][i]]*c_weights[c][i];   
+        for(unsigned i=0; i<c_weights[c].size(); i++) m += displ[c_DoFs[c][i]]*c_weights[c][i];
         if(m>dd) dd = m;
-    }    
+    }
     return dd;
 }
 
@@ -131,6 +131,3 @@ double IndirectDC :: givePrescribedDisplacement(double time){
     if (func) return func->giveY(time);
     return time;
 }
-
-
-
