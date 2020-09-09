@@ -1760,7 +1760,7 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
 
 def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes):
     #saving gov nodes
-    saveNodes (master_folder,govNodes, "MasterNode", dim, govNodesFile)
+    saveNodes (master_folder,govNodes, "MechMasterDoF", dim, govNodesFile)
     #saving gov nodes mech BC
     for i in range (len(govNodesMechBC)):
         m = govNodesMechBC[i]
