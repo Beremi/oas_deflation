@@ -931,19 +931,19 @@ void DamagePlasticMaterialStatus :: init() {
 
     energy_PL = energy_D = energy_Kin = energy_Iso = work_tot = 0;
 
-    if ( m->giveGt() != 0 ) {
-        Kt = 2 * m->giveE0() * pow(m->giveTensileStrength(), 2) * rbc->giveLength() /
-             ( 2 * m->giveE0() * m->giveGt() -
-               pow(m->giveTensileStrength(), 2) * rbc->giveLength()
-             );
-        if ( Kt < 0 ) {
-            std :: cerr << "Warning: snap-back occurs, use finer discretization or larger Gt, or use Kt instead" << '\n';
-            std :: cout << "current length = " << rbc->giveLength() << '\n';
-            std :: cout << "exit will be put here in future version" << '\n';
-            // exit(1);
-        }
-    } else if ( m->giveKt() != 0 ) {
-        Kt = m->giveKt();
+    if ( m->giveGt() != 0 ){
+      Kt = 2 * m->giveE0() * pow(m->giveTensileStrength(), 2) * rbc->giveLength() /
+           ( 2 * m->giveE0() * m->giveGt() -
+            pow(m->giveTensileStrength(), 2) * rbc->giveLength()
+           );
+      if ( Kt < 0 ){
+        std::cerr << "Warning: snap-back occurs, use finer discretization or larger Gt, or use Kt instead" << '\n';
+        std::cout << "current length = " << rbc->giveLength() << '\n';
+        std::cout << "exit will be put here in future version" << '\n';
+        exit(1);
+      }
+    } else if ( m->giveKt() != 0 ){
+      Kt = m->giveKt();
     }
 
     symmetric = m->isSym();

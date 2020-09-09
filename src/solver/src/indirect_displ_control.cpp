@@ -10,8 +10,10 @@ IndirectDC :: IndirectDC() {
 };
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
-    nummaxunit++;
+void IndirectDC :: readFromStream(unsigned num, ifstream& inputfile) {
+
+    nummaxunit ++;
+
     c_nodes.resize(nummaxunit);
     c_dirs.resize(nummaxunit);
     c_weights.resize(nummaxunit);
@@ -61,17 +63,17 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
             for ( unsigned j = 0; j < num; j++ )   {
                 iss >> zcoords [ nummaxunit - 1 ] [ j ];
             }
-        } else if ( param.compare("idc_directions") == 0 )                                                                                                                               {
-            for ( unsigned j = 0; j < num; j++ )                                                                                                                                       {
+        } else if ( param.compare("idc_directions") == 0 ) {
+            for ( unsigned j = 0; j < num; j++ ) {
                 iss >> c_dirs [ nummaxunit - 1 ] [ j ];
             }
-        } else if ( param.compare("idc_weights") == 0 )                                                                                                                                                                                                                                                                     {
-            for ( unsigned j = 0; j < num; j++ )                                                                                                                                                                                                                                                                             {
+        } else if ( param.compare("idc_weights") == 0 ) {
+            for ( unsigned j = 0; j < num; j++ ) {
                 iss >> c_weights [ nummaxunit - 1 ] [ j ];
             }
-        } else if ( param.compare("idc_function") == 0 )                                                                                                                                                                                                                                                                                                                                                                                                           {
+        } else if ( param.compare("idc_function") == 0 ) {
             iss >> funcnum;
-        } else                                                                                                                                                                                                                                                                                                                                                                                                                                                                             {
+        } else {
             inputfile.seekg(oldpos);    // get back to the position
             return;
         }
