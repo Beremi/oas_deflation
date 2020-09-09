@@ -14,7 +14,7 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e) : DisMechM
 double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
-    } else  if ( code.compare("damage") == 0 ) {
+    } else if ( code.compare("damage") == 0 ) {
         return temp_damage;
     } else {
         return DisMechMaterialStatus :: giveValue(code);
@@ -166,7 +166,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     }
 
     //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
-    temp_crackOpening = l2_norm((L*damage)*strain); //total opening
+    temp_crackOpening = l2_norm( ( L * damage ) * strain ); //total opening
 
     //if(temp_damage>0) cout << "damage " << " " << temp_damage << " " << strain[0] << " " << strain[1] << endl;
 

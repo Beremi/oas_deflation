@@ -331,12 +331,17 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
 
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount #, nodes_out, aux_nodes, vertices_out, ridges_out
 
+def findClosest(points, target, dim):
+    dist2 = np.zeros(len(points))
+    for i in range(dim):
+        dist2 += np.square(points[:,i]-target[i])
+    index = np.argmin(dist2)
+    return index,np.sqrt(dist2[index])
 
 
 #Extract geometry 2d periodic torus
 def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, activeMechanics, activeTransport, mZ=None):
     dim = 2
-
 
 
     print('Filtering valid ridges of 2d periodic model...')
@@ -412,17 +417,6 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
 
     node_count = len(valid_ridge_nodes)
     print('done.')
-
-
-    cpldNds = []
-    #coupledNodes = []
-    for i in range (len(coupledNodes)):
-        if ( coupledNodes[i][0] in valid_ridge_nodes and coupledNodes[i][1] in valid_ridge_nodes ):
-            #plt.plot( [vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][1],0 ]], [vor.points[ coupledNodes[i][0],1 ] , vor.points[ coupledNodes[i][1],1 ]] ,'ro-', color='red')
-            #plt.text(vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][0],1 ]  , nodePositions[coupledNodes[i][0]], fontsize=11)
-            #plt.text(vor.points[ coupledNodes[i][1],0 ] , vor.points[ coupledNodes[i][1],1 ]  , nodePositions[coupledNodes[i][1]], fontsize=11)
-
-            cpldNds.append ( np.array( [ validNodesDict[int(coupledNodes[i][0])]    ,   validNodesDict[int(coupledNodes[i][1])]     ]    )   )
 
     #plt.show()
     print ('done.')
@@ -596,6 +590,51 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
     savePeriodicBlock(master_folder,cpldNds,maxLim, nodes_out)
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
     """
+
+
+
+    cpldNds = []
+    if (activeMechanics):
+        subBlock = []
+        for i in range (len(coupledNodes)):
+            if ( coupledNodes[i][0] in valid_ridge_nodes and coupledNodes[i][1] in valid_ridge_nodes ):
+                #plt.plot( [vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][1],0 ]], [vor.points[ coupledNodes[i][0],1 ] , vor.points[ coupledNodes[i][1],1 ]] ,'ro-', color='red')
+                #plt.text(vor.points[ coupledNodes[i][0],0 ] , vor.points[ coupledNodes[i][0],1 ]  , nodePositions[coupledNodes[i][0]], fontsize=11)
+                #plt.text(vor.points[ coupledNodes[i][1],0 ] , vor.points[ coupledNodes[i][1],1 ]  , nodePositions[coupledNodes[i][1]], fontsize=11)
+
+                subBlock.append ( np.array( [ validNodesDict[int(coupledNodes[i][0])]    ,   validNodesDict[int(coupledNodes[i][1])]     ]    )   )
+        cpldNds.append(subBlock)
+  
+    vertices_out = np.array(vertices_out)
+    if (activeTransport):
+        subBlock = []    
+        for i in range (len(vertices_out)):
+            xplus  = 0
+            if (vertices_out[i][0]-maxLim[0]>0): xplus = -1
+            elif (vertices_out[i][0]<0): xplus = 1
+            yplus  = 0
+            if (vertices_out[i][1]-maxLim[1]>0): yplus = -1
+            elif (vertices_out[i][1]<0): yplus = 1
+            if(xplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlock.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+            if(yplus):
+                perP = np.copy(vertices_out[i])
+                perP[1] += maxLim[1]*yplus          
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlock.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+            if(xplus and yplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                perP[1] += maxLim[1]*yplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlock.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+        cpldNds.append(subBlock)
+
+    savePeriodicBlock(master_folder,cpldNds,maxLim, nodes_out)
+
     #saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
@@ -617,19 +656,23 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
 def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
     cf = open(os.path.join(master_folder,blocksFile),"w")
 
-    ndepend = len(cpldNds)
-    #ex ey gxy sx sy sxy
-    cf.write("BasicPeriodicBC\tsize\t2\t%e\t%e\tload\t%d\tey\t%d\tgxy\t%d\tpairs\t%d"%(maxLim[0],maxLim[1],2,0,1, ndepend))
+    nblocks = len(cpldNds)
+    print("BLOCKS   ", nblocks)
+    loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
+    names=["MechanicalPeriodicBC","TransportPeriodicBC"]
+    for q in range(nblocks):
+        ndepend = len(cpldNds[q])
+        #ex ey gxy sx sy sxy
+        cf.write("%s\tsize\t2\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],loads[q], ndepend))
 
-
-    for i in range(len(cpldNds)):
-        cf.write("\t%d\t%d"%(cpldNds[i][1], cpldNds[i][0]))
+        for i in range(len(cpldNds[q])):
+            cf.write("\t%d\t%d"%(cpldNds[q][i][1], cpldNds[q][i][0]))
 
         #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
         #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
         #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
 
-    cf.write(os.linesep)
+        cf.write(os.linesep)
     cf.close()
 
     #plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
@@ -1051,16 +1094,18 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
+     fl.write("Dimension\t%d\n"%dim)
+     fl.write("Solver\t%s\n"%(solverFile))
+     saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt)
+
      if not periodic:
-         fl.write("Dimension\t%d\n"%dim)
+
          """
          if (solver == "SteadyStateLinearSolver"):
                 fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t%e\n' %(solStep, simTime))
          if (solver == "SteadyStateNonLinearSolver"):
                 fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%e\tlimit_tolerance\t%e\tmaxIt\t%d\n' %(solStep,  maxStep, minStep, simTime, limitTolerance, maxIt))
-         """
-         fl.write("Solver\t%s\n"%(solverFile))
-         saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt)
+         """      
 
          if not constraint:
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
@@ -1079,13 +1124,14 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
              fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
 
      else:
-         fl.write("Dimension\t%d\n"%dim)
-         if (solver == 0):
-                fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%f\n' %(solStep,  maxStep, minStep, simTime))
-
          fl.write("NodeFiles\t2\t%s\t%s\n"%(nodesFile,verticesFile))
          fl.write("MatFiles\t1\t%s\n"%materialsFile)
-         fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
+         if (activeTransport and activeMechanics):
+             fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+         elif  (activeTransport):
+             fl.write("ElemFiles\t1\t%s\n"%(trsprtElemsFile))
+         elif  (activeMechanics):
+             fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
          fl.write("PBlockFiles\t1\t%s\n" %blocksFile)
      fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
      fl.write("ExporterFiles\t1\t%s"%exportersFile)

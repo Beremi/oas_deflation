@@ -197,6 +197,9 @@ class Model:
         if self.modelType == '2d_coupledArtificialCrack':
             self.run_2d_coupledArtificialCrack()
 
+        if self.modelType == '2d_coupledRVE':
+            self.run_2d_coupledRVE()
+
         #if (self.printout == False): enablePrint()
 
     def run_2d_singleSpring(self):
@@ -265,6 +268,12 @@ class Model:
 
 
 
+
+    def run_2d_coupledRVE(self):
+        print('2d_coupledRVE')
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
+        self.materialZones=None
+        self.periodicModel = 1
 
     def saveGeometry(self):
         tube = False

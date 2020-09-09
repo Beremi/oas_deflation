@@ -113,14 +113,12 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
         // TODO all following repair in the way that anything ending by _elem would be multiplied by area mat->giveValue(code without '_elem') * ( area * length / ndim )
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_total")  * ( area * length / ndim );
-
     } else if ( code.compare("energy_totalT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_totalT")  * ( area * length / ndim );
     } else if ( code.compare("energy_totalN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_totalN")  * ( area * length / ndim );
-
     } else if ( code.compare("energy_PLN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_PLN")  * ( area * length / ndim );
@@ -133,20 +131,18 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("energy_IsoN_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("energy_IsoN")  * ( area * length / ndim );
-
-      } else if ( code.compare("energy_PLT_elem") == 0 ) {
-          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-          return fmstat->giveValue("energy_PLT")  * ( area * length / ndim );
-      } else if ( code.compare("energy_DT_elem") == 0 ) {
-          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-          return fmstat->giveValue("energy_DT")  * ( area * length / ndim );
-      } else if ( code.compare("energy_KinT_elem") == 0 ) {
-          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-          return fmstat->giveValue("energy_KinT")  * ( area * length / ndim );
-      } else if ( code.compare("energy_IsoT_elem") == 0 ) {
-          MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-          return fmstat->giveValue("energy_IsoT")  * ( area * length / ndim );
-
+    } else if ( code.compare("energy_PLT_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_PLT")  * ( area * length / ndim );
+    } else if ( code.compare("energy_DT_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_DT")  * ( area * length / ndim );
+    } else if ( code.compare("energy_KinT_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_KinT")  * ( area * length / ndim );
+    } else if ( code.compare("energy_IsoT_elem") == 0 ) {
+        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
+        return fmstat->giveValue("energy_IsoT")  * ( area * length / ndim );
     } else if ( code.compare("work_dissip_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_dissip")  * ( area * length / ndim );
@@ -156,7 +152,6 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("work_dissipT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_dissipT")  * ( area * length / ndim );
-
     } else if ( code.compare("work_total_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_total")  * ( area * length / ndim );
@@ -166,7 +161,6 @@ double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
     } else if ( code.compare("work_totalT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_totalT")  * ( area * length / ndim );
-
     } else if ( code.compare("work_elaT_elem") == 0 ) {
         MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
         return fmstat->giveValue("work_elaT")  * ( area * length / ndim );
@@ -335,7 +329,7 @@ void RigidBodyContact :: init() {
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-    if ( abs(normal * t) > 1e-10 ) {
+    if ( abs(normal * t) > 1e-8 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
@@ -438,9 +432,9 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs, bool frozen) const {
-    if(frozen){ //frozen internal variables
-        return giveStiffnessMatrix("secant")*DoFs;
-    }else{      //evalution of internal variables
+    if ( frozen ) { //frozen internal variables
+        return giveStiffnessMatrix("secant") * DoFs;
+    } else  {    //evalution of internal variables
         Vector strainNT = giveContactStrainNT(DoFs);
         DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
         Vector stressNT = dmstats->giveStress(strainNT);
@@ -562,9 +556,8 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
     mat = fullmatrs->giveMaterial(num);
 
     string code;
-    while (iss>>code){
-        
-        if (code.compare("reducedCapacityMatrix")==0){
+    while ( iss >> code ) {
+        if ( code.compare("reducedCapacityMatrix") == 0 ) {
             reducedCapacityMatrix = true;
         }
     }
@@ -591,12 +584,12 @@ void Transp1D :: init() {
     }
 
     /* JM Zakomentoval
-    cout << "XXXXXXXXXXXXXXXXXXXXXx" << endl;
-    for ( unsigned int i = 0; i < vert.size(); i++ ) {
-        cout << vert [ i ]->givePoint().x << " " << vert [ i ]->givePoint().y << " " << vert [ i ]->givePoint().z << endl;
-    }
-    cout << "----------------------" << endl;
-    */
+     * cout << "XXXXXXXXXXXXXXXXXXXXXx" << endl;
+     * for ( unsigned int i = 0; i < vert.size(); i++ ) {
+     *  cout << vert [ i ]->givePoint().x << " " << vert [ i ]->givePoint().y << " " << vert [ i ]->givePoint().z << endl;
+     * }
+     * cout << "----------------------" << endl;
+     */
 
     Point t;
     if ( ndim == 2 ) {
@@ -623,7 +616,7 @@ void Transp1D :: init() {
                     maxErr = abs(currErr);
                 }
             }
-          // JM Zakomentoval  cout << maxErr << endl;
+            // JM Zakomentoval  cout << maxErr << endl;
         }
         if ( maxErr > 1e-10 ) {
             cerr << "TRSPRT: Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
@@ -689,6 +682,7 @@ void Transp1D :: init() {
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
+
     normal = normal / length;
     if ( abs(normal * t) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
@@ -713,9 +707,9 @@ Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
 Matrix Transp1D :: giveCapacityMatrix() const {
     Matrix S(2, 2);
     TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    double s = area * tmat->giveCapacity() * tmat->giveDensity() * length / (12.);
+    double s = area * tmat->giveCapacity() * tmat->giveDensity() * length / ( 12. );
 
-    if (reducedCapacityMatrix){     //derived based on assumption of constant pressure
+    if ( reducedCapacityMatrix ) {    //derived based on assumption of constant pressure
         S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 3 * s;
     } else {    //derived based on linear assumption of pressure
         S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
@@ -726,81 +720,95 @@ Matrix Transp1D :: giveCapacityMatrix() const {
 
 //////////////////////////////////////////////////////////
 Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen) const {
-    (void) frozen;
+    ( void ) frozen;
     Vector pressureGrad(1);
-    pressureGrad[0] = (DoFs[1]-DoFs[0])/length;
-    Vector flux = stats[0]->giveStress(pressureGrad);
+    pressureGrad [ 0 ] = ( DoFs [ 1 ] - DoFs [ 0 ] ) / length;
+    Vector flux = stats [ 0 ]->giveStress(pressureGrad);
     Vector intf(2);
-    intf[0] = flux[0]*area;
-    intf[1] = -intf[0];
+    intf [ 0 ] = flux [ 0 ] * area;
+    intf [ 1 ] = -intf [ 0 ];
     return intf;
 };
 
+//////////////////////////////////////////////////////////
+double Transp1D :: giveVolume() const {
+    return area * length / ndim;
+};
+
+//////////////////////////////////////////////////////////
+double Transp1D :: giveVolume(unsigned nodenum) const {
+    if ( nodenum == 0 ) {
+        return dot(vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint(), normal) * area / ndim;
+    } else if ( nodenum == 1 )        {
+        return -dot(vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint(), normal) * area / ndim;
+    } else                                                                                                                       {
+        cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
+        exit(1);
+    }
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 1D TRANSPORT ELEMENT COUPLED WITH MECHANICS
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: init() {
-    Transp1D :: init(); //calling base class method;  
+    Transp1D :: init(); //calling base class method;
 }
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: findFriends2D(ElementContainer *elemcont) {
-
-    for(unsigned k=0; k<elemcont->giveSize(); k++){
-        RigidBodyContact* rbc = dynamic_cast<RigidBodyContact*>( elemcont->giveElement(k));
-        if(rbc){
-            if( (rbc->giveNode(0)==vert[0] && rbc->giveNode(1)==vert[1]) || (rbc->giveNode(0)==vert[1] && rbc->giveNode(1)==vert[0]) ){
+    for ( unsigned k = 0; k < elemcont->giveSize(); k++ ) {
+        RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( elemcont->giveElement(k) );
+        if ( rbc ) {
+            if ( ( rbc->giveNode(0) == vert [ 0 ] && rbc->giveNode(1) == vert [ 1 ] ) || ( rbc->giveNode(0) == vert [ 1 ] && rbc->giveNode(1) == vert [ 0 ] ) ) {
                 friends.push_back(rbc);
-                friendsweight.push_back(rbc->giveArea());
+                friendsweight.push_back(rbc->giveArea() );
                 break; //only one friend avalilable in 2D
             }
-        }        
+        }
     }
 }
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
-    for(vector<Node*>::const_iterator b = vert.begin(); b!=vert.end(); ++b){
-
-    }
+    for ( vector< Node * > :: const_iterator b = vert.begin(); b != vert.end(); ++b ) {}
     //for(unsigned k)
 }
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont){
-    if(ndim==2) findFriends2D(elemcont);
-    else if(ndim==3) findFriends3D(elemcont);
+void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
+    if ( ndim == 2 ) {
+        findFriends2D(elemcont);
+    } else if ( ndim == 3 )   {
+        findFriends3D(elemcont);
+    }
 
-    //collect nodes from friend elements    
-    
+    //collect nodes from friend elements
 }
 
 //////////////////////////////////////////////////////////
 Vector Transp1DCoupled :: giveInternalForces(const Vector &DoFs, bool frozen) const {
-
-    if(frozen){ //frozen internal variables
-        return giveConductivityMatrix("secant")*DoFs;
-    }else{
-        Vector pressureGrad(2+2*friends.size());
-        pressureGrad[0] = (DoFs[1]-DoFs[0])/length; //the real pressure gradient
-        pressureGrad[1] = area; //area of the element face
+    if ( frozen ) { //frozen internal variables
+        return giveConductivityMatrix("secant") * DoFs;
+    } else  {
+        Vector pressureGrad(2 + 2 * friends.size() );
+        pressureGrad [ 0 ] = ( DoFs [ 1 ] - DoFs [ 0 ] ) / length; //the real pressure gradient
+        pressureGrad [ 1 ] = area; //area of the element face
         double elem_crack_opening;
-        size_t m=0;
-        for(auto &f: friends){
+        size_t m = 0;
+        for ( auto &f: friends ) {
             elem_crack_opening = 0;
-            for(unsigned k=0; k<f->giveIPNum(); k++) {
-                elem_crack_opening += abs(f->giveIPValue("tempCrackOpening",k));
+            for ( unsigned k = 0; k < f->giveIPNum(); k++ ) {
+                elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
             }
-            pressureGrad[2*m+2] += elem_crack_opening/f->giveIPNum(); //average crack opening in friend mechanical element
-            pressureGrad[2*m+3] = friendsweight[m]; //crack length in friend mechanical element
-            m ++;
+            pressureGrad [ 2 * m + 2 ] += elem_crack_opening / f->giveIPNum(); //average crack opening in friend mechanical element
+            pressureGrad [ 2 * m + 3 ] = friendsweight [ m ]; //crack length in friend mechanical element
+            m++;
         }
-        Vector flux = stats[0]->giveStress(pressureGrad);
+        Vector flux = stats [ 0 ]->giveStress(pressureGrad);
         Vector intf(2);
-        intf[0] = flux[0]*area;
-        intf[1] = -intf[0];
+        intf [ 0 ] = flux [ 0 ] * area;
+        intf [ 1 ] = -intf [ 0 ];
         return intf;
     }
 };

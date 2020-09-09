@@ -518,6 +518,7 @@ public:
     double froebeniusNorm() const;
     double infinityNorm() const;
 
+    bool isThereNaN() const;
     void print(unsigned size1, unsigned size2);
     void print();
 };

@@ -183,20 +183,22 @@ void ForceGauge :: init() {
         DoFpos = 0;
     } else if ( codes [ 0 ].compare("fy") == 0 ) {
         DoFpos = 1;
-    } else if ( codes [ 0 ].compare("fz") == 0 && dim>2 ) {
+    } else if ( codes [ 0 ].compare("fz") == 0 && dim > 2 ) {
         DoFpos = 2;
-    } else if ( codes [ 0 ].compare("mx") == 0 && dim>2) {
+    } else if ( codes [ 0 ].compare("mx") == 0 && dim > 2 ) {
         DoFpos = 3;
-    } else if ( codes [ 0 ].compare("my") == 0 && dim>2 ) {
+    } else if ( codes [ 0 ].compare("my") == 0 && dim > 2 ) {
         DoFpos = 4;
     } else if ( codes [ 0 ].compare("mz") == 0 ) {
         DoFpos = 5;
-        if(dim==2) DoFpos = 2;
+        if ( dim == 2 ) {
+            DoFpos = 2;
+        }
     } else {
-        if(dim==3){
+        if ( dim == 3 ) {
             cerr << "Error in ForceGauge: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge in 3D model" << endl;
             exit(EXIT_FAILURE);
-        } else if (dim==2){
+        } else if ( dim == 2 ) {
             cerr << "Error in ForceGauge: only 'fx', 'fy' or 'mz' can be exported by ForceGauge in 2D model" << endl;
             exit(EXIT_FAILURE);
         }

@@ -32,7 +32,7 @@ protected:
     virtual void computeInternalExternalForcesWithFrozenIntVariables(Vector &rr);
 
 public:
-    Solver() { name = "basic solver";};
+    Solver() { name = "basic solver"; };
     virtual ~Solver() {};
     virtual void init();
     virtual Solver *readFromFile(const string filename);
@@ -84,15 +84,15 @@ protected:
     double step_decrease;  ///> decreased in case the number of iteration is in upper 1/2
     double critical_step_decrease;  ///> decreased in case of step restart (not satisfying tolerance)
 
-    IndirectDC* idc;        //indirect displacement control
-    Vector ddf, full_ddf, f_last_iter; 
+    IndirectDC *idc;        //indirect displacement control
+    Vector ddf, full_ddf, f_last_iter;
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are masured
 
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve();
     void printAllVectors();
-    void evaluateErrors( double *displa_error, double *energy_error, double *residu_error);
+    void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
 private:
 
 public:

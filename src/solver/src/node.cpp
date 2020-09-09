@@ -27,26 +27,16 @@ void Node :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
-void MechMasterDoF :: readFromLine(istringstream &iss) {
-    double x, y, z;
-    if ( dim == 2 ) {
-        iss >> x >> y;
-        point = Point(x, y, 0.);
-    } else if ( dim == 3 ) {
-        iss >> x >> y >> z;
-        point = Point(x, y, z);
-    }
-    unsigned i;
-    iss >> i;
-    nDoFs = i;
+void MechDoF :: readFromLine(istringstream &iss) {
+    ( void ) iss;
 }
 
 //////////////////////////////////////////////////////////
-// MASTER DOF - GOVERN DEPENDENT DOFs
-MechMasterDoF :: MechMasterDoF(Point c, unsigned n) {
-    point = c;
-    nDoFs = n;
-    name = "Master DoF";
+MechDoF :: MechDoF(unsigned dimension) : MechNode(dimension) {
+    point = Point(0, 0, 0);
+    nDoFs = 1;
+    dim = dimension;
+    name = "Mechanical DoF";
 }
 
 //////////////////////////////////////////////////////////
@@ -74,6 +64,24 @@ double TrsNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
         return Node :: giveDoFBasedValue(code, DoFs);
     }
 };
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MASTER DOF - GOVERN DEPENDENT DOFs
+void TrsDoF :: readFromLine(istringstream &iss) {
+    ( void ) iss;
+}
+
+//////////////////////////////////////////////////////////
+// MASTER DOF - GOVERN DEPENDENT DOFs
+TrsDoF :: TrsDoF(unsigned dimension) : TrsNode(dimension) {
+    point = Point(0, 0, 0);
+    nDoFs = 1;
+    dim = dimension;
+    name = "Transport DoF";
+}
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

@@ -31,10 +31,11 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// PeriodicBoundaryCondition on prism
-class BasicPeriodicBC : public PBlock
+// Mechanical Periodic Boundary Condition on prism
+class MechanicalPeriodicBC : public PBlock
 {
-private:
+protected:
+    string name;
     vector< double >PUCsize;
     vector< unsigned >masters;
     vector< unsigned >slaves;
@@ -42,18 +43,41 @@ private:
     vector< int >stressFunc;
     double volume;
     bool use_half_gammas;
+    unsigned intialNodeNum;
+
+    virtual void genereteNewDoFs(NodeContainer *nodes);
+    virtual void genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+    virtual void genereteExporters(NodeContainer *nodes, ExporterContainer *ex);
+    virtual void readLoading(istringstream &iss);
+    virtual void genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
-    BasicPeriodicBC() {};
-    virtual ~BasicPeriodicBC() {};
+    MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; };
+    virtual ~MechanicalPeriodicBC() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
-protected:
 };
 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// PeriodicBoundaryCondition on prism
+// Transport Periodic Boundary Condition on prism
+class TransportPeriodicBC : public MechanicalPeriodicBC
+{
+protected:
+    int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
+    virtual void genereteNewDoFs(NodeContainer *nodes);
+    virtual void genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+    virtual void genereteExporters(NodeContainer *nodes, ExporterContainer *ex);
+    virtual void readLoading(istringstream &iss);
+    virtual void genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
+public:
+    TransportPeriodicBC() { name = "TransportPeriodicBC"; };
+    virtual ~TransportPeriodicBC() {};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Rigid Plate
 class RigidPlate : public PBlock
 {
 private:

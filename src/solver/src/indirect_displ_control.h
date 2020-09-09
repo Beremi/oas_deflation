@@ -19,15 +19,15 @@ protected:
     double target_value;
     int funcnum;
     unsigned nummaxunit;
-    vector <bool> coords_active;
-    vector <bool> nodes_active;
-    vector < vector<unsigned> > c_nodes;
-    vector < vector<unsigned> > c_dirs;
-    vector < vector<unsigned> > c_DoFs;
-    vector < vector<double> > xcoords;
-    vector < vector<double> > ycoords;
-    vector < vector<double> > zcoords;
-    vector < vector<double> > c_weights;
+    vector< bool >coords_active;
+    vector< bool >nodes_active;
+    vector< vector< unsigned > >c_nodes;
+    vector< vector< unsigned > >c_dirs;
+    vector< vector< unsigned > >c_DoFs;
+    vector< vector< double > >xcoords;
+    vector< vector< double > >ycoords;
+    vector< vector< double > >zcoords;
+    vector< vector< double > >c_weights;
 
     double givePrescribedDisplacement(double time);
 
@@ -37,7 +37,7 @@ public:
     void init(NodeContainer *nodes, FunctionContainer *funcs);
     void readFromStream(unsigned num, ifstream &inputfile);
     double giveMultiplierCorrection(Vector &prev_displ, Vector &displ_d, Vector &displ_f, double time);
-    double giveControlValue(Vector &displ);   
+    double giveControlValue(Vector &displ);
 };
 
 #endif

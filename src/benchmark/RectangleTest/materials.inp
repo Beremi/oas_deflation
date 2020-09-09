@@ -5,4 +5,4 @@ FatigueShearMaterial	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin
 # DamagePlasticMaterial	E0	35e9	alpha	0.300000    density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6
 # FatigueMaterial	E0	35e9	alpha	0.300000    density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6 a 0
 # FatigueMaterial	E0	35e9	alpha	0.300000    density 2200.0 fc 18e6 ft 3.5e6 KinN 5e9 gammaN 20e9 m 0 Ad 4000e-6 tauBar 5.0e6 Kin 10e9 gamma 80.0e9 S 1e-11 a 0.001 c 1.85 r 1.21
-TrsprtMaterial		capacity	11.000000	conductivity	22.000000
+TrsprtMaterial		capacity	11.000000	permeability	22e-18 viscosity 1e-5 density	1e3
