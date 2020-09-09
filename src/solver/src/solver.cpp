@@ -172,30 +172,37 @@ void SteadyStateLinearSolver :: solve() {
     nodes->giveFullDoFArray(ddr, full_ddr);
 
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-        r [ i ] += full_ddr [ i ];
+        r [ i ] += full_ddr [ i ];        
     }
 
-    /*
-     * for ( unsigned i = 0; i < freeDoFnum; i++ ) {
-     *  for ( unsigned j = 0; j < freeDoFnum; j++ ) cout << K [ i ][j] << "\t";
-     *  cout << "|\t" << ddr[i] << "\t=\t" << f[i] << endl;
-     * }
-     * exit(1);
-     */
-
     computeInternalExternalForces(r);
+
+    /*
+    cout << "******************************************" << endl;
+    for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+        cout << f[i] << " " << ddr[i] << endl;
+    }
+   
+    for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+       for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";      
+        cout << endl;      
+     }
+     exit(1);
+    */    
+
+
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: computeInternalExternalForces(Vector &rr) {
     elems->giveInternalForces(rr, f_int, false);
-    nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
+    nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: computeInternalExternalForcesWithFrozenIntVariables(Vector &rr) {
     elems->giveInternalForces(rr, f_int, true);
-    nodes->updateExteranlForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
+    nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
 }
 
 //////////////////////////////////////////////////////////

@@ -335,7 +335,7 @@ void RigidBodyContact :: init() {
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-    if ( abs(normal * t) > 1e-10 ) {
+    if ( abs(normal * t) > 1e-8 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
@@ -689,6 +689,7 @@ void Transp1D :: init() {
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
+
     normal = normal / length;
     if ( abs(normal * t) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
@@ -736,6 +737,22 @@ Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen) const {
     return intf;
 };
 
+//////////////////////////////////////////////////////////
+double Transp1D :: giveVolume() const {
+    return area*length/ndim;
+};
+
+//////////////////////////////////////////////////////////
+double Transp1D :: giveVolume(unsigned nodenum) const {
+    if (nodenum==0) {
+        return  dot(vert[0]->givePoint() - nodes[0]->givePoint(),normal)*area/ndim;     
+    }
+    else if(nodenum==1) return -dot(vert[0]->givePoint() - nodes[1]->givePoint(),normal)*area/ndim;     
+    else{
+        cerr << "Error in " <<name << ": attempting to reach node number different form 0 or 1." << endl;
+        exit(1);
+    }
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

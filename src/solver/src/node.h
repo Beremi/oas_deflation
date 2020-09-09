@@ -71,21 +71,6 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// Master Dof - additional DoF governing other dependent DoFs
-class MechMasterDoF : public Node
-{
-private:
-
-protected:
-public:
-    MechMasterDoF(unsigned dimension) { dim = dimension; name = "Master DoF"; isMechanical = true;};
-    MechMasterDoF(Point c, unsigned n);
-    virtual ~MechMasterDoF() {};
-    void readFromLine(istringstream &iss);
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational DoFs
 class MechNode : public Node
 {
@@ -95,6 +80,20 @@ public:
     MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "mechanical node"; isMechanical = true;};
     virtual ~MechNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Master Dof - additional DoF governing other dependent DoFs
+class MechDoF : public MechNode
+{
+private:
+
+protected:
+public:
+    MechDoF(unsigned dimension);
+    virtual ~MechDoF() {};
+    void readFromLine(istringstream &iss);
 };
 
 //////////////////////////////////////////////////////////
@@ -110,6 +109,22 @@ public:
     virtual ~TrsNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
+
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Master Dof - additional DoF governing other dependent DoFs
+class TrsDoF : public TrsNode
+{
+private:
+protected:
+public:
+    TrsDoF(unsigned dimension);
+    virtual ~TrsDoF() {};
+    void readFromLine(istringstream &iss);
+};
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

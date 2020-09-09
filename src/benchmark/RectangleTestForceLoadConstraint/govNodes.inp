@@ -1,5 +1,5 @@
 ##type xcoord ycoord (zcoord) (numDoFs = 3 * (ndim - 1)
 ## MasterNode is additional Node designed to govern other Nodes according to rigid body movement (see constraint.inp - rigidPlate)
-MasterNode 1 0.5
+Particle 1 0.5
 ## MasterDoF is additional single DoF designed to govern other DoFs according to linear combination prescribed by JoitDoF (see constraint.inp, not used in this example)
-# MasterDoF 1 0.5 1
+# Particle 1 0.5 1

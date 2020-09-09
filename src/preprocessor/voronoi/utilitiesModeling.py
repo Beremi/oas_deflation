@@ -622,6 +622,65 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
     return node_coords, [], transportBC_merged, vor, areas, functions
 """
 
+
+def create2dCoupledRVE(maxLim, minDist, trials ):
+    print('Creating 2d periodic RVE.')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype = asssemble2dPeriodicShear(maxLim, minDist, trials );
+
+    print ('Conducting Voronoi tesselation...', end ='')
+    vor = Voronoi(node_coords)
+    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    print('done.')
+
+
+    #fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, single force top right, bilinear
+    fn1 = utilitiesNumeric.sawToothConstFunc(value = -5e-4, period = 4)
+    functions.append (fn1)
+
+    mechIC_merged = []
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([2,-1])
+    #leftFaceIC = 25.6
+    boundA = np.array(  [-1e-8 , maxLim[1]/10*8] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+        #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
+        #transportIC_merged.append(trsIC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8 , - 1e-8] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]/10*2 ] )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
+
+
 def assembleTwoNodeSpringTest (maxLim, idt):
     node_coords = []
     mechBC_merged = []
@@ -3696,7 +3755,6 @@ def assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, tr
         #//functions.append(funcRot3)
         #//functions.append(funcRot4)
         #//functions.append(funcRot5)
-
         mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, mechBC)
         mechBC_merged.append(mBC)
 
@@ -3707,3 +3765,4 @@ def assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, tr
     #######################################################################
 
     return node_coords, mechBC_merged, mechInitC_merged
+

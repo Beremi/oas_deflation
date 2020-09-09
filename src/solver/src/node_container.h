@@ -43,7 +43,7 @@ public:
     void updateDirrichletBC(Vector &bc, double time) const;
     void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
-    void updateExteranlForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const;
+    void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
     void addNode(Node *n) { nodes.push_back(n); };
     vector<bool> giveMechDoFsIndicator(){return mechDoFs;}

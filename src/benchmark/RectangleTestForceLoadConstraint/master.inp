@@ -3,7 +3,7 @@ Solver	solver.inp
 NodeFiles	4	nodes.inp	auxNodes.inp	vertices.inp    govNodes.inp
 MatFiles	1	materials.inp
 ElemFiles	1	mechElems.inp	trsprtElems.inp
-ConstrFiles 1   constraint.inp
+PBlockFiles 1   constraint.inp
 BCFiles	1	mechBC.inp	trsprtBC.inp
 ICFiles	1	mechIC.inp	trsprtIC.inp
 FunctionFiles	1	functions.inp

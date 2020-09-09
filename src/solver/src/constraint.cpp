@@ -1,15 +1,26 @@
 #include "constraint.h"
 #include "node_container.h"
+#include "element_container.h"
 #include <fstream>
 
+bool containsChar(const std :: string &str, char c)
+{
+    // std::cout << "str = " << str << ", char = " << c << '\n';
+    return str.find(c) != std :: string :: npos;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Joint Degree of Freedom
 JointDoF :: JointDoF(Node *s, unsigned &dir, std :: vector< Node * > &m, std :: vector< unsigned > &dirs, std :: vector< double > &mult) {
     slaveNode = s;
     direction = dir;
     masters = m;
     directions = dirs;
-    multipliers = mult;
+    multipliers = mult; 
 }
 
+//////////////////////////////////////////////////////////
 void JointDoF :: readFromLine(istringstream &iss, NodeContainer *nodes) {
     // # type      node    direction   numMasters master1 multiplier1 master2...
     unsigned intn, intmas;
@@ -27,11 +38,16 @@ void JointDoF :: readFromLine(istringstream &iss, NodeContainer *nodes) {
     }
 }
 
-
+//////////////////////////////////////////////////////////
 unsigned JointDoF :: giveSlaveDoF() const {
     return slaveNode->giveStartingDoF() + direction;
 }
 
+//////////////////////////////////////////////////////////
+unsigned JointDoF :: giveMasterDoF(unsigned k) const {
+    return masters[k]->giveStartingDoF() + directions[k];
+}
+//////////////////////////////////////////////////////////
 void JointDoF :: print() {
     std :: cout << "slave DoF = " << giveSlaveDoF() << '\n';
     for ( unsigned i = 0; i < masters.size(); i++ ) {
@@ -39,15 +55,145 @@ void JointDoF :: print() {
     }
 }
 
-
-bool containsChar(const std :: string &str, char c)
-{
-    // std::cout << "str = " << str << ", char = " << c << '\n';
-    return str.find(c) != std :: string :: npos;
+//////////////////////////////////////////////////////////
+void JointDoF :: init() {
+    //consolidate (do not allow repetition of masters)
+    for(unsigned k=masters.size()-1; k>0 ; k--){
+        for(unsigned l=0; l<k; l++){                
+            if(masters[l]==masters[k] && directions[l]==directions[k]){
+                multipliers[l] += multipliers[k];
+                masters.erase(masters.begin()+k);
+                directions.erase(directions.begin()+k);
+                multipliers.erase(multipliers.begin()+k);
+                break;            
+            }
+        }
+    }
 }
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Volumetric Average
+VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc){
+    nodes = n;
+    dirs = d;
+    masternode = mn;
+    masterdir = md;
+    elems = ec;
+    constraints = cc;
+
+
+    //collect all slaves from other joint DoFs and also all involved DOFs
+    vector< Node* > excludedNodes;
+    vector< unsigned > excudedDirs;
+    vector<Node*> jdm;
+    vector<unsigned> jdd;
+    JointDoF *jd;
+    VolumetricAverage *va;
+    for(unsigned j=0; j<constraints->giveSize(); j++){
+        jd = constraints->giveConstraint(j);
+        va = dynamic_cast<VolumetricAverage*>(jd);
+        if(!va){
+            excludedNodes.push_back(jd->giveSlaveNode());
+            jdm = jd->giveMasterNodes();
+            excludedNodes.insert(excludedNodes.end(), jdm.begin(), jdm.end());
+            excudedDirs.push_back(jd->giveSlaveDir());
+            jdd = jd->giveMasterDirs();
+            excudedDirs.insert(excudedDirs.end(), jdd.begin(), jdd.end());
+        }
+    }
+
+
+    // find DoF to become a slave (cannot be slave or master of any other constraint)
+    unsigned k;
+    bool found;
+    for(k=0; k<nodes.size(); k++){
+        found = false;
+        for(unsigned l=0; l<excludedNodes.size(); l++){
+            if(excludedNodes[l]==nodes[k] && excudedDirs[l]==dirs[k]){
+                found = true;
+                break;
+            } 
+        }
+        if(!found) break;
+    }
+    if(found) {
+        cerr << "volumetric average didn't find any suitable slave DoF" << endl;
+        exit(1);
+    }  
+    slaveNode = nodes[k];
+    direction = dirs[k]; 
+}
+
+//////////////////////////////////////////////////////////
+void VolumetricAverage :: init(){
+
+    //collect all slaves from other joint DoFs
+    vector< unsigned > otherslaves;
+    otherslaves.resize(constraints->giveSize());
+    JointDoF *jd;
+    for(unsigned j=0; j<constraints->giveSize(); j++){
+        jd = constraints->giveConstraint(j);
+        otherslaves[j] = jd->giveSlaveDoF();
+    }
+
+    //find slave position in array
+    unsigned slaveid = find(nodes.begin(), nodes.end(), slaveNode)-nodes.begin();
+
+    // calculate volumes associated with nodes
+    unsigned r;
+    vector<double>m;
+    m.resize(nodes.size());
+    for(unsigned e=0; e<elems->giveSize(); e++){
+        Transp1D* et = dynamic_cast< Transp1D* > (elems->giveElement(e));
+        if(et){            
+            for(unsigned p=0; p<2; p++){    
+                r = (std::find (nodes.begin(), nodes.end(), et->giveNode(p)) - nodes.begin());
+                m[r] += et->giveVolume(p);
+            }     
+        }
+    }
+
+    //rearange everything and update weights
+    double factor = m[slaveid];
+    double fullVolume = 0;        
+    for (auto &s: m) {
+        fullVolume += s;
+        s /= -factor;
+    }
+    m[slaveid] = fullVolume/factor;
+    nodes[slaveid] = masternode;
+    dirs[slaveid] = masterdir;
+
+    vector<Node*> jdmasters;
+    vector<unsigned> jddirs;
+    vector<double> jdmults;
+    for(unsigned i=0; i<nodes.size(); i++){
+        r = (std :: find (otherslaves.begin(), otherslaves.end(), nodes[i]->giveStartingDoF() + dirs[i] ) - otherslaves.begin());
+        if(r==otherslaves.size()){  //true masters
+            masters.push_back(nodes[i]);
+            directions.push_back(dirs[i]);
+            multipliers.push_back(m[i]);
+        }else{                   
+            jd = constraints->giveConstraint(r);
+            jdmasters = jd->giveMasterNodes();
+            jddirs = jd->giveMasterDirs();
+            jdmults = jd->giveMasterMultipliers();
+            for(auto &k:jdmults) k *= m[i];
+            masters.insert(masters.end(), jdmasters.begin(), jdmasters.end());
+            directions.insert(directions.end(), jddirs.begin(), jddirs.end());
+            multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end());     
+        }
+    } 
+
+    JointDoF::init();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Container
 void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim, const string &which) {
-    unsigned nDoFsPerNode = 3 * ( ndim - 1 );
+    unsigned nDoFsPerNode = 3* ( ndim - 1 );
 
     if ( slave->giveNumberOfDoFs() != master->giveNumberOfDoFs() ) {
         std :: cerr << "slave and master must have the same number of DoFs, slave numDoFs = " << slave->giveNumberOfDoFs() << ", master numDoFs = " << master->giveNumberOfDoFs() << '\n';
@@ -117,7 +263,7 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
 }
 
 bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
-    double tol = 1e-9; // NOTE this should be raltive to lmin or something
+    double tol = 1e-9; // NOTE this should be relative to lmin or something
     if ( ( leftBottom.getX() - P.getX() ) < tol && ( P.getX() - rightTop.getX() ) < tol ) {
         if ( ( leftBottom.getY() - P.getY() ) < tol && ( P.getY() - rightTop.getY() ) < tol ) {
             if ( ( leftBottom.getZ() - P.getZ() ) < tol && ( P.getZ() - rightTop.getZ() ) < tol ) {
@@ -128,8 +274,7 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
     return false;
 }
 
-
-
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes) {
     unsigned origsize = constraints.size();
     string line, ConstrType;
@@ -169,8 +314,22 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 //     }
 // }
 
-
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: init(NodeContainer *nodes) {
+
+    //initiate volumetric averages
+    for ( auto const &jD : constraints ) jD->init();
+
+    //reorganize, move volumetric averages at the end
+    VolumetricAverage *va;
+    for ( int k =constraints.size()-1; k>=0; k--) {
+        va = dynamic_cast< VolumetricAverage* >(constraints[k]);
+        if(va) {
+            constraints.push_back(va);
+            constraints.erase (constraints.begin()+k);
+        }        
+    }
+
     map< pair< size_t, size_t >, double >indeces11;
     // map<pair<size_t, size_t>, double> indeces12;
     // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
@@ -201,12 +360,12 @@ void ConstraintContainer :: init(NodeContainer *nodes) {
             std :: cerr << "constraint applied simultaneously with boundary conditions" << '\n';
             exit(1);
         }
-        numM = jD->giveMasterDoFs().size();
+        numM = jD->giveNumOfMasters();
         for ( unsigned ind = 0; ind < numM; ind++ ) {
-            j = nodes->giveDoFid( ( jD->giveMasterDoFs() [ ind ] )->giveStartingDoF() + jD->giveDirs() [ ind ] );
+            j = nodes->giveDoFid( jD->giveMasterDoF(ind) );
             if ( j < nodes->giveNumFreeDoFs() - constraints.size() ) {
                 // master DoF is free
-                indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), jD->giveMultipliers() [ ind ]) );
+                indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), jD->giveMasterMultiplier( ind )) );
             }
         }
     }
@@ -218,29 +377,31 @@ void ConstraintContainer :: init(NodeContainer *nodes) {
         indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
     }
     X = CoordinateIndexedSparseMatrix(indeces11, nodes->giveNumFreeDoFs(), nodes->giveNumFreeDoFs() - constraints.size() );
-    // X.print();
 }
 
 
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K) {
     CoordinateIndexedSparseMatrix Kold = K;
-    K = X.transpose() * Kold * X;
+    K = X.transpose() * Kold * X;   
 }
 
 
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs) {
     for ( auto const &jD : constraints ) {
         fullDoFs [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
-        for ( unsigned i = 0; i < jD->giveMasterDoFs().size(); i++ ) {
-            fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoFs() [ i ]->giveStartingDoF() + jD->giveDirs() [ i ] ] * jD->giveMultipliers() [ i ];
+        for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+            fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF( i )] * jD->giveMasterMultiplier( i );
         }
     }
 }
 
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
     for ( auto const &jD : constraints ) {
-        for ( unsigned i = 0; i < jD->giveMasterDoFs().size(); i++ ) {
-            fullForces [ jD->giveMasterDoFs() [ i ]->giveStartingDoF() + jD->giveDirs() [ i ] ] += fullForces [ jD->giveSlaveDoF() ] * jD->giveMultipliers() [ i ];
+        for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+            fullForces [ jD->giveMasterDoF( i ) ] += fullForces [ jD->giveSlaveDoF() ] * jD->giveMasterMultiplier( i );
             // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
             // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept
         }

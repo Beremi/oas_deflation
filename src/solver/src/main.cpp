@@ -198,9 +198,9 @@ int main(int argc, char **argv) {
     pblocks.apply();
     bconds.init();
     nodes.init();
-    constr.init(& nodes);
     matrs.init();
     elems.init();
+    constr.init(& nodes);
     elems.findElementFriends();
     exporters.init();
     solver->init();

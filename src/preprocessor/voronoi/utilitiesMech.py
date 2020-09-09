@@ -211,7 +211,7 @@ class TransportMaterial:
         self.capacity = capacity
 
     def getString (self):
-        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%f'%(self.capacity)  + '\t' + 'conductivity\t%f'%(self.transportS)  + '\t' + 'permeability\t%f'%(self.permeability)  + '\t' + 'viscosity\t%f'%(self.viscosity)
+        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%f'%(self.capacity)  + '\t' + 'density\t%f'%(self.density)  + '\t' + 'permeability\t%f'%(self.permeability)  + '\t' + 'viscosity\t%f'%(self.viscosity)
         return line
 
 

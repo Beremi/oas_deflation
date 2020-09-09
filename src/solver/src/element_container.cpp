@@ -86,6 +86,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 //////////////////////////////////////////////////////////
 void ElementContainer :: init() {
     max_sol_order = 0;
+    
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->init();
         ( * e )->initMaterialStatuses();
@@ -140,8 +141,7 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
     }
     if (nfreeDoFs > 0) {
       K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
-    }
-
+    }   
 }
 
 //////////////////////////////////////////////////////////

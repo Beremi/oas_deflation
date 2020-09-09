@@ -1,28 +1,21 @@
 #include "preprocessing_block.h"
 
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// Basic Periodic BC
-void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
-    ( void ) e;
-    volume = 1;
-    for ( auto const a : PUCsize ) {
-        volume *= a;
-    }
-
-    unsigned const_num = constrs->giveSize();
-    unsigned funcs_num = funcs->giveSize();
-    unsigned bcs_num = bcs->giveSize();
-    unsigned ex_num = ex->giveSize();
-
+// Mechanical Periodic BC
+void MechanicalPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
-    MechMasterDoF *mn;
-    unsigned intialNodeNum = nodes->giveSize();
+    MechDoF *mn;
+    intialNodeNum = nodes->giveSize();
     for ( unsigned i = 0; i < 3 * ( dim - 1 ); i++ ) {
-        mn = new MechMasterDoF(Point(0, 0, 0), 1);
+        mn = new MechDoF(dim);
         nodes->addNode(mn);
     }
+}
 
+//////////////////////////////////////////////////////////
+void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
     //apply contraints, connect periodic images
     JointDoF *jd;
     vector< Node * >vm;
@@ -192,10 +185,61 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
             }
         }
     }
+}
 
+//////////////////////////////////////////////////////////
+void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterContainer *ex) {
+    //export data
+    string export_name = "PUCstrain_stress";
+    vector< string >gname;
+    vector< unsigned >n;
+    vector< string >codes;
+    n.resize(1);
+    codes.resize(1);
+    ForceGauge *fg;
+    codes [ 0 ] = "fx";
+    if ( dim == 2 ) {
+        gname.resize(3);
+        gname [ 0 ] = "sigma_x";
+        gname [ 1 ] = "sigma_y";
+        gname [ 2 ] = "tau_xy";
+    } else if ( dim == 3 ) {
+        gname.resize(6);
+        gname [ 0 ] = "sigma_x";
+        gname [ 1 ] = "sigma_y";
+        gname [ 2 ] = "sigma_z";
+        gname [ 3 ] = "tau_yz";
+        gname [ 4 ] = "tau_xz";
+        gname [ 5 ] = "tau_xy";
+    }
+    for ( unsigned i = 0; i < gname.size(); i++ ) {
+        n [ 0 ] = intialNodeNum + i;
+        fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
+        ex->addExporter(fg);
+    }
+    DoFGauge *dg;
+    if ( dim == 2 ) {
+        gname [ 0 ] = "eps_x";
+        gname [ 1 ] = "eps_y";
+        gname [ 2 ] = "gamma_xy";
+    } else if ( dim == 3 ) {
+        gname [ 0 ] = "eps_x";
+        gname [ 1 ] = "eps_y";
+        gname [ 2 ] = "eps_z";
+        gname [ 3 ] = "gamma_yz";
+        gname [ 4 ] = "gamma_xz";
+        gname [ 5 ] = "gamma_xy";
+    }
+    for ( unsigned i = 0; i < gname.size(); i++ ) {
+        dg = new DoFGauge(export_name, gname [ i ], intialNodeNum + i, 0, nodes, 1., dim);
+        ex->addExporter(dg);
+    }
+}
 
-    //boundary conditions
+//////////////////////////////////////////////////////////
+void MechanicalPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     //last master node cannot move
+    Node *m = constrs->giveConstraint(constrs->giveSize()-1)->giveMasterNode(0);
     BoundaryCondition *bc;
     vector< int >dBC, nBC;
     dBC.resize(m->giveNumberOfDoFs(), -1);
@@ -206,12 +250,45 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
     bc = new BoundaryCondition(m, dBC, nBC);
     bcs->addBoundaryCondition(bc);
 
+    //add constant function
+    vector< double >x, y;
+    x.resize(1, 0);
+    y.resize(1, 0);
+    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+    funcs->addFunction(newf);
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+    ( void ) e;
+    volume = 1;
+    for ( auto const a : PUCsize ) {
+        volume *= a;
+    }
+
+    unsigned const_num = constrs->giveSize();
+    unsigned funcs_num = funcs->giveSize();
+    unsigned bcs_num = bcs->giveSize();
+    unsigned ex_num = ex->giveSize();
+
+    //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
+    genereteNewDoFs(nodes);
+
+    //apply contraints, connect periodic images
+    genereteConstraints(nodes, constrs);
+
+    //boundary conditions
+    genereteRigidBodyBC(nodes, e, bcs, constrs, funcs);
+    
     //set prescribed strain and stress
     vector< double >bcmults;
+    BoundaryCondition *bc;
+    vector< int >dBC, nBC;
     dBC.resize(1, -1);
     nBC.resize(1, -1);
     bcmults.resize(1, 1);
     for ( unsigned i = 0; i < strainFunc.size(); i++ ) {
+        bcmults [ 0 ] = 1;
         if ( strainFunc [ i ] >= 0 ) {
             nBC [ 0 ] = -1;
             dBC [ 0 ] = strainFunc [ i ];
@@ -230,77 +307,87 @@ void BasicPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
         }
     }
 
-
-    //add constant function
-    vector< double >x, y;
-    x.resize(1, 0);
-    y.resize(1, 0);
-    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
-    funcs->addFunction(newf);
-
     //export data
-    string name = "PUCstrain_stress";
-    vector< string >gname;
-    vector< unsigned >n;
-    vector< string >codes;
-    n.resize(1);
-    codes.resize(1);
-    ForceGauge *fg;
-    codes [ 0 ] = "fx";
-    if ( dim == 2 ) {
-        gname.resize(3);
-        gname [ 0 ] = "sigma_x";
-        gname [ 1 ] = "sigma_y";
-        gname [ 2 ] = "tau_xy";
-    } else if ( dim == 3 ) {
-        gname.resize(3);
-        gname [ 0 ] = "sigma_x";
-        gname [ 1 ] = "sigma_y";
-        gname [ 2 ] = "sigma_z";
-        gname [ 3 ] = "tau_yz";
-        gname [ 4 ] = "tau_xz";
-        gname [ 5 ] = "tau_xy";
-    }
-    for ( unsigned i = 0; i < gname.size(); i++ ) {
-        n [ 0 ] = intialNodeNum + i;
-        fg = new ForceGauge(name, gname [ i ], codes, n, nodes, 1. / volume, dim);
-        ex->addExporter(fg);
-    }
-    DoFGauge *dg;
-    if ( dim == 2 ) {
-        gname [ 0 ] = "eps_x";
-        gname [ 1 ] = "eps_y";
-        gname [ 2 ] = "gamma_xy";
-    } else if ( dim == 3 ) {
-        gname [ 0 ] = "eps_x";
-        gname [ 1 ] = "eps_y";
-        gname [ 2 ] = "eps_z";
-        gname [ 3 ] = "gamma_yz";
-        gname [ 4 ] = "gamma_xz";
-        gname [ 5 ] = "gamma_xy";
-    }
-    for ( unsigned i = 0; i < gname.size(); i++ ) {
-        dg = new DoFGauge(name, gname [ i ], intialNodeNum + i, 0, nodes, 1., dim);
-        ex->addExporter(dg);
-    }
-
-
-
+    genereteExporters(nodes, ex);
+    
     cout << "Applied periodic boundary conditions: " << nodes->giveSize() - intialNodeNum << " new DoFs (nodes " << intialNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
 }
 
 //////////////////////////////////////////////////////////
-void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
-    use_half_gammas = false;
-    dim = d;
-    string param;
+void MechanicalPeriodicBC :: readLoading(istringstream &iss) {
     unsigned num, hnum;
-
-    bool sizeB, loadB, pairsB;
-    sizeB = loadB = pairsB = false;
+    string param;
+    iss >> num;
 
     strainFunc.resize(3 * ( dim - 1 ), -1);
     stressFunc.resize(3 * ( dim - 1 ), -1);
+
+    for ( unsigned i = 0; i < num; i++ ) {
+        iss >> param >> hnum;
+        if ( dim == 2 ) {
+            std :: size_t found = param.find("z");
+            if ( found != std :: string :: npos ) {
+                cout << "Error in " << name << " : cannot load by " << param << " in two dimensional setup" << '\n';
+                exit(1);
+            }
+            if ( param.compare("ex") == 0 ) {
+                strainFunc [ 0 ] = hnum;
+            } else if ( param.compare("ey") == 0 ) {
+                strainFunc [ 1 ] = hnum;
+            } else if ( param.compare("gxy") == 0 ) {
+                strainFunc [ 2 ] = hnum;
+            } else if ( param.compare("sx") == 0 ) {
+                stressFunc [ 0 ] = hnum;
+            } else if ( param.compare("sy") == 0 ) {
+                stressFunc [ 1 ] = hnum;
+            } else if ( param.compare("txy") == 0 ) {
+                stressFunc [ 2 ] = hnum;
+            } else {
+                cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
+                exit(1);
+            }
+        } else if ( dim == 3 ) {
+            if      ( param.compare("ex") == 0 ) {
+                strainFunc [ 0 ] = hnum;
+            } else if ( param.compare("ey") == 0 ) {
+                strainFunc [ 1 ] = hnum;
+            } else if ( param.compare("ez") == 0 ) {
+                strainFunc [ 2 ] = hnum;
+            } else if ( param.compare("gyz") == 0 ) {
+                strainFunc [ 3 ] = hnum;
+            } else if ( param.compare("gxz") == 0 ) {
+                strainFunc [ 4 ] = hnum;
+            } else if ( param.compare("gxy") == 0 ) {
+                strainFunc [ 5 ] = hnum;
+            } else if ( param.compare("sx") == 0 ) {
+                stressFunc [ 0 ] = hnum;
+            } else if ( param.compare("sy") == 0 ) {
+                stressFunc [ 1 ] = hnum;
+            } else if ( param.compare("sz") == 0 ) {
+                stressFunc [ 2 ] = hnum;
+            } else if ( param.compare("tyz") == 0 ) {
+                stressFunc [ 3 ] = hnum;
+            } else if ( param.compare("txz") == 0 ) {
+                stressFunc [ 4 ] = hnum;
+            } else if ( param.compare("txy") == 0 ) {
+                stressFunc [ 5 ] = hnum;
+            } else {
+                cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
+                exit(1);
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
+    use_half_gammas = false;
+    dim = d;
+    string param;
+    unsigned num;
+
+    bool sizeB, loadB, pairsB;
+    sizeB = loadB = pairsB = false;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -316,62 +403,7 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
             use_half_gammas = true;
         } else if ( param.compare("load") == 0 ) {
             loadB = true;
-            iss >> num;
-            for ( unsigned i = 0; i < num; i++ ) {
-                iss >> param >> hnum;
-                if ( dim == 2 ) {
-                    std :: size_t found = param.find("z");
-                    if ( found != std :: string :: npos ) {
-                        cout << "Error in PeriodicBoundaryCondition: cannot load by " << param << " in two dimensional setup" << '\n';
-                        exit(1);
-                    }
-                    if      ( param.compare("ex") == 0 ) {
-                        strainFunc [ 0 ] = hnum;
-                    } else if ( param.compare("ey") == 0 ) {
-                        strainFunc [ 1 ] = hnum;
-                    } else if ( param.compare("gxy") == 0 ) {
-                        strainFunc [ 2 ] = hnum;
-                    } else if ( param.compare("sx") == 0 ) {
-                        stressFunc [ 0 ] = hnum;
-                    } else if ( param.compare("sy") == 0 ) {
-                        stressFunc [ 1 ] = hnum;
-                    } else if ( param.compare("txy") == 0 ) {
-                        stressFunc [ 2 ] = hnum;
-                    } else {
-                        cout << "Error in PeriodicBoundaryCondition: loaded by " << param << " not implemented yet" << '\n';
-                        exit(1);
-                    }
-                } else if ( dim == 3 ) {
-                    if      ( param.compare("ex") == 0 ) {
-                        strainFunc [ 0 ] = hnum;
-                    } else if ( param.compare("ey") == 0 ) {
-                        strainFunc [ 1 ] = hnum;
-                    } else if ( param.compare("ez") == 0 ) {
-                        strainFunc [ 2 ] = hnum;
-                    } else if ( param.compare("gyz") == 0 ) {
-                        strainFunc [ 3 ] = hnum;
-                    } else if ( param.compare("gxz") == 0 ) {
-                        strainFunc [ 4 ] = hnum;
-                    } else if ( param.compare("gxy") == 0 ) {
-                        strainFunc [ 5 ] = hnum;
-                    } else if ( param.compare("sx") == 0 ) {
-                        stressFunc [ 0 ] = hnum;
-                    } else if ( param.compare("sy") == 0 ) {
-                        stressFunc [ 1 ] = hnum;
-                    } else if ( param.compare("sz") == 0 ) {
-                        stressFunc [ 2 ] = hnum;
-                    } else if ( param.compare("tyz") == 0 ) {
-                        stressFunc [ 3 ] = hnum;
-                    } else if ( param.compare("txz") == 0 ) {
-                        stressFunc [ 4 ] = hnum;
-                    } else if ( param.compare("txy") == 0 ) {
-                        stressFunc [ 5 ] = hnum;
-                    } else {
-                        cout << "Error in PeriodicBoundaryCondition: loaded by " << param << " not implemented yet" << '\n';
-                        exit(1);
-                    }
-                }
-            }
+            readLoading(iss);
         } else if ( param.compare("size") == 0 ) {
             sizeB = true;
             iss >> num;
@@ -383,19 +415,220 @@ void BasicPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
     }
 
     if ( !sizeB ) {
-        cout << "Error BasicPeriodicBC: size was not specified" << endl;
+        cout << "Error " << name << " : size was not specified" << endl;
         exit(1);
     }
     if ( !pairsB ) {
-        cout << "Error BasicPeriodicBC: pairs were not specified" << endl;
+        cout << "Error " << name << " : pairs were not specified" << endl;
         exit(1);
     }
     if ( !loadB ) {
-        cout << "Error BasicPeriodicBC: load was not specified" << endl;
+        cout << "Error " << name << " : load was not specified" << endl;
         exit(1);
     }
 }
 
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Transport Periodic BC
+//////////////////////////////////////////////////////////
+void TransportPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
+    //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
+    TrsDoF *mn;
+    intialNodeNum = nodes->giveSize();
+    for ( unsigned i = 0; i < dim; i++ ) {
+        mn = new TrsDoF(dim);
+        nodes->addNode(mn);
+    }
+    
+}
+
+//////////////////////////////////////////////////////////
+void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
+    //apply contraints, connect periodic images
+    JointDoF *jd;
+    vector< Node * >vm;
+    vector< unsigned >dirs;
+    vector< double >mults;
+    Node *s = nullptr;
+    Node *m = nullptr;
+    Point diff;
+    for ( unsigned i = 0; i < masters.size(); i++ ) {
+        m = nodes->giveNode(masters [ i ]);
+        s = nodes->giveNode(slaves [ i ]);
+
+        //connect pressure
+        diff = s->givePoint() - m->givePoint();
+
+        if ( dim == 3 ) {
+            vm.resize(4);
+            mults.resize(4);
+            dirs.resize(4, 0);
+            dirs [ 3 ] = 0;
+            vm [ 3 ] = nodes->giveNode(intialNodeNum+2); //grad z
+            mults [ 3 ] = diff.z;
+        } else if ( dim == 2 ) {
+            vm.resize(3);
+            mults.resize(3);
+            dirs.resize(3, 0);
+        }
+        dirs [ 0 ] = 0;
+        dirs [ 1 ] = 0;
+        dirs [ 2 ] = 0;
+        vm [ 0 ] = m; //master
+        vm [ 1 ] = nodes->giveNode(intialNodeNum); //grad x
+        vm [ 2 ] = nodes->giveNode(intialNodeNum+1); //grad y
+        mults [ 0 ] = 1;
+        mults [ 1 ] = diff.x;
+        mults [ 2 ] = diff.y;
+        jd = new JointDoF(s, dirs[0], vm, dirs, mults);
+        constrs->addConstraint(jd);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterContainer *ex) {
+    return;
+    //export data
+    string export_name = "PUCgrad_flux";
+    vector< string >gname;
+    vector< unsigned >n;
+    vector< string >codes;
+    n.resize(1);
+    codes.resize(1);
+    ForceGauge *fg;
+    codes [ 0 ] = "fx";
+    if ( dim == 2 ) {
+        gname.resize(2);
+        gname [ 0 ] = "grad_x";
+        gname [ 1 ] = "grad_y";
+    } else if ( dim == 3 ) {
+        gname.resize(3);
+        gname [ 0 ] = "grad_x";
+        gname [ 1 ] = "grad_y";
+        gname [ 2 ] = "grad_z";
+    }
+    for ( unsigned i = 0; i < gname.size(); i++ ) {
+        n [ 0 ] = intialNodeNum + i;
+        fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
+        ex->addExporter(fg);
+    }
+    DoFGauge *dg;
+    if ( dim == 2 ) {
+        gname [ 0 ] = "flux_x";
+        gname [ 1 ] = "flux_y";
+    } else if ( dim == 3 ) {
+        gname [ 0 ] = "flux_x";
+        gname [ 1 ] = "flux_y";
+        gname [ 2 ] = "flux_z";
+    }
+    for ( unsigned i = 0; i < gname.size(); i++ ) {
+        dg = new DoFGauge(export_name, gname [ i ], intialNodeNum + i, 0, nodes, 1., dim);
+        ex->addExporter(dg);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void TransportPeriodicBC :: readLoading(istringstream &iss) {
+    unsigned num, hnum;
+    string param;
+    strainFunc.resize(dim, -1);
+    stressFunc.resize(dim, -1);
+    volumetricAverageRigidBC = -1;
+
+    iss >> num;
+    for ( unsigned i = 0; i < num; i++ ) {
+        iss >> param >> hnum;
+        if ( dim == 2 ) {
+            std :: size_t found = param.find("z");
+            if ( found != std :: string :: npos ) {
+                cout << "Error in " << name << " : cannot load by " << param << " in two dimensional setup" << '\n';
+                exit(1);
+            }
+            if ( param.compare("gx") == 0 ) {
+                strainFunc [ 0 ] = hnum;
+            } else if ( param.compare("gy") == 0 ) {
+                strainFunc [ 1 ] = hnum;
+            } else if ( param.compare("jx") == 0 ) {
+                stressFunc [ 0 ] = hnum;
+            } else if ( param.compare("jy") == 0 ) {
+                stressFunc [ 1 ] = hnum;
+            } else if ( param.compare("volumetricAverage") == 0 ) {
+                volumetricAverageRigidBC = hnum;                
+            } else {
+                cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
+                exit(1);
+            }
+        } else if ( dim == 3 ) {
+            if      ( param.compare("gx") == 0 ) {
+                strainFunc [ 0 ] = hnum;
+            } else if ( param.compare("gy") == 0 ) {
+                strainFunc [ 1 ] = hnum;
+            } else if ( param.compare("gz") == 0 ) {
+                strainFunc [ 2 ] = hnum;
+            } else if ( param.compare("jx") == 0 ) {
+                stressFunc [ 0 ] = hnum;
+            } else if ( param.compare("jy") == 0 ) {
+                stressFunc [ 1 ] = hnum;
+            } else if ( param.compare("jz") == 0 ) {
+                stressFunc [ 2 ] = hnum;
+            } else if ( param.compare("volumetricAverage") == 0 ) {
+                volumetricAverageRigidBC = hnum;
+            } else {
+                cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
+                exit(1);
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void TransportPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
+    
+    if (volumetricAverageRigidBC<0){   //last master node cannot move
+        Node *m = constrs->giveConstraint(constrs->giveSize()-1)->giveMasterNode(0);
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize());
+        nBC.resize(m->giveNumberOfDoFs(), -1);
+        bc = new BoundaryCondition(m, dBC, nBC);
+        bcs->addBoundaryCondition(bc);
+
+        cout << "**** " << m << endl; 
+        //add constant function
+        vector< double >x, y;
+        x.resize(1, 0);
+        y.resize(1, 0);
+        PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+        funcs->addFunction(newf);
+
+    }else{ //volumetric average    
+        TrsDoF *tn = new TrsDoF(dim);
+        nodes->addNode(tn);
+
+        VolumetricAverage *va;
+        vector< Node * >vm;
+        for(unsigned n=0; n<nodes->giveSize(); n++){
+            if(nodes->giveNode(n)->doesTransport() && (dynamic_cast<TrsDoF*>(nodes->giveNode(n)) == nullptr ) ) vm.push_back(nodes->giveNode(n));    
+        }
+        vector< unsigned >dirs;
+        dirs.resize(vm.size());
+        va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
+        constrs->addConstraint(va);
+        
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        dBC.resize(1, -1);
+        nBC.resize(1, -1);
+        dBC [ 0 ] = volumetricAverageRigidBC; 
+        bc = new BoundaryCondition(tn, dBC, nBC);
+        bcs->addBoundaryCondition(bc);
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     // jointDoF jD;
@@ -418,7 +651,7 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
             iss >> which;
             // std::cout << "which" << '\n';
             bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for MechMasterDoF (fix unused DoFs to zero)" << '\n';
+            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for Particle (fix unused DoFs to zero)" << '\n';
         }
     }
     if ( !bw ) {
@@ -438,11 +671,11 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer 
     // check if it is master node
     MechNode *n = dynamic_cast< MechNode * >( master );
     if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be MechMasterDoF, " << master->giveName() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": node must be Mechanical, " << master->giveName() << " provided" << endl;
         exit(1);
     }
     if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MechMasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": Master for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
         exit(1);
     }
 
@@ -476,7 +709,7 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
             iss >> which;
             // std::cout << "which" << '\n';
             bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for MechMasterDoF (fix unused DoFs to zero)" << '\n';
+            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for Particle (fix unused DoFs to zero)" << '\n';
         }
     }
     if ( !bw ) {
@@ -496,16 +729,17 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
     // check if it is master node
     MechNode *n = dynamic_cast< MechNode * >( master );
     if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be MechMasterDoF, " << master->giveName() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": node must be Mechanical, " << master->giveName() << " provided" << endl;
         exit(1);
     }
     if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MechMasterDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
+        cerr << "Error in " << __func__ << ": MechDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
         exit(1);
     }
 
     for ( auto const &nod : * nodes ) {
         if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ) {
+            if(nod==master) continue;
             // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
             Particle *nn = dynamic_cast< Particle * >( nod );
             if ( nn ) {
@@ -559,8 +793,12 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
             istringstream iss(line);
             iss >> ftype;
             if ( !ftype.rfind("#", 0) == 0 ) {
-                if ( ftype.compare("BasicPeriodicBC") == 0 ) {
-                    BasicPeriodicBC *newblock = new BasicPeriodicBC();
+                if ( ftype.compare("MechanicalPeriodicBC") == 0 ) {
+                    MechanicalPeriodicBC *newblock = new MechanicalPeriodicBC();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("TransportPeriodicBC") == 0 ) {
+                    MechanicalPeriodicBC *newblock = new TransportPeriodicBC();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("RigidPlate") == 0 ) {

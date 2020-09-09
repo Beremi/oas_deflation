@@ -194,6 +194,9 @@ class Model:
         if self.modelType == '2d_singleSpring':
             self.run_2d_singleSpring()
 
+        if self.modelType == '2d_coupledRVE':
+            self.run_2d_coupledRVE()
+
         #if (self.printout == False): enablePrint()
 
     def run_2d_singleSpring(self):
@@ -256,6 +259,12 @@ class Model:
         self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
 
+
+    def run_2d_coupledRVE(self):
+        print('2d_coupledRVE')
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
+        self.materialZones=None
+        self.periodicModel = 1
 
     def saveGeometry(self):
         tube = False

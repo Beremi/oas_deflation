@@ -161,6 +161,10 @@ public:
     Transp1D(const unsigned dim);
     ~Transp1D() {};
     void init();
+    double giveArea() const { return area; }
+    Point giveNormal() const { return normal; }
+    double giveVolume(unsigned nodenum) const;
+    double giveVolume() const;
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     Matrix giveConductivityMatrix(string matrixType) const;
     Matrix giveCapacityMatrix() const;
