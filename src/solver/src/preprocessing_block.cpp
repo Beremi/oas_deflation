@@ -239,7 +239,7 @@ void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCon
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     //last master node cannot move
-    Node *m = constrs->giveConstraint(constrs->giveSize()-1)->giveMasterNode(0);
+    Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);
     BoundaryCondition *bc;
     vector< int >dBC, nBC;
     dBC.resize(m->giveNumberOfDoFs(), -1);
@@ -279,7 +279,7 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BC
 
     //boundary conditions
     genereteRigidBodyBC(nodes, e, bcs, constrs, funcs);
-    
+
     //set prescribed strain and stress
     vector< double >bcmults;
     BoundaryCondition *bc;
@@ -309,7 +309,7 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BC
 
     //export data
     genereteExporters(nodes, ex);
-    
+
     cout << "Applied periodic boundary conditions: " << nodes->giveSize() - intialNodeNum << " new DoFs (nodes " << intialNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
 }
 
@@ -441,7 +441,6 @@ void TransportPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
         mn = new TrsDoF(dim);
         nodes->addNode(mn);
     }
-    
 }
 
 //////////////////////////////////////////////////////////
@@ -466,7 +465,7 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
             mults.resize(4);
             dirs.resize(4, 0);
             dirs [ 3 ] = 0;
-            vm [ 3 ] = nodes->giveNode(intialNodeNum+2); //grad z
+            vm [ 3 ] = nodes->giveNode(intialNodeNum + 2); //grad z
             mults [ 3 ] = diff.z;
         } else if ( dim == 2 ) {
             vm.resize(3);
@@ -478,11 +477,11 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
         dirs [ 2 ] = 0;
         vm [ 0 ] = m; //master
         vm [ 1 ] = nodes->giveNode(intialNodeNum); //grad x
-        vm [ 2 ] = nodes->giveNode(intialNodeNum+1); //grad y
+        vm [ 2 ] = nodes->giveNode(intialNodeNum + 1); //grad y
         mults [ 0 ] = 1;
         mults [ 1 ] = diff.x;
         mults [ 2 ] = diff.y;
-        jd = new JointDoF(s, dirs[0], vm, dirs, mults);
+        jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
         constrs->addConstraint(jd);
     }
 }
@@ -490,6 +489,7 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
 //////////////////////////////////////////////////////////
 void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterContainer *ex) {
     return;
+
     //export data
     string export_name = "PUCgrad_flux";
     vector< string >gname;
@@ -555,7 +555,7 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
             } else if ( param.compare("jy") == 0 ) {
                 stressFunc [ 1 ] = hnum;
             } else if ( param.compare("volumetricAverage") == 0 ) {
-                volumetricAverageRigidBC = hnum;                
+                volumetricAverageRigidBC = hnum;
             } else {
                 cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
                 exit(1);
@@ -585,43 +585,43 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void TransportPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
-    
-    if (volumetricAverageRigidBC<0){   //last master node cannot move
-        Node *m = constrs->giveConstraint(constrs->giveSize()-1)->giveMasterNode(0);
+    if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
+        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize());
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
 
-        cout << "**** " << m << endl; 
+        cout << "**** " << m << endl;
         //add constant function
         vector< double >x, y;
         x.resize(1, 0);
         y.resize(1, 0);
         PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
         funcs->addFunction(newf);
-
-    }else{ //volumetric average    
+    } else  { //volumetric average
         TrsDoF *tn = new TrsDoF(dim);
         nodes->addNode(tn);
 
         VolumetricAverage *va;
         vector< Node * >vm;
-        for(unsigned n=0; n<nodes->giveSize(); n++){
-            if(nodes->giveNode(n)->doesTransport() && (dynamic_cast<TrsDoF*>(nodes->giveNode(n)) == nullptr ) ) vm.push_back(nodes->giveNode(n));    
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
+                vm.push_back(nodes->giveNode(n) );
+            }
         }
         vector< unsigned >dirs;
-        dirs.resize(vm.size());
+        dirs.resize(vm.size() );
         va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
         constrs->addConstraint(va);
-        
+
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
         dBC.resize(1, -1);
         nBC.resize(1, -1);
-        dBC [ 0 ] = volumetricAverageRigidBC; 
+        dBC [ 0 ] = volumetricAverageRigidBC;
         bc = new BoundaryCondition(tn, dBC, nBC);
         bcs->addBoundaryCondition(bc);
     }
@@ -739,7 +739,9 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 
     for ( auto const &nod : * nodes ) {
         if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ) {
-            if(nod==master) continue;
+            if ( nod == master ) {
+                continue;
+            }
             // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
             Particle *nn = dynamic_cast< Particle * >( nod );
             if ( nn ) {

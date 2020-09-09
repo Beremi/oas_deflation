@@ -994,9 +994,11 @@ void CoordinateIndexedSparseMatrix :: print() {
     this->print(RowCount, ColumnCount);
 }
 
-bool CoordinateIndexedSparseMatrix :: isThereNaN() const{
-    for(auto &k:array){
-        if (k!=k) return true;
+bool CoordinateIndexedSparseMatrix :: isThereNaN() const {
+    for ( auto &k:array ) {
+        if ( k != k ) {
+            return true;
+        }
     }
     return false;
 }

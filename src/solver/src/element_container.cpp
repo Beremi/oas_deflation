@@ -53,22 +53,22 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     TranspCondensedPolygonal *newelem = new TranspCondensedPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);/*
-                } else if ( elemType.compare("PolyhedralFace") == 0 ) {
-                    PolyhedralFace *newelem = new PolyhedralFace(ndim);
-                    newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);*/
+                                              * } else if ( elemType.compare("PolyhedralFace") == 0 ) {
+                                              * PolyhedralFace *newelem = new PolyhedralFace(ndim);
+                                              * newelem->readFromLine(iss, nodes, matrs);
+                                              * elems.push_back(newelem);*/
                 } else if ( elemType.compare("TranspPolyhedral") == 0 ) {
                     TranspPolyhedral *newelem = new TranspPolyhedral(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);/*
-                } else if ( elemType.compare("TranspVirtPolyhedral") == 0 ) {
-                    TranspVirtPolyhedral *newelem = new TranspVirtPolyhedral(ndim);
-                    newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);
-                } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 ) {
-                    TranspCondensedPolyhedral *newelem = new TranspCondensedPolyhedral(ndim);
-                    newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);*/
+                                              * } else if ( elemType.compare("TranspVirtPolyhedral") == 0 ) {
+                                              * TranspVirtPolyhedral *newelem = new TranspVirtPolyhedral(ndim);
+                                              * newelem->readFromLine(iss, nodes, matrs);
+                                              * elems.push_back(newelem);
+                                              * } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 ) {
+                                              * TranspCondensedPolyhedral *newelem = new TranspCondensedPolyhedral(ndim);
+                                              * newelem->readFromLine(iss, nodes, matrs);
+                                              * elems.push_back(newelem);*/
                 } else {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -86,11 +86,11 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 //////////////////////////////////////////////////////////
 void ElementContainer :: init() {
     max_sol_order = 0;
-    
+
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->init();
         ( * e )->initMaterialStatuses();
-        max_sol_order = max(max_sol_order,( * e )->giveSolutionOrder());
+        max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
     }
 }
 
@@ -139,9 +139,9 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
             }
         }
     }
-    if (nfreeDoFs > 0) {
-      K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
-    }   
+    if ( nfreeDoFs > 0 ) {
+        K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -169,9 +169,11 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
     MechanicalElement *me;
     TransportElement *te;
 
-    for(unsigned so=0; so<=max_sol_order; so++){
+    for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-            if(( * e )->giveSolutionOrder()!=so) continue; //correct order must be used;
+            if ( ( * e )->giveSolutionOrder() != so ) {
+                continue;                                  //correct order must be used;
+            }
             if ( matrixType.compare("mass") == 0 ) {
                 me = dynamic_cast< MechanicalElement * >( * e );
                 if ( me ) {
@@ -242,9 +244,11 @@ void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f, bool
     vector< unsigned >elDoFs;
     full_f *= 0;  // clear array
 
-    for(unsigned so=0; so<=max_sol_order; so++){
+    for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-            if(( * e )->giveSolutionOrder()!=so) continue; //correct order must be used;
+            if ( ( * e )->giveSolutionOrder() != so ) {
+                continue;                                  //correct order must be used;
+            }
             elDoFs = ( * e )->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -277,7 +281,7 @@ void ElementContainer :: addBodyForces(Vector &R, double time) const {
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: findElementFriends (){
+void ElementContainer :: findElementFriends() {
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->findElementFriends(this);
     }

@@ -51,7 +51,7 @@ protected:
     virtual void readLoading(istringstream &iss);
     virtual void genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
-    MechanicalPeriodicBC() {name = "MechanicalPeriodicBC";};
+    MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; };
     virtual ~MechanicalPeriodicBC() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
@@ -71,7 +71,7 @@ protected:
     virtual void readLoading(istringstream &iss);
     virtual void genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
-    TransportPeriodicBC() {name = "TransportPeriodicBC";};
+    TransportPeriodicBC() { name = "TransportPeriodicBC"; };
     virtual ~TransportPeriodicBC() {};
 };
 

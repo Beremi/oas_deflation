@@ -28,12 +28,12 @@ void Node :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
 void MechDoF :: readFromLine(istringstream &iss) {
-    (void) iss;
+    ( void ) iss;
 }
 
 //////////////////////////////////////////////////////////
-MechDoF :: MechDoF(unsigned dimension): MechNode(dimension) {
-    point = Point(0,0,0);
+MechDoF :: MechDoF(unsigned dimension) : MechNode(dimension) {
+    point = Point(0, 0, 0);
     nDoFs = 1;
     dim = dimension;
     name = "Mechanical DoF";
@@ -70,13 +70,13 @@ double TrsNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
 void TrsDoF :: readFromLine(istringstream &iss) {
-    (void) iss;
+    ( void ) iss;
 }
 
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
-TrsDoF :: TrsDoF(unsigned dimension): TrsNode(dimension) {
-    point = Point(0,0,0);
+TrsDoF :: TrsDoF(unsigned dimension) : TrsNode(dimension) {
+    point = Point(0, 0, 0);
     nDoFs = 1;
     dim = dimension;
     name = "Transport DoF";

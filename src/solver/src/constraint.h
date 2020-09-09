@@ -30,12 +30,12 @@ public:
     unsigned giveSlaveDir() const { return direction; };
     std :: vector< Node * >giveMasterNodes() { return masters; };
     unsigned giveNumOfMasters() const { return masters.size(); };
-    Node *giveMasterNode(unsigned k) { return masters[k]; };
+    Node *giveMasterNode(unsigned k) { return masters [ k ]; };
     unsigned giveMasterDoF(unsigned k) const;
     std :: vector< unsigned >giveMasterDirs() { return directions; };
-    unsigned giveMasterDir(unsigned k) const {return directions[k];}
+    unsigned giveMasterDir(unsigned k) const { return directions [ k ]; }
     std :: vector< double >giveMasterMultipliers() { return multipliers; };
-    double giveMasterMultiplier(unsigned k) const {return multipliers[k];}
+    double giveMasterMultiplier(unsigned k) const { return multipliers [ k ]; }
 };
 
 //////////////////////////////////////////////////////////
@@ -45,8 +45,8 @@ class VolumetricAverage : public JointDoF
 protected:
     ElementContainer *elems;
     ConstraintContainer *constraints;
-    vector< Node * > nodes;
-    vector< unsigned > dirs;
+    vector< Node * >nodes;
+    vector< unsigned >dirs;
     Node *masternode;
     unsigned masterdir;
 public:

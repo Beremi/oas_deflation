@@ -112,7 +112,7 @@ Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialCont
             } else if ( istr.compare("Solver") == 0 ) {
                 iss >> istr;
                 Solver auxs;
-                newsolver = auxs.readFromFile( ( GlobPaths :: BASEDIR / istr ).string());
+                newsolver = auxs.readFromFile( ( GlobPaths :: BASEDIR / istr ).string() );
                 newsolver->setElementContainer(elems);
                 newsolver->setNodeContainer(nodes);
                 newsolver->setFunctionContainer(funcs);

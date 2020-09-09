@@ -40,7 +40,7 @@ public:
      */
     virtual void readFromLine(istringstream &iss);
     Point givePoint() const { return point; };
-    Point *givePointPointer() { return &point; };
+    Point *givePointPointer() { return & point; };
     void setPoint(const Point &P) { point = P; };
     void setNumberOfDoFs(const int num) { nDoFs = num; };
     unsigned giveNumberOfDoFs() const { return nDoFs; };
@@ -52,8 +52,8 @@ public:
     bool doesMechanics() const { return isMechanical; };
     bool doesTransport() const { return isTransport; };
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const { ( void ) code; ( void ) DoFs; return 0; };
-    bool isDoFMechanical(unsigned k){(void) k; return isMechanical;}; //in future we might have node with both fields
-    bool isDoFTransport(unsigned k){(void) k; return isTransport;};   //in future we might have node with both fields
+    bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
+    bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
 };
 
 //////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ class MechNode : public Node
 private:
 protected:
 public:
-    MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "mechanical node"; isMechanical = true;};
+    MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "mechanical node"; isMechanical = true; };
     virtual ~MechNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
@@ -135,7 +135,7 @@ private:
     double r;  // radius in case of power tessellation
 protected:
 public:
-    Particle(unsigned dimension): MechNode(dimension) { nDoFs = 3 * ( dim - 1 ); name = "particle"; };
+    Particle(unsigned dimension) : MechNode(dimension) { nDoFs = 3 * ( dim - 1 ); name = "particle"; };
     virtual ~Particle() {};
 
     virtual void readFromLine(istringstream &iss);
