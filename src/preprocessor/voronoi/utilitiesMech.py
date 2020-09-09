@@ -212,11 +212,9 @@ class TransportMaterial:
         self.crack_turtuosity = crack_turtuosity
 
     def getString (self):
-<<<<<<< HEAD
-        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity)  
-=======
-        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%f'%(self.capacity)  + '\t' + 'density\t%f'%(self.density)  + '\t' + 'permeability\t%f'%(self.permeability)  + '\t' + 'viscosity\t%f'%(self.viscosity)
->>>>>>> 6fa61c23d2956848b4468cc0bbfd99e4043a24fa
+
+        line = 'TrsprtMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity)
+
         return line
 
 

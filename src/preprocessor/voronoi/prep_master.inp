@@ -39,7 +39,7 @@
 #
 ####################################################################################
 #COUPLED MODELS AVAILABLE
-Model 2d_coupledArtificialCrack Xsize 0.5 Ysize 0.5 minDist 0.02 notchH 0.5 activeTransport 1 activeMechanics 1 trials 50000
+Model 2d_coupledArtificialCrack Xsize 0.15 Ysize 0.5 minDist 0.006 notchH 0.8 activeTransport 1 activeMechanics 1 trials 100000
 #
 #
 ####################################################################################
