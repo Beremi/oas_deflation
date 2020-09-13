@@ -10,6 +10,7 @@
 // time management:
 #include <chrono>
 #include <ctime>
+#include <omp.h>
 
 #include "version.h"
 #include "globals.h"
@@ -22,25 +23,10 @@
 #include "solver.h"
 using namespace std;
 
-#define PRINT_TIME true
-
 fs :: path GlobPaths :: INPUT;
 fs :: path GlobPaths :: INPUTFILENAME;
 fs :: path GlobPaths :: BASEDIR;
 fs :: path GlobPaths :: RESULTDIR;
-
-string convertTimeToString(std :: chrono :: duration< double >time_interval) {
-    int hours = time_interval.count() / 3600;
-    int minutes = time_interval.count() / 60 - hours * 60;
-    int seconds = time_interval.count() - hours * 3600 - minutes * 60;
-    int miliseconds = ( time_interval.count() - hours * 3600 - minutes * 60 - seconds ) * 100;
-    stringstream ss;
-    ss << std :: setw(2) << std :: setfill('0') << hours << ":"
-       << std :: setw(2) << std :: setfill('0') << minutes << ":"
-       << std :: setw(2) << std :: setfill('0') << seconds << "."
-       << std :: setw(3) << std :: setfill('0') << miliseconds;
-    return ss.str();
-}
 
 
 Solver *readMasterFile(const string filename, NodeContainer *nodes, MaterialContainer *matrs, ElementContainer *elems, FunctionContainer *funcs, BCContainer *bconds, ConstraintContainer *constr, ExporterContainer *exporters, PBlockContainer *pblocks) {
@@ -150,6 +136,14 @@ int main(int argc, char **argv) {
         cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
+    
+    // OMP set 1 thread by default
+    omp_set_dynamic(0);
+    char *val = getenv("OMP_NUM_THREADS");
+    if (val != nullptr)
+        cout << "OMP_NUM_THREADS = " << val << endl;
+    else
+        omp_set_num_threads(1);
 
     GlobPaths :: INPUT = fs :: absolute(argv [ 1 ]);
     GlobPaths :: INPUTFILENAME = GlobPaths :: INPUT.filename();
