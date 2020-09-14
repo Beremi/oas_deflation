@@ -21,7 +21,7 @@ include (GenerateExportHeader)
 include (ProcessorCount)
 
 set(CMAKE_COLOR_MAKEFILE ON)
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 include(GNUInstallDirs)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
@@ -41,8 +41,6 @@ set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/"
 message(STATUS "project source directory -> ${PartMod_SOURCE_DIR}")
 message(STATUS "project build directory -> ${PartMod_BINARY_DIR}")
 
-# detect python
-find_package(PythonInterp REQUIRED)
 
 # Default is release build
 if (NOT CMAKE_BUILD_TYPE)
@@ -59,7 +57,7 @@ if (MSVC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W4 -wd4786 -wd4100 -wd4996 -wd4706 -wd4512 -wd4251 -wd4800")
 else ()
     #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC") # -Wextra
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall -fopenmp")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC") # Wextra
 endif ()
 
@@ -67,6 +65,11 @@ set (CMAKE_CXX_STANDARD 17)
 
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 #set (CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O2 -pg")
+
+# detect
+find_package(PythonInterp REQUIRED)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+include_directories(${EIGEN3_INCLUDE_DIR})
 
 #######################################################################
 ######################## Options ######################################
@@ -92,7 +95,7 @@ endif ()
 #add_executable(DiscreteModel ${SOURCE})
 add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
-#target_link_libraries (DiscreteModel libDiscreteModel)
+#target_link_libraries (DiscreteModel libDiscreteModel Eigen3::Eigen)
 #find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
@@ -106,6 +109,7 @@ endif()
 target_link_libraries(DiscreteModel
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
+                      Eigen3::Eigen
                      )
 
 install (

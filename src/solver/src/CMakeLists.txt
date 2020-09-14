@@ -5,6 +5,8 @@ set (solver_files
     element_container.cpp
     element.cpp
     element_polyhedral.cpp
+    globals.cpp
+    linalg.cpp
     linear_algebra.cpp
     #main.cpp
     material_container.cpp

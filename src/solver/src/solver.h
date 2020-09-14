@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>      // std::setw
-#include "linear_algebra.h"
+#include "linalg.h"
 #include "element_container.h"
 #include "node_container.h"
 #include "indirect_displ_control.h"

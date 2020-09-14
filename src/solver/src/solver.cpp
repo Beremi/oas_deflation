@@ -164,7 +164,7 @@ void SteadyStateLinearSolver :: solve() {
 
     //solve linear system
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    terminated = !ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
     // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
     //     terminated = true;
     //     cerr << "Conjugate gradients did not converge" << endl;
@@ -444,12 +444,12 @@ void SteadyStateNonLinearSolver :: solve() {
                 computeInternalExternalForcesWithFrozenIntVariables(trial_r);
                 nodes->giveReducedDoFArray(f_ext - f_int, f);
 
-                if ( ConjGrad(K, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                if ( LinalgSymmetricSolver(K, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
                 }
-                if ( ConjGrad(K, ddf, f - f_last_iter, ddf, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                if ( LinalgSymmetricSolver(K, ddf, f - f_last_iter, ddf, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
@@ -464,7 +464,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
             } else  {        //direct controll
-                if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                if ( LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
@@ -644,7 +644,7 @@ void TransientLinearMechanicalSolver :: init() {
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForcesWithFrozenIntVariables(r); //at time 0
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    terminated = !ConjGrad(M, a_red, f - C * v_red,  a_red, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(M, a_red, f - C * v_red,  a_red, conj_grad_precission, conj_grad_relative_maxit);
 }
 
 //////////////////////////////////////////////////////////
@@ -714,7 +714,7 @@ void TransientLinearMechanicalSolver :: solve() {
     //solve linear system
     nodes->giveReducedDoFArray(f_ext - f_int, f);
     updateFeff();
-    terminated = !ConjGrad(Keff, ddr, feff, ddr, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(Keff, ddr, feff, ddr, conj_grad_precission, conj_grad_relative_maxit);
 
     updateFieldVariables();
     r_old = r;
@@ -785,7 +785,7 @@ void TransientLinearTransportSolver :: init() {
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r); //at time 0
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    terminated = !ConjGrad(C, v_red, f,  v_red, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(C, v_red, f,  v_red, conj_grad_precission, conj_grad_relative_maxit);
 }
 
 //////////////////////////////////////////////////////////
