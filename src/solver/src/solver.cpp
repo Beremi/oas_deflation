@@ -1,4 +1,5 @@
 #include "solver.h"
+#include "solver_adaptive.h"
 #define EPS2 1e-30
 
 //////////////////////////////////////////////////////////
@@ -20,28 +21,28 @@ Solver *Solver :: readFromFile(const string filename) {
         inputfile.close();
     }
     if ( param.compare("SteadyStateLinearSolver") == 0 ) {
-        SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else if ( param.compare("SteadyStateNonLinearSolver") == 0 ) {
-        SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
-        TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else if ( param.compare("TransientLinearTransportSolver") == 0 ) {
-        TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else {
-        cerr << "Error: Solver " << param << " is not implemented" << endl;
-        exit(EXIT_FAILURE);
+      cerr << "Error: Solver " << param << " is not implemented" << endl;
+      exit(EXIT_FAILURE);
     }
 }
 
@@ -396,9 +397,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors( double *displa_error, double 
     }
 
     *residu_error = sqrt( residualM / max(max(f_extM, f_intM), EPS2) + residualT / max(max(f_extT, f_intT), EPS2));
-    *displa_error = sqrt( full_ddrM / max(trial_rM, EPS2) + full_ddrT / max(trial_rT, EPS2)); 
+    *displa_error = sqrt( full_ddrM / max(trial_rM, EPS2) + full_ddrT / max(trial_rT, EPS2));
     *energy_error = energyM / max(max(W_extM, W_intM), EPS2) + energyT / max(max(W_extT, W_intT), EPS2);
-  
+
 }
 
 //////////////////////////////////////////////////////////
