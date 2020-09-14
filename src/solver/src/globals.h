@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string>
 #include <cmath>
+#include <sstream>
 
 // time management:
 #include <chrono>

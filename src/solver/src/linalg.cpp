@@ -4,7 +4,7 @@ using namespace std;
 using namespace Eigen;
 
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit) {
-    #ifdef PRINT_DEBUG_TIME 
+    #if PRINT_DEBUG_TIME 
         auto start = std :: chrono :: system_clock :: now();
     #endif
     
@@ -36,7 +36,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     VectorXd cgx0(rowsize);
     for (size_t i=0; i<rowsize; i++) cgx0[i] = x0[i];
     
-    #ifdef PRINT_DEBUG_TIME
+    #if PRINT_DEBUG_TIME
         auto now = std :: chrono :: system_clock :: now();
 
         auto elapsed_seconds = now - start;
@@ -53,7 +53,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     VectorXd cgx = cgK.solveWithGuess(cgb, cgx0);
     //VectorXd cgx = cgK.solve(cgb);
     
-    #ifdef PRINT_DEBUG_TIME
+    #if PRINT_DEBUG_TIME
             now = std :: chrono :: system_clock :: now();
 
             elapsed_seconds = now - start;
@@ -68,7 +68,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
 
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit) {
-    #ifdef PRINT_DEBUG_TIME
+    #if PRINT_DEBUG_TIME
         auto start = std :: chrono :: system_clock :: now();
     #endif
     
@@ -100,7 +100,7 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
     VectorXd cgx0(rowsize);
     for (size_t i=0; i<rowsize; i++) cgx0[i] = x0[i];
     
-    #ifdef PRINT_DEBUG_TIME
+    #if PRINT_DEBUG_TIME
             auto now = std :: chrono :: system_clock :: now();
 
             auto elapsed_seconds = now - start;
@@ -118,7 +118,7 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
     VectorXd cgx = bicg.solveWithGuess(cgb, cgx0);
     //VectorXd cgx = bicg.solve(cgb);
     
-    #ifdef PRINT_DEBUG_TIME
+    #if PRINT_DEBUG_TIME
             now = std :: chrono :: system_clock :: now();
 
             elapsed_seconds = now - start;
