@@ -1,5 +1,5 @@
 #include "solver.h"
-#include "solver_adaptive.h"
+//#include "solver_adaptive.h"
 #define EPS2 1e-30
 
 //////////////////////////////////////////////////////////
