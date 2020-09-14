@@ -23,26 +23,6 @@
 #include "preprocessing_block.h"
 #include "solver.h"
 
-using namespace std;
-
-/*
-//////////////////////////////////////////////////////////////////////////////////////
-string convertTimeToString(std :: chrono :: duration< double >time_interval) {
-    int hours = time_interval.count() / 3600;
-    int minutes = time_interval.count() / 60 - hours * 60;
-    int seconds = time_interval.count() - hours * 3600 - minutes * 60;
-    int miliseconds = ( time_interval.count() - hours * 3600 - minutes * 60 - seconds ) * 100;
-    stringstream ss;
-    ss << std :: setw(2) << std :: setfill('0') << hours << ":"
-       << std :: setw(2) << std :: setfill('0') << minutes << ":"
-       << std :: setw(2) << std :: setfill('0') << seconds << "."
-       << std :: setw(3) << std :: setfill('0') << miliseconds;
-    return ss.str();
-}
-*/
-
-//////////////////////////////////////////////////////////////////////////////////////
-
 class Model
 {
 public:

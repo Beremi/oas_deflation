@@ -21,7 +21,7 @@ include (GenerateExportHeader)
 include (ProcessorCount)
 
 set(CMAKE_COLOR_MAKEFILE ON)
-set(CMAKE_VERBOSE_MAKEFILE OFF)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
 project(PartMod CXX)
@@ -125,8 +125,10 @@ endif ()
 #file(GLOB SOURCE "${PartMod_SOURCE_DIR}/src/solver/src/*.h" "${PartMod_SOURCE_DIR}/src/*.cpp")
 
 #add_executable(DiscreteModel ${SOURCE})
-add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
+#add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
+
+add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #target_link_libraries (DiscreteModel libDiscreteModel Eigen3::Eigen)
 #find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
 
