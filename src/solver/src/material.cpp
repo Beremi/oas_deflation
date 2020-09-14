@@ -27,7 +27,7 @@ void TrsprtMaterial :: readFromLine(istringstream &iss) {
         if ( param.compare("capacity") == 0 ) {
             bcapacity = true;
             iss >> capacity;
-        } else if ( param.compare("viscosity") == 0 ) {                                   
+        } else if ( param.compare("viscosity") == 0 ) {
             bviscosity = true;
             iss >> viscosity;
         } else if ( param.compare("permeability") == 0 ) {
@@ -69,7 +69,7 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
 
 TrsprtCoupledMaterialStatus :: TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e) : TrsprtMaterialStatus(m, e) {
     name = "coupled transport mat. status";
-    temp_effConductivity = effConductivity; 
+    temp_effConductivity = effConductivity;
 }
 
 //////////////////////////////////////////////////////////
@@ -92,7 +92,7 @@ void TrsprtCoupledMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain) {
-    //first strain term is pressure gradient, second strain face are, then it is alway crack opening and crack length coulples 
+    //first strain term is pressure gradient, second strain face are, then it is alway crack opening and crack length coulples
     TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
     Vector flux(1);
     double crackParam = 0;
@@ -104,7 +104,7 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
-    
+
     TrsprtMaterial :: readFromLine(iss);
 
     iss.clear(); // clear string stream
