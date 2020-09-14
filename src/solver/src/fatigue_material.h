@@ -126,12 +126,12 @@ private:
 
     void print() const;
 public:
-    FatigueShearMaterialInteractedStatus(FatigueShearMaterialInteracted* m, Element* e);
+    FatigueShearMaterialInteractedStatus(FatigueShearMaterialInteracted *m, Element *e);
     virtual ~FatigueShearMaterialInteractedStatus() {};
     void init();
     virtual void update();
     virtual Vector giveNormalShearStiffness(string type) const;
-    virtual Vector giveStress(const Vector& strain);
+    virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };
 
@@ -149,8 +149,8 @@ private:
 public:
     FatigueShearMaterialInteracted() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterialInteracted() {};
-    void readFromLine(istringstream& iss);
-    MaterialStatus* giveNewMaterialStatus(Element* e);
+    void readFromLine(istringstream &iss);
+    MaterialStatus *giveNewMaterialStatus(Element *e);
     double giveTauBar() const { return tauBar; }
     double giveKin() const { return Kin; }
     double giveGamma() const { return gamma; }

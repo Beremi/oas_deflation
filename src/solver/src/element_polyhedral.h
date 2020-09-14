@@ -77,18 +77,18 @@ public:
 // TRANSPORT POLYGONAL ELEMENT CONSTRUCTED BY STATIC CONDENSATION OF ISOPARAMETRIC TRIANGLES
 
 /*
-class PolyhedralFace : public GeometricalElement
-{
-protected:
-
-public:
-    PolyhedralFace(const unsigned dim);
-    ~PolyhedralFace() {};
-    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    void init();
-    double giveValue(string code) const {return 0;};
-};
-*/
+ * class PolyhedralFace : public GeometricalElement
+ * {
+ * protected:
+ *
+ * public:
+ *  PolyhedralFace(const unsigned dim);
+ *  ~PolyhedralFace() {};
+ *  void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+ *  void init();
+ *  double giveValue(string code) const {return 0;};
+ * };
+ */
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -96,9 +96,9 @@ class TranspPolyhedral : public TranspPolygonal
 {
 protected:
     vector< double >volumes;
-    vector< Point > faceCenters;
-    vector< vector< int > > faceConnectivity;
-    vector< double > determinants;
+    vector< Point >faceCenters;
+    vector< vector< int > >faceConnectivity;
+    vector< double >determinants;
 
     void findIntegrationPoints();
     Vector WachspressShapeF(Point x) const;
@@ -116,39 +116,39 @@ public:
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 /*
-class TranspVirtPolyhedral : public TranspPolyhedral
-{
-private:
-    Matrix V1, V2;
-public:
-    TranspVirtPolyhedral(const unsigned dim);
-    ~TranspVirtPolyhedral() {};
-    void init();
-    Matrix giveConductivityMatrix(string matrixType) const;
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// TRANSPORT POLYHEDRAL ELEMENT CONSTRUCTED BY STATIC CONDENSATION OF ISOPARAMETRIC TRIANGLES
-
-class TranspCondensedPolyhedral : public TranspPolyhedral
-{
-private:
-    unsigned nodeMaxAngle;
-    Vector red2full;
-    vector< double >angles;
-    Vector fullTriShapeF(Point x) const;
-    Matrix fullTriShapeFGrad(Point x) const;
-    Vector condTriShapeF(Point x) const;
-    Matrix condTriShapeFGrad(Point x) const;
-
-    unsigned findFaceNumber(Point x) const;
-public:
-    TranspCondensedPolyhedral(const unsigned dim);
-    ~TranspCondensedPolyhedral() {};
-    virtual Vector shapeF(Point x) const { return condTriShapeF(x); };
-    virtual Matrix shapeFGrad(Point x) const { return condTriShapeFGrad(x); };
-    virtual void init();
-};
-*/
+ * class TranspVirtPolyhedral : public TranspPolyhedral
+ * {
+ * private:
+ *  Matrix V1, V2;
+ * public:
+ *  TranspVirtPolyhedral(const unsigned dim);
+ *  ~TranspVirtPolyhedral() {};
+ *  void init();
+ *  Matrix giveConductivityMatrix(string matrixType) const;
+ * };
+ *
+ * //////////////////////////////////////////////////////////
+ * //////////////////////////////////////////////////////////
+ * // TRANSPORT POLYHEDRAL ELEMENT CONSTRUCTED BY STATIC CONDENSATION OF ISOPARAMETRIC TRIANGLES
+ *
+ * class TranspCondensedPolyhedral : public TranspPolyhedral
+ * {
+ * private:
+ *  unsigned nodeMaxAngle;
+ *  Vector red2full;
+ *  vector< double >angles;
+ *  Vector fullTriShapeF(Point x) const;
+ *  Matrix fullTriShapeFGrad(Point x) const;
+ *  Vector condTriShapeF(Point x) const;
+ *  Matrix condTriShapeFGrad(Point x) const;
+ *
+ *  unsigned findFaceNumber(Point x) const;
+ * public:
+ *  TranspCondensedPolyhedral(const unsigned dim);
+ *  ~TranspCondensedPolyhedral() {};
+ *  virtual Vector shapeF(Point x) const { return condTriShapeF(x); };
+ *  virtual Matrix shapeFGrad(Point x) const { return condTriShapeFGrad(x); };
+ *  virtual void init();
+ * };
+ */
 #endif  /* _ELEMENT_POLYHEDRAL_H */

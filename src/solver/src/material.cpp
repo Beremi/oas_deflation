@@ -7,20 +7,20 @@
 
 TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : MaterialStatus(m, e) {
     name = "transport mat. status";
-    effConductivity = m->giveDensity()*m->givePermeability()/m->giveViscosity();
+    effConductivity = m->giveDensity() * m->givePermeability() / m->giveViscosity();
 }
 
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
-    return -effConductivity*strain;
+    return -effConductivity * strain;
 };
 
 //////////////////////////////////////////////////////////
 void TrsprtMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bcapacity, bpermeability, bviscosity, bdensity;
-    bcapacity = bpermeability = bviscosity = bdensity= false;
+    bcapacity = bpermeability = bviscosity = bdensity = false;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -73,10 +73,10 @@ TrsprtCoupledMaterialStatus :: TrsprtCoupledMaterialStatus(TrsprtMaterial *m, El
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) const{
+double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) const {
     if ( type.compare("elastic") == 0  ) {
         TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-        return m->giveDensity()*m->givePermeability()/m->giveViscosity();
+        return m->giveDensity() * m->givePermeability() / m->giveViscosity();
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
         return temp_effConductivity;
     } else {
@@ -96,15 +96,16 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain) {
     TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
     Vector flux(1);
     double crackParam = 0;
-    for(size_t i=2; i<strain.size(); i += 2) crackParam += pow(strain[i],3)*strain[i+1];
-    temp_effConductivity = m->giveDensity()*m->givePermeability()/m->giveViscosity() + m->giveTurtuosity()/(12.*m->giveViscosity()*strain[1])*crackParam;
-    flux[0] = -temp_effConductivity*strain[0];
+    for ( size_t i = 2; i < strain.size(); i += 2 ) {
+        crackParam += pow(strain [ i ], 3) * strain [ i + 1 ];
+    }
+    temp_effConductivity = m->giveDensity() * m->givePermeability() / m->giveViscosity() + m->giveTurtuosity() / ( 12. * m->giveViscosity() * strain [ 1 ] ) * crackParam;
+    flux [ 0 ] = -temp_effConductivity * strain [ 0 ];
     return flux;
 };
 
 //////////////////////////////////////////////////////////
 void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
-
     TrsprtMaterial :: readFromLine(iss);
 
     iss.clear(); // clear string stream

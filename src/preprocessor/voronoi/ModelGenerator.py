@@ -194,6 +194,12 @@ class Model:
         if self.modelType == '2d_singleSpring':
             self.run_2d_singleSpring()
 
+        if self.modelType == '2d_coupledArtificialCrack':
+            self.run_2d_coupledArtificialCrack()
+
+        if self.modelType == '2d_coupledRVE':
+            self.run_2d_coupledRVE()
+
         #if (self.printout == False): enablePrint()
 
     def run_2d_singleSpring(self):
@@ -256,6 +262,18 @@ class Model:
         self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
 
+    def run_2d_coupledArtificialCrack(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
+
+
+
+
+    def run_2d_coupledRVE(self):
+        print('2d_coupledRVE')
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
+        self.materialZones=None
+        self.periodicModel = 1
 
     def saveGeometry(self):
         tube = False
@@ -357,6 +375,7 @@ class Model:
             permeability = None
             density = None
             capacity = None
+            crack_turtuosity = None
             #
             for i in range (len(r)):
                 if (r[i]=='capacity'):
@@ -367,12 +386,14 @@ class Model:
                     permeability = float(r[i+1])
                 if (r[i]=='viscosity'):
                     viscosity = float(r[i+1])
+                if (r[i]=='crack_turtuosity'):
+                    crack_turtuosity = float(r[i+1])
             #
-            if (viscosity == None or permeability == None or density == None or capacity == None):
+            if (viscosity == None or permeability == None or density == None or capacity == None or crack_turtuosity==None):
                 print ('!! TrsprtMaterial incomplete. Exiting. !!')
                 sys.exit()
 
-            transportMaterial = utilitiesMech.TransportMaterial(viscosity, permeability, density, capacity)
+            transportMaterial = utilitiesMech.TransportMaterial(viscosity, permeability, density, capacity, crack_turtuosity)
             self.materials.append(transportMaterial)
             print('done.')
 

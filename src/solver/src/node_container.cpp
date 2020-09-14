@@ -39,8 +39,12 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     AuxNode *newnode = new AuxNode(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
-                } else if ( nodeType.compare("MechMasterDoF") == 0 ) {
-                    MechMasterDoF *newnode = new MechMasterDoF(dim);
+                } else if ( nodeType.compare("MechDoF") == 0 ) {
+                    MechDoF *newnode = new MechDoF(dim);
+                    newnode->readFromLine(iss);
+                    nodes.push_back(newnode);
+                } else if ( nodeType.compare("TrsDoF") == 0 ) {
+                    TrsDoF *newnode = new TrsDoF(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else {
@@ -136,9 +140,9 @@ void NodeContainer :: establishDoFArray() {
     unsigned ndofs;
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         ndofs = ( * n )->giveNumberOfDoFs();
-        for(unsigned k=0; k<ndofs; k++, i++){
-            mechDoFs[i]   = ( * n )->isDoFMechanical(k);
-            transpDoFs[i] = ( * n )->isDoFTransport(k);            
+        for ( unsigned k = 0; k < ndofs; k++, i++ ) {
+            mechDoFs [ i ]   = ( * n )->isDoFMechanical(k);
+            transpDoFs [ i ] = ( * n )->isDoFTransport(k);
         }
     }
 
@@ -163,7 +167,6 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
     for ( unsigned k = 0; k < blocked.size(); k++ ) {
         r [ blockedDoFid [ k ] ] = blocked [ k ];
     }
-
     if ( this->giveConstraints()->isActive() ) {
         this->giveConstraints()->calculateDependentDoFs(r);
     }
@@ -173,10 +176,11 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs - constrDoFs ) {            
+        if ( DoFid [ i ] < freeDoFs - constrDoFs ) {
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
         }
     }
+
     // #constr_new
     if ( this->giveConstraints()->isActive() ) {
         this->giveConstraints()->calculateDependentDoFs(fullDoFs);
@@ -193,7 +197,7 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExteranlForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const {
+void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const {
     // #constr_new
     if ( this->giveConstraints()->isActive() ) {
         this->giveConstraints()->calculateMasterForces(f_int);

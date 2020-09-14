@@ -24,9 +24,9 @@ protected:
     vector< double >ip_weights;
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
-    unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs. 
+    unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
 public:
-    Element() { name = "basic element"; solution_order = 0;}
+    Element() { name = "basic element"; solution_order = 0; }
     virtual ~Element();
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
     virtual void init();
@@ -34,17 +34,17 @@ public:
     void updateMaterialStatuses();
     virtual Matrix giveSteadyStateMatrix(string matrixType) const = 0;
     vector< unsigned >giveDoFs() { return DoFids; };
-    unsigned giveNumOutDoFs()const{return outDoFs; };
+    unsigned giveNumOutDoFs() const { return outDoFs; };
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const = 0;
     virtual double giveValue(string code) const;
     string giveName() const { return name; }
     size_t giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     vector< Node * >giveNodes() const { return nodes; }
-    Node* giveNode(unsigned k) const { return nodes[k]; }
+    Node *giveNode(unsigned k) const { return nodes [ k ]; }
     Material *giveMaterial() const { return mat; }
-    virtual void findElementFriends(ElementContainer *elemcont) { (void) elemcont; }
-    unsigned giveSolutionOrder()const{return solution_order;}
+    virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
+    unsigned giveSolutionOrder() const { return solution_order; }
 };
 
 
@@ -56,11 +56,11 @@ class GeometricalElement : virtual public Element
 protected:
 
 public:
-    GeometricalElement() {mat = nullptr;}
+    GeometricalElement() { mat = nullptr; }
     ~GeometricalElement() {};
-    Matrix giveSteadyStateMatrix(string matrixType) const {(void)matrixType; return Matrix(0, 0);};
-    Vector giveInternalForces(const Vector &DoFs, bool frozen) const {(void)DoFs; (void)frozen; return Vector(0);};
-    double giveIPValue(string code, unsigned ipnum){(void) code; (void) ipnum; return 0;}
+    Matrix giveSteadyStateMatrix(string matrixType) const { ( void ) matrixType; return Matrix(0, 0); };
+    Vector giveInternalForces(const Vector &DoFs, bool frozen) const { ( void ) DoFs; ( void ) frozen; return Vector(0); };
+    double giveIPValue(string code, unsigned ipnum) { ( void ) code; ( void ) ipnum; return 0; }
 };
 
 //////////////////////////////////////////////////////////
@@ -125,7 +125,7 @@ public:
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
-    double giveCrackOpening(){return tempCrackOpening;};
+    double giveCrackOpening() { return tempCrackOpening; };
 };
 
 //////////////////////////////////////////////////////////
@@ -161,6 +161,10 @@ public:
     Transp1D(const unsigned dim);
     ~Transp1D() {};
     void init();
+    double giveArea() const { return area; }
+    Point giveNormal() const { return normal; }
+    double giveVolume(unsigned nodenum) const;
+    double giveVolume() const;
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     Matrix giveConductivityMatrix(string matrixType) const;
     Matrix giveCapacityMatrix() const;
@@ -171,15 +175,16 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // COUPLED 1D TRANSPORT ELEMENT
-class Transp1DCoupled : public Transp1D {
+class Transp1DCoupled : public Transp1D
+{
 private:
-    vector< RigidBodyContact* > friends; //mechanical elements involved in computation
-    vector< double > friendsweight; //weight of mechanical elements
-    
+    vector< RigidBodyContact * >friends; //mechanical elements involved in computation
+    vector< double >friendsweight;  //weight of mechanical elements
+
     void findFriends2D(ElementContainer *elemcont);
     void findFriends3D(ElementContainer *elemcont);
 public:
-    Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order=1;}; //coupled elements must be solved after all RBSN elements
+    Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     void findElementFriends(ElementContainer *elemcont);
     ~Transp1DCoupled() {};
     void init();

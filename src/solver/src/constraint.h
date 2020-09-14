@@ -3,14 +3,16 @@
 
 #include "linear_algebra.h"
 
+
 class Node; //forward declaration
 class NodeContainer; //forward declaration
-
+class ElementContainer;  // forward declaration
 class ConstraintContainer;  // forward declaration
+
 
 class JointDoF
 {
-private:
+protected:
     Node *slaveNode;
     unsigned direction;
     std :: vector< Node * >masters;
@@ -22,16 +24,39 @@ public:
     JointDoF(Node *s, unsigned &dir, std :: vector< Node * > &m, std :: vector< unsigned > &dirs, std :: vector< double > &mult);
     void readFromLine(istringstream &iss, NodeContainer *nodes);
     void print();
-    // void init();
+    virtual void init();
     unsigned giveSlaveDoF() const;
     Node *giveSlaveNode() const { return slaveNode; };
     unsigned giveSlaveDir() const { return direction; };
-    std :: vector< Node * >giveMasterDoFs() { return masters; };
-    std :: vector< unsigned >giveDirs() { return directions; };
-    std :: vector< double >giveMultipliers() { return multipliers; };
-protected:
+    std :: vector< Node * >giveMasterNodes() { return masters; };
+    unsigned giveNumOfMasters() const { return masters.size(); };
+    Node *giveMasterNode(unsigned k) { return masters [ k ]; };
+    unsigned giveMasterDoF(unsigned k) const;
+    std :: vector< unsigned >giveMasterDirs() { return directions; };
+    unsigned giveMasterDir(unsigned k) const { return directions [ k ]; }
+    std :: vector< double >giveMasterMultipliers() { return multipliers; };
+    double giveMasterMultiplier(unsigned k) const { return multipliers [ k ]; }
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+class VolumetricAverage : public JointDoF
+{
+protected:
+    ElementContainer *elems;
+    ConstraintContainer *constraints;
+    vector< Node * >nodes;
+    vector< unsigned >dirs;
+    Node *masternode;
+    unsigned masterdir;
+public:
+    VolumetricAverage(vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc);
+    ~VolumetricAverage() {};
+    void init();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 class ConstraintContainer
 {
 private:
