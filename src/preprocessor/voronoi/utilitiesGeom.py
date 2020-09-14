@@ -604,10 +604,10 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
 
                 subBlock.append ( np.array( [ validNodesDict[int(coupledNodes[i][0])]    ,   validNodesDict[int(coupledNodes[i][1])]     ]    )   )
         cpldNds.append(subBlock)
-  
+
     vertices_out = np.array(vertices_out)
     if (activeTransport):
-        subBlock = []    
+        subBlock = []
         for i in range (len(vertices_out)):
             xplus  = 0
             if (vertices_out[i][0]-maxLim[0]>0): xplus = -1
@@ -622,7 +622,7 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
                 if dist<1e-10: subBlock.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
             if(yplus):
                 perP = np.copy(vertices_out[i])
-                perP[1] += maxLim[1]*yplus          
+                perP[1] += maxLim[1]*yplus
                 index, dist = findClosest(vertices_out, perP, dim)
                 if dist<1e-10: subBlock.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
             if(xplus and yplus):
@@ -1105,7 +1105,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
                 fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t%e\n' %(solStep, simTime))
          if (solver == "SteadyStateNonLinearSolver"):
                 fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%e\tlimit_tolerance\t%e\tmaxIt\t%d\n' %(solStep,  maxStep, minStep, simTime, limitTolerance, maxIt))
-         """      
+         """
 
          if not constraint:
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
@@ -1197,11 +1197,13 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
     if activeMechanics:
         fl.write('#TXTNodalExporter translations 2 ux uy\n')
         fl.write('#TXTNodalExporter pressure 1 pressure\n')
-        fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage\n')
+        if not activeTransport:
+            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage\n')
         fl.write('#VTKRCExporter faces  saveEvery 1e-1 cellData 1 damage\n')
         fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
     if activeTransport:
         fl.write('TXTNodalExporter pressure 1 pressure\n')
+        fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 1 damage pointData 1 pressure\n')
 
     fl.close()
 
@@ -1219,13 +1221,19 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     if (dim == 2):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY"
         fmt= nodetype + '\t%.15e\t%.15e'
+        if nodetype=="GovParticle":
+            fmt= 'Particle' + '\t%.15e\t%.15e'
+
     elif (dim == 3):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY\tnodeCrdZ"
         fmt= nodetype + '\t%.15e\t%.15e\t%.15e'
+        if nodetype=="GovParticle":
+            fmt= 'Particle' + '\t%.15e\t%.15e\t%.15e'
     if nodetype=="Particle":
         headerLine = headerLine + "\tpowRadius"
         fmt = fmt + '\t%.15e'
         num = num + 1
+
 
     fl=open(os.path.join(master_folder,filename),'w')
     np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
@@ -1806,7 +1814,7 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
 
 def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes):
     #saving gov nodes
-    saveNodes (master_folder,govNodes, "MasterNode", dim, govNodesFile)
+    saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile)
     #saving gov nodes mech BC
     for i in range (len(govNodesMechBC)):
         m = govNodesMechBC[i]
