@@ -583,14 +583,6 @@ void Transp1D :: init() {
         exit(1);
     }
 
-    /* JM Zakomentoval
-     * cout << "XXXXXXXXXXXXXXXXXXXXXx" << endl;
-     * for ( unsigned int i = 0; i < vert.size(); i++ ) {
-     *  cout << vert [ i ]->givePoint().x << " " << vert [ i ]->givePoint().y << " " << vert [ i ]->givePoint().z << endl;
-     * }
-     * cout << "----------------------" << endl;
-     */
-
     Point t;
     if ( ndim == 2 ) {
         if ( !( vert.size() == 2 ) ) {
@@ -810,5 +802,130 @@ Vector Transp1DCoupled :: giveInternalForces(const Vector &DoFs, bool frozen) co
         intf [ 0 ] = flux [ 0 ] * area;
         intf [ 1 ] = -intf [ 0 ];
         return intf;
+    }
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D QUADRILATERAL TRANSPORT ELEMENT
+TranspQuad :: TranspQuad(){
+    ndim = 2;
+    name = "Transport Quadrilateral";
+}
+
+//////////////////////////////////////////////////////////
+void TranspQuad :: init(){    
+    TransportElement :: init();
+    ip_locs.resize(4);
+    ip_weights.resize(4);
+    stats.resize(4);
+    double q = 1./pow(3.,0.5);
+    ip_locs[0] = Point(-q,-q);
+    ip_locs[1] = Point( q,-q);
+    ip_locs[2] = Point( q, q);
+    ip_locs[3] = Point(-q, q);
+    Matrix phiGrad(2,4);
+    for(unsigned k=0; k<4; k++){
+        stats[k] = mat->giveNewMaterialStatus(this);
+        ip_weights[k] = shapeFGrad(&(ip_locs[k]), phiGrad);
+    }    
+}
+
+//////////////////////////////////////////////////////////
+void TranspQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs){
+    unsigned num;
+    nodes.resize(4);
+    for(unsigned k=0; k<4; k++){
+        iss >> num;
+        nodes [ k ] = fullnodes->giveNode(num);
+    }
+    iss >> num;
+    mat = fullmatrs->giveMaterial(num);    
+}
+
+//////////////////////////////////////////////////////////
+void TranspQuad :: shapeF(const Point *x, Vector &phi) const{ 
+    //x in natural coordinates
+    phi[0] = 0.25*(1.+x->getX())*(1.+x->getY());
+    phi[1] = 0.25*(1.-x->getX())*(1.+x->getY());
+    phi[2] = 0.25*(1.-x->getX())*(1.-x->getY());
+    phi[3] = 0.25*(1.+x->getX())*(1.-x->getY());
+}
+
+//////////////////////////////////////////////////////////
+double TranspQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const{
+    //x in natural coordinates
+    phiGrad[0][0] = 0.25*(1.+x->getY());
+    phiGrad[0][1] = -phiGrad[0][0];
+    phiGrad[0][2] = -0.25*(1.-x->getY());
+    phiGrad[0][3] = -phiGrad[0][2];
+    phiGrad[1][0] = 0.25*(1.+x->getX());
+    phiGrad[1][1] = 0.25*(1.-x->getX());
+    phiGrad[1][2] = -phiGrad[1][1];
+    phiGrad[1][3] = -phiGrad[1][0];
+
+    //Jacobi Matrix
+    Matrix Jac(2,2);
+    Point n;
+    for(unsigned i=0; i<4; i++){
+        n = nodes[i]->givePoint();
+        Jac[0][0] += phiGrad[0][i]*n.getX();
+        Jac[0][1] += phiGrad[0][i]*n.getY();
+        Jac[1][0] += phiGrad[1][i]*n.getX();
+        Jac[1][1] += phiGrad[1][i]*n.getY();
+    }
+    double JacDet = Jac[0][0]*Jac[1][1] - Jac[0][1]*Jac[1][0];
+    Matrix JacInv(2,2);
+    JacInv[0][0] = Jac[1][1]/JacDet;
+    JacInv[1][0] = -Jac[0][1]/JacDet;
+    JacInv[0][1] = -Jac[1][0]/JacDet;
+    JacInv[1][1] = Jac[0][0]/JacDet;
+    
+    //transorm to physical space
+    phiGrad = JacInv*phiGrad;
+    return JacDet;
+}
+
+//////////////////////////////////////////////////////////
+Matrix TranspQuad :: giveConductivityMatrix(string matrixType) const {
+    unsigned nDoFs = DoFids.size();
+    Matrix K(nDoFs,nDoFs);
+    Matrix phiGrad(ndim,nDoFs);
+    Matrix D;
+    for(unsigned i=0; i<stats.size(); i++){
+        shapeFGrad(&ip_locs[i], phiGrad);
+        D = stats [ i ] -> giveStiffnessTensor(matrixType, ndim);
+        K += phiGrad.transpose() * D * (phiGrad * ip_weights[i]);
+    }
+    return K;
+}
+
+//////////////////////////////////////////////////////////
+Matrix TranspQuad :: giveCapacityMatrix() const {
+    unsigned nDoFs = DoFids.size();
+    Matrix M(nDoFs,nDoFs);
+    Vector phi(nDoFs);
+    double c;
+    for(unsigned i=0; i<stats.size(); i++){
+        shapeF(&ip_locs[i], phi);
+        c = stats [ i ] -> giveMassConstant();
+        M += dyadicProduct(phi,phi)*(ip_weights[i]*c);
+    }
+    return M;
+}
+
+//////////////////////////////////////////////////////////
+Vector TranspQuad :: giveInternalForces(const Vector &DoFs, bool frozen) const {
+    if ( frozen ) { //frozen internal variables
+        return giveConductivityMatrix("secant") * DoFs;
+    } else  {    //evalution of internal variables
+        Vector intF;
+        Matrix B(ndim,DoFids.size());
+        intF.resize(DoFids.size());
+        for(unsigned i=0; i<stats.size(); i++){
+            shapeFGrad(&ip_locs[i],B);            
+            intF  -= B.transpose() * (stats[i]->giveStress(B*DoFs) * ip_weights[i]);
+        }
+        return intF;
     }
 };

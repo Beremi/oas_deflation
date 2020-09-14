@@ -53,13 +53,13 @@ void TXTNodalExporter :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) reactions;
     char buffer [ 100 ];
     Node *nn;
     double value;
     giveFileName(step, buffer);
-    ofstream outputfile( ( GlobPaths :: RESULTDIR / buffer ).string() );
+    ofstream outputfile( ( resultDir / buffer ).string() );
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -107,7 +107,7 @@ void TXTGaussPointExporter :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) DoFs;
     ( void ) reactions;
     char buffer [ 100 ];
@@ -115,7 +115,7 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
     double value;
     size_t nIP;
     giveFileName(step, buffer);
-    ofstream outputfile( ( GlobPaths :: RESULTDIR / buffer ).string() );
+    ofstream outputfile( ( resultDir / buffer ).string() );
 
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
@@ -212,13 +212,13 @@ void ForceGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions) const {
+void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
     ( void ) full_f;
     char buffer [ 100 ];
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -261,13 +261,13 @@ void DoFGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions) const {
+void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
     ( void ) step;
     ( void ) reactions;
     char buffer [ 100 ];
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -309,13 +309,13 @@ void DisplacementGauge :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) reactions;
     char buffer [ 100 ];
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -342,14 +342,14 @@ void StructuralExporter :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void StructuralExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void StructuralExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) DoFs;
     ( void ) reactions;
     char buffer [ 100 ];
     double value = calcValue();
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -458,6 +458,9 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: init() {
+
+    fs :: create_directories(resultDir);
+
     bool newname;
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
         ( * d )->init();
@@ -480,7 +483,7 @@ void ExporterContainer :: init() {
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string() );
+        outputfile.open( ( resultDir / buffer ).string() );
         if ( outputfile.good() ) {
             outputfile << "#step" << "\t" << "time";
         }
@@ -492,7 +495,7 @@ void ExporterContainer :: init() {
         if ( g ) {
             ( * d )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
             if ( outputfile.good() ) {
                 outputfile << "\t" << g->giveName();
             }
@@ -503,7 +506,7 @@ void ExporterContainer :: init() {
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << endl;
         }
@@ -518,7 +521,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << step << "\t" << time;
         }
@@ -528,7 +531,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     // export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
         if ( ( * d )->doExportNow(time) || exportAll ) {
-            ( * d )->exportData(step, DoFs, reactions);
+            ( * d )->exportData(step, DoFs, reactions, resultDir);
         }
     }
 
@@ -536,7 +539,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( GlobPaths :: RESULTDIR / buffer ).string(), ios :: app );
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << endl;
         }

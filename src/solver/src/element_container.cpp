@@ -41,6 +41,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     Transp1DCoupled *newelem = new Transp1DCoupled(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("TranspQuad") == 0 ) {
+                    TranspQuad *newelem = new TranspQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("TranspPolygonal") == 0 ) {
                     TranspPolygonal *newelem = new TranspPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);

@@ -1,4 +1,5 @@
 set (solver_files
+    model.cpp
     boundary_condition.cpp
     constraint.cpp
     data_exporter.cpp
@@ -9,6 +10,7 @@ set (solver_files
     #main.cpp
     material_container.cpp
     material.cpp
+    material_RVE.cpp
     mars_material.cpp
     fatigue_material.cpp
     node_container.cpp

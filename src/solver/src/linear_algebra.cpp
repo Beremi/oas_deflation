@@ -1466,7 +1466,15 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
 }
 
 
-
+Matrix dyadicProduct(const Vector &a, const Vector &b){
+    Matrix X(a.size(), b.size());
+    for(unsigned i=0; i<a.size(); i++){
+        for(unsigned j=0; j<b.size(); j++){
+            X[i][j] = a[i]*b[i];
+        }
+    }
+    return X;   
+}
 
 double l2_norm(Vector x) {
     return pow(inner_product(& x [ 0 ], & x [ x.size() ], & x [ 0 ], ( double ) ( 0 ) ), 0.5);

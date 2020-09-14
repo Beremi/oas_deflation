@@ -20,13 +20,14 @@ namespace fs = boost :: filesystem;
 // continue uncrustify
 //*INDENT-ON*
 
+/*
 namespace GlobPaths {
 extern fs :: path INPUT;
 extern fs :: path INPUTFILENAME;
 extern fs :: path BASEDIR;
 extern fs :: path RESULTDIR;
 }
-
+*/
 
 /*
  * struct GlobPaths {

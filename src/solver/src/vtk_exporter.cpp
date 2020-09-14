@@ -112,7 +112,7 @@ void exportAdditionalCellData(const ElementContainer *elems, const Vector &DoFs,
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
@@ -189,7 +189,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     }
 
     giveFileName(step, buffer);
-    ofstream outputfile( ( GlobPaths :: RESULTDIR / buffer ).string() );
+    ofstream outputfile( ( resultDir / buffer ).string() );
 
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
@@ -328,7 +328,7 @@ Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node *v, co
 
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
@@ -369,7 +369,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
     // }
 
     giveFileName(step, buffer);
-    ofstream outputfile( ( GlobPaths :: RESULTDIR / buffer ).string() );
+    ofstream outputfile( ( resultDir / buffer ).string() );
 
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
@@ -455,7 +455,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
 
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const {
+void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
@@ -541,7 +541,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     // std::cout << "all_points_id.size() = " << all_points_id.size() << '\n';
 
     giveFileName(step, buffer);
-    ofstream outputfile( ( GlobPaths :: RESULTDIR / buffer ).string() );
+    ofstream outputfile( ( resultDir / buffer ).string() );
 
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
