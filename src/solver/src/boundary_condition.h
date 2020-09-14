@@ -61,8 +61,9 @@ private:
 
 
 public:
-    BCContainer(FunctionContainer *f) { functions = f; };
+    BCContainer(){};
     virtual ~BCContainer();
+    void setContainers(FunctionContainer *f) { functions = f;};
     void init();
     void readFromFile(const string filename, NodeContainer *nodes);
     vector< unsigned >giveArrayOfBlockedDoFs() const { return dirichDoFs; };

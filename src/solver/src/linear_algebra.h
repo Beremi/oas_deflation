@@ -343,6 +343,8 @@ struct MtM {
     operator const Matrix() const;
 };
 
+Matrix dyadicProduct(const Vector &a, const Vector &b);
+
 Vector solveSystem(const Matrix &A, const Vector &b, Vector &x);
 
 inline MtV operator*(const Matrix &mm, const Vector &v) {

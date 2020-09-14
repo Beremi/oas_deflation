@@ -16,11 +16,11 @@ class DataExporter
 {
 private:
 public:
-    DataExporter(unsigned dimension) { dim = dimension; precision = 6; };
+    DataExporter(unsigned dimension) { dim = dimension; precision = 6;};
     virtual ~DataExporter() {};
     virtual void readFromLine(istringstream &iss);
     virtual bool doExportNow(const double &time);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const = 0;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
     virtual void giveFileName(unsigned step, char *buffer) const;
     string giveFileName() const { return filename; };
     virtual void init() {};
@@ -43,7 +43,7 @@ public:
     TXTNodalExporter(NodeContainer *n, unsigned dimension) : DataExporter(dimension) { nodes = n; };
     ~TXTNodalExporter() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
 };
 
@@ -58,7 +58,7 @@ public:
     TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     ~TXTElementExporter() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const { ( void ) step; ( void ) DoFs; ( void ) reactions; };
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const { ( void ) step; ( void ) DoFs; ( void ) reactions; (void) resultDir;};
 protected:
 };
 
@@ -73,7 +73,7 @@ public:
     TXTGaussPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     ~TXTGaussPointExporter() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
 };
 
@@ -106,7 +106,7 @@ public:
     ForceGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 protected:
 };
@@ -125,7 +125,7 @@ public:
     DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
     ~DisplacementGauge() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 protected:
 };
@@ -143,7 +143,7 @@ public:
     StructuralExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
     ~StructuralExporter() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 protected:
 };
@@ -164,7 +164,7 @@ public:
     DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension);
     ~DoFGauge() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 protected:
 };
@@ -175,6 +175,7 @@ protected:
 class ExporterContainer
 {
 private:
+    fs :: path resultDir;
     vector< DataExporter * >exporters;
     vector< DataExporter * >unique_file_exporters;
 public:
@@ -185,6 +186,8 @@ public:
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
     void init();
+    void setResultDirectory(fs :: path directory){resultDir = directory;}
+    fs :: path giveDirectoryPath(){return resultDir;}
 protected:
 };
 

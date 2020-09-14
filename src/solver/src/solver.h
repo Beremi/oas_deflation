@@ -37,9 +37,7 @@ public:
     virtual void init();
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
-    void setElementContainer(ElementContainer *e) { elems = e; }
-    void setNodeContainer(NodeContainer *n) { nodes = n; };
-    void setFunctionContainer(FunctionContainer *functions) { this->funcs = functions; };
+    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions;}
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     Vector giveDoFValues() { return r; }

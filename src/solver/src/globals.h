@@ -13,6 +13,8 @@
 #include <ctime>
 #include <iomanip>
 
+//#include "version.h"
+
 // disable uncrustify
 // *INDENT-OFF*
 #ifdef __has_include                           // Check if __has_include is present
@@ -35,13 +37,14 @@ namespace fs = boost :: filesystem;
 #define PRINT_TIME true
 #define PRINT_DEBUG_TIME false
 
+/*
 namespace GlobPaths {
 extern fs :: path INPUT;
 extern fs :: path INPUTFILENAME;
 extern fs :: path BASEDIR;
 extern fs :: path RESULTDIR;
 }
-
+*/
 
 /*
  * struct GlobPaths {
@@ -52,5 +55,7 @@ extern fs :: path RESULTDIR;
 
 
 std :: string convertTimeToString(std :: chrono :: duration< double >);
+
+std :: string version_info();
 
 #endif

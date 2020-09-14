@@ -14,9 +14,9 @@ private:
     unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
 
 public:
-    ElementContainer() {};
+    ElementContainer(){};
     ~ElementContainer();
-    void setNodeContainer(NodeContainer *n) { nodes = n; };
+    void setContainers(NodeContainer *n) { nodes = n; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
     size_t giveSize() const { return elems.size(); }
