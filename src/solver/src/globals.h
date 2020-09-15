@@ -13,7 +13,7 @@
 #include <ctime>
 #include <iomanip>
 
-//#include "version.h"
+#include "version.h"
 
 // disable uncrustify
 // *INDENT-OFF*

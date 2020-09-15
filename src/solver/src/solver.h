@@ -40,7 +40,7 @@ public:
     void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions;}
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
-    Vector giveDoFValues() { return r; }
+    Vector giveDoFValues() const { return r; }
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };

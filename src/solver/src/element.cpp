@@ -923,8 +923,8 @@ Vector TranspQuad :: giveInternalForces(const Vector &DoFs, bool frozen) const {
         Matrix B(ndim,DoFids.size());
         intF.resize(DoFids.size());
         for(unsigned i=0; i<stats.size(); i++){
-            shapeFGrad(&ip_locs[i],B);            
-            intF  -= B.transpose() * (stats[i]->giveStress(B*DoFs) * ip_weights[i]);
+            shapeFGrad(&ip_locs[i],B);         
+            intF  += B.transpose() * (stats[i]->giveStress(B*DoFs) * ip_weights[i]);
         }
         return intF;
     }

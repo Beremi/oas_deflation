@@ -817,8 +817,8 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False):
     areas = np.asarray(areas)
 
 
-    fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
-    plt.show()
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
 
     ########################################################################
     functions = []
@@ -2234,7 +2234,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False):
     govNodesMechBC = []
     rigidPlates = []
 
-    indent = 1e-5
+    indent = 1e-6
 
     oldLen = len(node_coords)
 
@@ -2344,10 +2344,10 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False):
 
 
     mirroredMiddle = []
-    mirroredMiddle.append(np.array([  0.2*D-1e-4,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.8+1e-4,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  0.2*D-1e-4,  3/4 * D - indent  -minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.8+1e-4,  3/4 * D - indent  -minDist/2 ]))
+    mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  +minDist/2 ]))
+    mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  +minDist/2 ]))
+    mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  -minDist/2 ]))
+    mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  -minDist/2 ]))
 
     node_coords_out = np.vstack( (node_coords_out, mirroredPointsA, mirroredPointsB, mirroredMiddle) )
 
@@ -3598,11 +3598,11 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
 
     ### fixed nodes
     mechBC = np.array([0,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
-    node_coords.append( np.array([indent*3,indent,indent]))
+    node_coords.append( np.array([indent*3,0,0]))
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
     mechBC_merged.append(mBC)
     mechBC = np.array([-1,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
-    node_coords.append( np.array([height-indent*3,indent,indent]))
+    node_coords.append( np.array([height-indent*3,0,0]))
     mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
     mechBC_merged.append(mBC)
 
@@ -3912,4 +3912,3 @@ def assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, tr
     #######################################################################
 
     return node_coords, mechBC_merged, mechInitC_merged
-

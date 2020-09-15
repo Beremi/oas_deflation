@@ -32,8 +32,15 @@ public:
     void init();
     void solve();
 
-    fs :: path baseDir;
+    ElementContainer* giveElements() {return &elems;};
+    NodeContainer* giveNodes() {return &nodes;};
+    Solver* giveSolver() {return solver;};
+    FunctionContainer* giveFunctions() {return &funcs;};
+    BCContainer* giveBC() {return &bconds;};
+
 protected:
+    fs :: path baseDir;
+
     bool printTime;
     FunctionContainer funcs;
     BCContainer bconds;

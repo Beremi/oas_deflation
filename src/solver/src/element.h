@@ -48,7 +48,8 @@ public:
     virtual void shapeF(const Point *x, Vector &phi) const { (void) x; (void) phi; };
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { (void) x; (void) phiGrad; return 0;};
     virtual Matrix giveBMatrix(const Point *x) const {return Matrix(0,0);};
-    virtual Vector giveStrain(const Point *x, const Vector &DoFs) {return giveBMatrix(x)*DoFs;};    
+    virtual Vector giveStrain(const Point *x, const Vector &DoFs) {return giveBMatrix(x)*DoFs;};  
+    unsigned giveDimension() const {return ndim;}  
 };
 
 
@@ -168,6 +169,7 @@ public:
     void init();
     double giveArea() const { return area; }
     Point giveNormal() const { return normal; }
+    double giveLength() const { return length; }
     double giveVolume(unsigned nodenum) const;
     double giveVolume() const;
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);

@@ -140,7 +140,9 @@ else()
     set(CXX_FILESYSTEM_LIBRARIES)
 endif()
 
-#add_dependencies(DiscreteModel unpack-eigen)
+if (NOT TARGET Eigen3::Eigen)
+  add_dependencies(solver unpack-eigen)
+endif()
 
 target_link_libraries(DiscreteModel
                       PRIVATE
@@ -189,11 +191,15 @@ set_target_properties(
 #######################################################################
 
 # needs to find the generated header file
-target_include_directories(DiscreteModel
-  PRIVATE
+target_include_directories(solver
+  PUBLIC
     ${PartMod_BINARY_DIR}/generated
   )
-
+  
+include_directories(
+    ${PartMod_BINARY_DIR}/generated
+  )
+  
 add_custom_command(
   OUTPUT
     ${PartMod_BINARY_DIR}/generated/version.h
@@ -214,7 +220,7 @@ add_custom_target(
 
 # version.hpp has to be generated
 # before we start building DiscreteModel
-add_dependencies(DiscreteModel get_git_hash)
+add_dependencies(solver get_git_hash)
 
 #######################################################################
 ######################## Documentation ################################

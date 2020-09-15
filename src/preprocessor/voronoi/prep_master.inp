@@ -14,7 +14,7 @@
 #Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0.5 loadWidth 0.01 minDist 0.01 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 1 trials 2000
 #
 # Dogbones
-#Model 2d_dogbone dogboneD 0.2 minDist 0.012 dogboneExcentricityFrac 50 activeMechanics 1 trials 50000 symmetric 1
+#Model 2d_dogbone dogboneD 0.2 minDist 0.003 dogboneExcentricityFrac 50 activeMechanics 1 trials 100000 symmetric 1
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
@@ -39,7 +39,7 @@
 #
 ####################################################################################
 #COUPLED MODELS AVAILABLE
-Model 2d_coupledArtificialCrack Xsize 0.15 Ysize 0.5 minDist 0.006 notchH 0.8 activeTransport 1 activeMechanics 1 trials 100000
+Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
 #
 #
 ####################################################################################

@@ -38,7 +38,7 @@ class Model:
 
         self.trials = 3e4
 
-        self.powerTes = self.activeMechanics = self.activeTransport = False
+        self.powerTes = self.activeMechanics = self.activeTransport = self.coupled = False
         self.periodicModel = 0
 
         self.nodePositions = []
@@ -108,6 +108,10 @@ class Model:
             if (r[i]=='activeTransport'):
                 if (int(r[i+1])==1): self.activeTransport = True
                 if (int(r[i+1])==0): self.activeTransport = False
+            if (r[i]=='coupled'):
+                if (int(r[i+1])==1): self.activeMechanics = True
+                if (int(r[i+1])==1): self.activeTransport = True
+                if (int(r[i+1])==1): self.coupled = True
             if (r[i]=='periodicModel'):
                 if (int(r[i+1])==1): self.periodicModel = True
                 if (int(r[i+1])==0): self.periodicModel = False
@@ -296,7 +300,7 @@ class Model:
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
             nodePositions=self.nodePositions, coupledNodes=self.coupledNodes,
-            mirtype=self.mirtype, notches=self.notches, isTube=tube)
+            mirtype=self.mirtype, notches=self.notches, isTube=tube, coupled=self.coupled)
 
         #if (self.printout == False): enablePrint()
         print ('done.')
@@ -393,7 +397,7 @@ class Model:
                 print ('!! TrsprtMaterial incomplete. Exiting. !!')
                 sys.exit()
 
-            transportMaterial = utilitiesMech.TransportMaterial(viscosity, permeability, density, capacity, crack_turtuosity)
+            transportMaterial = utilitiesMech.TransportMaterial(viscosity, permeability, density, capacity, crack_turtuosity, coupled=self.coupled)
             self.materials.append(transportMaterial)
             print('done.')
 

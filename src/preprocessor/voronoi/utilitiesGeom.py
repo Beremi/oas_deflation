@@ -172,10 +172,10 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None, notches = None, isTube=False):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None, notches = None, isTube=False, coupled=False):
     if (dim == 2):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches)
+            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled)
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, activeMechanics, activeTransport, mZ=mZ )
     if (dim == 3):
@@ -184,7 +184,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
 
 
 #Extract geometry 2d
-def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None):
+def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None, coupled=False):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -323,7 +323,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, coupled=coupled)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
@@ -1352,7 +1352,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
     sys.stdout.flush()
 
 
-def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False):
+def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False):
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
@@ -1771,7 +1771,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         f.write("%s\n" % headerLine )
         for element in transportElements:
             #print ("%s\n" % element.getString() )
-            if (dim==2):f.write("%s\n" % element.getString() )
+            if (dim==2):f.write("%s\n" % element.getString(coupled=coupled) )
             if (dim==3): f.write("%s\n" % element.getReducedString() )
 
 

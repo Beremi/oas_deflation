@@ -14,7 +14,7 @@ class TrsprtRVEMaterial;
 class TrsprtRVEMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
-    Model *model;
+    Model *RVE;
 
     fs :: path inputfile;
 public:

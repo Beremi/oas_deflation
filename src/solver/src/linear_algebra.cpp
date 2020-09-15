@@ -1458,8 +1458,7 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
     r = b - A * x;
     err = l2_norm(r) / bnorm;
 
-    if ( nit == Maxit ) {
-        cout << "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS " << err << endl;
+    if ( nit == Maxit ) {        
         return 1;
     }
     return 0;
@@ -1470,7 +1469,7 @@ Matrix dyadicProduct(const Vector &a, const Vector &b){
     Matrix X(a.size(), b.size());
     for(unsigned i=0; i<a.size(); i++){
         for(unsigned j=0; j<b.size(); j++){
-            X[i][j] = a[i]*b[i];
+            X[i][j] = a[i]*b[j];
         }
     }
     return X;   
