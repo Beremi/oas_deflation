@@ -116,7 +116,6 @@ void SteadyStateLinearSolver :: init() {
 
 //////////////////////////////////////////////////////////
 Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
-    cout << "WWWWW " << filename<< endl; cout.flush();
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;

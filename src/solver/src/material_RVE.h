@@ -2,6 +2,7 @@
 #define _MAT_RVE_H
 
 #include "material.h"
+#include "globals.h"
 
 class Model; //forward declaraion
 
@@ -14,9 +15,10 @@ class TrsprtRVEMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
     Model *model;
-    string masterfile;
+
+    fs :: path inputfile;
 public:
-    TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, string inputfile);
+    TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~TrsprtRVEMaterialStatus();
     virtual void init();
     virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
@@ -29,9 +31,9 @@ public:
 class TrsprtRVEMaterial : public TrsprtMaterial
 {
 protected:
-    string inputfile;
+    fs :: path inputfile;
 public:
-    TrsprtRVEMaterial() { name = "transport RVE material"; };
+    TrsprtRVEMaterial() { name = "transport RVE material";};
     ~TrsprtRVEMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);

@@ -3,9 +3,10 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // transport RVE status
-TrsprtRVEMaterialStatus :: TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, string inputfile):TrsprtMaterialStatus(m, e){
+TrsprtRVEMaterialStatus :: TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, fs :: path masterfile):TrsprtMaterialStatus(m, e){
     name = "transport RVE mat. status";
-    masterfile = inputfile;
+    inputfile = masterfile;
+    model = new Model(false);
 }
 
 //////////////////////////////////////////////////////////
@@ -15,8 +16,7 @@ TrsprtRVEMaterialStatus :: ~TrsprtRVEMaterialStatus() {
 
 //////////////////////////////////////////////////////////
 void TrsprtRVEMaterialStatus :: init(){
-    cout << "initialization " << endl; cout.flush();
-    model -> readFromFile(masterfile);
+    model -> readFromFile(inputfile.string());
 }
 
 ////////////////////////////////////////////////////////// 
@@ -43,7 +43,9 @@ return 0;
 //////////////////////////////////////////////////////////
 // transport RVE material
 void TrsprtRVEMaterial :: readFromLine(istringstream &iss){
-    iss >> inputfile;
+    string filename;
+    iss >> filename;
+    inputfile = GlobPaths :: BASEDIR  / filename;
 }
 
 //////////////////////////////////////////////////////////

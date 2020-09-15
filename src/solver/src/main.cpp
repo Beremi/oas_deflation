@@ -1,6 +1,7 @@
 #include "model.h"
 
 using namespace std;
+fs :: path GlobPaths :: BASEDIR;
 
 int main(int argc, char **argv) {
     if ( argc == 1 ) {
@@ -11,6 +12,11 @@ int main(int argc, char **argv) {
         //cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
+
+    fs :: path input = fs :: absolute(argv [ 1 ]);
+    GlobPaths :: BASEDIR = input.parent_path();
+
+
     
     // OMP set 1 thread by default
     omp_set_dynamic(0);
@@ -31,7 +37,7 @@ int main(int argc, char **argv) {
     }
 
     Model model(PRINT_TIME);
-    model.readFromFile(argv[1]);
+    model.readFromFile(input.string());
     model.init();
     model.solve();
 

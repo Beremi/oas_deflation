@@ -37,15 +37,13 @@ namespace fs = boost :: filesystem;
 #define PRINT_TIME true
 #define PRINT_DEBUG_TIME false
 
-/*
-namespace GlobPaths {
-extern fs :: path INPUT;
-extern fs :: path INPUTFILENAME;
-extern fs :: path BASEDIR;
-extern fs :: path RESULTDIR;
-}
-*/
 
+namespace GlobPaths {
+//extern fs :: path INPUT;
+//extern fs :: path INPUTFILENAME;
+extern fs :: path BASEDIR;
+//extern fs :: path RESULTDIR;
+}
 /*
  * struct GlobPaths {
  *  static const fs::path INPUTFILE;
