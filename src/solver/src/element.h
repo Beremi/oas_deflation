@@ -45,6 +45,10 @@ public:
     Material *giveMaterial() const { return mat; }
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
+    virtual void shapeF(const Point *x, Vector &phi) const { (void) x; (void) phi; };
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { (void) x; (void) phiGrad; return 0;};
+    virtual Matrix giveBMatrix(const Point *x) const {return Matrix(0,0);};
+    virtual Vector giveStrain(const Point *x, const Vector &DoFs) {return giveBMatrix(x)*DoFs;};    
 };
 
 
@@ -75,6 +79,7 @@ public:
     ~TransportElement() {};
     virtual Matrix giveConductivityMatrix(string matrixType) const = 0;
     virtual Matrix giveCapacityMatrix() const = 0;
+    Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
 };
 
 
@@ -168,7 +173,6 @@ public:
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     Matrix giveConductivityMatrix(string matrixType) const;
     Matrix giveCapacityMatrix() const;
-    Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 
@@ -188,6 +192,25 @@ public:
     void findElementFriends(ElementContainer *elemcont);
     ~Transp1DCoupled() {};
     void init();
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D QUADRILATERAL TRANSPORT ELEMENT
+class TranspQuad : public TransportElement
+{
+protected:
+
+public:
+    TranspQuad();
+    ~TranspQuad() {};
+    void init();
+    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void shapeF(const Point *x, Vector &phi) const;
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
+    virtual Matrix giveConductivityMatrix(string matrixType) const;
+    virtual Matrix giveCapacityMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 #endif  /* _ELEMENT_STRUCT_H */

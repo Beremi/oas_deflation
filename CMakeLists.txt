@@ -21,12 +21,8 @@ include (GenerateExportHeader)
 include (ProcessorCount)
 
 set(CMAKE_COLOR_MAKEFILE ON)
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
-include(GNUInstallDirs)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 project(PartMod CXX)
 set (PartMod_VERSION_MAJOR 0)
@@ -41,8 +37,11 @@ set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/"
 message(STATUS "project source directory -> ${PartMod_SOURCE_DIR}")
 message(STATUS "project build directory -> ${PartMod_BINARY_DIR}")
 
-# detect python
-find_package(PythonInterp REQUIRED)
+include(GNUInstallDirs)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+
 
 # Default is release build
 if (NOT CMAKE_BUILD_TYPE)
@@ -59,14 +58,50 @@ if (MSVC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W4 -wd4786 -wd4100 -wd4996 -wd4706 -wd4512 -wd4251 -wd4800")
 else ()
     #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC") # -Wextra
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall -fopenmp")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC") # Wextra
 endif ()
+
+check_cxx_compiler_flag("-march=native" _march_native_works)
+check_cxx_compiler_flag("-xHost" _xhost_works)
+
+set(_CXX_FLAGS)
+if(_march_native_works)
+  message(STATUS "Using processor's vector instructions (-march=native compiler flag set)")
+  set(_CXX_FLAGS "-march=native")
+elseif(_xhost_works)
+  message(STATUS "Using processor's vector instructions (-xHost compiler flag set)")
+  set(_CXX_FLAGS "-xHost")
+else()
+  message(STATUS "No suitable compiler flag found for vectorization")
+endif()
 
 set (CMAKE_CXX_STANDARD 17)
 
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 #set (CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O2 -pg")
+
+# detect
+find_package(PythonInterp REQUIRED)
+find_package (Eigen3 3.3 NO_MODULE)
+find_package(OpenMP REQUIRED)
+
+if(TARGET Eigen3::Eigen)
+  message(STATUS "Eigen3 v${EIGEN3_VERSION_STRING} found in ${EIGEN3_INCLUDE_DIR}")
+  include_directories(${EIGEN3_INCLUDE_DIR})
+else()
+  message(STATUS "Eigen3 not found. Version from the thirdparty directory will be used.")
+  add_custom_target(unpack-eigen
+  ALL
+  COMMAND
+    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-3.3.7.tar.gz
+  WORKING_DIRECTORY
+    ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT
+    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7"
+  )
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7)
+endif()
 
 #######################################################################
 ######################## Options ######################################
@@ -90,9 +125,11 @@ endif ()
 #file(GLOB SOURCE "${PartMod_SOURCE_DIR}/src/solver/src/*.h" "${PartMod_SOURCE_DIR}/src/*.cpp")
 
 #add_executable(DiscreteModel ${SOURCE})
-add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
-#target_link_libraries (DiscreteModel libDiscreteModel)
+#add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
+
+add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
+#target_link_libraries (DiscreteModel libDiscreteModel Eigen3::Eigen)
 #find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
@@ -103,10 +140,17 @@ else()
     set(CXX_FILESYSTEM_LIBRARIES)
 endif()
 
+#add_dependencies(DiscreteModel unpack-eigen)
+
 target_link_libraries(DiscreteModel
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
+                      #Eigen3::Eigen
                      )
+target_compile_options(DiscreteModel
+  PRIVATE
+    ${_CXX_FLAGS}
+)
 
 install (
   TARGETS
@@ -114,7 +158,32 @@ install (
   DESTINATION
     ${CMAKE_INSTALL_BINDIR})
 
+find_package(BLAS)
 
+if(BLAS_FOUND)
+  message(STATUS "Eigen will use some subroutines from BLAS.")
+  message(STATUS "See: http://eigen.tuxfamily.org/dox-devel/TopicUsingBlasLapack.html")
+  target_compile_definitions(DiscreteModel
+    PRIVATE
+      EIGEN_USE_BLAS
+    )
+  target_link_libraries(DiscreteModel
+    PUBLIC
+      ${BLAS_LIBRARIES}
+    )
+else()
+  message(STATUS "BLAS not found. Using Eigen own functions")
+endif()
+
+set_target_properties(
+  DiscreteModel
+  PROPERTIES
+    COMPILE_FLAGS
+      ${OpenMP_CXX_FLAGS}
+    LINK_FLAGS
+      ${OpenMP_CXX_FLAGS}
+  )
+  
 #######################################################################
 ######################## VERSION ######################################
 #######################################################################
@@ -253,4 +322,16 @@ include (CPack)
 #######################################################################
 ######################## Testing ######################################
 #######################################################################
+find_program(MEMORYCHECK_COMMAND NAMES valgrind)
+set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
+
+# add memcheck test action
+include(CTest)
+
+# define tests
+enable_testing()
+
+# BENCHMARKS
 include(src/benchmark/CMakeLists.cmake)
+# TESTS
+include(src/tests/CMakeLists.cmake)

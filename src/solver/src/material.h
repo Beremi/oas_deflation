@@ -27,6 +27,8 @@ public:
     virtual void update() {};
     virtual Vector giveStress(const Vector &strain) { ( void ) strain; return Vector(0); };
     virtual double giveValue(string code) const { ( void ) code; return 0; };
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const {return Matrix(0,0);};
+    virtual double giveMassConstant() const {return 0;};
 protected:
     Element *element;
     string name;
@@ -63,7 +65,9 @@ public:
     TrsprtMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain); //terminology from mechanics, it returns flux
-    virtual double giveEffectiveConductivity(string type) const { return effConductivity; };
+    virtual double giveEffectiveConductivity(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
+    virtual double giveMassConstant() const;
 };
 
 //////////////////////////////////////////////////////////

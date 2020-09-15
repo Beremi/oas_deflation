@@ -1,4 +1,5 @@
 #include "solver.h"
+//#include "solver_adaptive.h"
 #define EPS2 1e-30
 
 //////////////////////////////////////////////////////////
@@ -20,28 +21,28 @@ Solver *Solver :: readFromFile(const string filename) {
         inputfile.close();
     }
     if ( param.compare("SteadyStateLinearSolver") == 0 ) {
-        SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else if ( param.compare("SteadyStateNonLinearSolver") == 0 ) {
-        SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
-        TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else if ( param.compare("TransientLinearTransportSolver") == 0 ) {
-        TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
-        newsolver->readFromFile(filename);
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-        return newsolver;
+      TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
+      newsolver->readFromFile(filename);
+      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+      return newsolver;
     } else {
-        cerr << "Error: Solver " << param << " is not implemented" << endl;
-        exit(EXIT_FAILURE);
+      cerr << "Error: Solver " << param << " is not implemented" << endl;
+      exit(EXIT_FAILURE);
     }
 }
 
@@ -115,6 +116,7 @@ void SteadyStateLinearSolver :: init() {
 
 //////////////////////////////////////////////////////////
 Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
+    cout << "WWWWW " << filename<< endl; cout.flush();
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
@@ -164,7 +166,7 @@ void SteadyStateLinearSolver :: solve() {
 
     //solve linear system
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    terminated = !ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
     // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
     //     terminated = true;
     //     cerr << "Conjugate gradients did not converge" << endl;
@@ -176,6 +178,12 @@ void SteadyStateLinearSolver :: solve() {
     }
 
     computeInternalExternalForces(r);
+
+    cout << "S O L V E R" << endl;
+    for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+     cout << f[i] << " " << ddr[i] << endl;
+    }
+    K.print();
 
     /*
      * cout << "******************************************" << endl;
@@ -444,12 +452,12 @@ void SteadyStateNonLinearSolver :: solve() {
                 computeInternalExternalForcesWithFrozenIntVariables(trial_r);
                 nodes->giveReducedDoFArray(f_ext - f_int, f);
 
-                if ( ConjGrad(K, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                if ( LinalgSymmetricSolver(K, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
                 }
-                if ( ConjGrad(K, ddf, f - f_last_iter, ddf, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                if ( LinalgSymmetricSolver(K, ddf, f - f_last_iter, ddf, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
@@ -464,7 +472,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
             } else  {        //direct controll
-                if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                if ( LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
@@ -644,7 +652,7 @@ void TransientLinearMechanicalSolver :: init() {
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForcesWithFrozenIntVariables(r); //at time 0
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    terminated = !ConjGrad(M, a_red, f - C * v_red,  a_red, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(M, a_red, f - C * v_red,  a_red, conj_grad_precission, conj_grad_relative_maxit);
 }
 
 //////////////////////////////////////////////////////////
@@ -714,7 +722,7 @@ void TransientLinearMechanicalSolver :: solve() {
     //solve linear system
     nodes->giveReducedDoFArray(f_ext - f_int, f);
     updateFeff();
-    terminated = !ConjGrad(Keff, ddr, feff, ddr, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(Keff, ddr, feff, ddr, conj_grad_precission, conj_grad_relative_maxit);
 
     updateFieldVariables();
     r_old = r;
@@ -785,7 +793,7 @@ void TransientLinearTransportSolver :: init() {
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r); //at time 0
     nodes->giveReducedDoFArray(f_ext - f_int, f);
-    terminated = !ConjGrad(C, v_red, f,  v_red, conj_grad_precission, conj_grad_relative_maxit);
+    terminated = !LinalgSymmetricSolver(C, v_red, f,  v_red, conj_grad_precission, conj_grad_relative_maxit);
 }
 
 //////////////////////////////////////////////////////////

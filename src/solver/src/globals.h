@@ -1,5 +1,19 @@
 #ifndef GLOBAL_H
- #define GLOBAL_H
+#define GLOBAL_H
+
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <string>
+#include <cmath>
+#include <sstream>
+
+// time management:
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+
+//#include "version.h"
 
 // disable uncrustify
 // *INDENT-OFF*
@@ -20,13 +34,17 @@ namespace fs = boost :: filesystem;
 // continue uncrustify
 //*INDENT-ON*
 
+#define PRINT_TIME true
+#define PRINT_DEBUG_TIME false
+
+/*
 namespace GlobPaths {
 extern fs :: path INPUT;
 extern fs :: path INPUTFILENAME;
 extern fs :: path BASEDIR;
 extern fs :: path RESULTDIR;
 }
-
+*/
 
 /*
  * struct GlobPaths {
@@ -35,5 +53,9 @@ extern fs :: path RESULTDIR;
  *  static const fs::path RESULTDIR;
  * };*/
 
+
+std :: string convertTimeToString(std :: chrono :: duration< double >);
+
+std :: string version_info();
 
 #endif

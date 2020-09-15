@@ -17,6 +17,28 @@ Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
 };
 
 //////////////////////////////////////////////////////////
+Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const{
+    (void) type;
+    Matrix T(2,2);
+    T[0][0] = T[1][1] = effConductivity;
+    return T;
+};
+
+//////////////////////////////////////////////////////////
+double TrsprtMaterialStatus :: giveMassConstant() const {
+    TrsprtMaterial *m = static_cast<TrsprtMaterial*>(mat); 
+    return m->giveCapacity()*m->giveDensity();
+}
+
+double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const{
+    if (type.compare("elastic")==0){
+        TrsprtMaterial *m = static_cast<TrsprtMaterial*>(mat); 
+        return  m->giveDensity() * m->givePermeability() / m->giveViscosity();
+    } else return effConductivity;
+}
+
+
+//////////////////////////////////////////////////////////
 void TrsprtMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bcapacity, bpermeability, bviscosity, bdensity;

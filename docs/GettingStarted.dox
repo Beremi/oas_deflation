@@ -64,23 +64,8 @@ Recommended structure
       make -j 4
       cmake --build . -- /M      [Visual Studio]
     \endcode
--# build documentation
-  \code{.sh}
-    cmake --build . --target docs
-    OR
-    make docs [when Makefile generated]
-  \endcode
--# publish documentation (if partmod and partmod-site placed in the same directory
-   as recommended)
-  \code{.sh}
-    cmake --build . --target docs_publish
-    OR
-    make docs_publish [when Makefile generated]
-  \endcode
--# print possible targets
-  \code{.sh}
-    cmake --build . --target help
-  \endcode
+
+
 
 \subsubsection Crosscompilation Cross Compilation
 Build Windows binary under Linux
@@ -99,6 +84,49 @@ Build Windows binary under Linux
   i686-w64-mingw32.static-cmake ../partmod
 \endcode
 
+
+\subsection Builddoc Build Documentation
+-# build documentation
+  \code{.sh}
+    cmake --build . --target docs
+    OR
+    make docs [when Makefile generated]
+  \endcode
+-# publish documentation (if partmod and partmod-site placed in the same directory
+   as recommended)
+  \code{.sh}
+    cmake --build . --target docs_publish
+    OR
+    make docs_publish [when Makefile generated]
+  \endcode
+-# print possible targets
+  \code{.sh}
+    cmake --build . --target help
+  \endcode
+
+
+\subsection Test Testing
+
+-# simply run all tests
+  \code{.sh}
+    cd partmod-build
+    ctest
+  \endcode
+
+-# run multiple tests parallel
+  \code{.sh}
+    cd partmod-build
+    ctest -j [number of jobs]
+  \endcode
+
+-# specify benchmark label
+  \code{.sh}
+    cd partmod-build
+    ctest -L [label] -j 4
+    ctest -L benchmark -j 4
+  \endcode
+
+  
 
 \section CodingStandard Coding Standard
 http://www.oofem.org/wiki/doku.php?id=coding-conventions
@@ -126,6 +154,11 @@ DiscreteModel.exe C:\path\to\master.inp
 DiscreteModel.exe ..\..\master.inp
 DiscreteModel master.inp
 \endcode
+
+
+
+
+
 
 
 

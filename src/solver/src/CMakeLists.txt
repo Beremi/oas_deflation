@@ -1,14 +1,18 @@
 set (solver_files
+    model.cpp
     boundary_condition.cpp
     constraint.cpp
     data_exporter.cpp
     element_container.cpp
     element.cpp
     element_polyhedral.cpp
+    globals.cpp
+    linalg.cpp
     linear_algebra.cpp
     #main.cpp
     material_container.cpp
     material.cpp
+    material_RVE.cpp
     mars_material.cpp
     fatigue_material.cpp
     node_container.cpp
