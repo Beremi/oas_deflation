@@ -50,7 +50,7 @@ void Model::readFromFile(const string filename) {
     ofstream outputfile( (resultDir / "version.txt" ).string() );
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
-        //outputfile << version_info();
+        outputfile << version_info();
         outputfile << endl;
     }
     outputfile.close();
@@ -132,4 +132,5 @@ void Model::readFromFile(const string filename) {
         cerr << "Error: unable to open input file '" <<  fullPath.string() <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
+    
 }

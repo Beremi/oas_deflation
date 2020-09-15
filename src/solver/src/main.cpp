@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
         cerr << "Usage: DiscreteModel [path/to/master.inp]" << endl;
         //cerr << std::setfill('=') << setw(50) << "" << endl;
         cerr << string(80, '=') << endl;
-        //cerr << version_info() << endl;
+        cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
     
@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
     }
 
     Model model(PRINT_TIME);
+    
     model.readFromFile(argv[1]);
     model.init();
     model.solve();

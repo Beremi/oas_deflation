@@ -18,7 +18,7 @@ string convertTimeToString(std :: chrono :: duration< double >time_interval) {
     return ss.str();
 }
 
-/*
+
 string version_info() {
     string s = "This code has been built from version " + GIT_HASH + " : " + TIME_STRING + "\n";
     s += "OS name: " + OS_NAME + "\n";
@@ -28,4 +28,4 @@ string version_info() {
     s += "Build type: " + BUILD_TYPE;
     return s;
 }
-*/
+
