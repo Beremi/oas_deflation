@@ -14,7 +14,6 @@
 #include <chrono>
 #include <ctime>
 
-#include "globals.h"
 #include "material_container.h"
 #include "node_container.h"
 #include "element_container.h"

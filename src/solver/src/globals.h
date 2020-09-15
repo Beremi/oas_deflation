@@ -13,8 +13,6 @@
 #include <ctime>
 #include <iomanip>
 
-#include "version.h"
-
 // disable uncrustify
 // *INDENT-OFF*
 #ifdef __has_include                           // Check if __has_include is present
@@ -55,7 +53,5 @@ extern fs :: path RESULTDIR;
 
 
 std :: string convertTimeToString(std :: chrono :: duration< double >);
-
-std :: string version_info();
 
 #endif

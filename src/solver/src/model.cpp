@@ -47,14 +47,6 @@ void Model::readFromFile(const string filename) {
     
     exporters.setResultDirectory(resultDir);
 
-    ofstream outputfile( (resultDir / "version.txt" ).string() );
-    if ( outputfile.is_open() ) {
-        outputfile << std :: scientific;
-        outputfile << version_info();
-        outputfile << endl;
-    }
-    outputfile.close();
-
     string istr, line;
     int iint, dimension;
     ifstream inputfile( fullPath.string() );

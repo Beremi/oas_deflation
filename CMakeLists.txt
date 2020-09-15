@@ -128,7 +128,11 @@ endif ()
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
 
-add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
+add_executable(DiscreteModel 
+                ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp
+                ${PartMod_SOURCE_DIR}/src/solver/src/version.cpp 
+                ${LIBS}
+                )
 #target_link_libraries (DiscreteModel libDiscreteModel Eigen3::Eigen)
 #find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
 
@@ -191,12 +195,8 @@ set_target_properties(
 #######################################################################
 
 # needs to find the generated header file
-target_include_directories(solver
-  PUBLIC
-    ${PartMod_BINARY_DIR}/generated
-  )
-  
-include_directories(
+target_include_directories(DiscreteModel
+  PRIVATE
     ${PartMod_BINARY_DIR}/generated
   )
   
@@ -220,7 +220,7 @@ add_custom_target(
 
 # version.hpp has to be generated
 # before we start building DiscreteModel
-add_dependencies(solver get_git_hash)
+add_dependencies(DiscreteModel get_git_hash)
 
 #######################################################################
 ######################## Documentation ################################

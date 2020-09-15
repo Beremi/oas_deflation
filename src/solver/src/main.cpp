@@ -1,4 +1,5 @@
 #include "model.h"
+#include "version.h"
 
 using namespace std;
 
@@ -19,6 +20,19 @@ int main(int argc, char **argv) {
         cout << "OMP_NUM_THREADS = " << val << endl;
     else
         omp_set_num_threads(1);
+    
+    // save version information to result dir
+    fs :: path fullPath = fs :: absolute(argv[1]);
+    fs :: path baseDir = fullPath.parent_path();
+    fs :: path resultDir = baseDir / "results";
+    
+    ofstream outputfile( ( baseDir / "version.txt" ).string() );
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile << version_info();
+        outputfile << endl;
+    }
+    outputfile.close();
 
     //initial time
     auto start = std :: chrono :: system_clock :: now();
