@@ -32,6 +32,7 @@ public:
     void solve();
 
     fs :: path baseDir;
+    fs :: path resultDir;
 protected:
     bool printTime;
     FunctionContainer funcs;

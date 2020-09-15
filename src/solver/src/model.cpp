@@ -43,7 +43,7 @@ void Model::readFromFile(const string filename) {
 
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
-    fs :: path resultDir = baseDir / "results";
+    resultDir = baseDir / "results";
     
     exporters.setResultDirectory(resultDir);
 
