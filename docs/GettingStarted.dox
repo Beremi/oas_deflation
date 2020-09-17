@@ -119,11 +119,12 @@ Build Windows binary under Linux
     ctest -j [number of jobs]
   \endcode
 
--# specify benchmark label
+-# specify tests label
   \code{.sh}
     cd partmod-build
     ctest -L [label] -j 4
-    ctest -L benchmark -j 4
+    ctest -L tests -j 4
+    ctest -L tests -C Release -j 4 # [Windows]
   \endcode
 
   
@@ -139,6 +140,8 @@ uncrustify -c oofem_dir/uncrustify.cfg -l CPP --replace mysource.C
 uncrustify -c ../../../uncrustify.cfg -l CPP --replace *.cpp *.h
 \endcode
 
+
+
 \section Running Running PartMod
 PartMod executable requires path to master.inp - the path can be both absolute
 and relative. Unix commands can look like:
@@ -152,6 +155,21 @@ Windows alternatives are (TODO: test it):
 \code{.sh}
 DiscreteModel.exe C:\path\to\master.inp
 DiscreteModel.exe ..\..\master.inp
+DiscreteModel master.inp
+\endcode
+
+\subsection OPENMP OpenMP
+Using OpenMP to use parallel Conjugate gradient in Eigen on Linux:
+\code{.sh}
+OMP_NUM_THREADS=4 ./DiscreteModel master.inp
+\endcode
+\code
+export OMP_NUM_THREADS=4
+./DiscreteModel master.inp
+\endcode
+on Windows:
+\code
+set OMP_NUM_THREADS=4
 DiscreteModel master.inp
 \endcode
 
