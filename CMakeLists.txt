@@ -21,7 +21,7 @@ include (GenerateExportHeader)
 include (ProcessorCount)
 
 set(CMAKE_COLOR_MAKEFILE ON)
-set(CMAKE_VERBOSE_MAKEFILE OFF)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
 project(PartMod CXX)
@@ -56,9 +56,11 @@ if (MSVC)
     # C4127 Conditional expression is constant: Most of these uses are intentional (debugging code etc.)
     # C4267 size_t to int conversion. Most of these are indices, but many places can be replaced by a for-each loop as well.
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W4 -wd4786 -wd4100 -wd4996 -wd4706 -wd4512 -wd4251 -wd4800")
+    set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+	set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
 else ()
     #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC") # -Wextra
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall -fopenmp")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC") # Wextra
 endif ()
 
@@ -119,6 +121,7 @@ if (USE_SOLVER)
   add_subdirectory ("${PartMod_SOURCE_DIR}/src/solver/src")
   #list (APPEND MODULE_LIST "solver")
   list (APPEND LIBS $<TARGET_OBJECTS:solver>)
+  target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
 endif ()
 
 
@@ -153,6 +156,9 @@ target_link_libraries(DiscreteModel
                       ${CXX_FILESYSTEM_LIBRARIES}
                       #Eigen3::Eigen
                      )
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(DiscreteModel PUBLIC OpenMP::OpenMP_CXX)
+endif()
 target_compile_options(DiscreteModel
   PRIVATE
     ${_CXX_FLAGS}
@@ -181,6 +187,7 @@ else()
   message(STATUS "BLAS not found. Using Eigen own functions")
 endif()
 
+
 set_target_properties(
   DiscreteModel
   PROPERTIES
@@ -189,6 +196,7 @@ set_target_properties(
     LINK_FLAGS
       ${OpenMP_CXX_FLAGS}
   )
+  
   
 #######################################################################
 ######################## VERSION ######################################
@@ -314,7 +322,7 @@ set (CPACK_SOURCE_PACKAGE_FILE_NAME "partmod-${CPACK_PACKAGE_VERSION}")
 set (CPACK_SOURCE_IGNORE_FILES "~$;/build/;tags;cscope.*;.*\\\\.out$;\\\\.out\\\\.;/\\\\..*;\\\\.kdev4$;do_release;release_filter\\\\.pl") # Note: All hidden files are ignored
 
 ### deb package options
-set (CPACK_DEBIAN_PACKAGE_MAINTAINER "Mikael Öhman <micketeer@gmail.com>")
+set (CPACK_DEBIAN_PACKAGE_MAINTAINER "Name <e-mail>")
 set (CPACK_DEBIAN_PACKAGE_SECTION "Mathematics")
 # autogenerate dependency information
 set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
