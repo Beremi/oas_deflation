@@ -658,7 +658,8 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
 
     nblocks = len(cpldNds)
     print("BLOCKS   ", nblocks)
-    loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
+    #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
+    loads=["\t2\tey\t0\tgxy\t1","\t3\tvolumetricAverage\t0\tmicroSourcesX\t1\tmicroSourcesY\t2"]
     names=["MechanicalPeriodicBC","TransportPeriodicBC"]
     for q in range(nblocks):
         ndepend = len(cpldNds[q])
@@ -1186,7 +1187,6 @@ def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart)
     if (len(trsptBC_out)>0):
         np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
     fl.close()
-
     print('done.')
 
 

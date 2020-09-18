@@ -5,7 +5,7 @@ Model :: Model(bool pT){
     printTime = pT;
     nodes.setContainers(&bconds, &constr);
     bconds.setContainers(&funcs);
-    elems.setContainers(& nodes);
+    elems.setContainers(& nodes, &bconds);
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
 }
 
@@ -16,7 +16,7 @@ void Model::init() {    //initialization
     nodes.init();
     matrs.init();
     elems.init();
-    constr.init(& nodes);
+    constr.init(& nodes, &bconds);
     elems.findElementFriends();
     exporters.init();
     solver->init();
@@ -43,20 +43,12 @@ void Model::readFromFile(const string filename) {
 
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
-    fs :: path resultDir = baseDir / "results";
+    resultDir = baseDir / "results";
     
     exporters.setResultDirectory(resultDir);
 
-    ofstream outputfile( (resultDir / "version.txt" ).string() );
-    if ( outputfile.is_open() ) {
-        outputfile << std :: scientific;
-        outputfile << version_info();
-        outputfile << endl;
-    }
-    outputfile.close();
-
     string istr, line;
-    int iint, dimension;
+    int iint;
     ifstream inputfile( fullPath.string() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
@@ -69,12 +61,12 @@ void Model::readFromFile(const string filename) {
             istringstream iss(line);
             iss >> std :: skipws >> istr;
             if ( istr.compare("Dimension") == 0 ) {
-                iss >> dimension;
+                iss >> ndim;
             } else if ( istr.compare("NodeFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    nodes.readFromFile( ( baseDir / istr ).string(), dimension );
+                    nodes.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( istr.compare("MatFiles") == 0 ) {
                 iss >> iint;
@@ -86,14 +78,14 @@ void Model::readFromFile(const string filename) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems.readFromFile( ( baseDir / istr ).string(), dimension, &matrs );
+                    elems.readFromFile( ( baseDir / istr ).string(), ndim, &matrs );
                 }
             } else if ( istr.compare("ConstrFiles") == 0 ) {
                 // read constraint files
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    constr.readFromFile( ( baseDir / istr ).string(), dimension, &nodes );
+                    constr.readFromFile( ( baseDir / istr ).string(), ndim, &nodes );
                 }
             } else if ( istr.compare("BCFiles") == 0 ) {
                 iss >> iint;
@@ -111,13 +103,13 @@ void Model::readFromFile(const string filename) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters.readFromFile( ( baseDir / istr ).string(), &nodes, &elems, dimension );
+                    exporters.readFromFile( ( baseDir / istr ).string(), &nodes, &elems, ndim );
                 }
             } else if ( istr.compare("PBlockFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    pblocks.readFromFile( ( baseDir / istr ).string(), dimension );
+                    pblocks.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( istr.compare("Solver") == 0 ) {
                 iss >> istr;

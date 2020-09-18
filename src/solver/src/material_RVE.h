@@ -4,7 +4,12 @@
 #include "material.h"
 #include "globals.h"
 
+
 class Model; //forward declaraion
+class Node; //forward declaraion
+class Transp1D; //forward declaraion
+class BoundaryCondition; //forward declaraion
+class PieceWiseLinearFunction; //forward declaraion
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -17,6 +22,21 @@ protected:
     Model *RVE;
 
     fs :: path inputfile;
+
+    //setup for microsources generaget by macroscale
+    vector< Node* > MSnodes;
+    vector< BoundaryCondition* > MSbc;
+    vector< vector< Transp1D *> > MSelems;
+    vector< vector< unsigned > > MSorder;
+    vector< PieceWiseLinearFunction* > MSfunctions;
+
+    //setup for volumetric average
+    PieceWiseLinearFunction* volumAverFunc;
+
+    
+    void genereteMicroSources();
+    void updateMicroSources();
+    void genereteVolumetricAverageBC(); 
 public:
     TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~TrsprtRVEMaterialStatus();

@@ -65,6 +65,7 @@ class TransportPeriodicBC : public MechanicalPeriodicBC
 {
 protected:
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
+    vector<int> microscaleSources; ///< sources at nodes due to mohogenized macroscale pressure gradient
     virtual void genereteNewDoFs(NodeContainer *nodes);
     virtual void genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
     virtual void genereteExporters(NodeContainer *nodes, ExporterContainer *ex);

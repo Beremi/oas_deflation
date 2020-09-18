@@ -20,7 +20,7 @@ protected:
     FunctionContainer *funcs;
     double time, dt, termination_time;
     CoordinateIndexedSparseMatrix K, Kini;
-    Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr;
+    Vector f_ext, load, f_int, pbc, r, full_f, f, full_ddr, ddr;
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
     bool terminated;

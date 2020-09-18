@@ -19,30 +19,30 @@ class NodeContainer; //forward declaration
 // DIRICHLET AND NEUMANN BOUNDARY CONDITION
 class BoundaryCondition
 {
-private:
+protected:
     Node *node;
     vector< int >dirichBC; //kinematic - pressure BC
     vector< int >neumannBC; //static - flux BC
+    vector< Function* >dirichF; //kinematic - pressure BC
+    vector< Function* >neumannF; //static - flux BC
     vector< double >multipliers; //multipliers of functions
     unsigned blockedDoFNum, loadedDoFNum;
 public:
     BoundaryCondition() {};
-    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC, vector< double >m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m; };
-    BoundaryCondition(Node *n, vector< int >dBC, vector< int >nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.); };
+    BoundaryCondition(Node *n, vector< int >&dBC, vector< int >&nBC, vector< double >&m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m; };
+    BoundaryCondition(Node *n, vector< int >&dBC, vector< int >&nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.); };
     ~BoundaryCondition() {};
-    void init();
+    void init(FunctionContainer *funcs);
     unsigned giveNumberOfBlockedDoFs() const { return blockedDoFNum; };
     unsigned giveNumberOfLoadedDoFs() const { return loadedDoFNum; };
     vector< unsigned >giveBlockedDoFs() const;
     vector< unsigned >giveLoadedDoFs() const;
-    vector< unsigned >giveBlockedFunctions() const;
-    vector< unsigned >giveLoadedFunctions() const;
-    vector< double >giveBlockedMultipliers() const;
-    vector< double >giveLoadedMultipliers() const;
+    vector< double >giveBlockedDoFValues(double t) const;
+    vector< double >giveLoadedDoFValues(double t) const;
+    void setMultipliers(vector< double >&m){multipliers=m;};    
     Node *giveNode() { return node; };
-
-protected:
 };
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -52,12 +52,8 @@ class BCContainer
 private:
     FunctionContainer *functions;
     vector< BoundaryCondition * >BC;
-    vector< unsigned >dirichF;
-    vector< unsigned >neumannF;
     vector< unsigned >dirichDoFs;
     vector< unsigned >neumannDoFs;
-    vector< double >dirichMultipliers;
-    vector< double >neumannMultipliers;
 
 
 public:
@@ -68,6 +64,7 @@ public:
     void readFromFile(const string filename, NodeContainer *nodes);
     vector< unsigned >giveArrayOfBlockedDoFs() const { return dirichDoFs; };
     vector< unsigned >giveArrayOfLoadedDoFs() const { return neumannDoFs; };
+    unsigned giveNumBlockedDoFs() const {return dirichDoFs.size();};
     vector< double >giveBlockedDoFValues(double time) const;
     vector< double >giveLoadedDoFValues(double time) const;
     BoundaryCondition *giveBC(unsigned i) { return BC [ i ]; };

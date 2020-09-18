@@ -1,4 +1,5 @@
 #include "model.h"
+#include "version.h"
 
 using namespace std;
 fs :: path GlobPaths :: BASEDIR;
@@ -35,9 +36,21 @@ int main(int argc, char **argv) {
         string nowstring = ctime(& time_now);
         std :: cout << "######### start of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;
     }
+   
 
     Model model(PRINT_TIME);
-    model.readFromFile(input.string());
+    model.readFromFile(input.string());   
+
+    // save version information to result dir
+    ofstream outputfile( ( model.resultDir / "version.txt" ).string() );
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile << version_info();
+        outputfile << endl;
+    }
+    outputfile.close();
+
+ 
     model.init();
     model.solve();
 

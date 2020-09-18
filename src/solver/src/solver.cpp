@@ -92,7 +92,8 @@ void Solver :: init() {
     f_int = Vector(totalDoFnum);
     r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
-    f = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = Vector(totalDoFnum);
+    full_f = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     full_ddr = Vector(totalDoFnum);
 }
@@ -164,7 +165,7 @@ void SteadyStateLinearSolver :: solve() {
     computeInternalExternalForces(r);
 
     //solve linear system
-    nodes->giveReducedDoFArray(f_ext - f_int, f);
+    nodes->giveReducedForceArray(full_f, f);
     terminated = !LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
     // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
     //     terminated = true;
@@ -176,32 +177,42 @@ void SteadyStateLinearSolver :: solve() {
         r [ i ] += full_ddr [ i ];
     }
 
-    computeInternalExternalForces(r);
     
-    /*
-     * cout << "******************************************" << endl;
-     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     *  cout << f[i] << " " << ddr[i] << endl;
-     * }
-     *
+    
+    //*
+      cout << "******************************************" << endl;
+      for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+       cout << "EXT " << i << " " << f_ext[i] << endl;
+      }
+
+
+      cout << "******************************************" << endl;
+      for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+       cout << "f " << f[i] << " " << r[i] << endl;
+      }
+     /*
      * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
      * for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";
      *  cout << endl;
      * }
      * exit(1);
      */
+
+    computeInternalExternalForces(r);
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: computeInternalExternalForces(Vector &rr) {
     elems->giveInternalForces(rr, f_int, false);
     nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
+    full_f = f_ext - f_int;
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: computeInternalExternalForcesWithFrozenIntVariables(Vector &rr) {
     elems->giveInternalForces(rr, f_int, true);
     nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
+    full_f = f_ext - f_int;
 }
 
 //////////////////////////////////////////////////////////

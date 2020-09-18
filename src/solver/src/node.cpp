@@ -4,15 +4,7 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC NODE - ONLY MASTER CLASS
-unsigned Node :: giveNumberOfFreeDoFs() const {
-    if ( !bc ) {
-        return nDoFs;
-    } else {
-        return nDoFs - bc->giveNumberOfBlockedDoFs();
-    }
-}
 
-//////////////////////////////////////////////////////////
 void Node :: readFromLine(istringstream &iss) {
     double x, y, z;
     if ( dim == 2 ) {

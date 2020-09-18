@@ -110,7 +110,7 @@ void ElementContainer :: updateMaterialStatuses() {
 void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
     map< pair< size_t, size_t >, double >indices11;
 
-    unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
+    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
@@ -165,7 +165,7 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) con
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
-    unsigned nfreeDoFs = nodes->giveNumFreeDoFs();
+    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     Vector elDoFValues;

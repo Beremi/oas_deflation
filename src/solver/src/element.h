@@ -40,6 +40,7 @@ public:
     string giveName() const { return name; }
     size_t giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
+    MaterialStatus * giveMatStatus(unsigned ipnum) {return stats[ipnum];};
     vector< Node * >giveNodes() const { return nodes; }
     Node *giveNode(unsigned k) const { return nodes [ k ]; }
     Material *giveMaterial() const { return mat; }

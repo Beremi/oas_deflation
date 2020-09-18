@@ -23,13 +23,12 @@ protected:
     Point point;  /// center of voronoi cell
     unsigned dim; /// number of dimensions
     unsigned nDoFs; //
-    BoundaryCondition *bc;
     unsigned firstDoF;
     string name;
     bool isMechanical;
     bool isTransport;
 public:
-    Node() { bc = NULL; name = "basic node"; isMechanical = false; isTransport = false; };
+    Node() {name = "basic node"; isMechanical = false; isTransport = false; };
     virtual ~Node() {};
 
     /// A pure virtual member.
@@ -44,8 +43,6 @@ public:
     void setPoint(const Point &P) { point = P; };
     void setNumberOfDoFs(const int num) { nDoFs = num; };
     unsigned giveNumberOfDoFs() const { return nDoFs; };
-    unsigned giveNumberOfFreeDoFs() const;
-    void setBC(BoundaryCondition *nbc) { bc = nbc; }
     void setStartingDoF(unsigned num) { firstDoF = num; };
     unsigned giveStartingDoF() const { return firstDoF; };
     string giveName() const { return name; }

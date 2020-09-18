@@ -14,7 +14,6 @@
 #include <chrono>
 #include <ctime>
 
-#include "globals.h"
 #include "material_container.h"
 #include "node_container.h"
 #include "element_container.h"
@@ -37,10 +36,14 @@ public:
     Solver* giveSolver() {return solver;};
     FunctionContainer* giveFunctions() {return &funcs;};
     BCContainer* giveBC() {return &bconds;};
+    ConstraintContainer* giveConstraints() {return &constr;};
+    unsigned giveDimension()const{return ndim;};
+
+    fs :: path baseDir;
+    fs :: path resultDir;
 
 protected:
-    fs :: path baseDir;
-
+    unsigned ndim;
     bool printTime;
     FunctionContainer funcs;
     BCContainer bconds;
