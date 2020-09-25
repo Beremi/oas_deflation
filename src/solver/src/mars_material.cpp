@@ -231,6 +231,9 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
+    // initialize all values to zero (NOTE probably no ned in linux, but in windows necessary)
+    fs = Gs = fc = Kc = 0;
+
     string param;
     bool bft, bGt;
     bft = bGt = false;
@@ -243,6 +246,14 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("ft") == 0 ) {
             bft = true;
             iss >> ft;
+        } else if ( param.compare("fs") == 0 ) {
+            iss >> fs;
+        } else if ( param.compare("Gs") == 0 ) {
+            iss >> Gs;
+        } else if ( param.compare("fc") == 0 ) {
+            iss >> fc;
+        } else if ( param.compare("Kc") == 0 ) {
+            iss >> Kc;
         }
     }
     if ( !bft ) {
@@ -266,10 +277,11 @@ MaterialStatus *MarsMaterial :: giveNewMaterialStatus(Element *e) {
 
 //////////////////////////////////////////////////////////
 void MarsMaterial :: init() {
-    fs = 3 * ft;
-    Gs = 16 * Gt;
-    fc = 16 * ft;
-    Kc = 0.26 * E0;
+    // if variables not specified on the input, use default multipliers
+    fs = ( fs == 0 ) ? 3 * ft : fs;
+    Gs = ( Gs == 0 ) ? 16 * Gt : Gs;
+    fc = ( fc == 0 ) ? 16 * ft : fc;
+    Kc = ( Kc == 0 ) ? 0.26 * E0 : Kc;
     beta = 1.;
     mu = 0.2;
     nc = 2;
