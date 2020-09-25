@@ -448,6 +448,12 @@ Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
 };
 
 //////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
+    // return giveBMatrix() * DoFs;
+    return matrix_vector_multiply(giveBMatrix(), DoFs);
+};
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRUSS ELEMENT
 Matrix Truss :: giveAMatrix(Point a, Point x) const {

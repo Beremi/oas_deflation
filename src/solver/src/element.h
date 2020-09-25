@@ -129,6 +129,7 @@ public:
     double giveArea() const { return area; }
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
+    virtual Vector giveContactStrainXYZ(const Vector &DoFs) const;
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     double giveCrackOpening() { return tempCrackOpening; };

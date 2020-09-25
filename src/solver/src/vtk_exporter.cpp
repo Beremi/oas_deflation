@@ -45,7 +45,7 @@ void VTKExporter :: readFromLine(istringstream &iss) {
     DataExporter :: readFromLine(iss);
 }
 
-bool isAddonData( const string &var ){
+bool isAddonCellScalarData( const string &var ){
   std::vector< string > addon_list = { "normal_strain", "strainN",
                                        "sliding_strain", "strainT",
                                        "strainTY", "strainTZ",
@@ -54,14 +54,85 @@ bool isAddonData( const string &var ){
                                        "stressN", "stressT",
                                        "stressTY", "stressTZ"
                                        "stressT2", "stressT2"
+                                       // "strainXYZ", "stressXYZ"
                                      };
-
 
   return std::find( addon_list.begin(), addon_list.end(), var ) != addon_list.end();
 }
 
+bool isAddonCellVectorialData( const string &var ){
+  std::vector< string > addon_list = { "strainXYZ", "stressXYZ"
+                                     };
 
-void exportAdditionalCellData(const ElementContainer *elems, const Vector &DoFs, const vector< bool > &codes_positions, const vector< string > &codes, vector< vector< double > > &cell_data, bool doubled = false, bool rbcOnly = false) {
+  return std::find( addon_list.begin(), addon_list.end(), var ) != addon_list.end();
+}
+
+bool isAddonPointVectorialData( const string &var ){
+  std::vector< string > addon_list = { "nodal_stress"
+                                     };
+
+  return std::find( addon_list.begin(), addon_list.end(), var ) != addon_list.end();
+}
+
+template <typename Typo>
+bool isInVect(const Typo &val, const std :: vector<Typo> &vect){
+  return std::find( vect.begin(), vect.end(), val ) != vect.end();
+}
+
+
+void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *elems, const Vector &DoFs, const vector< string > &codes, vector<unsigned> &indeces, vector< vector< Vector > > &cell_vect_data, bool doubled = false, bool rbcOnly = false) {
+    Vector elDoFvalues, strainNT;
+    vector< unsigned >elDoFs;
+
+    Vector vect_ini(dim);
+    // set all elements of a vector to zero
+    for ( auto &a : vect_ini) {
+      a = 0;
+    }
+    Vector vect_data = vect_ini;
+    RigidBodyContact *rbc;
+
+    for ( auto const &e : * elems ) {
+        rbc = nullptr;
+        // NOTE do not use this for transport elements
+        if ( e->giveName().compare("RigidBodyContact") == 0 ) {
+            elDoFs = e->giveDoFs();
+            elDoFvalues.resize(elDoFs.size() );
+            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
+            }
+            rbc = static_cast< RigidBodyContact * >( e );
+
+            strainNT = rbc->giveContactStrainNT(elDoFvalues);
+            for ( unsigned i = 0; i < indeces.size(); i++ ) {
+                if (codes [ indeces[ i ] ].compare("strainXYZ") == 0 ){
+                  vect_data = rbc->giveContactStrainXYZ(elDoFvalues);
+                  // vect_data = matrix_vector_multiply(rbc->giveRMatrix().transpose(),strainNT);
+                } else if (codes [ indeces[ i ] ].compare("stressXYZ") == 0 ){
+                  vect_data = matrix_vector_multiply(rbc->giveRMatrix().transpose(), ( rbc->giveMaterialStats()[ 0 ]->giveStress(strainNT)));
+                } else {
+                    vect_data = vect_ini;
+                }
+                cell_vect_data [ i ].push_back(vect_data);
+                if ( doubled ) {
+                    cell_vect_data [ i ].push_back(vect_data);
+                }
+            }
+        } else {
+            // for any other element, only one number will be stored
+            if ( !rbcOnly ) {
+                for ( unsigned i = 0; i < indeces.size(); i++ ) {
+                    cell_vect_data [ i ].push_back( vect_ini );
+                }
+            }
+        }
+    }
+}
+
+
+void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs,
+  const vector< bool > &codes_positions, const vector< string > &codes,
+  vector< vector< double > > &cell_data, bool doubled = false, bool rbcOnly = false) {
     Vector elDoFvalues, strainNT;
     vector< unsigned >elDoFs;
     double data;
@@ -172,18 +243,11 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
     vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
     for ( unsigned i = 0; i < cell_data_size; i++ ) {
-        codes_positions [ i ] = isAddonData( codes [ i ] );
-        // if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
-        //      codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
-        //      codes [ i ].compare("strainN") == 0 || codes [ i ].compare("strainT") == 0 ||
-        //      codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
-        //     codes_positions [ i ] = true;
-        //     // } else if ( codes[ i ].compare("material") == 0 ) {
-        //     //   mat_code = i;
-        // } else {
-        //     codes_positions [ i ] = false;
-        // }
+        codes_positions [ i ] = isAddonCellScalarData( codes [ i ] );
     }
+
+    vector< vector< Vector > >cell_vect_data;
+    vector< unsigned > vector_data_code_indeces; // indeces of data to be exported as vectors
 
     vector< vector< double > >cell_data;
     cell_data.resize(cell_data_size);
@@ -203,7 +267,11 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         offset += points_id.size();
         offsets.push_back(offset);
         for ( unsigned i = 0; i < cell_data_size; i++ ) {
-            if ( isAddonData( codes [ i ] ) ) {
+            if ( isAddonCellScalarData( codes [ i ] ) ) {
+                // TODO this needs to be improved, it is duplicated in these two functions
+                continue;
+            } else if ( isAddonCellVectorialData( codes [ i ] ) ) {
+                vector_data_code_indeces.push_back( i );
                 continue;
             } else if ( codes [ i ].compare("material") == 0 ) {
                 matI = 0;
@@ -223,11 +291,16 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         }
         points_id.clear();
     }
+    cell_vect_data.resize(vector_data_code_indeces.size());
 
     if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
+        // TODO toto je nutný udělat jinak, teď, když jsou tady i jiný sady (vektorový data), není to prostě buď jedno nebo druhý
         return i == true;
     }) ) {
-        exportAdditionalCellData(elems, DoFs, codes_positions, codes, cell_data);
+        exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data);
+        if ( vector_data_code_indeces.size() > 0 ) {
+          exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
+        }
     }
 
     giveFileName(step, buffer);
@@ -292,7 +365,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         outputfile << "</DataArray>" << '\n';
         //////////////////////////////////////////////////////////////////////////
         for ( unsigned i = 0; i < point_data.size(); i++ ) {
-            outputfile << "<DataArray type=\"Float32\" Name=\" " << codes [ i + cell_data_size ] << " \" format=\"ascii\">" << '\n';
+            outputfile << "<DataArray type=\"Float32\" Name=\" " << codes [ i + cell_data_size ] << "\" format=\"ascii\">" << '\n';
             for ( auto const &p : point_data [ i ] ) {
                 outputfile << p << '\n';
             }
@@ -302,12 +375,26 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         outputfile << "</PointData>" << '\n';
         // /*
         outputfile << "<CellData Scalars=\"scalars\">" << "\n";
+        unsigned num_vectors = 0;
         for ( unsigned i = 0; i < cell_data.size(); i++ ) {
-            outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
-            for ( auto const &value : cell_data [ i ] ) {
-                outputfile << value << '\n';
+            if ( isInVect( i, vector_data_code_indeces ) ){
+                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] <<
+                "\" NumberOfComponents=\"" << dim << "\"  format=\"ascii\">" << '\n';
+                for ( auto const &value : cell_vect_data [ num_vectors ] ) {
+                    for ( auto const &a : value ){
+                      outputfile << a << '\t';
+                    }
+                    outputfile << '\n';
+                }
+                outputfile << "</DataArray>" << '\n';
+                num_vectors += 1;
+            } else {
+                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
+                for ( auto const &value : cell_data [ i ] ) {
+                    outputfile << value << '\n';
+                }
+                outputfile << "</DataArray>" << '\n';
             }
-            outputfile << "</DataArray>" << '\n';
         }
         outputfile << "</CellData>" << '\n';
         // */
@@ -515,15 +602,11 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
 
     vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
     for ( unsigned i = 0; i < cell_data_size; i++ ) {
-      codes_positions [ i ] = isAddonData( codes [ i ] );
-        // if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
-        //      codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
-        //      codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
-        //     codes_positions [ i ] = true;
-        // } else {
-        //     codes_positions [ i ] = false;
-        // }
+      codes_positions [ i ] = isAddonCellScalarData( codes [ i ] );
     }
+
+    vector< vector< Vector > >cell_vect_data;
+    vector< unsigned > vector_data_code_indeces; // indeces of data to
 
     vector< vector< double > >cell_data; // test version, this and more will be specified on the exporter input
     cell_data.resize(cell_data_size);
@@ -557,7 +640,10 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             offsets.push_back(offset);
 
             for ( unsigned i = 0; i < cell_data_size; i++ ) {
-                if ( isAddonData( codes [ i ] ) ) {
+                if ( isAddonCellScalarData( codes [ i ] ) ) {
+                    continue;
+                } else if ( isAddonCellVectorialData( codes [ i ] ) ) {
+                    vector_data_code_indeces.push_back(i);
                     continue;
                 } else {
                     cell_data [ i ].push_back(el->giveIPValue(codes [ i ], 0) ); // so far for single IP point
@@ -566,11 +652,15 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             points_id.clear();
         }
     }
+    cell_vect_data.resize(vector_data_code_indeces.size());
 
     if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
         return i == true;
     }) ) {
-        exportAdditionalCellData(elems, DoFs, codes_positions, codes, cell_data, true, true);
+        exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data, true, true);
+        if ( vector_data_code_indeces.size() > 0 ) {
+          exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data, true, true);
+        }
     }
 
     // unsigned iii = 0;
@@ -642,13 +732,27 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         outputfile << "</DataArray>" << '\n';
         outputfile << "</PointData>" << '\n';
         // /*
+        unsigned num_vectors = 0;
         outputfile << "<CellData Scalars=\"scalars\">" << "\n";
         for ( unsigned i = 0; i < cell_data.size(); i++ ) {
-            outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
-            for ( auto const &value : cell_data [ i ] ) {
-                outputfile << value << '\n';
+            if ( isInVect( i, vector_data_code_indeces) ){
+              outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] <<
+              "\" NumberOfComponents=\"" << dim << "\"  format=\"ascii\">" << '\n';
+              for ( auto const &value : cell_vect_data [ num_vectors ] ) {
+                  for ( auto const &a : value ){
+                    outputfile << a << '\t';
+                  }
+                  outputfile << '\n';
+              }
+              outputfile << "</DataArray>" << '\n';
+              num_vectors += 1;
+            } else {
+                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
+                for ( auto const &value : cell_data [ i ] ) {
+                  outputfile << value << '\n';
+                }
+                outputfile << "</DataArray>" << '\n';
             }
-            outputfile << "</DataArray>" << '\n';
         }
 
         outputfile << "<DataArray type=\"Float32\" Name=\"node_id\" format=\"ascii\">" << '\n';
