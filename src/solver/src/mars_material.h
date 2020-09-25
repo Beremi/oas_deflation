@@ -11,7 +11,7 @@ class MarsMaterialStatus : public DisMechMaterialStatus
 {
 private:
     double omega0, maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
-    Vector temp_strain;
+    // Vector temp_strain;
     double damage, temp_damage;
     double Kt, Ks, L, nt;
     double RAND_H;

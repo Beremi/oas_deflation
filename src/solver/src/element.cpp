@@ -814,7 +814,7 @@ TranspQuad :: TranspQuad(){
 }
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: init(){    
+void TranspQuad :: init(){
     TransportElement :: init();
     ip_locs.resize(4);
     ip_weights.resize(4);
@@ -828,7 +828,7 @@ void TranspQuad :: init(){
     for(unsigned k=0; k<4; k++){
         stats[k] = mat->giveNewMaterialStatus(this);
         ip_weights[k] = shapeFGrad(&(ip_locs[k]), phiGrad);
-    }    
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -840,11 +840,11 @@ void TranspQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Ma
         nodes [ k ] = fullnodes->giveNode(num);
     }
     iss >> num;
-    mat = fullmatrs->giveMaterial(num);    
+    mat = fullmatrs->giveMaterial(num);
 }
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: shapeF(const Point *x, Vector &phi) const{ 
+void TranspQuad :: shapeF(const Point *x, Vector &phi) const{
     //x in natural coordinates
     phi[0] = 0.25*(1.+x->getX())*(1.+x->getY());
     phi[1] = 0.25*(1.-x->getX())*(1.+x->getY());
@@ -880,7 +880,7 @@ double TranspQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const{
     JacInv[1][0] = -Jac[0][1]/JacDet;
     JacInv[0][1] = -Jac[1][0]/JacDet;
     JacInv[1][1] = Jac[0][0]/JacDet;
-    
+
     //transorm to physical space
     phiGrad = JacInv*phiGrad;
     return JacDet;
@@ -923,7 +923,7 @@ Vector TranspQuad :: giveInternalForces(const Vector &DoFs, bool frozen) const {
         Matrix B(ndim,DoFids.size());
         intF.resize(DoFids.size());
         for(unsigned i=0; i<stats.size(); i++){
-            shapeFGrad(&ip_locs[i],B);            
+            shapeFGrad(&ip_locs[i],B);
             intF  -= B.transpose() * (stats[i]->giveStress(B*DoFs) * ip_weights[i]);
         }
         return intF;

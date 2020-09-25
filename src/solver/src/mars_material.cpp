@@ -14,20 +14,20 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e) : DisMechM
 double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
-    } else if ( code.compare("damage") == 0 ) {
+    } else if ( code.rfind( "damage", 0 ) == 0 ) {
         return temp_damage;
-    } else  if ( code.compare("stressN") == 0 ) {
-        return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];
-    } else  if ( code.compare("stressT1") == 0 ) {
-        return this->giveNormalShearStiffness("secant")[1] * temp_strain[1];
-    } else  if ( code.compare("stressT2") == 0 ) {
-        return this->giveNormalShearStiffness("secant")[2] * temp_strain[2];
-    } else  if ( code.compare("strainN") == 0 ) {
-        return temp_strain[0];
-    } else  if ( code.compare("strainT1") == 0 ) {
-        return temp_strain[1];
-    } else  if ( code.compare("strainT2") == 0 ) {
-        return temp_strain[2];
+    // } else  if ( code.compare("stressN") == 0 ) {
+    //     return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];
+    // } else  if ( code.compare("stressT1") == 0 ) {
+    //     return this->giveNormalShearStiffness("secant")[1] * temp_strain[1];
+    // } else  if ( code.compare("stressT2") == 0 ) {
+    //     return this->giveNormalShearStiffness("secant")[2] * temp_strain[2];
+    // } else  if ( code.compare("strainN") == 0 ) {
+    //     return temp_strain[0];
+    // } else  if ( code.compare("strainT1") == 0 ) {
+    //     return temp_strain[1];
+    // } else  if ( code.compare("strainT2") == 0 ) {
+    //     return temp_strain[2];
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -215,7 +215,7 @@ Vector MarsMaterialStatus :: giveNormalShearStiffness(string type) const {
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain = strain;
+    // temp_strain = strain;
     computeDamage(strain);
     return DisMechMaterialStatus :: giveStress(strain) * ( 1 - temp_damage );
 }

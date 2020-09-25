@@ -1,4 +1,5 @@
 #include "vtk_exporter.h"
+#include <algorithm>
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -44,6 +45,22 @@ void VTKExporter :: readFromLine(istringstream &iss) {
     DataExporter :: readFromLine(iss);
 }
 
+bool isAddonData( const string &var ){
+  std::vector< string > addon_list = { "normal_strain", "strainN",
+                                       "sliding_strain", "strainT",
+                                       "strainTY", "strainTZ",
+                                       "strainT1", "strainT2",
+                                       "crack_opening", "crack_sliding",
+                                       "stressN", "stressT",
+                                       "stressTY", "stressTZ"
+                                       "stressT2", "stressT2"
+                                     };
+
+
+  return std::find( addon_list.begin(), addon_list.end(), var ) != addon_list.end();
+}
+
+
 void exportAdditionalCellData(const ElementContainer *elems, const Vector &DoFs, const vector< bool > &codes_positions, const vector< string > &codes, vector< vector< double > > &cell_data, bool doubled = false, bool rbcOnly = false) {
     Vector elDoFvalues, strainNT;
     vector< unsigned >elDoFs;
@@ -63,22 +80,47 @@ void exportAdditionalCellData(const ElementContainer *elems, const Vector &DoFs,
             strainNT = rbc->giveContactStrainNT(elDoFvalues);
             for ( unsigned i = 0; i < codes.size(); i++ ) {
                 if ( codes_positions [ i ] ) {
-                    if ( codes [ i ].compare("normal_strain") == 0 ) {
+                    if ( codes [ i ].compare("strainN") == 0 ) {
                         data = strainNT [ 0 ];
-                    } else if ( codes [ i ].compare("sliding_strain") == 0 ) {
+                    } else if ( codes [ i ].compare("strainT") == 0) {
                         double strT = 0;
                         for ( unsigned j = 1; j < strainNT.size(); j++ ) {
                             strT += pow(strainNT [ j ], 2);
                         }
                         data = sqrt(strT);
-                    } else if ( codes [ i ].compare("strainTY") == 0 ) {
+                    } else if ( codes [ i ].compare("strainTY") == 0 ||
+                                codes [ i ].compare("strainT1") == 0 ) {
                         data = strainNT [ 1 ];
-                    } else if ( codes [ i ].compare("strainTZ") == 0 ) {
+                    } else if ( codes [ i ].compare("strainTZ") == 0 ||
+                                codes [ i ].compare("strainT2") == 0 ) {
                         if ( strainNT.size() > 2 ) {
                             data = strainNT [ 2 ];
                         } else {
                             data = 0;
                         }
+                    } else if ( codes [ i ].rfind("stress", 0) == 0 ) {
+                      MaterialStatus *stats = static_cast< MaterialStatus * >( rbc->giveMaterialStats() [ 0 ] );
+                      Vector stressNT = stats->giveStress( strainNT );
+                      if ( codes [ i ].compare("stressN") == 0 ){
+                        data = stressNT [ 0 ];
+                      } else if ( codes [ i ].compare("stressT") == 0 ){
+                        double strT = 0;
+                        for ( unsigned j = 1; j < stressNT.size(); j++ ) {
+                            strT += pow(stressNT [ j ], 2);
+                        }
+                        data = sqrt(strT);
+                      } else if ( codes [ i ].compare("stressTY") == 0 ||
+                                  codes [ i ].compare("stressT1") == 0 ) {
+                        data = stressNT[1];
+                      } else if ( codes [ i ].compare("stressTZ") == 0 ||
+                                  codes [ i ].compare("stressT2") == 0 ) {
+                        if ( stressNT.size() > 2 ){
+                          data = stressNT[2];
+                        } else {
+                          data = 0;
+                        }
+                      }
+
                     } else if ( codes [ i ].compare("crack_opening") == 0 ) {
                         data = strainNT [ 0 ] * rbc->giveLength() * rbc->giveIPValue("damageN", 0);
                     } else if ( codes [ i ].compare("crack_sliding") == 0 ) {
@@ -130,15 +172,17 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
     vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
     for ( unsigned i = 0; i < cell_data_size; i++ ) {
-        if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
-             codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
-             codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
-            codes_positions [ i ] = true;
-            // } else if ( codes[ i ].compare("material") == 0 ) {
-            //   mat_code = i;
-        } else {
-            codes_positions [ i ] = false;
-        }
+        codes_positions [ i ] = isAddonData( codes [ i ] );
+        // if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
+        //      codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
+        //      codes [ i ].compare("strainN") == 0 || codes [ i ].compare("strainT") == 0 ||
+        //      codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
+        //     codes_positions [ i ] = true;
+        //     // } else if ( codes[ i ].compare("material") == 0 ) {
+        //     //   mat_code = i;
+        // } else {
+        //     codes_positions [ i ] = false;
+        // }
     }
 
     vector< vector< double > >cell_data;
@@ -159,9 +203,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         offset += points_id.size();
         offsets.push_back(offset);
         for ( unsigned i = 0; i < cell_data_size; i++ ) {
-            if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
-                 codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
-                 codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
+            if ( isAddonData( codes [ i ] ) ) {
                 continue;
             } else if ( codes [ i ].compare("material") == 0 ) {
                 matI = 0;
@@ -473,13 +515,14 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
 
     vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
     for ( unsigned i = 0; i < cell_data_size; i++ ) {
-        if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
-             codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
-             codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
-            codes_positions [ i ] = true;
-        } else {
-            codes_positions [ i ] = false;
-        }
+      codes_positions [ i ] = isAddonData( codes [ i ] );
+        // if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
+        //      codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
+        //      codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
+        //     codes_positions [ i ] = true;
+        // } else {
+        //     codes_positions [ i ] = false;
+        // }
     }
 
     vector< vector< double > >cell_data; // test version, this and more will be specified on the exporter input
@@ -514,9 +557,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             offsets.push_back(offset);
 
             for ( unsigned i = 0; i < cell_data_size; i++ ) {
-                if ( codes [ i ].compare("crack_opening") == 0 || codes [ i ].compare("crack_sliding") == 0 ||
-                     codes [ i ].compare("normal_strain") == 0 || codes [ i ].compare("sliding_strain") == 0 ||
-                     codes [ i ].compare("strainTY") == 0 || codes [ i ].compare("strainTZ") == 0 ) {
+                if ( isAddonData( codes [ i ] ) ) {
                     continue;
                 } else {
                     cell_data [ i ].push_back(el->giveIPValue(codes [ i ], 0) ); // so far for single IP point
