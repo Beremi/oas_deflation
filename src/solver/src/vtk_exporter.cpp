@@ -309,12 +309,12 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         if ( vector_data_code_indeces.size() > 0 ) {
           exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
         }
-        if ( isStringInVect("nodal_stress", codes) ){
-          // reserve space only if nodal stresses should be exported
-          nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim));
-          // export nodal stresses:
-          ExportAllElementsNodalStress(nodal_stress, DoFs, nodes, elems, this->dim);
-        }
+    }
+    if ( isStringInVect("nodal_stress", codes) ){
+      // reserve space only if nodal stresses should be exported
+      nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim));
+      // export nodal stresses:
+      ExportAllElementsNodalStress(nodal_stress, DoFs, nodes, elems, this->dim);
     }
 
     giveFileName(step, buffer);
@@ -382,8 +382,8 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
           outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << (dim - 1) * 3 << "\" format=\"ascii\">" << '\n';
           double data;
           for ( auto const &s : nodal_stress ) {
-            for ( unsigned i = 0; i < s.numRows(); i++ ){
-              for ( unsigned j = 0; j < s.numCols(); j++ ){
+            for ( unsigned j = 0; j < s.numCols(); j++ ){
+              for ( unsigned i = 0; i < s.numRows(); i++ ){
                 if ( j > i ) continue;
                 if ( i == j ) {
                   data = s[i][j];

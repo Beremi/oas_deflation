@@ -573,16 +573,18 @@ void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &D
       // to each node correspond 0.5 of volume
       // TODO must be repaired for power tessellation
       single_volume = 0.5 * rbc->giveLength() * rbc->giveArea() / dim;
-      first = 1;
+      first = -1;
       ni = 0;
       for ( auto const &n : el->giveNodes() ) {
           auto res = std :: find(begin(* nodes), end(* nodes), n);
           node_id = std :: distance(begin(* nodes), res);
           Volume [ node_id ] += single_volume;
 
-          stress [ node_id ] += dyadicProduct(el->giveInternalForces(elDoFvalues, false) * rbc->giveArea() * first, rbc->giveDistanceToNode(ni, 0));
+          stress [ node_id ] += dyadicProduct(el->giveInternalForces(elDoFvalues, false)
+          // * rbc->giveArea()  // internal force is already traction multiplied by area!!
+           * first, rbc->giveDistanceToNode(ni, 0));
           // for node corresponding to end of element, traction needs to be reversed
-          first = -1;
+          first = 1;
           ni++;
 
       }
