@@ -380,20 +380,25 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         //////////////////////////////////////////////////////////////////////////
         if ( isStringInVect( "nodal_stress", codes) ){
           outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << (dim - 1) * 3 << "\" format=\"ascii\">" << '\n';
-          double data;
+          vector <double> data;
+          if ( dim == 2 ) data.resize(3);
+          else data.resize(6);  // NOTE other case than 2D or 3D not considered
+
           for ( auto const &s : nodal_stress ) {
-            for ( unsigned j = 0; j < s.numCols(); j++ ){
-              for ( unsigned i = 0; i < s.numRows(); i++ ){
-                if ( j > i ) continue;
-                if ( i == j ) {
-                  data = s[i][j];
-                } else {
-                  data = 0.5 * (s[i][j] + s[j][i]);
-                }
-                outputfile << data << '\t';
-              }
+            for ( unsigned i = 0; i < s.numRows(); i++ ){
+              data[ i ] = s[i][i];
+            }
+            data[ (dim - 1) * 3 - 1 ] = 0.5 * ( s [ dim - 1 ][ 0 ] + s [ 0 ][ dim - 1 ] );
+            if ( dim > 2 ){
+              data[ 3 ] = 0.5 * ( s[ 0 ][ 1 ] + s[ 1 ][ 0 ] );
+              data[ 4 ] = 0.5 * ( s[ 2 ][ 1 ] + s[ 1 ][ 2 ] );
+            }
+
+            for ( auto const &d : data){
+              outputfile << d << '\t';
             }
             outputfile << '\n';
+            // data.clear();
           }
           outputfile << "</DataArray>" << '\n';
         }
