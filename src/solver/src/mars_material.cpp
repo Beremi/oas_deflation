@@ -14,7 +14,7 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e) : DisMechM
 double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
-    } else if ( code.rfind( "damage", 0 ) == 0 ) {
+    } else if ( code.rfind( "damage", 0 ) == 0 || code.rfind( "damageN", 0 ) == 0 || code.rfind( "damageT", 0 ) == 0) {
         return temp_damage;
     // } else  if ( code.compare("stressN") == 0 ) {
     //     return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];

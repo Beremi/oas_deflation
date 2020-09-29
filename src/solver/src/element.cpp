@@ -454,6 +454,18 @@ Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
 };
 
 //////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveDistanceToNode(const unsigned &node_i, const unsigned & ip_id) const {
+  Point distance = this->ip_locs[ ip_id ] - this->nodes[ node_i ]->givePoint();
+  Vector dst((double)0, ndim);
+  for ( unsigned i =0; i < ndim; i++){
+    if ( i == 0 ) dst[ i ] = distance.getX();
+    else if ( i == 1 ) dst[ i ] = distance.getY();
+    else if ( i == 2 ) dst[ i ] = distance.getZ();
+  }
+  return dst;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRUSS ELEMENT
 Matrix Truss :: giveAMatrix(Point a, Point x) const {

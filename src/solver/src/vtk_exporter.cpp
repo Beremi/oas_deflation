@@ -79,6 +79,10 @@ bool isInVect(const Typo &val, const std :: vector<Typo> &vect){
   return std::find( vect.begin(), vect.end(), val ) != vect.end();
 }
 
+bool isStringInVect(const std :: string &val, const std :: vector<std :: string> &vect){
+  return std::find( vect.begin(), vect.end(), val ) != vect.end();
+}
+
 
 void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *elems, const Vector &DoFs, const vector< string > &codes, vector<unsigned> &indeces, vector< vector< Vector > > &cell_vect_data, bool doubled = false, bool rbcOnly = false) {
     Vector elDoFvalues, strainNT;
@@ -232,13 +236,17 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     // Point P;
     // Element *ee;
 
-    vector< int >points_id;
-    vector< vector< int > >all_points_id;
-    vector< int >cell_types;
-    vector< int >offsets;
-    vector< Point >displ;
+    vector< int > points_id;
+    vector< vector< int > > all_points_id;
 
-    vector< string >materials;
+    // vector of nodal stresses - Matrices (tensors) dim x dim
+    vector< Matrix > nodal_stress;
+
+    vector< int > cell_types;
+    vector< int > offsets;
+    vector< Point > displ;
+
+    vector< string > materials;
     unsigned matI;
 
     vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
@@ -267,7 +275,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         offset += points_id.size();
         offsets.push_back(offset);
         for ( unsigned i = 0; i < cell_data_size; i++ ) {
-            if ( isAddonCellScalarData( codes [ i ] ) ) {
+            if ( isAddonCellScalarData( codes [ i ] ) || isAddonPointVectorialData( codes [ i ] ) ) {
                 // TODO this needs to be improved, it is duplicated in these two functions
                 continue;
             } else if ( isAddonCellVectorialData( codes [ i ] ) ) {
@@ -300,6 +308,12 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data);
         if ( vector_data_code_indeces.size() > 0 ) {
           exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
+        }
+        if ( isStringInVect("nodal_stress", codes) ){
+          // reserve space only if nodal stresses should be exported
+          nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim));
+          // export nodal stresses:
+          ExportAllElementsNodalStress(nodal_stress, DoFs, nodes, elems, this->dim);
         }
     }
 
@@ -364,7 +378,28 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         }
         outputfile << "</DataArray>" << '\n';
         //////////////////////////////////////////////////////////////////////////
+        if ( isStringInVect( "nodal_stress", codes) ){
+          outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << (dim - 1) * 3 << "\" format=\"ascii\">" << '\n';
+          double data;
+          for ( auto const &s : nodal_stress ) {
+            for ( unsigned i = 0; i < s.numRows(); i++ ){
+              for ( unsigned j = 0; j < s.numCols(); j++ ){
+                if ( j > i ) continue;
+                if ( i == j ) {
+                  data = s[i][j];
+                } else {
+                  data = 0.5 * (s[i][j] + s[j][i]);
+                }
+                outputfile << data << '\t';
+              }
+            }
+            outputfile << '\n';
+          }
+          outputfile << "</DataArray>" << '\n';
+        }
+        //////////////////////////////////////////////////////////////////////////
         for ( unsigned i = 0; i < point_data.size(); i++ ) {
+            if ( codes [ i + cell_data_size ].compare("nodal_stress") == 0 ) continue;
             outputfile << "<DataArray type=\"Float32\" Name=\" " << codes [ i + cell_data_size ] << "\" format=\"ascii\">" << '\n';
             for ( auto const &p : point_data [ i ] ) {
                 outputfile << p << '\n';
