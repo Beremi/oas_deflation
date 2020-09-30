@@ -113,7 +113,7 @@ void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *e
                   vect_data = rbc->giveContactStrainXYZ(elDoFvalues);
                   // vect_data = matrix_vector_multiply(rbc->giveRMatrix().transpose(),strainNT);
                 } else if (codes [ indeces[ i ] ].compare("stressXYZ") == 0 ){
-                  vect_data = matrix_vector_multiply(rbc->giveRMatrix().transpose(), ( rbc->giveMaterialStats()[ 0 ]->giveStress(strainNT)));
+                  vect_data = rbc->giveInternalForces(elDoFvalues, false) / rbc->giveArea();
                 } else {
                     vect_data = vect_ini;
                 }
@@ -306,9 +306,9 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         return i == true;
     }) ) {
         exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data);
-        if ( vector_data_code_indeces.size() > 0 ) {
-          exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
-        }
+    }
+    if ( vector_data_code_indeces.size() > 0 ) {
+      exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
     }
     if ( isStringInVect("nodal_stress", codes) ){
       // reserve space only if nodal stresses should be exported
@@ -698,9 +698,9 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         return i == true;
     }) ) {
         exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data, true, true);
-        if ( vector_data_code_indeces.size() > 0 ) {
-          exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data, true, true);
-        }
+    }
+    if ( vector_data_code_indeces.size() > 0 ) {
+      exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data, true, true);
     }
 
     // unsigned iii = 0;
