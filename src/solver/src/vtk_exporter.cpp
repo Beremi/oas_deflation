@@ -226,6 +226,23 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
     }
 }
 
+
+vector < double > MatrixToStdVectForParaview(const Matrix &s, const unsigned &dim){
+  vector < double > data;
+  if ( dim == 2 ) data.resize(3);
+  else data.resize(6);  // NOTE other case than 2D or 3D not considered
+  for ( unsigned i = 0; i < s.numRows(); i++ ){
+    data[ i ] = s[i][i];
+  }
+  data[ (dim - 1) * 3 - 1 ] = 0.5 * ( s [ dim - 1 ][ 0 ] + s [ 0 ][ dim - 1 ] );
+  if ( dim > 2 ){
+    data[ 3 ] = 0.5 * ( s[ 0 ][ 1 ] + s[ 1 ][ 0 ] );
+    data[ 4 ] = 0.5 * ( s[ 2 ][ 1 ] + s[ 1 ][ 2 ] );
+  }
+  return data;
+}
+
+
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
@@ -241,6 +258,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
     // vector of nodal stresses - Matrices (tensors) dim x dim
     vector< Matrix > nodal_stress;
+    bool export_nodal_stress = isStringInVect("nodal_stress", codes);
 
     vector< int > cell_types;
     vector< int > offsets;
@@ -310,7 +328,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     if ( vector_data_code_indeces.size() > 0 ) {
       exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
     }
-    if ( isStringInVect("nodal_stress", codes) ){
+    if ( export_nodal_stress ){
       // reserve space only if nodal stresses should be exported
       nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim));
       // export nodal stresses:
@@ -378,21 +396,12 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         }
         outputfile << "</DataArray>" << '\n';
         //////////////////////////////////////////////////////////////////////////
-        if ( isStringInVect( "nodal_stress", codes) ){
+        if ( export_nodal_stress ){
           outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << (dim - 1) * 3 << "\" format=\"ascii\">" << '\n';
           vector <double> data;
-          if ( dim == 2 ) data.resize(3);
-          else data.resize(6);  // NOTE other case than 2D or 3D not considered
 
           for ( auto const &s : nodal_stress ) {
-            for ( unsigned i = 0; i < s.numRows(); i++ ){
-              data[ i ] = s[i][i];
-            }
-            data[ (dim - 1) * 3 - 1 ] = 0.5 * ( s [ dim - 1 ][ 0 ] + s [ 0 ][ dim - 1 ] );
-            if ( dim > 2 ){
-              data[ 3 ] = 0.5 * ( s[ 0 ][ 1 ] + s[ 1 ][ 0 ] );
-              data[ 4 ] = 0.5 * ( s[ 2 ][ 1 ] + s[ 1 ][ 2 ] );
-            }
+            data = MatrixToStdVectForParaview(s, dim);
 
             for ( auto const &d : data){
               outputfile << d << '\t';
@@ -449,33 +458,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 // function tahat calculates displacement of any point of rigid body from its rotations and
 Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node *v, const Node *a, const Vector &DoFs, const unsigned &dim) {
     Matrix A = rbc.giveAMatrix(a->givePoint(), v->givePoint() );
-    // const Particle *part = static_cast< const Particle * >( v );
-    // if (dim == 3){
-    //   Matrix U(6, 1);
-    //   U [ 0 ] [ 0 ] = part->giveDoFBasedValue("ux", DoFs);
-    //   U [ 1 ] [ 0 ] = part->giveDoFBasedValue("uy", DoFs);
-    //   U [ 2 ] [ 0 ] = part->giveDoFBasedValue("uz", DoFs);
-    //   U [ 3 ] [ 0 ] = part->giveDoFBasedValue("rotx", DoFs);
-    //   U [ 4 ] [ 0 ] = part->giveDoFBasedValue("roty", DoFs);
-    //   U [ 5 ] [ 0 ] = part->giveDoFBasedValue("rotz", DoFs);
-    //
-    //   Matrix P = A * U;
-    //
-    //   return Point(P[0][0], P[1][0], P[2][0]);
-    // } else if ( dim == 2 ){
-    //   Matrix U(3, 1);
-    //   U [ 0 ] [ 0 ] = part->giveDoFBasedValue("ux", DoFs);
-    //   U [ 1 ] [ 0 ] = part->giveDoFBasedValue("uy", DoFs);
-    //   U [ 2 ] [ 0 ] = part->giveDoFBasedValue("uz", DoFs);  // in 2D, this DOF stays for rotation
-    //
-    //   Matrix P = A * U;
-    //
-    //   return Point(P[0][0], P[1][0], 0);
-    // } else {
-    //   std::cerr << "export for dim " << dim << " not implemented, exporting zero" << '\n';
-    //   return Point();
-    // }
-    // this works with basic nodes (no need of cast to particles)
+
     unsigned DofsPerNode = ( dim - 1 ) * 3;
     Matrix U(DofsPerNode, 1);
     for ( unsigned i = 0; i < DofsPerNode; i++ ) {
@@ -483,13 +466,6 @@ Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node *v, co
     }
 
     Matrix P = A * U;
-
-    // std::cout << "A matrix:" << '\n';
-    // A.print();
-    // std::cout << "U matrix:" << '\n';
-    // U.print();
-    // std::cout << "P matrix:" << '\n';
-    // P.print();
 
     return Point(P [ 0 ] [ 0 ], P [ 1 ] [ 0 ], P.numRows() > 2 ? P [ 2 ] [ 0 ] : 0);
 }
@@ -640,6 +616,11 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     vector< int >offsets;
     vector< Point >displ;
 
+    // vector of nodal stresses - Matrices (tensors) dim x dim
+    vector< Matrix > nodal_stress;
+    vector< unsigned > vertex_correponding_node_id;
+    bool export_nodal_stress = isStringInVect("nodal_stress", codes);
+
     vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
     for ( unsigned i = 0; i < cell_data_size; i++ ) {
       codes_positions [ i ] = isAddonCellScalarData( codes [ i ] );
@@ -657,6 +638,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     unsigned num_rbcs = 0;
 
     int offset = 0;
+    unsigned node_id_i;
     for ( auto const &el : * elems ) {
         if ( el->giveName().compare("RigidBodyContact") != 0 ) {
             continue;
@@ -666,13 +648,17 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         for ( auto const &n : rbc->giveNodes() ) {
             // Particle *part = static_cast< Particle * >( n );
             auto nod_id_ptr = std :: find(begin(* nodes), end(* nodes), n);
+            node_id_i = std :: distance(begin(* nodes), nod_id_ptr);
             for ( auto const &v : rbc->giveVertices() ) {
                 all_vertices_twice.push_back(v->givePoint() );
                 points_id.push_back(nodes->giveSize() + all_vertices_twice.size() - 1);
                 vertices_displ.push_back(calculateVertexDisplacement(* rbc, v, n, DoFs, this->dim) );
+                if ( export_nodal_stress ){
+                  vertex_correponding_node_id.push_back( node_id_i );
+                }
             }
             // points_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
-            node_id.push_back(std :: distance(begin(* nodes), nod_id_ptr) );
+            node_id.push_back( node_id_i );
             all_points_id.push_back(points_id);
             cell_types.push_back( ( points_id.size() > 2 ) ? 7 : points_id.size() * 2 - 1 );
             // cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
@@ -680,7 +666,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             offsets.push_back(offset);
 
             for ( unsigned i = 0; i < cell_data_size; i++ ) {
-                if ( isAddonCellScalarData( codes [ i ] ) ) {
+                if ( isAddonCellScalarData( codes [ i ] ) || isAddonPointVectorialData( codes [ i ] ) ) {
                     continue;
                 } else if ( isAddonCellVectorialData( codes [ i ] ) ) {
                     vector_data_code_indeces.push_back(i);
@@ -701,6 +687,12 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     }
     if ( vector_data_code_indeces.size() > 0 ) {
       exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data, true, true);
+    }
+    if ( export_nodal_stress ){
+      // reserve space only if nodal stresses should be exported
+      nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim));
+      // export nodal stresses:
+      ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
     }
 
     // unsigned iii = 0;
@@ -770,6 +762,36 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
         }
         outputfile << "</DataArray>" << '\n';
+
+        ///////////////////////////////////////////////////////////////////////
+        if ( export_nodal_stress ){
+          outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << (dim - 1) * 3 << "\" format=\"ascii\">" << '\n';
+          vector <double> data;
+
+          for ( auto const &s : nodal_stress ) {
+            data = MatrixToStdVectForParaview(s, dim);
+
+            for ( auto const &d : data){
+              outputfile << d << '\t';
+            }
+            outputfile << '\n';
+            // data.clear();
+          }
+          for ( auto const &is : vertex_correponding_node_id ) {
+            data = MatrixToStdVectForParaview(nodal_stress[ is ], dim);
+
+            for ( auto const &d : data){
+              outputfile << d << '\t';
+            }
+            outputfile << '\n';
+            // data.clear();
+          }
+
+
+          outputfile << "</DataArray>" << '\n';
+        }
+        ///////////////////////////////////////////////////////////////////////
+
         outputfile << "</PointData>" << '\n';
         // /*
         unsigned num_vectors = 0;
