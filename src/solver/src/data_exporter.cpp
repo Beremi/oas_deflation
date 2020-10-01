@@ -547,14 +547,14 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     }
 };
 
-void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &DoFs, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim) {
+void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim) {
 
   // Vector stressXYZ, stress_zero;
   // stress_zero = Vector((double)0, dim);
 
   unsigned node_id, ni;
   int first;
-  Vector elDoFvalues, strainNT;
+  Vector elDoFvalues, elReactValues, strainNT;
   vector< unsigned >elDoFs;
 
   vector < double > Volume( stress.size(), 0);
@@ -566,8 +566,10 @@ void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &D
       rbc = static_cast< RigidBodyContact * >( el );
       elDoFs = el->giveDoFs();
       elDoFvalues.resize(elDoFs.size() );
+      elReactValues.resize(elDoFs.size() );
       for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
           elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
+          elReactValues [ i ] = reactions [ elDoFs [ i ] ];
       }
 
       // to each node correspond 0.5 of volume
@@ -580,9 +582,12 @@ void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &D
           node_id = std :: distance(begin(* nodes), res);
           Volume [ node_id ] += single_volume;
 
-          stress [ node_id ] += dyadicProduct(el->giveInternalForces(elDoFvalues, false)
-          // * rbc->giveArea()  // internal force is already traction multiplied by area!!
-           * first, rbc->giveDistanceToNode(ni, 0));
+          stress [ node_id ] += dyadicProduct(
+            ( el->giveInternalForces(elDoFvalues, false)
+              + rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
+            )
+           * first
+           , rbc->giveDistanceToNode(ni, 0));
           // for node corresponding to end of element, traction needs to be reversed
           first = 1;
           ni++;

@@ -314,7 +314,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
       // reserve space only if nodal stresses should be exported
       nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim));
       // export nodal stresses:
-      ExportAllElementsNodalStress(nodal_stress, DoFs, nodes, elems, this->dim);
+      ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
     }
 
     giveFileName(step, buffer);

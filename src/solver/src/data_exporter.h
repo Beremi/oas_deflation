@@ -191,6 +191,6 @@ public:
 protected:
 };
 
-void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &DoFs, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
+void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
 
 #endif /* _EXPORTER_C_H */
