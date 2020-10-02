@@ -38,6 +38,7 @@ public:
     BCContainer* giveBC() {return &bconds;};
     ConstraintContainer* giveConstraints() {return &constr;};
     unsigned giveDimension()const{return ndim;};
+    void resetTime(){solver->setTime(0); solver->setStep(0);}
 
     fs :: path baseDir;
     fs :: path resultDir;

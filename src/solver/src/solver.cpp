@@ -74,6 +74,18 @@ void Solver :: runAfterEachStep() {
 }
 
 //////////////////////////////////////////////////////////
+void Solver :: setTime(double t) {
+    time = t;
+    if (time-1e-15>termination_time){
+        time= termination_time;
+        terminated = true;        
+    }else{
+        terminated = false;
+    }
+    dt = initdt;
+}
+
+//////////////////////////////////////////////////////////
 void Solver :: init() {
     step = 0;
     time = 0.;
@@ -133,7 +145,8 @@ Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
             iss >> param;
             if ( param.compare("time_step") == 0 ) {
                 bdt = true;
-                iss >> dt;
+                iss >> initdt;
+                dt = initdt;
             } else if ( param.compare("total_time") == 0 ) {
                 bttime = true;
                 iss >> termination_time;
@@ -176,28 +189,7 @@ void SteadyStateLinearSolver :: solve() {
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
         r [ i ] += full_ddr [ i ];
     }
-
     
-    
-    //*
-      cout << "******************************************" << endl;
-      for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-       cout << "EXT " << i << " " << f_ext[i] << endl;
-      }
-
-
-      cout << "******************************************" << endl;
-      for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-       cout << "f " << f[i] << " " << r[i] << endl;
-      }
-     /*
-     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     * for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";
-     *  cout << endl;
-     * }
-     * exit(1);
-     */
-
     computeInternalExternalForces(r);
 }
 
@@ -444,8 +436,9 @@ void SteadyStateNonLinearSolver :: solve() {
         // unsigned maxIt = 30;
         while ( !converged && it < maxIt ) {
             K = Kini;
-            elems->updateSteadyStateMatrix(K, "secant");
+            elems->updateSteadyStateMatrix(K, "secant");  
 
+            //nodes->giveReducedForceArray(full_f, f);
             nodes->giveReducedDoFArray(f_ext - f_int, f);
 
             if ( idc ) {      //indirect displacement control
@@ -488,7 +481,7 @@ void SteadyStateNonLinearSolver :: solve() {
             for ( unsigned i = 0; i < totalDoFnum; i++ ) {
                 trial_r [ i ] += full_ddr [ i ];
             }
-
+            
             // std::cout << "before ----------------------" << '\n';
             // this->printAllVectors();
             //compute internal forces

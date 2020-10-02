@@ -23,7 +23,7 @@ void TrsprtRVEMaterialStatus :: init(){
     updateMicroSources();
 }
 
-////////////////////////////////////////////////////////// 
+/////////////////////////////////.///////////////////////// 
 Vector TrsprtRVEMaterialStatus :: giveStress(const Vector &strain){
 
     unsigned ndim = RVE->giveDimension();
@@ -32,9 +32,12 @@ Vector TrsprtRVEMaterialStatus :: giveStress(const Vector &strain){
     for(unsigned i=0; i<ndim; i++){ 
         MSfunctions[i]->setYValue(-strain[i],0);
     }
-    volumAverFunc->setYValue(10.,0);
+    volumAverFunc->setYValue(0.,0);
+
+    cout << "strain " << strain[0] << " " << strain[1] << endl;
 
     //solve
+    RVE->resetTime();
     RVE->solve();
 
     //collect results
@@ -55,9 +58,9 @@ Vector TrsprtRVEMaterialStatus :: giveStress(const Vector &strain){
             if(ndim==3) n[2] = normal.getZ();
             lambdaEff += dyadicProduct(n,n)*(e->giveLength()*e->giveArea()*e->giveMatStatus(0)->giveStiffnessTensor("secant",ndim)[0][0]);
             volume += e->giveVolume();  
-            stress -= n*(e->giveArea()*(DoFs[e->giveNode(1)->giveStartingDoF()]-DoFs[e->giveNode(0)->giveStartingDoF()]));
+            stress -= (e->giveArea()*e->giveMatStatus(0)->giveStiffnessTensor("secant",ndim)[0][0])*(n*(DoFs[e->giveNode(1)->giveStartingDoF()]-DoFs[e->giveNode(0)->giveStartingDoF()]));            
         }
-    }
+    }    
   
     for(unsigned i=0; i<ndim; i++){
         for(unsigned j=0; j<ndim; j++) stress[i] -= strain[j]*lambdaEff[j][i];        
