@@ -12,6 +12,7 @@ set (solver_files
     #main.cpp
     material_container.cpp
     material.cpp
+    material_misc.cpp
     material_RVE.cpp
     mars_material.cpp
     fatigue_material.cpp
