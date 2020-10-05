@@ -93,34 +93,35 @@ public:
   Material (and material status) to mimic contact behavior - no transfer in tension, elastic in compression and if friction prescribed, then resisting in friction according to pressure
   */
 
-// class ContactMaterial;
-// class ContactMaterialStatus : public DisMechMaterialStatus
-// {
-// private:
-//
-// public:
-//     ContactMaterialStatus(ContactMaterial *m, Element *e);
-//     virtual ~ContactMaterialStatus() {};
-//     void init();
-//     virtual void update();
-//     virtual Vector giveNormalShearStiffness(string type) const;
-//     virtual Vector giveStress(const Vector &strain);
-//     virtual double giveValue(string code) const;
-// };
-//
-//
-// class ContactMaterial : public DisMechMaterial
-//   // TODO do only elasto brittle - fully elastic in compression and brittle in tension/shear with possíbility to calc in equiv. space
-// {
-// private:
-//     double friction;  // friction coefficient
-// public:
-//     ContactMaterial() { name = "Contact material"; };
-//     ~ContactMaterial() {};
-//     void readFromLine(istringstream &iss);
-//     MaterialStatus *giveNewMaterialStatus(Element *e);
-//
-//     virtual void init();
-// };
+class ContactMaterial;
+class ContactMaterialStatus : public DisMechMaterialStatus
+{
+private:
+    double temp_normal_strain;
+public:
+    ContactMaterialStatus(ContactMaterial *m, Element *e);
+    virtual ~ContactMaterialStatus() {};
+    void init();
+    virtual void update();
+    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Vector giveStress(const Vector &strain);
+    // virtual double giveValue(string code) const;
+};
+
+
+class ContactMaterial : public DisMechMaterial
+  // TODO do only elasto brittle - fully elastic in compression and brittle in tension/shear with possíbility to calc in equiv. space
+{
+private:
+    double friction_coef;  // friction coefficient
+public:
+    ContactMaterial() { name = "Contact material"; };
+    ~ContactMaterial() {};
+    void readFromLine(istringstream &iss);
+    MaterialStatus *giveNewMaterialStatus(Element *e);
+    double giveFrictionCoef() const { return friction_coef; };
+
+    virtual void init();
+};
 
 #endif

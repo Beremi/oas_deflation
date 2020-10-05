@@ -74,10 +74,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     BrittleMaterial *newmat = new BrittleMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back( ( BrittleMaterial * ) newmat );
-                // } else if ( matType.compare("ContactMaterial") == 0 ) {
-                //     ContactMaterial *newmat = new ContactMaterial();
-                //     newmat->readFromLine(iss);
-                //     matrs.push_back( ( ContactMaterial * ) newmat );
+                } else if ( matType.compare("ContactMaterial") == 0 ) {
+                    ContactMaterial *newmat = new ContactMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back( ( ContactMaterial * ) newmat );
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
