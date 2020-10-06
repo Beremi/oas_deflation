@@ -73,7 +73,8 @@ public:
 //
 //
 // class PlastoBrittleMaterial : public BrittleMaterial
-//   // TODO do only elasto brittle - fully elastic in compression and brittle in tension/shear with possíbility to calc in equiv. space
+//   // TODO do plasto brittle - can be useful in any way? (well, can be implemented in future)
+//   // plastic strain in compression and brittle in tension/shear with possíbility to calc in equiv. space
 // {
 // private:
 //     double fc;
