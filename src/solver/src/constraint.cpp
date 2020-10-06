@@ -265,24 +265,6 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
     }
 }
 
-bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
-    double tol = 1e-9; // NOTE this should be relative to lmin or something
-    if ( ( leftBottom.getX() - P.getX() ) < tol && ( P.getX() - rightTop.getX() ) < tol ) {
-        if ( ( leftBottom.getY() - P.getY() ) < tol && ( P.getY() - rightTop.getY() ) < tol ) {
-            if ( ( leftBottom.getZ() - P.getZ() ) < tol && ( P.getZ() - rightTop.getZ() ) < tol ) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool isInCircle(const Point &P, const Point &center, const double &radius){
-  // TODO make fn isInCilinder (for arbitrary cilinder orientation)
-  if ( (P - center).norm() < radius ) return true;
-  return false;
-}
-
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes) {
     unsigned origsize = constraints.size();

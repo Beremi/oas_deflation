@@ -8,10 +8,9 @@
 #include <algorithm>
 #include <typeinfo>
 
-#include "boundary_condition.h"
-#include "node_container.h"
-#include "element_container.h"
-#include "constraint.h"
+// #include "boundary_condition.h"
+// #include "node_container.h"
+// #include "element_container.h"
 #include "data_exporter.h"
 
 //////////////////////////////////////////////////////////

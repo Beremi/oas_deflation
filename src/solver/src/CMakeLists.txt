@@ -6,6 +6,7 @@ set (solver_files
     element_container.cpp
     element.cpp
     element_polyhedral.cpp
+    geometry.cpp
     globals.cpp
     linalg.cpp
     linear_algebra.cpp

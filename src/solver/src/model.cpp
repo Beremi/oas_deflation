@@ -44,7 +44,7 @@ void Model::readFromFile(const string filename) {
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
     resultDir = baseDir / "results";
-    
+
     exporters.setResultDirectory(resultDir);
 
     string istr, line;
@@ -124,5 +124,5 @@ void Model::readFromFile(const string filename) {
         cerr << "Error: unable to open input file '" <<  fullPath.string() <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
-    
+
 }

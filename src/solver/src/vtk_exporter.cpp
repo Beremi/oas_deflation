@@ -1,5 +1,5 @@
 #include "vtk_exporter.h"
-#include <algorithm>
+#include "misc.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -73,16 +73,6 @@ bool isAddonPointVectorialData( const string &var ){
 
   return std::find( addon_list.begin(), addon_list.end(), var ) != addon_list.end();
 }
-
-template <typename Typo>
-bool isInVect(const Typo &val, const std :: vector<Typo> &vect){
-  return std::find( vect.begin(), vect.end(), val ) != vect.end();
-}
-
-bool isStringInVect(const std :: string &val, const std :: vector<std :: string> &vect){
-  return std::find( vect.begin(), vect.end(), val ) != vect.end();
-}
-
 
 void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *elems, const Vector &DoFs, const vector< string > &codes, vector<unsigned> &indeces, vector< vector< Vector > > &cell_vect_data, bool doubled = false, bool rbcOnly = false) {
     Vector elDoFvalues, strainNT;
