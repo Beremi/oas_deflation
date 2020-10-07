@@ -179,11 +179,13 @@ void SteadyStateLinearSolver :: solve() {
 
     computeInternalExternalForces(r);
 
+    /*
     cout << "S O L V E R" << endl;
     for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
      cout << f[i] << " " << ddr[i] << endl;
     }
     K.print();
+    */
 
     /*
      * cout << "******************************************" << endl;
