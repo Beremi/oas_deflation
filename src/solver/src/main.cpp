@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
 
     Model model(PRINT_TIME);
     
+    model.readFromFile(argv[1]);
     // save version information to result dir
     ofstream outputfile( ( model.resultDir / "version.txt" ).string() );
     if ( outputfile.is_open() ) {
@@ -42,7 +43,6 @@ int main(int argc, char **argv) {
     }
     outputfile.close();
     
-    model.readFromFile(argv[1]);
     model.init();
     model.solve();
 
