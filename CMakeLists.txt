@@ -22,7 +22,7 @@ include (ProcessorCount)
 
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
-
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 project(PartMod CXX)
 set (PartMod_VERSION_MAJOR 0)
@@ -186,6 +186,26 @@ if(BLAS_FOUND)
 else()
   message(STATUS "BLAS not found. Using Eigen own functions")
 endif()
+
+find_package(LAPACK)
+find_package(LAPACKE)
+
+if(LAPACK_FOUND AND LAPACKE_FOUND)
+  message(STATUS "Eigen will use some subroutines from LAPACK.")
+  message(STATUS "See: http://eigen.tuxfamily.org/dox-devel/TopicUsingBlasLapack.html")
+  target_compile_definitions(DiscreteModel
+    PRIVATE
+      EIGEN_USE_LAPACKE
+    )
+  target_link_libraries(DiscreteModel
+    PUBLIC
+      ${LAPACK_LIBRARIES}
+      ${LAPACKE_LIBRARIES}
+    )
+else()
+  message(STATUS "LAPACK not found. Using Eigen own functions")
+endif()
+
 
 
 set_target_properties(
