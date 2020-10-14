@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=KonqPopupMenu/Plugin
+MimeType=text/inp;
+Actions=ld_view;
+X-KDE-Submenu=Tools
+X-KDE-StartupNotify=false
+X-KDE-Priority=TopLevel
+
+[Desktop Action ld_view]
+Icon=engauge-digitizer
+Name=LD Viewer
+Exec=/home/kelidas/anaconda3/bin/python /home/kelidas/workspace_git/partmod/src/postprocessor/LD_viewer/LD_viewer.py %f
