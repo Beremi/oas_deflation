@@ -4,7 +4,7 @@ import argparse
 os.environ["ETS_TOOLKIT"] = "qt"
 os.environ["QT_API"] = "pyqt5"
 from traits.api import HasStrictTraits, Instance, File, List, Enum, Button, Str, \
-                        Any, Bool, DelegatesTo, Property, WeakRef
+                        Any, Bool, DelegatesTo, Property, Float
 from traitsui.api import Item, Group, View, HSplit, NoButtons, EnumEditor, HGroup,\
                          Handler, VGroup, Tabbed, TextEditor, Label, ListEditor
 from traitsui.file_dialog  import open_file, TextInfo, FileInfo
@@ -92,6 +92,9 @@ class LDCurve(HasStrictTraits):
     x_values = Enum(values='labels')
     y_values = Enum(values='labels')
 
+    x_scale = Float(1)
+    y_scale = Float(1)
+
     figure = Instance(Figure)
     draw_this_button = Button('Draw this one')
 
@@ -103,15 +106,17 @@ class LDCurve(HasStrictTraits):
     def _draw_this(self, ax):
         #if self.clear_axis:
         #   ax.cla()
-        ax.plot(self.ldfile.data[self.x_values], self.ldfile.data[self.y_values], 
+        ax.plot(self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale, 
                 label='{}-{}'.format(self.ldfile.name, self.name))
         ax.legend()
 
     def _get_name(self):
         return 'LD {}'.format(self.ld_num)
 
-    view = View(VGroup(HItem('x_values'),
-                       HItem('y_values'),
+    view = View(VGroup(HGroup(HItem('x_values'), 
+                               Item('x_scale', show_label=False)),
+                       HGroup(HItem('y_values'), 
+                               Item('y_scale', show_label=False)),
                        Item('draw_this_button', show_label=False))
                 )
 
@@ -181,10 +186,10 @@ class LDViewer(HasStrictTraits):
     def _panel_default(self):
         return ControlPanel(figure=self.figure)
 
-    def __init__(self, **traits):
-        super().__init__(**traits)
-        if pathlib.Path('LD.out').exists():
-            self.ld_file = 'LD.out'
+   # def __init__(self, **traits):
+   #     super().__init__(**traits)
+   #     if pathlib.Path('LD.out').exists():
+   #         self.panel.ldfilesld_file = 'LD.out'
     
     view = View( HSplit('@panel',
                        Item('figure', show_label=False, editor=MPLFigureEditor(), dock='vertical', width=0.8),
