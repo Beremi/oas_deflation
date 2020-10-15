@@ -14,20 +14,20 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e) : DisMechM
 double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
-    } else if ( code.compare("damage") == 0 ) {
+    } else if ( code.rfind( "damage", 0 ) == 0 || code.rfind( "damageN", 0 ) == 0 || code.rfind( "damageT", 0 ) == 0) {
         return temp_damage;
-    } else  if ( code.compare("stressN") == 0 ) {
-        return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];
-    } else  if ( code.compare("stressT1") == 0 ) {
-        return this->giveNormalShearStiffness("secant")[1] * temp_strain[1];
-    } else  if ( code.compare("stressT2") == 0 ) {
-        return this->giveNormalShearStiffness("secant")[2] * temp_strain[2];
-    } else  if ( code.compare("strainN") == 0 ) {
-        return temp_strain[0];
-    } else  if ( code.compare("strainT1") == 0 ) {
-        return temp_strain[1];
-    } else  if ( code.compare("strainT2") == 0 ) {
-        return temp_strain[2];
+    // } else  if ( code.compare("stressN") == 0 ) {
+    //     return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];
+    // } else  if ( code.compare("stressT1") == 0 ) {
+    //     return this->giveNormalShearStiffness("secant")[1] * temp_strain[1];
+    // } else  if ( code.compare("stressT2") == 0 ) {
+    //     return this->giveNormalShearStiffness("secant")[2] * temp_strain[2];
+    // } else  if ( code.compare("strainN") == 0 ) {
+    //     return temp_strain[0];
+    // } else  if ( code.compare("strainT1") == 0 ) {
+    //     return temp_strain[1];
+    // } else  if ( code.compare("strainT2") == 0 ) {
+    //     return temp_strain[2];
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -215,7 +215,7 @@ Vector MarsMaterialStatus :: giveNormalShearStiffness(string type) const {
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain = strain;
+    // temp_strain = strain;
     computeDamage(strain);
     return DisMechMaterialStatus :: giveStress(strain) * ( 1 - temp_damage );
 }
@@ -231,6 +231,9 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
+    // initialize all values to zero (NOTE probably no ned in linux, but in windows necessary)
+    fs = Gs = fc = Kc = 0;
+
     string param;
     bool bft, bGt;
     bft = bGt = false;
@@ -243,6 +246,14 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("ft") == 0 ) {
             bft = true;
             iss >> ft;
+        } else if ( param.compare("fs") == 0 ) {
+            iss >> fs;
+        } else if ( param.compare("Gs") == 0 ) {
+            iss >> Gs;
+        } else if ( param.compare("fc") == 0 ) {
+            iss >> fc;
+        } else if ( param.compare("Kc") == 0 ) {
+            iss >> Kc;
         }
     }
     if ( !bft ) {
@@ -266,10 +277,11 @@ MaterialStatus *MarsMaterial :: giveNewMaterialStatus(Element *e) {
 
 //////////////////////////////////////////////////////////
 void MarsMaterial :: init() {
-    fs = 3 * ft;
-    Gs = 16 * Gt;
-    fc = 16 * ft;
-    Kc = 0.26 * E0;
+    // if variables not specified on the input, use default multipliers
+    fs = ( fs == 0 ) ? 3 * ft : fs;
+    Gs = ( Gs == 0 ) ? 16 * Gt : Gs;
+    fc = ( fc == 0 ) ? 16 * ft : fc;
+    Kc = ( Kc == 0 ) ? 0.26 * E0 : Kc;
     beta = 1.;
     mu = 0.2;
     nc = 2;

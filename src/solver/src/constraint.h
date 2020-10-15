@@ -88,5 +88,6 @@ protected:
 };
 
 bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop);
+bool isInCircle(const Point &P, const Point &center, const double &radius);
 
 #endif /* _CONSTRAINT_H */

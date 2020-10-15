@@ -34,6 +34,14 @@ void MaterialContainer :: readFromFile(const string filename) {
                     DisMechMaterial *newmat = new DisMechMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("ElasticMechMaterial") == 0 ) {
+                    ElasticMechMaterial *newmat = new ElasticMechMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("CosseratMechMaterial") == 0 ) {
+                    CosseratMechMaterial *newmat = new CosseratMechMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("TrsprtMaterial") == 0 ) {
                     TrsprtMaterial *newmat = new TrsprtMaterial();
                     newmat->readFromLine(iss);

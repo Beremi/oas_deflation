@@ -279,6 +279,12 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
     return false;
 }
 
+bool isInCircle(const Point &P, const Point &center, const double &radius){
+  // TODO make fn isInCilinder (for arbitrary cilinder orientation)
+  if ( (P - center).norm() < radius ) return true;
+  return false;
+}
+
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes) {
     unsigned origsize = constraints.size();

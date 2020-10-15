@@ -1472,7 +1472,7 @@ Matrix dyadicProduct(const Vector &a, const Vector &b){
             X[i][j] = a[i]*b[j];
         }
     }
-    return X;   
+    return X;
 }
 
 double l2_norm(Vector x) {

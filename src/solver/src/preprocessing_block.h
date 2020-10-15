@@ -106,6 +106,22 @@ protected:
 };
 
 
+// rigid plate constraining nodes in holow cylindric
+class RingRigidPlate : public RigidPlate
+{
+private:
+    Point center, axis;
+    double r_inner, r_outer;
+    unsigned direction;
+public:
+    RingRigidPlate() {};
+    virtual ~RingRigidPlate() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+protected:
+};
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // CONTAINER FOR PREPROCESSOR BLOCKS

@@ -187,7 +187,7 @@ void SteadyStateLinearSolver :: solve() {
     nodes->giveFullDoFArray(ddr, full_ddr);
 
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-        r [ i ] += full_ddr [ i ];
+        r [ i ] += full_ddr [ i ];        
     }
     
     computeInternalExternalForces(r);

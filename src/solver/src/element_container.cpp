@@ -41,8 +41,16 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     Transp1DCoupled *newelem = new Transp1DCoupled(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("TranspQuad") == 0 ) {
+                } else if ( elemType.compare("TrsprtQuad") == 0 ) {
                     TranspQuad *newelem = new TranspQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("MechanicalQuad") == 0 ) {
+                    MechanicalQuad *newelem = new MechanicalQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("CosseratQuad") == 0 ) {
+                    CosseratQuad *newelem = new CosseratQuad();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TranspPolygonal") == 0 ) {
@@ -90,7 +98,6 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 //////////////////////////////////////////////////////////
 void ElementContainer :: init() {
     max_sol_order = 0;
-
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->init();
         ( * e )->initMaterialStatuses();
@@ -114,6 +121,7 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+
         if ( matrixType.compare("mass") == 0 ) {
             if ( !dynamic_cast< MechanicalElement * >( * e ) ) {
                 continue;
@@ -173,6 +181,7 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
     MechanicalElement *me;
     TransportElement *te;
 
+
     for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
             if ( ( * e )->giveSolutionOrder() != so ) {
@@ -196,11 +205,11 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
                 k = ( * e )->giveSteadyStateMatrix(matrixType);
             }
             elDoFs = ( * e )->giveDoFs();
-
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 for ( unsigned j = i; j < elDoFs.size(); j++ ) {
                     DoFi = nodes->giveDoFid(elDoFs [ i ]);
                     DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                    
                     //diagonal
                     if ( DoFi == DoFj ) {
                         if ( DoFi < nfreeDoFs ) {
@@ -217,7 +226,6 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
             }
         }
     }
-
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(K);
     }

@@ -739,6 +739,77 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 }
 
 
+void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
+    ndim = d;
+    double x, y, z, rI, rO;
+    string dir;
+    iss >> master_id >> x >> y;
+    if ( d == 3 ) iss >> z;
+    this->center = Point(x, y, z);
+    iss >> rI >> rO;
+    this->r_inner = rI;
+    this->r_outer = rO;
+    if ( dim == 3 ){
+      iss >> dir;
+      if ( dir.compare("x")) direction = 0;
+      else if ( dir.compare("y")) direction = 1;
+      else if ( dir.compare("z")) direction = 2;
+      // iss >> x >> y >> z;
+      // axis = Point(x, y, z);
+    } else {
+      // for 2D case, normal
+      // axis = Point(0, 0, 1);
+      direction = 2;
+    }
+
+}
+
+void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+    ( void ) e;
+    ( void ) bcs;
+    ( void ) funcs;
+    ( void ) ex;
+    // jointDoF jD;
+    Node *master;
+
+    master = nodes->giveNode(master_id);
+    // check if it is master node
+    MechNode *n = dynamic_cast< MechNode * >( master );
+    if ( !n ) {
+        cerr << "Error in " << __func__ << ": node must be Mechanical, " << master->giveName() << " provided" << endl;
+        exit(1);
+    }
+    if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
+        cerr << "Error in " << __func__ << ": MechDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
+        exit(1);
+    }
+    Point node_point;
+    int xm, ym, zm;
+    xm = 1;
+    ym = 1;
+    zm = 1;
+    if ( direction == 0 ) xm = 0;
+    else if ( direction == 1 ) ym = 0;
+    else if ( direction == 2 ) zm = 0;
+    this->center = Point(this->center.getX()*xm, this->center.getY()*ym, this->center.getZ()*zm);
+    for ( auto const &nod : * nodes ) {
+        node_point = Point(nod->givePoint().getX()*xm, nod->givePoint().getZ()*ym, nod->givePoint().getZ()*zm);
+        if ( isInCircle( node_point, this->center, this->r_outer ) ) {
+            if ( !isInCircle( node_point, this->center, this->r_inner ) ) {
+                if ( nod == master ) {
+                    continue;
+                }
+                // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
+                Particle *nn = dynamic_cast< Particle * >( nod );
+                if ( nn ) {
+                  constrs->connectSlaveMaster(nod, master, ndim, which);
+                }
+            }
+        }
+    }
+}
+
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -796,6 +867,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("CoordRigidPlate") == 0 ) {
                     CoordRigidPlate *newblock = new CoordRigidPlate();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("RingRigidPlate") == 0 ) {
+                    RingRigidPlate *newblock = new RingRigidPlate();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else {
