@@ -1367,7 +1367,7 @@ static struct PyModuleDef dmga2py = {
 };
 
 PyMODINIT_FUNC PyInit_dmga2py(void) {
-  PyModule_Create(&dmga2py);
+  return PyModule_Create(&dmga2py);
 }
 
 int

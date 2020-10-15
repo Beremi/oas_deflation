@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
     }
     outputfile.close();
 
- 
+
     model.init();
     model.solve();
 

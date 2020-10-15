@@ -5,6 +5,7 @@
 #include "material_RVE.h"
 #include "mars_material.h"
 #include "fatigue_material.h"
+#include "material_misc.h"
 #include <vector>
 #include <iostream>
 #include <fstream>

@@ -191,6 +191,27 @@ void SteadyStateLinearSolver :: solve() {
     }
     
     computeInternalExternalForces(r);
+
+    /*
+    cout << "S O L V E R" << endl;
+    for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+     cout << f[i] << " " << ddr[i] << endl;
+    }
+    K.print();
+    */
+
+    /*
+     * cout << "******************************************" << endl;
+     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+     *  cout << f[i] << " " << ddr[i] << endl;
+     * }
+     *
+     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+     * for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";
+     *  cout << endl;
+     * }
+     * exit(1);
+     */
 }
 
 //////////////////////////////////////////////////////////
