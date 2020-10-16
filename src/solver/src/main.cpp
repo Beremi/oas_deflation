@@ -42,6 +42,8 @@ int main(int argc, char **argv) {
     Model model(PRINT_TIME);
     model.readFromFile(input.string() );
 
+    // check if exists or create directory for results
+    if (!fs :: exists(model.resultDir)) fs :: create_directories(model.resultDir);
     // save version information to result dir
     ofstream outputfile( ( model.resultDir / "version.txt" ).string() );
     if ( outputfile.is_open() ) {
