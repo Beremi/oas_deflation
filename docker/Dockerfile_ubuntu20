@@ -1,0 +1,49 @@
+# Get the base Ubuntu image from Docker Hub
+FROM ubuntu:20.04
+ENV TZ=Europe/Prague
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ARG DEBIAN_FRONTEND=noninteractive
+# Update apps on the base image
+#RUN apt-get -y update && apt-get install -y
+RUN apt-get -y update
+
+RUN apt-get -y install git\
+                    cmake\
+                    gcc\
+                    g++
+# Documentation
+RUN apt-get -y install doxygen\
+                    graphviz
+
+# Tests
+RUN apt-get -y install valgrind\
+                    python3
+
+# Eigen (Blas, Lapack) - optional
+RUN apt-get -y install libblas-dev\
+                    liblapack-dev\
+                    liblapacke-dev
+
+RUN apt-get autoclean
+
+RUN apt-get autoremove
+
+RUN apt-get clean
+
+# Copy the current folder which contains C++ source code to the Docker image under /usr/src
+COPY . /usr/src/partmod
+
+# Specify the working directory
+WORKDIR /usr/src/partmod-build
+
+# Use Clang to compile the Test.cpp source file
+RUN cmake ../partmod
+
+RUN cmake --build . -- -j$((`nproc`-1))
+
+#RUN g++ -o Test Test.cpp
+
+# Run the output program from the previous step
+#CMD ["./bin/DiscreteModel"]
+ENTRYPOINT ["ctest", "-L", "tests", "-T", "memcheck"]
