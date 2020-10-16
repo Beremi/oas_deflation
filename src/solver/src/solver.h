@@ -37,7 +37,7 @@ public:
     virtual void init();
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
-    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions;}
+    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions; }
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     Vector giveDoFValues() const { return r; }
@@ -46,7 +46,7 @@ public:
     double giveTime() const { return time; };
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
     void setTime(double t);
-    void setStep(unsigned t){step = t;};
+    void setStep(unsigned t) { step = t; };
 };
 
 //////////////////////////////////////////////////////////

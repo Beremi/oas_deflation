@@ -9,9 +9,8 @@ BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e) :
 
 //////////////////////////////////////////////////////////
 double BrittleMaterialStatus :: giveValue(string code) const {
-    if ( code.rfind( "damage", 0 ) == 0 || code.rfind( "damageN", 0 ) == 0 || code.rfind( "damageT", 0 ) == 0) {
+    if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         return temp_damage;
-
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -36,20 +35,20 @@ void BrittleMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 void BrittleMaterialStatus :: computeDamage(const Vector &strain) {
     BrittleMaterial *m = static_cast< BrittleMaterial * >( mat );
-    temp_normal_strain = strain[0];
+    temp_normal_strain = strain [ 0 ];
     double epsT = 0;
-    for ( unsigned ei = 1; ei < strain.size(); ei++){
-      epsT += pow(strain[ ei ], 2);
+    for ( unsigned ei = 1; ei < strain.size(); ei++ ) {
+        epsT += pow(strain [ ei ], 2);
     }
     epsT = sqrt(epsT);
 
-    if ( !damage ){
-      if ( temp_normal_strain > m->giveFt() / this->giveElasticNormalShearStiffness()[ 0 ] ) {
-        temp_damage = true;
-      }
-      if ( epsT > m->giveFs() / this->giveElasticNormalShearStiffness()[ 1 ] ) {
-        temp_damage = true;
-      }
+    if ( !damage ) {
+        if ( temp_normal_strain > m->giveFt() / m->giveE0() ) {
+            temp_damage = true;
+        }
+        if ( epsT > m->giveFs() / ( m->giveE0() * m->giveAlpha() ) ) {
+            temp_damage = true;
+        }
     }
 }
 
@@ -59,13 +58,17 @@ void BrittleMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Vector BrittleMaterialStatus :: giveNormalShearStiffness(string type) const {
-    Vector stiff = giveElasticNormalShearStiffness();
+Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
-        stiff[ 1 ] = stiff[ 1 ] * ( temp_damage ? 1e-10 : 1 );
-        if ( temp_normal_strain > 0 ) stiff[ 0 ] = stiff[ 0 ] * ( temp_damage ? 1e-10 : 1 );
+        if ( temp_normal_strain > 0 ) {
+            stiff [ 0 ] [ 0 ] *= ( temp_damage ? 1e-10 : 1 );
+        }
+        for ( size_t i = 1; i < dim; i++ ) {
+            stiff [ i ] [ i ] *= ( temp_damage ? 1e-10 : 1 );
+        }
         return stiff;
     } else {
         cerr << "Error: BrittleMaterialStatus does not provide '" << type << "' stiffness";
@@ -77,19 +80,10 @@ Vector BrittleMaterialStatus :: giveNormalShearStiffness(string type) const {
 Vector BrittleMaterialStatus :: giveStress(const Vector &strain) {
     computeDamage(strain);
     if ( damage ) {
-      Vector stress, stiff;
-      stress.resize(strain.size());
-      stiff = this->giveNormalShearStiffness("secant");
-      for ( unsigned i = 0; i < strain.size(); i++ ){
-        if ( i < 2 ){
-          stress[ i ] = strain[ i ] * stiff[ i ];
-        } else {
-          stress[ i ] = strain[ i ] * stiff[ 1 ];
-        }
-      }
-      return stress;
+        Matrix stiff = giveStiffnessTensor("secant", strain.size() );
+        return stiff * strain;
     } else {
-      return DisMechMaterialStatus :: giveStress(strain);
+        return DisMechMaterialStatus :: giveStress(strain);
     }
 }
 
@@ -156,7 +150,6 @@ void ContactMaterialStatus :: init() {
         cerr << "Material " << name << " can be used only for RigidBodyContact elements" << endl;
         exit(EXIT_FAILURE);
     }
-
 }
 
 
@@ -166,12 +159,15 @@ void ContactMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Vector ContactMaterialStatus :: giveNormalShearStiffness(string type) const {
-    Vector stiff = giveElasticNormalShearStiffness();
+Matrix ContactMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
+        // this is unfortunately wrong, cannot be done this way, shear stress will change in abruptly
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
-        if ( temp_normal_strain > 0 ) stiff = stiff * 1e-10;
+        if ( temp_normal_strain > 0 ) {
+            stiff = stiff * 1e-10;
+        }
         return stiff;
     } else {
         cerr << "Error: ContactMaterialStatus does not provide '" << type << "' stiffness";
@@ -181,13 +177,15 @@ Vector ContactMaterialStatus :: giveNormalShearStiffness(string type) const {
 
 //////////////////////////////////////////////////////////
 Vector ContactMaterialStatus :: giveStress(const Vector &strain) {
-    temp_normal_strain = strain[ 0 ];
-    Vector stress((double) 0, strain.size());
+    temp_normal_strain = strain [ 0 ];
+    Vector stress( ( double ) 0, strain.size() );
     if ( temp_normal_strain < 0 ) {
         ContactMaterial *m = static_cast< ContactMaterial * >( mat );
-        stress[ 0 ] = strain[ 0 ] * m->giveE0();
-        stress[ 1 ] = stress[ 0 ] * m->giveFrictionCoef();
-        if ( strain.size() > 2 ) stress[ 2 ] = stress[ 0 ] * m->giveFrictionCoef();
+        stress [ 0 ] = strain [ 0 ] * m->giveE0();
+        stress [ 1 ] = stress [ 0 ] * m->giveFrictionCoef();
+        if ( strain.size() > 2 ) {
+            stress [ 2 ] = stress [ 0 ] * m->giveFrictionCoef();
+        }
     }
     return stress;
 }
@@ -214,7 +212,6 @@ void ContactMaterial :: readFromLine(istringstream &iss) {
             iss >> friction_coef;
         }
     }
-
 }
 
 //////////////////////////////////////////////////////////

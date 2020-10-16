@@ -18,14 +18,15 @@ int main(int argc, char **argv) {
     GlobPaths :: BASEDIR = input.parent_path();
 
 
-    
+
     // OMP set 1 thread by default
     omp_set_dynamic(0);
     char *val = getenv("OMP_NUM_THREADS");
-    if (val != nullptr)
+    if ( val != nullptr ) {
         cout << "OMP_NUM_THREADS = " << val << endl;
-    else
+    } else {
         omp_set_num_threads(1);
+    }
 
     //initial time
     auto start = std :: chrono :: system_clock :: now();
@@ -36,10 +37,10 @@ int main(int argc, char **argv) {
         string nowstring = ctime(& time_now);
         std :: cout << "######### start of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;
     }
-   
+
 
     Model model(PRINT_TIME);
-    model.readFromFile(input.string());   
+    model.readFromFile(input.string() );
 
     // save version information to result dir
     ofstream outputfile( ( model.resultDir / "version.txt" ).string() );

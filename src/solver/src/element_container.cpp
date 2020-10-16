@@ -121,7 +121,6 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-
         if ( matrixType.compare("mass") == 0 ) {
             if ( !dynamic_cast< MechanicalElement * >( * e ) ) {
                 continue;
@@ -209,7 +208,7 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
                 for ( unsigned j = i; j < elDoFs.size(); j++ ) {
                     DoFi = nodes->giveDoFid(elDoFs [ i ]);
                     DoFj = nodes->giveDoFid(elDoFs [ j ]);
-                    
+
                     //diagonal
                     if ( DoFi == DoFj ) {
                         if ( DoFi < nfreeDoFs ) {

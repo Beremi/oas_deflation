@@ -81,7 +81,7 @@ void NodeContainer :: establishDoFArray() {
     vector< unsigned >loaded = BC->giveArrayOfLoadedDoFs();
     blockedDoFid.resize(blocked.size() );
     loadedDoFid.resize(loaded.size() );
-    freeDoFs = totalDoFs-blocked.size();
+    freeDoFs = totalDoFs - blocked.size();
 
     /////////////////////////////////////////////////////////////////
     // #constraint
@@ -109,12 +109,12 @@ void NodeContainer :: establishDoFArray() {
 
     //check that there are no two Dirichlet BC assigned to one DoF
     vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
-    for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev+1; cur != a.end(); ++cur) {
-        if(prev->first==cur->first) {
+    for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
+        if ( prev->first == cur->first ) {
             cerr << "Error: two Dirichlet BC assigne to the same DoF number " << cur->first << endl;
             exit(1);
         }
-        prev = cur;  
+        prev = cur;
     }
 
 
@@ -208,13 +208,12 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
-
     if ( this->giveConstraints()->isActive() ) {
         this->giveConstraints()->calculateMasterForces(fullf);
     }
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs) {
+        if ( DoFid [ i ] < freeDoFs ) {
             f [ DoFid [ i ] ] = fullf [ i ];
         }
     }

@@ -17,24 +17,26 @@ Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
 };
 
 //////////////////////////////////////////////////////////
-Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const{
-    (void) type;
-    Matrix T(2,2);
-    T[0][0] = T[1][1] = effConductivity;
+Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+    ( void ) type;
+    Matrix T(2, 2);
+    T [ 0 ] [ 0 ] = T [ 1 ] [ 1 ] = -effConductivity;
     return T;
 };
 
 //////////////////////////////////////////////////////////
 double TrsprtMaterialStatus :: giveMassConstant() const {
-    TrsprtMaterial *m = static_cast<TrsprtMaterial*>(mat); 
-    return m->giveCapacity()*m->giveDensity();
+    TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
+    return m->giveCapacity() * m->giveDensity();
 }
 
-double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const{
-    if (type.compare("elastic")==0){
-        TrsprtMaterial *m = static_cast<TrsprtMaterial*>(mat); 
-        return  m->giveDensity() * m->givePermeability() / m->giveViscosity();
-    } else return effConductivity;
+double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const {
+    if ( type.compare("elastic") == 0 ) {
+        TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
+        return m->giveDensity() * m->givePermeability() / m->giveViscosity();
+    } else {
+        return effConductivity;
+    }
 }
 
 
@@ -88,47 +90,54 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
 //////////////////////////////////////////////////////////
 // ELASTIC TENSORIAL MECHANICAL MATERIAL
 
-Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain) {   
-    unsigned dim;
-    if(strain.size()==1) dim=1; 
-    else if(strain.size()==3) dim=2;
-    else if(strain.size()==6) dim=3;
-    return  giveStiffnessTensor("elastic",dim) * strain;
+Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain) {
+    unsigned dim=0;
+    if ( strain.size() == 1 ) {
+        dim = 1;
+    } else if ( strain.size() == 3 )   {
+        dim = 2;
+    } else if ( strain.size() == 6 )                                               {
+        dim = 3;
+    }
+    return giveStiffnessTensor("elastic", dim) * strain;
 };
 
 //////////////////////////////////////////////////////////
-Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const{
-    (void) type;
+Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+    ( void ) type;
     unsigned size = 1;
-    if(dimension==1) size = 1;
-    else if(dimension==2) size = 3;
-    else if(dimension==3) size = 6;
-    else {
-        cerr << name << ": unsupported dimension " << dimension << endl; 
+    if ( dimension == 1 ) {
+        size = 1;
+    } else if ( dimension == 2 )   {
+        size = 3;
+    } else if ( dimension == 3 )                                            {
+        size = 6;
+    } else                                                                                {
+        cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
-    Matrix D(size,size);
-    ElasticMechMaterial *m = static_cast<ElasticMechMaterial*>(mat); 
-    if(dimension==1){
-        D[0][0] = m->giveElasticModulus();
-    }else if(dimension==2){
-        if(m->isPlaneStress()){
-            double factor = m->giveElasticModulus()/(1.-pow(m->givePoissonsRatio(),2));
-            D[0][0] = D[1][1] = factor;
-            D[0][1] = D[1][0] = m->givePoissonsRatio()*factor;    
-            D[2][2] = (1.-m->givePoissonsRatio())/2.*factor;
-        }else{ //plane strain
-            double factor = m->giveElasticModulus()/(1.-2.*m->givePoissonsRatio())/(1.+m->givePoissonsRatio());
-            D[0][0] = D[1][1] = factor*(1.-m->givePoissonsRatio());
-            D[0][1] = D[1][0] = m->givePoissonsRatio()*factor;    
-            D[2][2] = (1.-2.*m->givePoissonsRatio())/2.*factor;      
+    Matrix D(size, size);
+    ElasticMechMaterial *m = static_cast< ElasticMechMaterial * >( mat );
+    if ( dimension == 1 ) {
+        D [ 0 ] [ 0 ] = m->giveElasticModulus();
+    } else if ( dimension == 2 )       {
+        if ( m->isPlaneStress() ) {
+            double factor = m->giveElasticModulus() / ( 1. - pow(m->givePoissonsRatio(), 2) );
+            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = factor;
+            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = m->givePoissonsRatio() * factor;
+            D [ 2 ] [ 2 ] = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
+        } else  { //plane strain
+            double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
+            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = factor * ( 1. - m->givePoissonsRatio() );
+            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = m->givePoissonsRatio() * factor;
+            D [ 2 ] [ 2 ] = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
         }
-    }else if(dimension==3){
-        double factor = m->giveElasticModulus()/(1.-2.*m->givePoissonsRatio())/(1.+m->givePoissonsRatio());
-        D[0][0] = D[1][1] = D[2][2] = factor*(1.-m->givePoissonsRatio());
-        D[0][1] = D[1][0] = D[0][2] = D[2][0] = D[2][1] = D[1][2] = m->givePoissonsRatio()*factor;    
-        D[3][3] = D[4][4] = D[5][5] = (1.-2.*m->givePoissonsRatio())/2.*factor;
-    }else{
+    } else if ( dimension == 3 )       {
+        double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
+        D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = D [ 2 ] [ 2 ] = factor * ( 1. - m->givePoissonsRatio() );
+        D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = D [ 0 ] [ 2 ] = D [ 2 ] [ 0 ] = D [ 2 ] [ 1 ] = D [ 1 ] [ 2 ] = m->givePoissonsRatio() * factor;
+        D [ 3 ] [ 3 ] = D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
+    } else  {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
         exit(1);
     }
@@ -185,53 +194,58 @@ MaterialStatus *ElasticMechMaterial :: giveNewMaterialStatus(Element *e) {
 //////////////////////////////////////////////////////////
 // ELASTIC COSSERAT MECHANICAL MATERIAL
 
-Vector CosseratMechMaterialStatus :: giveStress(const Vector &strain) {   
+Vector CosseratMechMaterialStatus :: giveStress(const Vector &strain) {
     cout << strain.size() << endl;
     unsigned dim;
-    if(strain.size()==2) dim=1; 
-    else if(strain.size()==6) dim=2;
-    else if(strain.size()==18) dim=3;
-    else {
+    if ( strain.size() == 2 ) {
+        dim = 1;
+    } else if ( strain.size() == 6 )   {
+        dim = 2;
+    } else if ( strain.size() == 18 )                                               {
+        dim = 3;
+    } else                                                                                       {
         cerr << name << " error: unsupported dimension" << endl;
         exit(1);
     }
-    return  giveStiffnessTensor("elastic",dim) * strain;
+    return giveStiffnessTensor("elastic", dim) * strain;
 };
 
 //////////////////////////////////////////////////////////
-Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const{
-    (void) type;
+Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+    ( void ) type;
     unsigned size;
-    if(dimension==1) size = 1;
-    else if(dimension==2) size = 6;
-    else if(dimension==3) size = 18;
-    else {
-        cerr << name << ": unsupported dimension " << dimension << endl; 
+    if ( dimension == 1 ) {
+        size = 1;
+    } else if ( dimension == 2 )   {
+        size = 6;
+    } else if ( dimension == 3 )                                            {
+        size = 18;
+    } else                                                                                 {
+        cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
-    Matrix D(size,size);
-    CosseratMechMaterial *m = static_cast<CosseratMechMaterial*>(mat); 
-    double lammeL = m->giveElasticModulus()*m->givePoissonsRatio()/((1.+m->givePoissonsRatio())*(1.-2*m->givePoissonsRatio()));
-    double lammeM = m->giveElasticModulus()/(2.*(1.+m->givePoissonsRatio()));
-    if(dimension==1){
-        D[0][0] = m->giveElasticModulus();
-        D[1][1] = 4.*m->giveCosseratShearParam()*pow(m->giveCharacteristicLength(),2);
-    }else if(dimension==2){
-        if(m->isPlaneStress()){
-            double factor = m->giveElasticModulus()/(1.-pow(m->givePoissonsRatio(),2));
-            D[0][0] = D[1][1] = lammeL+2.*lammeM;
-            D[0][1] = D[1][0] = lammeL;    
-            D[2][2] = D[3][3] = lammeM + m->giveCosseratShearParam();
-            D[2][3] = D[3][2] = lammeM - m->giveCosseratShearParam();
-            D[4][4] = D[5][5] = lammeM*4.*m->giveCharacteristicLength();
-        }else{ //plane strain ACTUALLY NOT IMPLEMENTED YET
-            D[0][0] = D[1][1] = lammeL+2.*lammeM;
-            D[0][1] = D[1][0] = lammeL;    
-            D[2][2] = D[3][3] = lammeM + m->giveCosseratShearParam();
-            D[2][3] = D[3][2] = lammeM - m->giveCosseratShearParam();
-            D[4][4] = D[5][5] = lammeM*4.*m->giveCharacteristicLength();     
+    Matrix D(size, size);
+    CosseratMechMaterial *m = static_cast< CosseratMechMaterial * >( mat );
+    double lammeL = m->giveElasticModulus() * m->givePoissonsRatio() / ( ( 1. + m->givePoissonsRatio() ) * ( 1. - 2 * m->givePoissonsRatio() ) );
+    double lammeM = m->giveElasticModulus() / ( 2. * ( 1. + m->givePoissonsRatio() ) );
+    if ( dimension == 1 ) {
+        D [ 0 ] [ 0 ] = m->giveElasticModulus();
+        D [ 1 ] [ 1 ] = 4. * m->giveCosseratShearParam() * pow(m->giveCharacteristicLength(), 2);
+    } else if ( dimension == 2 )       {
+        if ( m->isPlaneStress() ) {
+            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = lammeL + 2. * lammeM;
+            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = lammeL;
+            D [ 2 ] [ 2 ] = D [ 3 ] [ 3 ] = lammeM + m->giveCosseratShearParam();
+            D [ 2 ] [ 3 ] = D [ 3 ] [ 2 ] = lammeM - m->giveCosseratShearParam();
+            D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = lammeM * 4. * m->giveCharacteristicLength();
+        } else  { //plane strain ACTUALLY NOT IMPLEMENTED YET
+            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = lammeL + 2. * lammeM;
+            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = lammeL;
+            D [ 2 ] [ 2 ] = D [ 3 ] [ 3 ] = lammeM + m->giveCosseratShearParam();
+            D [ 2 ] [ 3 ] = D [ 3 ] [ 2 ] = lammeM - m->giveCosseratShearParam();
+            D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = lammeM * 4. * m->giveCharacteristicLength();
         }
-    }else{
+    } else  {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
         exit(1);
     }
@@ -249,7 +263,7 @@ void CosseratMechMaterial :: readFromLine(istringstream &iss) {
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
-    
+
     string param;
     bool blc, bmuc;
     blc = bmuc = false;
@@ -276,7 +290,7 @@ void CosseratMechMaterial :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e) {
-    CosseratMechMaterialStatus *newStatus = new CosseratMechMaterialStatus(this, e); 
+    CosseratMechMaterialStatus *newStatus = new CosseratMechMaterialStatus(this, e);
     return newStatus;
 };
 
@@ -363,12 +377,14 @@ DisMechMaterialStatus :: DisMechMaterialStatus(DisMechMaterial *m, Element *e) :
 }
 
 //////////////////////////////////////////////////////////
-Vector DisMechMaterialStatus :: giveElasticNormalShearStiffness() const {
+Matrix DisMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    Vector c(2);
-    c [ 0 ] = m->giveE0();
-    c [ 1 ] = m->giveAlpha() * m->giveE0();
-    return c;
+    Matrix D(dimension, dimension);
+    D [ 0 ] [ 0 ] = m->giveE0();
+    for ( size_t i = 1; i < dimension; i++ ) {
+        D [ i ] [ i ] =  m->giveAlpha() * m->giveE0();
+    }
+    return D;
 }
 
 //////////////////////////////////////////////////////////
@@ -379,11 +395,11 @@ double DisMechMaterialStatus :: giveDensity() const {
 
 //////////////////////////////////////////////////////////
 Vector DisMechMaterialStatus :: giveStress(const Vector &strain) {
-    Vector stiff = giveElasticNormalShearStiffness();
+    DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
     Vector stress(strain.size() );
-    stress [ 0 ] = stiff [ 0 ] * strain [ 0 ];
+    stress [ 0 ] = m->giveE0() * strain [ 0 ];
     for ( unsigned i = 1; i < strain.size(); i++ ) {
-        stress [ i ] = stiff [ 1 ] * strain [ i ];
+        stress [ i ] = m->giveAlpha() * m->giveE0() * strain [ i ];
     }
     return stress;
 };

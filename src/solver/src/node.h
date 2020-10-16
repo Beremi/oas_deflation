@@ -28,7 +28,7 @@ protected:
     bool isMechanical;
     bool isTransport;
 public:
-    Node() {name = "basic node"; isMechanical = false; isTransport = false; };
+    Node() { name = "basic node"; isMechanical = false; isTransport = false; };
     virtual ~Node() {};
 
     /// A pure virtual member.

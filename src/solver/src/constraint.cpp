@@ -177,7 +177,7 @@ void VolumetricAverage :: init() {
             masters.push_back(nodes [ i ]);
             directions.push_back(dirs [ i ]);
             multipliers.push_back(m [ i ]);
-        } else  {
+        } else {
             jd = constraints->giveConstraint(r);
             jdmasters = jd->giveMasterNodes();
             jddirs = jd->giveMasterDirs();

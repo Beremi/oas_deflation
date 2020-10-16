@@ -22,7 +22,7 @@ protected:
     Material *mat;
     vector< Point >ip_locs;
     vector< double >ip_weights;
-    vector< Matrix > Bs;
+    vector< Matrix >Bs;
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
@@ -42,22 +42,22 @@ public:
     string giveName() const { return name; }
     size_t giveIPNum() const { return ip_locs.size(); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
-    MaterialStatus * giveMatStatus(unsigned ipnum) {return stats[ipnum];};
+    MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
     vector< Node * >giveNodes() const { return nodes; }
     Node *giveNode(unsigned k) const { return nodes [ k ]; }
     Material *giveMaterial() const { return mat; }
-    vector< MaterialStatus * > giveMaterialStats() const { return stats; };
+    vector< MaterialStatus * >giveMaterialStats() const { return stats; };
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
-    virtual void shapeF(const Point *x, Vector &phi) const { (void) x; (void) phi; };
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { (void) x; (void) phiGrad; return 0;};
-    virtual Matrix giveBMatrix(const Point *x) const {return Matrix(0,0);};
-    Matrix* giveBMatrix(unsigned i) {return &Bs[i];};
-    virtual Matrix giveHMatrix(const Point *x) const {return Matrix(0,0);};
-    virtual Vector giveStrain(const Point *x, const Vector &DoFs) {return giveBMatrix(x)*DoFs;};  
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs) {return Bs[i]*DoFs;};  
-    unsigned giveDimension() const {return ndim;}  
-    virtual void setIntegrationPointsAndWeights(){};
+    virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
+    virtual Matrix giveBMatrix(const Point *x) const { return Matrix(0, 0); };
+    Matrix *giveBMatrix(unsigned i) { return & Bs [ i ]; };
+    virtual Matrix giveHMatrix(const Point *x) const { return Matrix(0, 0); };
+    virtual Vector giveStrain(const Point *x, const Vector &DoFs) { return giveBMatrix(x) * DoFs; };
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
+    unsigned giveDimension() const { return ndim; }
+    virtual void setIntegrationPointsAndWeights() {};
 };
 
 
@@ -84,8 +84,8 @@ protected:
 public:
     TransportElement() {}
     ~TransportElement() {};
-    virtual Matrix giveConductivityMatrix(string matrixType) const {return giveSteadyStateMatrix(matrixType);};
-    virtual Matrix giveCapacityMatrix() const {return giveMassMatrix();};
+    virtual Matrix giveConductivityMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
+    virtual Matrix giveCapacityMatrix() const { return giveMassMatrix(); };
 };
 
 
@@ -99,7 +99,7 @@ protected:
 public:
     MechanicalElement() {}
     ~MechanicalElement() {};
-    virtual Matrix giveStiffnessMatrix(string matrixType) const {return giveSteadyStateMatrix(matrixType);};
+    virtual Matrix giveStiffnessMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
 };
 
 //////////////////////////////////////////////////////////
@@ -133,7 +133,7 @@ public:
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     double giveCrackOpening() { return tempCrackOpening; };
-    Vector giveDistanceToNode(const unsigned &node_i, const unsigned & ip_id) const;
+    Vector giveDistanceToNode(const unsigned &node_i, const unsigned &ip_id) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -164,19 +164,24 @@ protected:
     Point normal;
     double length, area;
     bool reducedCapacityMatrix;
+
+    virtual void checkNodeType() const;
 public:
     Transp1D(const unsigned dim);
     ~Transp1D() {};
     void init();
+    virtual void setIntegrationPointsAndWeights();
     double giveArea() const { return area; }
     Point giveNormal() const { return normal; }
     double giveLength() const { return length; }
     double giveVolume(unsigned nodenum) const;
     double giveVolume() const;
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    Matrix giveConductivityMatrix(string matrixType) const;
-    Matrix giveCapacityMatrix() const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+    //Matrix giveConductivityMatrix(string matrixType) const;
+    //Matrix giveCapacityMatrix() const;
+    //virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -190,12 +195,13 @@ private:
 
     void findFriends2D(ElementContainer *elemcont);
     void findFriends3D(ElementContainer *elemcont);
+
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     void findElementFriends(ElementContainer *elemcont);
     ~Transp1DCoupled() {};
     void init();
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -214,7 +220,6 @@ public:
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-
 };
 
 //////////////////////////////////////////////////////////

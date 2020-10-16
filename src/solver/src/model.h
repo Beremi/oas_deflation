@@ -26,19 +26,19 @@ class Model
 {
 public:
     Model(bool pT);
-    ~Model(){ delete solver;};
+    ~Model() { delete solver; };
     void readFromFile(const string filename);
     void init();
     void solve();
 
-    ElementContainer* giveElements() {return &elems;};
-    NodeContainer* giveNodes() {return &nodes;};
-    Solver* giveSolver() {return solver;};
-    FunctionContainer* giveFunctions() {return &funcs;};
-    BCContainer* giveBC() {return &bconds;};
-    ConstraintContainer* giveConstraints() {return &constr;};
-    unsigned giveDimension()const{return ndim;};
-    void resetTime(){solver->setTime(0); solver->setStep(0);}
+    ElementContainer *giveElements() { return & elems; };
+    NodeContainer *giveNodes() { return & nodes; };
+    Solver *giveSolver() { return solver; };
+    FunctionContainer *giveFunctions() { return & funcs; };
+    BCContainer *giveBC() { return & bconds; };
+    ConstraintContainer *giveConstraints() { return & constr; };
+    unsigned giveDimension() const { return ndim; };
+    void resetTime() { solver->setTime(0); solver->setStep(0); }
 
     fs :: path baseDir;
     fs :: path resultDir;

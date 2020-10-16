@@ -27,8 +27,8 @@ public:
     virtual void update() {};
     virtual Vector giveStress(const Vector &strain) { ( void ) strain; return Vector(0); };
     virtual double giveValue(string code) const { ( void ) code; return 0; };
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const {(void) dimension; return Matrix(0,0);};
-    virtual double giveMassConstant() const {return 0;};
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; return Matrix(0, 0); };
+    virtual double giveMassConstant() const { return 0; };
 protected:
     Element *element;
     string name;
@@ -140,7 +140,7 @@ protected:
     bool planeStress;
 
 public:
-    ElasticMechMaterial() { name = "elastic tensorial mechanical material"; planeStress = true;};
+    ElasticMechMaterial() { name = "elastic tensorial mechanical material"; planeStress = true; };
     ~ElasticMechMaterial() {};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e);
@@ -173,7 +173,7 @@ protected:
     double lc, muc;
 
 public:
-    CosseratMechMaterial() { name = "elastic Cosserat mechanical material"; planeStress = true;};
+    CosseratMechMaterial() { name = "elastic Cosserat mechanical material"; planeStress = true; };
     ~CosseratMechMaterial() {};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e);
@@ -193,9 +193,7 @@ protected:
 public:
     DisMechMaterialStatus(DisMechMaterial *m, Element *e);
     virtual ~DisMechMaterialStatus() {};
-    Vector giveElasticNormalShearStiffness() const;
-    virtual Vector giveNormalShearStiffness(string type) const { ( void ) type; return giveElasticNormalShearStiffness(); }   //only elastic
-    virtual Vector giveNormalShearStiffness(string type, const Vector &strain) { giveStress(strain); return giveNormalShearStiffness(type); }
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     double giveDensity() const;
 };

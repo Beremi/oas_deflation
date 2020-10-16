@@ -28,10 +28,10 @@ private:
     void establishDoFArray();
 
 public:
-    NodeContainer(){ totalDoFs = 0; };
+    NodeContainer() { totalDoFs = 0; };
     ~NodeContainer();
 
-    void setContainers(BCContainer *bc, ConstraintContainer *c) { constr = c; BC = bc;}
+    void setContainers(BCContainer *bc, ConstraintContainer *c) { constr = c; BC = bc; }
     void readFromFile(const string filename, const int dim);
     Node *giveNode(unsigned const num) { return nodes [ num ]; }
     size_t giveSize() { return nodes.size(); };

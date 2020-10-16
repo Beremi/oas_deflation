@@ -1,29 +1,29 @@
 #include "model.h"
 
 //////////////////////////////////////////////////////////
-Model :: Model(bool pT){
+Model :: Model(bool pT) {
     printTime = pT;
-    nodes.setContainers(&bconds, &constr);
-    bconds.setContainers(&funcs);
-    elems.setContainers(& nodes, &bconds);
+    nodes.setContainers(& bconds, & constr);
+    bconds.setContainers(& funcs);
+    elems.setContainers(& nodes, & bconds);
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
 }
 
 //////////////////////////////////////////////////////////
-void Model::init() {    //initialization
+void Model :: init() {    //initialization
     pblocks.apply();
     bconds.init();
     nodes.init();
     matrs.init();
     elems.init();
-    constr.init(& nodes, &bconds);
+    constr.init(& nodes, & bconds);
     elems.findElementFriends();
     exporters.init();
     solver->init();
 }
 
 //////////////////////////////////////////////////////////
-void Model:: solve(){
+void Model :: solve() {
     //solution
     while ( !solver->isTerminated() ) {
         auto start_part = std :: chrono :: system_clock :: now();
@@ -39,8 +39,7 @@ void Model:: solve(){
 }
 
 //////////////////////////////////////////////////////////
-void Model::readFromFile(const string filename) {
-
+void Model :: readFromFile(const string filename) {
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
     resultDir = baseDir / "results";
@@ -49,7 +48,7 @@ void Model::readFromFile(const string filename) {
 
     string istr, line;
     int iint;
-    ifstream inputfile( fullPath.string() );
+    ifstream inputfile(fullPath.string() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -78,20 +77,20 @@ void Model::readFromFile(const string filename) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems.readFromFile( ( baseDir / istr ).string(), ndim, &matrs );
+                    elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs );
                 }
             } else if ( istr.compare("ConstrFiles") == 0 ) {
                 // read constraint files
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    constr.readFromFile( ( baseDir / istr ).string(), ndim, &nodes );
+                    constr.readFromFile( ( baseDir / istr ).string(), ndim, & nodes );
                 }
             } else if ( istr.compare("BCFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds.readFromFile( ( baseDir / istr ).string(), &nodes );
+                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes );
                 }
             } else if ( istr.compare("FunctionFiles") == 0 ) {
                 iss >> std :: skipws >> iint;
@@ -103,7 +102,7 @@ void Model::readFromFile(const string filename) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters.readFromFile( ( baseDir / istr ).string(), &nodes, &elems, ndim );
+                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim );
                 }
             } else if ( istr.compare("PBlockFiles") == 0 ) {
                 iss >> iint;
@@ -115,7 +114,7 @@ void Model::readFromFile(const string filename) {
                 iss >> istr;
                 solver = new Solver();
                 solver = solver->readFromFile( ( baseDir / istr ).string() );
-                solver->setContainers(&elems, &nodes, &funcs);
+                solver->setContainers(& elems, & nodes, & funcs);
             }
         }
         inputfile.close();
@@ -124,5 +123,4 @@ void Model::readFromFile(const string filename) {
         cerr << "Error: unable to open input file '" <<  fullPath.string() <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
-
 }

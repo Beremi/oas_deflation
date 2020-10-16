@@ -21,28 +21,28 @@ Solver *Solver :: readFromFile(const string filename) {
         inputfile.close();
     }
     if ( param.compare("SteadyStateLinearSolver") == 0 ) {
-      SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
-      newsolver->readFromFile(filename);
-      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-      return newsolver;
+        SteadyStateLinearSolver *newsolver = new SteadyStateLinearSolver();
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+        return newsolver;
     } else if ( param.compare("SteadyStateNonLinearSolver") == 0 ) {
-      SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
-      newsolver->readFromFile(filename);
-      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-      return newsolver;
+        SteadyStateNonLinearSolver *newsolver = new SteadyStateNonLinearSolver();
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+        return newsolver;
     } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
-      TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
-      newsolver->readFromFile(filename);
-      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-      return newsolver;
+        TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+        return newsolver;
     } else if ( param.compare("TransientLinearTransportSolver") == 0 ) {
-      TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
-      newsolver->readFromFile(filename);
-      cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-      return newsolver;
+        TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
+        newsolver->readFromFile(filename);
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+        return newsolver;
     } else {
-      cerr << "Error: Solver " << param << " is not implemented" << endl;
-      exit(EXIT_FAILURE);
+        cerr << "Error: Solver " << param << " is not implemented" << endl;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -76,10 +76,10 @@ void Solver :: runAfterEachStep() {
 //////////////////////////////////////////////////////////
 void Solver :: setTime(double t) {
     time = t;
-    if (time-1e-15>termination_time){
-        time= termination_time;
-        terminated = true;        
-    }else{
+    if ( time - 1e-15 > termination_time ) {
+        time = termination_time;
+        terminated = true;
+    } else  {
         terminated = false;
     }
     dt = initdt;
@@ -187,18 +187,18 @@ void SteadyStateLinearSolver :: solve() {
     nodes->giveFullDoFArray(ddr, full_ddr);
 
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-        r [ i ] += full_ddr [ i ];        
+        r [ i ] += full_ddr [ i ];
     }
-    
+
     computeInternalExternalForces(r);
 
     /*
-    cout << "S O L V E R" << endl;
-    for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     cout << f[i] << " " << ddr[i] << endl;
-    }
-    K.print();
-    */
+     * cout << "S O L V E R" << endl;
+     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+     * cout << f[i] << " " << ddr[i] << endl;
+     * }
+     * K.print();
+     */
 
     /*
      * cout << "******************************************" << endl;
@@ -457,7 +457,7 @@ void SteadyStateNonLinearSolver :: solve() {
         // unsigned maxIt = 30;
         while ( !converged && it < maxIt ) {
             K = Kini;
-            elems->updateSteadyStateMatrix(K, "secant");  
+            elems->updateSteadyStateMatrix(K, "secant");
 
             //nodes->giveReducedForceArray(full_f, f);
             nodes->giveReducedDoFArray(f_ext - f_int, f);
@@ -489,7 +489,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 load *= 0;
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
-            } else  {        //direct controll
+            } else {         //direct controll
                 if ( LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
@@ -502,7 +502,7 @@ void SteadyStateNonLinearSolver :: solve() {
             for ( unsigned i = 0; i < totalDoFnum; i++ ) {
                 trial_r [ i ] += full_ddr [ i ];
             }
-            
+
             // std::cout << "before ----------------------" << '\n';
             // this->printAllVectors();
             //compute internal forces

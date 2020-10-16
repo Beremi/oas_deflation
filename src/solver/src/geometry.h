@@ -8,54 +8,58 @@
 // lines perpendicular to plane, line or whatever...
 
 
-class Region {
+class Region
+{
 protected:
-  string name;
-  unsigned dim;
+    string name;
+    unsigned dim;
 private:
 
 public:
-  Region () {};
-  virtual ~Region () {};
-  virtual bool isInside(const Point &P) const = 0;
+    Region() {};
+    virtual ~Region() {};
+    virtual bool isInside(const Point &P) const = 0;
 };
 
 
-class Block : public Region {
+class Block : public Region
+{
 private:
-  Point leftBottom, rightTop;
+    Point leftBottom, rightTop;
 
 public:
-  Block () {};
-  virtual ~Block () {};
-  Block (const Point &lB, const Point &rT);
-  virtual bool isInside(const Point &P) const;
+    Block() {};
+    virtual ~Block() {};
+    Block(const Point &lB, const Point &rT);
+    virtual bool isInside(const Point &P) const;
 };
 
-class Circle : public Region {
+class Circle : public Region
+{
 private:
-  Point center;
-  double radius;
+    Point center;
+    double radius;
 
 public:
-  Circle () {};
-  virtual ~Circle  () {};
-  Circle (const Point &c, const double &r);
-  virtual bool isInside(const Point &P) const;
+    Circle() {};
+    virtual ~Circle() {};
+    Circle(const Point &c, const double &r);
+    virtual bool isInside(const Point &P) const;
 };
 
 
-class Polygon : public Region {
+class Polygon : public Region
+{
 private:
-  std::vector<Point> vertices;
-  void orderClockwise(); // TODO this
+    std :: vector< Point >vertices;
+    void orderClockwise(); // TODO this
 
 public:
-  Polygon () {};
-  virtual ~Polygon () {};
-  Polygon (const std::vector<Point> &V);
-  void addVertex(const Point &P);
-  virtual bool isInside(const Point &P) const;
+    Polygon() {};
+    virtual ~Polygon() {};
+    Polygon(const std :: vector< Point > &V);
+    void addVertex(const Point &P);
+    virtual bool isInside(const Point &P) const;
 };
 
 
@@ -71,7 +75,7 @@ bool isInCircle(const Point &P, const Point &center, const double &radius);
 bool onSegment(const Point &p, const Point &q, const Point &r);
 int orientation(const Point &p, const Point &q, const Point &r);
 bool doIntersect(const Point &p1, const Point &q1, const Point &p2, const Point &q2);
-bool isInPolygon(const std::vector<Point> &polygon, const Point &p);
+bool isInPolygon(const std :: vector< Point > &polygon, const Point &p);
 
 
 

@@ -1,17 +1,17 @@
 #ifndef GLOBAL_H
-#define GLOBAL_H
+ #define GLOBAL_H
 
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <string>
-#include <cmath>
-#include <sstream>
+ #include <iostream>
+ #include <fstream>
+ #include <stdio.h>
+ #include <string>
+ #include <cmath>
+ #include <sstream>
 
 // time management:
-#include <chrono>
-#include <ctime>
-#include <iomanip>
+ #include <chrono>
+ #include <ctime>
+ #include <iomanip>
 
 // disable uncrustify
 // *INDENT-OFF*

@@ -24,19 +24,19 @@ protected:
     fs :: path inputfile;
 
     //setup for microsources generaget by macroscale
-    vector< Node* > MSnodes;
-    vector< BoundaryCondition* > MSbc;
-    vector< vector< Transp1D *> > MSelems;
-    vector< vector< unsigned > > MSorder;
-    vector< PieceWiseLinearFunction* > MSfunctions;
+    vector< Node * >MSnodes;
+    vector< BoundaryCondition * >MSbc;
+    vector< vector< Transp1D * > >MSelems;
+    vector< vector< unsigned > >MSorder;
+    vector< PieceWiseLinearFunction * >MSfunctions;
 
     //setup for volumetric average
-    PieceWiseLinearFunction* volumAverFunc;
+    PieceWiseLinearFunction *volumAverFunc;
 
-    
+
     void genereteMicroSources();
     void updateMicroSources();
-    void genereteVolumetricAverageBC(); 
+    void genereteVolumetricAverageBC();
 public:
     TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~TrsprtRVEMaterialStatus();
@@ -53,7 +53,7 @@ class TrsprtRVEMaterial : public TrsprtMaterial
 protected:
     fs :: path inputfile;
 public:
-    TrsprtRVEMaterial() { name = "transport RVE material";};
+    TrsprtRVEMaterial() { name = "transport RVE material"; };
     ~TrsprtRVEMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);

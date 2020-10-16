@@ -6,73 +6,75 @@
 #define TOL 1e-9
 
 
-Block :: Block (const Point &lB, const Point &rT){
-  this->leftBottom = lB;
-  this->rightTop = rT;
+Block :: Block(const Point &lB, const Point &rT) {
+    this->leftBottom = lB;
+    this->rightTop = rT;
 }
 
 bool Block :: isInside(const Point &P) const {
-  if ( ( this->leftBottom.getX() - P.getX() ) < TOL && ( P.getX() - this->rightTop.getX() ) < TOL ) {
-      if ( ( this->leftBottom.getY() - P.getY() ) < TOL && ( P.getY() - this->rightTop.getY() ) < TOL ) {
-          if ( ( this->leftBottom.getZ() - P.getZ() ) < TOL && ( P.getZ() - this->rightTop.getZ() ) < TOL ) {
-              return true;
-          }
-      }
-  }
-  return false;
+    if ( ( this->leftBottom.getX() - P.getX() ) < TOL && ( P.getX() - this->rightTop.getX() ) < TOL ) {
+        if ( ( this->leftBottom.getY() - P.getY() ) < TOL && ( P.getY() - this->rightTop.getY() ) < TOL ) {
+            if ( ( this->leftBottom.getZ() - P.getZ() ) < TOL && ( P.getZ() - this->rightTop.getZ() ) < TOL ) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-Circle :: Circle (const Point &c, const double &r){
-  this->center = c;
-  this->radius = r;
+Circle :: Circle(const Point &c, const double &r) {
+    this->center = c;
+    this->radius = r;
 }
 
 bool Circle :: isInside(const Point &P) const {
-  if ( (P - this->center).norm() < this->radius ) return true;
-  return false;
+    if ( ( P - this->center ).norm() < this->radius ) {
+        return true;
+    }
+    return false;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
-Polygon :: Polygon(const std::vector<Point> &V) {
-  this->vertices = V;
+Polygon :: Polygon(const std :: vector< Point > &V) {
+    this->vertices = V;
 }
 
 void Polygon :: addVertex(const Point &P) {
-  this->vertices.push_back(P);
-  if ( this->vertices.size() < 3) {
-    // There must be at least 3 vertices in polygon[]
-    std::cerr << "Error: there must be at least 3 vertices in Polygon" << '\n';
-    exit(1);
-  }
+    this->vertices.push_back(P);
+    if ( this->vertices.size() < 3 ) {
+        // There must be at least 3 vertices in polygon[]
+        std :: cerr << "Error: there must be at least 3 vertices in Polygon" << '\n';
+        exit(1);
+    }
 }
 
 bool Polygon :: isInside(const Point &P) const {
-  // Create a point for line segment from p to infinite (ray)
-  Point extreme = {INF, P.getY()};
+    // Create a point for line segment from p to infinite (ray)
+    Point extreme = { INF, P.getY() };
 
-  // Count intersections of the above line with sides of polygon
-  int count = 0;
-  for (int i = 0; i < this->vertices.size(); i++){
-      int next = (i == this->vertices.size() - 1) ? 0 : i+1;
+    // Count intersections of the above line with sides of polygon
+    int count = 0;
+    for ( size_t i = 0; i < this->vertices.size(); i++ ) {
+        int next = ( i == this->vertices.size() - 1 ) ? 0 : i + 1;
 
-      // Check if the line segment from 'p' to 'extreme' intersects
-      // with the line segment from 'polygon[i]' to 'polygon[next]'
-      if (doIntersect(this->vertices[i], this->vertices[next], P, extreme))
-      {
-          // If the point 'p' is colinear with line segment 'i-next',
-          // then check if it lies on segment. If it lies, return true,
-          // otherwise false
-          if (orientation(this->vertices[i], P, this->vertices[next]) == 0)
-             return onSegment(this->vertices[i], P, this->vertices[next]);
+        // Check if the line segment from 'p' to 'extreme' intersects
+        // with the line segment from 'polygon[i]' to 'polygon[next]'
+        if ( doIntersect(this->vertices [ i ], this->vertices [ next ], P, extreme) ) {
+            // If the point 'p' is colinear with line segment 'i-next',
+            // then check if it lies on segment. If it lies, return true,
+            // otherwise false
+            if ( orientation(this->vertices [ i ], P, this->vertices [ next ]) == 0 ) {
+                return onSegment(this->vertices [ i ], P, this->vertices [ next ]);
+            }
 
-          count++;
-      }
-  }
+            count++;
+        }
+    }
 
-  // Return true if count is odd, false otherwise
-  return count&1;  // Same as (count%2 == 1)
+    // Return true if count is odd, false otherwise
+    return count & 1; // Same as (count%2 == 1)
 }
 
 
@@ -90,10 +92,12 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
     return false;
 }
 
-bool isInCircle(const Point &P, const Point &center, const double &radius){
-  // TODO make fn isInCilinder (for arbitrary cilinder orientation)
-  if ( (P - center).norm() < radius ) return true;
-  return false;
+bool isInCircle(const Point &P, const Point &center, const double &radius) {
+    // TODO make fn isInCilinder (for arbitrary cilinder orientation)
+    if ( ( P - center ).norm() < radius ) {
+        return true;
+    }
+    return false;
 }
 
 
@@ -101,9 +105,10 @@ bool isInCircle(const Point &P, const Point &center, const double &radius){
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if (q.getX() <= max(p.getX(), r.getX()) && q.getX() >= min(p.getX(), r.getX()) &&
-            q.getY() <= max(p.getY(), r.getY()) && q.getY() >= min(p.getY(), r.getY()))
+    if ( q.getX() <= max(p.getX(), r.getX() ) && q.getX() >= min(p.getX(), r.getX() ) &&
+         q.getY() <= max(p.getY(), r.getY() ) && q.getY() >= min(p.getY(), r.getY() ) ) {
         return true;
+    }
     return false;
 }
 
@@ -114,11 +119,13 @@ bool onSegment(const Point &p, const Point &q, const Point &r)
 // 2 --> Counterclockwise
 int orientation(const Point &p, const Point &q, const Point &r)
 {
-    double val = (q.getY() - p.getY()) * (r.getX() - q.getX()) -
-                 (q.getX() - p.getX()) * (r.getY() - q.getY());
+    double val = ( q.getY() - p.getY() ) * ( r.getX() - q.getX() ) -
+                 ( q.getX() - p.getX() ) * ( r.getY() - q.getY() );
 
-    if (val == 0) return 0;  // colinear
-    return (val > 0)? 1: 2; // clock or counterclock wise
+    if ( val == 0 ) {
+        return 0;            // colinear
+    }
+    return ( val > 0 ) ? 1 : 2; // clock or counterclock wise
 }
 
 // The function that returns true if line segment 'p1q1'
@@ -133,53 +140,64 @@ bool doIntersect(const Point &p1, const Point &q1, const Point &p2, const Point 
     int o4 = orientation(p2, q2, q1);
 
     // General case
-    if (o1 != o2 && o3 != o4)
+    if ( o1 != o2 && o3 != o4 ) {
         return true;
+    }
 
     // Special Cases
     // p1, q1 and p2 are colinear and p2 lies on segment p1q1
-    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+    if ( o1 == 0 && onSegment(p1, p2, q1) ) {
+        return true;
+    }
 
     // p1, q1 and p2 are colinear and q2 lies on segment p1q1
-    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+    if ( o2 == 0 && onSegment(p1, q2, q1) ) {
+        return true;
+    }
 
     // p2, q2 and p1 are colinear and p1 lies on segment p2q2
-    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+    if ( o3 == 0 && onSegment(p2, p1, q2) ) {
+        return true;
+    }
 
-     // p2, q2 and q1 are colinear and q1 lies on segment p2q2
-    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+    // p2, q2 and q1 are colinear and q1 lies on segment p2q2
+    if ( o4 == 0 && onSegment(p2, q1, q2) ) {
+        return true;
+    }
 
     return false; // Doesn't fall in any of the above cases
 }
 
 // Returns true if the point p lies inside the polygon[] with n vertices (vertices must be ordered)
-bool isInPolygon(const std::vector<Point> &polygon, const Point &p)
+bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 {
     // There must be at least 3 vertices in polygon[]
-    if (polygon.size() < 3)  return false;
+    if ( polygon.size() < 3 ) {
+        return false;
+    }
 
     // Create a point for line segment from p to infinite (ray)
-    Point extreme = {INF, p.getY()};
+    Point extreme = { INF, p.getY() };
 
     // Count intersections of the above line with sides of polygon
     int count = 0;
-    for (int i = 0; i < polygon.size(); i++){
-        int next = (i == polygon.size() - 1) ? 0 : i+1;
+    for ( unsigned i = 0; i < polygon.size(); i++ ) {
+        int next = ( i == polygon.size() - 1 ) ? 0 : i + 1;
 
         // Check if the line segment from 'p' to 'extreme' intersects
         // with the line segment from 'polygon[i]' to 'polygon[next]'
-        if (doIntersect(polygon[i], polygon[next], p, extreme))
-        {
+        if ( doIntersect(polygon [ i ], polygon [ next ], p, extreme) ) {
             // If the point 'p' is colinear with line segment 'i-next',
             // then check if it lies on segment. If it lies, return true,
             // otherwise false
-            if (orientation(polygon[i], p, polygon[next]) == 0)
-               return onSegment(polygon[i], p, polygon[next]);
+            if ( orientation(polygon [ i ], p, polygon [ next ]) == 0 ) {
+                return onSegment(polygon [ i ], p, polygon [ next ]);
+            }
 
             count++;
         }
     }
 
     // Return true if count is odd, false otherwise
-    return count&1;  // Same as (count%2 == 1)
+    return count & 1;  // Same as (count%2 == 1)
 }

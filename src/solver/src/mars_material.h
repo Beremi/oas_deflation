@@ -27,7 +27,7 @@ public:
     virtual ~MarsMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };

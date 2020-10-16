@@ -10,9 +10,8 @@ IndirectDC :: IndirectDC() {
 };
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: readFromStream(unsigned num, ifstream& inputfile) {
-
-    nummaxunit ++;
+void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
+    nummaxunit++;
 
     c_nodes.resize(nummaxunit);
     c_dirs.resize(nummaxunit);
@@ -60,7 +59,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream& inputfile) {
                 iss >> ycoords [ nummaxunit - 1 ] [ j ];
             }
         } else if ( param.compare("idc_zcoords") == 0 ) {
-            for ( unsigned j = 0; j < num; j++ )   {
+            for ( unsigned j = 0; j < num; j++ ) {
                 iss >> zcoords [ nummaxunit - 1 ] [ j ];
             }
         } else if ( param.compare("idc_directions") == 0 ) {
@@ -102,12 +101,12 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
                 for ( unsigned i = 0; i < clength; i++ ) {
                     c_DoFs [ c ] [ i ] = nodes->giveNode(c_nodes [ c ] [ i ])->giveStartingDoF() + c_dirs [ c ] [ i ];
                 }
-            } else if ( coords_active [ c ] )      {
+            } else if ( coords_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
                     n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]) );
                     c_DoFs [ c ] [ i ] = n->giveStartingDoF() + c_dirs [ c ] [ i ];
                 }
-            } else  {
+            } else {
                 cerr << "Error: Indirect displacement controll was not correctly set" << endl;
                 exit(1);
             }
