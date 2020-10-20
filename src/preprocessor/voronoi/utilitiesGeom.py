@@ -191,7 +191,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     nodes_out = np.zeros( (node_count, (2 + 1 + 1 )))
     nodes_out[:, 0:2] = vor.points[0:node_count , 0:2]
     nodes_out[:, dim] = 0
-    nodes_out[:, dim + 1] = areas[:]
+    nodes_out[:, dim + 1] = 0
 
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area error: %.5e ' %(relAreaError)  )
@@ -1077,7 +1077,7 @@ def saveMechBC(master_folder,dim, nodes_mechBCmerged, govNodesBC = False):
 
     print('done.')
 
-def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance= 1e-1, maxIt=20):
+def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3):
     f=open(os.path.join(master_folder,solverFile),'w')
     f.write('%s\n'%solver)
     f.write('time_step\t%e\n'%solStep)
@@ -1086,17 +1086,18 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
     f.write('total_time\t%f\n'%simTime)
     f.write('limit_tolerance\t%e\n'%limitTolerance)
     f.write('maxIt\t%d\n'%maxIt)
+    f.write('tolerance\t%e\n'%tolerance)
 
     f.close()
 
-def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, limitTolerance= 1e-1, maxIt=20):
+def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
      fl.write("Dimension\t%d\n"%dim)
      fl.write("Solver\t%s\n"%(solverFile))
-     saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt)
+     saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt, tolerance=tolerance)
 
      if not periodic:
 
@@ -1169,6 +1170,7 @@ def saveFunctions (master_folder,functions):
 
 def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart):
     print('Saving TRSPRT boundary conditions...', end = '')
+
     sys.stdout.flush()
     trsptBC_out = []
 
@@ -1309,20 +1311,16 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
 
     if (notches!=None ):
         print('Filtering out elements connecting notches...' )
-        n = 0
         elementsWithoutNotch = []
         for i in range (len(mechElemRidges)):
             nA = mechElemRidges[i][0]
             nB = mechElemRidges[i][1]
 
             addElem = True
-            n=0
             for notch in notches:
                 if ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
-                    #print('%d'%n)
                     addElem = False
                     break
-                n+=1
 
             if addElem == True:
                 elementsWithoutNotch.append(mechElemRidges[i])
@@ -1547,8 +1545,8 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
 
             if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out) and equalCoords == 2  and isTube==False):
-                print('tube %s' %isTube)
-                print('Adding corner node')
+                #print('tube %s' %isTube)
+                #print('Adding corner node')
                 #print((elem.connectedNodes[0]/node_count))
                 #print((elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
                 updatedElems +=1
@@ -1632,12 +1630,12 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 lasti = -1
                 for i in ((elem.connectedNodes)):
                     if (i!=lasti):
-                        print(i)
+                        #print(i)
                         if (i<len(nodes_out)):
-                            print(nodes_out[int(i),0:3])
+                            #print(nodes_out[int(i),0:3])
                             ridgeCoords.append(nodes_out[int(i),0:3])
                         if (i>=len(nodes_out)):
-                            print(aux_nodes[int(i-len(nodes_out))][0:3])
+                            #print(aux_nodes[int(i-len(nodes_out))][0:3])
                             ridgeCoords.append(aux_nodes[int(i-len(nodes_out))][0:3])
                     lasti=i
                 ridgeCoords = np.asarray(ridgeCoords)
@@ -1669,7 +1667,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
                 ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
                 ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
-                plt.show()
+                #plt.show()
 
                 #print('new elem: %s' %elem.getString())
                 #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
@@ -1765,6 +1763,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     print('Wrong elems: %d' %wrongRidges)
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
+    print(coupled)
     print('Trsprt elements: %d' %len(transportElements))
     with open(os.path.join(master_folder,trsprtElemsFile), 'w') as f:
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
@@ -1779,6 +1778,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
 def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount):
     print('Saving rigid plates...', end='')
+
     with open(os.path.join(master_folder,constraintFile), 'w') as f:
         headerLine = '#ConstraintType\tGovNodeIdx\tXmin\tXmax\tYmin\tYmax'
         if (dim==3):
@@ -1814,6 +1814,8 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
 
 def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes):
     #saving gov nodes
+    print('govNodes')
+    print(govNodes)
     saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile)
     #saving gov nodes mech BC
     for i in range (len(govNodesMechBC)):
@@ -1826,6 +1828,8 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
         saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx)
 
     #saving rigid plates
+    for rp in rigidPlates:
+        rp.getNodesAffected(nodes)
     saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount)
 
     for rp in range (len(rigidPlates)):

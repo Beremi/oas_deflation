@@ -74,6 +74,16 @@ class Model:
         self.dimension = int(r[1][0])
         self.maxLim = np.zeros((self.dimension))
 
+        #RWTH cylinderRad
+        #cylinderHeight 0.1 cylinderRad 0.1 minDist 0.02 notchRadLeft 0.08 notchRadRight 0.05 notchWidth 0.01
+        self.notchRadLeft = None
+        self.notchRadRight = None
+        self.innerRadTop = None
+        self.innerRadBottom = None
+        self.notchWidth = None
+        self.notchDepth = None
+        self.RWTHQuarter = False
+
         for i in range (len(r)):
 
             if (r[i]=='printout'):
@@ -125,6 +135,22 @@ class Model:
                 self.cylinderRad = float(r[i+1])
             if (r[i]=='cylinderHeight'):
                 self.cylinderHeight = float(r[i+1])
+            if (r[i]=='notchRadLeft'):
+                self.notchRadLeft = float(r[i+1])
+            if (r[i]=='notchRadRight'):
+                self.notchRadRight = float(r[i+1])
+            if (r[i]=='innerRadTop'):
+                self.innerRadTop = float(r[i+1])
+            if (r[i]=='innerRadBottom'):
+                self.innerRadBottom = float(r[i+1])
+            if (r[i]=='notchWidth'):
+                self.notchWidth = float(r[i+1])
+            if (r[i]=='notchDepth'):
+                self.notchDepth = float(r[i+1])
+            if (r[i]=='RWTHQuarter'):
+                if (int(r[i+1])==1): self.RWTHQuarter = True
+                if (int(r[i+1])==0): self.RWTHQuarter = False
+
             if (r[i]=='tubeThickness'):
                 self.tubeThickness = float(r[i+1])
             if (r[i]=='dogboneD'):
@@ -192,6 +218,11 @@ class Model:
         if self.modelType == '3d_ReinhardtTension':
             self.run_3d_ReinhardtTension()
 
+        if self.modelType == '3d_RWTHShearCylinder':
+            self.run_3d_RWTHShearCylinder()
+        if self.modelType == '2d_RWTHShearCylinder':
+            self.run_2d_RWTHShearCylinder()
+
         if self.modelType == '2d_periodicShear':
             self.run_2d_periodicShear()
 
@@ -204,6 +235,9 @@ class Model:
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
+        if self.modelType =='3d_coupledBrazilianDisc':
+            self.run_3d_coupledBrazilianDisc()
+
         #if (self.printout == False): enablePrint()
 
     def run_2d_singleSpring(self):
@@ -213,11 +247,11 @@ class Model:
 
     def run_2d_notched3pb(self):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone)
+        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone)
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
         materialZones = None
@@ -250,6 +284,20 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dReinhardtTension(self.maxLim, self.minDist, self.trials, fracZoneWidth=self.fracZoneWidth)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('reinhardt3d', maxLim=self.maxLim)
 
+    def run_3d_RWTHShearCylinder(self):
+        self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
+        #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='box', maxLim=self.maxLim)
+        (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.notches)    = utilitiesModeling.create3dRWTHShearCylinder(np.array([1e-6,0,0]), self.cylinderRad, self.cylinderHeight, self.minDist, self.trials, self.notchRadLeft, self.notchRadRight, self.notchWidth, self.notchWidth, self.notchDepth, quarter = self.RWTHQuarter )
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
+        self.materialZones =  None
+
+    def run_2d_RWTHShearCylinder(self):
+        self.maxLim = np.array([2*self.cylinderRad, self.cylinderHeight])
+        #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='box', maxLim=self.maxLim)
+        (self.node_coords, self.mechBC_merged,  self.vor, self.volumes, self.functions,self.govNodes, self.govNodesMechBC, self.rigidPlates, self.notches)    = utilitiesModeling.create2dRWTHShearCylinder(self.cylinderRad, self.cylinderHeight, self.minDist, self.trials, self.innerRadTop, self.innerRadBottom, self.notchWidth, self.notchDepth)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_RWTH', maxLim=self.maxLim)
+        self.materialZones =  None
+
     def run_2d_periodicShear(self):
         print('2d periodic shear')
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
@@ -270,7 +318,10 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
 
 
-
+    def run_3d_coupledBrazilianDisc(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
+        self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
 
     def run_2d_coupledRVE(self):
@@ -283,7 +334,7 @@ class Model:
         tube = False
         if self.modelType == '3d_BiparvaTubeTransport':
             tube = True
-        #print ('bipa %s' %tube)
+        
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
@@ -337,7 +388,7 @@ class Model:
                 utilitiesGeom.saveRadii(self.master_folder, self.radii)
 
         utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint,
-        limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt)
+        limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
         #if (self.printout == False): enablePrint()
         print ('done.')
@@ -535,6 +586,7 @@ class Solver:
         self.total_time = 1
         self.limit_tolerance = 1e-5
         self.maxIt = 20
+        self.tolerance = 1e-3
 
         r = row.split()
         for i in range (len(r)):
@@ -552,6 +604,8 @@ class Solver:
                 self.limit_tolerance = float(r[i+1])
             if (r[i]=='maxIt'):
                 self.maxIt = int(r[i+1])
+            if (r[i]=='tolerance'):
+                self.tolerance = float(r[i+1])
 
         print('done.')
         #return solverType, time_step, max_time_step, min_time_step, total_time, limit_tolerance, maxIt
@@ -632,7 +686,8 @@ if __name__ == '__main__':
 
 
     print('\n%%%%%%%%% LATTICE PREPROCESSOR DONE %%%%%%%%%')
-    print('All done in %f seconds.' %(time.time()-start))
+    #print('\n%%%%%%%%% %d NODES MODEL %%%%%%%%%' %len(model.node_coords))
+    print('All done in %f seconds. (%d minutes).' %((time.time()-start), (time.time()-start)/60.0))
 
 
 
