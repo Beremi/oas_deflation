@@ -18,9 +18,9 @@ protected:
     ElementContainer *elems;
     NodeContainer *nodes;
     FunctionContainer *funcs;
-    double time, dt, termination_time;
+    double time, dt, initdt, termination_time;
     CoordinateIndexedSparseMatrix K, Kini;
-    Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr;
+    Vector f_ext, load, f_int, pbc, r, full_f, f, full_ddr, ddr;
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
     bool terminated;
@@ -37,14 +37,16 @@ public:
     virtual void init();
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
-    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions;}
+    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions; }
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
-    Vector giveDoFValues() { return r; }
+    Vector giveDoFValues() const { return r; }
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
+    void setTime(double t);
+    void setStep(unsigned t) { step = t; };
 };
 
 //////////////////////////////////////////////////////////

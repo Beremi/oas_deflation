@@ -2,6 +2,7 @@
 #include "version.h"
 
 using namespace std;
+fs :: path GlobPaths :: BASEDIR;
 
 int main(int argc, char **argv) {
     if ( argc == 1 ) {
@@ -12,14 +13,20 @@ int main(int argc, char **argv) {
         cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
-    
+
+    fs :: path input = fs :: absolute(argv [ 1 ]);
+    GlobPaths :: BASEDIR = input.parent_path();
+
+
+
     // OMP set 1 thread by default
     omp_set_dynamic(0);
     char *val = getenv("OMP_NUM_THREADS");
-    if (val != nullptr)
+    if ( val != nullptr ) {
         cout << "OMP_NUM_THREADS = " << val << endl;
-    else
+    } else {
         omp_set_num_threads(1);
+    }
 
     //initial time
     auto start = std :: chrono :: system_clock :: now();
@@ -31,8 +38,12 @@ int main(int argc, char **argv) {
         std :: cout << "######### start of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;
     }
 
+
     Model model(PRINT_TIME);
-    
+    model.readFromFile(input.string() );
+
+    // check if exists or create directory for results
+    if (!fs :: exists(model.resultDir)) fs :: create_directories(model.resultDir);
     // save version information to result dir
     ofstream outputfile( ( model.resultDir / "version.txt" ).string() );
     if ( outputfile.is_open() ) {
@@ -41,8 +52,8 @@ int main(int argc, char **argv) {
         outputfile << endl;
     }
     outputfile.close();
-    
-    model.readFromFile(argv[1]);
+
+
     model.init();
     model.solve();
 

@@ -430,11 +430,11 @@ class Model:
             permeability = None
             density = None
             capacity = None
-            crack_turtuosity = None
+            crack_turtuosity = 1.
             #
             for i in range (len(r)):
                 if (r[i]=='capacity'):
-                    capacity = float(r[i+1])
+                    capacity = float(r[i+1])                    
                 if (r[i]=='density'):
                     density = float(r[i+1])
                 if (r[i]=='permeability'):
@@ -444,7 +444,7 @@ class Model:
                 if (r[i]=='crack_turtuosity'):
                     crack_turtuosity = float(r[i+1])
             #
-            if (viscosity == None or permeability == None or density == None or capacity == None or crack_turtuosity==None):
+            if (viscosity == None or permeability == None or density == None or capacity == None):# or crack_turtuosity==None):
                 print ('!! TrsprtMaterial incomplete. Exiting. !!')
                 sys.exit()
 
@@ -653,7 +653,7 @@ if __name__ == '__main__':
     for row in f:
         if not (row[0]=='#'):
             r = row.split()
-            print(r)
+            #print(r)
             #
             if (r[0]=='Model'):
                 model = Model(row)

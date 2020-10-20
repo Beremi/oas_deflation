@@ -1,17 +1,17 @@
 #ifndef GLOBAL_H
-#define GLOBAL_H
+ #define GLOBAL_H
 
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <string>
-#include <cmath>
-#include <sstream>
+ #include <iostream>
+ #include <fstream>
+ #include <stdio.h>
+ #include <string>
+ #include <cmath>
+ #include <sstream>
 
 // time management:
-#include <chrono>
-#include <ctime>
-#include <iomanip>
+ #include <chrono>
+ #include <ctime>
+ #include <iomanip>
 
 // disable uncrustify
 // *INDENT-OFF*
@@ -35,15 +35,13 @@ namespace fs = boost :: filesystem;
 #define PRINT_TIME true
 #define PRINT_DEBUG_TIME false
 
-/*
-namespace GlobPaths {
-extern fs :: path INPUT;
-extern fs :: path INPUTFILENAME;
-extern fs :: path BASEDIR;
-extern fs :: path RESULTDIR;
-}
-*/
 
+namespace GlobPaths {
+//extern fs :: path INPUT;
+//extern fs :: path INPUTFILENAME;
+extern fs :: path BASEDIR;
+//extern fs :: path RESULTDIR;
+}
 /*
  * struct GlobPaths {
  *  static const fs::path INPUTFILE;

@@ -69,12 +69,10 @@ void NodeContainer :: init() {
 //////////////////////////////////////////////////////////
 void NodeContainer :: establishDoFArray() {
     totalDoFs = 0;
-    freeDoFs = 0;
 
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         ( * n )->setStartingDoF(totalDoFs);
         totalDoFs += ( * n )->giveNumberOfDoFs();
-        freeDoFs += ( * n )->giveNumberOfFreeDoFs();
     }
 
     BC->calculateDoFfields();
@@ -83,6 +81,7 @@ void NodeContainer :: establishDoFArray() {
     vector< unsigned >loaded = BC->giveArrayOfLoadedDoFs();
     blockedDoFid.resize(blocked.size() );
     loadedDoFid.resize(loaded.size() );
+    freeDoFs = totalDoFs - blocked.size();
 
     /////////////////////////////////////////////////////////////////
     // #constraint
@@ -107,6 +106,17 @@ void NodeContainer :: establishDoFArray() {
         a [ i ].second = i;
     }
     sort(a.begin(), a.end() );
+
+    //check that there are no two Dirichlet BC assigned to one DoF
+    vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
+    for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
+        if ( prev->first == cur->first ) {
+            cerr << "Error: two Dirichlet BC assigne to the same DoF number " << cur->first << endl;
+            exit(1);
+        }
+        prev = cur;
+    }
+
 
     unsigned cs = 0;
     unsigned k = 0;
@@ -192,6 +202,19 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
         if ( DoFid [ i ] < freeDoFs - constrDoFs ) {
             fDoFs [ DoFid [ i ] ] = fullDoFs [ i ];
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
+    if ( this->giveConstraints()->isActive() ) {
+        this->giveConstraints()->calculateMasterForces(fullf);
+    }
+
+    for ( unsigned i = 0; i < totalDoFs; i++ ) {
+        if ( DoFid [ i ] < freeDoFs ) {
+            f [ DoFid [ i ] ] = fullf [ i ];
         }
     }
 }

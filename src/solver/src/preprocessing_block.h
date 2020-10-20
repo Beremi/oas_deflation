@@ -8,10 +8,9 @@
 #include <algorithm>
 #include <typeinfo>
 
-#include "boundary_condition.h"
-#include "node_container.h"
-#include "element_container.h"
-#include "constraint.h"
+// #include "boundary_condition.h"
+// #include "node_container.h"
+// #include "element_container.h"
 #include "data_exporter.h"
 
 //////////////////////////////////////////////////////////
@@ -65,6 +64,7 @@ class TransportPeriodicBC : public MechanicalPeriodicBC
 {
 protected:
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
+    vector< int >microscaleSources; ///< sources at nodes due to mohogenized macroscale pressure gradient
     virtual void genereteNewDoFs(NodeContainer *nodes);
     virtual void genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
     virtual void genereteExporters(NodeContainer *nodes, ExporterContainer *ex);
@@ -99,6 +99,22 @@ private:
 public:
     CoordRigidPlate() {};
     virtual ~CoordRigidPlate() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+protected:
+};
+
+
+// rigid plate constraining nodes in holow cylindric
+class RingRigidPlate : public RigidPlate
+{
+private:
+    Point center, axis;
+    double r_inner, r_outer;
+    unsigned direction;
+public:
+    RingRigidPlate() {};
+    virtual ~RingRigidPlate() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
 protected:

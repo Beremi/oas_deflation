@@ -458,7 +458,6 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: init() {
-
     fs :: create_directories(resultDir);
 
     bool newname;
@@ -546,3 +545,60 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
         outputfile.close();
     }
 };
+
+void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim) {
+    // Vector stressXYZ, stress_zero;
+    // stress_zero = Vector((double)0, dim);
+
+    unsigned node_id, ni;
+    int first;
+    Vector elDoFvalues, elReactValues, strainNT;
+    vector< unsigned >elDoFs;
+
+    vector< double >Volume(stress.size(), 0);
+    double single_volume;
+    RigidBodyContact *rbc;
+
+    for ( auto const &el : * elems ) {
+        if ( el->giveName().compare("RigidBodyContact") == 0 ) {
+            rbc = static_cast< RigidBodyContact * >( el );
+            elDoFs = el->giveDoFs();
+            elDoFvalues.resize(elDoFs.size() );
+            elReactValues.resize(elDoFs.size() );
+            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
+                elReactValues [ i ] = reactions [ elDoFs [ i ] ];
+            }
+
+            // to each node correspond 0.5 of volume
+            // TODO must be repaired for power tessellation
+            single_volume = 0.5 * rbc->giveLength() * rbc->giveArea() / dim;
+            first = -1;
+            ni = 0;
+            for ( auto const &n : el->giveNodes() ) {
+                auto res = std :: find(begin(* nodes), end(* nodes), n);
+                node_id = std :: distance(begin(* nodes), res);
+                Volume [ node_id ] += single_volume;
+
+                stress [ node_id ] += dyadicProduct(
+                    ( el->giveInternalForces(elDoFvalues, false)
+                      + rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
+                    )
+                    * first
+                    , rbc->giveDistanceToNode(ni, 0) );
+                // for node corresponding to end of element, traction needs to be reversed
+                first = 1;
+                ni++;
+            }
+        } else {
+            //
+        }
+    }
+    for ( unsigned si = 0; si < stress.size(); si++ ) {
+        if ( Volume [ si ] <= 0 ) {
+            stress [ si ] *= 0;
+        } else {
+            stress [ si ] /= Volume [ si ];
+        }
+    }
+}

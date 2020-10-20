@@ -7,19 +7,27 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DIRICHLET AND NEUMANN BOUNDARY CONDITION
-void BoundaryCondition :: init() {
-    node->setBC(this);
-
+void BoundaryCondition :: init(FunctionContainer *funcs) {
     blockedDoFNum = 0;
     loadedDoFNum = 0;
-    for ( vector< int > :: const_iterator i = dirichBC.begin(); i != dirichBC.end(); ++i ) {
-        if ( * i >= 0 ) {
+
+    dirichF.resize(dirichBC.size() );
+    for ( unsigned i = 0; i < dirichBC.size(); i++ ) {
+        if ( dirichBC [ i ] >= 0 ) {
             blockedDoFNum++;
+            dirichF [ i ] = funcs->giveFunction(dirichBC [ i ]);
+        } else  {
+            dirichF [ i ] = nullptr;
         }
     }
-    for ( vector< int > :: const_iterator i = neumannBC.begin(); i != neumannBC.end(); ++i ) {
-        if ( * i >= 0 ) {
+
+    neumannF.resize(neumannBC.size() );
+    for ( unsigned i = 0; i < neumannBC.size(); i++ ) {
+        if ( neumannBC [ i ] >= 0 ) {
             loadedDoFNum++;
+            neumannF [ i ] = funcs->giveFunction(neumannBC [ i ]);
+        } else  {
+            neumannF [ i ] = nullptr;
         }
     }
 }
@@ -57,64 +65,35 @@ vector< unsigned >BoundaryCondition :: giveLoadedDoFs() const {
 }
 
 //////////////////////////////////////////////////////////
-vector< unsigned >BoundaryCondition :: giveBlockedFunctions() const {
-    vector< unsigned >blocked;
-    blocked.resize(blockedDoFNum);
-    unsigned s = 0;
-    for ( size_t i = 0; i < dirichBC.size(); i++ ) {
-        if ( dirichBC [ i ] >= 0 ) {
-            blocked [ s ] = dirichBC [ i ];
-            s++;
-        }
-    }
-    ;
-    return blocked;
-}
-
-//////////////////////////////////////////////////////////
-vector< unsigned >BoundaryCondition :: giveLoadedFunctions() const {
-    vector< unsigned >loaded;
-    loaded.resize(loadedDoFNum);
-    unsigned s = 0;
-    for ( size_t i = 0; i < neumannBC.size(); i++ ) {
-        if ( neumannBC [ i ] >= 0 ) {
-            loaded [ s ] = neumannBC [ i ];
-            s++;
-        }
-    }
-    ;
-    return loaded;
-}
-
-//////////////////////////////////////////////////////////
-vector< double >BoundaryCondition :: giveBlockedMultipliers() const {
+vector< double >BoundaryCondition :: giveBlockedDoFValues(double t) const {
     vector< double >blocked;
     blocked.resize(blockedDoFNum);
     unsigned s = 0;
-    for ( size_t i = 0; i < dirichBC.size(); i++ ) {
-        if ( dirichBC [ i ] >= 0 ) {
-            blocked [ s ] = multipliers [ i ];
+    unsigned i = 0;
+    for ( vector< Function * > :: const_iterator f = dirichF.begin(); f != dirichF.end(); ++f, i++ ) {
+        if ( * f ) {
+            blocked [ s ] = ( * f )->giveY(t) * multipliers [ i ];
             s++;
         }
     }
-    ;
     return blocked;
 }
 
 //////////////////////////////////////////////////////////
-vector< double >BoundaryCondition :: giveLoadedMultipliers() const {
+vector< double >BoundaryCondition :: giveLoadedDoFValues(double t) const {
     vector< double >loaded;
     loaded.resize(loadedDoFNum);
     unsigned s = 0;
-    for ( size_t i = 0; i < neumannBC.size(); i++ ) {
-        if ( neumannBC [ i ] >= 0 ) {
-            loaded [ s ] = multipliers [ i ];
+    unsigned i = 0;
+    for ( vector< Function * > :: const_iterator f = neumannF.begin(); f != neumannF.end(); ++f, i++ ) {
+        if ( * f ) {
+            loaded [ s ] = ( * f )->giveY(t) * multipliers [ i ];
             s++;
         }
     }
-    ;
     return loaded;
 }
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -176,13 +155,9 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes) {
 void BCContainer :: init() {
     dirichDoFs.resize(0);
     neumannDoFs.resize(0);
-    dirichF.resize(0);
-    neumannF.resize(0);
-    dirichMultipliers.resize(0);
-    neumannMultipliers.resize(0);
 
     for ( vector< BoundaryCondition * > :: iterator bc = BC.begin(); bc != BC.end(); ++bc ) {
-        ( * bc )->init();
+        ( * bc )->init(functions);
     }
 }
 
@@ -195,14 +170,6 @@ void BCContainer :: calculateDoFfields() {
         dirichDoFs.insert(dirichDoFs.end(), help.begin(), help.end() );
         help = ( * bc )->giveLoadedDoFs();
         neumannDoFs.insert(neumannDoFs.end(), help.begin(), help.end() );
-        help = ( * bc )->giveBlockedFunctions();
-        dirichF.insert(dirichF.end(), help.begin(), help.end() );
-        help = ( * bc )->giveLoadedFunctions();
-        neumannF.insert(neumannF.end(), help.begin(), help.end() );
-        help2 = ( * bc )->giveBlockedMultipliers();
-        dirichMultipliers.insert(dirichMultipliers.end(), help2.begin(), help2.end() );
-        help2 = ( * bc )->giveLoadedMultipliers();
-        neumannMultipliers.insert(neumannMultipliers.end(), help2.begin(), help2.end() );
     }
 
     // NOTE know which fns are actually used //JE WHY? What is this information for? Nobody cares. // JK to prevent restricting time step in extreme points of unused fns, it is probably not necessary and if anyone does not comment (or remove fn from fn file) fn that is not used it is his problem, can be removed then
@@ -221,8 +188,13 @@ void BCContainer :: calculateDoFfields() {
 //////////////////////////////////////////////////////////
 vector< double >BCContainer :: giveBlockedDoFValues(double t) const {
     vector< double >blocked(dirichDoFs.size() );
-    for ( unsigned h = 0; h < dirichDoFs.size(); h++ ) {
-        blocked [ h ] = functions->giveY(dirichF [ h ], t) * dirichMultipliers [ h ];
+    unsigned i, s = 0;
+    vector< double >b;
+    for ( auto &bc: BC ) {
+        b = bc->giveBlockedDoFValues(t);
+        for ( i = 0; i < b.size(); i++, s++ ) {
+            blocked [ s ] = b [ i ];
+        }
     }
     return blocked;
 }
@@ -230,8 +202,13 @@ vector< double >BCContainer :: giveBlockedDoFValues(double t) const {
 //////////////////////////////////////////////////////////
 vector< double >BCContainer :: giveLoadedDoFValues(double t) const {
     vector< double >loaded(neumannDoFs.size() );
-    for ( unsigned h = 0; h < neumannDoFs.size(); h++ ) {
-        loaded [ h ] = functions->giveY(neumannF [ h ], t) * neumannMultipliers [ h ];
+    unsigned i, s = 0;
+    vector< double >b;
+    for ( auto &bc: BC ) {
+        b = bc->giveLoadedDoFValues(t);
+        for ( i = 0; i < b.size(); i++, s++ ) {
+            loaded [ s ] = b [ i ];
+        }
     }
     return loaded;
 }

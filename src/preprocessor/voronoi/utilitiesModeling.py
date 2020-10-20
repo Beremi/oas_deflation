@@ -873,6 +873,8 @@ def create2dCoupledRVE(maxLim, minDist, trials ):
         trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
+    print("BOUNDARY CONDITIONS",transportBC_merged)
+
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
 
 

@@ -17,8 +17,10 @@ To grab a copy of the latest version of OOFEM using git access.
 \endcode
 
 \subsection Prereqisites Pre-requisites
-The oofem requires the CMake cross-platform build system and C++ compiler
+The PartMod requires the CMake cross-platform build system and C++ compiler
 with STL support (Standard Template Library).
+Ubuntu:
+- see Dockerfile_XXX in docker directory
 
 
 \subsection Build Build
@@ -172,6 +174,22 @@ on Windows:
 set OMP_NUM_THREADS=4
 DiscreteModel master.inp
 \endcode
+
+
+
+
+\subsection DOCKER Docker
+
+In partmod directory run:
+\code{.sh}
+docker build -f docker/Dockerfile_ubuntu20 .
+>> Successfully built a99225cc61c5 (this number will change)
+\endcode
+runing container will perform tests:
+\code
+docker run a992 (first 3 characters are enough)
+\endcode
+
 
 
 

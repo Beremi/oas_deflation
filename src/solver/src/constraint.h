@@ -8,6 +8,7 @@ class Node; //forward declaration
 class NodeContainer; //forward declaration
 class ElementContainer;  // forward declaration
 class ConstraintContainer;  // forward declaration
+class BCContainer;  // forward declaration
 
 
 class JointDoF
@@ -68,7 +69,7 @@ public:
     ~ConstraintContainer() {};
     void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);
-    void init(NodeContainer *nodes); // here matrix X will be created
+    void init(NodeContainer *nodes, BCContainer *bconds); // here matrix X will be created
     void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K);
     void calculateDependentDoFs(Vector &fullDoFs);
     void calculateMasterForces(Vector &fullForces);
@@ -85,7 +86,5 @@ public:
 
 protected:
 };
-
-bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop);
 
 #endif /* _CONSTRAINT_H */

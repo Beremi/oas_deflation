@@ -1,6 +1,8 @@
 #include "constraint.h"
 #include "node_container.h"
 #include "element_container.h"
+#include "element_container.h"
+#include "boundary_condition.h"
 #include <fstream>
 
 bool containsChar(const std :: string &str, char c)
@@ -175,7 +177,7 @@ void VolumetricAverage :: init() {
             masters.push_back(nodes [ i ]);
             directions.push_back(dirs [ i ]);
             multipliers.push_back(m [ i ]);
-        } else  {
+        } else {
             jd = constraints->giveConstraint(r);
             jdmasters = jd->giveMasterNodes();
             jddirs = jd->giveMasterDirs();
@@ -265,18 +267,6 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
     }
 }
 
-bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
-    double tol = 1e-9; // NOTE this should be relative to lmin or something
-    if ( ( leftBottom.getX() - P.getX() ) < tol && ( P.getX() - rightTop.getX() ) < tol ) {
-        if ( ( leftBottom.getY() - P.getY() ) < tol && ( P.getY() - rightTop.getY() ) < tol ) {
-            if ( ( leftBottom.getZ() - P.getZ() ) < tol && ( P.getZ() - rightTop.getZ() ) < tol ) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes) {
     unsigned origsize = constraints.size();
@@ -318,8 +308,11 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 // }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: init(NodeContainer *nodes) {
+void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
     //initiate volumetric averages
+
+    unsigned numFreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+
     for ( auto const &jD : constraints ) {
         jD->init();
     }
@@ -350,14 +343,14 @@ void ConstraintContainer :: init(NodeContainer *nodes) {
     for ( auto const &jD : constraints ) {
         // jD->print();
         i = nodes->giveDoFid(jD->giveSlaveDoF() );
-        //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", giveNumFreeDoFs() = " << nodes->giveNumFreeDoFs() << '\n';
+        //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", numFreeDoFs = " << numFreeDoFs << '\n';
         // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
         // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
         // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
-        if ( i < nodes->giveNumFreeDoFs() - constraints.size() ) {
+        if ( i < numFreeDoFs - constraints.size() ) {
             std :: cerr << "should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << '\n';
             exit(1);
-        } else if ( i >= nodes->giveNumFreeDoFs() ) {
+        } else if ( i >= numFreeDoFs ) {
             // Point A = jD->giveSlaveNode()->givePoint();
             // std::cout << "node name = " << jD->giveSlaveNode()->giveName() << '\n';
             // std::cout << "Point(" << A.getX() << ", " << A.getY() << ", " << A.getZ() << ")" << '\n';
@@ -367,7 +360,7 @@ void ConstraintContainer :: init(NodeContainer *nodes) {
         numM = jD->giveNumOfMasters();
         for ( unsigned ind = 0; ind < numM; ind++ ) {
             j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
-            if ( j < nodes->giveNumFreeDoFs() - constraints.size() ) {
+            if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
                 indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), jD->giveMasterMultiplier(ind) ) );
             }
@@ -376,11 +369,11 @@ void ConstraintContainer :: init(NodeContainer *nodes) {
 
     // here fill in value 1 for all other DoFs
     ///////////////////////////////////////////////////
-    for ( i = 0; i < nodes->giveNumFreeDoFs() - constraints.size(); i++ ) {
+    for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
         // fill the matrix with 1 for each unrestrained DoF (diagonal)
         indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
     }
-    X = CoordinateIndexedSparseMatrix(indeces11, nodes->giveNumFreeDoFs(), nodes->giveNumFreeDoFs() - constraints.size() );
+    X = CoordinateIndexedSparseMatrix(indeces11, numFreeDoFs, numFreeDoFs - constraints.size() );
 }
 
 

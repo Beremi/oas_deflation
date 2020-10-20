@@ -28,10 +28,10 @@ private:
     void establishDoFArray();
 
 public:
-    NodeContainer(){ totalDoFs = freeDoFs = 0; };
+    NodeContainer() { totalDoFs = 0; };
     ~NodeContainer();
 
-    void setContainers(BCContainer *bc, ConstraintContainer *c) { constr = c; BC = bc;}
+    void setContainers(BCContainer *bc, ConstraintContainer *c) { constr = c; BC = bc; }
     void readFromFile(const string filename, const int dim);
     Node *giveNode(unsigned const num) { return nodes [ num ]; }
     size_t giveSize() { return nodes.size(); };
@@ -43,6 +43,7 @@ public:
     void addRHS_nodalLoad(Vector &RHS, double time) const;
     void updateDirrichletBC(Vector &bc, double time) const;
     void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
+    void giveReducedForceArray(Vector &fullDoFs, Vector &fDoFs) const;
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
     void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;

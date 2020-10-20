@@ -34,6 +34,14 @@ void MaterialContainer :: readFromFile(const string filename) {
                     DisMechMaterial *newmat = new DisMechMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("ElasticMechMaterial") == 0 ) {
+                    ElasticMechMaterial *newmat = new ElasticMechMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("CosseratMechMaterial") == 0 ) {
+                    CosseratMechMaterial *newmat = new CosseratMechMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("TrsprtMaterial") == 0 ) {
                     TrsprtMaterial *newmat = new TrsprtMaterial();
                     newmat->readFromLine(iss);
@@ -70,6 +78,14 @@ void MaterialContainer :: readFromFile(const string filename) {
                     DesmoratMaterial *newmat = new DesmoratMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back( ( DesmoratMaterial * ) newmat );
+                } else if ( matType.compare("BrittleMaterial") == 0 ) {
+                    BrittleMaterial *newmat = new BrittleMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back( ( BrittleMaterial * ) newmat );
+                } else if ( matType.compare("ContactMaterial") == 0 ) {
+                    ContactMaterial *newmat = new ContactMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back( ( ContactMaterial * ) newmat );
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);

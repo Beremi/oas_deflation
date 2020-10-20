@@ -2,8 +2,14 @@
 #define _MAT_RVE_H
 
 #include "material.h"
+#include "globals.h"
+
 
 class Model; //forward declaraion
+class Node; //forward declaraion
+class Transp1D; //forward declaraion
+class BoundaryCondition; //forward declaraion
+class PieceWiseLinearFunction; //forward declaraion
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -13,10 +19,26 @@ class TrsprtRVEMaterial;
 class TrsprtRVEMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
-    Model *model;
-    string masterfile;
+    Model *RVE;
+
+    fs :: path inputfile;
+
+    //setup for microsources generaget by macroscale
+    vector< Node * >MSnodes;
+    vector< BoundaryCondition * >MSbc;
+    vector< vector< Transp1D * > >MSelems;
+    vector< vector< unsigned > >MSorder;
+    vector< PieceWiseLinearFunction * >MSfunctions;
+
+    //setup for volumetric average
+    PieceWiseLinearFunction *volumAverFunc;
+
+
+    void genereteMicroSources();
+    void updateMicroSources();
+    void genereteVolumetricAverageBC();
 public:
-    TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, string inputfile);
+    TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~TrsprtRVEMaterialStatus();
     virtual void init();
     virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
@@ -29,7 +51,7 @@ public:
 class TrsprtRVEMaterial : public TrsprtMaterial
 {
 protected:
-    string inputfile;
+    fs :: path inputfile;
 public:
     TrsprtRVEMaterial() { name = "transport RVE material"; };
     ~TrsprtRVEMaterial() {};

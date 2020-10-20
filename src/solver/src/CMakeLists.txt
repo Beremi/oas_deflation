@@ -6,12 +6,14 @@ set (solver_files
     element_container.cpp
     element.cpp
     element_polyhedral.cpp
+    geometry.cpp
     globals.cpp
     linalg.cpp
     linear_algebra.cpp
     #main.cpp
     material_container.cpp
     material.cpp
+    material_misc.cpp
     material_RVE.cpp
     mars_material.cpp
     fatigue_material.cpp
