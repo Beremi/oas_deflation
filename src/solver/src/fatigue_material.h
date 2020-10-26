@@ -45,7 +45,7 @@ public:
     virtual ~FatigueShearMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };
@@ -130,7 +130,7 @@ public:
     virtual ~FatigueShearMaterialInteractedStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };
@@ -205,7 +205,7 @@ public:
     virtual ~DamagePlasticMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };
@@ -259,7 +259,7 @@ public:
     virtual ~FatigueMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };
@@ -302,7 +302,7 @@ public:
     virtual ~AllicheMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     // virtual Vector giveStressWrong(const Vector &strain);
     void calculateDamage(const Vector &strain);
@@ -362,7 +362,7 @@ public:
     virtual ~DesmoratMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };

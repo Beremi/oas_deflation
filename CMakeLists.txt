@@ -21,8 +21,10 @@ include (GenerateExportHeader)
 include (ProcessorCount)
 
 set(CMAKE_COLOR_MAKEFILE ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 
 project(PartMod CXX)
 set (PartMod_VERSION_MAJOR 0)

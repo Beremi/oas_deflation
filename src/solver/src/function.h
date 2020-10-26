@@ -42,6 +42,7 @@ public:
     void readFromLine(istringstream &iss);
     double giveY(double t);
     virtual double giveNextEtreme(const double &t) const;
+    void setYValue(double yv, unsigned i) { y [ i ] = yv; };
 protected:
 };
 

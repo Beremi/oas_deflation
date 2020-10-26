@@ -13,6 +13,14 @@
 #Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0.5 loadWidth 0.005 minDist 0.004 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 100000
 #Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0.5 loadWidth 0.01 minDist 0.01 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 1 trials 2000
 #
+#
+#RWTH Notched 3pb
+#
+# A: 0.5/0.2/0.1, B: 1.0/0.4/0.1  ///  0.525   1.050
+#Model 2d_notched3pb Xsize 0.525 Ysize 0.2 notchH 0.16667 loadWidth 0.005 minDist 0.008 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 100000 notchWidth 0.008
+#Model 3d_notched3pb Xsize 0.525 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 0 trials 10000 notchWidth 0.008
+#
+#
 # Dogbones
 #Model 2d_dogbone dogboneD 0.2 minDist 0.003 dogboneExcentricityFrac 50 activeMechanics 1 trials 100000 symmetric 1
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
@@ -29,6 +37,9 @@
 #
 #Model 2d_periodicShear Xsize 0.05 Ysize 0.05 minDist 0.004 activeMechanics 1 activeTransport 1 trials 50000
 #
+#Model 3d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0007 notchRadRight 0.0245 notchRadLeft 0.0275 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 200 RWTHQuarter 1
+#Model 2d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0005 innerRadTop 0.0255 innerRadBottom 0.0225 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 10000 
+#
 ####################################################################################
 #TRANSPORT MODELS AVAILABLE
 #
@@ -39,12 +50,13 @@
 #
 ####################################################################################
 #COUPLED MODELS AVAILABLE
-Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
+#Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
+Model 3d_coupledBrazilianDisc cylinderHeight 0.1 cylinderRad 0.3 minDist 0.025 activeTransport 0 activeMechanics 1 coupled 0 trials 2000
 #
 #
 ####################################################################################
 #SOLVER SETUP
-Solver	SteadyStateNonLinearSolver	time_step	1.000000e-05	max_time_step	1.000000e-01	min_time_step	1.000000e-05	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	20
+Solver	SteadyStateNonLinearSolver	time_step	1.000000e-03	max_time_step	1.000000e-01	min_time_step	1.000000e-05	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	15    tolerance   0.001
 #
 #
 #
@@ -52,7 +64,7 @@ Solver	SteadyStateNonLinearSolver	time_step	1.000000e-05	max_time_step	1.000000e
 #MATERIALS
 #
 # Mars material
-Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2600000.0 Gt 500
+Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2600000.0 Gt 50
 #
 # Fatigue shear material
 #Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0

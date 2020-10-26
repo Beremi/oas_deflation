@@ -3,8 +3,8 @@
 using namespace std;
 
 string convertTimeToString(std :: chrono :: duration< double >time_interval) {
-    if (time_interval.count() <= 1e-4){
-        return std :: to_string(time_interval.count());
+    if ( time_interval.count() <= 1e-4 ) {
+        return std :: to_string(time_interval.count() );
     }
     int hours = time_interval.count() / 3600;
     int minutes = time_interval.count() / 60 - hours * 60;
@@ -17,4 +17,3 @@ string convertTimeToString(std :: chrono :: duration< double >time_interval) {
        << std :: setw(3) << std :: setfill('0') << miliseconds;
     return ss.str();
 }
-

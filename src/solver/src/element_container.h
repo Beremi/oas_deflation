@@ -3,6 +3,7 @@
 
 #include "element.h"
 #include "element_polyhedral.h"
+#include "boundary_condition.h"
 #include "node_container.h"
 
 //////////////////////////////////////////////////////////
@@ -11,12 +12,13 @@ class ElementContainer
 private:
     vector< Element * >elems;
     NodeContainer *nodes;
+    BCContainer *bconds;
     unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
 
 public:
-    ElementContainer(){};
+    ElementContainer() {};
     ~ElementContainer();
-    void setContainers(NodeContainer *n) { nodes = n; };
+    void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
     size_t giveSize() const { return elems.size(); }

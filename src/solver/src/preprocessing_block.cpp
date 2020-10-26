@@ -537,6 +537,7 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
     strainFunc.resize(dim, -1);
     stressFunc.resize(dim, -1);
     volumetricAverageRigidBC = -1;
+    microscaleSources.resize(dim, -1);
 
     iss >> num;
     for ( unsigned i = 0; i < num; i++ ) {
@@ -557,6 +558,9 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
                 stressFunc [ 1 ] = hnum;
             } else if ( param.compare("volumetricAverage") == 0 ) {
                 volumetricAverageRigidBC = hnum;
+            } else if ( param.compare("microSources") == 0 ) {
+                microscaleSources [ 0 ] = hnum;
+                iss >> microscaleSources [ 1 ];
             } else {
                 cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
                 exit(1);
@@ -576,6 +580,10 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
                 stressFunc [ 2 ] = hnum;
             } else if ( param.compare("volumetricAverage") == 0 ) {
                 volumetricAverageRigidBC = hnum;
+            } else if ( param.compare("microSources") == 0 ) {
+                microscaleSources [ 0 ] = hnum;
+                iss >> microscaleSources [ 1 ];
+                iss >> microscaleSources [ 2 ];
             } else {
                 cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
                 exit(1);
@@ -602,29 +610,7 @@ void TransportPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementCon
         y.resize(1, 0);
         PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
         funcs->addFunction(newf);
-    } else  { //volumetric average
-        TrsDoF *tn = new TrsDoF(dim);
-        nodes->addNode(tn);
-
-        VolumetricAverage *va;
-        vector< Node * >vm;
-        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-            if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-                vm.push_back(nodes->giveNode(n) );
-            }
-        }
-        vector< unsigned >dirs;
-        dirs.resize(vm.size() );
-        va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
-        constrs->addConstraint(va);
-
-        BoundaryCondition *bc;
-        vector< int >dBC, nBC;
-        dBC.resize(1, -1);
-        nBC.resize(1, -1);
-        dBC [ 0 ] = volumetricAverageRigidBC;
-        bc = new BoundaryCondition(tn, dBC, nBC);
-        bcs->addBoundaryCondition(bc);
+    } else {  //volumetric average
     }
 }
 
@@ -758,24 +744,29 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     double x, y, z, rI, rO;
     string dir;
     iss >> master_id >> x >> y;
-    if ( d == 3 ) iss >> z;
+    if ( d == 3 ) {
+        iss >> z;
+    }
     this->center = Point(x, y, z);
     iss >> rI >> rO;
     this->r_inner = rI;
     this->r_outer = rO;
-    if ( dim == 3 ){
-      iss >> dir;
-      if ( dir.compare("x")) direction = 0;
-      else if ( dir.compare("y")) direction = 1;
-      else if ( dir.compare("z")) direction = 2;
-      // iss >> x >> y >> z;
-      // axis = Point(x, y, z);
+    if ( dim == 3 ) {
+        iss >> dir;
+        if ( dir.compare("x") ) {
+            direction = 0;
+        } else if ( dir.compare("y") ) {
+            direction = 1;
+        } else if ( dir.compare("z") )                                             {
+            direction = 2;
+        }
+        // iss >> x >> y >> z;
+        // axis = Point(x, y, z);
     } else {
-      // for 2D case, normal
-      // axis = Point(0, 0, 1);
-      direction = 2;
+        // for 2D case, normal
+        // axis = Point(0, 0, 1);
+        direction = 2;
     }
-
 }
 
 void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
@@ -802,21 +793,25 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
     xm = 1;
     ym = 1;
     zm = 1;
-    if ( direction == 0 ) xm = 0;
-    else if ( direction == 1 ) ym = 0;
-    else if ( direction == 2 ) zm = 0;
-    this->center = Point(this->center.getX()*xm, this->center.getY()*ym, this->center.getZ()*zm);
+    if ( direction == 0 ) {
+        xm = 0;
+    } else if ( direction == 1 ) {
+        ym = 0;
+    } else if ( direction == 2 )                                     {
+        zm = 0;
+    }
+    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
-        node_point = Point(nod->givePoint().getX()*xm, nod->givePoint().getZ()*ym, nod->givePoint().getZ()*zm);
-        if ( isInCircle( node_point, this->center, this->r_outer ) ) {
-            if ( !isInCircle( node_point, this->center, this->r_inner ) ) {
+        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getZ() * ym, nod->givePoint().getZ() * zm);
+        if ( isInCircle(node_point, this->center, this->r_outer) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
                 if ( nod == master ) {
                     continue;
                 }
                 // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
                 Particle *nn = dynamic_cast< Particle * >( nod );
                 if ( nn ) {
-                  constrs->connectSlaveMaster(nod, master, ndim, which);
+                    constrs->connectSlaveMaster(nod, master, ndim, which);
                 }
             }
         }

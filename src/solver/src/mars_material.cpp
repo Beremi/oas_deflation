@@ -14,20 +14,20 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e) : DisMechM
 double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
-    } else if ( code.rfind( "damage", 0 ) == 0 || code.rfind( "damageN", 0 ) == 0 || code.rfind( "damageT", 0 ) == 0) {
+    } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         return temp_damage;
-    // } else  if ( code.compare("stressN") == 0 ) {
-    //     return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];
-    // } else  if ( code.compare("stressT1") == 0 ) {
-    //     return this->giveNormalShearStiffness("secant")[1] * temp_strain[1];
-    // } else  if ( code.compare("stressT2") == 0 ) {
-    //     return this->giveNormalShearStiffness("secant")[2] * temp_strain[2];
-    // } else  if ( code.compare("strainN") == 0 ) {
-    //     return temp_strain[0];
-    // } else  if ( code.compare("strainT1") == 0 ) {
-    //     return temp_strain[1];
-    // } else  if ( code.compare("strainT2") == 0 ) {
-    //     return temp_strain[2];
+        // } else  if ( code.compare("stressN") == 0 ) {
+        //     return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];
+        // } else  if ( code.compare("stressT1") == 0 ) {
+        //     return this->giveNormalShearStiffness("secant")[1] * temp_strain[1];
+        // } else  if ( code.compare("stressT2") == 0 ) {
+        //     return this->giveNormalShearStiffness("secant")[2] * temp_strain[2];
+        // } else  if ( code.compare("strainN") == 0 ) {
+        //     return temp_strain[0];
+        // } else  if ( code.compare("strainT1") == 0 ) {
+        //     return temp_strain[1];
+        // } else  if ( code.compare("strainT2") == 0 ) {
+        //     return temp_strain[2];
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -197,8 +197,8 @@ void MarsMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveNormalShearStiffness(string type) const {
-    Vector stiff = giveElasticNormalShearStiffness();
+Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {

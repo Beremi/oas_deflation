@@ -12,9 +12,9 @@ class BrittleMaterialStatus : public DisMechMaterialStatus
 {
 protected:
     /*
-      comp_recovery: full stiffness if loading goes back to negative values after previously reaching tensile strength
-      eqiv: calculate in equivalent space (normal + shear transformed into equivalent single - normal - axis)
-    */
+     * comp_recovery: full stiffness if loading goes back to negative values after previously reaching tensile strength
+     * eqiv: calculate in equivalent space (normal + shear transformed into equivalent single - normal - axis)
+     */
     bool damage, temp_damage, comp_recovery;
     double RAND_H;
     double L;
@@ -26,14 +26,14 @@ public:
     virtual ~BrittleMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual double giveValue(string code) const;
 };
 
 
 class BrittleMaterial : public DisMechMaterial
-  // TODO do only elasto brittle - fully elastic in compression and brittle in tension/shear with possíbility to calc in equiv. space
+    // TODO do only elasto brittle - fully elastic in compression and brittle in tension/shear with possíbility to calc in equiv. space
 {
 protected:
     double ft, fs;
@@ -90,9 +90,9 @@ public:
 
 //////////////////////////////////////////////////////////
 // CONTACT SHEAR MATERIAL
-  /*
-  Material (and material status) to mimic contact behavior - no transfer in tension, elastic in compression and if friction prescribed, then resisting in friction according to pressure
-  */
+/*
+ * Material (and material status) to mimic contact behavior - no transfer in tension, elastic in compression and if friction prescribed, then resisting in friction according to pressure
+ */
 
 class ContactMaterial;
 class ContactMaterialStatus : public DisMechMaterialStatus
@@ -104,14 +104,14 @@ public:
     virtual ~ContactMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Vector giveNormalShearStiffness(string type) const;
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     // virtual double giveValue(string code) const;
 };
 
 
 class ContactMaterial : public DisMechMaterial
-  // TODO do only elasto brittle - fully elastic in compression and brittle in tension/shear with possíbility to calc in equiv. space
+    // TODO do only elasto brittle - fully elastic in compression and brittle in tension/shear with possíbility to calc in equiv. space
 {
 private:
     double friction_coef;  // friction coefficient

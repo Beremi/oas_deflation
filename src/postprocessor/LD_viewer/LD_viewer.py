@@ -25,7 +25,7 @@ class LDFile(HasStrictTraits):
         LDFile.ldfile_num += 1
         super().__init__(**traits)
 
-    name = Property(Str)
+    name = Str
     ld_file = Any('', changed=True)
     open_button = Button('Open...')
     reload_button = Button('Reload')
@@ -39,7 +39,7 @@ class LDFile(HasStrictTraits):
     def _add_ldcurve_fired(self):
         self.ld_curves.append(LDCurve(ldfile=self, labels=self.labels, figure=self.figure))
 
-    def _get_name(self):
+    def _name_default(self):
         return 'F{}'.format(self.ldfile_num)
 
     def _open_button_fired ( self ):
@@ -69,6 +69,7 @@ class LDFile(HasStrictTraits):
                        Item('reload_button', show_label=False),
                        Item('ld_file', id='ld_file'),#, style='readonly')
                         ),
+                Item('name'),
                 Item('add_ldcurve', show_label=False),
                 Item('ld_curves', style='custom', show_label=False,
                 editor=ListEditor(use_notebook=True,
@@ -87,7 +88,7 @@ class LDCurve(HasStrictTraits):
     ldfile = Instance(LDFile)
     labels = List
 
-    name = Property(Str)
+    name = Str
     
     x_values = Enum(values='labels')
     y_values = Enum(values='labels')
@@ -110,10 +111,11 @@ class LDCurve(HasStrictTraits):
                 label='{}-{}'.format(self.ldfile.name, self.name))
         ax.legend()
 
-    def _get_name(self):
+    def _name_default(self):
         return 'LD {}'.format(self.ld_num)
 
-    view = View(VGroup(HGroup(HItem('x_values'), 
+    view = View(VGroup(Item('name'),
+                       HGroup(HItem('x_values'), 
                                Item('x_scale', show_label=False)),
                        HGroup(HItem('y_values'), 
                                Item('y_scale', show_label=False)),

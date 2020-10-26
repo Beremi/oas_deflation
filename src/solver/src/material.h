@@ -27,8 +27,8 @@ public:
     virtual void update() {};
     virtual Vector giveStress(const Vector &strain) { ( void ) strain; return Vector(0); };
     virtual double giveValue(string code) const { ( void ) code; return 0; };
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const {return Matrix(0,0);};
-    virtual double giveMassConstant() const {return 0;};
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; return Matrix(0, 0); };
+    virtual double giveMassConstant() const { return 0; };
 protected:
     Element *element;
     string name;
@@ -118,6 +118,71 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// TENSORIAL MECHANICAL MATERIAL
+
+class ElasticMechMaterial;
+class ElasticMechMaterialStatus : public MaterialStatus
+{
+protected:
+
+public:
+    ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e);
+    virtual ~ElasticMechMaterialStatus() {};
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Vector giveStress(const Vector &strain);
+};
+
+//////////////////////////////////////////////////////////
+class ElasticMechMaterial : public Material
+{
+protected:
+    double E, nu, density;
+    bool planeStress;
+
+public:
+    ElasticMechMaterial() { name = "elastic tensorial mechanical material"; planeStress = true; };
+    ~ElasticMechMaterial() {};
+    virtual void readFromLine(istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    double giveElasticModulus() const { return E; }
+    double givePoissonsRatio() const { return nu; }
+    double giveDensity() { return density; };
+    bool isPlaneStress() { return planeStress; };
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COSSERAT MECHANICAL MATERIAL
+
+class CosseratMechMaterial;
+class CosseratMechMaterialStatus : public ElasticMechMaterialStatus
+{
+protected:
+
+public:
+    CosseratMechMaterialStatus(CosseratMechMaterial *m, Element *e);
+    virtual ~CosseratMechMaterialStatus() {};
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Vector giveStress(const Vector &strain);
+};
+
+//////////////////////////////////////////////////////////
+class CosseratMechMaterial : public ElasticMechMaterial
+{
+protected:
+    double lc, muc;
+
+public:
+    CosseratMechMaterial() { name = "elastic Cosserat mechanical material"; planeStress = true; };
+    ~CosseratMechMaterial() {};
+    virtual void readFromLine(istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    double giveCharacteristicLength() const { return lc; }
+    double giveCosseratShearParam() const { return muc; }
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // DISCRETE MECHANICAL LINEAR MATERIAL
 
 class DisMechMaterial;
@@ -128,9 +193,7 @@ protected:
 public:
     DisMechMaterialStatus(DisMechMaterial *m, Element *e);
     virtual ~DisMechMaterialStatus() {};
-    Vector giveElasticNormalShearStiffness() const;
-    virtual Vector giveNormalShearStiffness(string type) const { ( void ) type; return giveElasticNormalShearStiffness(); }   //only elastic
-    virtual Vector giveNormalShearStiffness(string type, const Vector &strain) { giveStress(strain); return giveNormalShearStiffness(type); }
+    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     double giveDensity() const;
 };

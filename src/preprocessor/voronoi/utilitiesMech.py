@@ -11,37 +11,90 @@ class MeasuringGauge:
         self.name = name
         self.rotation = rotation
 
+
 class RigidPlate:
-    def __init__ (self, govNodeIdx, dim, limits):
+    def __init__ (self, govNodeIdx, dim, limits, radial = -1, innerRad = None, directIdcs = False):
         self.govNodeIdx = govNodeIdx
         self.dim = dim
         self.limits = limits
+        self.radial = radial
+        self.innerRad = innerRad
+        # if radial, limits -> center, cylidnerRadius, cylinderThickness
+        self.nodes = []
+        self.directNodes = []
+        self.directIdcs = directIdcs
+
+    def setDirectNodes(self, ndsList):
+        for n in ndsList:
+            self.directNodes.append(n)
 
     def getString (self):
-        line = 'CoordRigidPlate\t%d\t' %self.govNodeIdx
-        line += '%e\t' %self.limits[0] #xmin
-        line += '%e\t' %self.limits[1] #xmax
-        line += '%e\t' %self.limits[2] #ymin
-        line += '%e\t' %self.limits[3] #ymax
-        if (self.dim == 3):
-            line += '%e\t' %self.limits[4] #zmin
-            line += '%e\t' %self.limits[5] #zmax
+        if self.directIdcs == True:
+            line = 'RigidPlate\t%d\t' %self.govNodeIdx
+            line += '%d\t' %(len(self.directNodes)) #numSlaves
+            for n in self.directNodes:
+                line +='%d\t' %n
+
+
+        if self.radial==0 and self.directIdcs == False:
+            ## type      masterNode  numSlaves slave1 slave2 ...
+            #RigidPlate  1656 18 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+            line = 'RigidPlate\t%d\t' %self.govNodeIdx
+            line += '%d\t' %(len(self.nodes)) #numSlaves
+            for n in self.nodes:
+                line +='%d\t' %n
+
+        elif self.directIdcs == False:
+            line = 'CoordRigidPlate\t%d\t' %self.govNodeIdx
+            line += '%e\t' %self.limits[0] #xmin
+            line += '%e\t' %self.limits[1] #xmax
+            line += '%e\t' %self.limits[2] #ymin
+            line += '%e\t' %self.limits[3] #ymax
+            if (self.dim == 3):
+                line += '%e\t' %self.limits[4] #zmin
+                line += '%e\t' %self.limits[5] #zmax
 
         return line
 
     def getNodesAffected (self, nodes):
         nodesAffected = []
-        for n in range(len(nodes)):
-            coords = nodes[n][0:self.dim]
-            if self.dim==2:
-                if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
-                    coords[1]>self.limits[2] and coords[1]<self.limits[3]):
-                    nodesAffected.append(n)
-            if self.dim==3:
-                if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
-                    coords[1]>self.limits[2] and coords[1]<self.limits[3] and
-                    coords[2]>self.limits[4] and coords[2]<self.limits[5]):
-                    nodesAffected.append(n)
+
+        if self.directIdcs == True:
+            nodesAffected = self.directNodes
+
+        if self.radial == -1 and self.directIdcs == False:
+            for n in range(len(nodes)):
+                coords = nodes[n][0:self.dim]
+                if self.dim==2:
+                    if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
+                        coords[1]>self.limits[2] and coords[1]<self.limits[3]):
+                        nodesAffected.append(n)
+                if self.dim==3:
+                    if (coords[0]>self.limits[0] and coords[0]<self.limits[1] and
+                        coords[1]>self.limits[2] and coords[1]<self.limits[3] and
+                        coords[2]>self.limits[4] and coords[2]<self.limits[5]):
+                        nodesAffected.append(n)
+
+        if self.radial == 0 and self.directIdcs == False:
+            for n in range(len(nodes)):
+                coords = nodes[n][0:self.dim]
+                cylinderThickness = self.limits[4]
+                cylinderRad = self.limits[3]
+                #print(self.innerRad)
+                if self.dim==3:
+                    xbounds = np.array([self.limits[0]-cylinderThickness/2, self.limits[0]+cylinderThickness/2])
+                    radDist = np.linalg.norm(coords[1:3])
+                    if (coords[0]>xbounds[0] and coords[0]<xbounds[1] and  radDist<=cylinderRad):
+                        if self.innerRad != None:
+                            if radDist>=self.innerRad:
+                                nodesAffected.append(n)
+                            #else:
+                                #print('node bad')
+                        else:
+                            nodesAffected.append(n)
+
+        self.nodes = nodesAffected
+
 
         return nodesAffected
 

@@ -16,7 +16,7 @@ class DataExporter
 {
 private:
 public:
-    DataExporter(unsigned dimension) { dim = dimension; precision = 6;};
+    DataExporter(unsigned dimension) { dim = dimension; precision = 6; };
     virtual ~DataExporter() {};
     virtual void readFromLine(istringstream &iss);
     virtual bool doExportNow(const double &time);
@@ -58,7 +58,7 @@ public:
     TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     ~TXTElementExporter() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const { ( void ) step; ( void ) DoFs; ( void ) reactions; (void) resultDir;};
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const { ( void ) step; ( void ) DoFs; ( void ) reactions; ( void ) resultDir; };
 protected:
 };
 
@@ -186,11 +186,11 @@ public:
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
     void init();
-    void setResultDirectory(fs :: path directory){resultDir = directory;}
-    fs :: path giveDirectoryPath(){return resultDir;}
+    void setResultDirectory(fs :: path directory) { resultDir = directory; }
+    fs :: path giveDirectoryPath() { return resultDir; }
 protected:
 };
 
-void ExportAllElementsNodalStress(std::vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
+void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
 
 #endif /* _EXPORTER_C_H */

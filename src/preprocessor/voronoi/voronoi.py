@@ -172,26 +172,83 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
     """
     return dataOut
 
-def mirror_dataCylinder(data, center, radius, height, directionDim):
+def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = False):
     data = np.asarray(data)
     rad = radius + 1e-5
     if (directionDim == 0):
-        dataOut =  np.vstack((data,
-            np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
-            np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
-            ))
+        #print(quarter)
+        if quarter == False:
+            dataOut =  np.vstack((data,
+                np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
+                np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
+                ))
 
-        mirroredData = np.zeros( (len(dataOut)*3) )
-        mirroredData = np.reshape ( mirroredData, (len(dataOut),3))
+            mirroredData = np.zeros( (len(dataOut)*3) )
+            mirroredData = np.reshape ( mirroredData, (len(dataOut),3))
 
-        for i in range (len(mirroredData)):
-            rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
+            for i in range (len(mirroredData)):
+                rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
 
-            mirroredData[i,0] = dataOut[i,0]
-            mirroredData[i,1] = center[1] + (-center[1]+dataOut[i,1]) * ((2*rad-rad0) / rad0 )
-            mirroredData[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*rad-rad0) / rad0 )
+                mirroredData[i,0] = dataOut[i,0]
+                mirroredData[i,1] = center[1] + (-center[1]+dataOut[i,1]) * ((2*rad-rad0) / rad0 )
+                mirroredData[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*rad-rad0) / rad0 )
 
-        dataOut =  np.vstack((dataOut, mirroredData))
+            dataOut =  np.vstack((dataOut, mirroredData))
+
+
+        if quarter == True:
+            dataOut =  np.vstack((data,
+                np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
+                np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
+                ))
+
+            mirroredData = np.zeros( (len(dataOut)*3) )
+            mirroredData = np.reshape ( mirroredData, (len(dataOut),3))
+
+            """
+            print('first')
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
+            plt.show()
+            """
+
+            for i in range (len(mirroredData)):
+                rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
+
+                mirroredData[i,0] = dataOut[i,0]
+                mirroredData[i,1] = center[1] + (-center[1]+dataOut[i,1]) * ((2*rad-rad0) / rad0 )
+                mirroredData[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*rad-rad0) / rad0 )
+
+            dataOut =  np.vstack((dataOut, mirroredData))
+
+            """
+            print('first')
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
+            plt.show()
+            """
+
+            dataOutM =  np.vstack((
+                np.array([ 0 ,-1e-4,0]) + dataOut * np.array([1,-1,1]),
+                np.array([ 0 ,0,-1e-4]) + dataOut * np.array([1,1,-1]),
+                np.array([ 0 ,-1e-4,-1e-4]) + dataOut * np.array([1,1,-1]) *  np.array([1,-1,1])
+                ))
+
+
+            for n in range (len(dataOutM)):
+                no = dataOutM[n]
+                if (no[1]>-1e-2 and no[2]>-1e-2):
+                    dataOut =  np.vstack((dataOut,no))
+
+            """
+            print('first')
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
+            plt.show()
+            """
 
 
     if (directionDim == 1):
@@ -230,12 +287,15 @@ def mirror_dataCylinder(data, center, radius, height, directionDim):
 
         dataOut =  np.vstack((dataOut, mirroredData))
 
+
     """
+    print('first')
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
     plt.show()
     """
+
     return dataOut
 
 def mirror_dataTube(data, center, radius, height, thickness, directionDim):
