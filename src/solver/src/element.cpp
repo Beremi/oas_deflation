@@ -276,15 +276,23 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     ip_locs.resize(1);
     ip_weights.resize(1);
     stats.resize(1);
-    if ( !( vert.size() == 2 ) ) {
-        cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
-        exit(1);
-    }
-    ip_locs [ 0 ] = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
+    // NOTE this check moved lower under condition: if ( ndim == 2 )
+    // if ( !( vert.size() == 2 ) ) {
+    //     cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
+    //     exit(1);
+    // }
+    // ip_locs [ 0 ] = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
 
 
     Point t;
     if ( ndim == 2 ) {
+        // NOTE the following taken from few lines upper
+        if ( !( vert.size() == 2 ) ) {
+            cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
+            exit(1);
+        }
+        ip_locs [ 0 ] = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
+        /////////////////////////////////////////////////////////
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
         t = t / area;
@@ -423,7 +431,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         exit(EXIT_FAILURE);
     }
 
-    ip_weights [ 0 ] = length * area;
+    ip_weights [ 0 ] = length * area;  // NOTE JK: this works for stiffness matrix, since there is actually A * L, but not for the mass matrix, where volume should be taken (divide by dim)
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
 }
 
@@ -701,7 +709,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         exit(1);
     }
 
-    ip_weights [ 0 ] = length * area;
+    ip_weights [ 0 ] = length * area;  // NOTE JK: should not this be divided by dimension? Otherwise you integrate dim-times volume that is actually there (this is what caused problems in study on unstructured grid for FDM contribution)
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
 }
 
