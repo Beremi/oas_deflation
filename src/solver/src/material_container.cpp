@@ -70,22 +70,26 @@ void MaterialContainer :: readFromFile(const string filename) {
                     FatigueMaterial *newmat = new FatigueMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back( ( FatigueShearMaterial * ) newmat );
+                } else if ( matType.compare("Slide32Material") == 0 ) {
+                    Slide32Material *newmat = new Slide32Material();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("AllicheMaterial") == 0 ) {
                     AllicheMaterial *newmat = new AllicheMaterial();
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( AllicheMaterial * ) newmat );
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("DesmoratMaterial") == 0 ) {
                     DesmoratMaterial *newmat = new DesmoratMaterial();
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( DesmoratMaterial * ) newmat );
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("BrittleMaterial") == 0 ) {
                     BrittleMaterial *newmat = new BrittleMaterial();
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( BrittleMaterial * ) newmat );
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("ContactMaterial") == 0 ) {
                     ContactMaterial *newmat = new ContactMaterial();
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( ContactMaterial * ) newmat );
+                    matrs.push_back(newmat);
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
