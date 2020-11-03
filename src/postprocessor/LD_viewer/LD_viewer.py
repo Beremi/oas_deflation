@@ -148,6 +148,7 @@ class ControlPanel(HasStrictTraits):
     figure = Instance(Figure)
 
     draw_button = Button('Draw all')
+    reload_button = Button('Reload all')
     clear_button = Button('Clear')
 
     #clear_axis = Bool(True)
@@ -165,9 +166,14 @@ class ControlPanel(HasStrictTraits):
         for lds in self.ldfiles.ldfiles:
             for ld in lds.ld_curves:
                 ld.draw_this_button = True
+                
+    def _reload_button_fired(self):
+        for lds in self.ldfiles.ldfiles:
+            lds.reload_button = True
 
     view = View((Item('@ldfiles', show_label=False),
                     HGroup(
+                        Item('reload_button', show_label=False, springy=True),
                        Item('clear_button', show_label=False, springy=True),
                        Item('draw_button', show_label=False, springy=True)),),
                 resizable=True
