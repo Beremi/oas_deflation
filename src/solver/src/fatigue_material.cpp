@@ -450,33 +450,6 @@ MaterialStatus *FatigueShearMaterialInteracted :: giveNewMaterialStatus(Element 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialInteracted :: init() {};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //////////////////////////////////////////////////////////
 // FATIGUE SHEAR MATERIAL STATUS
 
@@ -575,8 +548,6 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     ////////////////////////////////////////////////////////
 
     Vector stress(strain.size() );
-
-
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -1451,6 +1422,7 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
     }
 }
 
+//////////////////////////////////////////////////////////
 Vector AllicheMaterialStatus :: giveStress(const Vector &strain) {
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 

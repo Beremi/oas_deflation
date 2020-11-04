@@ -14,6 +14,7 @@ set (solver_files
     material_container.cpp
     material.cpp
     material_misc.cpp
+    material_slide_3_2.cpp
     material_RVE.cpp
     mars_material.cpp
     fatigue_material.cpp
