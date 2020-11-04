@@ -98,7 +98,9 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 //////////////////////////////////////////////////////////
 void ElementContainer :: init() {
     max_sol_order = 0;
-    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+    unsigned num = 0;
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e, num++) {
+        ( * e )->setID(num);
         ( * e )->init();
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );

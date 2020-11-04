@@ -16,6 +16,7 @@ private:
 
 protected:
     unsigned ndim;
+    unsigned idx;
     unsigned solution_order;
     vector< Node * >nodes;
     string name;
@@ -29,6 +30,8 @@ protected:
 public:
     Element() { name = "basic element"; solution_order = 0; }
     virtual ~Element();
+    void setID(unsigned i){idx = i;};
+    unsigned giveID() const {return idx;};
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
     virtual void init();
     void initMaterialStatuses();
@@ -41,6 +44,7 @@ public:
     virtual double giveValue(string code) const;
     string giveName() const { return name; }
     size_t giveIPNum() const { return ip_locs.size(); };
+    Point giveIPLoc(unsigned k) const { return ip_locs[k]; };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
     vector< Node * >giveNodes() const { return nodes; }
@@ -110,7 +114,7 @@ class RigidBodyContact : public MechanicalElement
 protected:
     vector< Node * >vert;
     double length, area;
-    Point normal;
+    Point normal, t1, t2;
     Matrix R;
     double tempCrackOpening; //needed for coupled analysis;
 
@@ -134,6 +138,11 @@ public:
     virtual double giveIPValue(string code, unsigned ipnum) const;
     double giveCrackOpening() { return tempCrackOpening; };
     Vector giveDistanceToNode(const unsigned &node_i, const unsigned &ip_id) const;
+    Point giveNormal() const { return normal; };
+    Point giveT1() const { return t1; };
+    Point giveT2() const { return t2; };
+    double giveVolume(unsigned nodenum) const;
+    double giveVolume() const;
 };
 
 //////////////////////////////////////////////////////////

@@ -4,6 +4,8 @@
 using namespace std;
 fs :: path GlobPaths :: BASEDIR;
 
+Model* masterModel;
+
 int main(int argc, char **argv) {
     if ( argc == 1 ) {
         cerr << "Error: no input file specified, please try again with input file" << endl;
@@ -39,13 +41,13 @@ int main(int argc, char **argv) {
     }
 
 
-    Model model(PRINT_TIME);
-    model.readFromFile(input.string() );
+    masterModel = new Model(PRINT_TIME);
+    masterModel->readFromFile(input.string() );
 
     // check if exists or create directory for results
-    if (!fs :: exists(model.resultDir)) fs :: create_directories(model.resultDir);
+    if (!fs :: exists(masterModel->resultDir)) fs :: create_directories(masterModel->resultDir);
     // save version information to result dir
-    ofstream outputfile( ( model.resultDir / "version.txt" ).string() );
+    ofstream outputfile( ( masterModel->resultDir / "version.txt" ).string() );
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         outputfile << version_info();
@@ -54,8 +56,8 @@ int main(int argc, char **argv) {
     outputfile.close();
 
 
-    model.init();
-    model.solve();
+    masterModel->init();
+    masterModel->solve();
 
 
     if ( PRINT_TIME ) {
@@ -70,6 +72,8 @@ int main(int argc, char **argv) {
     //int terminationStatus = solver->giveTerminationStatus();
     //std :: cout << "termination status = " << terminationStatus << '\n';
     //return terminationStatus;
+
+    delete masterModel; //delete mater model class
 
     return 0;
 }

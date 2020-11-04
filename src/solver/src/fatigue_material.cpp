@@ -294,6 +294,9 @@ Vector FatigueShearMaterialInteractedStatus :: giveStress(const Vector &strain) 
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialInteractedStatus :: update() {
+
+    DisMechMaterialStatus :: update();
+
     prev_damageShear = damageShear;
     prev_sPi = sPi;
     prev_alphaKin = alphaKin;
@@ -712,6 +715,9 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: update() {
+
+    DisMechMaterialStatus :: update();
+
     prev_damageShear = damageShear;
     prev_sPi = sPi;
     prev_alphaKin = alphaKin;
@@ -1073,6 +1079,9 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: update() {
+
+    DisMechMaterialStatus :: update();
+
     prev_damage = damage;
     prev_epsNP = epsNP;
     prev_zN = zN;
@@ -1489,6 +1498,7 @@ Matrix AllicheMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 
 //////////////////////////////////////////////////////////
 void AllicheMaterialStatus :: update() {
+    DisMechMaterialStatus :: update();
     damage = temp_damage;
     Y_prev  = Y;
     eps_plus_prev = eps_plus;
@@ -1594,6 +1604,7 @@ void DesmoratMaterialStatus :: init() {
 }
 
 void DesmoratMaterialStatus :: update() {
+    DisMechMaterialStatus :: update();
     sigma = temp_sigma;
     Y = temp_Y;
     epsPi = temp_epsPi;

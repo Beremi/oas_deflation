@@ -24,10 +24,6 @@ protected:
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
     bool terminated;
-    virtual void setNextStepTime();
-    virtual void runBeforeEachStep();
-    virtual void runAfterEachStep();
-    virtual void solve() {};
     virtual void computeInternalExternalForces(Vector &rr);
     virtual void computeInternalExternalForcesWithFrozenIntVariables(Vector &rr);
 
@@ -47,15 +43,16 @@ public:
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
     void setTime(double t);
     void setStep(unsigned t) { step = t; };
+    virtual void setNextStepTime();
+    virtual void runBeforeEachStep();
+    virtual void runAfterEachStep();
+    virtual void solve() {};
 };
 
 //////////////////////////////////////////////////////////
 class SteadyStateLinearSolver : public Solver
 {
 protected:
-    virtual void runBeforeEachStep();
-    virtual void runAfterEachStep();
-    virtual void solve();
     double conj_grad_precission;
     double conj_grad_relative_maxit;
 private:
@@ -65,6 +62,9 @@ public:
     virtual ~SteadyStateLinearSolver();     //destructor
     virtual void init();
     virtual Solver *readFromFile(const string filename);
+    virtual void runBeforeEachStep();
+    virtual void runAfterEachStep();
+    virtual void solve();
 };
 
 //////////////////////////////////////////////////////////
@@ -88,9 +88,6 @@ protected:
     Vector ddf, full_ddf, f_last_iter;
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are masured
 
-    virtual void runBeforeEachStep();
-    virtual void runAfterEachStep();
-    virtual void solve();
     void printAllVectors();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
 private:
@@ -101,6 +98,9 @@ public:
     virtual void init();
     virtual Solver *readFromFile(const string filename);
     virtual Vector giveNodalForces() { return f_ext_old; };
+    virtual void runBeforeEachStep();
+    virtual void runAfterEachStep();
+    virtual void solve();
 };
 
 //////////////////////////////////////////////////////////

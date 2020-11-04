@@ -149,6 +149,7 @@ void VolumetricAverage :: init() {
     m.resize(nodes.size() );
     for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
         Transp1D *et = dynamic_cast< Transp1D * >( elems->giveElement(e) );
+        //RigidBodyContact *et = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
         if ( et ) {
             for ( unsigned p = 0; p < 2; p++ ) {
                 r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );

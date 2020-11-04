@@ -1,109 +1,233 @@
 #include "material_RVE.h"
 #include "model.h"
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// transport RVE status
-TrsprtRVEMaterialStatus :: TrsprtRVEMaterialStatus(TrsprtRVEMaterial *m, Element *e, fs :: path masterfile) : TrsprtMaterialStatus(m, e) {
-    name = "transport RVE mat. status";
+// general RVE status
+RVEMaterialStatus :: RVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile) : MaterialStatus(m, e) {
+    name = "general RVE mat. status";
     inputfile = masterfile;
     RVE = new Model(false);
 }
 
 //////////////////////////////////////////////////////////
-TrsprtRVEMaterialStatus :: ~TrsprtRVEMaterialStatus() {
+RVEMaterialStatus :: ~RVEMaterialStatus() {
     delete RVE;
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtRVEMaterialStatus :: init() {
+void RVEMaterialStatus :: init() {
     RVE->readFromFile(inputfile.string() );
-    genereteMicroSources();
-    genereteVolumetricAverageBC();
+    stringstream appendname;
+    appendname << "_" << std::setfill('0') << std::setw(4) << element->giveID() << "_" << std::setw(2) << idx;
+    RVE->giveExporters()->appendToAllNames(appendname.str());
+    generateVolumetricAverageBC();
     RVE->init();
-    updateMicroSources();
+}
+
+//////////////////////////////////////////////////////////
+void RVEMaterialStatus :: update() {
+    Solver* solver = RVE->giveSolver();
+    Solver* masterSolver = masterModel->giveSolver();
+    solver -> runAfterEachStep(); //update material statuses
+    RVE->giveExporters()->exportData(masterSolver->giveStepNumber(), masterSolver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), masterSolver->isTerminated() );
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// general RVE material
+MaterialStatus* RVEMaterial :: giveNewMaterialStatus(Element *e) {
+    RVEMaterialStatus *newstat = new RVEMaterialStatus(this, e, inputfile);
+    return newstat;
+}
+
+//////////////////////////////////////////////////////////
+void RVEMaterial :: readFromLine(istringstream &iss) {
+    string filename;
+    iss >> filename;
+    inputfile = GlobPaths :: BASEDIR  / filename;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// transport RVE status
+DiscreteRVEMaterialStatus :: DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile) : RVEMaterialStatus(m, e, masterfile) {
+    name = "transport RVE mat. status";
 }
 
 /////////////////////////////////./////////////////////////
-Vector TrsprtRVEMaterialStatus :: giveStress(const Vector &strain) {
+Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
+
+    volumAverFunc->setYValue(0., 0);
+    
     unsigned ndim = RVE->giveDimension();
 
-    //set sources and BC
-    for ( unsigned i = 0; i < ndim; i++ ) {
-        MSfunctions [ i ]->setYValue(-strain [ i ], 0);
-    }
-    volumAverFunc->setYValue(0., 0);
+    unsigned stra_size = ndim*ndim;
+    stra_size += (ndim==3) ? ndim*ndim : ndim; //in 2D only vector
+    if (! active_mechanics) stra_size = 0;
 
-    cout << "strain " << strain [ 0 ] << " " << strain [ 1 ] << endl;
+    unsigned pres_size = ndim;
+    if (! active_transport) pres_size = 0;
+
+    //set eigenstrains
+    ElementContainer *elems = RVE->giveElements();
+    Point normal;
+
+    if (active_mechanics){   
+        RigidBodyContact *e;
+        Vector eigstr(ndim);
+        unsigned num = 0;
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
+            if(!e) continue;
+            eigstr *= 0.;
+            for(unsigned v=0; v<ndim; v++){
+                for(unsigned r=0; r<stra_size; r++) eigstr[v] -= strain[r]*mechProjectors[v][num][r];
+            }
+            num ++;
+            e->giveMatStatus(0)->setEigenStrain(eigstr);
+        }
+    }
+
+    if (active_transport){   
+        Transp1D *e;
+        Vector eigstr(0);
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
+            if(!e) continue;
+            normal = e->giveNormal();
+            eigstr *= 0.;
+            for(unsigned v=0; v<ndim; v++) eigstr[0] = -strain[stra_size+v]*normal.giveCoord(v);
+            e->giveMatStatus(0)->setEigenStrain(eigstr);
+        }
+    }
 
     //solve
     RVE->resetTime();
-    RVE->solve();
+    RVE->giveSolver()->runBeforeEachStep();
+    RVE->giveSolver()->solve();
 
     //collect results
+    temp_stress.resize(stra_size+pres_size);
+    
+    
+    if (active_mechanics){   
+        double volume = 0.;
+        RigidBodyContact *e;
+        Vector factor;
+        unsigned num = 0;
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
+            if ( e ) {
+                factor  = e->giveArea() * e->giveLength() * e->giveMatStatus(0)->giveTempStress();
+                cout << factor.size() << " " << ndim<< endl;
+                for(unsigned v=0; v<ndim; v++){
+                    for(unsigned r=0; r<stra_size; r++) temp_stress[r] += factor[r] * mechProjectors[v][num][r];
+                }
+                num ++;
+                volume += e->giveVolume();
+            }
+        }
+        for(unsigned v=0; v<stra_size; v++) temp_stress[v] /= volume; 
+    }
+    
+
+    if (active_transport){   
+        double volume = 0.;
+        double factor;
+        Transp1D *e;
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
+            if ( e ) {
+                normal = e->giveNormal();
+                factor = e->giveArea() * e->giveLength() * e->giveMatStatus(0)->giveTempStress()[0];
+                for(unsigned v=0; v<ndim; v++) temp_stress[stra_size+v] += factor * normal.giveCoord(v);
+                volume += e->giveVolume();
+            }
+        }
+        for(unsigned v=0; v<ndim; v++) temp_stress[stra_size+v] /= volume;
+    }
+
+    return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+Matrix DiscreteRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned ndim) const {
+
+    unsigned stra_size = ndim*ndim;
+    stra_size += (ndim==3) ? ndim*ndim : ndim; //in 2D only vector
+    if (! active_mechanics) stra_size = 0;
+    Matrix Keff(stra_size, stra_size);
+
+    unsigned pres_size = ndim;
+    if (! active_transport) pres_size = 0;
+    Matrix Leff(pres_size, pres_size);
+
+
     ElementContainer *elems = RVE->giveElements();
-    Vector stress(ndim);
-    Vector DoFs = RVE->giveSolver()->giveDoFValues();
-    Matrix lambdaEff(ndim, ndim);
-    Transp1D *e;
     double volume = 0;
     Point normal;
     Vector n(ndim);
-    for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
-        if ( e ) {
-            normal = e->giveNormal();
-            n [ 0 ] = normal.getX();
-            n [ 1 ] = normal.getY();
-            if ( ndim == 3 ) {
-                n [ 2 ] = normal.getZ();
+
+    if (active_mechanics){       
+        RigidBodyContact *e;     
+        volume = 0;
+        Matrix stiff;
+        unsigned num = 0;
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
+            if ( e ) {
+                stiff  = e->giveMatStatus(0)->giveStiffnessTensor(type, ndim) ;
+                for(unsigned v=0; v<ndim; v++){
+                    Keff += dyadicProduct(mechProjectors[v][num],mechProjectors[v][num]) * e->giveLength() * e->giveArea() * stiff[v][v];
+                }
+                num ++;
+                volume += e->giveVolume();
             }
-            lambdaEff += dyadicProduct(n, n) * ( e->giveLength() * e->giveArea() * e->giveMatStatus(0)->giveStiffnessTensor("secant", ndim) [ 0 ] [ 0 ] );
-            volume += e->giveVolume();
-            stress -= ( e->giveArea() * e->giveMatStatus(0)->giveStiffnessTensor("secant", ndim) [ 0 ] [ 0 ] ) * ( n * ( DoFs [ e->giveNode(1)->giveStartingDoF() ] - DoFs [ e->giveNode(0)->giveStartingDoF() ] ) );
         }
-    }
+        Keff /= volume;
+    }    
 
-    for ( unsigned i = 0; i < ndim; i++ ) {
-        for ( unsigned j = 0; j < ndim; j++ ) {
-            stress [ i ] -= strain [ j ] * lambdaEff [ j ] [ i ];
-        }
-    }
 
-    return stress / volume;
-}
-
-//////////////////////////////////////////////////////////
-double TrsprtRVEMaterialStatus :: giveEffectiveConductivity(string type) const {
-    return 0;
-}
-
-//////////////////////////////////////////////////////////
-Matrix TrsprtRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
-    ElementContainer *elems = RVE->giveElements();
-    unsigned ndim = RVE->giveDimension();
-    Matrix lambdaEff(ndim, ndim);
-    Transp1D *e;
-    double volume = 0;
-    Point normal;
-    Vector n(ndim);
-    for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
-        if ( e ) {
-            normal = e->giveNormal();
-            n [ 0 ] = normal.getX();
-            n [ 1 ] = normal.getY();
-            if ( ndim == 3 ) {
-                n [ 2 ] = normal.getZ();
+    if (active_transport) {
+        Transp1D *e;     
+        volume = 0;
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
+            if ( e ) {
+                normal = e->giveNormal();
+                n [ 0 ] = normal.getX();
+                n [ 1 ] = normal.getY();
+                if ( ndim == 3 ) {
+                    n [ 2 ] = normal.getZ();
+                }
+                Leff += dyadicProduct(n, n) * ( e->giveLength() * e->giveArea() * e->giveMatStatus(0)->giveStiffnessTensor(type, ndim) [ 0 ] [ 0 ] );
+                volume += e->giveVolume();
             }
-            lambdaEff += dyadicProduct(n, n) * ( e->giveLength() * e->giveArea() * e->giveMatStatus(0)->giveStiffnessTensor(type, ndim) [ 0 ] [ 0 ] );
-            volume += e->giveVolume();
+        }
+        Leff /= volume;
+    }    
+
+    if (!active_transport) return Keff;
+    if (!active_mechanics) return Leff;
+
+    Matrix KL(stra_size+pres_size, stra_size+pres_size);
+    for(unsigned r = 0; r<stra_size; r++){
+        for(unsigned s = 0; s<stra_size; s++){
+            KL[r][s] = Keff[r][s];
         }
     }
-    return lambdaEff / volume;
+    for(unsigned r = 0; r<pres_size; r++){
+        for(unsigned s = 0; s<pres_size; s++){
+            KL[stra_size+r][stra_size+s] = Leff[r][s];
+        }
+    }
+
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtRVEMaterialStatus :: giveMassConstant() const {
+double DiscreteRVEMaterialStatus :: giveMassConstant() const {
     ElementContainer *elems = RVE->giveElements();
     Transp1D *e;
     double volume = 0;
@@ -119,134 +243,156 @@ double TrsprtRVEMaterialStatus :: giveMassConstant() const {
 };
 
 //////////////////////////////////////////////////////////
-void TrsprtRVEMaterialStatus :: genereteVolumetricAverageBC() {
+void DiscreteRVEMaterialStatus :: generateVolumetricAverageBC() {
     NodeContainer *nodes = RVE->giveNodes();
     BCContainer *bconds = RVE->giveBC();
     FunctionContainer *funcs = RVE->giveFunctions();
     ElementContainer *elems = RVE->giveElements();
     ConstraintContainer *constrs = RVE->giveConstraints();
 
-    TrsDoF *tn = new TrsDoF(1);
-    nodes->addNode(tn);
+    unsigned ndim = RVE->giveDimension();
 
-    VolumetricAverage *va;
-    vector< Node * >vm;
-    for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-        if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-            vm.push_back(nodes->giveNode(n) );
-        }
-    }
-    vector< unsigned >dirs;
-    dirs.resize(vm.size() );
-    va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
-    constrs->addConstraint(va);
-
+    VolumetricAverage * va;
     unsigned funsize = RVE->giveFunctions()->giveSize();
     vector< double >x, y;
     x.resize(1, 0);
     y.resize(1, 0);
     volumAverFunc = new PieceWiseLinearFunction(x, y);
     RVE->giveFunctions()->addFunction(volumAverFunc);
+    vector< unsigned >dirs;
 
-    BoundaryCondition *bc;
-    vector< int >dBC, nBC;
-    dBC.resize(1, -1);
-    nBC.resize(1, -1);
-    dBC [ 0 ] = funsize;
-    bc = new BoundaryCondition(tn, dBC, nBC);
-    bconds->addBoundaryCondition(bc);
-}
-
-//////////////////////////////////////////////////////////
-void TrsprtRVEMaterialStatus :: genereteMicroSources() {
-    unsigned funsize = RVE->giveFunctions()->giveSize();
-    unsigned ndim = RVE->giveDimension();
-    vector< double >x, y;
-    x.resize(1, 0);
-    y.resize(1, 0);
-    MSfunctions.resize(ndim);
-    for ( unsigned i = 0; i < ndim; i++ ) {
-        PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
-        RVE->giveFunctions()->addFunction(newf);
-        MSfunctions [ i ] = newf;
-    }
-
-    BoundaryCondition *bc;
-    vector< int >dBC, nBC;
-    dBC.resize(ndim, -1);
-    nBC.resize(ndim, -1);
-    for ( unsigned i = 0; i < ndim; i++ ) {
-        nBC [ i ] = funsize + i;
-    }
-
-    NodeContainer *nodes = RVE->giveNodes();
+    //transport
+    vector< Node * >vm;
     for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
         if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-            MSnodes.push_back(nodes->giveNode(n) );
+            vm.push_back(nodes->giveNode(n) );
         }
     }
-    MSbc.resize(MSnodes.size() );
-    BCContainer *bconds = RVE->giveBC();
-    for ( unsigned n = 0; n < MSnodes.size(); n++ ) {
-        bc = new BoundaryCondition(MSnodes [ n ], dBC, nBC);
+    if (vm.size()>0){
+        TrsDoF *tn = new TrsDoF(1);
+        nodes->addNode(tn);
+
+        dirs.resize(vm.size() );
+        va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
+        constrs->addConstraint(va);
+
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        dBC.resize(1, funsize);
+        nBC.resize(1, -1);
+        bc = new BoundaryCondition(tn, dBC, nBC);
         bconds->addBoundaryCondition(bc);
-        MSbc [ n ] = bc;
+
+        active_transport = true;
+    }
+    else{
+        active_transport = false;
     }
 
-    MSelems.resize(MSnodes.size() );
-    MSorder.resize(MSnodes.size() );
-    unsigned r;
-    Transp1D *et;
-    ElementContainer *elems = RVE->giveElements();
-    for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
-        et = dynamic_cast< Transp1D * >( elems->giveElement(e) );
-        if ( et ) {
-            for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(MSnodes.begin(), MSnodes.end(), et->giveNode(p) ) - MSnodes.begin() );
-                MSelems [ r ].push_back(et);
-                MSorder [ r ].push_back(p);
-            }
+    //mechanics
+    vm.clear();
+    for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+        if ( nodes->giveNode(n)->doesMechanics() && ( dynamic_cast< MechDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
+            vm.push_back(nodes->giveNode(n) );
         }
+    }
+    if (vm.size()>0){
+        unsigned nDoFs = 3;
+        if (ndim==3) nDoFs = 6;
+        MechDoF *pn = new MechDoF(nDoFs);
+        nodes->addNode(pn);
+
+        dirs.resize(vm.size());
+
+        for(unsigned vi=0; vi<nDoFs; vi++){
+            fill (dirs.begin(),dirs.end(),vi);
+            va = new VolumetricAverage(vm, dirs, pn, vi, elems, constrs);
+            constrs->addConstraint(va);
+        }
+
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        dBC.resize(nDoFs, funsize);
+        nBC.resize(nDoFs, -1);
+        bc = new BoundaryCondition(pn, dBC, nBC);
+        bconds->addBoundaryCondition(bc);
+
+        active_mechanics = true;
+    }
+    else{
+        active_mechanics = false;
     }
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtRVEMaterialStatus :: updateMicroSources() {
+void DiscreteRVEMaterialStatus :: init() {
+    RVEMaterialStatus :: init();
+
     unsigned ndim = RVE->giveDimension();
-    vector< double >m(ndim);
+    ElementContainer *elems = RVE->giveElements();
     Point normal;
-    double factor;
-    Transp1D *elem;
-    for ( unsigned i = 0; i < MSnodes.size(); i++ ) {
-        fill(m.begin(), m.end(), 0);
-        for ( unsigned e = 0; e < MSelems [ i ].size(); e++ ) {
-            elem = MSelems [ i ] [ e ];
-            normal = elem->giveNormal();
-            factor = elem->giveArea() * elem->giveMatStatus(0)->giveStiffnessTensor("secant", ndim) [ 0 ] [ 0 ];
-            if ( MSorder [ i ] [ e ] == 1 ) {
-                factor *= -1;
-            }
-            m [ 0 ] += normal.getX() * factor;
-            m [ 1 ] += normal.getY() * factor;
-            if ( ndim == 3 ) {
-                m [ 2 ] += normal.getZ() * factor;
-            }
+
+    if (active_mechanics){
+        mechProjectors.resize(ndim);
+
+        unsigned stra_size = ndim*ndim;
+        stra_size += (ndim==3) ? ndim*ndim : ndim; //in 2D only vector
+
+        RigidBodyContact *e;     
+        Point xc;
+        Point alphaVec;
+        Vector PQ(stra_size);
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
+            if ( e ) {                
+                xc =  e->giveIPLoc(0);
+                normal = e->giveNormal();
+                for(unsigned v=0; v<ndim; v++){                    
+                    if (v==0) alphaVec = normal;
+                    else if(v==1) alphaVec = e->giveT1();
+                    else if(v==2) alphaVec = e->giveT2();
+
+                    if(ndim==2){     
+                        PQ[0] = normal.getX()*alphaVec.getX();
+                        PQ[1] = normal.getY()*alphaVec.getY();
+                        PQ[2] = normal.getX()*alphaVec.getY();
+                        PQ[3] = normal.getY()*alphaVec.getX();
+                        double factor2D = xc.getX()*alphaVec.getY() - xc.getY()*alphaVec.getX();
+                        PQ[4] = factor2D*normal.getX();
+                        PQ[5] = factor2D*normal.getY();
+                    }
+                    else{
+                        PQ[0] = normal.getX()*alphaVec.getX();
+                        PQ[1] = normal.getY()*alphaVec.getY();
+                        PQ[2] = normal.getZ()*alphaVec.getZ();
+                        PQ[3] = normal.getY()*alphaVec.getZ();
+                        PQ[4] = normal.getZ()*alphaVec.getY();
+                        PQ[5] = normal.getX()*alphaVec.getZ();
+                        PQ[6] = normal.getZ()*alphaVec.getX();
+                        PQ[7] = normal.getX()*alphaVec.getY();
+                        PQ[8] = normal.getY()*alphaVec.getZ();
+                        Point factor3D = cross(xc, alphaVec);
+                        PQ[9] = normal.getX()*factor3D.getX();
+                        PQ[10] = normal.getY()*factor3D.getY();
+                        PQ[11] = normal.getZ()*factor3D.getZ();
+                        PQ[12] = normal.getY()*factor3D.getZ();
+                        PQ[13] = normal.getZ()*factor3D.getY();
+                        PQ[14] = normal.getX()*factor3D.getZ();
+                        PQ[15] = normal.getZ()*factor3D.getX();
+                        PQ[16] = normal.getX()*factor3D.getY();
+                        PQ[17] = normal.getY()*factor3D.getZ();
+                    }
+                    mechProjectors[v].push_back(PQ);
+                }
+            }  
         }
-        MSbc [ i ]->setMultipliers(m);
     }
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // transport RVE material
-void TrsprtRVEMaterial :: readFromLine(istringstream &iss) {
-    string filename;
-    iss >> filename;
-    inputfile = GlobPaths :: BASEDIR  / filename;
-}
-
-//////////////////////////////////////////////////////////
-MaterialStatus *TrsprtRVEMaterial :: giveNewMaterialStatus(Element *e) {
-    TrsprtRVEMaterialStatus *newstat = new TrsprtRVEMaterialStatus(this, e, inputfile);
+MaterialStatus *DiscreteRVEMaterial :: giveNewMaterialStatus(Element *e) {
+    DiscreteRVEMaterialStatus *newstat = new DiscreteRVEMaterialStatus(this, e, inputfile);
     return newstat;
 }

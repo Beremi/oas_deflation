@@ -24,15 +24,26 @@ public:
     string whoAmI() { return name; }
     Material *giveMaterial() { return mat; };
     virtual void init() {};
-    virtual void update() {};
+    virtual void update();
     virtual Vector giveStress(const Vector &strain) { ( void ) strain; return Vector(0); };
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, unsigned ndim) const;
     virtual double giveValue(string code) const { ( void ) code; return 0; };
+    virtual Vector giveTempStress() const {return temp_stress;};
+    virtual Vector giveUpdatedStress() const {return updt_stress;};
+    virtual Vector giveTempStrain() const {return temp_strain;};
+    virtual Vector giveUpdatedStrain() const {return updt_strain;};
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; return Matrix(0, 0); };
     virtual double giveMassConstant() const { return 0; };
+    virtual void setEigenStrain(Vector &x) {eigenstrain = x;};
+    void setID(unsigned i){idx = i;};
 protected:
+    Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
     string name;
     Material *mat;
+    Vector eigenstrain;
+    Vector updt_strain, temp_strain, updt_stress, temp_stress;
+    unsigned idx;
 };
 
 

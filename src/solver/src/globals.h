@@ -49,6 +49,8 @@ extern fs :: path BASEDIR;
  *  static const fs::path RESULTDIR;
  * };*/
 
+class Model;
+extern Model* masterModel; //master model accessible from anywhere;
 
 std :: string convertTimeToString(std :: chrono :: duration< double >);
 

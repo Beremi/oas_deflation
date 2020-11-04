@@ -71,6 +71,7 @@ void Solver :: runAfterEachStep() {
     if ( dt < 1e-15 ) {
         terminated = true;
     }
+    elems->updateMaterialStatuses();
 }
 
 //////////////////////////////////////////////////////////
@@ -115,7 +116,7 @@ void Solver :: init() {
 // STEADY STATE LINEAR SOLVER
 SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
-    conj_grad_precission = 1e-16;
+    conj_grad_precission = 1e-13;
     conj_grad_relative_maxit = 0.85;
 }
 
@@ -179,9 +180,14 @@ void SteadyStateLinearSolver :: solve() {
 
     //solve linear system
     nodes->giveReducedForceArray(full_f, f);
-    terminated = !LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit);
+    if( LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false) {
+        terminated = true;
+        cerr << "Conjugate gradients did not converge" << endl;
+        return;
+    }
+    
     // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
-    //     terminated = true;
+    // if (terminated == true);
     //     cerr << "Conjugate gradients did not converge" << endl;
     // }
     nodes->giveFullDoFArray(ddr, full_ddr);
@@ -193,25 +199,23 @@ void SteadyStateLinearSolver :: solve() {
     computeInternalExternalForces(r);
 
     /*
-     * cout << "S O L V E R" << endl;
-     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     * cout << f[i] << " " << ddr[i] << endl;
-     * }
-     * K.print();
-     */
-
-    /*
-     * cout << "******************************************" << endl;
-     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     *  cout << f[i] << " " << ddr[i] << endl;
-     * }
-     *
-     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     * for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";
-     *  cout << endl;
-     * }
-     * exit(1);
-     */
+      cout << "S O L V E R" << endl;
+      for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+      cout << f[i] << " " << ddr[i] << endl;
+      }
+      //K.print();
+     
+      cout << "******************************************" << endl;
+      for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+       cout << f[i] << " " << ddr[i] << endl;
+      }
+     
+      //for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
+      //for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";
+      // cout << endl;
+      //}
+      exit(1);
+    */
 }
 
 //////////////////////////////////////////////////////////
@@ -627,7 +631,6 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
         W_ext_oldM = W_extM;
         W_int_oldT = W_intT;
         W_ext_oldT = W_extT;
-        elems->updateMaterialStatuses();
         cout << "----------------------------------------------------" << endl;
 
         if ( idc ) {

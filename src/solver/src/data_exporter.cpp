@@ -546,6 +546,13 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     }
 };
 
+//////////////////////////////////////////////////////////
+void ExporterContainer :: appendToAllNames(string app){
+    for ( auto &d : exporters) d->appendToName(app);
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim) {
     // Vector stressXYZ, stress_zero;
     // stress_zero = Vector((double)0, dim);

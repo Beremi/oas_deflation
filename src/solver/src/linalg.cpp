@@ -72,6 +72,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     for ( size_t i = 0; i < rowsize; i++ ) {
         x [ i ] = cgx [ i ];
     }
+    
     bool result = size_t (cgK.iterations()) < Maxit;
     return result;
 }

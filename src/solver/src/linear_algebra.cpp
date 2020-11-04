@@ -216,7 +216,7 @@ void Point :: print() const {
     cout << "; " << getZ() << flush << endl;
 }
 
-Point cross(const Point &p, const Point &q) {
+Point cross(const Point p, const Point q) {
     Point r( ( p.y *q.z - p.z *q.y ), ( p.z *q.x - p.x *q.z ), ( p.x *q.y - p.y *q.x ) );
     return r;
 }

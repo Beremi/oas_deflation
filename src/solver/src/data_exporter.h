@@ -24,6 +24,7 @@ public:
     virtual void giveFileName(unsigned step, char *buffer) const;
     string giveFileName() const { return filename; };
     virtual void init() {};
+    void appendToName(string app){ filename = filename + app;};
 protected:
     unsigned dim;
     string filename;
@@ -188,6 +189,7 @@ public:
     void init();
     void setResultDirectory(fs :: path directory) { resultDir = directory; }
     fs :: path giveDirectoryPath() { return resultDir; }
+    void appendToAllNames(string app);
 protected:
 };
 

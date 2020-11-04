@@ -37,8 +37,10 @@ void Element :: init() {
 
 //////////////////////////////////////////////////////////
 void Element :: initMaterialStatuses() {
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
-        ( * m )->init();
+    unsigned num =0;
+    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num ++ ) {
+        ( * m )->setID(num);
+        ( * m )->init();        
     }
 }
 
@@ -87,16 +89,18 @@ Matrix Element :: giveSteadyStateMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
-    if ( frozen ) { //frozen internal variables
-        return giveSteadyStateMatrix("secant") * DoFs;
-    } else {     //evalution of internal variables
-        Vector intF;
-        intF.resize(DoFids.size() );
-        for ( unsigned i = 0; i < stats.size(); i++ ) {
-            intF  += Bs [ i ].transpose() * ( stats [ i ]->giveStress(giveStrain(i, DoFs) ) * ip_weights [ i ] );
+    Vector intF;
+    intF.resize(DoFids.size() );
+    Vector stress;
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        if ( frozen) { 
+            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs) , ndim); //frozen internal variables
+        }else {
+            stress = stats [ i ]->giveStress(giveStrain(i, DoFs)); //full evaluation of stress including change of state variables
         }
-        return intF;
+        intF  += Bs [ i ].transpose() * (  stress * ip_weights [ i ] );
     }
+    return intF;
 }
 
 //////////////////////////////////////////////////////////
@@ -324,7 +328,6 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point n = cross(vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
-        Point t2;
         if ( fabs(n.x) > fabs(n.z) ) {
             t2 = Point(-n.y, n.x, 0.0f);
         } else {
@@ -390,14 +393,13 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
 
     // Matrix R;
     if ( ndim == 2 ) {
-        Point t1 = Point(-normal.y, normal.x);
+        t1 = Point(-normal.y, normal.x);
         R = Matrix(2, 2);
         R [ 0 ] [ 0 ] = normal.x;
         R [ 0 ] [ 1 ] = normal.y;
         R [ 1 ] [ 0 ] = t1.x;
         R [ 1 ] [ 1 ] = t1.y;
     } else if ( ndim == 3 ) {
-        Point t1, t2;
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
         if ( ( normal - arbit ).norm() < 1e-3 ) {
             t1 = cross(arbit, normal);
@@ -502,6 +504,23 @@ Vector RigidBodyContact :: giveDistanceToNode(const unsigned &node_i, const unsi
     }
     return dst;
 }
+
+//////////////////////////////////////////////////////////
+double RigidBodyContact :: giveVolume() const {
+    return area * length / ndim;
+};
+
+//////////////////////////////////////////////////////////
+double RigidBodyContact :: giveVolume(unsigned nodenum) const {
+    if ( nodenum == 0 ) {
+        return dot(vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint(), normal) * area / ndim;
+    } else if ( nodenum == 1 ) {
+        return -dot(vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint(), normal) * area / ndim;
+    } else {
+        cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
+        exit(1);
+    }
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

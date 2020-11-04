@@ -37,6 +37,8 @@ public:
     FunctionContainer *giveFunctions() { return & funcs; };
     BCContainer *giveBC() { return & bconds; };
     ConstraintContainer *giveConstraints() { return & constr; };
+    ExporterContainer *giveExporters() { return & exporters; };
+
     unsigned giveDimension() const { return ndim; };
     void resetTime() { solver->setTime(0); solver->setStep(0); }
 

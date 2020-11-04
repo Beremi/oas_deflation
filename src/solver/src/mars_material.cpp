@@ -191,6 +191,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
 
 //////////////////////////////////////////////////////////
 void MarsMaterialStatus :: update() {
+    DisMechMaterialStatus :: update();
     damage = temp_damage;
     maxEpsN = temp_maxEpsN;
     maxEpsT = temp_maxEpsT;
@@ -215,9 +216,11 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain) {
-    // temp_strain = strain;
-    computeDamage(strain);
-    return DisMechMaterialStatus :: giveStress(strain) * ( 1 - temp_damage );
+    temp_strain = strain;
+    computeDamage(addEigenStrain(strain));
+    temp_stress = DisMechMaterialStatus :: giveStress(strain) * ( 1 - temp_damage );
+    cout << temp_stress.size() << endl;
+    return temp_stress;
 }
 
 
