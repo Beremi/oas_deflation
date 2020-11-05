@@ -20,7 +20,7 @@ def HItem(value=None, **traits):
 
 class LDFile(HasStrictTraits):
     ldfile_num = 0
-    
+
     def __init__(self, **traits):
         LDFile.ldfile_num += 1
         super().__init__(**traits)
@@ -50,7 +50,7 @@ class LDFile(HasStrictTraits):
             self.ld_file = file_name
 
     def _reload_button_fired ( self ):
-        """ 
+        """
         """
         self.labels = self.__load_data()
 
@@ -80,7 +80,7 @@ class LDFile(HasStrictTraits):
 
 class LDCurve(HasStrictTraits):
     ld_num = 0
-    
+
     def __init__(self, **traits):
         LDCurve.ld_num += 1
         super().__init__(**traits)
@@ -89,7 +89,7 @@ class LDCurve(HasStrictTraits):
     labels = List
 
     name = Str
-    
+
     x_values = Enum(values='labels')
     y_values = Enum(values='labels')
 
@@ -107,17 +107,17 @@ class LDCurve(HasStrictTraits):
     def _draw_this(self, ax):
         #if self.clear_axis:
         #   ax.cla()
-        ax.plot(self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale, 
-                label='{}-{}'.format(self.ldfile.name, self.name))
+        ax.plot(self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale,
+                label='{}-{}'.format(self.ldfile.name, self.name), marker='o')
         ax.legend()
 
     def _name_default(self):
         return 'LD {}'.format(self.ld_num)
 
     view = View(VGroup(Item('name'),
-                       HGroup(HItem('x_values'), 
+                       HGroup(HItem('x_values'),
                                Item('x_scale', show_label=False)),
-                       HGroup(HItem('y_values'), 
+                       HGroup(HItem('y_values'),
                                Item('y_scale', show_label=False)),
                        Item('draw_this_button', show_label=False))
                 )
@@ -166,7 +166,7 @@ class ControlPanel(HasStrictTraits):
         for lds in self.ldfiles.ldfiles:
             for ld in lds.ld_curves:
                 ld.draw_this_button = True
-                
+
     def _reload_button_fired(self):
         for lds in self.ldfiles.ldfiles:
             lds.reload_button = True
@@ -181,7 +181,7 @@ class ControlPanel(HasStrictTraits):
 
 
 class LDViewer(HasStrictTraits):
-    
+
     panel = Instance(ControlPanel)
     figure = Instance(Figure)
 
@@ -198,7 +198,7 @@ class LDViewer(HasStrictTraits):
    #     super().__init__(**traits)
    #     if pathlib.Path('LD.out').exists():
    #         self.panel.ldfilesld_file = 'LD.out'
-    
+
     view = View( HSplit('@panel',
                        Item('figure', show_label=False, editor=MPLFigureEditor(), dock='vertical', width=0.8),
                        show_labels=False, id='ld_hsplit', dock='tab'

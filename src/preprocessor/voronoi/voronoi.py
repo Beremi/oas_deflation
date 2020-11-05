@@ -175,8 +175,9 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
 def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = False):
     data = np.asarray(data)
     rad = radius + 1e-5
+    print(directionDim)
     if (directionDim == 0):
-        #print(quarter)
+        print(quarter)
         if quarter == False:
             dataOut =  np.vstack((data,
                 np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),

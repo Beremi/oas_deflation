@@ -173,11 +173,31 @@ class transportPath:
 
         return line
 
-    def getReducedString(self):
+    def getReducedString(self, coupled=False):
+        #oprava
+        if (self.connectedNodes[0]!=self.connectedNodes[-1]):
+            self.connectedNodes.append(self.connectedNodes[-1])
+            self.connectedNodes.append(self.connectedNodes[0])
+        self.nds = len(self.connectedNodes)
+        
         ndNr = self.nds /2
-        line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
+        if not coupled:
+            line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
+        else:
+            line = 'LTCTRSPCoupled\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)
+
         for i in range (0, self.nds, 2):
             line+='\t%d'%(self.connectedNodes[i])
+
+        if (ndNr==2) :
+            print()
+            print (self.connectedNodes)
+            print (line)
+
+        #print()
+        #print (self.connectedNodes)
+        #print (line)
+
         #line+='\t%d'%(self.connectedNodes[len(self.connectedNodes)-1])
         line +='\t' + '%d'%(self.material)
         return line
