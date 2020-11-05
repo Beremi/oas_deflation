@@ -280,12 +280,6 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     ip_locs.resize(1);
     ip_weights.resize(1);
     stats.resize(1);
-    // NOTE this check moved lower under condition: if ( ndim == 2 )
-    // if ( !( vert.size() == 2 ) ) {
-    //     cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
-    //     exit(1);
-    // }
-    // ip_locs [ 0 ] = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
 
 
     Point t;
@@ -340,7 +334,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
         Point prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ) * t;
-        if ( prp.norm() > 1e-10 ) {
+        if ( prp.norm() > 1e-8 ) {
             cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
             //  exit(1);
         }
@@ -627,26 +621,36 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     ip_locs.resize(1);
     ip_weights.resize(1);
     stats.resize(1);
-    if ( !( vert.size() == 2 ) ) {
-        cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
-        exit(1);
-    }
-    ip_locs [ 0 ] = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
+    
+    ip_locs [ 0 ] = ( nodes [ 0 ]->givePoint() + nodes [ 1 ]->givePoint() ) / 2.;
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
 
     Point t;
     if ( ndim == 2 ) {
+
+        if ( !( vert.size() == 2 ) ) {
+            cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
+            exit(1);
+        }
+
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
         t = t / area;
+
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
         double maxErr = 0.0;
         double currErr = 0.0;
         //
+
+        if (  vert.size() < 3  ) {
+            cerr << name << " Error: three or more vertices are required, only "<< vert.size() << " provided" << endl;
+            exit(1);
+        }
+
         if ( vert.size() > 3 ) {
             for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
                 // JM Zakomentoval cout << i <<  " " << endl;
@@ -679,7 +683,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
         Point prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ) * t;
-        if ( prp.norm() > 1e-10 ) {
+        if ( prp.norm() > 1e-8 ) {
             cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
             //  exit(1);
         }
@@ -734,6 +738,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
 //////////////////////////////////////////////////////////
 void Transp1D :: init() {
+
     Element :: init(); //calling base class method;
 
     checkNodeType();
