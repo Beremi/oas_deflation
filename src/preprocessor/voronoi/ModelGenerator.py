@@ -334,7 +334,7 @@ class Model:
         tube = False
         if self.modelType == '3d_BiparvaTubeTransport':
             tube = True
-        
+
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
@@ -358,8 +358,6 @@ class Model:
 
     def saveRest(self, solver, master_file):
         print('Saving files...', end='')
-        #if (self.printout == False): blockPrint()
-        # saving rest of input
         utilitiesGeom.saveMaterials(self.master_folder, self.materials)
         utilitiesGeom.saveFunctions(self.master_folder, self.functions)
         if self.activeMechanics:
@@ -376,9 +374,9 @@ class Model:
         if self.govNodes != None:
             if self.rigidPlates != None:
                 if self.govNodesMechBC != None:
-                    #print(totalNodeCount)
-                    utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
-                    self.constraint = True
+                    if not (self.activeTransport==True and self.coupled==False):
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
+                        self.constraint = True
 
         if (self.measuringGauges!=None):
             utilitiesGeom.saveMeasuringGauges(self.master_folder, self.dimension, self.measuringGauges)
@@ -390,7 +388,6 @@ class Model:
         utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint,
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
-        #if (self.printout == False): enablePrint()
         print ('done.')
 
         print ('Copying prep_master used...', end='')
@@ -434,7 +431,7 @@ class Model:
             #
             for i in range (len(r)):
                 if (r[i]=='capacity'):
-                    capacity = float(r[i+1])                    
+                    capacity = float(r[i+1])
                 if (r[i]=='density'):
                     density = float(r[i+1])
                 if (r[i]=='permeability'):

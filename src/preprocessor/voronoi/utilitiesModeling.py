@@ -66,6 +66,9 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None):
         coordsA = np.array([ maxLim[0]/2, maxLim[1]])
         coordsB = np.array([ 0, 0 ])
         measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
+        coordsA = np.array([ maxLim[0]/2-1e3, 0])
+        coordsA = np.array([ maxLim[0]/2+1e3, 0])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'notchOpening', False))
 
     if(type=='3pb3d'):
         coordsA = np.array([ maxLim[0]/2, maxLim[1], maxLim[2]/2])
@@ -74,6 +77,9 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None):
         coordsA = np.array([ maxLim[0]/2, 0, maxLim[2]/2])
         coordsB = np.array([ 0, 0, 0 ])
         measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalBotMid', False))
+        coordsA = np.array([ maxLim[0]/2-1e3, 0, maxLim[2]/2])
+        coordsA = np.array([ maxLim[0]/2+1e3, 0, maxLim[2]/2])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'notchOpening', False))
 
     if(type=='3d_brazilianDisc'):
         #total length
@@ -3819,11 +3825,11 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
 
     ### fixed nodes
     mechBC = np.array([0,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
-    node_coords.append( np.array([indent*3,0,0]))
+    node_coords.append( np.array([indent*3,indent,indent]))
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
     mechBC_merged.append(mBC)
     mechBC = np.array([-1,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
-    node_coords.append( np.array([height-indent*3,0,0]))
+    node_coords.append( np.array([height-indent*3,indent,indent]))
     mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
     mechBC_merged.append(mBC)
 

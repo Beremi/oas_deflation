@@ -179,7 +179,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, nodePositions, coupledNodes, mirtype, activeMechanics, activeTransport, mZ=mZ )
     if (dim == 3):
-        vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube)
+        vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled)
     return vert_count, verticesIdxDict, vertIdxStart, totalNodeCount
 
 
@@ -683,7 +683,7 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
 
 
 
-def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False):
+def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False):
     start_time = time.time()
     dim = 3
     print('Extracting the geometry...',  end ='')
@@ -861,7 +861,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     newAuxNodes = 0
     if (activeTransport):
-        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube)
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
     vertIdxStart += newAuxNodes
 
     for i in range (len(ridges_out)):
@@ -1503,7 +1503,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
     auxNodesInitLength = len (aux_nodes)
     #print(auxNodesInitLength)
-    updatedElems =0
+    updatedElems = 0
     newAuxNodesA = []
     if (auxNodesInitLength != 0 and dim==3):
         print('Generating additional aux_nodes (if 0th and last node are aux nodes, creating another auxNode in a corner)...', end='')
@@ -1511,7 +1511,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         for elem in transportElements:
             #print('\n\n new element')
             nds = node_count
-             #aux = len(aux_nodes)
+            #aux = len(aux_nodes)
             vertexA = vertices_out[int(elem.vertexA-node_count-aux)][0:dim]
             vertexB = vertices_out[int(elem.vertexB-node_count-aux)][0:dim]
 
@@ -1524,6 +1524,8 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 else:
                     diffIdx = d
 
+            #if (len(elem.connectedNodes)==4 and elem.connectedNodes[len(elem.connectedNodes)-1]==elem.connectedNodes[0]):
+            #    print (elem.connectedNodes)
 
             if (elem.connectedNodes[0]>=len(nodes_out) and elem.connectedNodes[len(elem.connectedNodes)-1]>=len(nodes_out) and
             (equalCoords == 1 or isTube==True) ):
@@ -1535,7 +1537,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 #print(elem.getString())
                 elem.addSingleConnectedNode( elem.connectedNodes[len(elem.connectedNodes)-1])
                 #elem.addSingleConnectedNode( node_count + len(aux_nodes) )
-                #elem.addSingleConnectedNode( node_count + len(aux_nodes) )
+                #elem.addSingleConnectedNode( node_count + len(aux_nodes) )saveTransportElements
                 elem.addSingleConnectedNode( elem.connectedNodes[0] )
 
                 #aux_nodes.append(nanode)
@@ -1596,15 +1598,12 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 #print ('psi: %s' %psi)
                 #print ('pa: %s' %pA)
 
-
-
                 #print(int(elem.connectedNodes[0]/node_count))
                 #print(int(elem.connectedNodes[len(elem.connectedNodes)-1]/node_count))
                 elemMidpoint = (vertexA + vertexB) /2
                 ridgeMidpoint = (anodeA + anodeB) /2
                 #vector from elem midpoint to ridge midpoint
                 vecV =  elemMidpoint - ridgeMidpoint
-
 
 
                 #nanode = ridgeMidpoint + 1e-6
@@ -1653,6 +1652,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                     ax.plot3D([ridgeCoords[r,0], ridgeCoords[r+1,0]], [ridgeCoords[r,1], ridgeCoords[r+1,1]], [ridgeCoords[r,2], ridgeCoords[r+1,2]], marker='x')
                 ax.plot3D([ridgeCoords[0,0], ridgeCoords[len(ridgeCoords)-1,0]], [ridgeCoords[0,1], ridgeCoords[len(ridgeCoords)-1,1]], [ridgeCoords[0,2], ridgeCoords[len(ridgeCoords)-1,2]], marker='x')
 
+                """
                 ax.plot3D([0,maxLim[0]], [0,0], [0,0], color='black')
                 ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [0,0], color='black')
                 ax.plot3D([0,maxLim[0]], [0,0], [maxLim[2],maxLim[2]], color='black')
@@ -1667,12 +1667,17 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
                 ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
                 ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
+                """
                 #plt.show()
 
                 #print('new elem: %s' %elem.getString())
                 #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
                 #print(elem.connectedNodes)
                 #print()
+
+            if (len(elem.connectedNodes)==2):
+                print ('pruser')
+
 
         print('done.')
         sys.stdout.flush()
@@ -1771,7 +1776,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         for element in transportElements:
             #print ("%s\n" % element.getString() )
             if (dim==2):f.write("%s\n" % element.getString(coupled=coupled) )
-            if (dim==3): f.write("%s\n" % element.getReducedString() )
+            if (dim==3): f.write("%s\n" % element.getReducedString(coupled=coupled) )
 
 
     return newAuxNodes

@@ -58,7 +58,7 @@ def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
         volumes = voronoi.voronoi_3d(vor, maxLim);
         return vor, volumes
 
-def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim, quarter = None):
+def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim, quarter = False):
     vor = Voronoi(voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim, quarter = quarter))
     volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
     return vor, volumes
