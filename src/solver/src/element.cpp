@@ -856,7 +856,6 @@ void Transp1DCoupled :: findFriends2D(ElementContainer *elemcont) {
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
-    cout << name << endl;
     //ip point is centroid
     Point centroid = ip_locs [ 0 ];
     unsigned i = vert.size() - 1;
@@ -866,13 +865,26 @@ void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
             if ( rbc ) {
                 if ( ( rbc->giveNode(0) == vert [ i ] && rbc->giveNode(1) == vert [ j ] ) || ( rbc->giveNode(0) == vert [ j ] && rbc->giveNode(1) == vert [ i ] ) ) {
                     friends.push_back(rbc);
-                    friendsweight.push_back( ( centroid - ( vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 2. ).norm() );
-                    cout << area << " " << friendsweight [ friendsweight.size() - 1 ] << endl;
+                    friendsweight.push_back( ( centroid - ( vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 2. ).norm() );                    
                     break; //only one friend avalilable in 3D for given pair
                 }
             }
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+double Transp1DCoupled :: giveValue(string code) const {
+    if ( code.compare("numOfFriends") == 0 ) {
+        return friends.size();
+    }else return  Transp1D :: giveValue(code);
+};
+
+//////////////////////////////////////////////////////////
+double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const{
+    if ( code.compare("numOfFriends") == 0 ) {
+        return friends.size();
+    }else return  Transp1D :: giveIPValue(code,ipnum);
 }
 
 //////////////////////////////////////////////////////////

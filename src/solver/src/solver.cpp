@@ -514,6 +514,7 @@ void SteadyStateNonLinearSolver :: solve() {
             // std::cout << "after ----------------------" << '\n';
             // this->printAllVectors();
 
+
             //compute residual and errors
             evaluateErrors(& displa_error, & energy_error, & residu_error);
             if ( it == 0 ) {

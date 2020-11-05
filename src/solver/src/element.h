@@ -210,6 +210,8 @@ public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     void findElementFriends(ElementContainer *elemcont);
     ~Transp1DCoupled() {};
+    virtual double giveValue(string code) const;
+    virtual double giveIPValue(string code, unsigned ipnum) const;
     void init();
 };
 
