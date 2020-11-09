@@ -19,11 +19,13 @@ RVEMaterialStatus :: ~RVEMaterialStatus() {
 //////////////////////////////////////////////////////////
 void RVEMaterialStatus :: init() {
     RVE->readFromFile(inputfile.string() );
+    generateVolumetricAverageBC();
+    RVE->init();
+
     stringstream appendname;
     appendname << "_" << std::setfill('0') << std::setw(4) << element->giveID() << "_" << std::setw(2) << idx;
     RVE->giveExporters()->appendToAllNames(appendname.str());
-    generateVolumetricAverageBC();
-    RVE->init();
+
 }
 
 //////////////////////////////////////////////////////////
@@ -121,7 +123,6 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
             e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
             if ( e ) {
                 factor  = e->giveArea() * e->giveLength() * e->giveMatStatus(0)->giveTempStress();
-                cout << factor.size() << " " << ndim<< endl;
                 for(unsigned v=0; v<ndim; v++){
                     for(unsigned r=0; r<stra_size; r++) temp_stress[r] += factor[r] * mechProjectors[v][num][r];
                 }
@@ -387,6 +388,7 @@ void DiscreteRVEMaterialStatus :: init() {
             }  
         }
     }
+
 }
 
 //////////////////////////////////////////////////////////

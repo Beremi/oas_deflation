@@ -111,7 +111,7 @@ void NodeContainer :: establishDoFArray() {
     vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
     for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
         if ( prev->first == cur->first ) {
-            cerr << "Error: two Dirichlet BC assigne to the same DoF number " << cur->first << endl;
+            cerr << "Node Container Error: two Dirichlet BC assigned to the same DoF number " << cur->first << endl;
             exit(1);
         }
         prev = cur;

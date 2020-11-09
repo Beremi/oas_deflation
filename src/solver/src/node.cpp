@@ -26,7 +26,7 @@ void MechDoF :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 MechDoF :: MechDoF(unsigned dimension) : MechNode(dimension) {
     point = Point(0, 0, 0);
-    nDoFs = 1;
+    nDoFs = dimension;
     dim = dimension;
     name = "Mechanical DoF";
 }
@@ -69,7 +69,7 @@ void TrsDoF :: readFromLine(istringstream &iss) {
 // MASTER DOF - GOVERN DEPENDENT DOFs
 TrsDoF :: TrsDoF(unsigned dimension) : TrsNode(dimension) {
     point = Point(0, 0, 0);
-    nDoFs = 1;
+    nDoFs = dimension;
     dim = dimension;
     name = "Transport DoF";
 }

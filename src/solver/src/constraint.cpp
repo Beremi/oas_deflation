@@ -147,13 +147,20 @@ void VolumetricAverage :: init() {
     unsigned r;
     vector< double >m;
     m.resize(nodes.size() );
+    Transp1D *et;
+    RigidBodyContact *em;
     for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
-        Transp1D *et = dynamic_cast< Transp1D * >( elems->giveElement(e) );
-        //RigidBodyContact *et = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
+        et = dynamic_cast< Transp1D * >( elems->giveElement(e) );
+        em = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
         if ( et ) {
             for ( unsigned p = 0; p < 2; p++ ) {
                 r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
                 m [ r ] += et->giveVolume(p);
+            }
+        }else if (em){
+            for ( unsigned p = 0; p < 2; p++ ) {
+                r = ( std :: find(nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
+                m [ r ] += em->giveVolume(p);
             }
         }
     }
@@ -327,7 +334,6 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
             constraints.erase(constraints.begin() + k);
         }
     }
-
     map< pair< size_t, size_t >, double >indeces11;
     // map<pair<size_t, size_t>, double> indeces12;
     // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
@@ -348,6 +354,7 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
         // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
         // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
         // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
+
         if ( i < numFreeDoFs - constraints.size() ) {
             std :: cerr << "should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << '\n';
             exit(1);

@@ -8,11 +8,9 @@
 void MechanicalPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
-    intialNodeNum = nodes->giveSize();
-    for ( unsigned i = 0; i < 3 * ( dim - 1 ); i++ ) {
-        mn = new MechDoF(dim);
-        nodes->addNode(mn);
-    }
+    initalNodeNum = nodes->giveSize();
+    mn = new MechDoF(3 * ( dim - 1 ));
+    nodes->addNode(mn);
 }
 
 //////////////////////////////////////////////////////////
@@ -51,50 +49,36 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 vm.resize(4);
                 mults.resize(4);
                 dirs.resize(4, 0);
-                dirs [ 2 ] = 0;
-                dirs [ 3 ] = 0;
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 5); //gamma xy
-                vm [ 3 ] = nodes->giveNode(intialNodeNum + 4); //gamma xz
+                dirs [ 2 ] = 5; //gamma xy
+                dirs [ 3 ] = 4; //gamma xz
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
+                vm [ 3 ] = nodes->giveNode(initalNodeNum); //gamma xz
                 mults [ 3 ] = diff.z / 2;
             } else if ( dim == 2 ) {
                 vm.resize(3);
                 mults.resize(3);
                 dirs.resize(3, 0);
-                dirs [ 2 ] = 0;
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 2); //gamma xy
+                dirs [ 2 ] = 2; //gamma xy
+                vm [ 2 ] = nodes->giveNode(initalNodeNum); 
             }
             dirs [ 0 ] = 0;
-            dirs [ 1 ] = 0;
+            dirs [ 1 ] = 0; //eps x
             vm [ 0 ] = m; //master
-            vm [ 1 ] = nodes->giveNode(intialNodeNum); //eps x
+            vm [ 1 ] = nodes->giveNode(initalNodeNum); 
             mults [ 0 ] = 1;
-            mults [ 1 ] = diff.x / 2;
+            mults [ 1 ] = diff.x;
             mults [ 2 ] = diff.y / 2;
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
             //direction Y  (gammaxz realized here)
             if ( dim == 3 ) {
-                vm.resize(4);
-                mults.resize(4);
-                dirs.resize(4, 0);
-                dirs [ 2 ] = 0;
-                dirs [ 3 ] = 0;
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 5); //gamma xy
-                vm [ 3 ] = nodes->giveNode(intialNodeNum + 3); //gamma yz
+                dirs [ 2 ] = 5; //gamma xy
+                dirs [ 3 ] = 3; //gamma yz
                 mults [ 3 ] = diff.z / 2;
-            } else if ( dim == 2 ) {
-                vm.resize(3);
-                mults.resize(3);
-                dirs.resize(3, 0);
-                dirs [ 2 ] = 0;
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 2); //gamma xy
             }
             dirs [ 0 ] = 1;
-            dirs [ 1 ] = 0;
-            vm [ 0 ] = m; //master
-            vm [ 1 ] = nodes->giveNode(intialNodeNum + 1); //eps y
-            mults [ 0 ] = 1;
+            dirs [ 1 ] = 1; //eps y
             mults [ 1 ] = diff.y;
             mults [ 2 ] = diff.x / 2;
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
@@ -102,20 +86,12 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
 
             //direction Z  (gammaxz realized here)
             if ( dim == 3 ) {
-                vm.resize(4);
-                mults.resize(4);
-                dirs.resize(4, 0);
-                dirs [ 2 ] = 0;
-                dirs [ 3 ] = 0;
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 4); //gamma xy
-                vm [ 3 ] = nodes->giveNode(intialNodeNum + 3); //gamma yz
+                dirs [ 2 ] = 4; //gamma xz
+                dirs [ 3 ] = 3; //gamma yz
                 mults [ 3 ] = diff.y / 2;
 
                 dirs [ 0 ] = 2;
-                dirs [ 1 ] = 0;
-                vm [ 0 ] = m; //master
-                vm [ 1 ] = nodes->giveNode(intialNodeNum + 2); //eps y
-                mults [ 0 ] = 1;
+                dirs [ 1 ] = 2; //eps z
                 mults [ 1 ] = diff.z;
                 mults [ 2 ] = diff.x / 2;
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
@@ -127,22 +103,22 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 vm.resize(4);
                 mults.resize(4);
                 dirs.resize(4, 0);
-                dirs [ 2 ] = 0;
-                dirs [ 3 ] = 0;
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 5); //gamma xy
-                vm [ 3 ] = nodes->giveNode(intialNodeNum + 4); //gamma xz
+                dirs [ 2 ] = 5;  //gamma xy
+                dirs [ 3 ] = 4;  //gamma xz
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
+                vm [ 3 ] = nodes->giveNode(initalNodeNum);
                 mults [ 3 ] = diff.z;
             } else if ( dim == 2 ) {
                 vm.resize(3);
                 mults.resize(3);
                 dirs.resize(3, 0);
-                dirs [ 2 ] = 0;
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 2); //gamma xy
+                dirs [ 2 ] = 2; //gamma xy
+                vm [ 2 ] = nodes->giveNode(initalNodeNum); 
             }
             dirs [ 0 ] = 0;
-            dirs [ 1 ] = 0;
+            dirs [ 1 ] = 0; //eps x
             vm [ 0 ] = m; //master
-            vm [ 1 ] = nodes->giveNode(intialNodeNum); //eps x
+            vm [ 1 ] = nodes->giveNode(initalNodeNum);
             mults [ 0 ] = 1;
             mults [ 1 ] = diff.x;
             mults [ 2 ] = diff.y;
@@ -154,7 +130,8 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 vm.resize(3);
                 mults.resize(3);
                 dirs.resize(3, 0);
-                vm [ 2 ] = nodes->giveNode(intialNodeNum + 3); //gamma yz
+                dirs[2] = 3; //gamma yz
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
                 mults [ 2 ] = diff.z;
             } else if ( dim == 2 ) {
                 vm.resize(2);
@@ -162,11 +139,11 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 dirs.resize(2, 0);
             }
             dirs [ 0 ] = 1;
+            dirs [ 1 ] = 1; //eps y
             vm [ 0 ] = m; //master
-            vm [ 1 ] = nodes->giveNode(intialNodeNum + 1); //eps y
+            vm [ 1 ] = nodes->giveNode(initalNodeNum);
             mults [ 0 ] = 1;
             mults [ 1 ] = diff.y;
-            dirs [ 0 ] = 1;  // JK: here should be dirs[1] = 0; shouldn't it...? probably stays form dir X, so it does not matter, but dirs[0] is aleready  defined 5 lines upper
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -176,11 +153,11 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 mults.resize(2);
                 dirs.resize(2, 0);
                 dirs [ 0 ] = 2;
+                dirs [ 1 ] = 2;  //eps z
                 vm [ 0 ] = m; //master
-                vm [ 1 ] = nodes->giveNode(intialNodeNum + 2); //eps z
+                vm [ 1 ] = nodes->giveNode(initalNodeNum);
                 mults [ 0 ] = 1;
                 mults [ 1 ] = diff.z;
-                dirs [ 0 ] = 2;
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
@@ -193,10 +170,8 @@ void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCon
     //export data
     string export_name = "PUCstrain_stress";
     vector< string >gname;
-    vector< unsigned >n;
-    vector< string >codes;
-    n.resize(1);
-    codes.resize(1);
+    vector< unsigned >n(initalNodeNum);
+    vector< string >codes(1);
     ForceGauge *fg;
     codes [ 0 ] = "fx";
     if ( dim == 2 ) {
@@ -214,7 +189,6 @@ void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCon
         gname [ 5 ] = "tau_xy";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        n [ 0 ] = intialNodeNum + i;
         fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
         ex->addExporter(fg);
     }
@@ -232,31 +206,32 @@ void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCon
         gname [ 5 ] = "gamma_xy";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        dg = new DoFGauge(export_name, gname [ i ], intialNodeNum + i, 0, nodes, 1., dim);
+        dg = new DoFGauge(export_name, gname [ i ], initalNodeNum, i, nodes, 1., dim);
         ex->addExporter(dg);
     }
 }
 
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
-    //last master node cannot move
-    Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);
-    BoundaryCondition *bc;
-    vector< int >dBC, nBC;
-    dBC.resize(m->giveNumberOfDoFs(), -1);
-    nBC.resize(m->giveNumberOfDoFs(), -1);
-    for ( unsigned i = 0; i < dim; i++ ) {
-        dBC [ i ] = funcs->giveSize();                        //only translation
-    }
-    bc = new BoundaryCondition(m, dBC, nBC);
-    bcs->addBoundaryCondition(bc);
 
-    //add constant function
-    vector< double >x, y;
-    x.resize(1, 0);
-    y.resize(1, 0);
-    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
-    funcs->addFunction(newf);
+
+    if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
+        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );
+        nBC.resize(m->giveNumberOfDoFs(), -1);
+        bc = new BoundaryCondition(m, dBC, nBC);
+        bcs->addBoundaryCondition(bc);
+
+        //add constant function
+        vector< double >x, y;
+        x.resize(1, 0);
+        y.resize(1, 0);
+        PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+        funcs->addFunction(newf);
+    } else {  //volumetric average
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -285,39 +260,38 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BC
     vector< double >bcmults;
     BoundaryCondition *bc;
     vector< int >dBC, nBC;
-    dBC.resize(1, -1);
-    nBC.resize(1, -1);
-    bcmults.resize(1, 1);
+
+    unsigned n = strainFunc.size();
+    dBC.resize(n, -1);
+    nBC.resize(n, -1);
+    bcmults.resize(n, 1);
     for ( unsigned i = 0; i < strainFunc.size(); i++ ) {
-        bcmults [ 0 ] = 1;
         if ( strainFunc [ i ] >= 0 ) {
-            nBC [ 0 ] = -1;
-            dBC [ 0 ] = strainFunc [ i ];
-            bc = new BoundaryCondition(nodes->giveNode(intialNodeNum + i), dBC, nBC, bcmults);
-            bcs->addBoundaryCondition(bc);
+            dBC [ i ] = strainFunc [ i ];
         }
-        bcmults [ 0 ] = volume;
         if ( stressFunc [ i ] >= 0 ) {
-            nBC [ 0 ] = stressFunc [ i ];
-            dBC [ 0 ] = -1;
-            bc = new BoundaryCondition(nodes->giveNode(intialNodeNum + i), dBC, nBC, bcmults);
-            bcs->addBoundaryCondition(bc);
+            bcmults [ i ] = volume;
+            nBC [ i ] = stressFunc [ i ];            
         }
         if ( strainFunc [ i ] >= 0 && stressFunc [ i ] >= 0 ) {
             cerr << "Error in Periodic boundary condition: cannot prescribe both stress and strain for the same direction" << endl;
         }
     }
+    bc = new BoundaryCondition(nodes->giveNode(initalNodeNum), dBC, nBC, bcmults);
+    bcs->addBoundaryCondition(bc);
+
 
     //export data
     genereteExporters(nodes, ex);
 
-    cout << "Applied periodic boundary conditions: " << nodes->giveSize() - intialNodeNum << " new DoFs (nodes " << intialNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
+    cout << "Applied periodic boundary conditions: " << nodes->giveSize() - initalNodeNum << " new DoFs (nodes " << initalNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
 }
 
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: readLoading(istringstream &iss) {
     unsigned num, hnum;
     string param;
+    volumetricAverageRigidBC = -1;
     iss >> num;
 
     strainFunc.resize(3 * ( dim - 1 ), -1);
@@ -343,6 +317,8 @@ void MechanicalPeriodicBC :: readLoading(istringstream &iss) {
                 stressFunc [ 1 ] = hnum;
             } else if ( param.compare("txy") == 0 ) {
                 stressFunc [ 2 ] = hnum;
+            } else if ( param.compare("volumetricAverage") == 0 ) {
+                volumetricAverageRigidBC = hnum;
             } else {
                 cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
                 exit(1);
@@ -372,6 +348,8 @@ void MechanicalPeriodicBC :: readLoading(istringstream &iss) {
                 stressFunc [ 4 ] = hnum;
             } else if ( param.compare("txy") == 0 ) {
                 stressFunc [ 5 ] = hnum;
+            } else if ( param.compare("volumetricAverage") == 0 ) {
+                volumetricAverageRigidBC = hnum;
             } else {
                 cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
                 exit(1);
@@ -437,7 +415,7 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
 void TransportPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     TrsDoF *mn;
-    intialNodeNum = nodes->giveSize();
+    initalNodeNum = nodes->giveSize();
     for ( unsigned i = 0; i < dim; i++ ) {
         mn = new TrsDoF(dim);
         nodes->addNode(mn);
@@ -466,7 +444,7 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
             mults.resize(4);
             dirs.resize(4, 0);
             dirs [ 3 ] = 0;
-            vm [ 3 ] = nodes->giveNode(intialNodeNum + 2); //grad z
+            vm [ 3 ] = nodes->giveNode(initalNodeNum + 2); //grad z
             mults [ 3 ] = diff.z;
         } else if ( dim == 2 ) {
             vm.resize(3);
@@ -477,8 +455,8 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
         dirs [ 1 ] = 0;
         dirs [ 2 ] = 0;
         vm [ 0 ] = m; //master
-        vm [ 1 ] = nodes->giveNode(intialNodeNum); //grad x
-        vm [ 2 ] = nodes->giveNode(intialNodeNum + 1); //grad y
+        vm [ 1 ] = nodes->giveNode(initalNodeNum); //grad x
+        vm [ 2 ] = nodes->giveNode(initalNodeNum + 1); //grad y
         mults [ 0 ] = 1;
         mults [ 1 ] = diff.x;
         mults [ 2 ] = diff.y;
@@ -511,7 +489,7 @@ void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCont
         gname [ 2 ] = "grad_z";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        n [ 0 ] = intialNodeNum + i;
+        n [ 0 ] = initalNodeNum + i;
         fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
         ex->addExporter(fg);
     }
@@ -525,7 +503,7 @@ void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCont
         gname [ 2 ] = "flux_z";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        dg = new DoFGauge(export_name, gname [ i ], intialNodeNum + i, 0, nodes, 1., dim);
+        dg = new DoFGauge(export_name, gname [ i ], initalNodeNum + i, 0, nodes, 1., dim);
         ex->addExporter(dg);
     }
 }
@@ -603,7 +581,6 @@ void TransportPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementCon
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
 
-        cout << "**** " << m << endl;
         //add constant function
         vector< double >x, y;
         x.resize(1, 0);
