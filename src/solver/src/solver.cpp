@@ -185,7 +185,7 @@ void SteadyStateLinearSolver :: solve() {
         cerr << "Conjugate gradients did not converge" << endl;
         return;
     }
-    
+
     // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
     // if (terminated == true);
     //     cerr << "Conjugate gradients did not converge" << endl;
@@ -204,12 +204,12 @@ void SteadyStateLinearSolver :: solve() {
       cout << f[i] << " " << ddr[i] << endl;
       }
       //K.print();
-     
+
       cout << "******************************************" << endl;
       for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
        cout << f[i] << " " << ddr[i] << endl;
       }
-     
+
       //for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
       //for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";
       // cout << endl;
@@ -579,7 +579,7 @@ void SteadyStateNonLinearSolver :: solve() {
             dt = fmin(dt * step_increase, dtmax);
             std :: cout << "enlarging step, timestep = " << dt << '\n';
         } else if ( converged && it > maxIt / 2 && dt > dtmin ) {
-            dt = fmin(dt * step_decrease, dtmin);
+            dt = fmax(dt * step_decrease, dtmin);
             std :: cout << "shortening step, timestep = " << dt << '\n';
         }
         // std::cerr << "number of iterations: " << it << '\n';
