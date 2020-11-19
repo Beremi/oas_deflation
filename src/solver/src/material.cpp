@@ -360,6 +360,8 @@ void TrsprtCoupledMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
+
+    
     //first strain term is pressure gradient, second strain face are, then it is alway crack opening and crack length coulples
     TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
     double crackParam = 0;
