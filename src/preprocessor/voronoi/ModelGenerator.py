@@ -242,6 +242,10 @@ class Model:
         if self.modelType =='3d_coupledBrazilianDisc':
             self.run_3d_coupledBrazilianDisc()
 
+        if self.modelType =='2d_cantileverBending':
+            self.run_2d_cantileverBending()
+
+
         #if (self.printout == False): enablePrint()
 
     def run_2d_singleSpring(self):
@@ -337,6 +341,12 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
+
+    def run_2d_cantileverBending(self):
+        print('2d_cantilever bending')
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials )
+        self.materialZones=None
+
 
     def saveGeometry(self):
         tube = False

@@ -562,6 +562,84 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
 
+def create2DUniaxialTension(maxLim, minDist, trials, dim, powerTes):
+    print('Creating uniaxial Tension')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, radii, mechBC_merged, mechIC_merged  = assemblePatchTestTransport(maxLim, minDist, trials, dim);
+
+    print('Conducting Voronoi tesselation...', end = '')
+    if not powerTes:
+        if (dim==2):
+            vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+        else:
+            vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    else:
+        if (dim==2):
+            vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
+        else:
+            vor, areas = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim)
+    print('done.')
+
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    functions = []
+
+    #"""
+    ### selecting vertices on the left surface
+    boundA = np.zeros(dim)-1e-8
+    boundB = maxLim + 1e-8
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+    boundA = np.zeros(dim)+1e-8
+    boundB = maxLim - 1e-8
+    faces0 = utilitiesGeom.excludeSelectedPts(boundA, boundB, vert)
+    faces = faces1[faces0]
+
+    for i,k in enumerate(faces):
+        fn1 = utilitiesNumeric.constantFunc(np.sin(vor.vertices[k,0])*np.exp(vor.vertices[k,1]))
+        functions.append (fn1)
+        trsBC = utilitiesMech.transportBC(k,[i,-1])
+        transportBC_merged.append(trsBC)
+    #"""
+    """
+    #transport function, leftFace, constant
+    fn2 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn2)
+    fn3 = utilitiesNumeric.constantFunc(1)
+    functions.append (fn3)
+
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    leftFaceBC = np.array([0,-1])
+    boundA = np.array(  [-1e-8 , 0] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([1,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8, 0] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+    """
+
+    return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
 
 def createCoupledArtificialCrack(maxLim, minDist, trials, notchH):
@@ -1946,10 +2024,11 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
 
     #defining points of the line
     nodeA = np.array([maxLim[0] - indent, maxLim[1] - indent])
+    nodeB = np.array([maxLim[0] - indent, indent])
 
     oldLen = len(node_coords)
-    #utilitiesGeom.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
-    pointGenerators.generateSingleNode (nodeA, dim, node_coords)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+    #pointGenerators.generateSingleNode (nodeA, dim, node_coords)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 

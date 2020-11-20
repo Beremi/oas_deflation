@@ -37,7 +37,7 @@ if __name__ == '__main__':
         if len(sys.argv) > 1:
             minDist = float(sys.argv[2])
         else:
-            minDist = 0.2
+            minDist = 0.005
 
         periodicModel = 0
         nodePositions = []
@@ -52,12 +52,12 @@ if __name__ == '__main__':
         powerTes = True
 
         #dimension
-        dim = 3
+        dim = 2
 
         print('Creating a %dd lattice model...' % dim)
         #coupled problem?
         activeTransport = 1
-        activeMechanics = 0
+        activeMechanics = 1
 
         #Cusatis 3PB:
         #A: 1.131 / 0.2 / 0.1
@@ -67,8 +67,8 @@ if __name__ == '__main__':
         # X: 0.4445, diameter: 0.2286
 
         #dimensions of rectangle model
-        Xdim = 1            #also length of cylinder
-        Ydim = 1             #also diameter of cylinder
+        Xdim = 0.3            #also length of cylinder
+        Ydim = 0.3             #also diameter of cylinder
         Zdim = 1
 
         #trials of random node positioning
@@ -122,10 +122,10 @@ if __name__ == '__main__':
         if (dim == 2):
 
             #patch test for Transport
-            node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
+            #node_coords, mechBC_merged, trsprtBC_merged, vor, areas, functions, radii  = utilitiesModeling.createPatchTestTransport(maxLim, minDist, trials, dim, powerTes)
 
             #cantilever bending
-            #node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
+            node_coords, mechBC_merged, mechIC_merged, trsprtBC_merged, trsprtIC_merged, vor, areas, functions   = utilitiesModeling.create2dCantileverBending(maxLim, minDist, trials )
             #materialZones=None
 
             #cantilever  pressure free contraction

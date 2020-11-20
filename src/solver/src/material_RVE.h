@@ -53,13 +53,16 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// TRANSPORT RVE MATERIAL
+// DISCRETE RVE MATERIAL FOR BOTH TRANSPORT AND MECHANICAL HOMOGENIZATION
 
 class DiscreteRVEMaterial;
 class DiscreteRVEMaterialStatus : public RVEMaterialStatus
 {
 protected:
     virtual void generateVolumetricAverageBC();
+    void calculateCentroid();
+
+    Point centroid;
     bool active_mechanics, active_transport;
     vector< vector < Vector > > mechProjectors;
     

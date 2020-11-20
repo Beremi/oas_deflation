@@ -900,9 +900,10 @@ void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
 
 //////////////////////////////////////////////////////////
 Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-    Vector pressureGrad = Element :: giveStrain(i, DoFs);
+    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
 
-    pressureGrad.resize(2 + 2 * friends.size() );
+    Vector pressureGrad(2 + 2 * friends.size() );
+    pressureGrad[0] = pressureGradPlain[0];
     pressureGrad [ 1 ] = area;
 
     double elem_crack_opening;
@@ -916,6 +917,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         pressureGrad [ 2 * m + 3 ] = friendsweight [ m ]; //crack length in friend mechanical element
         m++;
     }
+
     return pressureGrad;
 };
 
@@ -1139,7 +1141,7 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
     shapeF(x, phi);
     Matrix B(6, DoFids.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        B [ 0 ] [ 3 * i ]     =   B [ 2 ] [ 3 * i + 1 ] =   B [ 4 ] [ 3 * i + 2 ]   =   phiG [ 0 ] [ i ];
+        B [ 0 ] [ 3 * i ]       =   B [ 2 ] [ 3 * i + 1 ] =   B [ 4 ] [ 3 * i + 2 ]   =   phiG [ 0 ] [ i ];
         B [ 1 ] [ 3 * i + 1 ]   =   B [ 3 ] [ 3 * i ]   =   B [ 5 ] [ 3 * i + 2 ]   =   phiG [ 1 ] [ i ];
         B [ 2 ] [ 3 * i + 2 ]   =   -phi [ i ];
         B [ 3 ] [ 3 * i + 2 ]   =   phi [ i ];
