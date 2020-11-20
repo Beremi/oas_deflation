@@ -226,6 +226,10 @@ class Model:
         if self.modelType == '2d_periodicShear':
             self.run_2d_periodicShear()
 
+        if self.modelType == '3d_periodicShear':
+            self.run_3d_periodicShear()
+
+
         if self.modelType == '2d_singleSpring':
             self.run_2d_singleSpring()
 
@@ -299,8 +303,12 @@ class Model:
         self.materialZones =  None
 
     def run_2d_periodicShear(self):
-        print('2d periodic shear')
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        self.materialZones=None
+        self.periodicModel = 1
+
+    def run_3d_periodicShear(self):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 

@@ -36,6 +36,7 @@
 #
 #
 #Model 2d_periodicShear Xsize 0.05 Ysize 0.05 minDist 0.004 activeMechanics 1 activeTransport 1 trials 50000
+#Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMechanics 1 activeTransport 1 trials 400
 #
 #Model 3d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0007 notchRadRight 0.0245 notchRadLeft 0.0275 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 200 RWTHQuarter 1
 #Model 2d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0005 innerRadTop 0.0255 innerRadBottom 0.0225 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 10000 
@@ -51,7 +52,7 @@
 ####################################################################################
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
-Model 3d_coupledBrazilianDisc cylinderHeight 0.1 cylinderRad 0.3 minDist 0.015 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
+Model 3d_coupledBrazilianDisc cylinderHeight 0.1 cylinderRad 0.3 minDist 0.025 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
 #
 #
 ####################################################################################
