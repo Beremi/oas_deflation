@@ -7,14 +7,14 @@
 
 
 Block :: Block(const Point &lB, const Point &rT) {
-    this->leftBottom = lB;
+    this->mainPoint = lB;
     this->rightTop = rT;
 }
 
 bool Block :: isInside(const Point &P) const {
-    if ( ( this->leftBottom.getX() - P.getX() ) < TOL && ( P.getX() - this->rightTop.getX() ) < TOL ) {
-        if ( ( this->leftBottom.getY() - P.getY() ) < TOL && ( P.getY() - this->rightTop.getY() ) < TOL ) {
-            if ( ( this->leftBottom.getZ() - P.getZ() ) < TOL && ( P.getZ() - this->rightTop.getZ() ) < TOL ) {
+    if ( ( this->mainPoint.getX() - P.getX() ) < TOL && ( P.getX() - this->rightTop.getX() ) < TOL ) {
+        if ( ( this->mainPoint.getY() - P.getY() ) < TOL && ( P.getY() - this->rightTop.getY() ) < TOL ) {
+            if ( ( this->mainPoint.getZ() - P.getZ() ) < TOL && ( P.getZ() - this->rightTop.getZ() ) < TOL ) {
                 return true;
             }
         }
@@ -24,12 +24,26 @@ bool Block :: isInside(const Point &P) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 Circle :: Circle(const Point &c, const double &r) {
-    this->center = c;
-    this->radius = r;
+    this->mainPoint = c;
+    this->size = r;
 }
 
 bool Circle :: isInside(const Point &P) const {
-    if ( ( P - this->center ).norm() < this->radius ) {
+    if ( ( P - this->mainPoint ).norm() < this->size ) {
+        return true;
+    }
+    return false;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+Sphere :: Sphere(const Point &c, const double &r) {
+    this->mainPoint = c;
+    this->size = r;
+}
+
+bool Sphere :: isInside(const Point &P) const {
+    if ( ( P - this->mainPoint ).norm() < this->size ) {
         return true;
     }
     return false;

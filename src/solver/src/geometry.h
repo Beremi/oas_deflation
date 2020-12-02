@@ -10,10 +10,11 @@
 
 class Region
 {
+private:
+
 protected:
     string name;
     unsigned dim;
-private:
 
 public:
     Region() {};
@@ -22,10 +23,26 @@ public:
 };
 
 
-class Block : public Region
+class RegularRegion : public Region
 {
 private:
-    Point leftBottom, rightTop;
+
+protected:
+    Point mainPoint;
+    double size;
+public:
+    RegularRegion() {};
+    virtual ~RegularRegion() {};
+    virtual bool isInside(const Point &P) const = 0;
+    virtual void setMainPoint(const Point &P) { this->mainPoint = P; };
+    virtual void setSize(const double &size) { this->size = size; };
+};
+
+
+class Block : public RegularRegion
+{
+private:
+    Point rightTop;
 
 public:
     Block() {};
@@ -34,16 +51,23 @@ public:
     virtual bool isInside(const Point &P) const;
 };
 
-class Circle : public Region
+class Circle : public RegularRegion
 {
-private:
-    Point center;
-    double radius;
 
 public:
     Circle() {};
     virtual ~Circle() {};
     Circle(const Point &c, const double &r);
+    virtual bool isInside(const Point &P) const;
+};
+
+
+class Sphere : public Circle
+{
+public:
+    Sphere() {};
+    virtual ~Sphere() {};
+    Sphere(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
 };
 
