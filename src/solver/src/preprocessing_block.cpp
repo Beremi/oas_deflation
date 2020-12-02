@@ -59,12 +59,12 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 mults.resize(3);
                 dirs.resize(3, 0);
                 dirs [ 2 ] = 2; //gamma xy
-                vm [ 2 ] = nodes->giveNode(initalNodeNum); 
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
             }
             dirs [ 0 ] = 0;
             dirs [ 1 ] = 0; //eps x
             vm [ 0 ] = m; //master
-            vm [ 1 ] = nodes->giveNode(initalNodeNum); 
+            vm [ 1 ] = nodes->giveNode(initalNodeNum);
             mults [ 0 ] = 1;
             mults [ 1 ] = diff.x;
             mults [ 2 ] = diff.y / 2;
@@ -113,7 +113,7 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 mults.resize(3);
                 dirs.resize(3, 0);
                 dirs [ 2 ] = 2; //gamma xy
-                vm [ 2 ] = nodes->giveNode(initalNodeNum); 
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
             }
             dirs [ 0 ] = 0;
             dirs [ 1 ] = 0; //eps x
@@ -271,7 +271,7 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BC
         }
         if ( stressFunc [ i ] >= 0 ) {
             bcmults [ i ] = volume;
-            nBC [ i ] = stressFunc [ i ];            
+            nBC [ i ] = stressFunc [ i ];
         }
         if ( strainFunc [ i ] >= 0 && stressFunc [ i ] >= 0 ) {
             cerr << "Error in Periodic boundary condition: cannot prescribe both stress and strain for the same direction" << endl;
@@ -623,6 +623,24 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     }
 }
 
+void RigidPlate :: checkMechTransport( Node *master ) {
+    if ( dynamic_cast< MechNode * >( master ) ) {
+      if ( master->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
+        cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
+        exit(EXIT_FAILURE);
+      }
+    } else if ( dynamic_cast< TrsNode * >( master ) ) {
+      this->transport = true;
+      if ( master->giveNumberOfDoFs() != 1 ) {
+        cerr << "Error in " << __func__ << ": Master for RigidPlate in transport must have " << 1 << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
+        exit(EXIT_FAILURE);
+      }
+    } else {
+      cerr << "Error in " << __func__ << ": Master for RigidPlate is niether mechanical nor transport " << '\n';
+      exit(EXIT_FAILURE);
+    }
+}
+
 void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
     ( void ) e;
     ( void ) bcs;
@@ -633,15 +651,7 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer 
     // read the line "masterId numSlaves slaveId1, slaveId2...."
     master = nodes->giveNode(master_id);
     // check if it is master node
-    MechNode *n = dynamic_cast< MechNode * >( master );
-    if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be Mechanical, " << master->giveName() << " provided" << endl;
-        exit(1);
-    }
-    if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": Master for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
-        exit(1);
-    }
+    this->checkMechTransport(master);
 
     for ( auto const &sl_id : slave_ids ) {
         slave = nodes->giveNode(sl_id);
@@ -663,7 +673,7 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
         rightTop = Point(x1, y1, z1);
     } else {
         std :: cerr << "dimension " << d << " not implemented yet" << '\n';
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     bool bw = false;
     string param;
@@ -691,15 +701,7 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 
     master = nodes->giveNode(master_id);
     // check if it is master node
-    MechNode *n = dynamic_cast< MechNode * >( master );
-    if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be Mechanical, " << master->giveName() << " provided" << endl;
-        exit(1);
-    }
-    if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MechDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
-        exit(1);
-    }
+    RigidPlate :: checkMechTransport(master);
 
     for ( auto const &nod : * nodes ) {
         if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ) {
@@ -756,15 +758,8 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
 
     master = nodes->giveNode(master_id);
     // check if it is master node
-    MechNode *n = dynamic_cast< MechNode * >( master );
-    if ( !n ) {
-        cerr << "Error in " << __func__ << ": node must be Mechanical, " << master->giveName() << " provided" << endl;
-        exit(1);
-    }
-    if ( n->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": MechDoF for RigidPlate must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << n->giveNumberOfDoFs() << " provided" << endl;
-        exit(1);
-    }
+    RigidPlate :: checkMechTransport(master);
+
     Point node_point;
     int xm, ym, zm;
     xm = 1;
