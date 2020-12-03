@@ -75,7 +75,7 @@ public:
     void calculateMasterForces(Vector &fullForces);
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };
-    void connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim, const string &which);
+    void connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp=false);
     size_t giveSize() { return constraints.size(); };
     bool isActive() const { return !constraints.empty(); }
 
