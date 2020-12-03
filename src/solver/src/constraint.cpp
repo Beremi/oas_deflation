@@ -205,8 +205,17 @@ void VolumetricAverage :: init() {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Container
-void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim, const string &which) {
-    unsigned nDoFsPerNode = 3 * ( ndim - 1 );
+void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp) {
+    unsigned nDoFsPerNode;
+    if ( trsp ) {
+        // if master is transport, slave must be transport
+        if ( !dynamic_cast< TrsNode * >( slave ) ) return;
+        nDoFsPerNode = 1;
+    } else {
+        if ( !dynamic_cast< Particle * >( slave ) ) return; // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
+        nDoFsPerNode = 3 * ( ndim - 1 );
+    }
+
 
     if ( slave->giveNumberOfDoFs() != master->giveNumberOfDoFs() ) {
         std :: cerr << "slave and master must have the same number of DoFs, slave numDoFs = " << slave->giveNumberOfDoFs() << ", master numDoFs = " << master->giveNumberOfDoFs() << '\n';
@@ -249,19 +258,20 @@ void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsign
     // read the table and put the information to jointDoFs
     // NOTE this could be done in the previous loop
     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
-            // std::cout << "fixed in x dir" << '\n';
-        } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
-            // std::cout << "fixed in y dir" << '\n';
-        } else if ( containsChar(which, 'z') && ( i == 2 || i == 3 || i == 4 ) && ndim > 2 ) {
-            // std::cout << "fixed in z dir" << '\n';
-        } else {
-            continue;
+        // for transport nodes, only ones are in tableOfMultipliers
+        if ( !trsp ) {
+            if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
+              // std::cout << "fixed in x dir" << '\n';
+            } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
+              // std::cout << "fixed in y dir" << '\n';
+            } else if ( containsChar(which, 'z') && ( i == 2 || i == 3 || i == 4 ) && ndim > 2 ) {
+              // std::cout << "fixed in z dir" << '\n';
+            } else {
+              continue;
+            }
         }
         for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
             if ( tableOfMultipliers [ j ] [ i ] != 0 ) {
-                // std::cout << "master->giveStartingDoF() = " << master->giveStartingDoF() << '\n';
-                // THE PROBLEM IS IN SETTING THE STARTING DOF FOR MASTER
                 masterNodes.push_back(master);
                 multipliers.push_back(tableOfMultipliers [ j ] [ i ]);
                 directions.push_back(j);

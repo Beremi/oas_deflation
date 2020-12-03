@@ -247,6 +247,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     vector< vector< int > >all_points_id;
 
     // vector of nodal stresses - Matrices (tensors) dim x dim
+    // TODO make this only for particles, now vector nodal_stress has length of all nodes, vertices and auxnodes (then node_id is needed for each matrix of nodal stresss - either pair <unsigned, Matrix> or two vectors - vector<unsigned> + vector<Matrix>) combine it at the beginning in init() - then it will apply also for adaptivity
     vector< Matrix >nodal_stress;
     bool export_nodal_stress = isStringInVect("nodal_stress", codes);
 
