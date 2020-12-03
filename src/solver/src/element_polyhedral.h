@@ -21,22 +21,22 @@ protected:
     string ip_type;
 
     void sort2D();
-    void findIntegrationPoints();
-    Vector WachspressShapeF(Point x) const;
-    Matrix WachspressShapeFGrad(Point x) const;
+    void WachspressShapeF(const Point *x, Vector &phi) const;
+    double WachspressShapeFGrad(const Point *x, Matrix &phiGrad) const;
 public:
     TranspPolygonal(const unsigned dim);
     ~TranspPolygonal() {};
-    virtual void init();
-    virtual Vector shapeF(Point x) const { return WachspressShapeF(x); };
-    virtual Matrix shapeFGrad(Point x) const { return WachspressShapeFGrad(x); };
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    virtual Matrix giveConductivityMatrix(string matrixType) const;
-    virtual Matrix giveCapacityMatrix() const;
-    virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+    virtual void init();
+    virtual void shapeF(const Point *x, Vector &phi) const { WachspressShapeF(x, phi); };
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const {return  WachspressShapeFGrad(x, phiGrad); };
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual void setIntegrationPointsAndWeights();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 class TranspVirtPolygonal : public TranspPolygonal
 {
 private:
@@ -45,7 +45,8 @@ public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
     virtual void init();
-    virtual Matrix giveConductivityMatrix(string matrixType) const;
+    virtual Matrix giveSteadyStateMatrix(string matrixType) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
 };
 
 //////////////////////////////////////////////////////////
@@ -55,20 +56,17 @@ public:
 class TranspCondensedPolygonal : public TranspPolygonal
 {
 private:
-    unsigned nodeMaxAngle;
     Vector red2full;
     vector< double >angles;
-    Vector fullTriShapeF(Point x) const;
-    Matrix fullTriShapeFGrad(Point x) const;
-    Vector condTriShapeF(Point x) const;
-    Matrix condTriShapeFGrad(Point x) const;
+    void fullShapeF(const Point *x, Vector &phi) const;
+    double fullShapeFGrad(const Point *x, Matrix &phiGrad) const;
 
     unsigned findFaceNumber(Point x) const;
 public:
     TranspCondensedPolygonal(const unsigned dim);
     ~TranspCondensedPolygonal() {};
-    virtual Vector shapeF(Point x) const { return condTriShapeF(x); };
-    virtual Matrix shapeFGrad(Point x) const { return condTriShapeFGrad(x); };
+    virtual void shapeF(const Point *x, Vector &phi) const;
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual void init();
 };
 
@@ -90,6 +88,7 @@ public:
  * };
  */
 
+/*
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 class TranspPolyhedral : public TranspPolygonal
@@ -115,6 +114,8 @@ public:
     virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
+*/
+
 /*
  * class TranspVirtPolyhedral : public TranspPolyhedral
  * {
