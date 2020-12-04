@@ -624,6 +624,9 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
 }
 
 void RigidPlate :: checkMechTransport( Node *master ) {
+    // in case of rigid plate, master is a virtual virtual node and not a physical particle or
+    master->setName(master->giveName().append("-virtual"));
+
     if ( dynamic_cast< MechNode * >( master ) ) {
       if ( master->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
         cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
