@@ -183,6 +183,9 @@ def generateInputs(tensileLoad, shearLoad,
 def runCalculation(angle, masterFile="input_files/master.inp",
                    binary="DiscreteModel",
                    nohup=True):
+    if not os.path.isfile(binary):
+        print("there is no binary file in this directory %s" % os.path.abspath("."))
+        exit(1)
     if nohup:
         nohup_file = "nohup.out"
         cmd = "nohup ./%s %s > %s" % (binary, masterFile, nohup_file)
@@ -281,7 +284,7 @@ if __name__ == '__main__':
     ###########################################################################
     # material file must be in the same directory as this python script
     ###########################################################################
-    matFile = "materials.inp"
+    matFile = "material.inp"
     matFileName = matFile.split(".")[0]
     folName = matFileName + "_calculation"
     if not os.path.isdir(folName):
@@ -351,7 +354,7 @@ if __name__ == '__main__':
                         hspace=0.30, wspace=0.30)
 
 
-    fig.savefig("%s_results.pdf" % folName)
+    fig.savefig("%s_results.pdf" % matFileName)
     # plt.show()
     plt.close()
     try:
