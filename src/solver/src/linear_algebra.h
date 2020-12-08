@@ -437,7 +437,7 @@ public:
     inline double operator[](const size_t i) const
     {
         const unsigned *i_index_pointer = find(& idx [ start ], & idx [ min(start + length, idx.size() ) ], i);
-        unsigned offset = i_index_pointer - & idx [ start ];
+        unsigned offset = i_index_pointer - & idx [ start ]; //todo: warning C4244: 'initializing': conversion from '__int64' to 'unsigned int', possible loss of data
         if ( i_index_pointer != & idx [ min(start + length, idx.size() ) ] ) {
             return ( val [ start + offset ] );
         }

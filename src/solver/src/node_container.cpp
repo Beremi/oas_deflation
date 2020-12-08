@@ -132,7 +132,7 @@ void NodeContainer :: establishDoFArray() {
             }
         } else if ( cs < cstr.size() && id == cstr [ cs ].first ) {
             // #constraint
-            * d = freeDoFs - constrDoFs + cs;
+            * d = freeDoFs - constrDoFs + cs; //todo:  warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
             constrainedDoFid [ cstr [ cs ].second ] = id;
             cs++;
         } else {
@@ -150,7 +150,7 @@ void NodeContainer :: establishDoFArray() {
     unsigned ndofs;
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         ndofs = ( * n )->giveNumberOfDoFs();
-        for ( unsigned k = 0; k < ndofs; k++, i++ ) {
+        for ( unsigned k = 0; k < ndofs; k++, i++ ) { //todo:  warning C4456: declaration of 'k' hides previous local declaration
             mechDoFs [ i ]   = ( * n )->isDoFMechanical(k);
             transpDoFs [ i ] = ( * n )->isDoFTransport(k);
         }

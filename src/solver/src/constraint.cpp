@@ -121,7 +121,7 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
             break;
         }
     }
-    if ( found ) {
+    if ( found ) { //Todo potentially uninitialized variable 'found' used!
         cerr << "volumetric average didn't find any suitable slave DoF" << endl;
         exit(1);
     }

@@ -216,10 +216,10 @@ void MechanicalPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementCo
 
 
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
-        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);
+        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() ); //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -415,7 +415,7 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
 void TransportPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     TrsDoF *mn;
-    initalNodeNum = nodes->giveSize();
+    initalNodeNum = nodes->giveSize(); //todo warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
     for ( unsigned i = 0; i < dim; i++ ) {
         mn = new TrsDoF(dim);
         nodes->addNode(mn);
@@ -573,10 +573,10 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
 //////////////////////////////////////////////////////////
 void TransportPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
-        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);
+        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() ); //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -729,7 +729,7 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     if ( d == 3 ) {
         iss >> z;
     }
-    this->center = Point(x, y, z);
+    this->center = Point(x, y, z); //todo: warning C4701: potentially uninitialized local variable 'z' used
     iss >> rI >> rO;
     this->r_inner = rI;
     this->r_outer = rO;
@@ -823,7 +823,7 @@ void PBlockContainer :: apply() {
 
 //////////////////////////////////////////////////////////
 void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
-    unsigned origsize = blocks.size();
+    unsigned origsize = blocks.size(); //todo: warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of dat
     string line, ftype;
     ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {

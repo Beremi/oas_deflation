@@ -159,7 +159,7 @@ void LinSawToothFunction :: readFromLine(istringstream &iss) {
             iss >> time_multiplier;
             bmult = true;
         } else if ( param.compare("time") == 0 ) {
-            iss >> timo;
+            iss >> timo;  //TODO potentially uninitialized local variable 'timo' used
             btim = true;
         } else if ( param.compare("value") == 0 ) {
             iss >> val;
@@ -168,7 +168,7 @@ void LinSawToothFunction :: readFromLine(istringstream &iss) {
     }
     if ( !bmult ) {
         if ( btim && bval ) {
-            time_multiplier = 1 / timo;
+            time_multiplier = 1 / timo; //todo:  warning C4701: potentially uninitialized local variable 'timo' used
             // std::cout << "timo = " << timo << ", value = " << val << ", time_multiplier = " << time_multiplier << '\n';
         } else {
             cerr << " function parameter 'time_multiplier' for function " << typeid( this ).name() << " was not specified" << endl;

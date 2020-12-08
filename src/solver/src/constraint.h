@@ -30,7 +30,7 @@ public:
     Node *giveSlaveNode() const { return slaveNode; };
     unsigned giveSlaveDir() const { return direction; };
     std :: vector< Node * >giveMasterNodes() { return masters; };
-    unsigned giveNumOfMasters() const { return masters.size(); };
+    unsigned giveNumOfMasters() const { return masters.size(); }; //TODO: warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
     Node *giveMasterNode(unsigned k) { return masters [ k ]; };
     unsigned giveMasterDoF(unsigned k) const;
     std :: vector< unsigned >giveMasterDirs() { return directions; };

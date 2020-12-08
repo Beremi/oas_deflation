@@ -276,7 +276,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     for ( auto const &el : * elems ) {
         for ( auto const &n : el->giveNodes() ) {
             auto res = std :: find(begin(* nodes), end(* nodes), n);
-            points_id.push_back(std :: distance(begin(* nodes), res) );
+            points_id.push_back(std :: distance(begin(* nodes), res) ); //todo warning C4244: 'argument': conversion from '__int64' to '_Ty', possible loss of data
             // points_id.push_back(n - *nodes->begin());
         }
         all_points_id.push_back(points_id);
@@ -641,10 +641,10 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         for ( auto const &n : rbc->giveNodes() ) {
             // Particle *part = static_cast< Particle * >( n );
             auto nod_id_ptr = std :: find(begin(* nodes), end(* nodes), n);
-            node_id_i = std :: distance(begin(* nodes), nod_id_ptr);
+            node_id_i = std :: distance(begin(* nodes), nod_id_ptr);// todo warning C4244: '=': conversion from '__int64' to 'unsigned int', possible loss of data
             for ( auto const &v : rbc->giveVertices() ) {
                 all_vertices_twice.push_back(v->givePoint() );
-                points_id.push_back(nodes->giveSize() + all_vertices_twice.size() - 1);
+                points_id.push_back(nodes->giveSize() + all_vertices_twice.size() - 1); //tofo warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
                 vertices_displ.push_back(calculateVertexDisplacement(* rbc, v, n, DoFs, this->dim) );
                 if ( export_nodal_stress ) {
                     vertex_correponding_node_id.push_back(node_id_i);

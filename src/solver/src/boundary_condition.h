@@ -64,7 +64,7 @@ public:
     void readFromFile(const string filename, NodeContainer *nodes);
     vector< unsigned >giveArrayOfBlockedDoFs() const { return dirichDoFs; };
     vector< unsigned >giveArrayOfLoadedDoFs() const { return neumannDoFs; };
-    unsigned giveNumBlockedDoFs() const { return dirichDoFs.size(); };
+    unsigned giveNumBlockedDoFs() const { return dirichDoFs.size(); };//todo: conversion from 'size_t' to 'unsigned int', possible loss of data
     vector< double >giveBlockedDoFValues(double time) const;
     vector< double >giveLoadedDoFValues(double time) const;
     BoundaryCondition *giveBC(unsigned i) { return BC [ i ]; };

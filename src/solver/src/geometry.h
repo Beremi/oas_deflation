@@ -35,7 +35,7 @@ public:
     virtual ~RegularRegion() {};
     virtual bool isInside(const Point &P) const = 0;
     virtual void setMainPoint(const Point &P) { this->mainPoint = P; };
-    virtual void setSize(const double &size) { this->size = size; };
+    virtual void setSize(const double &size) { this->size = size; }; //todo: warning C4458: declaration of 'size' hides class member
 };
 
 
