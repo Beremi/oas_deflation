@@ -284,7 +284,6 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     functions.append (fn1)
 
 
-
     return node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates
 
 
@@ -876,30 +875,69 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
         transportBC_merged.append(trsBC)
 
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
-"""
+
+
+
+def create3dPeriodicShear(maxLim, minDist, trials ):
+    print('Creating 3d periodic rectangle, shear loaded.')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechInitC_merged = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
+    #node_coords, mechBC_merged, mechInitC_merged , nodePositions, coupledNodes, mirtype = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
+
+    print ('Conducting Voronoi tesselation...', end ='')
+    vor = Voronoi(node_coords)
+    volumes = voronoi.voronoi_3d(vor, maxLim)
+    print('done.')
+
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, single force top right, bilinear
+    fn1 = utilitiesNumeric.sawToothConstFunc(value = -5e-4, period = 4)
+    functions.append (fn1)
+
+    mechIC_merged = []
+
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
-    functions = []
-
+    transportIC_merged = []
     ### selecting vertices on the left surface
-    boundA = np.array(  [-1e-8 , -1e-8] )
-    boundB = np.array(  [maxLim[0]+1e-8, maxLim[1]+1e-8]  )
-    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    vert = vor.vertices[faces1,:]
-    boundA = np.array(  [1e-8 , 1e-8] )
-    boundB = np.array(  [maxLim[0]-1e-8, maxLim[1]-1e-8]  )
-    faces0 = utilitiesGeom.excludeSelectedPts(boundA, boundB, vert)
-    faces = faces1[faces0]
+    """
+    leftFaceBC = np.array([2,-1])
+    #leftFaceIC = 25.6
+    boundA = np.array(  [-1e-8 , maxLim[1]/10*8] )
+    boundB = np.array(  [ 1e-8 , maxLim[1]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
+        transportBC_merged.append(trsBC)
+        #trsIC = utilitiesGeom.transportIC(leftFace[i], leftFaceIC)
+        #transportIC_merged.append(trsIC)
 
-    for i,k in enumerate(faces):
-        fn1 = utilitiesNumeric.constantFunc(np.sin(vor.vertices[k,0])*np.exp(vor.vertices[k,1]))
-        functions.append (fn1)
-        trsBC = utilitiesMech.transportBC(k,[i,-1])
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([3,-1])
+    boundA = np.array(  [maxLim[0] - 1e-8 , - 1e-8] )
+    boundB = np.array(  [maxLim[0] + 1e-8 , maxLim[1]/10*2 ] )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(rightFace)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords, [], transportBC_merged, vor, areas, functions
-"""
+    #return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
+    """
+
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+
+
 
 
 def create2dCoupledRVE(maxLim, minDist, trials ):
@@ -1140,10 +1178,10 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 
 
 
-def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1 ):
+def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1, coupled=False ):
     print('Creating 3d simply supported beam, uniform load.')
     #govNodes, rigidPlates
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled);
     node_coords = np.asarray(node_coords)
     """
     fig = plt.figure()
@@ -1170,10 +1208,36 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
+    fn2 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn2)
+
+    transportBC_merged = []
+    transportIC_merged = []
+    if coupled == True:
+
+        ### selecting vertices on the bottom surface
+        botFaceBC = np.array([2,-1])
+        boundA = np.array(  [-1e-4 , -1e-5, -1e-5] )
+        boundB = np.array(  [ maxLim[0]+1e-4 , 1e-5, maxLim[2]+1e-5]  )
+        botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+        for i in range (len(botFace)):
+            trsBC = utilitiesMech.transportBC(botFace[i], botFaceBC)
+            transportBC_merged.append(trsBC)
+
+        ### selecting vertices on the top surface
+        topFaceBC = np.array([0,-1])
+        boundA = np.array(  [-1e-4 , maxLim[1]-1e-5, -1e-5] )
+        boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, maxLim[2]+1e-5]  )
+        topFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+        for i in range (len(topFace)):
+            trsBC = utilitiesMech.transportBC(topFace[i], topFaceBC)
+            transportBC_merged.append(trsBC)
+
+    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
 
 
-
-    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates
 
 
 
@@ -2258,6 +2322,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZone
     govNodesMechBC = []
     rigidPlates = []
 
+
     #an indent due to mirroring of the data for voronoi tess.
     notches=[]
     indent = 1e-8
@@ -2911,10 +2976,340 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
 
 
 
+def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
+    dim = 3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    periodicBand = 3* minDist
+
+    print('assembling 3d periodic ')
+    ###########generating of points in rectangle
+    pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
+
+    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
+    #node_coords = np.loadtxt('test.out')
+
+    mirtype = []
+    coupledNodes = []
+    nodePositions = []
+    for i in range (len(node_coords)):
+        nodePositions.append(i+1)
+        mirtype.append(0)
+    node_coords = np.asarray(node_coords)
+    print(len(node_coords))
+
+    nNds =  np.vstack((
+    node_coords + np.array([-maxLim[0], 1*maxLim[1], 0]),#
+    node_coords + np.array([0*maxLim[0], 1*maxLim[1], 0]),
+    node_coords + np.array([1*maxLim[0], 1*maxLim[1], 0]),
+    node_coords + np.array([-1*maxLim[0], 0*maxLim[1], 0]),#
+    node_coords,
+    node_coords + np.array([1*maxLim[0], 0*maxLim[1], 0]),
+    node_coords + np.array([-1*maxLim[0], -1*maxLim[1], 0]),
+    node_coords + np.array([0*maxLim[0], -1*maxLim[1], 0]),#
+    node_coords + np.array([1*maxLim[0], -1*maxLim[1], 0]),
+        node_coords + np.array([-1*maxLim[0], 1*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([0*maxLim[0], 1*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([1*maxLim[0], 1*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([-1*maxLim[0], 0*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([0*maxLim[0], 0*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([1*maxLim[0], 0*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([-1*maxLim[0], -1*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([0*maxLim[0], -1*maxLim[1], 1*maxLim[2]]),
+        node_coords + np.array([1*maxLim[0], -1*maxLim[1], 1*maxLim[2]]),
+    node_coords + np.array([-1*maxLim[0], 1*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([0*maxLim[0], 1*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([1*maxLim[0], 1*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([-1*maxLim[0], 0*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([0*maxLim[0], 0*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([1*maxLim[0], 0*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([-1*maxLim[0], -1*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([0*maxLim[0], -1*maxLim[1], -1*maxLim[2]]),
+    node_coords + np.array([1*maxLim[0], -1*maxLim[1], -1*maxLim[2]]))                      )
+    #plt.plot(node_coords[:,0]+1, node_coords[:,1], 'x', color='red');
+    ########### adding periodic points
+    """
+    print('Adding periodic points')mechBC_merged
+    for i in range (len(node_coords)):
+        point = np.asarray(node_coords[i,:])
+        #
+        xplus = False
+        xminus = False
+        yplus = False
+        yminus = False
+        zplus = False
+        zminus = False
+        #
+        if(point[0]<periodicBand):
+            xplus = True
+        if(point[0]>maxLim[0]-periodicBand):
+            xminus = True
+        if(point[1]<periodicBand):
+            yplus = True
+        if(point[1]>maxLim[1]-periodicBand):
+            yminus = True
+        if(point[2]<periodicBand):
+            zplus = True
+        if(point[2]>maxLim[2]-periodicBand):
+            zminus = True
+
+        k = i+1# len(node_coords)+1
+
+        #images due to one dimension
+
+        if xplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            nodePositions.append(-k)
+            node_coords = np.vstack(( node_coords, newPoint ))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(1)
+            nNds.append(newPoint)
+        if xminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if yplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[1] += maxLim[1]
+            nodePositions.append(-k)
+            #plt.plot(  newPoint[0] , newPoint[1] ,'o', color='red')
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(2)
+            nNds.append(newPoint)
+        if yminus:
+            newPoint = np.copy(point)
+            newPoint[1] -= maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if zplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[2] += maxLim[2]
+            nodePositions.append(-k)
+            #plt.plot(  newPoint[0] , newPoint[1] ,'o', color='red')
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(3)
+            nNds.append(newPoint)
+        if zminus:
+            newPoint = np.copy(point)
+            newPoint[2] -= maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+
+
+        if xplus and yplus and not zplus and not zminus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] += maxLim[1]
+            nodePositions.append(-k)
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(110)
+            nNds.append(newPoint)
+
+        if xminus and yplus and not zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] += maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if xplus and yminus  and not zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] -= maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if xminus and yminus  and not zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] -= maxLim[1]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+
+
+        if xplus and yplus and zplus and not zminus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] += maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(-k)
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(111)
+            nNds.append(newPoint)
+        if xminus and yplus and zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] += maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if xplus and yminus  and zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] -= maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if xminus and yminus  and zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] -= maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
 
 
 
-def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZoneWidth = 0.15, orthogonalFracZone=False, notchWidth = -1):
+
+        if xplus and yplus and not zplus and zminus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] += maxLim[1]
+            newPoint[2] -= maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if xminus and yplus and not zplus and zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] += maxLim[1]
+            newPoint[2] -= maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if xplus and yminus  and not zplus and zminus:
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] -= maxLim[1]
+            newPoint[2] -= maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+        if xminus and yminus  and not zplus and zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] -= maxLim[1]
+            newPoint[2] -= maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+            nNds.append(newPoint)
+
+
+
+        if  not xplus and not xminus and  yplus and zplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            #newPoint[0] += maxLim[0]
+            newPoint[1] += maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(-k)
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(11)
+        if xminus and yplus and zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] += maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+        if xplus and yminus  and zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] += maxLim[0]
+            newPoint[1] -= maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+        if xminus and yminus  and zplus and not zminus:
+            newPoint = np.copy(point)
+            newPoint[0] -= maxLim[0]
+            newPoint[1] -= maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(0)
+            node_coords = np.vstack((node_coords, newPoint))
+            mirtype.append(-1)
+
+
+
+        if  not xplus and not xminus and  yplus and zplus:
+            #k = len(node_coords)+1
+            newPoint = np.copy(point)
+            #newPoint[0] += maxLim[0]
+            newPoint[1] += maxLim[1]
+            newPoint[2] += maxLim[2]
+            nodePositions.append(-k)
+            node_coords = np.vstack((node_coords, newPoint))
+            coupledNodes.append( np.array([i, len(node_coords)-1]) )
+            mirtype.append(11)
+
+    """
+
+    """
+    nNds = np.asarray(nNds)
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
+    #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
+    ax.scatter(nNds[:,0], nNds[:,1], nNds[:,2], color='r')
+    plt.show()
+    """
+
+
+    #print (len(node_coords))
+
+    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
+    #node_coords = np.loadtxt('test.out')
+
+
+
+    return nNds, mechBC_merged, mechInitC_merged #, nodePositions, coupledNodes, mirtype
+
+
+
+
+
+
+
+
+def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZoneWidth = 0.15, orthogonalFracZone=False, notchWidth = -1, coupled=False):
     minDist *=2
     dim = 3
     #lists for the model
@@ -2936,7 +3331,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     if notchWidth == -1:
         notchWidth = minDist /4
     else:
-        notchWidth /= 2
+        notchWidth /= 2.0
 
     #generating notch points
     if (notch > 0):
@@ -3221,8 +3616,10 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
     ##########################################generating of points, homogeneous volume
-    pointGenerators.generateNodesRect(maxLim, minDist*1.5, dim, trials, node_coords)
+    pointGenerators.generateNodesRect(maxLim, minDist/2, dim, trials, node_coords)
 
+    if coupled:
+        notches = []
     return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
 
 

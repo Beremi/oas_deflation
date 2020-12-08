@@ -10,8 +10,8 @@
 # Notched 3PB
 # !! pro 3PB zadej mindist ve fracture zone (zbytek bude hrubsi) !! 
 # A: 1131/200, B: 1386/300, C: 800/100
-Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0.5 loadWidth 0.005 minDist 0.004 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 100000
-#Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0.5 loadWidth 0.01 minDist 0.01 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 1 trials 2000
+Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH -1 loadWidth 0.005 minDist 0.006 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 10000 notchWidth -1
+#Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0.5 loadWidth 0.01 minDist 0.01 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 1 trials 200 notchWidth -1
 #
 #
 #RWTH Notched 3pb
@@ -36,6 +36,7 @@ Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0.5 loadWidth 0.005 minDist 0.004
 #
 #
 #Model 2d_periodicShear Xsize 0.05 Ysize 0.05 minDist 0.004 activeMechanics 1 activeTransport 1 trials 50000
+#Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMechanics 1 activeTransport 1 trials 400
 #
 #Model 3d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0007 notchRadRight 0.0245 notchRadLeft 0.0275 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 200 RWTHQuarter 1
 #Model 2d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0005 innerRadTop 0.0255 innerRadBottom 0.0225 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 10000 
@@ -51,7 +52,8 @@ Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0.5 loadWidth 0.005 minDist 0.004
 ####################################################################################
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
-Model 3d_coupledBrazilianDisc cylinderHeight 0.1 cylinderRad 0.3 minDist 0.015 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
+#Model 3d_coupledBrazilianDisc cylinderHeight 0.08 cylinderRad 0.3 minDist 0.022 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
+#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0.5 loadWidth 0.01 minDist 0.007 fracZoneWidth 0.1 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.01
 #
 #
 ####################################################################################
