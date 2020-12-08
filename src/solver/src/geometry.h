@@ -20,6 +20,7 @@ public:
     Region() {};
     virtual ~Region() {};
     virtual bool isInside(const Point &P) const = 0;
+    virtual void readFromLine(istringstream &iss) = 0;
 };
 
 
@@ -49,6 +50,7 @@ public:
     virtual ~Block() {};
     Block(const Point &lB, const Point &rT);
     virtual bool isInside(const Point &P) const;
+    virtual void readFromLine(istringstream &iss);
 };
 
 class Circle : public RegularRegion
@@ -59,6 +61,7 @@ public:
     virtual ~Circle() {};
     Circle(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
+    virtual void readFromLine(istringstream &iss);
 };
 
 
@@ -69,6 +72,7 @@ public:
     virtual ~Sphere() {};
     Sphere(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
+
 };
 
 
@@ -102,6 +106,6 @@ bool doIntersect(const Point &p1, const Point &q1, const Point &p2, const Point 
 bool isInPolygon(const std :: vector< Point > &polygon, const Point &p);
 
 
-
+void readRegions(const std :: string &filename, std :: vector < Region * > &regions );
 
 #endif
