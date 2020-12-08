@@ -38,7 +38,7 @@ public:
      * \param c2 the second argument.
      */
     virtual void readFromLine(istringstream &iss);
-    
+
     Point givePoint() const { return point; };
     Point *givePointPointer() { return & point; };
     void setPoint(const Point &P) { point = P; };
@@ -47,12 +47,13 @@ public:
     void setStartingDoF(unsigned num) { firstDoF = num; };
     unsigned giveStartingDoF() const { return firstDoF; };
     string giveName() const { return name; }
+    void setName(const std :: string &newName) { this->name = newName; };
     bool doesMechanics() const { return isMechanical; };
     bool doesTransport() const { return isTransport; };
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const { ( void ) code; ( void ) DoFs; return 0; };
     bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
     bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
-    void subtructFromPoint(Point *p) { point -= (*p); }; 
+    void subtructFromPoint(Point *p) { point -= (*p); };
 };
 
 //////////////////////////////////////////////////////////
