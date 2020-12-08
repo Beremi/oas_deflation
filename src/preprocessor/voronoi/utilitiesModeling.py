@@ -284,7 +284,6 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     functions.append (fn1)
 
 
-
     return node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates
 
 
@@ -1179,10 +1178,10 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 
 
 
-def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1 ):
+def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1, coupled=False ):
     print('Creating 3d simply supported beam, uniform load.')
     #govNodes, rigidPlates
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled);
     node_coords = np.asarray(node_coords)
     """
     fig = plt.figure()
@@ -1209,10 +1208,36 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
+    fn2 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn2)
+
+    transportBC_merged = []
+    transportIC_merged = []
+    if coupled == True:
+
+        ### selecting vertices on the bottom surface
+        botFaceBC = np.array([2,-1])
+        boundA = np.array(  [-1e-4 , -1e-5, -1e-5] )
+        boundB = np.array(  [ maxLim[0]+1e-4 , 1e-5, maxLim[2]+1e-5]  )
+        botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+        for i in range (len(botFace)):
+            trsBC = utilitiesMech.transportBC(botFace[i], botFaceBC)
+            transportBC_merged.append(trsBC)
+
+        ### selecting vertices on the top surface
+        topFaceBC = np.array([0,-1])
+        boundA = np.array(  [-1e-4 , maxLim[1]-1e-5, -1e-5] )
+        boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, maxLim[2]+1e-5]  )
+        topFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+        for i in range (len(topFace)):
+            trsBC = utilitiesMech.transportBC(topFace[i], topFaceBC)
+            transportBC_merged.append(trsBC)
+
+    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
 
 
-
-    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates
 
 
 
@@ -2297,6 +2322,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZone
     govNodesMechBC = []
     rigidPlates = []
 
+
     #an indent due to mirroring of the data for voronoi tess.
     notches=[]
     indent = 1e-8
@@ -3283,7 +3309,7 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
 
 
 
-def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZoneWidth = 0.15, orthogonalFracZone=False, notchWidth = -1):
+def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZoneWidth = 0.15, orthogonalFracZone=False, notchWidth = -1, coupled=False):
     minDist *=2
     dim = 3
     #lists for the model
@@ -3305,7 +3331,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     if notchWidth == -1:
         notchWidth = minDist /4
     else:
-        notchWidth /= 2
+        notchWidth /= 2.0
 
     #generating notch points
     if (notch > 0):
@@ -3590,8 +3616,10 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
     ##########################################generating of points, homogeneous volume
-    pointGenerators.generateNodesRect(maxLim, minDist*1.5, dim, trials, node_coords)
+    pointGenerators.generateNodesRect(maxLim, minDist/2, dim, trials, node_coords)
 
+    if coupled:
+        notches = []
     return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
 
 
