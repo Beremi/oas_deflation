@@ -137,7 +137,7 @@ public:
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     double giveCrackOpening() { return tempCrackOpening; };
-    Vector giveDistanceToNode(const unsigned &node_i, const unsigned &ip_id) const;
+    Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     Point giveNormal() const { return normal; };
     Point giveT1() const { return t1; };
     Point giveT2() const { return t2; };

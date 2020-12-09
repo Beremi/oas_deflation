@@ -370,11 +370,15 @@ Matrix &Matrix :: operator*=(const Matrix &m) {
 }
 
 Matrix &Matrix :: operator+=(const Matrix &m) {
+    assert(m.numRows() == this->numRows() );
+    assert(m.numCols() == this->numCols() );
     ( * v ) += ( m.array() );
     return * this;
 }
 
 Matrix Matrix :: operator+(const Matrix &m) const {
+    assert(m.numRows() == this->numRows() );
+    assert(m.numCols() == this->numCols() );
     Matrix ret(* this);
     ret += m;
     ;
@@ -387,11 +391,15 @@ Matrix &Matrix :: operator+=(const double x) {
 }
 
 Matrix &Matrix :: operator-=(const Matrix &m) {
+    assert(m.numRows() == this->numRows() );
+    assert(m.numCols() == this->numCols() );
     ( * v ) -= ( m.array() );
     return * this;
 }
 
 Matrix Matrix :: operator-(const Matrix &m) const {
+    assert(m.numRows() == this->numRows() );
+    assert(m.numCols() == this->numCols() );
     Matrix ret(* this);
     ret -= m;
     ;
