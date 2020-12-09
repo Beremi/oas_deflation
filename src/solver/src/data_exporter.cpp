@@ -559,6 +559,9 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 
     unsigned node_id, ni;
     int first;
+    Vector intF0(2*dim);
+    Vector intF1(dim);
+    Vector intF2(dim);
     Vector elDoFvalues, elReactValues, strainNT;
     vector< unsigned >elDoFs;
 
@@ -582,17 +585,24 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
             single_volume = 0.5 * rbc->giveLength() * rbc->giveArea() / dim;
             first = -1;
             ni = 0;
+            intF0 = el->giveInternalForces(elDoFvalues, false);
+            for ( size_t ii = 0; ii < dim; ii++ ){
+              intF1[ii] = intF0[ii];
+              intF2[ii] = intF0[ii + 3 * (dim - 1)];
+            }
             for ( auto const &n : el->giveNodes() ) {
                 auto res = std :: find(begin(* nodes), end(* nodes), n);
                 node_id = std :: distance(begin(* nodes), res);
                 Volume [ node_id ] += single_volume;
 
                 stress [ node_id ] += dyadicProduct(
-                    ( el->giveInternalForces(elDoFvalues, false)
-                      + rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
+                    (
+                      ( (first == -1) ? intF1 * -first : intF2  * -first ) +
+                      rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
                     )
                     * first
                     , rbc->giveDistanceToNode(ni, 0) );
+                // TODO here is probably missing some value corresponding to internal moments, since only forces are taken into account to intF1 & intF2
                 // for node corresponding to end of element, traction needs to be reversed
                 first = 1;
                 ni++;
