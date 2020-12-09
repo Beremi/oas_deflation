@@ -39,13 +39,14 @@ public:
 //////////////////////////////////////////////////////////
 class TranspVirtPolygonal : public TranspPolygonal
 {
-private:
-    Matrix V1, V2;
+protected:
+    Matrix V1, V2, W1, W2; 
 public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
     virtual void init();
     virtual Matrix giveSteadyStateMatrix(string matrixType) const;
+    virtual Matrix giveMassMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
 };
 
@@ -55,7 +56,7 @@ public:
 
 class TranspCondensedPolygonal : public TranspPolygonal
 {
-private:
+private:       
     Vector red2full;
     vector< double >angles;
     void fullShapeF(const Point *x, Vector &phi) const;

@@ -57,7 +57,7 @@ Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimensi
 //////////////////////////////////////////////////////////
 double TrsprtMaterialStatus :: giveMassConstant() const {
     TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-    return m->giveCapacity() * m->giveDensity();
+    return -m->giveCapacity() * m->giveDensity();
 }
 
 //////////////////////////////////////////////////////////

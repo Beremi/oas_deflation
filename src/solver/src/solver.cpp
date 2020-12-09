@@ -65,6 +65,7 @@ void Solver :: runBeforeEachStep() {
 
 //////////////////////////////////////////////////////////
 void Solver :: runAfterEachStep() {
+
     if ( time + dt > termination_time ) {
         dt = termination_time - time;
     }
@@ -736,6 +737,7 @@ Solver *TransientLinearMechanicalSolver ::  readFromFile(const string filename) 
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: solve() {
+
     nodes->addRHS_nodalLoad(load, time - alpha_f * dt);  //add nodal load, at time alpha_f
     nodes->updateDirrichletBC(r, time);   //give prescribed DoFs, at time t
     r_f = r_old * alpha_f + r * ( 1. - alpha_f );
@@ -808,6 +810,7 @@ void TransientLinearTransportSolver :: init() {
     r_old = r;
     r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     nodes->giveReducedDoFArray(r, r_red);
+    v_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
 
     //compute initial presure derivative
     v = Vector(totalDoFnum);

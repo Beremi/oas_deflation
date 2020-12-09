@@ -306,6 +306,7 @@ public:
     Vector &operator*=(const Vector &m);
     //  const Matrix& operator *(const Matrix &m) const ;
     Matrix &operator+=(const Matrix &m);
+    Matrix &operator+=(const double x);
     Matrix operator+(const Matrix &m) const;
     Matrix &operator-=(const Matrix &m);
     Matrix operator-(const Matrix &m) const;

@@ -34,7 +34,7 @@ namespace fs = boost :: filesystem;
 
 #define PRINT_TIME true
 #define PRINT_DEBUG_TIME false
-
+# define M_PI  3.14159265358979323846  /* pi */
 
 namespace GlobPaths {
 //extern fs :: path INPUT;

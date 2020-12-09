@@ -252,39 +252,77 @@ TranspVirtPolygonal :: TranspVirtPolygonal(const unsigned dim) : TranspPolygonal
 void TranspVirtPolygonal :: init() {
     TranspPolygonal :: init(); //calling base class method;
 
-    Matrix R(nnodes, ndim);
-    unsigned j = nnodes - 1;
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        R [ i ] [ 0 ] = ( normals [ i ].x * surfaces [ i ] + normals [ j ].x * surfaces [ j ] ) / 2.;
-        R [ i ] [ 1 ] = ( normals [ i ].y * surfaces [ i ] + normals [ j ].y * surfaces [ j ] ) / 2.;
-        j = i;
-    }
-
-    Matrix N(nnodes, ndim);
+    double radius = pow(volume/M_PI, 0.5);  
+    Matrix D(nnodes,ndim+1);
     Point x;
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        x = nodes [ i ]->givePoint();
-        N [ i ] [ 0 ] = x.x;
-        N [ i ] [ 1 ] = x.y;
-    }
-
-    Matrix I(nnodes, nnodes);
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        I [ i ] [ i ] = 1.;
-    }
-
-    Matrix P0(nnodes, nnodes);
-    for ( unsigned i = 0; i < nnodes; i++ ) {
-        for ( unsigned j = 0; j < nnodes; j++ ) {
-            P0 [ i ] [ j ] = 1. / nnodes;
+    unsigned i,j,v;
+    for( i=0; i<nnodes; i++){
+        D[i][0] = 1.;
+        x = nodes[i]->givePoint();
+        for( v=0; v<ndim; v++){
+            D[i][v+1] = (x.giveCoord(v) - centroid.giveCoord(v))/radius;
         }
     }
 
-    Matrix H = matrix_multiply(N, R.transpose() ) / volume;
-    Matrix P =  H +  matrix_multiply(P0, I - H);
+    Matrix B(ndim+1, nnodes);
+     j = nnodes - 1;
+    for (  i = 0; i < nnodes; i++ ) {
+        B[0][i] = 1./nnodes;
+        for( v=0; v<ndim; v++){
+            B [ v+1 ] [ i ] = ( normals [ i ].giveCoord(v) * surfaces [ i ] + normals [ j ].giveCoord(v) * surfaces [ j ] );
+        }
+        j = i;
+    }
+    B /= 2.*radius;
 
-    V1 = matrix_multiply(R, R.transpose() ) / volume;
-    V2 = I - P;
+    Matrix G = matrix_multiply(B,D); 
+    Matrix Gtilde = G;
+    for( i=0; i<ndim+1; i++) Gtilde[0][i] = 0.; 
+
+    double Gdet = G[0][0]*G[1][1]*G[2][2] + G[0][2]*G[1][0]*G[2][1] + G[2][0]*G[0][1]*G[1][2] - G[0][0]*G[2][1]*G[1][2] - G[0][1]*G[1][0]*G[2][2] - G[0][2]*G[1][1]*G[2][0]; 
+    Matrix Ginv(ndim+1, ndim+1);
+    Ginv[0][0] = G[1][1]*G[2][2]-G[1][2]*G[2][1];
+    Ginv[1][0] = -G[1][0]*G[2][2]-G[1][2]*G[2][0];
+    Ginv[2][0] = G[1][0]*G[2][1]-G[1][1]*G[2][0];
+    Ginv[0][1] = -G[0][1]*G[2][2]-G[0][2]*G[2][1];
+    Ginv[1][1] = G[0][0]*G[2][2]-G[0][2]*G[2][0];
+    Ginv[2][1] = -G[0][0]*G[2][1]-G[0][1]*G[2][0];
+    Ginv[0][2] = G[0][1]*G[1][2]-G[0][2]*G[1][1];
+    Ginv[1][2] = -G[0][0]*G[1][2]-G[0][2]*G[1][0];
+    Ginv[2][2] = G[0][0]*G[1][1]-G[0][1]*G[1][0];
+    Ginv /= Gdet;
+
+    V1 = matrix_multiply(Ginv,B);
+    V2 =matrix_multiply(D,V1) * (-1.);
+    for(i=0; i<nnodes; i++) V2[i][i] += 1.;
+    V1 = matrix_multiply(matrix_multiply(V1.transpose(),Gtilde),V1);
+
+    Matrix H(ndim+1,ndim+1);
+    Vector m(ndim+1);
+    m[0] = 1;
+    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
+        for( v=0; v<ndim; v++)  m[v+1] = (ip_locs[i].giveCoord(v)-centroid.giveCoord(v))/radius;
+        H += dyadicProduct(m,m*ip_weights [ i ]);
+    }
+
+    double Hdet = H[0][0]*H[1][1]*H[2][2] + H[0][2]*H[1][0]*H[2][1] + H[2][0]*H[0][1]*H[1][2] - H[0][0]*H[2][1]*H[1][2] - H[0][1]*H[1][0]*H[2][2] - H[0][2]*H[1][1]*H[2][0]; 
+    Matrix Hinv(ndim+1, ndim+1);
+    Hinv[0][0] = H[1][1]*H[2][2]-H[1][2]*H[2][1];
+    Hinv[1][0] = -H[1][0]*H[2][2]-H[1][2]*H[2][0];
+    Hinv[2][0] = H[1][0]*H[2][1]-H[1][1]*H[2][0];
+    Hinv[0][1] = -H[0][1]*H[2][2]-H[0][2]*H[2][1];
+    Hinv[1][1] = H[0][0]*H[2][2]-H[0][2]*H[2][0];
+    Hinv[2][1] = -H[0][0]*H[2][1]-H[0][1]*H[2][0];
+    Hinv[0][2] = H[0][1]*H[1][2]-H[0][2]*H[1][1];
+    Hinv[1][2] = -H[0][0]*H[1][2]-H[0][2]*H[1][0];
+    Hinv[2][2] = H[0][0]*H[1][1]-H[0][1]*H[1][0];
+    Hinv /= Hdet;
+
+    W2 = matrix_multiply(Ginv,B); 
+    Matrix C = matrix_multiply(H,W2);
+    W2 = matrix_multiply(D,W2)*(-1.); 
+    for(i=0; i<nnodes; i++) W2[i][i] += 1.;
+    W1 = matrix_multiply(matrix_multiply(C.transpose(), Hinv), C);
 }
 
 //////////////////////////////////////////////////////////
@@ -295,7 +333,30 @@ Matrix TranspVirtPolygonal :: giveSteadyStateMatrix(string matrixType) const {
         cond += ip_weights [ i ] * stats [ i ]->giveStiffnessTensor("elastic", ndim)[0][0];
     }
     cond /= volume;
+
     return V1 * cond + matrix_multiply(matrix_multiply(V2.transpose(), C), V2);
+}
+
+//////////////////////////////////////////////////////////
+Matrix TranspVirtPolygonal :: giveMassMatrix() const {
+    Matrix M = TranspPolygonal :: giveMassMatrix();
+    double cap = 0;
+    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
+        cap += ip_weights [ i ] * stats [ i ]->giveMassConstant();
+    }
+    cap /= volume;
+
+    /*
+    cout << "------------" << endl;
+    M.print();
+    cout << "------------" << endl;
+    ( W1 * cap + matrix_multiply(matrix_multiply(W2.transpose(), M), W2) ).print();
+    cout << "------------" << endl;
+    ( (W1 + matrix_multiply(W2.transpose(), W2)*volume*volume )* cap ).print();
+    exit(1);
+    return M;
+    */
+    return W1 * cap + matrix_multiply(matrix_multiply(W2.transpose(), M), W2);
 }
 
 //////////////////////////////////////////////////////////
@@ -304,7 +365,6 @@ Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen
     //return Element::giveInternalForces(DoFs, frozen); //incorrect integration
     return  giveSteadyStateMatrix("elastic")*DoFs;  //using VEM integration, only elastic material!
 }
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

@@ -99,7 +99,7 @@ public:
 class MechanicalElement : public Element
 {
 protected:
-    Matrix GeomM; //R*B
+
 public:
     MechanicalElement() {}
     ~MechanicalElement() {};
