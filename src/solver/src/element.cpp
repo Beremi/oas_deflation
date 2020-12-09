@@ -76,14 +76,9 @@ Matrix Element :: giveSteadyStateMatrix(string matrixType) const {
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
+        D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);        
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * ip_weights [ i ] );
     }
-    /*cout << name << endl;
-     * K.print();
-     * D.print();
-     * Bs[0].print();
-     */
     return K;
 }
 
@@ -475,7 +470,7 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
-    return GeomM * DoFs;
+    return Bs[0] * DoFs;
 };
 
 //////////////////////////////////////////////////////////
@@ -567,7 +562,7 @@ Matrix Truss :: giveHMatrix(const Point *x) const {
 }
 //////////////////////////////////////////////////////////
 Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
-    Vector strain = GeomM * DoFs;
+    Vector strain = Bs[0] * DoFs;
     for ( size_t k = 1; k < strain.size(); k++ ) {
         strain [ k ] = 0;                                  //only normal strain active in truss
     }

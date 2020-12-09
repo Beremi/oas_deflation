@@ -20,12 +20,13 @@ void Model :: init() {    //initialization
     elems.findElementFriends();
     exporters.init();
     solver->init();
+    cout << "Initialition completed" << endl;
 }
 
 //////////////////////////////////////////////////////////
 void Model :: solve() {
     //solution
-    while ( !solver->isTerminated() ) {
+    while ( !solver->isTerminated() ) {  
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
         exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
