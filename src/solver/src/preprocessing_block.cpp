@@ -729,7 +729,7 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     if ( d == 3 ) {
         iss >> z;
     }
-    this->center = Point(x, y, z); //todo: warning C4701: potentially uninitialized local variable 'z' used
+    this->center = Point(x, y, z); //todo: warning C4701: potentially uninitialized local variable 'z' used. Should be initialized to zero to prevent problems in exporter.
     iss >> rI >> rO;
     this->r_inner = rI;
     this->r_outer = rO;
