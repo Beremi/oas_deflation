@@ -90,7 +90,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
         func = funcs->giveFunction(funcnum);
     }
     for ( unsigned c = 0; c < nummaxunit; c++ ) {
-        clength = c_weights [ c ].size();
+        clength = c_weights [ c ].size(); //todo: warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
         if ( clength == 0 ) {
             cerr << "Error: Indirect displacement controll weights were not set" << endl;
             exit(1);

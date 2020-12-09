@@ -704,7 +704,7 @@ Solver *TransientLinearMechanicalSolver ::  readFromFile(const string filename) 
             } else if ( param.compare("beta") == 0 ) {
                 iss >> gamma;
             } else if ( param.compare("spectral_radius") == 0 ) {
-                double rhoinfty;
+                double rhoinfty; //todo: warning C4458: declaration of 'rhoinfty' hides class member
                 iss >> rhoinfty;
                 applySpectralRadius(rhoinfty);
             }

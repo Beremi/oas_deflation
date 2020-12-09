@@ -609,3 +609,13 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
         }
     }
 }
+
+
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > & NodeTypes, fs :: path resultDir) {
+  // if NodeTypes.empty() then save all nodes
+  // TODO finish this, now (for adaptivity) just save path to file with particles
+}
+
+void saveElems(const ElementContainer &elems, const std :: vector< std :: string > & ElemTypes, fs :: path resultDir) {
+  // if ElemTypes.empty() then save all elems
+}

@@ -1,6 +1,7 @@
 // TODO move all functions regarding geometrical operations etc.
 // TODO change thsi to class region -> inherited classes circle, polygon etc with same fns isinside etc
 #include "geometry.h"
+#include <fstream>
 // Define Infinite (Using INT_MAX caused overflow problems)
 #define INF 10000
 #define TOL 1e-9
@@ -9,6 +10,14 @@
 Block :: Block(const Point &lB, const Point &rT) {
     this->mainPoint = lB;
     this->rightTop = rT;
+}
+
+void Block :: readFromLine(istringstream &iss){
+    double x, y, z;
+    iss >> x >> y >> z;
+    this->mainPoint = Point(x, y, z);
+    iss >> x >> y >> z;
+    this->rightTop = Point(x, y, z);
 }
 
 bool Block :: isInside(const Point &P) const {
@@ -25,6 +34,13 @@ bool Block :: isInside(const Point &P) const {
 ///////////////////////////////////////////////////////////////////////////////
 Circle :: Circle(const Point &c, const double &r) {
     this->mainPoint = c;
+    this->size = r;
+}
+
+void Circle :: readFromLine(istringstream &iss) {
+    double x, y, z, r;
+    iss >> x >> y >> z >> r;
+    this->mainPoint = Point(x, y, z);
     this->size = r;
 }
 
@@ -214,4 +230,43 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 
     // Return true if count is odd, false otherwise
     return count & 1;  // Same as (count%2 == 1)
+}
+
+
+void readRegions(const std :: string &filename, std :: vector < Region * > &regions ){
+  size_t origsize = regions.size();
+  string line, regionType;
+  ifstream inputfile(filename.c_str() );
+  if ( inputfile.is_open() ) {
+    while ( getline(inputfile >> std :: ws, line) ) {
+      if ( line.empty() ) {
+        continue;
+      }
+      if ( line.at(0) == '#' ) {
+        continue;
+      }
+      istringstream iss(line);
+      iss >> std :: ws >> regionType;
+      if ( !regionType.rfind("#", 0) == 0 ) {
+        if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
+            Block *newregion = new Block();
+            newregion->readFromLine(iss);
+            regions.push_back(newregion);
+        } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
+            Sphere *newregion = new Sphere();
+            newregion->readFromLine(iss);
+            regions.push_back(newregion);
+        } else {
+            cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
+            exit(EXIT_FAILURE);
+        }
+      }
+    }
+    inputfile.close();
+    cout << "Input file '" <<  filename << "' succesfully loaded; " << regions.size() - origsize << " regions found" << endl;
+  } else {
+    cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
+    exit(EXIT_FAILURE);
+  }
+
 }

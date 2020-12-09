@@ -195,4 +195,8 @@ protected:
 
 void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
 
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > & NodeTypes, fs :: path resultDir);
+
+void saveElems(const ElementContainer &elems, const std :: vector< std :: string > & ElemTypes, fs :: path resultDir);
+
 #endif /* _EXPORTER_C_H */
