@@ -96,7 +96,7 @@ void TranspPolygonal :: sort2D() {
         centroid += ( nodes [ faces [ i ] [ 0 ] ]->givePoint() + nodes [ faces [ i ] [ 1 ] ]->givePoint() + cpoint ) * triVolume;
         volume += triVolume;
     }
-    centroid /= volume * 3.;    
+    centroid /= volume * 3.;
 }
 
 //////////////////////////////////////////////////////////
@@ -252,7 +252,7 @@ TranspVirtPolygonal :: TranspVirtPolygonal(const unsigned dim) : TranspPolygonal
 void TranspVirtPolygonal :: init() {
     TranspPolygonal :: init(); //calling base class method;
 
-    double radius = pow(volume/M_PI, 0.5);  
+    double radius = pow(volume/M_PI, 0.5);
     Matrix D(nnodes,ndim+1);
     Point x;
     unsigned i,j,v;
@@ -275,11 +275,11 @@ void TranspVirtPolygonal :: init() {
     }
     B /= 2.*radius;
 
-    Matrix G = matrix_multiply(B,D); 
+    Matrix G = matrix_multiply(B,D);
     Matrix Gtilde = G;
-    for( i=0; i<ndim+1; i++) Gtilde[0][i] = 0.; 
+    for( i=0; i<ndim+1; i++) Gtilde[0][i] = 0.;
 
-    double Gdet = G[0][0]*G[1][1]*G[2][2] + G[0][2]*G[1][0]*G[2][1] + G[2][0]*G[0][1]*G[1][2] - G[0][0]*G[2][1]*G[1][2] - G[0][1]*G[1][0]*G[2][2] - G[0][2]*G[1][1]*G[2][0]; 
+    double Gdet = G[0][0]*G[1][1]*G[2][2] + G[0][2]*G[1][0]*G[2][1] + G[2][0]*G[0][1]*G[1][2] - G[0][0]*G[2][1]*G[1][2] - G[0][1]*G[1][0]*G[2][2] - G[0][2]*G[1][1]*G[2][0];
     Matrix Ginv(ndim+1, ndim+1);
     Ginv[0][0] = G[1][1]*G[2][2]-G[1][2]*G[2][1];
     Ginv[1][0] = -G[1][0]*G[2][2]-G[1][2]*G[2][0];
@@ -305,7 +305,7 @@ void TranspVirtPolygonal :: init() {
         H += dyadicProduct(m,m*ip_weights [ i ]);
     }
 
-    double Hdet = H[0][0]*H[1][1]*H[2][2] + H[0][2]*H[1][0]*H[2][1] + H[2][0]*H[0][1]*H[1][2] - H[0][0]*H[2][1]*H[1][2] - H[0][1]*H[1][0]*H[2][2] - H[0][2]*H[1][1]*H[2][0]; 
+    double Hdet = H[0][0]*H[1][1]*H[2][2] + H[0][2]*H[1][0]*H[2][1] + H[2][0]*H[0][1]*H[1][2] - H[0][0]*H[2][1]*H[1][2] - H[0][1]*H[1][0]*H[2][2] - H[0][2]*H[1][1]*H[2][0];
     Matrix Hinv(ndim+1, ndim+1);
     Hinv[0][0] = H[1][1]*H[2][2]-H[1][2]*H[2][1];
     Hinv[1][0] = -H[1][0]*H[2][2]-H[1][2]*H[2][0];
@@ -318,9 +318,9 @@ void TranspVirtPolygonal :: init() {
     Hinv[2][2] = H[0][0]*H[1][1]-H[0][1]*H[1][0];
     Hinv /= Hdet;
 
-    W2 = matrix_multiply(Ginv,B); 
+    W2 = matrix_multiply(Ginv,B);
     Matrix C = matrix_multiply(H,W2);
-    W2 = matrix_multiply(D,W2)*(-1.); 
+    W2 = matrix_multiply(D,W2)*(-1.);
     for(i=0; i<nnodes; i++) W2[i][i] += 1.;
     W1 = matrix_multiply(matrix_multiply(C.transpose(), Hinv), C);
 }
@@ -400,7 +400,7 @@ double TranspCondensedPolygonal :: fullShapeFGrad(const Point *x, Matrix &phiGra
 
 //////////////////////////////////////////////////////////
 unsigned TranspCondensedPolygonal :: findFaceNumber(Point x) const {
-    double alpha = atan2(x.getY() - centroid.getY(), x.getX() - centroid.getX() ); 
+    double alpha = atan2(x.getY() - centroid.getY(), x.getX() - centroid.getX() );
     double a, b;
     unsigned face;
     for ( face = 0; face < nnodes; face++ ) {

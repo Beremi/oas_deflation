@@ -65,7 +65,7 @@ protected:
     Point centroid;
     bool active_mechanics, active_transport;
     vector< vector < Vector > > mechProjectors;
-    
+
 public:
     DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~DiscreteRVEMaterialStatus(){};

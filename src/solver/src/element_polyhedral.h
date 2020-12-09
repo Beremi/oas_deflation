@@ -40,7 +40,7 @@ public:
 class TranspVirtPolygonal : public TranspPolygonal
 {
 protected:
-    Matrix V1, V2, W1, W2; 
+    Matrix V1, V2, W1, W2;
 public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
@@ -56,7 +56,7 @@ public:
 
 class TranspCondensedPolygonal : public TranspPolygonal
 {
-private:       
+private:
     Vector red2full;
     vector< double >angles;
     void fullShapeF(const Point *x, Vector &phi) const;

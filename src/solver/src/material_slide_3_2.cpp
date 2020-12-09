@@ -643,7 +643,7 @@ void Slide32Material :: readFromLine(istringstream &iss) {
     if ( f_c0 < f_c ) {
         std::cerr << "material param f_c0 = " << f_c0 << " must not be greater than parameter f_c = " << f_c << '\n';
         exit(EXIT_FAILURE);
-        // TODO similar must be check of taubar vs f_t etc, some combinations does not make sense for the cap function 
+        // TODO similar must be check of taubar vs f_t etc, some combinations does not make sense for the cap function
     }
     if ( !bm ) {
         cerr << name << ": material parameter 'm' was not specified" << endl;

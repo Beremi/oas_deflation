@@ -20,7 +20,7 @@ RVEMaterialStatus :: ~RVEMaterialStatus() {
 void RVEMaterialStatus :: init() {
     RVE->readFromFile(inputfile.string() );
     generateVolumetricAverageBC();
-    RVE->init();    
+    RVE->init();
 
     stringstream appendname;
     appendname << "_" << std::setfill('0') << std::setw(4) << element->giveID() << "_" << std::setw(2) << idx;
@@ -64,7 +64,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     temp_strain = strain;
 
     volumAverFunc->setYValue(0., 0);
-    
+
     unsigned ndim = RVE->giveDimension();
 
     unsigned stra_size = ndim*ndim;
@@ -78,7 +78,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     ElementContainer *elems = RVE->giveElements();
     Point normal;
 
-    if (active_mechanics){   
+    if (active_mechanics){
         RigidBodyContact *e;
         Vector eigstr(ndim);
         unsigned num = 0;
@@ -94,7 +94,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
         }
     }
 
-    if (active_transport){   
+    if (active_transport){
         Transp1D *e;
         Vector eigstr(0);
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
@@ -115,9 +115,9 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     //collect results
     temp_stress.resize(stra_size+pres_size);
     temp_stress *= 0;
-    
-    
-    if (active_mechanics){   
+
+
+    if (active_mechanics){
         double volume = 0.;
         RigidBodyContact *e;
         Vector factor;
@@ -133,11 +133,11 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
                 volume += e->giveVolume();
             }
         }
-        for(unsigned v=0; v<stra_size; v++) temp_stress[v] /= volume; 
+        for(unsigned v=0; v<stra_size; v++) temp_stress[v] /= volume;
     }
-    
 
-    if (active_transport){   
+
+    if (active_transport){
         double volume = 0.;
         double factor;
         Transp1D *e;
@@ -164,7 +164,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     */
 
     return temp_stress;
-    
+
 
 }
 
@@ -186,8 +186,8 @@ Matrix DiscreteRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned nd
     Point normal;
     Vector n(ndim);
 
-    if (active_mechanics){       
-        RigidBodyContact *e;     
+    if (active_mechanics){
+        RigidBodyContact *e;
         volume = 0;
         Matrix stiff;
         unsigned num = 0;
@@ -203,11 +203,11 @@ Matrix DiscreteRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned nd
             }
         }
         Keff /= volume;
-    }    
+    }
 
 
     if (active_transport) {
-        Transp1D *e;     
+        Transp1D *e;
         volume = 0;
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
             e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
@@ -223,9 +223,9 @@ Matrix DiscreteRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned nd
             }
         }
         Leff /= volume;
-    }    
+    }
 
-    
+
 
     //Keff.print();
 
@@ -371,7 +371,7 @@ void DiscreteRVEMaterialStatus :: calculateCentroid() {
             weight = e->giveLength() * e->giveArea() * ms->giveDensity();;
             totalweight += weight;
             centroid += e->giveIPLoc(0)*weight;
-        }        
+        }
     }
     centroid /= totalweight;
 
@@ -381,15 +381,15 @@ void DiscreteRVEMaterialStatus :: calculateCentroid() {
     for ( unsigned i = 0; i < nodes->giveSize(); i++ ) {
         nodes->giveNode(i)->subtructFromPoint(&centroid);
     }
-    + UPDATE 
-    */  
+    + UPDATE
+    */
 }
 
 //////////////////////////////////////////////////////////
 void DiscreteRVEMaterialStatus :: init() {
     RVEMaterialStatus :: init();
     calculateCentroid();
-  
+
     unsigned ndim = RVE->giveDimension();
     ElementContainer *elems = RVE->giveElements();
     Point normal;
@@ -400,21 +400,21 @@ void DiscreteRVEMaterialStatus :: init() {
         unsigned stra_size = ndim*ndim;
         stra_size += (ndim==3) ? ndim*ndim : ndim; //in 2D only vector
 
-        RigidBodyContact *e;     
+        RigidBodyContact *e;
         Point xc;
         Point alphaVec;
         Vector PQ(stra_size);
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
             e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
-            if ( e ) {                 
+            if ( e ) {
                 xc =  e->giveIPLoc(0) - centroid; //here we make corrections to have origin of the reference system at the centroid
                 normal = e->giveNormal();
-                for(unsigned v=0; v<ndim; v++){                    
+                for(unsigned v=0; v<ndim; v++){
                     if (v==0) alphaVec = normal;
                     else if(v==1) alphaVec = e->giveT1();
                     else if(v==2) alphaVec = e->giveT2();
 
-                    if(ndim==2){     
+                    if(ndim==2){
                         PQ[0] = normal.getX()*alphaVec.getX();
                         PQ[1] = normal.getY()*alphaVec.getY();
                         PQ[2] = normal.getX()*alphaVec.getY();
@@ -446,7 +446,7 @@ void DiscreteRVEMaterialStatus :: init() {
                     }
                     mechProjectors[v].push_back(PQ);
                 }
-            }  
+            }
         }
     }
 }

@@ -26,7 +26,7 @@ void Model :: init() {    //initialization
 //////////////////////////////////////////////////////////
 void Model :: solve() {
     //solution
-    while ( !solver->isTerminated() ) {  
+    while ( !solver->isTerminated() ) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
         exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );

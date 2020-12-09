@@ -40,7 +40,7 @@ void Element :: initMaterialStatuses() {
     unsigned num =0;
     for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num ++ ) {
         ( * m )->setID(num);
-        ( * m )->init();        
+        ( * m )->init();
     }
 }
 
@@ -76,7 +76,7 @@ Matrix Element :: giveSteadyStateMatrix(string matrixType) const {
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);        
+        D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * ip_weights [ i ] );
     }
     return K;
@@ -88,7 +88,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
     intF.resize(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        if ( frozen) { 
+        if ( frozen) {
             stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs) , ndim); //frozen internal variables
         }else {
             stress = stats [ i ]->giveStress(giveStrain(i, DoFs)); //full evaluation of stress including change of state variables
@@ -616,7 +616,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     ip_locs.resize(1);
     ip_weights.resize(1);
     stats.resize(1);
-    
+
     ip_locs [ 0 ] = ( nodes [ 0 ]->givePoint() + nodes [ 1 ]->givePoint() ) / 2.;
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
@@ -860,7 +860,7 @@ void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
             if ( rbc ) {
                 if ( ( rbc->giveNode(0) == vert [ i ] && rbc->giveNode(1) == vert [ j ] ) || ( rbc->giveNode(0) == vert [ j ] && rbc->giveNode(1) == vert [ i ] ) ) {
                     friends.push_back(rbc);
-                    friendsweight.push_back( ( centroid - ( vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 2. ).norm() );                    
+                    friendsweight.push_back( ( centroid - ( vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 2. ).norm() );
                     break; //only one friend avalilable in 3D for given pair
                 }
             }
