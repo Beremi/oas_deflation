@@ -658,7 +658,7 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer 
 
     for ( auto const &sl_id : slave_ids ) {
         slave = nodes->giveNode(sl_id);
-        constrs->connectSlaveMaster(slave, master, ndim, which);
+        constrs->connectSlaveMaster(slave, master, ndim, which, this->transport);
     }
 }
 
@@ -711,11 +711,7 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
             if ( nod == master ) {
                 continue;
             }
-            // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
-            Particle *nn = dynamic_cast< Particle * >( nod );
-            if ( nn ) {
-                constrs->connectSlaveMaster(nod, master, ndim, which);
-            }
+            constrs->connectSlaveMaster(nod, master, ndim, which, this->transport);
         }
     }
 }
@@ -783,11 +779,7 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
                 if ( nod == master ) {
                     continue;
                 }
-                // NOTE this is quite unefficient, could be done checking num of DoFs (...?)
-                Particle *nn = dynamic_cast< Particle * >( nod );
-                if ( nn ) {
-                    constrs->connectSlaveMaster(nod, master, ndim, which);
-                }
+                constrs->connectSlaveMaster(nod, master, ndim, which, this->transport);
             }
         }
     }
