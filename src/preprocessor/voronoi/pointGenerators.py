@@ -765,7 +765,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
     else:
         #print('Equid')
-        mD = minDist 
+        mD = minDist
         length = np.linalg.norm(nodeA - nodeB)
         nodeNr = int (length / mD)
         indnt = (length-(nodeNr-1)*mD) / 2

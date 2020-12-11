@@ -214,7 +214,7 @@ class PowerTesselation(object):
         regions = [[], ]
         point_region = []
         start = time.time()
-        
+
         for i, cell in enumerate(self.diagram):
             region = []
             point_region.append(i + 1)
