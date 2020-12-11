@@ -26,7 +26,9 @@ auxNodesFile                = "auxNodes.inp"
 exportersFile               = "exporters.inp"
 blocksFile                  = "blocks.inp"
 govNodesFile                = "govNodes.inp"
+govNodesTrsptFile           = "govNodesTrspt.inp"
 constraintFile              = "constraint.inp"
+constraintTrsptFile         = "constraintTrspt.inp"
 solverFile                  = "solver.inp"
 
 #
@@ -1543,6 +1545,54 @@ def saveMechBC(master_folder,dim, nodes_mechBCmerged, govNodesBC = False):
 
     print('done.')
 
+
+
+def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart, govNodesBC = False, totalNodeCount=-1):
+    print('Saving TRSPRT boundary conditions...', end = '')
+
+    sys.stdout.flush()
+    trsptBC_out = []
+
+    ttlNdcnt = totalNodeCount
+
+    for i in range (len(transportBCmerged)):
+        idx = transportBCmerged[i].getNodeIdx()
+
+        if (govNodesBC==True):
+            bc = np.zeros ((1 + 1 + 1))
+            bc[0] = transportBCmerged[i].getNodeIdx()
+            bc[1:] = transportBCmerged[i].getTrsprtBC()
+            trsptBC_out.append(bc)
+
+        if (govNodesBC==False and idx in verticesDict):
+            bc = np.zeros ((1 + 1 + 1))
+            bc[0] = verticesDict[transportBCmerged[i].getNodeIdx()] + vertIdxStart
+            bc[1:] = transportBCmerged[i].getTrsprtBC()
+            trsptBC_out.append(bc)
+
+
+
+    print('len len %d' %len(trsptBC_out))
+
+    if (govNodesBC==False and len(trsptBC_out)>0):
+        headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
+        fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
+        if (len(trsptBC_out)>0):
+            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
+        fl.close()
+    elif(len(trsptBC_out)>0):
+        print('Saving trspt rigid plate bc...')
+        fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
+        if (len(trsptBC_out)>0):
+            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d')
+        fl.close()
+
+    print('done.')
+
+
+
+
+
 def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3):
     f=open(os.path.join(master_folder,solverFile),'w')
     f.write('%s\n'%solver)
@@ -1556,7 +1606,7 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
 
     f.close()
 
-def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3):
+def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
@@ -1577,8 +1627,16 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
          if not constraint:
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
          else:
-             fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile))
-             fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
+             if (constraint and not constraintTrspt):
+                 fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile))
+                 fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
+             if (constraint and not constraintTrspt):
+                 fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesTrsptFile))
+                 fl.write('PBlockFiles\t1\t%s\n' %(constraintTrsptFile))
+             if (constraint and constraintTrspt):
+                 fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
+                 fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
+
          fl.write("MatFiles\t1\t%s\n"%materialsFile)
          if (activeTransport and activeMechanics):
              fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
@@ -1634,27 +1692,6 @@ def saveFunctions (master_folder,functions):
 
 
 
-def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart):
-    print('Saving TRSPRT boundary conditions...', end = '')
-
-    sys.stdout.flush()
-    trsptBC_out = []
-
-    for i in range (len(transportBCmerged)):
-        idx = transportBCmerged[i].getNodeIdx()
-
-        if (idx in verticesDict):
-            bc = np.zeros ((1 + 1 + 1))
-            bc[0] = verticesDict[transportBCmerged[i].getNodeIdx()] + vertIdxStart
-            bc[1:] = transportBCmerged[i].getTrsprtBC()
-            trsptBC_out.append(bc)
-
-    headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
-    fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
-    if (len(trsptBC_out)>0):
-        np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
-    fl.close()
-    print('done.')
 
 
 def saveExporters(master_folder,activeTransport, activeMechanics):
@@ -2246,10 +2283,15 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
     return newAuxNodes
 
-def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount):
+def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False):
     print('Saving rigid plates...', end='')
 
-    with open(os.path.join(master_folder,constraintFile), 'w') as f:
+    if trspt == False:
+        file = constraintFile
+    else:
+        file = constraintTrsptFile
+
+    with open(os.path.join(master_folder,file), 'w') as f:
         headerLine = '#ConstraintType\tGovNodeIdx\tXmin\tXmax\tYmin\tYmax'
         if (dim==3):
             headerLine += '\tZmin\tZmax'
@@ -2284,8 +2326,6 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
 
 def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes):
     #saving gov nodes
-    print('govNodes')
-    print(govNodes)
     saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile)
     #saving gov nodes mech BC
     for i in range (len(govNodesMechBC)):
@@ -2295,7 +2335,7 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
 
     #saving force gauges for rigid plates
     for i in range (len(govNodesMechBC)):
-        saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx)
+        saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='MechPLT%d'%i)
 
     #saving rigid plates
     for rp in rigidPlates:
@@ -2306,16 +2346,49 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
         print('Nodes affected by Rigid plate #%d:' %rp)
         print(rigidPlates[rp].getNodesAffected(nodes))
 
+def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrsptBC, rigidPlatesTrspt, totalNodeCount, node_coords, vert_count, verticesIdxDict, vertIdxStart):
+    print ('Saving Transport constraint...')
+    saveNodes (master_folder,govNodesTrspt, "TrsprtNode", dimension, govNodesTrsptFile)
+
+    for i in range (len(govNodesTrsptBC)):
+        m = govNodesTrsptBC[i]
+        m.nodeIdx = totalNodeCount + i
 
 
-def saveForceGauges(master_folder, dimension, nodeIdx, moments=True):
-    saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
-    saveForceGauge(master_folder, 'fy#%d'%nodeIdx, 'fy', nodeIdx )
-    if (dimension==3): saveForceGauge(master_folder, 'fz#%d'%nodeIdx, 'fz', nodeIdx )
-    if moments == True:
-        if (dimension==3): saveForceGauge(master_folder, 'mx#%d'%nodeIdx , 'mx', nodeIdx )
-        if (dimension==3): saveForceGauge(master_folder, 'my#%d'%nodeIdx, 'my', nodeIdx )
-        saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
+    for rp in rigidPlatesTrspt:
+        rp.renumberVertices(verticesIdxDict, vertIdxStart)
+
+
+    #print (govNodesTrsptBC)
+    saveTransportBC(master_folder,govNodesTrsptBC, verticesIdxDict, vertIdxStart, govNodesBC=True, totalNodeCount=totalNodeCount)
+
+
+    for i in range (len(govNodesTrsptBC)):
+        saveForceGauges(master_folder, dimension, govNodesTrsptBC[i].nodeIdx, moments=False, name='TrsptPLT%d'%i)
+
+
+    saveRigidPlates(master_folder, dimension, rigidPlatesTrspt, totalNodeCount, trspt=True)
+
+
+def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name=''):
+    if (name==''):
+        saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
+        saveForceGauge(master_folder, 'fy#%d'%nodeIdx, 'fy', nodeIdx )
+        if (dimension==3): saveForceGauge(master_folder, 'fz#%d'%nodeIdx, 'fz', nodeIdx )
+        if moments == True:
+            if (dimension==3): saveForceGauge(master_folder, 'mx#%d'%nodeIdx , 'mx', nodeIdx )
+            if (dimension==3): saveForceGauge(master_folder, 'my#%d'%nodeIdx, 'my', nodeIdx )
+            saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
+    else:
+        saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
+        saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
+        if (dimension==3): saveForceGauge(master_folder, 'fz#%s'%name, 'fz', nodeIdx )
+        if moments == True:
+            if (dimension==3): saveForceGauge(master_folder, 'mx#%s'%name , 'mx', nodeIdx )
+            if (dimension==3): saveForceGauge(master_folder, 'my#%s'%name, 'my', nodeIdx )
+            saveForceGauge(master_folder, 'mz#%s'%name, 'mz', nodeIdx )
+
+
 
 #saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
 def saveDisplacementGauges(master_folder, dimension, name, coordsA, coordsB, rotations = False):

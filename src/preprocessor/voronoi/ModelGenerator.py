@@ -46,12 +46,15 @@ class Model:
         self.mirtype = []
 
         self.govNodes = []
+        self.govNodesTrspt = []
         self.rigidPlates = []
+        self.rigidPlatesTrspt = []
         self.constraint = False
+        self.constraintTrspt = False
 
         self.node_coords = []
 
-        self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = None
+        self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC = None
 
         self.functions = []
         self.radii = []
@@ -331,7 +334,7 @@ class Model:
 
 
     def run_3d_coupledBrazilianDisc(self):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
@@ -350,8 +353,7 @@ class Model:
 
     def saveGeometry(self):
         tube = False
-        if self.modelType == '3d_BiparvaTubeTransport':
-            tube = True
+        if self.modelType == '3d_BiparvaTubeTransport': tube = True
 
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
@@ -396,6 +398,18 @@ class Model:
                         utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
                         self.constraint = True
 
+        self.totalNodeCount += len(self.govNodes)
+
+
+        #saving transport rigid plates
+        if self.govNodesTrspt != None:
+            if self.rigidPlatesTrspt != None:
+                if self.govNodesTrsptBC != None:
+                    utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart)
+                    self.constraintTrspt = True
+
+
+
         if (self.measuringGauges!=None):
             utilitiesGeom.saveMeasuringGauges(self.master_folder, self.dimension, self.measuringGauges)
 
@@ -403,7 +417,7 @@ class Model:
             if self.powerTes:
                 utilitiesGeom.saveRadii(self.master_folder, self.radii)
 
-        utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint,
+        utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint, constraintTrspt=self.constraintTrspt,
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
         print ('done.')
@@ -697,6 +711,7 @@ if __name__ == '__main__':
             model.createModel()
             model.saveGeometry()
             model.saveRest(solver, file)
+
 
 
 

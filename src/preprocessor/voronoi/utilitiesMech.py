@@ -28,6 +28,19 @@ class RigidPlate:
         for n in ndsList:
             self.directNodes.append(n)
 
+    def renumberVertices(self, dictionary, vertIdxStart):
+        #print(vertIdxStart)
+        renumberedVertices= []
+        for i in range (len(self.directNodes)):
+            key = dictionary.get(self.directNodes[i])
+            if key:
+                ##print('N %d  >  key %d' %(self.directNodes[i], key))
+                renumberedVertices.append(dictionary[self.directNodes[i]] + vertIdxStart)
+
+
+
+        self.directNodes = renumberedVertices
+
     def getString (self):
         if self.directIdcs == True:
             line = 'RigidPlate\t%d\t' %self.govNodeIdx
@@ -179,7 +192,7 @@ class transportPath:
             self.connectedNodes.append(self.connectedNodes[-1])
             self.connectedNodes.append(self.connectedNodes[0])
         self.nds = len(self.connectedNodes)
-        
+
         ndNr = self.nds /2
         if not coupled:
             line = 'LTCTRSP\t%d'%(self.vertexA)  + '\t' + '%d'%(self.vertexB) +'\t%d'%(ndNr)

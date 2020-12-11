@@ -776,8 +776,6 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
         trsBC = utilitiesMech.transportBC(k,[i,-1])
         transportBC_merged.append(trsBC)
     """
-    ########################################################################
-    ### indirect setting of transportBCs by spatial selection of vertices
 
     #"""
     ### indirect setting of transportBCs by spatial selection of vertices
@@ -788,36 +786,43 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
     boundA = np.array(  [-1e-4 , -cylinderRad*2, -cylinderRad*2] )
     boundB = np.array(  [ 1e-4 , cylinderRad*2, cylinderRad*2]  )
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-
+    """
     for i in range (len(leftFace)):
         trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
         transportBC_merged.append(trsBC)
+    """
 
     ### selecting vertices on the right surface
     rightFaceBC = np.array([2,-1])
     boundA = np.array(  [cylinderHeight-1e-4 , -cylinderRad*2, -cylinderRad*2] )
     boundB = np.array(  [cylinderHeight+1e-4 , cylinderRad*2, cylinderRad*2]  )
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    #print(rightFace)
-    #a = input('').split(" ")[0]
-    #print(a)
+    """
     for i in range (len(rightFace)):
-        #print(rightFace[i])
-        #a = input('').split(" ")[0]
-        #print(a)
-
         trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
+    """
 
-        #print(rightFaceBC)
-        #a = input('').split(" ")[0]
-        #print(a)
+    #setting of transport bc by using rigid plate
+    rigidPlatesTrspt = []
+    govNodesTrspt = []
+    govNodesTrsptBC = []
 
-    #print(transportBC_merged)
-    #a = input('').split(" ")[0]
-    #print(a)
+    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptLeftRigidPlate.setDirectNodes(leftFace)
+    trsptLeftRigidPlateMechBC = np.array([0,-1])
+    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
 
-    return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions
+    trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptRightRigidPlate.setDirectNodes(rightFace)
+    trsptRightRigidPlateMechBC = np.array([2,-1])
+    rigidPlatesTrspt.append(trsptRightRigidPlate)
+    govNodesTrspt.append(np.array([ -1, -1, -1]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+
+    return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
 
 def create2dPeriodicShear(maxLim, minDist, trials ):
     print('Creating 2d periodic rectangle, shear loaded.')
