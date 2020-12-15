@@ -177,15 +177,19 @@ class Model:
 
         print('done.')
 
-    def setDirectory(self):
-        if self.userSeed == -1:
-            self.seed = np.random.randint(1000.0)
-            np.random.seed(seed=self.seed)
-        else:
-            self.seed = self.userSeed
-            np.random.seed(seed=self.seed)
+    def setDirectory(self, dirNam=None):
+        if dirNam is None:
+            if self.userSeed == -1:
+                self.seed = np.random.randint(1000.0)
+                np.random.seed(seed=self.seed)
+            else:
+                self.seed = self.userSeed
+                np.random.seed(seed=self.seed)
 
-        self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
+            self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
+        else:
+            self.master_folder = dirNam
+
         try:
             if not os.path.exists(self.master_folder):
                 os.makedirs(self.master_folder)
@@ -376,7 +380,7 @@ class Model:
         #if (self.printout == False): enablePrint()
         print ('done.')
 
-    def saveRest(self, solver, master_file):
+    def saveRest(self, solver, master_file=None):
         print('Saving files...', end='')
         utilitiesGeom.saveMaterials(self.master_folder, self.materials)
         utilitiesGeom.saveFunctions(self.master_folder, self.functions)
@@ -420,10 +424,10 @@ class Model:
         utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint, constraintTrspt=self.constraintTrspt,
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
-        print ('done.')
+        if not master_file is None:
+            print ('Copying prep_master used...', end='')
+            copyfile(master_file, os.path.join(self.master_folder,master_file))
 
-        print ('Copying prep_master used...', end='')
-        copyfile(master_file, os.path.join(self.master_folder,master_file))
         print ('done.')
 
     def addMaterial(self, row):
