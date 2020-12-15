@@ -260,10 +260,13 @@ def createDiamondTestModel(width, height):
 
 
 
-def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15,  orthogonalFracZone=False, notchWidth =-1):
+def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,
+                           loadWidth = 1, fracZoneWidth = 0.15,
+                           orthogonalFracZone=False, notchWidth =-1,
+                           node_coords_init=None):
     print('Creating 2d simply supported beam, uniform load.')
     #
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth=notchWidth, node_coords_init=node_coords_init);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -2317,7 +2320,15 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
 
 
 
-def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth, fracZoneWidth,  orthogonalFracZone=False, notchWidth = -1):
+def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
+                             fracZoneWidth,  orthogonalFracZone=False,
+                             notchWidth = -1, node_coords_init=None):
+    dim = 2
+    #lists for the model
+    if node_coords_init is None:
+        node_coords = []
+    else:
+        node_coords = node_coords_init
     dim = 2
     #lists for the model
     node_coords = []
