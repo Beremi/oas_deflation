@@ -48,7 +48,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, useLowBound=Fal
             coords = randPointInRectangle(dim, maxLim,useLowBound=useLowBound)
             distIsGood = True
             #
-            distIsGood = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords, coords)
+            distIsGood = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords, list(coords))
             #distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
             #distIsGood = cutilitiesGeom.heckMutDistancesCKDTree(dim, minDist, node_coords, coords)
 
@@ -659,6 +659,153 @@ try:
 except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+def distance(a, b):
+    dst = 0;
+    for coord_a, coord_b in zip(a, b):
+        dst += (coord_a - coord_b) ** 2.0
+    return dst ** 0.5
+
+
+def minDistTrans(lminR, lmin, dst, rR, rT):
+    return lminR + (lmin - lminR) * ( dst - rR ) / (rT - rR)
+
+
+
+def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
+                        centersToRemesh, centersPreviouslyRemeshed,
+                        radiusRemesh, radiusTransitional,
+                        dim=2):
+    print ( 'Generating points to update geometry' )
+    tr = 0
+    # remesh fine areas
+    ci = 0
+    for center in centersToRemesh:
+        # print("generating in remesh area %d - " % (ci), end=' ' )
+        # print(center)
+        ci += 1
+        while (tr<trials):
+            tr = 0
+            distIsGood = False
+            while (distIsGood == False):
+                # print("printing node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
+                distIsGood = True
+                if (tr > trials): break
+                if len(center) == 2:
+                    center = np.append(center, 0.)
+
+                coords = randPointInCircle(center,
+                                           radiusRemesh, directionDim=2)[:dim]  # so far for 2D
+                # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                          radiusRemesh,
+                                          centersPreviouslyRemeshed,
+                                          list(coords))
+                if not distIsGood:
+                    tr += 1
+                    continue;
+
+                # check distances to other nodes
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                             minDistRemesh,
+                                             node_coords, list(coords))
+                if not distIsGood:
+                    tr +=1
+                    continue;
+
+            #Adding node coords
+            if (tr < trials):
+                # print("appending node in remesh area ---------------------", end=' ' )
+                # print(coords)
+                node_coords.append(coords)
+
+        # after remesh of fine area, append this one into centers previously remeshed
+        centersPreviouslyRemeshed.append(center)
+    ##########################################################################
+    # print(centersPreviouslyRemeshed)
+    # remesh the transitional areas - same centers, just different radius and only outer ring
+    ci = 0
+    tr = 0
+    for center in centersToRemesh:
+        # print("generating in transitional area %d" % ci, end=' ' )
+        ci += 1
+        while (tr<trials):
+            tr = 0
+            distIsGood = False
+            while (distIsGood == False):
+                if (tr > trials): break
+                distIsGood = True
+                if len(center) == 2:
+                    center = np.append(center, 0.)
+
+                coords = randPointInAnnulus(
+                            center,
+                            radiusTransitional,
+                            thickness=(radiusTransitional-radiusRemesh),
+                            directionDim=2)[:dim]  # so far for 2D
+
+                # check distances to already remeshed centers - to prevent putting nodes there centers
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                        radiusRemesh,
+                                        centersPreviouslyRemeshed,
+                                        list(coords))
+                if not distIsGood:
+                    tr += 1
+                    continue
+
+
+                # TODO tady neco nesedí: viz obrázek co to exportuje
+                mdt = minDistTrans(minDistRemesh, minDist, distance(coords,
+                                                                    center),
+                             radiusRemesh, radiusTransitional)
+                # mdt = (minDistRemesh + (minDist - minDistRemesh) *
+                #                  ( distance(coords, center) - radiusRemesh ) /
+                #                  (radiusTransitional - radiusRemesh)
+                #                 )
+
+                print(minDist, minDistRemesh, mdt)
+                print(minDistTrans(minDistRemesh, minDist, radiusTransitional,
+                             radiusRemesh, radiusTransitional))
+
+                # check distances to other nodes
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                            mdt,
+                                            node_coords, list(coords))
+                if not distIsGood:
+                    tr += 1
+                    continue
+
+
+            #Adding node coords
+            if (tr < trials):
+                # print("appending node in transitional area ---------------------", end=' ' )
+                # print(coords)
+                node_coords.append(coords)
+
+    return node_coords
+
+
+try:
+    from point_generators_cython import generateNodesRemesh_cython as generateNodesRemesh
+    print('Using Cython version of point generator - generateNodesRemesh.')
+except Exception as e:
+    print(e)
+    print('''Cython version of point generator - generateNodesRemesh - not avaliable yet.''')
+    # print('''Using Python version of generator. To use the Cython version the
+    #       the code has to be build using: python setup.py build_ext --inplace.''')
+
+###############################################################################
+###############################################################################
+###############################################################################
+
 
 
 def randPointInCilinder(center, radius, height, directionDim):
