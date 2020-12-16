@@ -198,7 +198,7 @@ class Model:
             sys.exit()
 
 
-    def createModel(self):
+    def createModel(self, node_coords_init=None):
         print ('Creating model %s' %self.modelType)
         #
         #if (self.printout == False): blockPrint()
@@ -210,7 +210,7 @@ class Model:
             self.run_3d_BiparvaTubeTransport()
 
         if self.modelType == '2d_notched3pb':
-            self.run_2d_notched3pb()
+            self.run_2d_notched3pb(node_coords_init=node_coords_init)
         if self.modelType == '3d_notched3pb':
             self.run_3d_notched3pb()
 
@@ -260,9 +260,9 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_singleSpring', maxLim=np.array([self.minDist, 1]) )
         materialZones = None
 
-    def run_2d_notched3pb(self):
+    def run_2d_notched3pb(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth)
+        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self):
