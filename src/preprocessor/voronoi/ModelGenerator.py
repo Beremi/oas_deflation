@@ -380,7 +380,7 @@ class Model:
         #if (self.printout == False): enablePrint()
         print ('done.')
 
-    def saveRest(self, solver, master_file=None):
+    def saveRest(self, solver, master_file):
         print('Saving files...', end='')
         utilitiesGeom.saveMaterials(self.master_folder, self.materials)
         utilitiesGeom.saveFunctions(self.master_folder, self.functions)
@@ -424,9 +424,11 @@ class Model:
         utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint, constraintTrspt=self.constraintTrspt,
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
-        if not master_file is None:
+        # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
+        dst_file = os.path.join(self.master_folder,master_file)
+        if not os.path.isfile(dst_file):
             print ('Copying prep_master used...', end='')
-            copyfile(master_file, os.path.join(self.master_folder,master_file))
+            copyfile(master_file, dst_file)
 
         print ('done.')
 
