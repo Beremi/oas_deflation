@@ -457,7 +457,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 }
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: init() {
+void ExporterContainer :: init(const bool &initial) {
     fs :: create_directories(resultDir);
 
     bool newname;
@@ -477,39 +477,41 @@ void ExporterContainer :: init() {
         }
     }
 
-    //gauge files header
-    char buffer [ 100 ];
-    for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string() );
-        if ( outputfile.good() ) {
-            outputfile << "#step" << "\t" << "time";
-        }
-        outputfile.close();
-    }
-
-    for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        Gauge *g = dynamic_cast< Gauge * >( * d );
-        if ( g ) {
-            ( * d )->giveFileName(0, buffer);
+    if ( initial ){
+        //gauge files header
+        char buffer [ 100 ];
+        for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
+            ( * unique )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string() );
             if ( outputfile.good() ) {
-                outputfile << "\t" << g->giveName();
+                outputfile << "#step" << "\t" << "time";
             }
             outputfile.close();
         }
-    }
 
-    for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
-        if ( outputfile.good() ) {
-            outputfile << endl;
+        for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
+            Gauge *g = dynamic_cast< Gauge * >( * d );
+            if ( g ) {
+                ( * d )->giveFileName(0, buffer);
+                ofstream outputfile;
+                outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+                if ( outputfile.good() ) {
+                    outputfile << "\t" << g->giveName();
+                }
+                outputfile.close();
+            }
         }
-        outputfile.close();
+
+        for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
+            ( * unique )->giveFileName(0, buffer);
+            ofstream outputfile;
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            if ( outputfile.good() ) {
+                outputfile << endl;
+            }
+            outputfile.close();
+        }
     }
 };
 

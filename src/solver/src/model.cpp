@@ -18,7 +18,7 @@ void Model :: init( const bool &initial) {    //initialization
     elems.init();
     constr.init(& nodes, & bconds);
     elems.findElementFriends();
-    exporters.init();
+    exporters.init( initial );
     solver->init( initial );
     cout << "Initialition completed" << endl;
 }
