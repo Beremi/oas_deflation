@@ -306,6 +306,7 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
     SteadyStateLinearSolver :: readFromFile(filename);
 
     maxIt = 30;
+    enlargeIt = shortenIt = 0;
     disErr = resErr = eneErr = 1e-5;
     limitEneErr = limitResErr = limitDisErr = 0;
     step_increase = 1.25;
@@ -316,6 +317,8 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
     dtmax = dtmin = dt;
     bool bdtmin = false;
     bool bdtmax = false;
+    bool ben = false;
+    bool bsh = false;
     unsigned helpuint;
     double valueIN;
     ifstream inputfile(filename.c_str() );
@@ -350,6 +353,12 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
                 } else if ( maxIt < 3 ) {
                     std :: cout << "solver parameter maxIt set to " << maxIt << ", be carefull with such a small number" << '\n';
                 }
+            } else if ( param.compare("enlargeIt") == 0 ) {
+                iss >> enlargeIt;
+                ben = true;
+            } else if ( param.compare("shortenIt") == 0 ) {
+                iss >> shortenIt;
+                bsh = true;
             } else if ( param.compare("step_increase") == 0 ) {
                 iss >> valueIN;
                 if ( valueIN < 1 ) {
@@ -401,7 +410,17 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
     } else {
         cout << endl;
     }
-    ;
+    if ( enlargeIt > shortenIt ){
+      std::cerr << "cannot set number of iterations for step enlargement higher than number of iterations for step shortening, setting back to default values" << '\n';
+      ben = false;
+      bsh = false;
+    }
+    if ( !ben ){
+      enlargeIt = maxIt / 3;
+    if ( !bsh ){
+      shortenIt = maxIt / 2;
+    }
+
     return this;
 };
 
@@ -593,10 +612,10 @@ void SteadyStateNonLinearSolver :: solve() {
                 return;
                 // exit(1);
             }
-        } else if ( ( !restarted ) && converged && it < maxIt / 3 && dt < dtmax ) {
+        } else if ( ( !restarted ) && converged && it < enlargeIt && dt < dtmax ) {
             dt = fmin(dt * step_increase, dtmax);
             std :: cout << "enlarging step, timestep = " << dt << '\n';
-        } else if ( converged && it > maxIt / 2 && dt > dtmin ) {
+        } else if ( converged && it > shortenIt && dt > dtmin ) {
             dt = fmax(dt * step_decrease, dtmin);
             std :: cout << "shortening step, timestep = " << dt << '\n';
         }

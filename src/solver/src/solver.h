@@ -78,7 +78,8 @@ protected:
     double W_ext_oldT, W_int_oldT, W_extT, W_intT; //transport
     double disErr, resErr, eneErr;
     double limitDisErr, limitResErr, limitEneErr;
-    unsigned maxIt;
+    unsigned maxIt; ///> maximum number of iteration
+    unsigned enlargeIt, shortenIt; ///> if lower/higher numIt -> enlarge/shorten time-step
     ///> time step is changed according to actual fraction of number of iteration vs maxIt
     double step_increase;  ///> increased in case the number of iteration is in lower 1/3
     double step_decrease;  ///> decreased in case the number of iteration is in upper 1/2
