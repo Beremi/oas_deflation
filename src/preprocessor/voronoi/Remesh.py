@@ -87,8 +87,8 @@ if __name__ == '__main__':
 
     ##########################################################################
     ##########################################################################
-    oldDir = "/home/jose/Soft/ParticleModel/TESTS/adaptivity_pokus/TPB_no_notch"
-    node_coords_old = loadNodes(os.path.join(oldDir, "nodes.inp"), model.dimension)
+    # oldDir = "/home/jose/Soft/ParticleModel/TESTS/adaptivity_pokus/TPB_no_notch"
+    # node_coords_old = loadNodes(os.path.join(oldDir, "nodes.inp"), model.dimension)
 
     node_coords_ini = loadNodes(os.path.join(remeshDir, "nodes.inp"), model.dimension)
 
