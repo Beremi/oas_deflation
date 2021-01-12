@@ -3528,15 +3528,16 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     for i in range (oldLen, len(node_coords), 1):
         fracZone.append(i)
 
-    notchFrac = []
-    notchFrac.append(notchSide0)
-    notchFrac.append(fracZone)
-    notches.append(notchFrac)
+    if (notch > 0):
+        notchFrac = []
+        notchFrac.append(notchSide0)
+        notchFrac.append(fracZone)
+        notches.append(notchFrac)
 
-    notchFrac1 = []
-    notchFrac1.append(notchSide1)
-    notchFrac1.append(fracZone)
-    notches.append(notchFrac1)
+        notchFrac1 = []
+        notchFrac1.append(notchSide1)
+        notchFrac1.append(fracZone)
+        notches.append(notchFrac1)
 
     ##########################################generating of points, fracture zone
     maxLimF = np.array([
