@@ -417,6 +417,7 @@ Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
     }
     if ( !ben ){
       enlargeIt = maxIt / 3;
+    }
     if ( !bsh ){
       shortenIt = maxIt / 2;
     }
