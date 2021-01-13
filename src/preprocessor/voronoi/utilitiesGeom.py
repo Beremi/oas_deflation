@@ -1702,7 +1702,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
         fl.write('#TXTNodalExporter translations 2 ux uy\n')
         fl.write('#TXTNodalExporter pressure 1 pressure\n')
         if not activeTransport:
-            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage\n')
+            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage pointData 1 nodal_stress\n')
         fl.write('#VTKRCExporter faces  saveEvery 1e-1 cellData 1 damage\n')
         fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
     if activeTransport:

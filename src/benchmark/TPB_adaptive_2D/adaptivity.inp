@@ -1,0 +1,9 @@
+adaptThreshold 1e6
+radius 0.02
+radius2 0.04
+remesherLmin 0.004
+preprocessorDir path-to-your-preprocessor-directory
+elemStatuses elemStatuses.inp
+nodeStatuses nodeStatuses.inp
+prepInput prep_3PB_adaptive.inp
+regionsToSkip regionsNotToRemesh.inp

@@ -7,6 +7,7 @@ import os
 import utilitiesMech
 import utilitiesGeom
 from mpl_toolkits.mplot3d import Axes3D
+from regions import *
 
 
 
@@ -464,7 +465,6 @@ def randPointInCircle(center, radius, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
     point = np.zeros(3)
-    point += center
 
     rn = np.random.uniform()
 
@@ -478,13 +478,13 @@ def randPointInCircle(center, radius, directionDim):
         point[0] = radius * np.cos(angle) * rn
         point[1] = radius * np.sin(angle) * rn
 
+    point += center
     return point
 
 def randPointInAnnulus(center, radius, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
     point = np.zeros(3)
-    point += center
 
     effRadius = (radius - thickness) + thickness *  np.random.uniform()
 
@@ -498,13 +498,13 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
         point[0] =  np.cos(angle) * effRadius
         point[1] =  np.sin(angle) * effRadius
 
+    point += center
     return point
 
 def randPointInTube(center, radius, height, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
     point = np.zeros(3)
-    point += center
 
     effRadius = (radius - thickness) + thickness *  np.random.uniform()
 
@@ -521,6 +521,7 @@ def randPointInTube(center, radius, height, thickness, directionDim):
         point[1] =  np.sin(angle) * effRadius
         point[2] = height * np.random.uniform()
 
+    point += center
     return point
 
 
@@ -683,12 +684,16 @@ def minDistTrans(lminR, lmin, dst, rR, rT):
 def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                         centersToRemesh, centersPreviouslyRemeshed,
                         radiusRemesh, radiusTransitional,
-                        dim=2):
+                        dim=2, rectLims=None):
+    PRINT_TEST = False
     print ( 'Generating points to update geometry' )
+    border_block = Block(Point(rectLims[0][0], rectLims[0][1]),
+                         Point(rectLims[1][0], rectLims[1][1]))
     tr = 0
     # remesh fine areas
     ci = 0
     for center in centersToRemesh:
+        tr = 0
         # print("generating in remesh area %d - " % (ci), end=' ' )
         # print(center)
         ci += 1
@@ -696,7 +701,8 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
             tr = 0
             distIsGood = False
             while (distIsGood == False):
-                # print("printing node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
+                if PRINT_TEST:
+                    print("generating node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 distIsGood = True
                 if (tr > trials): break
                 if len(center) == 2:
@@ -704,6 +710,12 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
 
                 coords = randPointInCircle(center,
                                            radiusRemesh, directionDim=2)[:dim]  # so far for 2D
+                # check if generated point is not outside the specimen
+                if rectLims is not None:
+                    if not border_block.IsInside(Point(coords[0], coords[1])):
+                        distIsGood = False
+                        tr += 1
+                        continue
                 # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
                                           radiusRemesh,
@@ -711,7 +723,7 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                                           list(coords))
                 if not distIsGood:
                     tr += 1
-                    continue;
+                    continue
 
                 # check distances to other nodes
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
@@ -719,12 +731,13 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                                              node_coords, list(coords))
                 if not distIsGood:
                     tr +=1
-                    continue;
+                    continue
 
             #Adding node coords
             if (tr < trials):
-                # print("appending node in remesh area ---------------------", end=' ' )
-                # print(coords)
+                if PRINT_TEST:
+                    print("appending node in remesh area ---------------------", end=' ' )
+                    print(coords)
                 node_coords.append(coords)
 
         # after remesh of fine area, append this one into centers previously remeshed
@@ -735,12 +748,16 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     ci = 0
     tr = 0
     for center in centersToRemesh:
-        # print("generating in transitional area %d" % ci, end=' ' )
+        # if PRINT_TEST:
+        #     print("generating in transitional area %d" % ci, end='\r' )
+        tr = 0
         ci += 1
         while (tr<trials):
             tr = 0
             distIsGood = False
             while (distIsGood == False):
+                if PRINT_TEST:
+                    print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 if (tr > trials): break
                 distIsGood = True
                 if len(center) == 2:
@@ -751,6 +768,13 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                             radiusTransitional,
                             thickness=(radiusTransitional-radiusRemesh),
                             directionDim=2)[:dim]  # so far for 2D
+
+                # check if generated point is not outside the specimen
+                if rectLims is not None:
+                    if not border_block.IsInside(Point(coords[0], coords[1])):
+                        distIsGood = False
+                        tr += 1
+                        continue
 
                 # check distances to already remeshed centers - to prevent putting nodes there centers
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
@@ -771,9 +795,9 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                 #                  (radiusTransitional - radiusRemesh)
                 #                 )
 
-                print(minDist, minDistRemesh, mdt)
-                print(minDistTrans(minDistRemesh, minDist, radiusTransitional,
-                             radiusRemesh, radiusTransitional))
+                # print(minDist, minDistRemesh, mdt)
+                # print(minDistTrans(minDistRemesh, minDist, radiusTransitional,
+                #              radiusRemesh, radiusTransitional))
 
                 # check distances to other nodes
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
@@ -786,8 +810,9 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
 
             #Adding node coords
             if (tr < trials):
-                # print("appending node in transitional area ---------------------", end=' ' )
-                # print(coords)
+                if PRINT_TEST:
+                    print("appending node in transitional area ----------", end=' ' )
+                    print(coords)
                 node_coords.append(coords)
 
     return node_coords

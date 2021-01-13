@@ -15,6 +15,7 @@ from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import utilitiesGeom, utilitiesMech, utilitiesModeling, utilitiesNumeric, voronoi
+from utilitiesGeom import mechBCFile
 
 # Disable
 def blockPrint():
@@ -381,6 +382,11 @@ class Model:
         print ('done.')
 
     def saveRest(self, solver, master_file):
+        # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
+        bc_path = os.path.join(self.master_folder,
+                               utilitiesGeom.mechBCFile)
+        if os.path.isfile(bc_path):
+            os.remove(bc_path)
         print('Saving files...', end='')
         utilitiesGeom.saveMaterials(self.master_folder, self.materials)
         utilitiesGeom.saveFunctions(self.master_folder, self.functions)

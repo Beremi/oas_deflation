@@ -186,7 +186,7 @@ public:
     void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const;
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
-    void init();
+    void init(const bool &initial=true);
     void setResultDirectory(fs :: path directory) { resultDir = directory; }
     fs :: path giveDirectoryPath() { return resultDir; }
     void appendToAllNames(string app);

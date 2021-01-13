@@ -1,0 +1,10 @@
+# SteadyStateNonLinearSolver
+SteadyStateNonLinearSolver Adaptive
+time_step	1.000000e-03
+min_time_step	1.000000e-05
+max_time_step	1.000000e-01
+total_time	1.000000
+limit_tolerance	1.000000e-01
+maxIt	15
+tolerance	1.000000e-03
+adaptivity adaptivity.inp
