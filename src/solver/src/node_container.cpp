@@ -159,16 +159,15 @@ void NodeContainer :: establishDoFArray() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
-    vector < double > nodalLoad = BC->giveLoadedDoFValues(time);
+    vector< double >nodalLoad = BC->giveLoadedDoFValues(time);
     for ( unsigned k = 0; k < nodalLoad.size(); k++ ) {
         RHS [ loadedDoFs [ k ] ] += nodalLoad [ k ];
     }
 
-   vector < double > bodyLoad = BC->giveBodyForceDoFValues(time);
+    vector< double >bodyLoad = BC->giveBodyForceDoFValues(time);
     for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
         RHS [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
     }
-
 }
 
 //////////////////////////////////////////////////////////

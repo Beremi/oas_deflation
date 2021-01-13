@@ -11,9 +11,9 @@
 //parser for mathematic expressions
 #include "exprtk.hpp"
 
-typedef exprtk::symbol_table<double> symbol_table_t;
-typedef exprtk::expression<double>     expression_t;
-typedef exprtk::parser<double>             parser_t;
+typedef exprtk :: symbol_table< double >symbol_table_t;
+typedef exprtk :: expression< double >expression_t;
+typedef exprtk :: parser< double >parser_t;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -25,8 +25,8 @@ private:
 public:
     Function() {};
     virtual ~Function() {};
-    virtual double giveY(double t)const { return 0; };
-    virtual double giveY(const Point *t){ return 0;}
+    virtual double giveY(double t) const { return 0; };
+    virtual double giveY(const Point *t) { return 0; }
     virtual void readFromLine(istringstream &iss) = 0;
     virtual double giveNextEtreme(const double &t) const = 0;
     virtual void setActive() { active = true; };
@@ -41,8 +41,8 @@ class GeneralSpatialFunction : public Function
 {
 private:
     string expression_string;
-    double x,y,z;
-    expression_t expression; 
+    double x, y, z;
+    expression_t expression;
 public:
     GeneralSpatialFunction() {};
     virtual ~GeneralSpatialFunction() {};
@@ -65,7 +65,7 @@ public:
     PieceWiseLinearFunction(vector< double >nx, vector< double >ny) { x = nx; y = ny; };
     virtual ~PieceWiseLinearFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t)const;
+    double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
     void setYValue(double yv, unsigned i) { y [ i ] = yv; };
 protected:
@@ -83,7 +83,7 @@ public:
     ConstSawToothFunction() {};
     virtual ~ConstSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t)const;
+    double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
 protected:
 };
@@ -100,7 +100,7 @@ public:
     LinSawToothFunction() {};
     virtual ~LinSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t)const;
+    double giveY(double t) const;
 protected:
 };
 
@@ -117,7 +117,7 @@ public:
     VaryingSawToothFunction() {};
     virtual ~VaryingSawToothFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t)const;
+    double giveY(double t) const;
 protected:
 };
 
@@ -136,7 +136,7 @@ public:
     ConstSawToothRotationFunction() {};
     virtual ~ConstSawToothRotationFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t)const;
+    double giveY(double t) const;
     //void setCurrentTime(double t);
 protected:
 };
@@ -156,7 +156,7 @@ public:
     ConstSawToothShearFunction() {};
     virtual ~ConstSawToothShearFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t)const;
+    double giveY(double t) const;
     void setCurrentTime(double t);
 protected:
 };
@@ -173,7 +173,7 @@ public:
     SinusFunction() {};
     virtual ~SinusFunction() {};
     void readFromLine(istringstream &iss);
-    double giveY(double t)const;
+    double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
 protected:
 };

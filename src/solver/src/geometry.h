@@ -55,7 +55,6 @@ public:
 
 class Circle : public RegularRegion
 {
-
 public:
     Circle() {};
     virtual ~Circle() {};
@@ -72,7 +71,6 @@ public:
     virtual ~Sphere() {};
     Sphere(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
-
 };
 
 
@@ -106,6 +104,6 @@ bool doIntersect(const Point &p1, const Point &q1, const Point &p2, const Point 
 bool isInPolygon(const std :: vector< Point > &polygon, const Point &p);
 
 
-void readRegions(const std :: string &filename, std :: vector < Region * > &regions );
+void readRegions(const std :: string &filename, std :: vector< Region * > &regions);
 
 #endif

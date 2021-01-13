@@ -16,7 +16,7 @@ void BoundaryCondition :: init(FunctionContainer *funcs) {
         if ( dirichBC [ i ] >= 0 ) {
             blockedDoFNum++;
             dirichF [ i ] = funcs->giveFunction(dirichBC [ i ]);
-        } else  {
+        } else {
             dirichF [ i ] = nullptr;
         }
     }
@@ -26,7 +26,7 @@ void BoundaryCondition :: init(FunctionContainer *funcs) {
         if ( neumannBC [ i ] >= 0 ) {
             loadedDoFNum++;
             neumannF [ i ] = funcs->giveFunction(neumannBC [ i ]);
-        } else  {
+        } else {
             neumannF [ i ] = nullptr;
         }
     }
@@ -65,7 +65,7 @@ vector< unsigned >BoundaryCondition :: giveLoadedDoFs() const {
 }
 
 //////////////////////////////////////////////////////////
-vector < double > BoundaryCondition :: giveBlockedDoFValues(double t) const {
+vector< double >BoundaryCondition :: giveBlockedDoFValues(double t) const {
     vector< double >blocked;
     blocked.resize(blockedDoFNum);
     unsigned s = 0;
@@ -132,21 +132,21 @@ void BodyLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
                 numelems = elems->giveSize();
                 els.resize(numelems);
                 for ( unsigned i = 0; i < numelems; i++ ) {
-                    els[i] = elems->giveElement(i);
-                }                
-            }else{
+                    els [ i ] = elems->giveElement(i);
+                }
+            } else  {
                 numelems = stoi(code);
                 els.resize(numelems);
                 for ( unsigned i = 0; i < numelems; i++ ) {
                     iss >> k;
-                    els[i] = elems->giveElement(k);
+                    els [ i ] = elems->giveElement(k);
                 }
             }
-        }else if( code.compare("spatialFunction") == 0 ) {
+        } else if ( code.compare("spatialFunction") == 0 )   {
             iss >> spatialFunctionNum;
-        }else if( code.compare("timeFunction") == 0 ) {
+        } else if ( code.compare("timeFunction") == 0 )   {
             iss >> timeFunctionNum;
-        }else if( code.compare("direction") == 0 ) {
+        } else if ( code.compare("direction") == 0 )   {
             iss >> dir;
         }
     }
@@ -164,21 +164,21 @@ double BodyLoad :: giveValue(const Point *xyz, double t) {
 }
 
 //////////////////////////////////////////////////////////
-vector < double > BodyLoad :: giveBodyForceDoFValues(double t){
-    vector < double > load, elemLoad;
-    for(auto &e: els){
+vector< double >BodyLoad :: giveBodyForceDoFValues(double t) {
+    vector< double >load, elemLoad;
+    for ( auto &e: els ) {
         elemLoad = e->integrateLoad(this, t);
-        load.insert( load.end(), elemLoad.begin(), elemLoad.end() );
+        load.insert(load.end(), elemLoad.begin(), elemLoad.end() );
     }
     return load;
 }
 
 //////////////////////////////////////////////////////////
-vector<unsigned> BodyLoad :: giveArrayOfBodyForceDoFs() const{
-    vector < unsigned > DoFs, elemDoFs;
-    for(auto &e: els){
+vector< unsigned >BodyLoad :: giveArrayOfBodyForceDoFs() const {
+    vector< unsigned >DoFs, elemDoFs;
+    for ( auto &e: els ) {
         elemDoFs = e->giveDoFsInDirection(dir);
-        DoFs.insert( DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
+        DoFs.insert(DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
     }
     return DoFs;
 }
@@ -187,10 +187,10 @@ vector<unsigned> BodyLoad :: giveArrayOfBodyForceDoFs() const{
 //////////////////////////////////////////////////////////
 // CONTAINER FOR BOUNDARY CONDITIONS
 BCContainer :: ~BCContainer() {
-    for ( auto &bc: BC) {
+    for ( auto &bc: BC ) {
         delete bc;
     }
-    for ( auto &vl: loads) {
+    for ( auto &vl: loads ) {
         delete vl;
     }
 }
@@ -226,7 +226,7 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes, El
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << BC.size() - origBCsize << " boundary conditions and "<< loads.size() - origLoadsize << " volume loads found" << endl;
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << BC.size() - origBCsize << " boundary conditions and " << loads.size() - origLoadsize << " volume loads found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
@@ -250,7 +250,7 @@ void BCContainer :: init() {
 //////////////////////////////////////////////////////////
 void BCContainer :: calculateDoFfields() {
     vector< unsigned >help;
-    vector < double > help2;
+    vector< double >help2;
     for ( vector< BoundaryCondition * > :: iterator bc = BC.begin(); bc != BC.end(); ++bc ) {
         help = ( * bc )->giveBlockedDoFs();
         dirichDoFs.insert(dirichDoFs.end(), help.begin(), help.end() );
@@ -272,10 +272,10 @@ void BCContainer :: calculateDoFfields() {
 }
 
 //////////////////////////////////////////////////////////
-vector < double > BCContainer :: giveBlockedDoFValues(double t) const {
-    vector < double > blocked(dirichDoFs.size() );
+vector< double >BCContainer :: giveBlockedDoFValues(double t) const {
+    vector< double >blocked(dirichDoFs.size() );
     unsigned i, s = 0;
-    vector < double > b;
+    vector< double >b;
     for ( auto &bc: BC ) {
         b = bc->giveBlockedDoFValues(t);
         for ( i = 0; i < b.size(); i++, s++ ) {
@@ -286,10 +286,10 @@ vector < double > BCContainer :: giveBlockedDoFValues(double t) const {
 }
 
 //////////////////////////////////////////////////////////
-vector < double > BCContainer :: giveLoadedDoFValues(double t) const {
-    vector < double > loads (neumannDoFs.size() );
+vector< double >BCContainer :: giveLoadedDoFValues(double t) const {
+    vector< double >loads(neumannDoFs.size() );
     unsigned i, s = 0;
-    vector < double > b;
+    vector< double >b;
     for ( auto &bc: BC ) {
         b = bc->giveLoadedDoFValues(t);
         for ( i = 0; i < b.size(); i++, s++ ) {
@@ -300,22 +300,21 @@ vector < double > BCContainer :: giveLoadedDoFValues(double t) const {
 }
 
 //////////////////////////////////////////////////////////
-vector<unsigned> BCContainer :: giveArrayOfBodyForceDoFs() const{
-    vector<unsigned> DoFs, elemDoFs;
-    for(auto &l: loads){
+vector< unsigned >BCContainer :: giveArrayOfBodyForceDoFs() const {
+    vector< unsigned >DoFs, elemDoFs;
+    for ( auto &l: loads ) {
         elemDoFs = l->giveArrayOfBodyForceDoFs();
-        DoFs.insert( DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
+        DoFs.insert(DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
     }
     return DoFs;
 }
 
 //////////////////////////////////////////////////////////
-vector < double > BCContainer :: giveBodyForceDoFValues(double t){
-    vector < double > structLoads, elemLoads;
-    for(auto &l: loads){
+vector< double >BCContainer :: giveBodyForceDoFValues(double t) {
+    vector< double >structLoads, elemLoads;
+    for ( auto &l: loads ) {
         elemLoads = l->giveBodyForceDoFValues(t);
-        structLoads.insert( structLoads.end(), elemLoads.begin(), elemLoads.end() );
+        structLoads.insert(structLoads.end(), elemLoads.begin(), elemLoads.end() );
     }
     return structLoads;
 }
-

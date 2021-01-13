@@ -53,22 +53,22 @@ public:
 class BodyLoad
 {
 protected:
-    vector < Element *> els;
+    vector< Element * >els;
     unsigned timeFunctionNum;
-    Function* timeFunction;
+    Function *timeFunction;
     unsigned spatialFunctionNum;
-    Function* spatialFunction;
+    Function *spatialFunction;
     unsigned dir;
 
 public:
     BodyLoad() {};
     ~BodyLoad() {};
-    void readFromLine(istringstream &iss,ElementContainer *elems);
+    void readFromLine(istringstream &iss, ElementContainer *elems);
     void init(FunctionContainer *funcs);
     double giveValue(const Point *xyz, double time);
-    vector < double > giveBodyForceDoFValues(double t);
-    vector < unsigned > giveArrayOfBodyForceDoFs() const;
-    unsigned giveDirection()const {return dir;};
+    vector< double >giveBodyForceDoFValues(double t);
+    vector< unsigned >giveArrayOfBodyForceDoFs() const;
+    unsigned giveDirection() const { return dir; };
 };
 
 //////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ private:
     vector< unsigned >dirichDoFs;
     vector< unsigned >neumannDoFs;
 
-    vector<BodyLoad *> loads;
+    vector< BodyLoad * >loads;
 
 public:
     BCContainer() {};
@@ -94,13 +94,13 @@ public:
     vector< unsigned >giveArrayOfLoadedDoFs() const { return neumannDoFs; };
     vector< unsigned >giveArrayOfBodyForceDoFs() const;
     unsigned giveNumBlockedDoFs() const { return dirichDoFs.size(); };//todo: conversion from 'size_t' to 'unsigned int', possible loss of data
-    vector < double > giveBlockedDoFValues(double time) const;
-    vector < double > giveLoadedDoFValues(double time) const;
-    vector < double > giveBodyForceDoFValues(double time);
+    vector< double >giveBlockedDoFValues(double time) const;
+    vector< double >giveLoadedDoFValues(double time) const;
+    vector< double >giveBodyForceDoFValues(double time);
     BoundaryCondition *giveBC(unsigned i) { return BC [ i ]; };
     void calculateDoFfields();
     size_t giveSize() { return BC.size(); }
-    void addBoundaryCondition(BoundaryCondition *bc) { BC.push_back(bc); }   
+    void addBoundaryCondition(BoundaryCondition *bc) { BC.push_back(bc); }
 protected:
 };
 

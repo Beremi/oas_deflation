@@ -245,7 +245,6 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: update() {
-
     DisMechMaterialStatus :: update();
 
     prev_damageShear = damageShear;
@@ -609,7 +608,6 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: update() {
-
     DisMechMaterialStatus :: update();
 
     prev_damage = damage;

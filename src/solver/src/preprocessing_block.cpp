@@ -9,7 +9,7 @@ void MechanicalPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
     initalNodeNum = nodes->giveSize();
-    mn = new MechDoF(3 * ( dim - 1 ));
+    mn = new MechDoF(3 * ( dim - 1 ) );
     nodes->addNode(mn);
 }
 
@@ -130,7 +130,7 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
                 vm.resize(3);
                 mults.resize(3);
                 dirs.resize(3, 0);
-                dirs[2] = 3; //gamma yz
+                dirs [ 2 ] = 3; //gamma yz
                 vm [ 2 ] = nodes->giveNode(initalNodeNum);
                 mults [ 2 ] = diff.z;
             } else if ( dim == 2 ) {
@@ -213,8 +213,6 @@ void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCon
 
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
-
-
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
@@ -623,24 +621,24 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     }
 }
 
-void RigidPlate :: checkMechTransport( Node *master ) {
+void RigidPlate :: checkMechTransport(Node *master) {
     // in case of rigid plate, master is a virtual virtual node and not a physical particle or
-    master->setName(master->giveName().append("-virtual"));
+    master->setName(master->giveName().append("-virtual") );
 
     if ( dynamic_cast< MechNode * >( master ) ) {
-      if ( master->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-        cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
-        exit(EXIT_FAILURE);
-      }
+        if ( master->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
+            cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
+            exit(EXIT_FAILURE);
+        }
     } else if ( dynamic_cast< TrsNode * >( master ) ) {
-      this->transport = true;
-      if ( master->giveNumberOfDoFs() != 1 ) {
-        cerr << "Error in " << __func__ << ": Master for RigidPlate in transport must have " << 1 << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
-        exit(EXIT_FAILURE);
-      }
+        this->transport = true;
+        if ( master->giveNumberOfDoFs() != 1 ) {
+            cerr << "Error in " << __func__ << ": Master for RigidPlate in transport must have " << 1 << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
+            exit(EXIT_FAILURE);
+        }
     } else {
-      cerr << "Error in " << __func__ << ": Master for RigidPlate is niether mechanical nor transport " << '\n';
-      exit(EXIT_FAILURE);
+        cerr << "Error in " << __func__ << ": Master for RigidPlate is niether mechanical nor transport " << '\n';
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -735,7 +733,7 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
             direction = 0;
         } else if ( dir.compare("y") ) {
             direction = 1;
-        } else if ( dir.compare("z") )                                             {
+        } else if ( dir.compare("z") ) {
             direction = 2;
         }
         // iss >> x >> y >> z;
@@ -768,7 +766,7 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
         xm = 0;
     } else if ( direction == 1 ) {
         ym = 0;
-    } else if ( direction == 2 )                                     {
+    } else if ( direction == 2 ) {
         zm = 0;
     }
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);

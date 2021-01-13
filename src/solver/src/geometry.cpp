@@ -12,7 +12,7 @@ Block :: Block(const Point &lB, const Point &rT) {
     this->rightTop = rT;
 }
 
-void Block :: readFromLine(istringstream &iss){
+void Block :: readFromLine(istringstream &iss) {
     double x, y, z;
     iss >> x >> y >> z;
     this->mainPoint = Point(x, y, z);
@@ -233,40 +233,39 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 }
 
 
-void readRegions(const std :: string &filename, std :: vector < Region * > &regions ){
-  size_t origsize = regions.size();
-  string line, regionType;
-  ifstream inputfile(filename.c_str() );
-  if ( inputfile.is_open() ) {
-    while ( getline(inputfile >> std :: ws, line) ) {
-      if ( line.empty() ) {
-        continue;
-      }
-      if ( line.at(0) == '#' ) {
-        continue;
-      }
-      istringstream iss(line);
-      iss >> std :: ws >> regionType;
-      if ( !regionType.rfind("#", 0) == 0 ) {
-        if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
-            Block *newregion = new Block();
-            newregion->readFromLine(iss);
-            regions.push_back(newregion);
-        } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
-            Sphere *newregion = new Sphere();
-            newregion->readFromLine(iss);
-            regions.push_back(newregion);
-        } else {
-            cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
-            exit(EXIT_FAILURE);
+void readRegions(const std :: string &filename, std :: vector< Region * > &regions) {
+    size_t origsize = regions.size();
+    string line, regionType;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
+            if ( line.at(0) == '#' ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> std :: ws >> regionType;
+            if ( !regionType.rfind("#", 0) == 0 ) {
+                if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
+                    Block *newregion = new Block();
+                    newregion->readFromLine(iss);
+                    regions.push_back(newregion);
+                } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
+                    Sphere *newregion = new Sphere();
+                    newregion->readFromLine(iss);
+                    regions.push_back(newregion);
+                } else {
+                    cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
         }
-      }
+        inputfile.close();
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << regions.size() - origsize << " regions found" << endl;
+    } else {
+        cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
+        exit(EXIT_FAILURE);
     }
-    inputfile.close();
-    cout << "Input file '" <<  filename << "' succesfully loaded; " << regions.size() - origsize << " regions found" << endl;
-  } else {
-    cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-    exit(EXIT_FAILURE);
-  }
-
 }

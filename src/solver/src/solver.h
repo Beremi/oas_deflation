@@ -30,7 +30,7 @@ protected:
 public:
     Solver() { name = "basic solver"; };
     virtual ~Solver() {};
-    virtual void init(const bool &initial=true);
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
     void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions; }
@@ -60,7 +60,7 @@ private:
 public:
     SteadyStateLinearSolver();
     virtual ~SteadyStateLinearSolver();     //destructor
-    virtual void init(const bool &initial=true);
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -96,7 +96,7 @@ private:
 public:
     SteadyStateNonLinearSolver();
     virtual ~SteadyStateNonLinearSolver();     //destructor
-    virtual void init(const bool &initial=true);
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual Vector giveNodalForces() { return f_ext_old; };
     virtual void runBeforeEachStep();
@@ -121,7 +121,7 @@ private:
 public:
     TransientLinearMechanicalSolver();
     virtual ~TransientLinearMechanicalSolver();     //destructor
-    virtual void init(const bool &initial=true);
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
 };
 

@@ -28,8 +28,8 @@ public:
     Model(bool pT);
     ~Model() { delete solver; };
     // JK: different read for reloading the geometry (e.g. after adaptive remesh)
-    void readFromFile(const string filename, const bool &initial=true);
-    void init(const bool &initial=true);
+    void readFromFile(const string filename, const bool &initial = true);
+    void init(const bool &initial = true);
     void solve();
 
     void clear();
@@ -45,7 +45,7 @@ public:
     unsigned giveDimension() const { return ndim; };
     void resetTime() { solver->setTime(0); solver->setStep(0); }
 
-    void print_res_dir(){std::cout << "resultdir: " << resultDir.string() << '\n';}
+    void print_res_dir() { std :: cout << "resultdir: " << resultDir.string() << '\n'; }
 
     fs :: path baseDir;
     fs :: path resultDir;

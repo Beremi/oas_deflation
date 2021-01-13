@@ -13,7 +13,7 @@ class NodeContainer
 private:
     vector< Node * >nodes;
     vector< unsigned >DoFid;         //mapping from particle order to DoF order for all DoFs
-    vector< unsigned >loadedDoFs;    
+    vector< unsigned >loadedDoFs;
     vector< unsigned >bodyForceDoFs;
     vector< unsigned >blockedDoFid;
     unsigned totalDoFs, freeDoFs;

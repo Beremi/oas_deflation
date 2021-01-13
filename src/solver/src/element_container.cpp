@@ -69,20 +69,20 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                                               * PolyhedralFace *newelem = new PolyhedralFace(ndim);
                                               * newelem->readFromLine(iss, nodes, matrs);
                                               * elems.push_back(newelem);*/
-                /*} else if ( elemType.compare("TranspPolyhedral") == 0 ) {
-                    TranspPolyhedral *newelem = new TranspPolyhedral(ndim);
-                    newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);
-                */
-                                                /*
-                                              * } else if ( elemType.compare("TranspVirtPolyhedral") == 0 ) {
-                                              * TranspVirtPolyhedral *newelem = new TranspVirtPolyhedral(ndim);
-                                              * newelem->readFromLine(iss, nodes, matrs);
-                                              * elems.push_back(newelem);
-                                              * } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 ) {
-                                              * TranspCondensedPolyhedral *newelem = new TranspCondensedPolyhedral(ndim);
-                                              * newelem->readFromLine(iss, nodes, matrs);
-                                              * elems.push_back(newelem);*/
+                    /*} else if ( elemType.compare("TranspPolyhedral") == 0 ) {
+                     *  TranspPolyhedral *newelem = new TranspPolyhedral(ndim);
+                     *  newelem->readFromLine(iss, nodes, matrs);
+                     *  elems.push_back(newelem);
+                     */
+                    /*
+                     * } else if ( elemType.compare("TranspVirtPolyhedral") == 0 ) {
+                     * TranspVirtPolyhedral *newelem = new TranspVirtPolyhedral(ndim);
+                     * newelem->readFromLine(iss, nodes, matrs);
+                     * elems.push_back(newelem);
+                     * } else if ( elemType.compare("TranspCondensedPolyhedral") == 0 ) {
+                     * TranspCondensedPolyhedral *newelem = new TranspCondensedPolyhedral(ndim);
+                     * newelem->readFromLine(iss, nodes, matrs);
+                     * elems.push_back(newelem);*/
                 } else {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -101,7 +101,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 void ElementContainer :: init() {
     max_sol_order = 0;
     unsigned num = 0;
-    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e, num++) {
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e, num++ ) {
         ( * e )->setID(num);
         ( * e )->init();
         ( * e )->initMaterialStatuses();
