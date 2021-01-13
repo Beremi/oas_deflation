@@ -665,5 +665,5 @@ voro++
 dmgalpha
 *DiscreteModel
 point_generators_cython.cpp
-/src/preprocessor/voronoi/power_0.0100_144
+/src/preprocessor/voronoi/power_*/
 /src/postprocessor/LD_viewer/example-Mirek.bat

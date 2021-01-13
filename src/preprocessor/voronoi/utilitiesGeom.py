@@ -1630,10 +1630,10 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
              if (constraint and not constraintTrspt):
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
-             if (not constraint and constraintTrspt):
+             elif (not constraint and constraintTrspt):
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintTrsptFile))
-             if (constraint and constraintTrspt):
+             elif (constraint and constraintTrspt):
                  fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
 
@@ -1702,7 +1702,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
         fl.write('#TXTNodalExporter translations 2 ux uy\n')
         fl.write('#TXTNodalExporter pressure 1 pressure\n')
         if not activeTransport:
-            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage\n')
+            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage pointData 1 nodal_stress\n')
         fl.write('#VTKRCExporter faces  saveEvery 1e-1 cellData 1 damage\n')
         fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
     if activeTransport:

@@ -1,0 +1,2 @@
+TXTNodalExporter pressure 1 pressure
+VTKElementExporter elems saveEvery 0.01 pointData 1 pressure

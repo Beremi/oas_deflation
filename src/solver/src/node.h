@@ -53,7 +53,7 @@ public:
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const { ( void ) code; ( void ) DoFs; return 0; };
     bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
     bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
-    void subtructFromPoint(Point *p) { point -= (*p); };
+    void subtructFromPoint(Point *p) { point -= ( * p ); };
 };
 
 //////////////////////////////////////////////////////////

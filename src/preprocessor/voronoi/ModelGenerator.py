@@ -15,6 +15,7 @@ from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import utilitiesGeom, utilitiesMech, utilitiesModeling, utilitiesNumeric, voronoi
+from utilitiesGeom import mechBCFile
 
 # Disable
 def blockPrint():
@@ -183,15 +184,19 @@ class Model:
 
         print('done.')
 
-    def setDirectory(self):
-        if self.userSeed == -1:
-            self.seed = np.random.randint(1000.0)
-            np.random.seed(seed=self.seed)
-        else:
-            self.seed = self.userSeed
-            np.random.seed(seed=self.seed)
+    def setDirectory(self, dirNam=None):
+        if dirNam is None:
+            if self.userSeed == -1:
+                self.seed = np.random.randint(1000.0)
+                np.random.seed(seed=self.seed)
+            else:
+                self.seed = self.userSeed
+                np.random.seed(seed=self.seed)
 
-        self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
+            self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
+        else:
+            self.master_folder = dirNam
+
         try:
             if not os.path.exists(self.master_folder):
                 os.makedirs(self.master_folder)
@@ -200,7 +205,7 @@ class Model:
             sys.exit()
 
 
-    def createModel(self):
+    def createModel(self, node_coords_init=None):
         print ('Creating model %s' %self.modelType)
         #
         #if (self.printout == False): blockPrint()
@@ -212,7 +217,7 @@ class Model:
             self.run_3d_BiparvaTubeTransport()
 
         if self.modelType == '2d_notched3pb':
-            self.run_2d_notched3pb()
+            self.run_2d_notched3pb(node_coords_init=node_coords_init)
         if self.modelType == '3d_notched3pb':
             self.run_3d_notched3pb()
 
@@ -262,9 +267,9 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_singleSpring', maxLim=np.array([self.minDist, 1]) )
         materialZones = None
 
-    def run_2d_notched3pb(self):
+    def run_2d_notched3pb(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth)
+        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self):
@@ -383,6 +388,11 @@ class Model:
         print ('done.')
 
     def saveRest(self, solver, master_file):
+        # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
+        bc_path = os.path.join(self.master_folder,
+                               utilitiesGeom.mechBCFile)
+        if os.path.isfile(bc_path):
+            os.remove(bc_path)
         print('Saving files...', end='')
         utilitiesGeom.saveMaterials(self.master_folder, self.materials)
         utilitiesGeom.saveFunctions(self.master_folder, self.functions)
@@ -426,10 +436,12 @@ class Model:
         utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint, constraintTrspt=self.constraintTrspt,
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
-        print ('done.')
+        # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
+        dst_file = os.path.join(self.master_folder,master_file)
+        if not os.path.isfile(dst_file):
+            print ('Copying prep_master used...', end='')
+            copyfile(master_file, dst_file)
 
-        print ('Copying prep_master used...', end='')
-        copyfile(master_file, os.path.join(self.master_folder,master_file))
         print ('done.')
 
     def addMaterial(self, row):

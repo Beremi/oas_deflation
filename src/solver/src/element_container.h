@@ -31,7 +31,6 @@ public:
     void updateCapacityMatrix(CoordinateIndexedSparseMatrix &C) const;
     void prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const;
     void updateMassMatrix(CoordinateIndexedSparseMatrix &M) const;
-    void addBodyForces(Vector &R, double time) const;
     void giveInternalForces(Vector &full_r, Vector &full_f);                       ///< return internal forces with temporary update of internal variables
     void giveInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f); ///< return internal forces based on current state of internal variables
     void giveInternalForces(Vector &full_r, Vector &full_f, bool frozen);          ///< return internal forces with or without frozen internal variables

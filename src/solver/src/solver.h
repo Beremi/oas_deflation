@@ -30,7 +30,7 @@ protected:
 public:
     Solver() { name = "basic solver"; };
     virtual ~Solver() {};
-    virtual void init();
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
     void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions; }
@@ -60,7 +60,7 @@ private:
 public:
     SteadyStateLinearSolver();
     virtual ~SteadyStateLinearSolver();     //destructor
-    virtual void init();
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -78,7 +78,8 @@ protected:
     double W_ext_oldT, W_int_oldT, W_extT, W_intT; //transport
     double disErr, resErr, eneErr;
     double limitDisErr, limitResErr, limitEneErr;
-    unsigned maxIt;
+    unsigned maxIt; ///> maximum number of iteration
+    unsigned enlargeIt, shortenIt; ///> if lower/higher numIt -> enlarge/shorten time-step
     ///> time step is changed according to actual fraction of number of iteration vs maxIt
     double step_increase;  ///> increased in case the number of iteration is in lower 1/3
     double step_decrease;  ///> decreased in case the number of iteration is in upper 1/2
@@ -86,7 +87,7 @@ protected:
 
     IndirectDC *idc;        //indirect displacement control
     Vector ddf, full_ddf, f_last_iter;
-    double idc_time, idc_dt, idc_time_converged; //time in which load advancements are masured
+    double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
 
     void printAllVectors();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
@@ -95,7 +96,7 @@ private:
 public:
     SteadyStateNonLinearSolver();
     virtual ~SteadyStateNonLinearSolver();     //destructor
-    virtual void init();
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual Vector giveNodalForces() { return f_ext_old; };
     virtual void runBeforeEachStep();
@@ -120,7 +121,7 @@ private:
 public:
     TransientLinearMechanicalSolver();
     virtual ~TransientLinearMechanicalSolver();     //destructor
-    virtual void init();
+    virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
 };
 
@@ -137,7 +138,7 @@ private:
 public:
     TransientLinearTransportSolver();
     virtual ~TransientLinearTransportSolver();     //destructor
-    virtual void init();
+    virtual void init(const bool &initial);
 };
 
 #endif

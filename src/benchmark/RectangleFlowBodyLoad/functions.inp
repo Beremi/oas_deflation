@@ -1,0 +1,7 @@
+#FuncType	numberOfDefPoints	pointvalues
+PWLFunction	1	0.000000	0.000000
+PWLFunction	2	0.000000	50.000000	0.000000	500000.000000
+PWLFunction	1	0.000000	0.000000
+PWLFunction	1	0.000000	300.000000
+PWLFunction	1	0.000000	2.2e-9
+GeneralSpatialFunction 200./3.

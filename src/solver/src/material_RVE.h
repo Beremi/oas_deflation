@@ -26,9 +26,9 @@ protected:
     fs :: path inputfile;
 
     //setup for volumetric average
-    PieceWiseLinearFunction * volumAverFunc;
+    PieceWiseLinearFunction *volumAverFunc;
 
-    virtual void generateVolumetricAverageBC(){};
+    virtual void generateVolumetricAverageBC() {};
 public:
     RVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~RVEMaterialStatus();
@@ -64,11 +64,11 @@ protected:
 
     Point centroid;
     bool active_mechanics, active_transport;
-    vector< vector < Vector > > mechProjectors;
+    vector< vector< Vector > >mechProjectors;
 
 public:
     DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile);
-    virtual ~DiscreteRVEMaterialStatus(){};
+    virtual ~DiscreteRVEMaterialStatus() {};
     virtual void init();
     virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;

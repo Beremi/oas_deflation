@@ -4,7 +4,7 @@
 using namespace std;
 fs :: path GlobPaths :: BASEDIR;
 
-Model* masterModel;
+Model *masterModel;
 
 int main(int argc, char **argv) {
     if ( argc == 1 ) {
@@ -45,7 +45,9 @@ int main(int argc, char **argv) {
     masterModel->readFromFile(input.string() );
 
     // check if exists or create directory for results
-    if (!fs :: exists(masterModel->resultDir)) fs :: create_directories(masterModel->resultDir);
+    if ( !fs :: exists(masterModel->resultDir) ) {
+        fs :: create_directories(masterModel->resultDir);
+    }
     // save version information to result dir
     ofstream outputfile( ( masterModel->resultDir / "version.txt" ).string() );
     if ( outputfile.is_open() ) {

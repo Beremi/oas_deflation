@@ -457,7 +457,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 }
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: init() {
+void ExporterContainer :: init(const bool &initial) {
     fs :: create_directories(resultDir);
 
     bool newname;
@@ -477,39 +477,41 @@ void ExporterContainer :: init() {
         }
     }
 
-    //gauge files header
-    char buffer [ 100 ];
-    for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string() );
-        if ( outputfile.good() ) {
-            outputfile << "#step" << "\t" << "time";
-        }
-        outputfile.close();
-    }
-
-    for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        Gauge *g = dynamic_cast< Gauge * >( * d );
-        if ( g ) {
-            ( * d )->giveFileName(0, buffer);
+    if ( initial ) {
+        //gauge files header
+        char buffer [ 100 ];
+        for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
+            ( * unique )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string() );
             if ( outputfile.good() ) {
-                outputfile << "\t" << g->giveName();
+                outputfile << "#step" << "\t" << "time";
             }
             outputfile.close();
         }
-    }
 
-    for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
-        if ( outputfile.good() ) {
-            outputfile << endl;
+        for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
+            Gauge *g = dynamic_cast< Gauge * >( * d );
+            if ( g ) {
+                ( * d )->giveFileName(0, buffer);
+                ofstream outputfile;
+                outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+                if ( outputfile.good() ) {
+                    outputfile << "\t" << g->giveName();
+                }
+                outputfile.close();
+            }
         }
-        outputfile.close();
+
+        for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
+            ( * unique )->giveFileName(0, buffer);
+            ofstream outputfile;
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            if ( outputfile.good() ) {
+                outputfile << endl;
+            }
+            outputfile.close();
+        }
     }
 };
 
@@ -547,8 +549,10 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 };
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: appendToAllNames(string app){
-    for ( auto &d : exporters) d->appendToName(app);
+void ExporterContainer :: appendToAllNames(string app) {
+    for ( auto &d : exporters ) {
+        d->appendToName(app);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -559,7 +563,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 
     unsigned node_id, ni;
     double first;
-    Vector intF0(2*dim);
+    Vector intF0(2 * dim);
     Vector intF1(dim);
     Vector intF2(dim);
     Vector elDoFvalues, elReactValues, strainNT;
@@ -586,9 +590,9 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
             first = -1;
             ni = 0;
             intF0 = el->giveInternalForces(elDoFvalues, false);
-            for ( size_t ii = 0; ii < dim; ii++ ){
-              intF1[ii] = intF0[ii];
-              intF2[ii] = intF0[ii + 3 * (dim - 1)];
+            for ( size_t ii = 0; ii < dim; ii++ ) {
+                intF1 [ ii ] = intF0 [ ii ];
+                intF2 [ ii ] = intF0 [ ii + 3 * ( dim - 1 ) ];
             }
             for ( auto const &n : el->giveNodes() ) {
                 auto res = std :: find(begin(* nodes), end(* nodes), n);
@@ -597,8 +601,8 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 
                 stress [ node_id ] += dyadicProduct(
                     (
-                      ( (first == -1) ? intF1 * (-first) : intF2  * (-first) ) +
-                      rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
+                        ( ( first == -1 ) ? intF1 * ( -first ) : intF2  * ( -first ) ) +
+                        rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
                     )
                     * first
                     , rbc->giveVectorToNode(ni, 0) );
@@ -621,11 +625,11 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 }
 
 
-void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > & NodeTypes, fs :: path resultDir) {
-  // if NodeTypes.empty() then save all nodes
-  // TODO finish this, now (for adaptivity) just save path to file with particles
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {
+    // if NodeTypes.empty() then save all nodes
+    // TODO finish this, now (for adaptivity) just save path to file with particles
 }
 
-void saveElems(const ElementContainer &elems, const std :: vector< std :: string > & ElemTypes, fs :: path resultDir) {
-  // if ElemTypes.empty() then save all elems
+void saveElems(const ElementContainer &elems, const std :: vector< std :: string > &ElemTypes, fs :: path resultDir) {
+    // if ElemTypes.empty() then save all elems
 }

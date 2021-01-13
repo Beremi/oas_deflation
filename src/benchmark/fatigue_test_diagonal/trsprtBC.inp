@@ -1,11 +1,11 @@
 # vrtxIdx	TrsptP	TrsptJ
-16	-1	-1
-17	-1	-1
-15	-1	-1
-14	-1	-1
-12	-1	-1
-13	-1	-1
-19	-1	-1
-18	-1	-1
-20	-1	-1
-21	-1	-1
+NodalBC	16	-1	-1
+NodalBC	17	-1	-1
+NodalBC	15	-1	-1
+NodalBC	14	-1	-1
+NodalBC	12	-1	-1
+NodalBC	13	-1	-1
+NodalBC	19	-1	-1
+NodalBC	18	-1	-1
+NodalBC	20	-1	-1
+NodalBC	21	-1	-1
