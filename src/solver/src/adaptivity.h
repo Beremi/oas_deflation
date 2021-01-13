@@ -48,12 +48,21 @@ Vector calcPrincipalStress(const Matrix &stress) {
      // calculate intermediate quantities
      Q = (3 * I2 - pow(I1, 2) ) / 9;
      R = ( 2 * pow(I1, 3) - 9 * I1 * I2 + 27 * I3) / 54;
-     theta = acos(R / sqrt( - pow(Q, 3) ) );
+     if ( Q >= 0 ){
+       theta = 0;
+     } else {
+       if ( R / sqrt( - pow(Q, 3) ) > 1.0 ){
+          theta = acos( 1.0 );
+       } else {
+         theta = acos(R / sqrt( - pow(Q, 3) ) );
+       }
+     }
      // calculate eigen values
      principalStress[0] = 2 * sqrt(-Q) * cos(theta / 3) + I1 / 3;
      principalStress[1] = 2 * sqrt(-Q) * cos((theta + 2 * M_PI) / 3) + I1 / 3;
      principalStress[2] = 2 * sqrt(-Q) * cos((theta + 4 * M_PI) / 3) + I1 / 3;
-     std::cout << "principalStress ( " << principalStress[0] << ", " << principalStress[1] << ", " << principalStress[2] << " )" << '\n';
+     // stress.print();
+     // std::cout << "principalStress ( " << principalStress[0] << ", " << principalStress[1] << ", " << principalStress[2] << " ), Q = " << Q << ", R = " << R << ", theta = " << theta << ", acos argument = " << R / sqrt( - pow(Q, 3) ) << '\n';
   }
   return principalStress;
 }
