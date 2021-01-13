@@ -54,17 +54,22 @@ Recommended structure
     \code{.sh}
       cmake -D CMAKE_BUILD_TYPE=Debug PATH_TO_SRC
     \endcode
+-# update build directory after change CMakeLists.txt
+  \code{.sh}
+    cmake . [run inside build directory]
+  \endcode
 -# compile
   \code{.sh}
     cmake --build .
     OR
     make [when Makefile generated]
   \endcode
-  - for speedup when using Makefile use "-j [N]" (Allow N jobs at once; infinite jobs with no arg.)
+  - for speedup use parallel ("cmake --build" will run "cmake ." if necessary)
     \code{.sh}
-      cmake --build . -- -j 4
-      make -j 4
+      cmake --build . --parallel 4 [universal]
+      cmake --build . -- -j 4 [makefile option "-j [N]" (Allow N jobs at once; infinite jobs with no arg.)]
       cmake --build . -- /M      [Visual Studio]
+      make -j 4
     \endcode
 
 
@@ -129,7 +134,7 @@ Build Windows binary under Linux
     ctest -L tests -C Release -j 4 # [Windows]
   \endcode
 
-  
+
 
 \section CodingStandard Coding Standard
 http://www.oofem.org/wiki/doku.php?id=coding-conventions
