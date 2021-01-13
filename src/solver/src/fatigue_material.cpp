@@ -244,6 +244,48 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
+Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+    // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
+    ////////////////////////////////////////////////////////
+
+    Vector stress(strain.size() );
+
+    FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
+    double stiffN = m->giveE0();
+    double stiffT = m->giveAlpha() * stiffN;
+
+    double x = 0;
+    double y = 0;
+    double z = 0;
+    for ( unsigned i = 1; i < strain.size(); i++ ) {
+        if ( i == 1 ) {
+            y = strain [ i ];
+        } else if ( i == 2 ) {
+            z = strain [ i ];
+        } else {
+            std :: cerr << "should never get here, exit" << '\n';
+            exit(1);
+        }
+    }
+
+    stress [ 0 ] = stiffN * strain [ 0 ]; //normal stress
+    Point XstressT = ( Point(x,y,z) - temp_sPi ) * ( 1. - temp_damageShear ) * stiffT;
+
+    for ( unsigned i = 1; i < strain.size(); i++ ) {
+        if ( i == 1 ) {
+            stress [ i ] = XstressT.getY();
+        } else if ( i == 2 ) {
+            stress [ i ] = XstressT.getZ();
+        } else {
+            std :: cerr << "should never get here, exit" << '\n';
+            exit(1);
+        }
+    }
+
+    return stress;
+}
+
+//////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: update() {
     DisMechMaterialStatus :: update();
 
@@ -606,6 +648,32 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
     return stress;
 }
 
+
+//////////////////////////////////////////////////////////
+Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+    Vector stress(strain.size() );
+    DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
+    double stiffN = m->giveE0();
+    double stiffT = m->giveAlpha() * stiffN;
+
+    for ( size_t i = 1; i < stress.size(); i++ ) {
+        stress [ i ] = stiffT * strain [ i ];
+    }
+
+    if ( temp_epsN - epsNP > 0 ) {
+        stress [ 0 ] = ( 1 - temp_damage ) * stiffN * ( temp_epsN - epsNP );
+        for ( unsigned i = 1; i < strain.size(); i++ ) {
+            stress [ i ] = ( 1 - temp_damage ) * stiffT * ( strain [ i ] );
+        }
+    } else {
+        stress [ 0 ] = stiffN * ( temp_epsN - epsNP );
+        for ( unsigned i = 1; i < strain.size(); i++ ) {
+            stress [ i ] = stiffT * ( strain [ i ] );
+        }
+    }
+    return stress;
+}
+
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: update() {
     DisMechMaterialStatus :: update();
@@ -827,11 +895,26 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
     // TODO transition from compression to tension is very simply done here, should be improved
     Vector stress(strain.size() );
 
-    for ( size_t i = 0; i < stress.size(); i++ ) {
+    for ( size_t i = 0; i < strain.size(); i++ ) {
         if ( i == 0 ) {
             stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain) [ i ];
         } else {
             stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain) [ i ];
+        }
+    }
+
+    return stress;
+}
+
+//////////////////////////////////////////////////////////
+Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+    Vector stress(strain.size() );
+
+    for ( size_t i = 0; i < stress.size(); i++ ) {
+        if ( i == 0 ) {
+            stress [ i ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain) [ i ];
+        } else {
+            stress [ i ] = FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(strain) [ i ];
         }
     }
 
@@ -996,6 +1079,11 @@ Vector AllicheMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
+Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain) const{
+    return Vector(0); //TOTO: FIX
+}
+
+//////////////////////////////////////////////////////////
 Matrix AllicheMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
@@ -1121,6 +1209,7 @@ DesmoratMaterialStatus :: DesmoratMaterialStatus(DesmoratMaterial *m, Element *e
     name = "Desmorat mat. status";
 }
 
+//////////////////////////////////////////////////////////
 void DesmoratMaterialStatus :: init() {
     temp_sigma = sigma = Point(); ///< stress
     temp_Y = Y = 0; ///< energy release rate
@@ -1132,6 +1221,7 @@ void DesmoratMaterialStatus :: init() {
     temp_alphaKin = alphaKin = Point();
 }
 
+//////////////////////////////////////////////////////////
 void DesmoratMaterialStatus :: update() {
     DisMechMaterialStatus :: update();
     sigma = temp_sigma;
@@ -1142,6 +1232,7 @@ void DesmoratMaterialStatus :: update() {
     alphaKin = temp_alphaKin;
 }
 
+//////////////////////////////////////////////////////////
 Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
@@ -1158,6 +1249,7 @@ Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) 
     };
 }
 
+//////////////////////////////////////////////////////////
 Vector DesmoratMaterialStatus :: giveStress(const Vector &strain) {
     Vector stress(strain.size() );
 
@@ -1201,6 +1293,12 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain) {
     return stress;
 }
 
+//////////////////////////////////////////////////////////
+Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+    return Vector(0); //TOTO: FIX
+}
+
+//////////////////////////////////////////////////////////
 double DesmoratMaterialStatus :: giveValue(string code) const {
     if ( ( code.compare("damage") == 0 ) ) {
         return damage;

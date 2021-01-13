@@ -99,7 +99,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
     Vector stress;
     for ( unsigned i = 0; i < stats.size(); i++ ) {
         if ( frozen ) {
-            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), ndim);  //frozen internal variables
+            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs));  //frozen internal variables
         } else  {
             stress = stats [ i ]->giveStress(giveStrain(i, DoFs) ); //full evaluation of stress including change of state variables
         }
