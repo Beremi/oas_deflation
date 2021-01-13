@@ -14,6 +14,8 @@ from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
 
+SHOW_PLOT = False
+
 def assembleMeasuringGauges(type, D=-1, maxLim = None):
     measuringGauges = []
     if (type == 'dogbone2d'):
@@ -190,13 +192,15 @@ def createSingleSpringTestModel(length, master_folder):
     print('done.')
 
     #fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     print(node_coords)
     node_coords = np.asarray(node_coords)
     #fig, ax = plt.subplots()
     #ax.scatter(node_coords[:,0], node_coords[:,1])
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     return node_coords, mechBC_merged,  vor, areas, functions,govNodes, govNodesMechBC, rigidPlates
 
@@ -235,7 +239,8 @@ def createDiamondTestModel(width, height):
     print(areas)
 
     fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
 
     #print (points)
 
@@ -504,7 +509,8 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
@@ -584,7 +590,8 @@ def create2DUniaxialTension(maxLim, minDist, trials, dim, powerTes):
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
@@ -657,7 +664,8 @@ def createCoupledArtificialCrack(maxLim, minDist, trials, notchH):
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     functions = []
 
@@ -732,7 +740,8 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
 
@@ -742,7 +751,8 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
     print('done.')
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     functions = []
 
@@ -840,7 +850,8 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
 
 
     #fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     ########################################################################
     functions = []
@@ -961,7 +972,8 @@ def create2dCoupledRVE(maxLim, minDist, trials ):
 
 
     #fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     ########################################################################
     functions = []
@@ -1056,7 +1068,8 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, 
     """
     fig, ax = plt.subplots()
     ax.scatter(node_coords[:,0], node_coords[:,1])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
     print('Conducting Voronoi tesselation...', end = '')
@@ -1070,7 +1083,8 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, 
 
 
     #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     ########################################################################
     functions = []
@@ -1105,7 +1119,8 @@ def create3dDogBone(minDist, trials, D=1.0, excentricity = 20 ):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], c = 'b', marker='o')
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     print('Conducting Voronoi tesselation...', end = '')
     vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords, 3, D, thickness = 0.1)
@@ -1117,7 +1132,8 @@ def create3dDogBone(minDist, trials, D=1.0, excentricity = 20 ):
     areas = np.asarray(areas)
 
     #fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
-    #splt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     ########################################################################
     functions = []
@@ -1196,7 +1212,8 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     ax = Axes3D(fig)
     ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    #plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     print('Conducting Voronoi tesselation...', end = '')
     vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
@@ -1259,7 +1276,8 @@ def create3dReinhardtTension(maxLim, minDist, trials, fracZoneWidth = 0.15 ):
     ax = Axes3D(fig)
     ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     print('Conducting Voronoi tesselation...', end = '')
     vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
@@ -1313,7 +1331,8 @@ def create3dCantileverBending(maxLim, minDist, trials ):
     ax.set_xlim3d(-maxLim[0]*1,2*maxLim[0])
     ax.set_ylim3d(-maxLim[1]*1,2*maxLim[1])
     ax.set_zlim3d(-maxLim[2]*1,2*maxLim[2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
     ########################################################################
@@ -1537,7 +1556,8 @@ def create3dcylinderUniPressConfined(center, radius, height, minDist, trials, di
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     print('Conducting Voronoi tesselation...', end='')
     ### conducting Voronoi tesselation
@@ -1615,7 +1635,8 @@ def create3dcylinderUniPressFree(center, radius, height, minDist, trials, direct
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     print('Conducting Voronoi tesselation...', end='')
     ### conducting Voronoi tesselation
@@ -1707,7 +1728,8 @@ def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directi
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
     print('Conducting Voronoi tesselation...', end='')
@@ -1781,7 +1803,8 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
     print('Conducting Voronoi tesselation...', end='')
@@ -1826,7 +1849,8 @@ def create3dRWTHShearCylinder(center, radius, height, minDist, trials, notchRadL
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
     print('Conducting Voronoi tesselation...', end='')
@@ -1871,7 +1895,8 @@ def create2dRWTHShearCylinder(radius, height, minDist, trials, innerRadTop, inne
     node_coords = np.asarray(node_coords)
     fig, ax = plt.subplots()
     ax.scatter(node_coords[:,0], node_coords[:,1])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     #"""
 
     print('Conducting Voronoi tesselation...', end='')
@@ -1912,7 +1937,8 @@ def create3dtubeTorsionFree(center, radius, height, thickness, minDist, trials, 
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     print('Conducting Voronoi tesselation...', end='')
     ### conducting Voronoi tesselation
@@ -1967,7 +1993,8 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
 
     print('Conducting Voronoi tesselation...', end='')
     directionDim = 0
@@ -1992,7 +2019,8 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     ax = Axes3D(fig)
     ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
     ax.scatter(vor.vertices[outerFace,0], vor.vertices[outerFace,1], vor.vertices[outerFace,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
 
     innerFaceBC = np.array([0,-1])
     innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices)
@@ -2004,7 +2032,8 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     ax = Axes3D(fig)
     ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
     ax.scatter(vor.vertices[innerFace,0], vor.vertices[innerFace,1], vor.vertices[innerFace,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
 
 
 
@@ -2725,7 +2754,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     node_count = len(node_coords_out)
     nc = np.asarray(node_coords_out)
     #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
 
     mirroredMiddle = []
@@ -2738,7 +2768,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
 
     nc = np.asarray(node_coords_out)
     #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     sympoints = []
     """
@@ -2755,7 +2786,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     #if symmetric:
         #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
         #plt.plot(sympoints[:,0], sympoints[:,1], 'x', color='red');
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     nc = np.asarray(node_coords_out)
 
@@ -2980,7 +3012,8 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
     #    plt.plot( node_coords[ abs(coupledNodes[i][0]),0 ] , node_coords[ abs(coupledNodes[i][0]),1 ] ,'o', color='red')
     #    plt.plot( node_coords[ abs(coupledNodes[i][1]),0 ] , node_coords[ abs(coupledNodes[i][1]),1 ] ,'o', color='green')
 
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     #print (len(node_coords))
 
@@ -3307,7 +3340,8 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
     ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
     #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
     ax.scatter(nNds[:,0], nNds[:,1], nNds[:,2], color='r')
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
 
@@ -3461,7 +3495,8 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    #plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
     #width of the supports
@@ -3616,7 +3651,8 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter(node_coords[:,0],node_coords[:,1],node_coords[:,2])
-        #plt.show()
+        if SHOW_PLOT:
+            plt.show()
         """
 
 
@@ -3897,7 +3933,8 @@ def assemble3DReinhardtTension (maxLim, minDist, trials, fracZoneWidth = 0.15):
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     ##########################################generating of points, left support area
     maxLimF = np.array([
@@ -4400,7 +4437,8 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     #"""
 
 
@@ -4690,7 +4728,8 @@ def assemble3dRWTHShearCylinder(center, radiusInp, heightInp, minDist, trials, d
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     #
     """
 
@@ -5124,7 +5163,8 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     #"""
 
 

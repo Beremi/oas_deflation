@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.spatial as ss
 
+SHOW_PLOT = False
 
 def loadNodes(filename, dim):
     if not os.path.isfile(filename):
@@ -179,7 +180,8 @@ if __name__ == '__main__':
 
     # ss.voronoi_plot_2d(model.vor, ax=ax)
     #
-    # plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
     # plt.close()
     # sys.exit(1)
 
