@@ -13,6 +13,7 @@ from scipy.spatial import Delaunay
 #VORONOI PY#
 from shapely.geometry import Polygon, Point
 
+SHOW_PLOT = False
 
 def mirror_data(data):
     '''Mirror 2D data'''
@@ -168,7 +169,8 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
     dataOut = np.asarray(dataOut)
     fig, ax = plt.subplots()
     ax.scatter(dataOut[:,0], dataOut[:,1])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     return dataOut
 
@@ -211,7 +213,8 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
             fig = plt.figure()
             ax = Axes3D(fig)
             ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
-            plt.show()
+            if SHOW_PLOT:
+                plt.show()
             """
 
             for i in range (len(mirroredData)):
@@ -228,7 +231,8 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
             fig = plt.figure()
             ax = Axes3D(fig)
             ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
-            plt.show()
+            if SHOW_PLOT:
+                plt.show()
             """
 
             dataOutM =  np.vstack((
@@ -248,7 +252,8 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
             fig = plt.figure()
             ax = Axes3D(fig)
             ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
-            plt.show()
+            if SHOW_PLOT:
+                plt.show()
             """
 
 
@@ -294,7 +299,8 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
 
     return dataOut
@@ -333,7 +339,8 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim):
     ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
     ax.scatter(mirroredOutside[:,0], mirroredOutside[:,1], mirroredOutside[:,2])
     ax.scatter(mirroredInside[:,0], mirroredInside[:,1], mirroredInside[:,2])
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     """
     dataOut =  np.vstack((dataOut, mirroredOutside))
     dataOut =  np.vstack((dataOut, mirroredInside))

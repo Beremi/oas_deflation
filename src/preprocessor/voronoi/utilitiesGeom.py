@@ -31,6 +31,8 @@ constraintFile              = "constraint.inp"
 constraintTrsptFile         = "constraintTrspt.inp"
 solverFile                  = "solver.inp"
 
+SHOW_PLOT = False
+AXIS_ASPECT_EQUAL = False  # True may cause error using newer matplotlib versions
 #
 #coplanarity test
 def equation_plane(pA, pB, pC, pD):
@@ -379,7 +381,8 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
             valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
 
 
-    plt.show()
+    if SHOW_PLOT:
+        plt.show()
     print('done.')
     #"""
 
@@ -405,7 +408,8 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
             valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
             valid_ridge_vertices = np.vstack((valid_ridge_vertices, vor.ridge_vertices[ir]))
 
-    #plt.show()
+    #if SHOW_PLOT:
+    #    plt.show()
     #"""
     print('done.')
 
@@ -423,7 +427,8 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
     node_count = len(valid_ridge_nodes)
     print('done.')
 
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
     print ('done.')
     print('filtering done.')
 
@@ -683,7 +688,8 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
 
     #plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
 
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
 def pointWithinCenterBox(point, maxLim):
     if (point[0]>0 and point[0]<maxLim[0]
@@ -1522,25 +1528,25 @@ def saveMechBC(master_folder,dim, nodes_mechBCmerged, govNodesBC = False):
     if (govNodesBC == False and len(mechBC_out)>0 ):
         print('Saving node BC...')
         if (dim == 2):
-            headerLine = 'nodeIdx\tKinTrX\tKinTrY\tKinRotZ\tStTrX\tStTrY\tStRotZ'
+            headerLine = 'bcType\tnodeIdx\tKinTrX\tKinTrY\tKinRotZ\tStTrX\tStTrY\tStRotZ'
             fl=open(os.path.join(master_folder,mechBCFile) ,'w')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
             fl.close()
         elif (dim == 3):
-            headerLine = 'nodeIdx\tKinTrX\tKinTrY\tKinTrZ\tKinRotX\tKinRotY\tKinRotZ\tStTrX\tStTrY\tStTrZ\tStRotX\tStRotY\tStRotZ'
+            headerLine = 'bcType\tnodeIdx\tKinTrX\tKinTrY\tKinTrZ\tKinRotX\tKinRotY\tKinRotZ\tStTrX\tStTrY\tStTrZ\tStRotX\tStRotY\tStRotZ'
             fl=open(os.path.join(master_folder,mechBCFile) ,'w')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
             fl.close()
     elif(len(mechBC_out)>0 ):
         print('Saving rigid plate BC...')
         #print(mechBC_out)
         if (dim == 2):
             fl=open(os.path.join(master_folder,mechBCFile) ,'a')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d')
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d')
             fl.close()
         elif (dim == 3):
             fl=open(os.path.join(master_folder,mechBCFile) ,'a')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d')
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d')
             fl.close()
 
     print('done.')
@@ -1575,16 +1581,16 @@ def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart,
     print('len len %d' %len(trsptBC_out))
 
     if (govNodesBC==False and len(trsptBC_out)>0):
-        headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
+        headerLine = 'bcType\tvrtxIdx\tTrsptP\tTrsptJ'
         fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
         if (len(trsptBC_out)>0):
-            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
+            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d', header = headerLine)
         fl.close()
     elif(len(trsptBC_out)>0):
         print('Saving trspt rigid plate bc...')
         fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
         if (len(trsptBC_out)>0):
-            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d')
+            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d')
         fl.close()
 
     print('done.')
@@ -2143,7 +2149,8 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
                 fig = plt.figure()
                 ax = Axes3D(fig)
-                ax.set_aspect('equal')
+                if AXIS_ASPECT_EQUAL:
+                    ax.set_aspect('equal')
                 ax.plot3D([vertexA[0], vertexB[0]], [vertexA[1], vertexB[1]], [vertexA[2], vertexB[2]], marker='o')
                 #ax.plot3D([anodeA[0], anodeB[0]], [anodeA[1], anodeB[1]], [anodeA[2], anodeB[2]], marker='o')
                 ax.scatter3D(nanode[0], nanode[1], nanode[2])
@@ -2170,7 +2177,8 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
                 ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
                 """
-                #plt.show()
+                # if SHOW_PLOT:
+                #     plt.show()
 
                 #print('new elem: %s' %elem.getString())
                 #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
@@ -2258,7 +2266,8 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             #ax.plot(np.array([0,maxLim[1],maxLim[2]]), np.array([maxLim[0],maxLim[1],maxLim[2]]))
 
             ax.scatter(vrtcs[len(vrtcs)-1,0], vrtcs[len(vrtcs)-1,1], vrtcs[len(vrtcs)-1,2])
-            plt.show()
+            if SHOW_PLOT:
+                plt.show()
 
 
             allCoplanar = False

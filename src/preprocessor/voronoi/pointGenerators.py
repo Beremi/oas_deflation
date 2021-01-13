@@ -9,7 +9,7 @@ import utilitiesGeom
 from mpl_toolkits.mplot3d import Axes3D
 from regions import *
 
-
+SHOW_PLOT = False
 
 
 def randPointInRectangle(dim, maxLim, useLowBound=False):
@@ -267,7 +267,8 @@ def generateOrtogrid(maxLim, minDist, dim, node_coords, size):
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter(orthogrid[:,0],orthogrid[:,1],orthogrid[:,2])
-        plt.show()
+        if SHOW_PLOT:
+            plt.show()
         #
         #"""
 
@@ -352,7 +353,8 @@ def generateOrtogrid_variable(maxLim, minDist, node_coords, dimensions):
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter(orthogrid[:,0],orthogrid[:,1],orthogrid[:,2])
-        plt.show()
+        if SHOW_PLOT:
+            plt.show()
         #
         #"""
 
