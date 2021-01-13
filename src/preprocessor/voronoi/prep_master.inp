@@ -22,11 +22,11 @@
 #
 #
 # Dogbones
-#Model 2d_dogbone dogboneD 0.2 minDist 0.003 dogboneExcentricityFrac 50 activeMechanics 1 trials 100000 symmetric 1
+Model 2d_dogbone dogboneD 0.2 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 10000 symmetric 0 edgeMinDistCoef 0.2
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
-#Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.012 activeMechanics 1 trials 20000
+#Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.030 activeMechanics 1 trials 50000
 #
 # Reinhardt tension 
 #Model 3d_ReinhardtTension Xsize 0.25 Ysize 0.06 Zsize 0.05 minDist 0.005 fracZoneWidth 0.3 activeMechanics 1 trials 5000
@@ -52,7 +52,7 @@
 ####################################################################################
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
-Model 3d_coupledBrazilianDisc cylinderHeight 0.08 cylinderRad 0.3 minDist 0.018 activeTransport 1 activeMechanics 1 coupled 1 trials 5000
+#Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.004 activeTransport 0 activeMechanics 1 coupled 0 trials 50000
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0.5 loadWidth 0.01 minDist 0.007 fracZoneWidth 0.1 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.01
 #
 #

@@ -274,7 +274,7 @@ def run_and_export_single(angle_deg, final_displacement, num_steps, tension,
 
 if __name__ == '__main__':
     ###########################################################################
-    length = 24e-3  # element length
+    length = 30e-3  # element length
     perp_length = length  # facet size (in 2D it is just length)
     final_displacement = [1e-3, 1e-3]
     num_steps = 1000.

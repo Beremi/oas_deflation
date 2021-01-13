@@ -1630,7 +1630,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
              if (constraint and not constraintTrspt):
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
-             if (constraint and not constraintTrspt):
+             if (not constraint and constraintTrspt):
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintTrsptFile))
              if (constraint and constraintTrspt):

@@ -52,6 +52,8 @@ class Model:
         self.constraint = False
         self.constraintTrspt = False
 
+        self.edgeMinDistCoef=1.0
+
         self.node_coords = []
 
         self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC = None
@@ -134,6 +136,10 @@ class Model:
             if r[i] in keys:
                 setattr(self, r[i], bool(r[i+1]))
             """
+            if (r[i]=='edgeMinDistCoef'):
+                self.edgeMinDistCoef = float(r[i+1])
+
+
             if (r[i]=='cylinderRad'):
                 self.cylinderRad = float(r[i+1])
             if (r[i]=='cylinderHeight'):
@@ -268,7 +274,7 @@ class Model:
         materialZones = None
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef )
         self.materialZones=None
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
