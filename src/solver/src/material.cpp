@@ -122,7 +122,7 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
 
 Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain){
     temp_strain = strain;
-    temp_stress = giveStressWithFrozenIntVars(strain);
+    temp_stress = ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(strain);
     return temp_stress;
 };
 
@@ -234,7 +234,7 @@ MaterialStatus *ElasticMechMaterial :: giveNewMaterialStatus(Element *e) {
 
 Vector CosseratMechMaterialStatus ::  giveStress(const Vector &strain) {
     temp_strain = strain;
-    temp_stress = giveStressWithFrozenIntVars(strain);
+    temp_stress = CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(strain);
     return temp_stress;
 };
 
@@ -449,7 +449,7 @@ double DisMechMaterialStatus :: giveDensity() const {
 //////////////////////////////////////////////////////////
 Vector DisMechMaterialStatus ::  giveStress(const Vector &strain) {
     temp_strain = strain;
-    temp_stress = giveStressWithFrozenIntVars(strain);
+    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain);
     return temp_stress;
 };
 

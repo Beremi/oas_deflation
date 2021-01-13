@@ -268,7 +268,7 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
         }
     }
 
-    stress [ 0 ] = stiffN * strain [ 0 ]; //normal stress
+    stress [ 0 ] = stiffN * strain [ 0 ]; // elastic normal stress
     Point XstressT = ( Point(x,y,z) - temp_sPi ) * ( 1. - temp_damageShear ) * stiffT;
 
     for ( unsigned i = 1; i < strain.size(); i++ ) {
@@ -656,17 +656,15 @@ Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
 
-    for ( size_t i = 1; i < stress.size(); i++ ) {
-        stress [ i ] = stiffT * strain [ i ];
-    }
-
-    if ( temp_epsN - epsNP > 0 ) {
-        stress [ 0 ] = ( 1 - temp_damage ) * stiffN * ( temp_epsN - epsNP );
+    double epsN0 = strain [ 0 ] * strain_displ_multiplier;
+    if ( epsN0 - epsNP > 0 ) {
+        stress [ 0 ] = ( 1 - temp_damage ) * stiffN * ( epsN0 - temp_epsNP );
         for ( unsigned i = 1; i < strain.size(); i++ ) {
             stress [ i ] = ( 1 - temp_damage ) * stiffT * ( strain [ i ] );
         }
     } else {
-        stress [ 0 ] = stiffN * ( temp_epsN - epsNP );
+
+        stress [ 0 ] =  stiffN * ( epsN0 - temp_epsNP );
         for ( unsigned i = 1; i < strain.size(); i++ ) {
             stress [ i ] = stiffT * ( strain [ i ] );
         }
@@ -1080,7 +1078,16 @@ Vector AllicheMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain) const{
-    return Vector(0); //TOTO: FIX
+  AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
+
+  Vector stress(strain.size() );
+
+  stress [ 0 ] = ( 1 - temp_damage.getX() ) * m->giveE0() * strain [ 0 ];
+  for ( unsigned i = 1; i < strain.size(); i++ ) {
+      stress [ i ] = ( 1 - temp_damage.getY() ) * m->giveE0() * m->giveAlpha() * strain [ i ];
+  }
+
+  return stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -1295,6 +1302,16 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+    Vector stress(strain.size() );
+
+    DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
+
+    
+    stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
+    stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.getY();
+    if ( strain.size() > 1 ) {
+        stress [ 2 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.getZ();
+    }
     return Vector(0); //TOTO: FIX
 }
 
