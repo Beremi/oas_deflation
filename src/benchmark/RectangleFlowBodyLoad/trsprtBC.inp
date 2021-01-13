@@ -1,0 +1,17 @@
+# vrtxIdx	TrsptP	TrsptJ
+NodalBC 152	2	-1
+NodalBC 153	2	-1
+NodalBC 196	2	-1
+NodalBC 197	2	-1
+NodalBC 201	2	-1
+NodalBC 204	2	-1
+NodalBC 232	2	-1
+NodalBC 231	2	-1
+NodalBC 144	3	-1
+NodalBC 142	3	-1
+NodalBC 157	3	-1
+NodalBC 154	3	-1
+NodalBC 155	3	-1
+NodalBC 234	3	-1
+NodalBC 272	3	-1
+BodyLoad elems all spatialFunction 5 timeFunction 4 direction 0

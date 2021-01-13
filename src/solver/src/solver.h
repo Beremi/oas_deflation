@@ -86,7 +86,7 @@ protected:
 
     IndirectDC *idc;        //indirect displacement control
     Vector ddf, full_ddf, f_last_iter;
-    double idc_time, idc_dt, idc_time_converged; //time in which load advancements are masured
+    double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
 
     void printAllVectors();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);

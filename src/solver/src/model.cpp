@@ -20,7 +20,7 @@ void Model :: init() {    //initialization
     elems.findElementFriends();
     exporters.init();
     solver->init();
-    cout << "Initialition completed" << endl;
+    cout << "Initialization completed" << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ void Model :: readFromFile(const string filename) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes );
+                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems);
                 }
             } else if ( istr.compare("FunctionFiles") == 0 ) {
                 iss >> std :: skipws >> iint;

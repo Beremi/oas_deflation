@@ -184,7 +184,6 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
     MechanicalElement *me;
     TransportElement *te;
 
-
     for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
             if ( ( * e )->giveSolutionOrder() != so ) {
@@ -285,14 +284,6 @@ void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
 //////////////////////////////////////////////////////////
 void ElementContainer :: giveInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f) {
     giveInternalForces(full_r, full_f, true);
-}
-
-//////////////////////////////////////////////////////////
-void ElementContainer :: addBodyForces(Vector &R, double time) const {
-    ( void ) R;
-    ( void ) time;
-    //here comes distributed load, self weight
-    //TO BE DONE
 }
 
 //////////////////////////////////////////////////////////

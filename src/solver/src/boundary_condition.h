@@ -13,6 +13,8 @@
 
 class Node; //forward declaration
 class NodeContainer; //forward declaration
+class Element; //forward declaration
+class ElementContainer; //forward declaration
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -32,6 +34,7 @@ public:
     BoundaryCondition(Node *n, vector< int > &dBC, vector< int > &nBC, vector< double > &m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m; };
     BoundaryCondition(Node *n, vector< int > &dBC, vector< int > &nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.); };
     ~BoundaryCondition() {};
+    void readFromLine(istringstream &iss, NodeContainer *nodes);
     void init(FunctionContainer *funcs);
     unsigned giveNumberOfBlockedDoFs() const { return blockedDoFNum; };
     unsigned giveNumberOfLoadedDoFs() const { return loadedDoFNum; };
@@ -46,6 +49,30 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// VOLUME LOAD
+class BodyLoad
+{
+protected:
+    vector < Element *> els;
+    unsigned timeFunctionNum;
+    Function* timeFunction;
+    unsigned spatialFunctionNum;
+    Function* spatialFunction;
+    unsigned dir;
+
+public:
+    BodyLoad() {};
+    ~BodyLoad() {};
+    void readFromLine(istringstream &iss,ElementContainer *elems);
+    void init(FunctionContainer *funcs);
+    double giveValue(const Point *xyz, double time);
+    vector < double > giveBodyForceDoFValues(double t);
+    vector < unsigned > giveArrayOfBodyForceDoFs() const;
+    unsigned giveDirection()const {return dir;};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // CONTAINER FOR BOUNDARY CONDITIONS
 class BCContainer
 {
@@ -55,22 +82,25 @@ private:
     vector< unsigned >dirichDoFs;
     vector< unsigned >neumannDoFs;
 
+    vector<BodyLoad *> loads;
 
 public:
     BCContainer() {};
     virtual ~BCContainer();
     void setContainers(FunctionContainer *f) { functions = f; };
     void init();
-    void readFromFile(const string filename, NodeContainer *nodes);
+    void readFromFile(const string filename, NodeContainer *nodes, ElementContainer *elements);
     vector< unsigned >giveArrayOfBlockedDoFs() const { return dirichDoFs; };
     vector< unsigned >giveArrayOfLoadedDoFs() const { return neumannDoFs; };
+    vector< unsigned >giveArrayOfBodyForceDoFs() const;
     unsigned giveNumBlockedDoFs() const { return dirichDoFs.size(); };//todo: conversion from 'size_t' to 'unsigned int', possible loss of data
-    vector< double >giveBlockedDoFValues(double time) const;
-    vector< double >giveLoadedDoFValues(double time) const;
+    vector < double > giveBlockedDoFValues(double time) const;
+    vector < double > giveLoadedDoFValues(double time) const;
+    vector < double > giveBodyForceDoFValues(double time);
     BoundaryCondition *giveBC(unsigned i) { return BC [ i ]; };
     void calculateDoFfields();
     size_t giveSize() { return BC.size(); }
-    void addBoundaryCondition(BoundaryCondition *bc) { BC.push_back(bc); }
+    void addBoundaryCondition(BoundaryCondition *bc) { BC.push_back(bc); }   
 protected:
 };
 

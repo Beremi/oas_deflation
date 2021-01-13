@@ -278,7 +278,7 @@ void SteadyStateNonLinearSolver :: init() {
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         idc_time = 0;
-        idc_dt = 1e-5;
+        idc_dt = 1e-6;
         idc_time_converged = 0;
     }
 }
@@ -467,7 +467,7 @@ void SteadyStateNonLinearSolver :: solve() {
             //nodes->giveReducedForceArray(full_f, f);
             nodes->giveReducedDoFArray(f_ext - f_int, f);
 
-            if ( idc ) {      //indirect displacement control
+            if ( idc ) {      //indirect displacement control                
                 f_last_iter = f;
                 load *= 0.;
                 nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
@@ -565,6 +565,7 @@ void SteadyStateNonLinearSolver :: solve() {
             load *= 0;
             if ( idc ) {
                 idc_time = idc_time_converged;
+                idc_dt *= critical_step_decrease; 
             }
         } else if ( !converged ) {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
@@ -576,12 +577,18 @@ void SteadyStateNonLinearSolver :: solve() {
                 return;
                 // exit(1);
             }
-        } else if ( ( !restarted ) && converged && it < maxIt / 3 && dt < dtmax ) {
-            dt = fmin(dt * step_increase, dtmax);
-            std :: cout << "enlarging step, timestep = " << dt << '\n';
-        } else if ( converged && it > maxIt / 2 && dt > dtmin ) {
-            dt = fmax(dt * step_decrease, dtmin);
-            std :: cout << "shortening step, timestep = " << dt << '\n';
+        } else { //converged
+            if( idc ) idc_dt = idc_time - idc_time_converged;
+
+            if( ( !restarted ) && converged && it < maxIt / 3 && dt < dtmax ) {
+                dt = fmin(dt * step_increase, dtmax);
+                if( idc ) idc_dt *= step_increase;
+                std :: cout << "enlarging step, timestep = " << dt << '\n';
+            } else if ( converged && it > maxIt / 2 && dt > dtmin ) {
+                dt = fmax(dt * step_decrease, dtmin);
+                if( idc ) idc_dt *= step_decrease;
+                std :: cout << "shortening step, timestep = " << dt << '\n';
+            }
         }
         // std::cerr << "number of iterations: " << it << '\n';
     }

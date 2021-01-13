@@ -6,6 +6,7 @@
 #include "material_container.h"
 
 class ElementContainer; //forward declaration;
+class BodyLoad; //forward declaration
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -39,7 +40,8 @@ public:
     virtual Matrix giveSteadyStateMatrix(string matrixType) const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
     virtual Matrix giveMassMatrix() const;
-    vector< unsigned >giveDoFs() { return DoFids; };
+    vector< unsigned >giveDoFs() const { return DoFids; };
+    vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
     virtual double giveValue(string code) const;
     string giveName() const { return name; }
@@ -62,6 +64,7 @@ public:
     virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
     unsigned giveDimension() const { return ndim; }
     virtual void setIntegrationPointsAndWeights() {};
+    virtual vector<double> integrateLoad(BodyLoad *vl, double time) const;
 };
 
 
@@ -172,7 +175,7 @@ protected:
     bool bound;
     Point normal;
     double length, area;
-    bool reducedCapacityMatrix;
+    bool BolanderCapacityMatrix;
 
     virtual void checkNodeType() const;
 public:
@@ -188,8 +191,8 @@ public:
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    //Matrix giveConductivityMatrix(string matrixType) const;
-    //Matrix giveCapacityMatrix() const;
+    virtual Matrix giveCapacityMatrix() const;
+    virtual vector<double> integrateLoad(BodyLoad *vl, double time) const;
     //virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
 };
 

@@ -352,11 +352,13 @@ Matrix TranspVirtPolygonal :: giveMassMatrix() const {
     cout << "------------" << endl;
     ( W1 * cap + matrix_multiply(matrix_multiply(W2.transpose(), M), W2) ).print();
     cout << "------------" << endl;
-    ( (W1 + matrix_multiply(W2.transpose(), W2)*volume*volume )* cap ).print();
+    ( W1 * cap + matrix_multiply(matrix_multiply(W2.transpose(), M), W2)*volume ).print();
+    cout << "------------" << endl;
+    ( (W1*cap + matrix_multiply(W2.transpose(), W2)*volume*volume )* cap ).print();
     exit(1);
     return M;
-    */
-    return W1 * cap + matrix_multiply(matrix_multiply(W2.transpose(), M), W2);
+    */    
+    return (W1 + matrix_multiply(W2.transpose(), W2)*volume)* cap;
 }
 
 //////////////////////////////////////////////////////////

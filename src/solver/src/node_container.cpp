@@ -78,9 +78,9 @@ void NodeContainer :: establishDoFArray() {
     BC->calculateDoFfields();
     DoFid.resize(totalDoFs);
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
-    vector< unsigned >loaded = BC->giveArrayOfLoadedDoFs();
+    loadedDoFs = BC->giveArrayOfLoadedDoFs();
+    bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
     blockedDoFid.resize(blocked.size() );
-    loadedDoFid.resize(loaded.size() );
     freeDoFs = totalDoFs - blocked.size();
 
     /////////////////////////////////////////////////////////////////
@@ -139,9 +139,6 @@ void NodeContainer :: establishDoFArray() {
             * d = id - k - cs;
         }
     }
-    for ( unsigned i = 0; i < loaded.size(); i++ ) {
-        loadedDoFid [ i ] = loaded [ i ];
-    }
 
     //identify whether the DoF is mechanical or Transport
     mechDoFs.resize(totalDoFs);
@@ -162,13 +159,16 @@ void NodeContainer :: establishDoFArray() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
-    vector< double >loaded = BC->giveLoadedDoFValues(time);
-    for ( unsigned k = 0; k < loaded.size(); k++ ) {
-        // JK QUESTION why is here += when after every step load *= 0. Can loadedDoFid[k] indeces repeat? or can any value appear in place of other than loaded DoF?
-        //  in case not, I would remove load *= 0 after every step and here replace += with just =
-        // JK ANSWER (based on discussion with JE): in future, more stuff will be necessary to add to load and it will be nonzero
-        RHS [ loadedDoFid [ k ] ] += loaded [ k ];
+    vector < double > nodalLoad = BC->giveLoadedDoFValues(time);
+    for ( unsigned k = 0; k < nodalLoad.size(); k++ ) {
+        RHS [ loadedDoFs [ k ] ] += nodalLoad [ k ];
     }
+
+   vector < double > bodyLoad = BC->giveBodyForceDoFValues(time);
+    for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
+        RHS [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
+    }
+
 }
 
 //////////////////////////////////////////////////////////
