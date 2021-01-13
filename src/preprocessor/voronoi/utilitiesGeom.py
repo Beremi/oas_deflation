@@ -1528,25 +1528,25 @@ def saveMechBC(master_folder,dim, nodes_mechBCmerged, govNodesBC = False):
     if (govNodesBC == False and len(mechBC_out)>0 ):
         print('Saving node BC...')
         if (dim == 2):
-            headerLine = 'nodeIdx\tKinTrX\tKinTrY\tKinRotZ\tStTrX\tStTrY\tStRotZ'
+            headerLine = 'bcType\tnodeIdx\tKinTrX\tKinTrY\tKinRotZ\tStTrX\tStTrY\tStRotZ'
             fl=open(os.path.join(master_folder,mechBCFile) ,'w')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
             fl.close()
         elif (dim == 3):
-            headerLine = 'nodeIdx\tKinTrX\tKinTrY\tKinTrZ\tKinRotX\tKinRotY\tKinRotZ\tStTrX\tStTrY\tStTrZ\tStRotX\tStRotY\tStRotZ'
+            headerLine = 'bcType\tnodeIdx\tKinTrX\tKinTrY\tKinTrZ\tKinRotX\tKinRotY\tKinRotZ\tStTrX\tStTrY\tStTrZ\tStRotX\tStRotY\tStRotZ'
             fl=open(os.path.join(master_folder,mechBCFile) ,'w')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine)
             fl.close()
     elif(len(mechBC_out)>0 ):
         print('Saving rigid plate BC...')
         #print(mechBC_out)
         if (dim == 2):
             fl=open(os.path.join(master_folder,mechBCFile) ,'a')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d')
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d')
             fl.close()
         elif (dim == 3):
             fl=open(os.path.join(master_folder,mechBCFile) ,'a')
-            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d')
+            np.savetxt(fl, mechBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d')
             fl.close()
 
     print('done.')
@@ -1581,16 +1581,16 @@ def saveTransportBC(master_folder,transportBCmerged, verticesDict, vertIdxStart,
     print('len len %d' %len(trsptBC_out))
 
     if (govNodesBC==False and len(trsptBC_out)>0):
-        headerLine = 'vrtxIdx\tTrsptP\tTrsptJ'
+        headerLine = 'bcType\tvrtxIdx\tTrsptP\tTrsptJ'
         fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
         if (len(trsptBC_out)>0):
-            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d', header = headerLine)
+            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d', header = headerLine)
         fl.close()
     elif(len(trsptBC_out)>0):
         print('Saving trspt rigid plate bc...')
         fl=open(os.path.join(master_folder,trsprtBCFile) ,'w')
         if (len(trsptBC_out)>0):
-            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='%d\t%d\t%d')
+            np.savetxt(fl, trsptBC_out, delimiter='\t', fmt='NodalBC\t%d\t%d\t%d')
         fl.close()
 
     print('done.')
