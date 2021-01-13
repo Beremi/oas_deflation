@@ -24,7 +24,7 @@ public:
     virtual void giveFileName(unsigned step, char *buffer) const;
     string giveFileName() const { return filename; };
     virtual void init() {};
-    void appendToName(string app){ filename = filename + app;};
+    void appendToName(string app) { filename = filename + app; };
 protected:
     unsigned dim;
     string filename;
@@ -186,7 +186,7 @@ public:
     void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const;
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
-    void init(const bool &initial=true);
+    void init(const bool &initial = true);
     void setResultDirectory(fs :: path directory) { resultDir = directory; }
     fs :: path giveDirectoryPath() { return resultDir; }
     void appendToAllNames(string app);
@@ -195,8 +195,8 @@ protected:
 
 void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
 
-void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > & NodeTypes, fs :: path resultDir);
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir);
 
-void saveElems(const ElementContainer &elems, const std :: vector< std :: string > & ElemTypes, fs :: path resultDir);
+void saveElems(const ElementContainer &elems, const std :: vector< std :: string > &ElemTypes, fs :: path resultDir);
 
 #endif /* _EXPORTER_C_H */

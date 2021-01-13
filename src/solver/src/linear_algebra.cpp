@@ -387,7 +387,7 @@ Matrix Matrix :: operator+(const Matrix &m) const {
 
 Matrix &Matrix :: operator+=(const double x) {
     ( * v ) += x;
-    return *this;
+    return * this;
 }
 
 Matrix &Matrix :: operator-=(const Matrix &m) {

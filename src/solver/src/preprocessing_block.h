@@ -92,7 +92,7 @@ protected:
     bool transport = false;
     unsigned master_id, ndim;
     std :: string which;  ///< which direction to fix (e.g. to leave expansion in perpendicualr direction)
-    void checkMechTransport( Node *master );
+    void checkMechTransport(Node *master);
 };
 
 class CoordRigidPlate : public RigidPlate

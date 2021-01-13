@@ -13,8 +13,9 @@ class NodeContainer
 private:
     vector< Node * >nodes;
     vector< unsigned >DoFid;         //mapping from particle order to DoF order for all DoFs
-    vector< unsigned >loadedDoFid;     //mapping from particle order to DoF order for loaded DoFs
-    vector< unsigned >blockedDoFid;  //mapping from particle order to DoF order for blocked DoFs
+    vector< unsigned >loadedDoFs;
+    vector< unsigned >bodyForceDoFs;
+    vector< unsigned >blockedDoFid;
     unsigned totalDoFs, freeDoFs;
     BCContainer *BC;
 

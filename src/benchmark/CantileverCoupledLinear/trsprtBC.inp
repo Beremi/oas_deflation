@@ -1,16 +1,16 @@
 # vrtxIdx	TrsptP	TrsptJ
-152	2	-1
-153	2	-1
-196	2	-1
-197	2	-1
-201	2	-1
-204	2	-1
-232	2	-1
-231	2	-1
-144	3	-1
-142	3	-1
-157	3	-1
-154	3	-1
-155	3	-1
-234	3	-1
-272	3	-1
+NodalBC	152	2	-1
+NodalBC	153	2	-1
+NodalBC	196	2	-1
+NodalBC	197	2	-1
+NodalBC	201	2	-1
+NodalBC	204	2	-1
+NodalBC	232	2	-1
+NodalBC	231	2	-1
+NodalBC	144	3	-1
+NodalBC	142	3	-1
+NodalBC	157	3	-1
+NodalBC	154	3	-1
+NodalBC	155	3	-1
+NodalBC	234	3	-1
+NodalBC	272	3	-1

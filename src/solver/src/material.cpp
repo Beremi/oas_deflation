@@ -4,29 +4,28 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC MATERIAL
-Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const{
-    if(eigenstrain.size()>0){
-        if(eigenstrain.size() != totalStrain.size()){
+Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
+    if ( eigenstrain.size() > 0 ) {
+        if ( eigenstrain.size() != totalStrain.size() ) {
             cerr << "Material status error: cannot apply eigenstrain of size " << eigenstrain.size() << " to  total strain of size " << totalStrain.size() << endl;
             exit(1);
         }
         Vector activeStrain = totalStrain - eigenstrain;
         return activeStrain;
-    }
-    else{
+    } else   {
         return totalStrain;
     }
 }
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: update(){
+void MaterialStatus :: update() {
     updt_strain = temp_strain;
     updt_stress = temp_stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector MaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, unsigned ndim) const{
-    return giveStiffnessTensor("secant",ndim)*addEigenStrain(strain);
+Vector MaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, unsigned ndim) const {
+    return giveStiffnessTensor("secant", ndim) * addEigenStrain(strain);
 }
 
 //////////////////////////////////////////////////////////
@@ -42,7 +41,7 @@ TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : Ma
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
     temp_strain = strain;
-    temp_stress = -effConductivity * addEigenStrain(strain);
+    temp_stress = -effConductivity *addEigenStrain(strain);
     return temp_stress;
 };
 
@@ -122,12 +121,12 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
 // ELASTIC TENSORIAL MECHANICAL MATERIAL
 
 Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain) {
-    unsigned dim=0;
+    unsigned dim = 0;
     if ( strain.size() == 1 ) {
         dim = 1;
-    } else if ( strain.size() == 3 )   {
+    } else if ( strain.size() == 3 ) {
         dim = 2;
-    } else if ( strain.size() == 6 )   {
+    } else if ( strain.size() == 6 ) {
         dim = 3;
     }
     temp_strain = strain;
@@ -141,11 +140,11 @@ Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned di
     unsigned size = 1;
     if ( dimension == 1 ) {
         size = 1;
-    } else if ( dimension == 2 )   {
+    } else if ( dimension == 2 ) {
         size = 3;
-    } else if ( dimension == 3 )                                            {
+    } else if ( dimension == 3 ) {
         size = 6;
-    } else                                                                                {
+    } else {
         cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
@@ -153,24 +152,24 @@ Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned di
     ElasticMechMaterial *m = static_cast< ElasticMechMaterial * >( mat );
     if ( dimension == 1 ) {
         D [ 0 ] [ 0 ] = m->giveElasticModulus();
-    } else if ( dimension == 2 )       {
+    } else if ( dimension == 2 ) {
         if ( m->isPlaneStress() ) {
             double factor = m->giveElasticModulus() / ( 1. - pow(m->givePoissonsRatio(), 2) );
             D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = factor;
             D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = m->givePoissonsRatio() * factor;
             D [ 2 ] [ 2 ] = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
-        } else  { //plane strain
+        } else {  //plane strain
             double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
             D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = factor * ( 1. - m->givePoissonsRatio() );
             D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = m->givePoissonsRatio() * factor;
             D [ 2 ] [ 2 ] = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
         }
-    } else if ( dimension == 3 )       {
+    } else if ( dimension == 3 ) {
         double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
         D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = D [ 2 ] [ 2 ] = factor * ( 1. - m->givePoissonsRatio() );
         D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = D [ 0 ] [ 2 ] = D [ 2 ] [ 0 ] = D [ 2 ] [ 1 ] = D [ 1 ] [ 2 ] = m->givePoissonsRatio() * factor;
         D [ 3 ] [ 3 ] = D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
-    } else  {
+    } else {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
         exit(1);
     }
@@ -231,11 +230,11 @@ Vector CosseratMechMaterialStatus :: giveStress(const Vector &strain) {
     unsigned dim;
     if ( strain.size() == 2 ) {
         dim = 1;
-    } else if ( strain.size() == 6 )   {
+    } else if ( strain.size() == 6 ) {
         dim = 2;
-    } else if ( strain.size() == 18 )                                               {
+    } else if ( strain.size() == 18 ) {
         dim = 3;
-    } else                                                                                       {
+    } else {
         cerr << name << " error: unsupported dimension" << endl;
         exit(1);
     }
@@ -250,11 +249,11 @@ Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned d
     unsigned size;
     if ( dimension == 1 ) {
         size = 1;
-    } else if ( dimension == 2 )   {
+    } else if ( dimension == 2 ) {
         size = 6;
-    } else if ( dimension == 3 )                                            {
+    } else if ( dimension == 3 ) {
         size = 18;
-    } else                                                                                 {
+    } else {
         cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
@@ -265,21 +264,21 @@ Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned d
     if ( dimension == 1 ) {
         D [ 0 ] [ 0 ] = m->giveElasticModulus();
         D [ 1 ] [ 1 ] = 4. * m->giveCosseratShearParam() * pow(m->giveCharacteristicLength(), 2);
-    } else if ( dimension == 2 )       {
+    } else if ( dimension == 2 ) {
         if ( m->isPlaneStress() ) {
             D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = lammeL + 2. * lammeM;
             D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = lammeL;
             D [ 2 ] [ 2 ] = D [ 3 ] [ 3 ] = lammeM + m->giveCosseratShearParam();
             D [ 2 ] [ 3 ] = D [ 3 ] [ 2 ] = lammeM - m->giveCosseratShearParam();
             D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = lammeM * 4. * m->giveCharacteristicLength();
-        } else  { //plane strain ACTUALLY NOT IMPLEMENTED YET
+        } else {  //plane strain ACTUALLY NOT IMPLEMENTED YET
             D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = lammeL + 2. * lammeM;
             D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = lammeL;
             D [ 2 ] [ 2 ] = D [ 3 ] [ 3 ] = lammeM + m->giveCosseratShearParam();
             D [ 2 ] [ 3 ] = D [ 3 ] [ 2 ] = lammeM - m->giveCosseratShearParam();
             D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = lammeM * 4. * m->giveCharacteristicLength();
         }
-    } else  {
+    } else {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
         exit(1);
     }
@@ -360,8 +359,6 @@ void TrsprtCoupledMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
-
-
     //first strain term is pressure gradient, second strain face are, then it is alway crack opening and crack length coulples
     TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
     double crackParam = 0;
@@ -370,8 +367,8 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
     }
     temp_effConductivity = m->giveDensity() * m->givePermeability() / m->giveViscosity() + m->giveTurtuosity() / ( 12. * m->giveViscosity() * fullstrain [ 1 ] ) * crackParam;
     Vector strain(1);
-    strain[0] = fullstrain[0];
-    return -temp_effConductivity * addEigenStrain(strain);
+    strain [ 0 ] = fullstrain [ 0 ];
+    return -temp_effConductivity *addEigenStrain(strain);
 };
 
 //////////////////////////////////////////////////////////
@@ -433,7 +430,7 @@ double DisMechMaterialStatus :: giveDensity() const {
 //////////////////////////////////////////////////////////
 Vector DisMechMaterialStatus :: giveStress(const Vector &strain) {
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     Vector activeStrain = addEigenStrain(strain);
     temp_stress [ 0 ] = m->giveE0() * activeStrain [ 0 ];
     for ( unsigned i = 1; i < strain.size(); i++ ) {

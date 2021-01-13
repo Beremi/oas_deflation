@@ -1,5 +1,6 @@
 #include "element.h"
 #include "element_container.h"
+#include "boundary_condition.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -36,9 +37,18 @@ void Element :: init() {
 }
 
 //////////////////////////////////////////////////////////
+vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
+    vector< unsigned >DoFinDir(nodes.size() );
+    for ( unsigned i = 0; i < nodes.size(); i++ ) {
+        DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
+    }
+    return DoFinDir;
+}
+
+//////////////////////////////////////////////////////////
 void Element :: initMaterialStatuses() {
-    unsigned num =0;
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num ++ ) {
+    unsigned num = 0;
+    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num++ ) {
         ( * m )->setID(num);
         ( * m )->init();
     }
@@ -88,10 +98,10 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
     intF.resize(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        if ( frozen) {
-            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs) , ndim); //frozen internal variables
-        }else {
-            stress = stats [ i ]->giveStress(giveStrain(i, DoFs)); //full evaluation of stress including change of state variables
+        if ( frozen ) {
+            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), ndim);  //frozen internal variables
+        } else  {
+            stress = stats [ i ]->giveStress(giveStrain(i, DoFs) ); //full evaluation of stress including change of state variables
         }
         intF  += Bs [ i ].transpose() * (  stress * ip_weights [ i ] );
     }
@@ -102,14 +112,31 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
 Matrix Element :: giveMassMatrix() const {
     unsigned nDoFs = DoFids.size();
     Matrix M(nDoFs, nDoFs);
-    Vector phi(nDoFs);
     double c;
+    Matrix H;
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        shapeF(& ip_locs [ i ], phi);
+        H = giveHMatrix(& ip_locs [ i ]);
         c = stats [ i ]->giveMassConstant();
-        M += dyadicProduct(phi, phi) * ( ip_weights [ i ] * c );
+        M += matrix_multiply(H.transpose(), H) * ( ip_weights [ i ] * c );
     }
     return M;
+}
+
+//////////////////////////////////////////////////////////
+vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
+    unsigned nDoFs = DoFids.size();
+    vector< double >load(nDoFs);
+    double fvalue;
+    unsigned dir = vl->giveDirection();
+    Matrix H;
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        H = giveHMatrix(& ip_locs [ i ]);
+        fvalue = vl->giveValue(& ip_locs [ i ], time);
+        for ( unsigned j = 0; j < nDoFs; j++ ) {
+            load [ j ] += H [ dir ] [ j ] * fvalue * ip_weights [ i ];
+        }
+    }
+    return load;
 }
 
 //////////////////////////////////////////////////////////
@@ -422,7 +449,8 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         exit(EXIT_FAILURE);
     }
 
-    ip_weights [ 0 ] = length * area;  // NOTE JK: this works for stiffness matrix, since there is actually A * L, but not for the mass matrix, where volume should be taken (divide by dim)
+    ip_weights [ 0 ] = length * area;  // NOTE JK: this works for stiffness matrix, since there is actually A * L, but not for the mass matrix, where volume should be taken (divide by dim) // JE: Agreed, independent integration of mass has been included for this element
+
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
 }
 
@@ -470,7 +498,7 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
-    return Bs[0] * DoFs;
+    return Bs [ 0 ] * DoFs;
 };
 
 //////////////////////////////////////////////////////////
@@ -487,7 +515,7 @@ Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsign
             dst [ i ] = distance.getX();
         } else if ( i == 1 ) {
             dst [ i ] = distance.getY();
-        } else if ( i == 2 )                                                  {
+        } else if ( i == 2 ) {
             dst [ i ] = distance.getZ();
         }
     }
@@ -562,7 +590,7 @@ Matrix Truss :: giveHMatrix(const Point *x) const {
 }
 //////////////////////////////////////////////////////////
 Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
-    Vector strain = Bs[0] * DoFs;
+    Vector strain = Bs [ 0 ] * DoFs;
     for ( size_t k = 1; k < strain.size(); k++ ) {
         strain [ k ] = 0;                                  //only normal strain active in truss
     }
@@ -577,7 +605,7 @@ Transp1D :: Transp1D(const unsigned dim) {
     nodes.resize(2);
     bound = false;
     name = "Transp1D";
-    reducedCapacityMatrix = false;
+    BolanderCapacityMatrix = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -601,8 +629,8 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
 
     string code;
     while ( iss >> code ) {
-        if ( code.compare("reducedCapacityMatrix") == 0 ) {
-            reducedCapacityMatrix = true;
+        if ( code.compare("BolanderCapacityMatrix") == 0 ) {
+            BolanderCapacityMatrix = true;
         }
     }
 
@@ -624,7 +652,6 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
     Point t;
     if ( ndim == 2 ) {
-
         if ( !( vert.size() == 2 ) ) {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
@@ -633,7 +660,6 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
         t = t / area;
-
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
@@ -642,7 +668,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         //
 
         if (  vert.size() < 3  ) {
-            cerr << name << " Error: three or more vertices are required, only "<< vert.size() << " provided" << endl;
+            cerr << name << " Error: three or more vertices are required, only " << vert.size() << " provided" << endl;
             exit(1);
         }
 
@@ -733,7 +759,6 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
 //////////////////////////////////////////////////////////
 void Transp1D :: init() {
-
     Element :: init(); //calling base class method;
 
     checkNodeType();
@@ -768,35 +793,38 @@ Matrix Transp1D :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveHMatrix(const Point *x) const {
-    return Matrix(0, 0);
+    Matrix H(1, 2);
+    double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
+    double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
+    H [ 0 ] [ 0 ] = l1 / length;
+    H [ 0 ] [ 1 ] = l2 / length;
+    return H;
 }
+
+//////////////////////////////////////////////////////////
+Matrix Transp1D :: giveCapacityMatrix() const {
+    Matrix S(2, 2);
+    double s = area * stats [ 0 ]->giveMassConstant() * length /  ( 2. * ndim );
+
+    S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = s; //finite volume
+    if ( BolanderCapacityMatrix ) { //from Bolander's papers
+        S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2. / 3. * s;
+        S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s / 3.;
+    }
+    return S;
+}
+
+
+//////////////////////////////////////////////////////////
+vector< double >Transp1D :: integrateLoad(BodyLoad *vl, double time) const {
+    vector< double >load = Element :: integrateLoad(vl, time);
+    for ( auto &p:load ) {
+        p /= ndim;
+    }
+    return load;
+}
+
 /*
- * //////////////////////////////////////////////////////////
- * Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
- *  ( void ) matrixType;
- *  TrsprtMaterialStatus *tstat = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
- *  double c = area * tstat->giveEffectiveConductivity(matrixType) / length;
- *  Matrix C(2, 2);
- *  C [ 0 ] [ 0 ] = C [ 1 ] [ 1 ] = c;
- *  C [ 1 ] [ 0 ] = C [ 0 ] [ 1 ] = -c;
- *  return C;
- * }
- *
- * //////////////////////////////////////////////////////////
- * Matrix Transp1D :: giveCapacityMatrix() const {
- *  Matrix S(2, 2);
- *  TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
- *  double s = area * tmat->giveCapacity() * tmat->giveDensity() * length / ( 12. );
- *
- *  if ( reducedCapacityMatrix ) {    //derived based on assumption of constant pressure
- *      S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 3 * s;
- *  } else {    //derived based on linear assumption of pressure
- *      S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
- *      S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s;
- *  }
- *  return S;
- * }
- *
  * //////////////////////////////////////////////////////////
  * Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen) const {
  *  ( void ) frozen;
@@ -872,14 +900,18 @@ void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
 double Transp1DCoupled :: giveValue(string code) const {
     if ( code.compare("numOfFriends") == 0 ) {
         return friends.size();
-    }else return  Transp1D :: giveValue(code);
+    } else  {
+        return Transp1D :: giveValue(code);
+    }
 };
 
 //////////////////////////////////////////////////////////
-double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const{
+double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
     if ( code.compare("numOfFriends") == 0 ) {
         return friends.size();
-    }else return  Transp1D :: giveIPValue(code,ipnum);
+    } else  {
+        return Transp1D :: giveIPValue(code, ipnum);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -898,7 +930,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
 
     Vector pressureGrad(2 + 2 * friends.size() );
-    pressureGrad[0] = pressureGradPlain[0];
+    pressureGrad [ 0 ] = pressureGradPlain [ 0 ];
     pressureGrad [ 1 ] = area;
 
     double elem_crack_opening;

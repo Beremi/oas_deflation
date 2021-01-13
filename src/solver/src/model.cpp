@@ -10,7 +10,7 @@ Model :: Model(bool pT) {
 }
 
 //////////////////////////////////////////////////////////
-void Model :: init( const bool &initial) {    //initialization
+void Model :: init(const bool &initial) {     //initialization
     pblocks.apply();
     bconds.init();
     nodes.init();
@@ -18,9 +18,9 @@ void Model :: init( const bool &initial) {    //initialization
     elems.init();
     constr.init(& nodes, & bconds);
     elems.findElementFriends();
-    exporters.init( initial );
-    solver->init( initial );
-    cout << "Initialition completed" << endl;
+    exporters.init(initial);
+    solver->init(initial);
+    cout << "Initialization completed" << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -43,8 +43,8 @@ void Model :: solve() {
 void Model :: readFromFile(const string filename, const bool &initial) {
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
-    if ( initial ){
-      resultDir = baseDir / "results";
+    if ( initial ) {
+        resultDir = baseDir / "results";
     }
 
     exporters.setResultDirectory(resultDir);
@@ -93,7 +93,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes );
+                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems );
                 }
             } else if ( istr.compare("FunctionFiles") == 0 ) {
                 iss >> std :: skipws >> iint;
@@ -131,23 +131,23 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 
 
 void Model :: clear() {
-  // TODO JK: check containers for memory leaks
-  // initialize new model with clear geometry, only solver remains
-  funcs = FunctionContainer();
-  bconds = BCContainer();
-  constr = ConstraintContainer();
-  nodes = NodeContainer();
-  matrs = MaterialContainer();
-  elems = ElementContainer();
-  exporters = ExporterContainer();
-  pblocks = PBlockContainer();
+    // TODO JK: check containers for memory leaks
+    // initialize new model with clear geometry, only solver remains
+    funcs = FunctionContainer();
+    bconds = BCContainer();
+    constr = ConstraintContainer();
+    nodes = NodeContainer();
+    matrs = MaterialContainer();
+    elems = ElementContainer();
+    exporters = ExporterContainer();
+    pblocks = PBlockContainer();
 
-  nodes.setContainers(& bconds, & constr);
-  bconds.setContainers(& funcs);
-  elems.setContainers(& nodes, & bconds);
-  pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
-  std::cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
+    nodes.setContainers(& bconds, & constr);
+    bconds.setContainers(& funcs);
+    elems.setContainers(& nodes, & bconds);
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
+    std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 
-  solver->setContainers(& elems, & nodes, & funcs);
-  std::cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
+    solver->setContainers(& elems, & nodes, & funcs);
+    std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 }
