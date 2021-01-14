@@ -602,7 +602,6 @@ void SteadyStateNonLinearSolver :: solve() {
             load *= 0;
             if ( idc ) {
                 idc_time = idc_time_converged;
-                idc_dt *= critical_step_decrease;
             }
         } else if ( !converged ) {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
