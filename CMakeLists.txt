@@ -34,7 +34,7 @@ set (PartMod_HOMEPAGE "https://kelidas.gitlab.io/partmod-site")
 #set (PartMod_COPYRIGHT "Copyright (C) 2019")
 #set (PartMod_EMAIL "elias.j@fce.vutbr.cz")
 
-set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 message(STATUS "project source directory -> ${PartMod_SOURCE_DIR}")
 message(STATUS "project build directory -> ${PartMod_BINARY_DIR}")
@@ -52,11 +52,29 @@ endif ()
 
 if (MSVC)
     add_definitions (-D_USE_MATH_DEFINES)
+    # Build with multiple processes
+    add_definitions(/MP)
+    # Allow big object
+    add_definitions(/bigobj)
     set (CMAKE_REQUIRED_DEFINITIONS "-D_USE_MATH_DEFINES")
     # I'm not sure we should block these warnings or not:
     # C4800 Conversion from int to bool performance warning (we should probably be using bool in most of these places though).
     # C4127 Conditional expression is constant: Most of these uses are intentional (debugging code etc.)
     # C4267 size_t to int conversion. Most of these are indices, but many places can be replaced by a for-each loop as well.
+    # /wd4018 # 'expression' : signed/unsigned mismatch
+    # /wd4065 # switch statement contains 'default' but no 'case' labels
+    # /wd4146 # unary minus operator applied to unsigned type, result still unsigned
+    # /wd4244 # 'conversion' conversion from 'type1' to 'type2', possible loss of data
+    # /wd4251 # 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
+    # /wd4267 # 'var' : conversion from 'size_t' to 'type', possible loss of data
+    # /wd4305 # 'identifier' : truncation from 'type1' to 'type2'
+    # /wd4307 # 'operator' : integral constant overflow
+    # /wd4309 # 'conversion' : truncation of constant value
+    # /wd4334 # 'operator' : result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+    # /wd4355 # 'this' : used in base member initializer list
+    # /wd4506 # no definition for inline function 'function'
+    # /wd4800 # 'type' : forcing value to bool 'true' or 'false' (performance warning)
+    # /wd4996 # The compiler encountered a deprecated declaration.
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W4 -wd4786 -wd4100 -wd4996 -wd4706 -wd4512 -wd4251 -wd4800")
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi")
@@ -133,9 +151,9 @@ endif ()
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
 
-add_executable(DiscreteModel 
+add_executable(DiscreteModel
                 ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp
-                ${PartMod_SOURCE_DIR}/src/solver/src/version.cpp 
+                ${PartMod_SOURCE_DIR}/src/solver/src/version.cpp
                 ${LIBS}
                 )
 #target_link_libraries (DiscreteModel libDiscreteModel Eigen3::Eigen)
@@ -218,8 +236,8 @@ set_target_properties(
     LINK_FLAGS
       ${OpenMP_CXX_FLAGS}
   )
-  
-  
+
+
 #######################################################################
 ######################## VERSION ######################################
 #######################################################################
@@ -229,7 +247,7 @@ target_include_directories(DiscreteModel
   PRIVATE
     ${PartMod_BINARY_DIR}/generated
   )
-  
+
 add_custom_command(
   OUTPUT
     ${PartMod_BINARY_DIR}/generated/version.h
