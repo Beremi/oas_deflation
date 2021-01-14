@@ -287,51 +287,70 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
     Parameters:
     - filename [string] - file to store results (e.g. LD -> results/LD.out)
     - name - label placed in table header
-    - nodenum [int] - node number
-    - direction [int] - DoF direction (0=x, 1=y, z=2)
+    - codes [string] - component name (2D - ux, uy, rz) and (3D ux, uy, uz, rx, ry, rz)
+    - num [int] - number of nodes to read
+    - n [int] - node numbers
 
     These parameters can be followed by optional keywords:
     - see DataExporter::readFromLine
 */
-void DoFGauge :: readFromLine(istringstream &iss) {
-    iss >> filename;
-    iss >> name;
-    iss >> nodenum;
-    iss >> direction;
-    DataExporter :: readFromLine(iss);
-}
 
 //////////////////////////////////////////////////////////
-DoFGauge :: DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension) : Gauge(dimension) {
-    filename = f;
-    name = gname;
-    direction = dir;
-    nodes = nn;
-    nodenum = n;
-    multiplier = m;
+DoFGauge :: DoFGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {
 }
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
-    n = nodes->giveNode(nodenum);
-    DoF = n->giveStartingDoF() + direction;
     time_each = 0;
     time_last = 0;
+    unsigned DoFpos = 0;
+    if ( codes [ 0 ].compare("ux") == 0 ) {
+        DoFpos = 0;
+    } else if ( codes [ 0 ].compare("uy") == 0 ) {
+        DoFpos = 1;
+    } else if ( codes [ 0 ].compare("uz") == 0 && dim > 2 ) {
+        DoFpos = 2;
+    } else if ( codes [ 0 ].compare("rx") == 0 && dim > 2 ) {
+        DoFpos = 3;
+    } else if ( codes [ 0 ].compare("ry") == 0 && dim > 2 ) {
+        DoFpos = 4;
+    } else if ( codes [ 0 ].compare("rz") == 0 ) {
+        DoFpos = 5;
+        if ( dim == 2 ) {
+            DoFpos = 2;
+        }
+    } else {
+        if ( dim == 3 ) {
+            cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by ForceGauge in 3D model" << endl;
+            exit(EXIT_FAILURE);
+        } else if ( dim == 2 ) {
+            cerr << "Error in DoFGauge: only 'ux', 'uy' or 'rz' can be exported by ForceGauge in 2D model" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    DoFs.resize(n.size() );
+    for ( unsigned i = 0; i < n.size(); i++ ) {
+        DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + DoFpos;
+    }
 }
 
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) step;
     ( void ) reactions;
     char buffer [ 100 ];
+    double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        outputfile << "\t" <<  full_f [ DoF ] * multiplier;
+        for ( unsigned i = 0; i < DoFs.size(); i++ ) {
+            value += full_f [ DoFs [ i ] ];
+        }
+        outputfile <<  "\t" << value * multiplier;
     }
     outputfile.close();
 }
