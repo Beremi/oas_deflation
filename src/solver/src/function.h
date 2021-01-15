@@ -121,25 +121,6 @@ public:
 protected:
 };
 
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// JM: Rotation function using angle multiplier from a ConstSawToothFunction
-class ConstSawToothRotationFunction : public ConstSawToothFunction
-{
-private:
-    Point initNodePosition;
-    Point rotationAngles;
-    unsigned int displacementType;
-    //double currentTime;
-    //double previousTime;
-public:
-    ConstSawToothRotationFunction() {};
-    virtual ~ConstSawToothRotationFunction() {};
-    void readFromLine(istringstream &iss);
-    double giveY(double t) const;
-    //void setCurrentTime(double t);
-protected:
-};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

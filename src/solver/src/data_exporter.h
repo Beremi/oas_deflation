@@ -98,7 +98,7 @@ public:
 // EXPORT OF FORCES
 class ForceGauge : public Gauge
 {
-private:
+protected:
     NodeContainer *nodes;
     vector< unsigned >DoFs;
     vector< unsigned >n;
@@ -109,8 +109,22 @@ public:
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
-protected:
 };
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF DoFs
+class DoFGauge : public ForceGauge
+{
+public:
+    DoFGauge(NodeContainer *n, unsigned dimension) : ForceGauge(n, dimension) {};
+    DoFGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
+    ~DoFGauge() {};
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void init();
+};
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -143,27 +157,6 @@ private:
 public:
     StructuralExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
     ~StructuralExporter() {};
-    void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
-    virtual void init();
-protected:
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// EXPORT OF DoFs
-class DoFGauge : public Gauge
-{
-private:
-    unsigned DoF;
-    Node *n;
-    unsigned direction;
-    unsigned nodenum;
-    NodeContainer *nodes;
-public:
-    DoFGauge(NodeContainer *nn, unsigned dimension) : Gauge(dimension) { nodes = nn; multiplier = 1; };
-    DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension);
-    ~DoFGauge() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();

@@ -192,6 +192,8 @@ void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCon
         fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
         ex->addExporter(fg);
     }
+
+    codes [ 0 ] = "ux";
     DoFGauge *dg;
     if ( dim == 2 ) {
         gname [ 0 ] = "eps_x";
@@ -206,7 +208,7 @@ void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCon
         gname [ 5 ] = "gamma_xy";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        dg = new DoFGauge(export_name, gname [ i ], initalNodeNum, i, nodes, 1., dim);
+        dg = new DoFGauge(export_name, gname [ i ], codes, n, nodes, 1., dim);
         ex->addExporter(dg);
     }
 }
@@ -491,6 +493,8 @@ void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCont
         fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
         ex->addExporter(fg);
     }
+
+    codes [ 0 ] = "ux";
     DoFGauge *dg;
     if ( dim == 2 ) {
         gname [ 0 ] = "flux_x";
@@ -501,7 +505,7 @@ void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCont
         gname [ 2 ] = "flux_z";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        dg = new DoFGauge(export_name, gname [ i ], initalNodeNum + i, 0, nodes, 1., dim);
+        dg = new DoFGauge(export_name, gname [ i ], codes, n, nodes, 1., dim);
         ex->addExporter(dg);
     }
 }

@@ -13,49 +13,58 @@
 
 
 Vector calcPrincipalStress(const Matrix &stress) {
-    Vector principalStress;
-    principalStress.resize(stress.numCols() );
-    if ( principalStress.size() == 2 ) {
-        // 2d case
-        principalStress [ 0 ] = 0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ) +
-                                sqrt(
-            pow(0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ), 2) +
-            pow(0.5 * ( stress [ 0 ] [ 1 ] + stress [ 1 ] [ 0 ] ), 2)
-            );
-        principalStress [ 1 ] = 0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ) -
-                                sqrt(
-            pow(0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ), 2) +
-            pow(0.5 * ( stress [ 0 ] [ 1 ] + stress [ 1 ] [ 0 ] ), 2)
-            );
-    } else if ( principalStress.size() == 3 ) {
-        // http://www.continuummechanics.org/principalstress.html
-        double I1, I2, I3; // invariants
-        double Q, R, theta;
-        // calculate invariants
-        I1 = stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] + stress [ 2 ] [ 2 ];
-        I2 = stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] +
-             stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] +
-             stress [ 0 ] [ 0 ] * stress [ 2 ] [ 2 ] +
-             stress [ 0 ] [ 1 ] * stress [ 1 ] [ 0 ] + // for symetric matrix = stress12^2
-             stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ] +
-             stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ];
-        I3 = stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] +
-             stress [ 0 ] [ 0 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ] +
-             stress [ 1 ] [ 1 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] +
-             stress [ 2 ] [ 2 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] +
-             stress [ 0 ] [ 1 ] * stress [ 1 ] [ 2 ] * stress [ 0 ] [ 2 ] +
-             stress [ 1 ] [ 0 ] * stress [ 2 ] [ 1 ] * stress [ 2 ] [ 0 ]; // last two could be done once and multiplied by 2
-        // calculate intermediate quantities
-        Q = ( 3 * I2 - pow(I1, 2) ) / 9;
-        R = ( 2 * pow(I1, 3) - 9 * I1 * I2 + 27 * I3 ) / 54;
-        theta = acos(R / sqrt(-pow(Q, 3) ) );
-        // calculate eigen values
-        principalStress [ 0 ] = 2 * sqrt(-Q) * cos(theta / 3) + I1 / 3;
-        principalStress [ 1 ] = 2 * sqrt(-Q) * cos( ( theta + 2 * M_PI ) / 3 ) + I1 / 3;
-        principalStress [ 2 ] = 2 * sqrt(-Q) * cos( ( theta + 4 * M_PI ) / 3 ) + I1 / 3;
-        std :: cout << "principalStress ( " << principalStress [ 0 ] << ", " << principalStress [ 1 ] << ", " << principalStress [ 2 ] << " )" << '\n';
-    }
-    return principalStress;
+  Vector principalStress;
+  principalStress.resize(stress.numCols());
+  if ( principalStress.size() == 2 ){
+    // 2d case
+    principalStress[0] = 0.5 * (stress[0][0] + stress[1][1]) +
+        sqrt(
+          pow( 0.5 * (stress[0][0] + stress[1][1]), 2) +
+          pow( 0.5 * (stress[0][1] + stress[1][0]), 2)
+        );
+    principalStress[1] = 0.5 * (stress[0][0] + stress[1][1]) -
+        sqrt(
+          pow( 0.5 * (stress[0][0] + stress[1][1]), 2) +
+          pow( 0.5 * (stress[0][1] + stress[1][0]), 2)
+        );
+  } else if ( principalStress.size() == 3 ) {
+    // http://www.continuummechanics.org/principalstress.html
+    double I1, I2, I3;  // invariants
+    double Q, R, theta;
+    // calculate invariants
+    I1 = stress[0][0] + stress[1][1] + stress[2][2];
+    I2 = stress[0][0] * stress[1][1] +
+         stress[1][1] * stress[2][2] +
+         stress[0][0] * stress[2][2] +
+         stress[0][1] * stress[1][0] +   // for symetric matrix = stress12^2
+         stress[1][2] * stress[2][1] +
+         stress[0][2] * stress[2][0];
+    I3 = stress[0][0] * stress[1][1] * stress[2][2] +
+         stress[0][0] * stress[1][2] * stress[2][1] +
+         stress[1][1] * stress[0][2] * stress[2][0] +
+         stress[2][2] * stress[0][2] * stress[2][0] +
+         stress[0][1] * stress[1][2] * stress[0][2] +
+         stress[1][0] * stress[2][1] * stress[2][0];   // last two could be done once and multiplied by 2
+     // calculate intermediate quantities
+     Q = (3 * I2 - pow(I1, 2) ) / 9;
+     R = ( 2 * pow(I1, 3) - 9 * I1 * I2 + 27 * I3) / 54;
+     if ( Q >= 0 ){
+       theta = 0;
+     } else {
+       if ( R / sqrt( - pow(Q, 3) ) > 1.0 ){
+          theta = acos( 1.0 );
+       } else {
+         theta = acos(R / sqrt( - pow(Q, 3) ) );
+       }
+     }
+     // calculate eigen values
+     principalStress[0] = 2 * sqrt(-Q) * cos(theta / 3) + I1 / 3;
+     principalStress[1] = 2 * sqrt(-Q) * cos((theta + 2 * M_PI) / 3) + I1 / 3;
+     principalStress[2] = 2 * sqrt(-Q) * cos((theta + 4 * M_PI) / 3) + I1 / 3;
+     // stress.print();
+     // std::cout << "principalStress ( " << principalStress[0] << ", " << principalStress[1] << ", " << principalStress[2] << " ), Q = " << Q << ", R = " << R << ", theta = " << theta << ", acos argument = " << R / sqrt( - pow(Q, 3) ) << '\n';
+  }
+  return principalStress;
 }
 
 double calcMaxPrincipalStress(const Matrix &stress) {

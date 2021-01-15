@@ -24,11 +24,6 @@ void MaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Vector MaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, unsigned ndim) const {
-    return giveStiffnessTensor("secant", ndim) * addEigenStrain(strain);
-}
-
-//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT MATERIAL
 
@@ -43,6 +38,11 @@ Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
     temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(strain);
     return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const {
+    return -effConductivity *addEigenStrain(strain);
 };
 
 //////////////////////////////////////////////////////////
@@ -120,7 +120,15 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
 //////////////////////////////////////////////////////////
 // ELASTIC TENSORIAL MECHANICAL MATERIAL
 
-Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain) {
+Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain){
+    temp_strain = strain;
+    temp_stress = ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(strain);
+    return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+
+Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
     unsigned dim = 0;
     if ( strain.size() == 1 ) {
         dim = 1;
@@ -129,9 +137,7 @@ Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain) {
     } else if ( strain.size() == 6 ) {
         dim = 3;
     }
-    temp_strain = strain;
-    temp_stress = giveStiffnessTensor("elastic", dim) * addEigenStrain(strain);
-    return temp_stress;
+    return giveStiffnessTensor("elastic", dim) * addEigenStrain(strain);
 };
 
 //////////////////////////////////////////////////////////
@@ -226,7 +232,14 @@ MaterialStatus *ElasticMechMaterial :: giveNewMaterialStatus(Element *e) {
 //////////////////////////////////////////////////////////
 // ELASTIC COSSERAT MECHANICAL MATERIAL
 
-Vector CosseratMechMaterialStatus :: giveStress(const Vector &strain) {
+Vector CosseratMechMaterialStatus ::  giveStress(const Vector &strain) {
+    temp_strain = strain;
+    temp_stress = CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(strain);
+    return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+Vector CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain) const{
     unsigned dim;
     if ( strain.size() == 2 ) {
         dim = 1;
@@ -238,9 +251,7 @@ Vector CosseratMechMaterialStatus :: giveStress(const Vector &strain) {
         cerr << name << " error: unsupported dimension" << endl;
         exit(1);
     }
-    temp_strain = strain;
-    temp_stress = giveStiffnessTensor("elastic", dim) * addEigenStrain(strain);
-    return temp_stress;
+    return giveStiffnessTensor("elastic", dim) * addEigenStrain(strain);
 };
 
 //////////////////////////////////////////////////////////
@@ -366,6 +377,14 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
         crackParam += pow(fullstrain [ i ], 3) * fullstrain [ i + 1 ];
     }
     temp_effConductivity = m->giveDensity() * m->givePermeability() / m->giveViscosity() + m->giveTurtuosity() / ( 12. * m->giveViscosity() * fullstrain [ 1 ] ) * crackParam;
+    temp_strain.resize(1);
+    temp_strain [ 0 ] = fullstrain [ 0 ];
+    temp_stress = -temp_effConductivity *addEigenStrain(temp_strain);
+    return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector & fullstrain) const {
     Vector strain(1);
     strain [ 0 ] = fullstrain [ 0 ];
     return -temp_effConductivity *addEigenStrain(strain);
@@ -428,16 +447,22 @@ double DisMechMaterialStatus :: giveDensity() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector DisMechMaterialStatus :: giveStress(const Vector &strain) {
-    DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    temp_stress.resize(strain.size() );
-    Vector activeStrain = addEigenStrain(strain);
-    temp_stress [ 0 ] = m->giveE0() * activeStrain [ 0 ];
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
-        temp_stress [ i ] = m->giveAlpha() * m->giveE0() * activeStrain [ i ];
-    }
+Vector DisMechMaterialStatus ::  giveStress(const Vector &strain) {
     temp_strain = strain;
+    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain);
     return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain) const {
+    DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
+    Vector stress (strain.size() );
+    Vector activeStrain = addEigenStrain(strain);
+    stress [ 0 ] = m->giveE0() * activeStrain [ 0 ];
+    for ( unsigned i = 1; i < strain.size(); i++ ) {
+        stress [ i ] = m->giveAlpha() * m->giveE0() * activeStrain [ i ];
+    }
+    return stress;
 };
 
 //////////////////////////////////////////////////////////

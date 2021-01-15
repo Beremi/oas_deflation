@@ -77,8 +77,8 @@ def genMechBCFile(folName="input_files"):
     bcFile = open("%s/mechBC.inp" % folName, 'w+')
 
     bcFile.write("# nodeIdx	KinTrX	KinTrY	KinRotZ	StTrX	StTrY	StRotZ\n")
-    bcFile.write("0	0	0	0	-1	-1	-1\n")
-    bcFile.write("1	1	2	0	-1	-1	-1")
+    bcFile.write("NodalBC 0	0	0	0	-1	-1	-1\n")
+    bcFile.write("NodalBC 1	1	2	0	-1	-1	-1")
 
     bcFile.close()
     return
