@@ -89,6 +89,7 @@ class Model:
         self.notchWidth = None
         self.notchDepth = None
         self.RWTHQuarter = False
+        self.elasticZone = False
 
         for i in range (len(r)):
 
@@ -131,6 +132,9 @@ class Model:
             if (r[i]=='periodicModel'):
                 if (int(r[i+1])==1): self.periodicModel = True
                 if (int(r[i+1])==0): self.periodicModel = False
+            if (r[i]=='elasticZone'):
+                if (int(r[i+1])==1): self.elasticZone = True
+                if (int(r[i+1])==0): self.elasticZone = False
             #"""
             """
             keys = ['powerTes', 'activeMechanics', 'activeTransport', 'periodicModel']
@@ -277,6 +281,16 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
         materialZones = None
+        if self.elasticZone ==True:
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=np.array([
+            0.5*self.maxLim[0]*(1-self.fracZoneWidth),
+            self.maxLim[1] * 0.2,
+            -self.maxLim[2]* 0.1,
+            self.maxLim[0]  - 0.5*self.maxLim[0]*(1-self.fracZoneWidth),
+            self.maxLim[1] * 1.1,
+            self.maxLim[2] * 1.1
+            ]))
+
 
     def run_2d_dogbone(self):
         (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef )

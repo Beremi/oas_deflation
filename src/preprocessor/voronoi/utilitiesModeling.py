@@ -106,7 +106,8 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None):
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None):
+    #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
     matZ = []
@@ -153,6 +154,18 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             boundB1 = np.array(  [ 2*D, 2*D, thickness*2] )
             matZ.append (boundB1)
             materialZones.append(matZ)
+
+    if (model =='3pb3d'):
+        boundA = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
+        matZ.append (boundA)
+        boundB = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
+        matZ.append (boundB)
+        boundA1 = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
+        matZ.append (boundA1)
+        boundB1 = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
+        matZ.append (boundB1)
+
+        materialZones.append(matZ)
 
     return materialZones
 
@@ -4962,26 +4975,54 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
 
 
         oldLen = len(node_coords)
-        nodeA = np.array([indent, radius*0.995, radius*0.10])
-        nodeB = np.array([height-indent, radius*0.995, radius*0.10])
-        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.995, radius*0.06])
-        nodeB = np.array([height-indent, radius*0.995, radius*0.06])
+        nodeA = np.array([indent, radius*0.99, radius*0.14])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.14])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.995, radius*0.02])
-        nodeB = np.array([height-indent, radius*0.995, radius*0.02])
+        nodeA = np.array([indent, radius*0.99, radius*0.07])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.07])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.995, -radius*0.02])
-        nodeB = np.array([height-indent, radius*0.995, -radius*0.02])
+        nodeA = np.array([indent, radius*0.99, radius*0.0])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.00])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.995, -radius*0.06])
-        nodeB = np.array([height-indent, radius*0.995, -radius*0.06])
+        nodeA = np.array([indent, radius*0.99, -radius*0.14])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.14])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.995, -radius*0.10])
-        nodeB = np.array([height-indent, radius*0.995, -radius*0.10])
-        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, -radius*0.07])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.07])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, -radius*0.0])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.00])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
 
+        """
+        oldLen = len(node_coords)
+        nodeA = np.array([indent, radius*0.99, radius*0.14])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.14])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, radius*0.10])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.10])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, radius*0.06])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.06])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, radius*0.02])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.02])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, -radius*0.02])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.02])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, -radius*0.06])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.06])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, -radius*0.10])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.10])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, -radius*0.14])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.14])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        newNodes = len(node_coords)-oldLen
+        """
 
         rpIdcs = []
         for i in range (newNodes):
@@ -4995,28 +5036,54 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodes.append(np.array([ height/2, radius, 0]))
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
 
-
-
         oldLen = len(node_coords)
-        nodeA = np.array([indent, -radius*0.995, radius*0.10])
-        nodeB = np.array([height-indent, -radius*0.995, radius*0.10])
-    #    pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.995, radius*0.06])
-        nodeB = np.array([height-indent, -radius*0.995, radius*0.06])
+        nodeA = np.array([indent, -radius*0.99, radius*0.14])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.14])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.995, radius*0.02])
-        nodeB = np.array([height-indent, -radius*0.995, radius*0.02])
+        nodeA = np.array([indent, -radius*0.99, radius*0.07])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.07])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.995, -radius*0.02])
-        nodeB = np.array([height-indent, -radius*0.995, -radius*0.02])
+        nodeA = np.array([indent, -radius*0.99, radius*0.0])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.00])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.995, -radius*0.06])
-        nodeB = np.array([height-indent, -radius*0.995, -radius*0.06])
+        nodeA = np.array([indent, -radius*0.99, -radius*0.14])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.14])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.995, -radius*0.10])
-        nodeB = np.array([height-indent, -radius*0.995, -radius*0.10])
-    #    pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, -radius*0.07])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.07])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, -radius*0.0])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.00])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
+        """
+        oldLen = len(node_coords)
+        nodeA = np.array([indent, -radius*0.99, radius*0.14])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.14])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, radius*0.10])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.10])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, radius*0.06])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.06])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, radius*0.02])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.02])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, -radius*0.02])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.02])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, -radius*0.06])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.06])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, -radius*0.10])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.10])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, -radius*0.14])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.14])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        newNodes = len(node_coords)-oldLen
+        """
 
         print()
         rpIdcs = []
