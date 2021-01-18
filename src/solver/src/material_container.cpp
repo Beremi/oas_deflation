@@ -105,7 +105,4 @@ void MaterialContainer :: readFromFile(const string filename) {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
-    for ( auto const &mat : matrs ){
-      std::cout << "mat id = " << mat->giveId() << '\n';
-    }
 }
