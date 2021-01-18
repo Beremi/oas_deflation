@@ -34,7 +34,8 @@ public:
 
     void setContainers(BCContainer *bc, ConstraintContainer *c) { constr = c; BC = bc; }
     void readFromFile(const string filename, const int dim);
-    Node *giveNode(unsigned const num) { return nodes [ num ]; }
+    void saveToFile(const std :: string &filepath, std :: vector< unsigned > &nodes_to_save) const;
+    Node *giveNode(unsigned const num) const { return nodes [ num ]; }
     size_t giveSize() { return nodes.size(); };
     unsigned giveDoFid(unsigned i) const { return DoFid [ i ]; }
     void establishDoFArray(BCContainer *BC);

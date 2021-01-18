@@ -62,6 +62,19 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
 }
 
 //////////////////////////////////////////////////////////
+void NodeContainer ::  saveToFile(const std :: string &filepath, std :: vector< unsigned > &nodes_to_save) const {
+    std :: ofstream outputfile( filepath );
+    if ( outputfile.is_open() ) {
+        outputfile << "#nodes saved from calculation";
+        for ( auto const &node_id : nodes_to_save) {
+          outputfile << this->giveNode(node_id)->giveLineToSave() << '\n';
+        }
+        outputfile.close();
+    }
+}
+
+
+//////////////////////////////////////////////////////////
 void NodeContainer :: init() {
     establishDoFArray();
 }

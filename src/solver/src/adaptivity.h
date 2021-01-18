@@ -109,12 +109,12 @@ private:
     double time_before_step; // if remesh, step will be restatrted
 
     // true = keep forever, false = remesh if needed
-    std :: vector< bool >keepThisNodeForever;  // set on init() and set it only for particles
+    std :: vector< bool > keepThisNodeForever;  // set on init() and set it only for particles
 
-    std :: vector< Point >nodeCentersToRmesh;  // clear after remesh
+    std :: vector< Point > nodeCentersToRmesh;  // clear after remesh
     // std :: vector< Point > centersPreviouslyRmeshed;   // clear after remesh
 
-    std :: vector< Region * >regionsNotToRemesh; // can be specified on the input, as well as by centers of already remeshed circles
+    std :: vector< Region * > regionsNotToRemesh; // can be specified on the input, as well as by centers of already remeshed circles
     // furthermore will be stored in memory
 
     //////////////////////////////////////////////////////////////////////////////
@@ -132,7 +132,56 @@ private:
         }
     }
 
+    // void saveNodesToKeepPrevious() {
+    //     Node *n;
+    //     Point p;
+    //     bool to_be_exported;
+    //     // create vector of centers to remove nodes from
+    //     std :: vector< Sphere >regionsToRemove;
+    //     for ( auto const &cent : nodeCentersToRmesh ) {
+    //         regionsToRemove.push_back(Sphere(cent, this->radius2) );
+    //     }
+    //
+    //     // save nodes that are going to be kept
+    //     // maybe here can be nodes.out to distinguish between old and the new ones
+    //     std :: string node_file = "nodes.inp";
+    //     ofstream outputfile(fs :: path(this->remeshDir) / node_file);
+    //     if ( outputfile.is_open() ) {
+    //         outputfile << std :: scientific;
+    //         outputfile.precision(6);
+    //         outputfile << "#nodesToLoad";
+    //         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
+    //             n = BaseSolver :: nodes->giveNode(i);
+    //             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0) {
+    //                 to_be_exported = true;
+    //                 Particle *part = static_cast< Particle * >( n );
+    //                 p = n->givePoint();
+    //                 // check if node is in region to remesh
+    //                 for ( auto const &regRemove : regionsToRemove ) {
+    //                     if ( regRemove.isInside(p) ) {
+    //                         to_be_exported = false;
+    //                         break;
+    //                     }
+    //                 }
+    //                 // also check if it is not in region where remesh is restricted
+    //                 // TODO this should be done in better way
+    //                 for ( auto const &regKeep : regionsNotToRemesh ) {
+    //                     if ( regKeep->isInside(p) ) {
+    //                         to_be_exported = true;
+    //                         break;
+    //                     }
+    //                 }
+    //                 if ( to_be_exported ) {
+    //                     outputfile << "\nparticle\t" << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\t' << part->giveRadius();
+    //                 }
+    //             }
+    //         }
+    //         outputfile.close();
+    //     }
+    // };
+
     void saveNodesToKeep() {
+        std :: vector< unsigned > nodesToKeep;
         Node *n;
         Point p;
         bool to_be_exported;
@@ -145,39 +194,39 @@ private:
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
         std :: string node_file = "nodes.inp";
-        ofstream outputfile(fs :: path(this->remeshDir) / node_file);
-        if ( outputfile.is_open() ) {
-            outputfile << std :: scientific;
-            outputfile.precision(6);
-            outputfile << "#nodesToLoad";
-            for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
-                n = BaseSolver :: nodes->giveNode(i);
-                if ( n->giveName().compare("particle") == 0 ) {
-                    to_be_exported = true;
-                    Particle *part = static_cast< Particle * >( n );
-                    p = n->givePoint();
-                    // check if node is in region to remesh
-                    for ( auto const &regRemove : regionsToRemove ) {
-                        if ( regRemove.isInside(p) ) {
-                            to_be_exported = false;
-                            break;
-                        }
-                    }
-                    // also check if it is not in region where remesh is restricted
-                    // TODO this should be done in better way
-                    for ( auto const &regKeep : regionsNotToRemesh ) {
-                        if ( regKeep->isInside(p) ) {
-                            to_be_exported = true;
-                            break;
-                        }
-                    }
-                    if ( to_be_exported ) {
-                        outputfile << "\nparticle\t" << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\t' << part->giveRadius();
+        for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
+            n = BaseSolver :: nodes->giveNode(i);
+            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
+                to_be_exported = true;
+                Particle *part = static_cast< Particle * >( n );
+                p = n->givePoint();
+                // check if node is in region to remesh
+                for ( auto const &regRemove : regionsToRemove ) {
+                    if ( regRemove.isInside(p) ) {
+                        to_be_exported = false;
+                        break;
                     }
                 }
+                // also check if it is not in region where remesh is restricted
+                // TODO this should be done in better way
+                for ( auto const &regKeep : regionsNotToRemesh ) {
+                    if ( regKeep->isInside(p) ) {
+                        to_be_exported = true;
+                        break;
+                    }
+                }
+                if ( to_be_exported ) {
+                    nodesToKeep.push_back(i);
+                    // outputfile << "\nparticle\t" << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\t' << part->giveRadius();
+                }
             }
-            outputfile.close();
         }
+
+        BaseSolver :: nodes->saveToFile(
+          (fs :: path(this->remeshDir) / node_file).string(),
+          nodesToKeep
+        );
+
     };
 
     //////////////////////////////////////////////////////////////////////////////
@@ -309,7 +358,7 @@ private:
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             checkStress = true;
             n = BaseSolver :: nodes->giveNode(i);
-            if ( n->giveName().compare("particle") == 0 ) {
+            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0) {
                 for ( auto const &reg : regionsNotToRemesh ) {
                     if ( reg->isInside(n->givePoint() ) ) {
                         checkStress = false;
@@ -451,7 +500,7 @@ public:
         // NOTE JK this is intended for field of nodes to keep
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) {
             n = BaseSolver :: nodes->giveNode(i);
-            if ( n->giveName().compare("particle") == 0 ) {
+            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
                 numParticles++;
             }
         }

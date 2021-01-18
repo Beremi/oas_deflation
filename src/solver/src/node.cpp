@@ -16,6 +16,17 @@ void Node :: readFromLine(istringstream &iss) {
     }
 }
 
+
+std :: string Node :: giveLineToSave() const {
+  ostringstream ostr;
+  ostr << this->name << '\t';
+  ostr << this->point.getX() << '\t' << this->point.getY();
+  if ( this->dim == 3 ){
+    ostr << '\t' << this->point.getZ();
+  }
+  return ostr.str();
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
@@ -28,7 +39,7 @@ MechDoF :: MechDoF(unsigned dimension) : MechNode(dimension) {
     point = Point(0, 0, 0);
     nDoFs = dimension;
     dim = dimension;
-    name = "Mechanical DoF";
+    name = "MechDoF";
 }
 
 //////////////////////////////////////////////////////////
@@ -71,7 +82,7 @@ TrsDoF :: TrsDoF(unsigned dimension) : TrsNode(dimension) {
     point = Point(0, 0, 0);
     nDoFs = dimension;
     dim = dimension;
-    name = "Transport DoF";
+    name = "TrsDoF";
 }
 
 
