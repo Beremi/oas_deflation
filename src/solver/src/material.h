@@ -51,13 +51,14 @@ protected:
 class Material
 {
 private:
-
+    unsigned id;  // to be able to save element
 public:
     Material() { name = "basic material"; };
     virtual ~Material() {};
     virtual void readFromLine(istringstream &iss) { ( void ) iss; };
     virtual MaterialStatus *giveNewMaterialStatus(Element *e) { MaterialStatus *newStatus = new MaterialStatus(this, e); return newStatus; };
     string giveName() { return name; }
+    unsigned giveId() { return id; }
     virtual void init() {};
 protected:
     string name;

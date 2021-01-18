@@ -19,6 +19,7 @@ void MaterialContainer :: readFromFile(const string filename) {
     size_t origsize = matrs.size();
     string line, matType;
     ifstream inputfile(filename.c_str() );
+    unsigned id = 0;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -95,11 +96,16 @@ void MaterialContainer :: readFromFile(const string filename) {
                     exit(EXIT_FAILURE);
                 }
             }
+            matrs.back()->setId(id);
+            id++;
         }
         inputfile.close();
         cout << "Input file '" <<  filename << "' succesfully loaded; " << matrs.size() - origsize << " materials found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
+    }
+    for ( auto const &mat : matrs ){
+      std::cout << "mat id = " << mat->giveId() << '\n';
     }
 }
