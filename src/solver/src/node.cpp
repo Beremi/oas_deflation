@@ -18,13 +18,12 @@ void Node :: readFromLine(istringstream &iss) {
 
 
 std :: string Node :: giveLineToSave() const {
-  ostringstream ostr;
-  ostr << this->name << '\t';
-  ostr << this->point.getX() << '\t' << this->point.getY();
+  std :: string  str = this->name + "\t" + to_string(this->point.getX()) +
+      "\t" + to_string(this->point.getY());
   if ( this->dim == 3 ){
-    ostr << '\t' << this->point.getZ();
+    str += "\t" + to_string(this->point.getZ());
   }
-  return ostr.str();
+  return str;
 }
 
 //////////////////////////////////////////////////////////

@@ -34,6 +34,7 @@ public:
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
+    virtual std :: string giveLineToSave() const;
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
@@ -78,7 +79,7 @@ protected:
 public:
     GeometricalElement() { mat = nullptr; }
     ~GeometricalElement() {};
-    double giveIPValue(string code, unsigned ipnum) { ( void ) code; ( void ) ipnum; return 0; }
+    double giveIPValue(string code, unsigned ipnum) const { ( void ) code; ( void ) ipnum; return 0; }
 };
 
 //////////////////////////////////////////////////////////

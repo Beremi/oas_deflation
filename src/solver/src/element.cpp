@@ -11,6 +11,13 @@ Element :: ~Element() {
     }
 }
 
+std :: string Element :: giveLineToSave() const {
+  std :: string str = this->giveName();
+  
+
+  return str;
+}
+
 //////////////////////////////////////////////////////////
 void Element :: init() {
     unsigned totalDoFs = 0;
@@ -145,7 +152,7 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
 RigidBodyContact :: RigidBodyContact(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
-    name = "RigidBodyContact";
+    name = "LTCBEAM";
 }
 
 //////////////////////////////////////////////////////////
@@ -604,7 +611,7 @@ Transp1D :: Transp1D(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
     bound = false;
-    name = "Transp1D";
+    name = "LTCTRSP";
     BolanderCapacityMatrix = false;
 }
 
@@ -953,7 +960,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 // 2D QUADRILATERAL TRANSPORT ELEMENT
 TranspQuad :: TranspQuad() {
     ndim = 2;
-    name = "Transport Quadrilateral";
+    name = "TrsprtQuad";
 }
 
 //////////////////////////////////////////////////////////
@@ -1054,7 +1061,7 @@ Matrix TranspQuad :: giveHMatrix(const Point *x) const {
 // 2D QUADRILATERAL MECHANICAL ELEMENT
 MechanicalQuad :: MechanicalQuad() {
     ndim = 2;
-    name = "Mechanical Quadrilateral";
+    name = "MechanicalQuad";
 }
 
 //////////////////////////////////////////////////////////
@@ -1156,7 +1163,7 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
 // 2D QUADRILATERAL COSSERAT MECHANICAL ELEMENT
 CosseratQuad :: CosseratQuad() {
     ndim = 2;
-    name = "Mechanical Cosserat Quadrilateral";
+    name = "CosseratQuad";
 }
 
 
