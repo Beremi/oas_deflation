@@ -20,6 +20,7 @@ public:
     ~ElementContainer();
     void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
+    void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
     void init();
     size_t giveSize() const { return elems.size(); }
     void findElementFriends();
@@ -34,7 +35,7 @@ public:
     void giveInternalForces(Vector &full_r, Vector &full_f);                       ///< return internal forces with temporary update of internal variables
     void giveInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f); ///< return internal forces based on current state of internal variables
     void giveInternalForces(Vector &full_r, Vector &full_f, bool frozen);          ///< return internal forces with or without frozen internal variables
-    Element *giveElement(unsigned const num) { return elems [ num ]; }
+    Element *giveElement(unsigned const num) const { return elems [ num ]; }
 
     vector< Element * > :: iterator begin() { return elems.begin(); }
     vector< Element * > :: iterator end() { return elems.end(); }

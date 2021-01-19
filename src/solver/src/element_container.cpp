@@ -97,6 +97,19 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     }
 }
 
+
+//////////////////////////////////////////////////////////
+void ElementContainer ::  saveToFile(const string &filepath, std :: vector< unsigned > &elems_to_save) const {
+    std :: ofstream outputfile( filepath );
+    if ( outputfile.is_open() ) {
+        outputfile << "#nodes saved from calculation";
+        for ( auto const &elem_id : elems_to_save) {
+          outputfile << this->giveElement(elem_id)->giveLineToSave(this->nodes) << '\n';
+        }
+        outputfile.close();
+    }
+}
+
 //////////////////////////////////////////////////////////
 void ElementContainer :: init() {
     max_sol_order = 0;

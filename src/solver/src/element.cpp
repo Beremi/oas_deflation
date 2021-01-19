@@ -11,10 +11,15 @@ Element :: ~Element() {
     }
 }
 
-std :: string Element :: giveLineToSave() const {
-  std :: string str = this->giveName();
-  
-
+std :: string Element :: giveLineToSave(NodeContainer * nodes_all) const {
+  std :: string str = this->giveName() + "\t";
+  if ( this->nodes.size() > 2 ){
+    // for polygonal elems etc
+    str += to_string(this->nodes.size()) + "\t";
+  }
+  for ( auto const &node : this->nodes ){
+    str += to_string(nodes_all->giveNodeId(node)) + "\t";
+  }
   return str;
 }
 

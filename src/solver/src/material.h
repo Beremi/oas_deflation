@@ -59,6 +59,7 @@ public:
     virtual MaterialStatus *giveNewMaterialStatus(Element *e) { MaterialStatus *newStatus = new MaterialStatus(this, e); return newStatus; };
     string giveName() { return name; }
     unsigned giveId() { return id; }
+    void setId(const unsigned &i) { this->id = i; }
     virtual void init() {};
 protected:
     string name;
