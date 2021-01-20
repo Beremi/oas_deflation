@@ -115,7 +115,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     stress [ 0 ] = stiffN * strain [ 0 ]; //normal stress
 
     //kill element when excessive tension occur
-    if ( m->giveTauBar() - m->giveM() * stress [ 0 ] <= 0 ) {
+    if ( m->giveTauBar() - m->giveMT() * stress [ 0 ] <= 0 ) {
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
         }
@@ -131,7 +131,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     Point sgn1;
     double dLambda;
     double part1;
-    part1 = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveM() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+    part1 = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveMC() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
 
     for ( unsigned i = 1; i < strain.size(); i++ ) {
         if ( i == 1 ) {
@@ -183,7 +183,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
             //compute trials
             tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiffT;
 
-            f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - ( m->giveM() * stress [ 0 ] ) );
+            f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - ( m->giveMC() * stress [ 0 ] ) );
 
             if ( f_trial < 0 ) {
                 // std::cout << " elastic" << '\t';
@@ -206,7 +206,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
                 Ynext = 0.5 * stiffT * ( slip_cur - temp_sPi ).sqNorm();
 
-                part1 = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveM() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+                part1 = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveMC() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
                 temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * part1) ); //limited by <0 1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
@@ -374,8 +374,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     string param;
-    bool btau, bkin, bgam, bs, bc, br, bm;
-    btau = bkin = bgam = bs = bc = br = bm = false;
+    bool btau, bkin, bgam, bs, bc, br, bm, bat;
+    btau = bkin = bgam = bs = bc = br = bm = bat = false;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("tauBar") == 0 ) {
@@ -400,7 +400,10 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             // pressure sensitivity renamed due to collision with normal loading plasticity parameter
             // for coupled model (cumulative sliding + plasticity damage)
             bm = true;
-            iss >> m;
+            iss >> mC;
+        } else if ( param.compare("aT") == 0 ) {
+            bm = true;
+            iss >> mT;
         } else if ( param.compare("use_displacements") == 0 ) {
             use_slip = true;
         } else if ( param.compare("return_mapping") == 0 ) {
@@ -439,7 +442,11 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bm ) {
         cout << name << ": material parameter 'a' was not specified, taking a = 0.0" << endl;
-        m = 0.0;
+        mC = 0.0;
+    }
+    if ( !bat ) {
+        // if not specified, set same as the one used in compression
+        mT = mC;
     }
     ;
 };
@@ -1306,7 +1313,7 @@ Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strai
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
 
-    
+
     stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
     stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.getY();
     if ( strain.size() > 1 ) {

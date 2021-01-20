@@ -60,7 +60,7 @@ private:
     double gamma;  ///< kinematic hardening modulus
     double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
-    double m;  ///< parameter controling the pressure sensitivity
+    double mC, mT;  ///< parameters controling the pressure sensitivity (under Compression or Tension)
     bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
@@ -73,7 +73,8 @@ public:
     double giveS() const { return S; }
     double giveC() const { return c; }
     double giveR() const { return r; }
-    double giveM() const { return m; }
+    double giveMC() const { return mC; }
+    double giveMT() const { return mT; }
     virtual void init();
 
     bool useSlip() const { return use_slip; }
