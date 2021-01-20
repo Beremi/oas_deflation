@@ -143,6 +143,7 @@ public:
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
+    virtual std :: string giveLineToSave() const;
 };
 
 #endif /* _NODE_H */

@@ -111,3 +111,9 @@ double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
         return MechNode :: giveDoFBasedValue(code, DoFs);
     }
 };
+
+
+//////////////////////////////////////////////////////////
+std :: string Particle :: giveLineToSave() const {
+  return Node :: giveLineToSave() + "\t" + to_string(this->r);
+};
