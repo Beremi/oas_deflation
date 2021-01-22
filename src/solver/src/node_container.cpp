@@ -236,7 +236,7 @@ void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
     }
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
+        if ( DoFid [ i ] < freeDoFs - constrDoFs  ) {
             f [ DoFid [ i ] ] = fullf [ i ];
         }
     }

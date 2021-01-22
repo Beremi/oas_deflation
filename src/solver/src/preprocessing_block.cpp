@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Mechanical Periodic BC
-void MechanicalPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
+void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
     initalNodeNum = nodes->giveSize();
@@ -14,7 +14,7 @@ void MechanicalPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
+void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
     //apply contraints, connect periodic images
     JointDoF *jd;
     vector< Node * >vm;
@@ -166,55 +166,59 @@ void MechanicalPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constrain
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterContainer *ex) {
+void MechanicalPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterContainer *ex) {
     //export data
     string export_name = "PUCstrain_stress";
-    vector< string >gname;
     vector< unsigned >n(initalNodeNum);
-    vector< string >codes(1);
+    vector< string >gname(3*dim-3);
+    vector< string >codes(3*dim-3);
     ForceGauge *fg;
+    gname [ 0 ] = "sigma_x";
+    gname [ 1 ] = "sigma_y";
+    gname [ 2 ] = "tau_xy";
     codes [ 0 ] = "fx";
-    if ( dim == 2 ) {
-        gname.resize(3);
-        gname [ 0 ] = "sigma_x";
-        gname [ 1 ] = "sigma_y";
-        gname [ 2 ] = "tau_xy";
-    } else if ( dim == 3 ) {
-        gname.resize(6);
-        gname [ 0 ] = "sigma_x";
-        gname [ 1 ] = "sigma_y";
+    codes [ 1 ] = "fy";
+    codes [ 2 ] = "fz";
+    if ( dim == 3 ) {
         gname [ 2 ] = "sigma_z";
         gname [ 3 ] = "tau_yz";
         gname [ 4 ] = "tau_xz";
         gname [ 5 ] = "tau_xy";
+        codes [ 2 ] = "fz";
+        codes [ 3 ] = "mx";
+        codes [ 4 ] = "my";
+        codes [ 5 ] = "mz";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
+        fg = new ForceGauge(export_name, gname [ i ], codes [ i ], n, nodes, 1. / volume, dim);
         ex->addExporter(fg);
     }
 
-    codes [ 0 ] = "ux";
     DoFGauge *dg;
-    if ( dim == 2 ) {
-        gname [ 0 ] = "eps_x";
-        gname [ 1 ] = "eps_y";
-        gname [ 2 ] = "gamma_xy";
-    } else if ( dim == 3 ) {
-        gname [ 0 ] = "eps_x";
-        gname [ 1 ] = "eps_y";
+    gname [ 0 ] = "eps_x";
+    gname [ 1 ] = "eps_y";
+    gname [ 2 ] = "gamma_xy";
+    codes [ 0 ] = "ux";
+    codes [ 1 ] = "uy";
+    codes [ 2 ] = "rz";
+    if ( dim == 3 ) {
         gname [ 2 ] = "eps_z";
         gname [ 3 ] = "gamma_yz";
         gname [ 4 ] = "gamma_xz";
         gname [ 5 ] = "gamma_xy";
+        codes [ 2 ] = "uz";
+        codes [ 3 ] = "rx";
+        codes [ 4 ] = "ry";
+        codes [ 5 ] = "rz";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        dg = new DoFGauge(export_name, gname [ i ], codes, n, nodes, 1., dim);
+        dg = new DoFGauge(export_name, gname [ i ], codes [ i ], n, nodes, 1., dim);
         ex->addExporter(dg);
     }
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
+void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
@@ -248,13 +252,13 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BC
     unsigned ex_num = ex->giveSize();
 
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
-    genereteNewDoFs(nodes);
+    generateNewDoFs(nodes);
 
     //apply contraints, connect periodic images
-    genereteConstraints(nodes, constrs);
+    generateConstraints(nodes, constrs);
 
     //boundary conditions
-    genereteRigidBodyBC(nodes, e, bcs, constrs, funcs);
+    generateRigidBodyBC(nodes, e, bcs, constrs, funcs);
 
     //set prescribed strain and stress
     vector< double >bcmults;
@@ -280,9 +284,8 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BC
     bc = new BoundaryCondition(nodes->giveNode(initalNodeNum), dBC, nBC, bcmults);
     bcs->addBoundaryCondition(bc);
 
-
     //export data
-    genereteExporters(nodes, ex);
+    generateExporters(nodes, ex);
 
     cout << "Applied periodic boundary conditions: " << nodes->giveSize() - initalNodeNum << " new DoFs (nodes " << initalNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
 }
@@ -412,18 +415,16 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
 //////////////////////////////////////////////////////////
 // Transport Periodic BC
 //////////////////////////////////////////////////////////
-void TransportPeriodicBC :: genereteNewDoFs(NodeContainer *nodes) {
+void TransportPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     TrsDoF *mn;
     initalNodeNum = nodes->giveSize(); //todo warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-    for ( unsigned i = 0; i < dim; i++ ) {
-        mn = new TrsDoF(dim);
-        nodes->addNode(mn);
-    }
+    mn = new TrsDoF(dim);
+    nodes->addNode(mn);
 }
 
 //////////////////////////////////////////////////////////
-void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
+void TransportPeriodicBC :: generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
     //apply contraints, connect periodic images
     JointDoF *jd;
     vector< Node * >vm;
@@ -443,9 +444,9 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
             vm.resize(4);
             mults.resize(4);
             dirs.resize(4, 0);
-            dirs [ 3 ] = 0;
-            vm [ 3 ] = nodes->giveNode(initalNodeNum + 2); //grad z
+            dirs [ 3 ] = 2;
             mults [ 3 ] = diff.z;
+            vm [ 3 ] = nodes->giveNode(initalNodeNum);
         } else if ( dim == 2 ) {
             vm.resize(3);
             mults.resize(3);
@@ -453,10 +454,10 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
         }
         dirs [ 0 ] = 0;
         dirs [ 1 ] = 0;
-        dirs [ 2 ] = 0;
+        dirs [ 2 ] = 1;
         vm [ 0 ] = m; //master
-        vm [ 1 ] = nodes->giveNode(initalNodeNum); //grad x
-        vm [ 2 ] = nodes->giveNode(initalNodeNum + 1); //grad y
+        vm [ 1 ] = nodes->giveNode(initalNodeNum);
+        vm [ 2 ] = nodes->giveNode(initalNodeNum);
         mults [ 0 ] = 1;
         mults [ 1 ] = diff.x;
         mults [ 2 ] = diff.y;
@@ -466,8 +467,7 @@ void TransportPeriodicBC :: genereteConstraints(NodeContainer *nodes, Constraint
 }
 
 //////////////////////////////////////////////////////////
-void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterContainer *ex) {
-    return;
+void TransportPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterContainer *ex) {
 
     //export data
     string export_name = "PUCgrad_flux";
@@ -475,37 +475,35 @@ void TransportPeriodicBC :: genereteExporters(NodeContainer *nodes, ExporterCont
     vector< unsigned >n;
     vector< string >codes;
     n.resize(1);
-    codes.resize(1);
+    codes.resize(dim);
+    gname.resize(dim);
+   
     ForceGauge *fg;
+    gname [ 0 ] = "flux_x";
+    gname [ 1 ] = "flux_y";
     codes [ 0 ] = "fx";
-    if ( dim == 2 ) {
-        gname.resize(2);
-        gname [ 0 ] = "grad_x";
-        gname [ 1 ] = "grad_y";
-    } else if ( dim == 3 ) {
-        gname.resize(3);
-        gname [ 0 ] = "grad_x";
-        gname [ 1 ] = "grad_y";
-        gname [ 2 ] = "grad_z";
+    codes [ 1 ] = "fy";
+    if ( dim == 3 ) {
+        gname [ 2 ] = "flux_z";
+        codes [ 2 ] = "fz";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        n [ 0 ] = initalNodeNum + i;
-        fg = new ForceGauge(export_name, gname [ i ], codes, n, nodes, 1. / volume, dim);
+        n [ 0 ] = initalNodeNum;
+        fg = new ForceGauge(export_name, gname [ i ], codes [ i ], n, nodes, 1. / volume, dim);
         ex->addExporter(fg);
     }
 
-    codes [ 0 ] = "ux";
     DoFGauge *dg;
-    if ( dim == 2 ) {
-        gname [ 0 ] = "flux_x";
-        gname [ 1 ] = "flux_y";
-    } else if ( dim == 3 ) {
-        gname [ 0 ] = "flux_x";
-        gname [ 1 ] = "flux_y";
-        gname [ 2 ] = "flux_z";
+    gname [ 0 ] = "grad_x";
+    gname [ 1 ] = "grad_y";
+    codes [ 0 ] = "ux";
+    codes [ 1 ] = "uy";
+    if ( dim == 3 ) {
+        gname [ 2 ] = "grad_z";
+        codes [ 2 ] = "uz";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        dg = new DoFGauge(export_name, gname [ i ], codes, n, nodes, 1., dim);
+        dg = new DoFGauge(export_name, gname [ i ], codes [ i ], n, nodes, 1., dim);
         ex->addExporter(dg);
     }
 }
@@ -573,7 +571,7 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-void TransportPeriodicBC :: genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
+void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;

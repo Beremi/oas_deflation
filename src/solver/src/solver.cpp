@@ -124,8 +124,8 @@ void Solver :: init(const bool &initial) {
     f_int = Vector(totalDoFnum);
     r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
-    f = Vector(totalDoFnum);
-    full_f = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
+    full_f = Vector(totalDoFnum);
     ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     full_ddr = Vector(totalDoFnum);
 }
@@ -195,10 +195,11 @@ Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
 void SteadyStateLinearSolver :: solve() {
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(r, time); //give prescribed DoFs
-    computeInternalExternalForces(r);
+    computeInternalExternalForcesWithFrozenIntVariables(r);
 
     //solve linear system
     nodes->giveReducedForceArray(full_f, f);
+
     if ( LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
         terminated = true;
         cerr << "Conjugate gradients did not converge" << endl;
@@ -296,7 +297,7 @@ void SteadyStateNonLinearSolver :: init(const bool &initial) {
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         idc_time = 0;
-        idc_dt = 1e-6;
+        idc_dt = 1e-3;
         idc_time_converged = 0;
     }
 }
@@ -502,8 +503,7 @@ void SteadyStateNonLinearSolver :: solve() {
             K = Kini;
             elems->updateSteadyStateMatrix(K, "secant");
 
-            //nodes->giveReducedForceArray(full_f, f);
-            nodes->giveReducedDoFArray(f_ext - f_int, f);
+            nodes->giveReducedForceArray(full_f, f);
 
             if ( idc ) {      //indirect displacement control
                 f_last_iter = f;
@@ -511,7 +511,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time + idc_dt); //give prescribed DoFs
                 computeInternalExternalForcesWithFrozenIntVariables(trial_r);
-                nodes->giveReducedDoFArray(f_ext - f_int, f);
+                nodes->giveReducedForceArray(full_f, f);
 
                 if ( LinalgSymmetricSolver(K, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
@@ -528,6 +528,8 @@ void SteadyStateNonLinearSolver :: solve() {
                 load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
                 ddr = ddr + load_mult * ddf;
                 idc_time += idc_dt * load_mult;
+
+                cout << "idc time " << idc_time << endl;
 
                 load *= 0;
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
@@ -711,7 +713,7 @@ void TransientLinearMechanicalSolver :: init(const bool &initial) {
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForcesWithFrozenIntVariables(r); //at time 0
-    nodes->giveReducedDoFArray(f_ext - f_int, f);
+    nodes->giveReducedForceArray(full_f, f);
     terminated = !LinalgSymmetricSolver(M, a_red, f - C * v_red,  a_red, conj_grad_precission, conj_grad_relative_maxit);
 }
 
@@ -777,10 +779,10 @@ void TransientLinearMechanicalSolver :: solve() {
     nodes->addRHS_nodalLoad(load, time - alpha_f * dt);  //add nodal load, at time alpha_f
     nodes->updateDirrichletBC(r, time);   //give prescribed DoFs, at time t
     r_f = r_old * alpha_f + r * ( 1. - alpha_f );
-    computeInternalExternalForces(r_f); //at time alpha_f
+    computeInternalExternalForcesWithFrozenIntVariables(r_f); //at time alpha_f
 
     //solve linear system
-    nodes->giveReducedDoFArray(f_ext - f_int, f);
+    nodes->giveReducedForceArray(full_f, f);
     updateFeff();
     terminated = !LinalgSymmetricSolver(Keff, ddr, feff, ddr, conj_grad_precission, conj_grad_relative_maxit);
 
@@ -852,7 +854,7 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r); //at time 0
-    nodes->giveReducedDoFArray(f_ext - f_int, f);
+    nodes->giveReducedForceArray(full_f, f);
     terminated = !LinalgSymmetricSolver(C, v_red, f,  v_red, conj_grad_precission, conj_grad_relative_maxit);
 }
 

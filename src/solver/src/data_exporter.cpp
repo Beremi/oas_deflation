@@ -214,12 +214,13 @@ void ForceGauge :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge :: ForceGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
+ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
     nodes = nc;
     filename = f;
     name = gname;
     n = nn;
-    codes = c;
+    codes.resize(1);
+    codes [ 0 ] = c;
     multiplier = m;
 }
 
@@ -296,7 +297,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
 */
 
 //////////////////////////////////////////////////////////
-DoFGauge :: DoFGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {
+DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {
 }
 
 //////////////////////////////////////////////////////////
@@ -321,10 +322,10 @@ void DoFGauge :: init() {
         }
     } else {
         if ( dim == 3 ) {
-            cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by ForceGauge in 3D model" << endl;
+            cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;
             exit(EXIT_FAILURE);
         } else if ( dim == 2 ) {
-            cerr << "Error in DoFGauge: only 'ux', 'uy' or 'rz' can be exported by ForceGauge in 2D model" << endl;
+            cerr << "Error in DoFGauge: only 'ux', 'uy' or 'rz' can be exported by DoFGauge in 2D model" << endl;
             exit(EXIT_FAILURE);
         }
     }
