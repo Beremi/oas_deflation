@@ -96,7 +96,7 @@ def generateSolverFile(num_steps, folName="input_files"):
 
 
 def generateFnFile(tensileLoad, shearLoad, folName="input_files", function=None):
-    print(function)
+    sym = 0
     fnFile = open("%s/functions.inp" % folName, 'w+')
 
     fnFile.write("PWLFunction 1 0 0\n")
@@ -104,15 +104,21 @@ def generateFnFile(tensileLoad, shearLoad, folName="input_files", function=None)
         fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
         fnFile.write("PWLFunction 2 0 1 0 %lg" % shearLoad)
     elif function == 'ConstSawToothFn':
-        fnFile.write("ConstSawToothFn value %lg period 0.01 sym\n"
-                      % tensileLoad)
-        fnFile.write("ConstSawToothFn value %lg period 0.01 sym\n"
-                      % shearLoad)
+        if tensileLoad - 1e-9 < 0:
+            fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
+        else:
+            fnFile.write("ConstSawToothFn value %lg period 0.02 sym %d\n"
+                          % (tensileLoad, sym))
+        fnFile.write("ConstSawToothFn value %lg period 0.02 sym %d\n"
+                      % (shearLoad, sym))
     elif function == 'LinSawToothFn':
-        fnFile.write("LinSawToothFn value %lg period 0.001 sym\n"
-                      % tensileLoad)
-        fnFile.write("LinSawToothFn value %lg period 0.001 time 1.0 sym\n"
-                      % shearLoad)
+        if tensileLoad - 1e-9 < 0:
+            fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
+        else:
+            fnFile.write("LinSawToothFn value %lg period 0.02  time 1.0 sym %d\n"
+                          % (tensileLoad, sym))
+        fnFile.write("LinSawToothFn value %lg period 0.02  time 1.0 sym %d\n"
+                      % (shearLoad, sym))
     else:
         print("function of type \'%s\' not implemented" % function)
         exit(1)
@@ -299,7 +305,7 @@ if __name__ == '__main__':
     # material file must be in the same directory as this python script
     ###########################################################################
     matFile = "material.inp"
-    function = "ConstSawToothFn"
+    function = "LinSawToothFn"
     matFileName = matFile.split(".")[0]
     folName = matFileName + "_calculation"
     if not os.path.isdir(folName):
