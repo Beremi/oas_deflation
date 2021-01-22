@@ -95,13 +95,27 @@ def generateSolverFile(num_steps, folName="input_files"):
     return
 
 
-def generateFnFile(tensileLoad, shearLoad, folName="input_files"):
+def generateFnFile(tensileLoad, shearLoad, folName="input_files", function=None):
+    print(function)
     fnFile = open("%s/functions.inp" % folName, 'w+')
 
     fnFile.write("PWLFunction 1 0 0\n")
-    fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
-    fnFile.write("PWLFunction 2 0 1 0 %lg" % shearLoad)
-
+    if function is None:
+        fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
+        fnFile.write("PWLFunction 2 0 1 0 %lg" % shearLoad)
+    elif function == 'ConstSawToothFn':
+        fnFile.write("ConstSawToothFn value %lg period 0.01 sym\n"
+                      % tensileLoad)
+        fnFile.write("ConstSawToothFn value %lg period 0.01 sym\n"
+                      % shearLoad)
+    elif function == 'LinSawToothFn':
+        fnFile.write("LinSawToothFn value %lg period 0.001 sym\n"
+                      % tensileLoad)
+        fnFile.write("LinSawToothFn value %lg period 0.001 time 1.0 sym\n"
+                      % shearLoad)
+    else:
+        print("function of type \'%s\' not implemented" % function)
+        exit(1)
     fnFile.close()
     return
 
@@ -168,12 +182,12 @@ def generateMaster(folName="input_files", ini_files="input_files",
 
 def generateInputs(tensileLoad, shearLoad,
                    length, perp_length, num_steps, folName,
-                   matFile="materials.inp"):
+                   matFile="materials.inp", function=None):
 
     genMechElemFile(folName)
     genMechBCFile(folName)
     generateSolverFile(num_steps, folName)
-    generateFnFile(tensileLoad, shearLoad, folName)
+    generateFnFile(tensileLoad, shearLoad, folName, function=function)
     generateNodeFile(length, perp_length, folName)
     genExpFile(length, perp_length, folName)
     master = generateMaster(folName, matFile=matFile)
@@ -215,7 +229,7 @@ def exportResults(folName="input_files"):
 def run_and_export_single(angle_deg, final_displacement, num_steps, tension,
                           length, perp_length, folName,
                           axShear, axTensile, axCombined, nohup=False,
-                          matFile="materials.inp"):
+                          matFile="materials.inp", function=None):
     angle = angle_deg * np.pi / 180.
     cc = np.cos(angle)
     ss = np.sin(angle)
@@ -225,7 +239,7 @@ def run_and_export_single(angle_deg, final_displacement, num_steps, tension,
 
     masterFile = generateInputs(tensileLoad, shearLoad,
                                length, perp_length, num_steps, folName,
-                               matFile
+                               matFile, function,
                                )
 
     runCalculation(angle_deg, masterFile, nohup=nohup)
@@ -276,7 +290,7 @@ if __name__ == '__main__':
     ###########################################################################
     length = 30e-3  # element length
     perp_length = length  # facet size (in 2D it is just length)
-    final_displacement = [1e-3, 1e-3]
+    final_displacement = [1e-5, 1e-5]
     num_steps = 1000.
     # list of angles in degrees to plot curves for
     angle_deg_all = [0., 10., 20., 30., 40., 50., 60., 70., 80., 90., ]
@@ -285,6 +299,7 @@ if __name__ == '__main__':
     # material file must be in the same directory as this python script
     ###########################################################################
     matFile = "material.inp"
+    function = "ConstSawToothFn"
     matFileName = matFile.split(".")[0]
     folName = matFileName + "_calculation"
     if not os.path.isdir(folName):
@@ -313,7 +328,8 @@ if __name__ == '__main__':
                                       num_steps, tension,
                                       length, perp_length, folName,
                                       axShear, axTensile, axCombined,
-                                      nohup=True, matFile=matFile)
+                                      nohup=True, matFile=matFile,
+                                      function=function)
             except Exception as e:
                 try:
                     # this will probably not work on windows, therefore try catch is here
