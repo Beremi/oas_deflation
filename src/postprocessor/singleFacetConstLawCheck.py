@@ -320,6 +320,8 @@ if __name__ == '__main__':
     LinearFn = Function()
     LinearFn.name = "LinearFn"
 
+    ###########################################################################
+    ### HERE SPECIFY NUMBER OF CYCLES
     num_cycles = 100
     period = 1.0 / float(num_cycles)
 
@@ -341,7 +343,7 @@ if __name__ == '__main__':
     ##########################################################################
     ### HERE CHOSE VALUE OF FINAL DISPLACEMNT ################################
     if function.name == "LinearFn":
-        final_displacement = [1e-3, 1e-3]
+        final_displacement = [1e-3, 1e-3]  # first value is for tension, second for compression
     elif function.name == "ConstSawToothFn":
         final_displacement = [5e-5, 5e-5]
     elif function.name == "LinSawToothFn":
