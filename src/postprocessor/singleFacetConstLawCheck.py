@@ -303,8 +303,11 @@ if __name__ == '__main__':
     tension_both = [True, False]
     ###########################################################################
     # material file must be in the same directory as this python script
-    ###########################################################################
+    ##########################################################################
     matFile = "material.inp"
+    ##########################################################################
+    ## function:
+    ## (None, LinSawToothFn, ConstSawToothFn), None = linearly increasing fn
     function = "LinSawToothFn"
     matFileName = matFile.split(".")[0]
     folName = matFileName + "_calculation"
