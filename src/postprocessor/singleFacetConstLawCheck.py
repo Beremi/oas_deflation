@@ -27,6 +27,17 @@ else:
 MTI = 0.0393700787  # mm to inch
 
 
+class Function(object):
+    """docstring for Function."""
+    name = "common"
+    period = 0.01
+    time_to_max = 1.0
+
+    def __init__(self, ):
+        super(Function, self).__init__()
+
+
+
 def plot_results(ax, stress, strain, ls='-', col='b', normal=3,
                  print_x_label=False, print_y_label=False, label=None):
     if label is None:
@@ -100,25 +111,25 @@ def generateFnFile(tensileLoad, shearLoad, folName="input_files", function=None)
     fnFile = open("%s/functions.inp" % folName, 'w+')
 
     fnFile.write("PWLFunction 1 0 0\n")
-    if function is None:
+    if function.name == "LinearFn":
         fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
         fnFile.write("PWLFunction 2 0 1 0 %lg" % shearLoad)
-    elif function == 'ConstSawToothFn':
+    elif function.name == 'ConstSawToothFn':
         if tensileLoad - 1e-9 < 0:
             fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
         else:
-            fnFile.write("ConstSawToothFn value %lg period 0.02 sym %d\n"
-                          % (tensileLoad, sym))
-        fnFile.write("ConstSawToothFn value %lg period 0.02 sym %d\n"
-                      % (shearLoad, sym))
-    elif function == 'LinSawToothFn':
+            fnFile.write("ConstSawToothFn value %lg period %lg sym %d\n"
+                          % (tensileLoad, function.period, sym))
+        fnFile.write("ConstSawToothFn value %lg period %lg sym %d\n"
+                      % (shearLoad, function.period,  sym))
+    elif function.name == 'LinSawToothFn':
         if tensileLoad - 1e-9 < 0:
             fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
         else:
-            fnFile.write("LinSawToothFn value %lg period 0.02  time 1.0 sym %d\n"
-                          % (tensileLoad, sym))
-        fnFile.write("LinSawToothFn value %lg period 0.02  time 1.0 sym %d\n"
-                      % (shearLoad, sym))
+            fnFile.write("LinSawToothFn value %lg period %lg  time %lg sym %d\n"
+                          % (tensileLoad, function.period, function.time_to_max, sym))
+        fnFile.write("LinSawToothFn value %lg period %lg time %lg sym %d\n"
+                      % (shearLoad, function.period, function.time_to_max, sym))
     else:
         print("function of type \'%s\' not implemented" % function)
         exit(1)
@@ -303,12 +314,41 @@ if __name__ == '__main__':
     tension_both = [True, False]
     ###########################################################################
     # material file must be in the same directory as this python script
-    ##########################################################################
+    ###########################################################################
     matFile = "material.inp"
+
+    LinearFn = Function()
+    LinearFn.name = "LinearFn"
+
+    num_cycles = 100
+    period = 1.0 / float(num_cycles)
+
+    ConstSawToothFn = Function()
+    ConstSawToothFn.name = "ConstSawToothFn"
+    ConstSawToothFn.period = period
+
+    LinSawToothFn = Function()
+    LinSawToothFn.name = "LinSawToothFn"
+    LinSawToothFn.period = period
+    LinSawToothFn.time_to_max = 1.0
+
     ##########################################################################
-    ## function:
-    ## (None, LinSawToothFn, ConstSawToothFn), None = linearly increasing fn
-    function = "LinSawToothFn"
+    ### HERE CHOSE THE FUNCTION WHICH TO USE FOR LOADING #####################
+    # function = LinearFn
+    function = ConstSawToothFn
+    # function = LinSawToothFn
+
+    ##########################################################################
+    ### HERE CHOSE VALUE OF FINAL DISPLACEMNT ################################
+    if function.name == "LinearFn":
+        final_displacement = [1e-3, 1e-3]
+    elif function.name == "ConstSawToothFn":
+        final_displacement = [5e-5, 5e-5]
+    elif function.name == "LinSawToothFn":
+        final_displacement = [1e-4, 1e-4]
+    else:
+        print("no such function defined %s" % function.name)
+
     matFileName = matFile.split(".")[0]
     folName = matFileName + "_calculation"
     if not os.path.isdir(folName):
@@ -379,7 +419,7 @@ if __name__ == '__main__':
                         hspace=0.30, wspace=0.30)
 
 
-    fig.savefig("%s_results.pdf" % matFileName)
+    fig.savefig("%s_%s.pdf" % (matFileName, function.name))
     # plt.show()
     plt.close()
     try:
