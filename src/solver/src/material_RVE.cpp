@@ -64,7 +64,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     volumAverFunc->setYValue(0., 0);
 
     unsigned ndim = RVE->giveDimension();
-
+    
     unsigned stra_size = ndim * ndim;
     stra_size += ( ndim == 3 ) ? ndim * ndim : ndim; //in 2D only vector
     if ( !active_mechanics ) {
@@ -102,7 +102,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
 
     if ( active_transport ) {
         Transp1D *e;
-        Vector eigstr(0);
+        Vector eigstr(1);
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
             e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
             if ( !e ) {
@@ -111,7 +111,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
             normal = e->giveNormal();
             eigstr *= 0.;
             for ( unsigned v = 0; v < ndim; v++ ) {
-                eigstr [ 0 ] = -strain [ stra_size + v ] * normal.giveCoord(v);
+                eigstr [ 0 ] -= strain [ stra_size + v ] * normal.giveCoord(v);
             }
             e->giveMatStatus(0)->setEigenStrain(eigstr);
         }
@@ -162,6 +162,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
                 factor = e->giveArea() * e->giveLength() * e->giveMatStatus(0)->giveTempStress() [ 0 ];
                 for ( unsigned v = 0; v < ndim; v++ ) {
                     temp_stress [ stra_size + v ] += factor * normal.giveCoord(v);
+                    //cout << factor * normal.giveCoord(v) << endl; 
                 }
                 volume += e->giveVolume();
             }
@@ -172,14 +173,14 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     }
 
     /*
-     * cout << "STRAIN ";
-     * for(unsigned v=0; v<stra_size; v++) cout << " " << temp_strain[v];
-     * cout << endl;
-     *
-     * cout << "STRESS ";
-     * for(unsigned v=0; v<stra_size; v++) cout << " " << temp_stress[v];
-     * cout << endl;
-     */
+    cout << "STRAIN ";
+    for(unsigned v=0; v<temp_strain.size(); v++) cout << " " << temp_strain[v];
+    cout << endl;
+    
+    cout << "STRESS ";
+    for(unsigned v=0; v<temp_strain.size(); v++) cout << " " << temp_stress[v];
+    cout << endl;
+    */
 
     return temp_stress;
 }

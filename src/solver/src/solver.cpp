@@ -297,7 +297,7 @@ void SteadyStateNonLinearSolver :: init(const bool &initial) {
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         idc_time = 0;
-        idc_dt = 1e-3;
+        idc_dt = 1e-6;
         idc_time_converged = 0;
     }
 }

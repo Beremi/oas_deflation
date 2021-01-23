@@ -34,7 +34,7 @@ public:
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; return Matrix(0, 0); };
     virtual double giveMassConstant() const { return 0; };
-    virtual void setEigenStrain(Vector &x) { eigenstrain = x; };
+    virtual void setEigenStrain(Vector &x);
     void setID(unsigned i) { idx = i; };
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
@@ -82,6 +82,7 @@ public:
     virtual double giveEffectiveConductivity(string type) const;
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveMassConstant() const;
+    virtual double giveValue(string code) const;
 };
 
 //////////////////////////////////////////////////////////
