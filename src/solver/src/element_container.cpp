@@ -102,9 +102,26 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 void ElementContainer ::  saveToFile(const string &filepath, std :: vector< unsigned > &elems_to_save) const {
     std :: ofstream outputfile( filepath );
     if ( outputfile.is_open() ) {
-        outputfile << "#nodes saved from calculation";
+        outputfile << "#elements saved from calculation";
         for ( auto const &elem_id : elems_to_save) {
           outputfile << this->giveElement(elem_id)->giveLineToSave(this->nodes) << '\n';
+        }
+        outputfile.close();
+    }
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer ::  saveElemStatsToFile(const string &filepath, std :: vector< unsigned > &elems_to_save) const {
+    std :: ofstream outputfile( filepath );
+    unsigned stat_id = 0;
+    if ( outputfile.is_open() ) {
+        outputfile << "#element statuses saved from calculation";
+        for ( auto const &elem_id : elems_to_save) {
+          stat_id = 0;
+          for ( auto const &mat_stats : this->giveElement(elem_id)->giveMaterialStats()){
+            // elem_id - mat_stat_id - internal_variables
+            outputfile << elem_id << '\t' << stat_id++ << '\t' << mat_stats->giveLineToSave() << '\n';
+          }
         }
         outputfile.close();
     }

@@ -36,6 +36,8 @@ public:
     virtual double giveMassConstant() const { return 0; };
     virtual void setEigenStrain(Vector &x) { eigenstrain = x; };
     void setID(unsigned i) { idx = i; };
+    virtual std :: string giveLineToSave() const { return "no internal variables to export"; }
+    virtual MaterialStatus* readFromLine(istringstream &iss, Material *m, Element *e);
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;

@@ -23,6 +23,12 @@ void MaterialStatus :: update() {
     updt_stress = temp_stress;
 }
 
+
+MaterialStatus* MaterialStatus :: readFromLine(istringstream &iss, Material *m, Element *e) {
+  return m->giveNewMaterialStatus(e);
+}
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT MATERIAL
