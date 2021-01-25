@@ -30,6 +30,11 @@ MaterialStatus* MaterialStatus :: readFromLine(istringstream &iss, Material *m, 
 
 
 //////////////////////////////////////////////////////////
+void MaterialStatus :: setEigenStrain(Vector &x) {
+    eigenstrain = x;  
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT MATERIAL
 
@@ -75,6 +80,15 @@ double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const {
     }
 }
 
+//////////////////////////////////////////////////////////
+double TrsprtMaterialStatus :: giveValue(string code) const {
+    if ( code.compare("permeability") == 0 ) {
+        TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
+        return m->givePermeability();
+    } else {
+        return MaterialStatus :: giveValue(code);
+    }
+}
 
 //////////////////////////////////////////////////////////
 void TrsprtMaterial :: readFromLine(istringstream &iss) {
@@ -121,6 +135,7 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
     TrsprtMaterialStatus *newStatus = new TrsprtMaterialStatus(this, e); //needs to be deleted manually
     return newStatus;
 };
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

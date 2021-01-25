@@ -81,7 +81,40 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         prob = volumeRatio*fuller2D(d, maxDiam)
         num = ((prob[:-1]-prob[1:])*Volume/(np.pi*np.square(d[:-1]/2.))+1.).astype(int)
 
-        point = np.zeros(dim+1)
+        #add regular boundary
+        """
+        point = np.zeros(dim)
+        n0 = int(2.*maxLim[0]/(maxDiam+minDiam))
+        n1 = int(2.*maxLim[1]/(maxDiam+minDiam))
+        s0 = maxLim[0]/n0;
+        s1 = maxLim[1]/n1;
+        for i in range(n0+1):
+            point[0] = i*s0
+            point[1] = 0
+            node_coords = np.vstack((node_coords, point));  
+            radii = np.hstack((radii, 0));          
+            point[1] = maxLim[1]
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
+        for i in range(n0-1):
+            point[1] = (i+1)*s1
+            point[0] = 0
+            node_coords = np.vstack((node_coords, point));  
+            radii = np.hstack((radii, 0));          
+            point[0] = maxLim[0]
+            node_coords = np.vstack((node_coords, point));             
+            radii = np.hstack((radii, 0));
+    
+        print(node_coords)    
+        """        
+
+        #option to add external nodes
+        """
+        node_coords = np.loadtxt("repnodes.inp")
+        radii = node_coords[:,-1]
+        node_coords = node_coords[:,0:-1]
+        """
+
         iters = 0
         di = 0
         numi= 0
