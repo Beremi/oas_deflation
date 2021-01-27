@@ -690,7 +690,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
     RigidBodyContact *rbc;
 
     for ( auto const &el : * elems ) {
-        if ( el->giveName().compare("RigidBodyContact") == 0 ) {
+        if ( el->giveName().compare("LTCBEAM") == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
