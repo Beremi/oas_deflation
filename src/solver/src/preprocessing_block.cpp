@@ -178,7 +178,7 @@ void MechanicalPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCon
     gname [ 2 ] = "tau_xy";
     codes [ 0 ] = "fx";
     codes [ 1 ] = "fy";
-    codes [ 2 ] = "fz";
+    codes [ 2 ] = "mz";
     if ( dim == 3 ) {
         gname [ 2 ] = "sigma_z";
         gname [ 3 ] = "tau_yz";
@@ -477,7 +477,7 @@ void TransportPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCont
     n.resize(1);
     codes.resize(dim);
     gname.resize(dim);
-   
+
     ForceGauge *fg;
     gname [ 0 ] = "flux_x";
     gname [ 1 ] = "flux_y";
