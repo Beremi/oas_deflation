@@ -169,7 +169,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
 void MechanicalPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterContainer *ex) {
     //export data
     string export_name = "PUCstrain_stress";
-    vector< unsigned >n(initalNodeNum);
+    vector< unsigned >n(1, initalNodeNum);
     vector< string >gname(3*dim-3);
     vector< string >codes(3*dim-3);
     ForceGauge *fg;
@@ -472,9 +472,8 @@ void TransportPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCont
     //export data
     string export_name = "PUCgrad_flux";
     vector< string >gname;
-    vector< unsigned >n;
+    vector< unsigned >n(1, initalNodeNum);
     vector< string >codes;
-    n.resize(1);
     codes.resize(dim);
     gname.resize(dim);
 
@@ -488,7 +487,6 @@ void TransportPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCont
         codes [ 2 ] = "fz";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
-        n [ 0 ] = initalNodeNum;
         fg = new ForceGauge(export_name, gname [ i ], codes [ i ], n, nodes, 1. / volume, dim);
         ex->addExporter(fg);
     }
