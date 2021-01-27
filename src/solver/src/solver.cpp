@@ -116,6 +116,7 @@ void Solver :: init(const bool &initial) {
     fixedDoFnum = ( nodes->giveTotalNumDoFs() - freeDoFnum );
     totalDoFnum = freeDoFnum + fixedDoFnum;
 
+
     elems->prepareSteadyStateMatrix(Kini);
     K = Kini;
     elems->updateSteadyStateMatrix(K, "elastic");
@@ -128,6 +129,7 @@ void Solver :: init(const bool &initial) {
     full_f = Vector(totalDoFnum);
     ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     full_ddr = Vector(totalDoFnum);
+
 }
 
 //////////////////////////////////////////////////////////
@@ -844,13 +846,16 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
     elems->updateCapacityMatrix(C);
     updateKeff();
 
+
     r = Vector(totalDoFnum); //initial conitions, assumed zero for now
     r_old = r;
     r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     nodes->giveReducedDoFArray(r, r_red);
 
+
     //compute initial presure derivative
     v = Vector(totalDoFnum);
+    v_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r); //at time 0

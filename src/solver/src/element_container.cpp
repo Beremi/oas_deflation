@@ -189,6 +189,7 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) con
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
+
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;

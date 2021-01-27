@@ -194,7 +194,7 @@ public:
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveCapacityMatrix() const;
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
-    //virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -209,7 +209,6 @@ private:
     void findFriends2D(ElementContainer *elemcont);
     void findFriends3D(ElementContainer *elemcont);
 
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     void findElementFriends(ElementContainer *elemcont);
@@ -217,6 +216,7 @@ public:
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     void init();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -235,6 +235,7 @@ public:
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////

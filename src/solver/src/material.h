@@ -57,6 +57,7 @@ public:
     virtual ~Material() {};
     virtual void readFromLine(istringstream &iss) { ( void ) iss; };
     virtual MaterialStatus *giveNewMaterialStatus(Element *e) { MaterialStatus *newStatus = new MaterialStatus(this, e); return newStatus; };
+    string whoAmI() { return name; }
     string giveName() { return name; }
     unsigned giveId() { return id; }
     void setId(const unsigned &i) { this->id = i; }
@@ -73,30 +74,36 @@ class TrsprtMaterial;
 class TrsprtMaterialStatus : public MaterialStatus
 {
 protected:
-    double effConductivity;
+    double effConductivity, temp_effConductivity;
 public:
     TrsprtMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain); //terminology from mechanics, it returns flux
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
-    virtual double giveEffectiveConductivity(string type) const;
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveMassConstant() const;
-    virtual double giveValue(string code) const;
+    virtual double giveValue(string code) const; 
+    virtual double giveEffectiveConductivity(string type) const;
+    virtual void updateEffectiveConductivity(double pressure);  
+    virtual double calculatePressureDependentPermeability(double pressure) const;  
 };
 
 //////////////////////////////////////////////////////////
 class TrsprtMaterial : public Material
 {
 protected:
-    double permeability, viscosity, capacity, density;
+    double permeability, viscosity, capacity, density, a, m;
 public:
-    TrsprtMaterial() { name = "transport material"; };
+    TrsprtMaterial() { name = "transport material"; a=-1.; m=0;};
     ~TrsprtMaterial() {};
-    double giveCapacity() { return capacity; };
-    double giveDensity() { return density; };
-    double givePermeability() { return permeability; };
-    double giveViscosity() { return viscosity; };
+    double giveCapacity() const { return capacity; };
+    double giveDensity() const { return density; };
+    double givePermeability() const { return permeability; };
+    double giveViscosity() const { return viscosity; };
+    double giveParamA() const { return a; };
+    double giveParamM() const { return m; };
+    void setPermeability(double new_p) { permeability = new_p; };
+    void setParamA(double new_a) { a = new_a; };
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e);
 };
@@ -109,14 +116,12 @@ class TrsprtCoupledMaterial;
 class TrsprtCoupledMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
-    double temp_effConductivity;
 public:
     TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtCoupledMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
-    virtual double giveEffectiveConductivity(string type) const;
-    virtual void update();
+    virtual double giveEffectiveConductivity(string type) const; 
 };
 
 //////////////////////////////////////////////////////////

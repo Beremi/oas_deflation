@@ -34,20 +34,25 @@ void MaterialStatus :: setEigenStrain(Vector &x) {
 
 TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : MaterialStatus(m, e) {
     name = "transport mat. status";
-    effConductivity = m->giveDensity() * m->givePermeability() / m->giveViscosity();
+    updateEffectiveConductivity(0.);
 }
 
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain = strain;
-    temp_stress = -effConductivity *addEigenStrain(strain);
+    temp_strain.resize(strain.size()-1); 
+    for(unsigned k=0; k<temp_strain.size(); k++) temp_strain[k] = strain[k];
+    updateEffectiveConductivity( strain[temp_strain.size()] ); //nonlinear effecto of pressure
+ 
+    temp_stress = -effConductivity *addEigenStrain(temp_strain);
     return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const {
-    return -effConductivity *addEigenStrain(strain);
+    Vector true_strain(strain.size()-1); 
+    for(unsigned k=0; k<true_strain.size(); k++) true_strain[k] = strain[k];
+    return -effConductivity *addEigenStrain(true_strain); //DO NOT update here effConductivity, it is used for RVE material 
 };
 
 //////////////////////////////////////////////////////////
@@ -67,10 +72,21 @@ double TrsprtMaterialStatus :: giveMassConstant() const {
 //////////////////////////////////////////////////////////
 double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const {
     if ( type.compare("elastic") == 0 ) {
-        TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-        return m->giveDensity() * m->givePermeability() / m->giveViscosity();
+        TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+        return calculatePressureDependentPermeability(0.)*tmat->giveDensity()/tmat->giveViscosity();
     } else {
         return effConductivity;
+    }
+}
+
+//////////////////////////////////////////////////////////
+double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pressure) const{    
+    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+    if (tmat->giveParamA()<0) return tmat->givePermeability();
+    else {
+        double m = tmat->giveParamM();
+        double saturation = pow(1.+pow(pressure/tmat->giveParamA(),1./(1.-m)),-m);
+        return tmat->givePermeability() * pow(saturation,0.5)*pow(1.-pow(1.-pow(saturation,1./m),m),2.);
     }
 }
 
@@ -83,6 +99,13 @@ double TrsprtMaterialStatus :: giveValue(string code) const {
         return MaterialStatus :: giveValue(code);
     }
 }
+
+//////////////////////////////////////////////////////////
+void TrsprtMaterialStatus :: updateEffectiveConductivity (double pressure){
+    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+    effConductivity = calculatePressureDependentPermeability(pressure)*tmat->giveDensity()/tmat->giveViscosity();
+}
+
 
 //////////////////////////////////////////////////////////
 void TrsprtMaterial :: readFromLine(istringstream &iss) {
@@ -104,6 +127,10 @@ void TrsprtMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("density") == 0 ) {
             bdensity = true;
             iss >> density;
+        } else if ( param.compare("a") == 0 ) {
+            iss >> a; //negative "a" means linear material behavior
+        } else if ( param.compare("m") == 0 ) {
+            iss >> m;
         }
     }
     if ( !bcapacity ) {
@@ -361,16 +388,15 @@ MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e) {
 
 TrsprtCoupledMaterialStatus :: TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e) : TrsprtMaterialStatus(m, e) {
     name = "coupled transport mat. status";
-    temp_effConductivity = effConductivity;
 }
 
 //////////////////////////////////////////////////////////
 double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) const {
     if ( type.compare("elastic") == 0  ) {
-        TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-        return m->giveDensity() * m->givePermeability() / m->giveViscosity();
+        TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
+        return calculatePressureDependentPermeability(0.)*tmat->giveDensity()/tmat->giveViscosity();
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
-        return temp_effConductivity;
+        return effConductivity;
     } else {
         cerr << "Error: TrsprtCoupledMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
@@ -378,23 +404,20 @@ double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) con
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtCoupledMaterialStatus :: update() {
-    TrsprtMaterialStatus :: update();
-    effConductivity = temp_effConductivity;
-};
-
-//////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
     //first strain term is pressure gradient, second strain face are, then it is alway crack opening and crack length coulples
-    TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
+    TrsprtCoupledMaterial *tmat = static_cast< TrsprtCoupledMaterial * >( mat );
     double crackParam = 0;
-    for ( size_t i = 2; i < fullstrain.size(); i += 2 ) {
+    for ( size_t i = 3; i < fullstrain.size(); i += 2 ) {
         crackParam += pow(fullstrain [ i ], 3) * fullstrain [ i + 1 ];
     }
-    temp_effConductivity = m->giveDensity() * m->givePermeability() / m->giveViscosity() + m->giveTurtuosity() / ( 12. * m->giveViscosity() * fullstrain [ 1 ] ) * crackParam;
+
+    
+    updateEffectiveConductivity(fullstrain [ 1 ]);
+    effConductivity += tmat->giveTurtuosity() / ( 12. * tmat->giveViscosity() * fullstrain [ 2 ] ) * crackParam;
     temp_strain.resize(1);
     temp_strain [ 0 ] = fullstrain [ 0 ];
-    temp_stress = -temp_effConductivity *addEigenStrain(temp_strain);
+    temp_stress = -effConductivity *addEigenStrain(temp_strain);
     return temp_stress;
 };
 
@@ -402,7 +425,7 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
 Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector & fullstrain) const {
     Vector strain(1);
     strain [ 0 ] = fullstrain [ 0 ];
-    return -temp_effConductivity *addEigenStrain(strain);
+    return -effConductivity *addEigenStrain(strain);
 };
 
 //////////////////////////////////////////////////////////
