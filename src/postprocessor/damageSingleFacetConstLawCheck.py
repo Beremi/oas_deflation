@@ -178,7 +178,9 @@ def genExpFile(length, perp_length=1.0, folName="input_files"):
     expFile.write("ForceGauge LD loadX fx 1 1\n")
     expFile.write("ForceGauge LD loadY fy 1 1\n")
     expFile.write("ValueGauge LD damageN damageN\n")
-    expFile.write("ValueGauge LD damageT damageT")
+    expFile.write("ValueGauge LD damageT damageT\n")
+    expFile.write("ValueGauge LD nonElaStrainN strainPLN\n")
+    expFile.write("ValueGauge LD nonElaStrainT strainPLT")
 
     expFile.close()
     return
@@ -256,12 +258,12 @@ def exportResults(folName="input_files"):
         data = np.genfromtxt(LD_file, skip_header=1, skip_footer=1)
 
     ##     time        displN      displT      loadN       loadT       damageN damageT
-    return data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5], data[:, 6], data[:, 7]
+    return data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5], data[:, 6], data[:, 7], data[:, 8], data[:, 9]
 
 
 def run_and_export_single(angle_deg, final_load, num_steps, tension, force,
                           length, perp_length, folName,
-                          axDispl, axDamage, axCombined, nohup=False,
+                          axDispl, axDamage, axSPi, axCombined, nohup=False,
                           matFile="materials.inp", function=None):
     angle = angle_deg * np.pi / 180.
     cc = np.cos(angle)
@@ -278,7 +280,7 @@ def run_and_export_single(angle_deg, final_load, num_steps, tension, force,
     runCalculation(angle_deg, masterFile, nohup=nohup)
 
     ###########################################################################
-    time_c, displN, displT, loadN, loadT, damageN, damageT = exportResults(folName)
+    time_c, displN, displT, loadN, loadT, damageN, damageT, sPiN, sPiT = exportResults(folName)
 
     time_c = np.append(0., time_c)
     stressN = np.append(0., loadN / (perp_length)) * 1e-6
@@ -287,6 +289,8 @@ def run_and_export_single(angle_deg, final_load, num_steps, tension, force,
     strainT = np.append(0., displT / length) * (tension and 1 or -1) * 1e2
     damageN = np.append(0., damageN)
     damageT = np.append(0., damageT)
+    sPiN = np.append(0., sPiN)
+    sPiT = np.append(0., sPiT)
 
     strains = np.sqrt( np.power(strainN, 2.) + np.power(strainT, 2.) ) * \
         (tension and 1 or -1)
@@ -314,7 +318,11 @@ def run_and_export_single(angle_deg, final_load, num_steps, tension, force,
                  label=r"$\omega_{N}$")
     plot_results(axDamage, time_c, damageT, col='c',
                  label=r"$\omega_{T}$")
-
+    ###########################################################################
+    plot_results(axSPi, time_c, sPiN, col='r',
+                 label=r"$\varepsilon_{N}^{\pi}$")
+    plot_results(axSPi, time_c, sPiT, col='c',
+                 label=r"$\varepsilon_{T}^{\pi}$")
     return
 
 
@@ -383,8 +391,8 @@ if __name__ == '__main__':
     if not os.path.isdir(folName):
         os.makedirs(folName)
 
-    fig, axs = plt.subplots(len(angle_deg_all), 3,
-                            figsize=(200. * MTI,
+    fig, axs = plt.subplots(len(angle_deg_all), 4,
+                            figsize=(250. * MTI,
                                      50. * MTI * len(angle_deg_all)))
 
 
@@ -396,16 +404,18 @@ if __name__ == '__main__':
             axCombined = axs[0]
             axDispl = axs[1]
             axDamage = axs[2]
+            axSPi = axs[3]
         else:
             axCombined = axs[i, 0]
             axDispl = axs[i, 1]
             axDamage = axs[i, 2]
+            axSPi = axs[i, 3]
         ###################################################################
         try:
             run_and_export_single(angle_deg, final_load,
                                   num_steps, tension, force,
                                   length, perp_length, folName,
-                                  axDispl, axDamage, axCombined,
+                                  axDispl, axDamage, axSPi, axCombined,
                                   nohup=True, matFile=matFile,
                                   function=function)
         except Exception as e:
@@ -427,12 +437,12 @@ if __name__ == '__main__':
         if i == len(angle_deg_all)-1:
             axCombined.set_xlabel(r"total strain $\varepsilon$ [\%]",
                                   fontsize=ftsz1)
-        # if i == 0:
-        #     axCombined.set_title(tension and "tension" or "compression",
-        #                          fontsize=ftsz)
+        if i == 0:
+            axCombined.set_title(tension and "tension" or "compression",
+                                 fontsize=ftsz)
 
-        axDamage.set_ylabel("%lg degrees" % angle_deg, fontsize=ftsz1)
-        axDamage.yaxis.set_label_position("right")
+        axSPi.set_ylabel("%lg degrees" % angle_deg, fontsize=ftsz1)
+        axSPi.yaxis.set_label_position("right")
         if i == len(angle_deg_all)//2:
             try:
                 axCombined.set_ylabel(
