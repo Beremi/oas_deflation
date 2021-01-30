@@ -90,6 +90,8 @@ void FatigueShearMaterialStatus :: init() {
     alphaKin = prev_alphaKin = temp_alphaKin = Point();
     slip = temp_slip = prev_slip = Point();
 
+    coup_dam = m->isDamageCoupled();
+
     energy_PL = energy_D = energy_Kin = energy_Iso = work_tot = 0;
 }
 
@@ -370,6 +372,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     newIterOn = false;
     bisecOn = false;
 
+    this->coup_dam = false;
+
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
@@ -414,6 +418,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             newIterOn = true;
         } else if ( param.compare("bisection_method") == 0 ) {
             bisecOn = true;
+        } else if ( param.compare("couple_damage") == 0 ) {
+            iss >> coup_dam;
         }
     }
     if ( !btau ) {
@@ -893,6 +899,7 @@ double FatigueMaterialStatus :: giveValue(string code) const {
 void FatigueMaterialStatus :: init() {
     FatigueShearMaterialStatus :: init();
     DamagePlasticMaterialStatus :: init();
+    this->coupled_damage = FatigueShearMaterialStatus :: isDamageCoupled();
 }
 
 //////////////////////////////////////////////////////////
@@ -902,8 +909,14 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
 
     for ( size_t i = 0; i < strain.size(); i++ ) {
         if ( i == 0 ) {
+            if ( this->coupled_damage ) {
+              DamagePlasticMaterialStatus :: setDamage( FatigueShearMaterialStatus :: giveValue("damage"));
+            }
             stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain) [ i ];
         } else {
+            if ( this->coupled_damage ) {
+              FatigueShearMaterialStatus :: setDamage( DamagePlasticMaterialStatus :: giveValue("damage"));
+            }
             stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain) [ i ];
         }
     }
@@ -928,6 +941,10 @@ Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
 
 //////////////////////////////////////////////////////////
 void FatigueMaterialStatus :: update() {
+    if ( this->coupled_damage) {
+      DamagePlasticMaterialStatus :: setDamage( FatigueShearMaterialStatus :: giveValue("damage"));
+      FatigueShearMaterialStatus :: setDamage( DamagePlasticMaterialStatus :: giveValue("damage"));
+    }
     FatigueShearMaterialStatus :: update();
     DamagePlasticMaterialStatus :: update();
 }
@@ -966,7 +983,9 @@ MaterialStatus *FatigueMaterial :: giveNewMaterialStatus(Element *e) {
 };
 
 //////////////////////////////////////////////////////////
-void FatigueMaterial :: init() {};
+void FatigueMaterial :: init() {
+
+};
 
 //////////////////////////////////////////////////////////
 // ALLICHE MATERIAL STATUS
