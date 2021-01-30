@@ -26,7 +26,7 @@ public:
     virtual void init() {};
     virtual void update();
     virtual Vector giveStress(const Vector &strain) { return giveStressWithFrozenIntVars(strain); };
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const { ( void ) strain; return Vector(0); };
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) { ( void ) strain; return Vector(0); };
     virtual double giveValue(string code) const { ( void ) code; return 0; };
     virtual Vector giveTempStress() const { return temp_stress; };
     virtual Vector giveUpdatedStress() const { return updt_stress; };
@@ -34,6 +34,7 @@ public:
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; return Matrix(0, 0); };
     virtual double giveMassConstant() const { return 0; };
+    virtual double giveDampingConstant() const { return 0; };
     virtual void setEigenStrain(Vector &x);
     void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export"; }
@@ -81,9 +82,9 @@ public:
     TrsprtMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain); //terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual double giveMassConstant() const;
+    virtual double giveDampingConstant() const;
     virtual double giveValue(string code) const; 
     virtual double giveEffectiveConductivity(string type) const;
     virtual void updateEffectiveConductivity(double pressure);  
@@ -122,7 +123,7 @@ public:
     TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e);
     virtual ~TrsprtCoupledMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveEffectiveConductivity(string type) const; 
 };
 
@@ -153,7 +154,7 @@ public:
     virtual ~ElasticMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
 };
 
 //////////////////////////////////////////////////////////
@@ -188,7 +189,7 @@ public:
     virtual ~CosseratMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
 };
 
 //////////////////////////////////////////////////////////
@@ -220,7 +221,7 @@ public:
     virtual ~DisMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     double giveDensity() const;
 };
 

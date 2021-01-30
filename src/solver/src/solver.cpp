@@ -3,6 +3,13 @@
 #define EPS2 1e-30
 
 //////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// BASIC SOLVER CLASS
+Solver :: Solver(){
+    name = "basic solver";
+}
+
+//////////////////////////////////////////////////////////
 Solver *Solver :: readFromFile(const string filename) {
     string param, paramA, line;
     ifstream inputfile(filename.c_str() );
@@ -46,16 +53,28 @@ Solver *Solver :: readFromFile(const string filename) {
             newsolver->readFromFile(filename);
             cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
             return newsolver;
-        } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
-            TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
-            newsolver->readFromFile(filename);
-            cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-            return newsolver;
         } else if ( param.compare("TransientLinearTransportSolver") == 0 ) {
             TransientLinearTransportSolver *newsolver = new TransientLinearTransportSolver();
             newsolver->readFromFile(filename);
             cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
             return newsolver;
+        } else if ( param.compare("TransientNonLinearTransportSolver") == 0 ) {
+            TransientNonLinearTransportSolver *newsolver = new TransientNonLinearTransportSolver();
+            newsolver->readFromFile(filename);
+            cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+            return newsolver;
+        /*
+        } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
+            TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
+            newsolver->readFromFile(filename);
+            cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+            return newsolver;
+        } else if ( param.compare("TransientNonLinearMechanicalSolver") == 0 ) {
+            TransientNonLinearMechanicalSolver *newsolver = new TransientNonLinearMechanicalSolver();
+            newsolver->readFromFile(filename);
+            cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+            return newsolver;
+        */
         } else {
             cerr << "Error: Solver " << param << " is not implemented" << endl;
             exit(EXIT_FAILURE);
@@ -78,10 +97,18 @@ void Solver :: setNextStepTime() {
 void Solver :: runBeforeEachStep() {
     step += 1;
     setNextStepTime();
+
+    load *= 0;  //clear nodal load
+    full_ddr *= 0; //iteration increment is zero
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: runAfterEachStep() {
+
+    r = trial_r;
+    f_int_old = f_int;
+    f_ext_old = f_ext;
+
     if ( time + dt > termination_time ) {
         dt = termination_time - time;
     }
@@ -117,19 +144,23 @@ void Solver :: init(const bool &initial) {
     totalDoFnum = freeDoFnum + fixedDoFnum;
 
 
-    elems->prepareSteadyStateMatrix(Kini);
+    elems->prepareStiffnessMatrix(Kini);
     K = Kini;
-    elems->updateSteadyStateMatrix(K, "elastic");
-    f_ext = Vector(totalDoFnum);
+    elems->updateStiffnessMatrix(K, "elastic");
     load = Vector(totalDoFnum);
+    f_ext = Vector(totalDoFnum);
     f_int = Vector(totalDoFnum);
+    f_dam = Vector(totalDoFnum);
+    f_acc = Vector(totalDoFnum);
     r = Vector(totalDoFnum);
+    trial_r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
     f = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
-    full_f = Vector(totalDoFnum);
+    residuals = Vector(totalDoFnum);
     ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     full_ddr = Vector(totalDoFnum);
-
+    f_int_old = Vector(totalDoFnum);
+    f_ext_old = Vector(totalDoFnum);
 }
 
 //////////////////////////////////////////////////////////
@@ -195,12 +226,13 @@ Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: solve() {
+
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(r, time); //give prescribed DoFs
-    computeInternalExternalForcesWithFrozenIntVariables(r);
+    computeInternalExternalForces(r, true);
 
     //solve linear system
-    nodes->giveReducedForceArray(full_f, f);
+    nodes->giveReducedForceArray(residuals, f);
 
     if ( LinalgSymmetricSolver(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
         terminated = true;
@@ -218,47 +250,21 @@ void SteadyStateLinearSolver :: solve() {
         r [ i ] += full_ddr [ i ];
     }
 
-    computeInternalExternalForces(r);
+    computeInternalExternalForces(r, false);
 
-    /*
-     * cout << "S O L V E R" << endl;
-     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     * cout << f[i] << " " << ddr[i] << endl;
-     * }
-     * //K.print();
-     *
-     * cout << "******************************************" << endl;
-     * for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     * cout << f[i] << " " << ddr[i] << endl;
-     * }
-     *
-     * //for ( unsigned i = 0; i < freeDoFnum - nodes->giveNumConstrDoFs(); i++ ) {
-     * //for ( unsigned j = 0; j < freeDoFnum - nodes->giveNumConstrDoFs(); j++ ) cout << K [ i ][j] << " X ";
-     * // cout << endl;
-     * //}
-     * exit(1);
-     */
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: computeInternalExternalForces(Vector &rr) {
-    elems->giveInternalForces(rr, f_int, false);
-    nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
-    full_f = f_ext - f_int;
-}
-
-//////////////////////////////////////////////////////////
-void Solver :: computeInternalExternalForcesWithFrozenIntVariables(Vector &rr) {
-    elems->giveInternalForces(rr, f_int, true);
-    nodes->updateExternalForcesByReactions(f_int, load, f_ext);     //give prescribed DoFs
-    full_f = f_ext - f_int;
+void Solver :: computeInternalExternalForces(const Vector &rr, bool frozen) {
+    elems->integrateInternalForces(rr, f_int, frozen);
+    nodes->updateExternalForcesByReactions(f_int, load, f_dam, f_acc, f_ext);     //give prescribed DoFs
+    residuals = f_ext - f_int;
 }
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runBeforeEachStep() {
-    Solver :: runBeforeEachStep();
+    Solver :: runBeforeEachStep();   
     cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
-    load *= 0;  //clear nodal load
 }
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runAfterEachStep() {
@@ -284,10 +290,7 @@ SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: init(const bool &initial) {
     Solver :: init(initial);
-    f_int_old = Vector(totalDoFnum);
-    f_ext_old = Vector(totalDoFnum);
-    trial_r = Vector(totalDoFnum);
-    residual = Vector(totalDoFnum);
+
     W_ext_oldM = 0;
     W_int_oldM = 0;
     W_ext_oldT = 0;
@@ -434,12 +437,16 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
     vector< bool >transpDoFs = nodes->giveTranspDoFsIndicator();
     double f_extM = 0;
     double f_intM = 0;
+    double f_damM = 0;
+    double f_accM = 0;
     double residualM = 0;
     double full_ddrM = 0;
     double trial_rM = 0;
     double energyM = 0;
     double f_extT = 0;
     double f_intT = 0;
+    double f_damT = 0;
+    double f_accT = 0;
     double residualT = 0;
     double full_ddrT = 0;
     double trial_rT = 0;
@@ -448,52 +455,60 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
     W_extM = W_ext_oldM;
     W_intT = W_int_oldT;
     W_extT = W_ext_oldT;
+    W_kinM = 0;
+    W_kinT = 0;
 
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-        residual [ i ] = f_int [ i ] - f_ext [ i ];
-
         if ( mechDoFs [ i ] ) {
-            residualM += pow(residual [ i ], 2);
+            residualM += pow(residuals [ i ], 2);
             f_extM += pow(f_ext [ i ], 2);
             f_intM += pow(f_int [ i ], 2);
+            f_damM += pow(f_dam [ i ], 2);
+            f_accM += pow(f_acc [ i ], 2);
             full_ddrM += pow(full_ddr [ i ], 2);
             trial_rM += pow(trial_r [ i ], 2);
-            energyM += abs(residual [ i ] * full_ddr [ i ]);
+            energyM += abs(residuals [ i ] * full_ddr [ i ]);
             W_intM += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
             W_extM += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_kinM += 0.; //TODO: correct kinetic energy
         }
         if ( transpDoFs [ i ] ) {
-            residualT += pow(residual [ i ], 2);
+            residualT += pow(residuals [ i ], 2);
             f_extT += pow(f_ext [ i ], 2);
             f_intT += pow(f_int [ i ], 2);
+            f_damT += pow(f_dam [ i ], 2);
+            f_accT += pow(f_acc [ i ], 2);
             full_ddrT += pow(full_ddr [ i ], 2);
             trial_rT += pow(trial_r [ i ], 2);
-            energyT += abs(residual [ i ] * full_ddr [ i ]);
+            energyT += abs(residuals [ i ] * full_ddr [ i ]);
             W_intT += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
             W_extT += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_kinT += 0.; //TODO: correct kinetic energy
         }
     }
 
-    * residu_error = sqrt(residualM / max(max(f_extM, f_intM), EPS2) + residualT / max(max(f_extT, f_intT), EPS2) );
+    * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM)), EPS2) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT)), EPS2) );
     * displa_error = sqrt(full_ddrM / max(trial_rM, EPS2) + full_ddrT / max(trial_rT, EPS2) );
-    * energy_error = energyM / max(max(W_extM, W_intM), EPS2) + energyT / max(max(W_extT, W_intT), EPS2);
+    * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2);
 }
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
+
     double load_mult;
     bool converged = false;
     bool restarted = false;
     double displa_error = 0;
     double energy_error = 0;
     double residu_error = 0;
+
     while ( !converged ) {
         //setup loading
 
         if ( !idc ) {
             nodes->addRHS_nodalLoad(load, time); //add nodal load
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-            computeInternalExternalForcesWithFrozenIntVariables(trial_r);
+            computeInternalExternalForces(trial_r, true);
         }
 
         // std::cout << " ---------------------- initial " << '\n';
@@ -501,19 +516,20 @@ void SteadyStateNonLinearSolver :: solve() {
 
         unsigned it = 0;
         // unsigned maxIt = 30;
+
         while ( !converged && it < maxIt ) {
             K = Kini;
-            elems->updateSteadyStateMatrix(K, "secant");
+            elems->updateStiffnessMatrix(K, "secant");
 
-            nodes->giveReducedForceArray(full_f, f);
+            nodes->giveReducedForceArray(residuals, f);
 
             if ( idc ) {      //indirect displacement control
                 f_last_iter = f;
                 load *= 0.;
                 nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time + idc_dt); //give prescribed DoFs
-                computeInternalExternalForcesWithFrozenIntVariables(trial_r);
-                nodes->giveReducedForceArray(full_f, f);
+                computeInternalExternalForces(trial_r, true);
+                nodes->giveReducedForceArray(residuals, f);
 
                 if ( LinalgSymmetricSolver(K, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
                     terminated = true;
@@ -530,8 +546,6 @@ void SteadyStateNonLinearSolver :: solve() {
                 load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
                 ddr = ddr + load_mult * ddf;
                 idc_time += idc_dt * load_mult;
-
-                cout << "idc time " << idc_time << endl;
 
                 load *= 0;
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
@@ -550,12 +564,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 trial_r [ i ] += full_ddr [ i ];
             }
 
-            // std::cout << "before ----------------------" << '\n';
-            // this->printAllVectors();
-            //compute internal forces
-            computeInternalExternalForces(trial_r);
-            // std::cout << "after ----------------------" << '\n';
-            // this->printAllVectors();
+            computeInternalExternalForces(trial_r, false);
 
             //compute residual and errors
             evaluateErrors(& displa_error, & energy_error, & residu_error);
@@ -637,6 +646,8 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
     cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
     cout << setw(6) << " " << setw(15) << resErr << setw(15) << disErr << setw(15) << eneErr << endl;
     cout << "----------------------------------------------------" << endl;
+
+    load *= 0; //clear load
 }
 
 void SteadyStateNonLinearSolver :: printAllVectors() {
@@ -663,13 +674,10 @@ void SteadyStateNonLinearSolver :: printAllVectors() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runAfterEachStep() {
+
     if ( !terminated ) {
         SteadyStateLinearSolver :: runAfterEachStep();
-        for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-            r [ i ] = trial_r [ i ];
-            f_int_old [ i ] = f_int [ i ];
-            f_ext_old [ i ] = f_ext [ i ];
-        }
+        
         W_int_oldM = W_intM;
         W_ext_oldM = W_extM;
         W_int_oldT = W_intT;
@@ -684,44 +692,279 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// TRANSIENT LINEAR MECHANICAL SOLVER
-TransientLinearMechanicalSolver :: TransientLinearMechanicalSolver() {
-    name = "TransientLinearMechanicalSolver";
-
+// TRANSIENT LINEAR TRANSPORT SOLVER
+TransientLinearTransportSolver :: TransientLinearTransportSolver() {
+    name = "TransientLinearTransportSolver";
     applySpectralRadius(0.8);
 }
 
 //////////////////////////////////////////////////////////
-TransientLinearMechanicalSolver :: ~TransientLinearMechanicalSolver() {}
+void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty) {
+    //set up the generalized-alpha method according to Chung and Hulbert 1993
+    if ( abs(rhoinfty - 0.5) > 0.5 ) {
+        cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
+        exit(1);
+    }
+
+    alpha_m = ( 2. * rhoinfty - 1. ) / ( 1. + rhoinfty );
+    alpha_f = rhoinfty / ( 1. + rhoinfty );
+    gamma = 1. / 2. - alpha_m + alpha_f;
+    beta = 1.; //not used
+}
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: init(const bool &initial) {
+TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: init(const bool &initial) {
     SteadyStateLinearSolver :: init(initial);
+
+    elems->prepareDampingMatrix(C);
+    elems->updateDampingMatrix(C);
+    updateKeff();
+
+    //compute initial presure derivative
+    nodes->addRHS_nodalLoad(load, 0);
+    nodes->updateDirrichletBC(r, 0);
+    computeInternalExternalForces(r, false); //at time 0
+    nodes->giveReducedForceArray(residuals, f);
+    terminated = !LinalgSymmetricSolver(C, ddr, f,  ddr, conj_grad_precission, conj_grad_relative_maxit);
+    v = Vector(totalDoFnum);
+    nodes->giveFullDoFArray(ddr,v);
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: computeInternalExternalDampingForces(const Vector &rr, const Vector &vv, bool frozen){
+    elems->integrateDampingForces( v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam ); 
+    Solver :: computeInternalExternalForces(rr, frozen); 
+    residuals -= f_dam;
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: updateKeff() {
+    Keff = C * ( ( 1. - alpha_m ) / ( dt * gamma ) ) + K * ( 1. - alpha_f );
+}
+
+//////////////////////////////////////////////////////////
+//void TransientLinearTransportSolver :: updateFeff() {
+//    nodes->giveReducedDoFArray(v,v_red);
+//    feff =  f - ( C * v_red ) * ( 1. + ( alpha_m - 1. ) / gamma ); //not used in the code, available for checking 
+//}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: updateFieldVariables() {
+    nodes->giveFullDoFArray(ddr, full_ddr);
+    trial_r += full_ddr;
+    v = (trial_r-r) * ( 1. / ( dt * gamma ) ) + v_old * ( 1. - 1. / gamma );
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: solve() {
+    nodes->addRHS_nodalLoad(load, time - alpha_f * dt);  //add nodal load, at time alpha_f
+    nodes->updateDirrichletBC(trial_r, time);   //give prescribed DoFs, at time t
+    updateFieldVariables();
+    computeInternalExternalDampingForces(r * alpha_f + trial_r * ( 1. - alpha_f ), v * ( 1. - alpha_m ) +  v_old * alpha_m, true); //at time alpha_f
+
+
+    //solve linear system
+    nodes->giveReducedForceArray(residuals, f);
+    //updateFeff(); //not used, already done in computeInternalExternalDampingForces using f_dam
+    if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+        terminated = true;
+        cerr << "Conjugate gradients did not converge" << endl;
+        return;
+    }
+
+    updateFieldVariables();
+
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: runBeforeEachStep(){
+    SteadyStateLinearSolver :: runBeforeEachStep(); 
+    v_old = v;
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: runAfterEachStep(){
+    computeInternalExternalDampingForces(trial_r, v, false); //at the end of the step, to compute actual fluxes
+    SteadyStateLinearSolver :: runAfterEachStep(); 
+};
+
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSIENT NON-LINEAR TRANSPORT SOLVER
+TransientNonLinearTransportSolver :: TransientNonLinearTransportSolver() {
+    name = "TransientNonLinearTransportSolver";
+}
+
+//////////////////////////////////////////////////////////
+TransientNonLinearTransportSolver :: ~TransientNonLinearTransportSolver() {}
+
+//////////////////////////////////////////////////////////
+void TransientNonLinearTransportSolver :: init(const bool &initial) {
+    TransientLinearTransportSolver :: init(initial);
+}
+
+
+//////////////////////////////////////////////////////////
+void TransientNonLinearTransportSolver :: runBeforeEachStep(){
+    SteadyStateNonLinearSolver :: runBeforeEachStep();
+    v_old = v;
+}
+
+//////////////////////////////////////////////////////////
+void TransientNonLinearTransportSolver :: runAfterEachStep(){
+    computeInternalExternalDampingForces(trial_r, v, false); //at the end of the step, to compute actual fluxes
+    SteadyStateNonLinearSolver :: runAfterEachStep(); 
+};
+
+
+//////////////////////////////////////////////////////////
+void TransientNonLinearTransportSolver :: solve() {
+
+    bool converged = false;
+    bool restarted = false;
+    double displa_error = 0;
+    double energy_error = 0;
+    double residu_error = 0;
+
+    while ( !converged ) {
+        //setup loading
+        nodes->addRHS_nodalLoad(load, time - alpha_f * dt); //add nodal load, at time alpha_f
+        nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs, at time t
+        updateFieldVariables();
+        computeInternalExternalDampingForces( r * alpha_f + trial_r * ( 1. - alpha_f ),  v * ( 1. - alpha_m ) +  v_old * alpha_m, true ); //at time alpha_f and alpha_m  
+
+        unsigned it = 0;
+        while ( !converged && it < maxIt ) {
+            K = Kini;
+            elems->updateStiffnessMatrix(K, "secant");
+            updateKeff();
+            nodes->giveReducedForceArray(residuals, f);
+            //updateFeff();  //not used, already done in computeInternalExternalDampingForces using f_dam
+            if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+                terminated = true;
+                cerr << "Conjugate gradients did not converge" << endl;
+                return;
+            }
+
+
+            updateFieldVariables();
+            computeInternalExternalDampingForces( r * alpha_f + trial_r * ( 1. - alpha_f ),  v * ( 1. - alpha_m ) +  v_old * alpha_m, false); //at time alpha_f and alpha_m  
+      
+            
+            //compute residual and errors
+            evaluateErrors(& displa_error, & energy_error, & residu_error);
+
+            if ( it == 0 ) {
+                displa_error = 0;            //error in displacement change, only from second iteration
+            }
+            cout << setw(6) << it << setw(15) << residu_error;
+            if ( it == 0 ) {
+                cout << setw(15) << "---";
+            } else {
+                cout << setw(15) << displa_error;
+            }
+            cout << setw(15) << energy_error;
+
+            cout << endl;
+
+            if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
+                cerr << "calculating with NaN in ";
+                if ( std :: isnan(residu_error) ) {
+                    std :: cerr << "\nresidua ";
+                }
+                if ( std :: isnan(displa_error) ) {
+                    std :: cerr << "\ndisplacements ";
+                }
+                if ( std :: isnan(energy_error) ) {
+                    std :: cerr << "\nenergies ";
+                }
+                std :: cerr << "- exit" << '\n';
+                exit(1);
+            }
+
+            if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {
+                converged = false;
+            } else {
+                converged = true;
+            }
+            it++;
+        }
+
+        if ( !converged && dt > dtmin ) {
+            time -= dt;
+            dt = fmax(dt * critical_step_decrease, dtmin);
+            time += dt;
+            cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+            restarted = true;
+            trial_r = r;
+            f_int = f_int_old;
+            f_ext = f_ext_old;
+            load *= 0;
+        } else if ( !converged ) {
+            if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
+                std :: cerr << "tolerance increased in this step" << '\n';
+                converged = true;
+            } else {
+                std :: cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
+                terminated = true;
+                return;
+                // exit(1);
+            }
+        } else if ( ( !restarted ) && converged && it < enlargeIt && dt < dtmax ) {
+            dt = fmin(dt * step_increase, dtmax);
+            std :: cout << "enlarging step, timestep = " << dt << '\n';
+        } else if ( converged && it > shortenIt && dt > dtmin ) {
+            dt = fmax(dt * step_decrease, dtmin);
+            std :: cout << "shortening step, timestep = " << dt << '\n';
+        }
+    }
+}
+
+
+/*
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSIENT NON LINEAR MECHANICAL SOLVER
+TransientNonLinearMechanicalSolver :: TransientNonLinearMechanicalSolver() {
+    name = "TransientNonLinearMechanicalSolver";
+    applySpectralRadius(0.8);
+}
+
+//////////////////////////////////////////////////////////
+TransientNonLinearMechanicalSolver :: ~TransientNonLinearMechanicalSolver() {}
+
+//////////////////////////////////////////////////////////
+void TransientNonLinearMechanicalSolver :: init(const bool &initial) { 
+    SteadyStateNonLinearSolver :: init(initial);
     elems->prepareMassMatrix(M);
     elems->updateMassMatrix(M);
     C = M * 0 + K * 0; //no damping, possibly change to something if needed
     updateKeff();
 
     r = Vector(totalDoFnum); //initial conitions, assumed zero for now
-    r_old = r;
     v = Vector(totalDoFnum); //initial conitions, assumed zero for now
-    r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
-    nodes->giveReducedDoFArray(r, r_red);
-    v_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
-    nodes->giveReducedDoFArray(v, v_red);
+    v_old = v;
+    dr = Vector(totalDoFnum);
 
     //compute initial acceleration
-    a = Vector(totalDoFnum);
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForcesWithFrozenIntVariables(r); //at time 0
-    nodes->giveReducedForceArray(full_f, f);
-    terminated = !LinalgSymmetricSolver(M, a_red, f - C * v_red,  a_red, conj_grad_precission, conj_grad_relative_maxit);
+    nodes->giveReducedForceArray(residuals, f);
+    terminated = !LinalgSymmetricSolver(M, ddr, f - C * v_red,  ddr, conj_grad_precission, conj_grad_relative_maxit);
+    a = Vector(totalDoFnum);
+    nodes->giveFullDoFArray(ddr,a);
+    a_old = a;
 }
 
 //////////////////////////////////////////////////////////
-Solver *TransientLinearMechanicalSolver ::  readFromFile(const string filename) {
-    SteadyStateLinearSolver :: readFromFile(filename);
+Solver *TransientNonLinearMechanicalSolver ::  readFromFile(const string filename) {
+    SteadyStateNonLinearSolver :: readFromFile(filename);
 
     string param, line;
     ifstream inputfile(filename.c_str() );
@@ -776,24 +1019,25 @@ Solver *TransientLinearMechanicalSolver ::  readFromFile(const string filename) 
     return this;
 };
 
+
+
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: solve() {
-    nodes->addRHS_nodalLoad(load, time - alpha_f * dt);  //add nodal load, at time alpha_f
-    nodes->updateDirrichletBC(r, time);   //give prescribed DoFs, at time t
-    r_f = r_old * alpha_f + r * ( 1. - alpha_f );
-    computeInternalExternalForcesWithFrozenIntVariables(r_f); //at time alpha_f
-
-    //solve linear system
-    nodes->giveReducedForceArray(full_f, f);
-    updateFeff();
-    terminated = !LinalgSymmetricSolver(Keff, ddr, feff, ddr, conj_grad_precission, conj_grad_relative_maxit);
-
-    updateFieldVariables();
-    r_old = r;
+void TransientNonLinearMechanicalSolver :: computeInternalExternalForces(Vector &rr){
+    SteadyStateNonLinearSolver ::  computeInternalExternalForces(rr);
+    //f_ext += elems->giveDampingForces(v);
+    //residuals -= elems->giveDampingForces(v);
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
+void TransientNonLinearMechanicalSolver :: computeInternalExternalForcesWithFrozenIntVariables(Vector &rr){
+    SteadyStateNonLinearSolver ::  computeInternalExternalForcesWithFrozenIntVariables(rr);   
+    //f_ext += elems->giveDampingForces(v);
+    //residuals -= elems->giveDampingForces(v);
+}
+
+//////////////////////////////////////////////////////////
+void TransientNonLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
+
     //set up the generalized-alpha method according to Chung and Hulbert 1993
     if ( abs(rhoinfty - 0.5) > 0.5 ) {
         cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
@@ -807,91 +1051,54 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: updateKeff() {
+void TransientNonLinearMechanicalSolver :: updateKeff() {
     Keff = K * ( 1. - alpha_f ) + C * ( ( 1 - alpha_f ) * gamma / dt / beta ) + M * ( ( 1 - alpha_m ) / dt / dt / beta );
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: updateFeff() {
+void TransientNonLinearMechanicalSolver :: updateFeff() {
     feff = f - C * ( ( 1. + gamma * ( alpha_f - 1 ) / beta ) * v_red + dt * ( 1. - alpha_f ) * ( 1. - gamma / ( 2. * beta ) ) * a_red ) - M * ( ( alpha_m - 1. ) / ( dt * beta ) * v_red  + ( 1. + ( alpha_m - 1 ) / ( 2. * beta ) ) * a_red );
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: updateFieldVariables() {
-    r_red += ddr;
-    v_red = ddr * ( gamma / ( dt * beta ) ) + v_red * ( 1. - gamma / beta ) + a_red * ( dt * ( 1. - gamma / ( 2. * beta ) ) );
-    a_red = ( ddr - v_red * dt - a_red * ( pow(dt, 2) * ( 1. / 2. - beta ) ) ) / ( pow(dt, 2) * beta );
+void TransientNonLinearMechanicalSolver :: updateFieldVariables() {
+    elems->giveFullDoFArray(drr, ful_ddr);
+    dr += full_ddr;
+    v = dr * ( gamma / ( dt * beta ) ) + v_old * ( 1. - gamma / beta ) + a_old * ( dt * ( 1. - gamma / ( 2. * beta ) ) );
+    a = ( dr - v * dt - a_old * ( pow(dt, 2) * ( 1. / 2. - beta ) ) ) / ( pow(dt, 2) * beta );
 
-    nodes->giveFullDoFArray(r_red, r);
-    nodes->giveFullDoFArray(v_red, v);
-    nodes->giveFullDoFArray(a_red, a);
+    trial_r = r + dr;
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// TRANSIENT LINEAR TRANSPORT SOLVER
-TransientLinearTransportSolver :: TransientLinearTransportSolver() {
-    name = "TransientLinearTransportSolver";
-
-    applySpectralRadius(0.8);
+// TRANSIENT LINEAR MECHANICAL SOLVER
+TransientLinearMechanicalSolver :: TransientLinearMechanicalSolver() {
+    name = "TransientLinearMechanicalSolver";
 }
 
 //////////////////////////////////////////////////////////
-TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {}
+TransientLinearMechanicalSolver :: ~TransientLinearMechanicalSolver() {}
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: init(const bool &initial) {
-    SteadyStateLinearSolver :: init(initial);
-    elems->prepareCapacityMatrix(C);
-    elems->updateCapacityMatrix(C);
-    updateKeff();
+void TransientLinearMechanicalSolver :: solve() {
 
+    nodes->addRHS_nodalLoad(load, time - alpha_f * dt);  //add nodal load, at time alpha_f
+    nodes->updateDirrichletBC(trial_r, time);   //give prescribed DoFs, at time t
+    r_f = r * alpha_f + trial_r * ( 1. - alpha_f );
+    computeInternalExternalForcesWithFrozenIntVariables(r_f); //at time alpha_f
 
-    r = Vector(totalDoFnum); //initial conitions, assumed zero for now
-    r_old = r;
-    r_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
-    nodes->giveReducedDoFArray(r, r_red);
-
-
-    //compute initial presure derivative
-    v = Vector(totalDoFnum);
-    v_red = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
-    nodes->addRHS_nodalLoad(load, 0);
-    nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r); //at time 0
-    nodes->giveReducedForceArray(full_f, f);
-    terminated = !LinalgSymmetricSolver(C, v_red, f,  v_red, conj_grad_precission, conj_grad_relative_maxit);
-}
-
-//////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty) {
-    //set up the generalized-alpha method according to Chung and Hulbert 1993
-    if ( abs(rhoinfty - 0.5) > 0.5 ) {
-        cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
-        exit(1);
+    //solve linear system
+    nodes->giveReducedForceArray(residuals, f);
+    updateFeff();
+    if ( LinalgSymmetricSolver(Keff, ddr, feff, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+        terminated = true;
+        cerr << "Conjugate gradients did not converge" << endl;
+        return;
     }
 
-    alpha_m = ( 2. * rhoinfty - 1. ) / ( 1. + rhoinfty );
-    alpha_f = rhoinfty / ( 1. + rhoinfty );
-    gamma = 1. / 2. - alpha_m + alpha_f;
-    beta = 1.; //not used
+    updateFieldVariables();
+    computeInternalExternalForcesWithFrozenIntVariables(trial_r); //at the end of the step
+    r = trial_r;
 }
-
-//////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: updateKeff() {
-    Keff = C * ( ( 1. - alpha_m ) / ( dt * gamma ) ) + K * ( 1. - alpha_f );
-}
-
-//////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: updateFeff() {
-    feff = f - ( C * v_red ) * ( 1. + ( alpha_m - 1. ) / gamma );
-}
-
-//////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: updateFieldVariables() {
-    r_red += ddr;
-    v_red = ddr * ( 1. / ( dt * gamma ) ) + v_red * ( 1. - 1. / gamma );
-
-    nodes->giveFullDoFArray(r_red, r);
-    nodes->giveFullDoFArray(v_red, v);
-}
+*/

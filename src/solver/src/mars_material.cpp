@@ -216,15 +216,15 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain = strain;
     computeDamage(addEigenStrain(strain) );
-    temp_stress = MarsMaterialStatus :: giveStressWithFrozenIntVars(strain);
-    return temp_stress;
+    return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain);
 }
 
 //////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
-    return DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain) * ( 1. - temp_damage );
+Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
+    temp_strain = strain;
+    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain) * ( 1. - temp_damage );
+    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////

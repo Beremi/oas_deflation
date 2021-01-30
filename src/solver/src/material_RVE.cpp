@@ -52,7 +52,7 @@ void RVEMaterial :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// transport RVE status
+// DISCRETE RVE MATERIAL
 DiscreteRVEMaterialStatus :: DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile) : RVEMaterialStatus(m, e, masterfile) {
     name = "transport RVE mat. status";
 }
@@ -210,6 +210,12 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     */
 
     return temp_stress;
+}
+
+/////////////////////////////////./////////////////////////
+Vector DiscreteRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+    //TODO: this is WRONG, needs fix in future
+    return giveStress(strain);
 }
 
 //////////////////////////////////////////////////////////
@@ -506,8 +512,73 @@ void DiscreteRVEMaterialStatus :: init() {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// dicrete RVE material
+// DISCRETE RVE MATERIAL
 MaterialStatus *DiscreteRVEMaterial :: giveNewMaterialStatus(Element *e) {
     DiscreteRVEMaterialStatus *newstat = new DiscreteRVEMaterialStatus(this, e, inputfile);
+    return newstat;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DISCRETE RVE MATERIAL STATUS PRE-COMPUTED
+DiscreteRVEMaterialPrecomputedStatus :: DiscreteRVEMaterialPrecomputedStatus(DiscreteRVEMaterialPrecomputed *m, Element *e, fs :: path masterfile) : DiscreteRVEMaterialStatus(m, e, masterfile) {
+    name = "transport RVE precomputed mat. status";
+}
+
+/////////////////////////////////./////////////////////////
+Vector DiscreteRVEMaterialPrecomputedStatus :: giveStress(const Vector &strain) {
+
+    double macro_pressure = 0;
+    if ( active_transport ) {
+        temp_strain.resize(strain.size()-1);
+        for (unsigned i = 0; i<temp_strain.size(); i++) temp_strain[i] = strain[i];
+        macro_pressure = strain[strain.size()-1];      
+    } else {
+        temp_strain = strain;
+    }
+    
+    TrsprtMaterialStatus* status = static_cast < TrsprtMaterialStatus* >(RVE->giveElements()->giveElement(0)->giveMatStatus(0));
+    TrsprtMaterial* material = static_cast < TrsprtMaterial* >(RVE->giveElements()->giveElement(0)->giveMaterial());
+    double nonlinearity = status->calculatePressureDependentPermeability(macro_pressure)/material->givePermeability();
+    temp_stress = matrix_vector_multiply(Stiff,temp_strain)*nonlinearity;
+    return temp_stress;
+}
+
+/////////////////////////////////./////////////////////////
+Vector DiscreteRVEMaterialPrecomputedStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+    return giveStress(strain);
+}
+
+//////////////////////////////////////////////////////////
+Matrix DiscreteRVEMaterialPrecomputedStatus :: giveStiffnessTensor(string type, unsigned ndim) const {
+    return Stiff;
+
+}
+
+//////////////////////////////////////////////////////////
+void DiscreteRVEMaterialPrecomputedStatus :: init() {
+
+    //TODO: if this is needed, one should call it only once and distribute the result among all identical RVEs
+    DiscreteRVEMaterialStatus :: init();
+    cout << "Precomputing pressure fields on RVE" << endl;
+
+    unsigned ndim = RVE->giveDimension();
+    Stiff = Matrix(ndim,ndim);
+
+    Vector strainDoFs(ndim+1);
+    Vector stress;
+    for(unsigned i=0; i<ndim; i++){
+        strainDoFs[i] = 1.;
+        stress = DiscreteRVEMaterialStatus :: giveStress(strainDoFs);
+        strainDoFs[i] = 0.;   
+        for(unsigned j=0; j<ndim; j++) Stiff[i][j] = stress[j];
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DISCRETE RVE MATERIAL
+MaterialStatus *DiscreteRVEMaterialPrecomputed :: giveNewMaterialStatus(Element *e) {
+    DiscreteRVEMaterialPrecomputedStatus *newstat = new DiscreteRVEMaterialPrecomputedStatus(this, e, inputfile);
     return newstat;
 }

@@ -38,9 +38,10 @@ public:
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
-    virtual Matrix giveSteadyStateMatrix(string matrixType) const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
     vector< unsigned >giveDoFs() const { return DoFids; };
     vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
@@ -92,8 +93,6 @@ protected:
 public:
     TransportElement() {}
     ~TransportElement() {};
-    virtual Matrix giveConductivityMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
-    virtual Matrix giveCapacityMatrix() const { return giveMassMatrix(); };
 };
 
 
@@ -107,7 +106,6 @@ protected:
 public:
     MechanicalElement() {}
     ~MechanicalElement() {};
-    virtual Matrix giveStiffnessMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
 };
 
 //////////////////////////////////////////////////////////
@@ -192,7 +190,7 @@ public:
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Matrix giveCapacityMatrix() const;
+    virtual Matrix giveDampingMatrix() const;
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };

@@ -71,6 +71,7 @@ public:
     virtual ~DiscreteRVEMaterialStatus() {};
     virtual void init();
     virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveMassConstant() const;
 };
@@ -83,6 +84,36 @@ protected:
 public:
     DiscreteRVEMaterial() { name = "transport RVE material"; };
     virtual ~DiscreteRVEMaterial() {};
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DISCRETE RVE MATERIAL FOR TRANSPORT PRECOMPUTED
+
+class DiscreteRVEMaterialPrecomputed;
+class DiscreteRVEMaterialPrecomputedStatus : public DiscreteRVEMaterialStatus
+{
+protected:
+    Matrix Stiff;
+
+public:
+    DiscreteRVEMaterialPrecomputedStatus(DiscreteRVEMaterialPrecomputed *m, Element *e, fs :: path masterfile);
+    virtual ~DiscreteRVEMaterialPrecomputedStatus() {};
+    virtual void init();
+    virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
+};
+
+//////////////////////////////////////////////////////////
+class DiscreteRVEMaterialPrecomputed : public DiscreteRVEMaterial
+{
+protected:
+
+public:
+    DiscreteRVEMaterialPrecomputed() { name = "transport RVE precomputed material"; };
+    virtual ~DiscreteRVEMaterialPrecomputed() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e);
 };
 

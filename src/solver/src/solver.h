@@ -20,19 +20,20 @@ protected:
     FunctionContainer *funcs;
     double time, dt, initdt, termination_time;
     CoordinateIndexedSparseMatrix K, Kini;
-    Vector f_ext, load, f_int, pbc, r, full_f, f, full_ddr, ddr;
+    Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr, residuals;
+    Vector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
     bool terminated;
-    virtual void computeInternalExternalForces(Vector &rr);
-    virtual void computeInternalExternalForcesWithFrozenIntVariables(Vector &rr);
+
+    virtual void computeInternalExternalForces(const Vector &rr, bool frozen);
 
 public:
-    Solver() { name = "basic solver"; };
+    Solver();
     virtual ~Solver() {};
     virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
-    virtual void solveStep() { runBeforeEachStep(); solve(); runAfterEachStep(); };
+    virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };
     void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions; }
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
@@ -46,7 +47,7 @@ public:
     virtual void setNextStepTime();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
-    virtual void solve() {};
+    virtual void solve() { cout << "SOLVING CRAP " << endl; cout.flush();};
 };
 
 //////////////////////////////////////////////////////////
@@ -72,10 +73,8 @@ class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 {
 protected:
     double dtmax, dtmin;  // for adaptive step
-    Vector f_int_old, f_ext_old, residual;
-    Vector trial_r;
-    double W_ext_oldM, W_int_oldM, W_extM, W_intM; //mechanics
-    double W_ext_oldT, W_int_oldT, W_extT, W_intT; //transport
+    double W_ext_oldM, W_int_oldM, W_extM, W_intM, W_kinM; //mechanics
+    double W_ext_oldT, W_int_oldT, W_extT, W_intT, W_kinT; //transport
     double disErr, resErr, eneErr;
     double limitDisErr, limitResErr, limitEneErr;
     unsigned maxIt; ///> maximum number of iteration
@@ -91,7 +90,6 @@ protected:
 
     void printAllVectors();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
-private:
 
 public:
     SteadyStateNonLinearSolver();
@@ -104,41 +102,83 @@ public:
     virtual void solve();
 };
 
+
 //////////////////////////////////////////////////////////
-class TransientLinearMechanicalSolver : public SteadyStateLinearSolver /// solver of second order differential equation in time
+class TransientLinearTransportSolver : public SteadyStateNonLinearSolver /// solver of first order differential equation in time
 {
 protected:
     double alpha_f, alpha_m, gamma, beta, rhoinfty;
-    CoordinateIndexedSparseMatrix M, C, Keff;
-    Vector a, v, a_red, v_red, r_red, feff, r_old, r_f;
-    virtual void solve();
-    virtual void updateKeff();
-    virtual void updateFeff();
-    virtual void updateFieldVariables();
-    virtual void applySpectralRadius(double rhoinfty);
-private:
+    CoordinateIndexedSparseMatrix C, Keff;
+    Vector v, v_old;
 
-public:
-    TransientLinearMechanicalSolver();
-    virtual ~TransientLinearMechanicalSolver();     //destructor
-    virtual void init(const bool &initial = true);
-    virtual Solver *readFromFile(const string filename);
-};
-
-//////////////////////////////////////////////////////////
-class TransientLinearTransportSolver : public TransientLinearMechanicalSolver /// solver of first order differential equation in time
-{
-protected:
-    virtual void updateKeff();
-    virtual void updateFeff();
-    virtual void updateFieldVariables();
     virtual void applySpectralRadius(double rhoinfty);
-private:
+    virtual void updateKeff();
+    //virtual void updateFeff();
+    virtual void updateFieldVariables();
+    virtual void computeInternalExternalDampingForces(const Vector &rr, const Vector &vv, bool frozen);
 
 public:
     TransientLinearTransportSolver();
     virtual ~TransientLinearTransportSolver();     //destructor
-    virtual void init(const bool &initial);
+    virtual void init(const bool &initial = true);
+    virtual void solve();
+    virtual void runBeforeEachStep();
+    virtual void runAfterEachStep();
 };
+
+
+
+//////////////////////////////////////////////////////////
+class TransientNonLinearTransportSolver : public TransientLinearTransportSolver /// solver of first order differential equation in time
+{
+protected:
+
+public:
+    TransientNonLinearTransportSolver();
+    virtual ~TransientNonLinearTransportSolver();     //destructor
+    virtual void init(const bool &initial = true);
+    virtual void solve();
+    virtual void runBeforeEachStep();
+    virtual void runAfterEachStep();
+};
+
+
+/*
+//////////////////////////////////////////////////////////
+class TransientNonLinearMechanicalSolver : public SteadyStateNonLinearSolver /// solver of second order differential equation in time
+{
+protected:
+    double alpha_f, alpha_m, gamma, beta, rhoinfty;
+    CoordinateIndexedSparseMatrix M, C, Keff;
+    Vector a, v, a_old, v_old, feff, r_f, dr;
+
+    virtual void computeInternalExternalForces(Vector &rr);
+    virtual void computeInternalExternalForcesWithFrozenIntVariables(Vector &rr);
+
+private:
+
+public:
+    TransientNonLinearMechanicalSolver();
+    virtual ~TransientNonLinearMechanicalSolver();     //destructor
+    virtual void init(const bool &initial = true);
+    virtual Solver *readFromFile(const string filename);
+    virtual void solve();
+    virtual void runAfterEachStep(){SteadyStateNonLinearSolver :: runAfterEachStep(); computeInternalExternalForces(r);};
+};
+
+//////////////////////////////////////////////////////////
+class TransientLinearMechanicalSolver : public TransientNonLinearMechanicalSolver /// solver of second order differential equation in time
+{
+protected:
+
+public:
+    TransientLinearMechanicalSolver();
+    virtual ~TransientLinearMechanicalSolver();     //destructor
+    virtual void solve();
+    virtual void runBeforeEachStep(){SteadyStateLinearSolver :: runBeforeEachStep();};
+    virtual void runAfterEachStep(){SteadyStateLinearSolver :: runAfterEachStep();};
+};
+*/
+
 
 #endif
