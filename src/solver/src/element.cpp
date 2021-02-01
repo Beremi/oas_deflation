@@ -93,7 +93,7 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
 };
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveSteadyStateMatrix(string matrixType) const {
+Matrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
@@ -118,6 +118,20 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
         intF  += Bs [ i ].transpose() * (  stress * ip_weights [ i ] );
     }
     return intF;
+}
+
+//////////////////////////////////////////////////////////
+Matrix Element :: giveDampingMatrix() const {
+    unsigned nDoFs = DoFids.size();
+    Matrix M(nDoFs, nDoFs);
+    double c;
+    Matrix H;
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        H = giveHMatrix(& ip_locs [ i ]);
+        c = stats [ i ]->giveDampingConstant();
+        M += matrix_multiply(H.transpose(), H) * ( ip_weights [ i ] * c );
+    }
+    return M;
 }
 
 //////////////////////////////////////////////////////////
@@ -828,11 +842,9 @@ Matrix Transp1D :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D :: giveCapacityMatrix() const {
+Matrix Transp1D :: giveDampingMatrix() const {
     Matrix S(2, 2);
-    double s = area * stats [ 0 ]->giveMassConstant() * length /  ( 2. * ndim );
-
-
+    double s = area * stats [ 0 ]->giveDampingConstant() * length /  ( 2. * ndim );
 
     S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = s; //finite volume
     if ( BolanderCapacityMatrix ) { //from Bolander's papers

@@ -338,8 +338,8 @@ void TranspVirtPolygonal :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspVirtPolygonal :: giveSteadyStateMatrix(string matrixType) const {
-    Matrix C = TranspPolygonal :: giveSteadyStateMatrix(matrixType);
+Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
+    Matrix C = TranspPolygonal :: giveStiffnessMatrix(matrixType);
     double cond = 0;
     for ( size_t i = 0; i < ip_weights.size(); i++ ) {
         cond += ip_weights [ i ] * stats [ i ]->giveStiffnessTensor("elastic", ndim) [ 0 ] [ 0 ];
@@ -350,11 +350,11 @@ Matrix TranspVirtPolygonal :: giveSteadyStateMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspVirtPolygonal :: giveMassMatrix() const {
-    Matrix M = TranspPolygonal :: giveMassMatrix();
+Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
+    Matrix M = TranspPolygonal :: giveDampingMatrix();
     double cap = 0;
     for ( size_t i = 0; i < ip_weights.size(); i++ ) {
-        cap += ip_weights [ i ] * stats [ i ]->giveMassConstant();
+        cap += ip_weights [ i ] * stats [ i ]->giveDampingConstant();
     }
     cap /= volume;
 
@@ -377,7 +377,7 @@ Matrix TranspVirtPolygonal :: giveMassMatrix() const {
 Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen) {
     ( void ) frozen;
     //return Element::giveInternalForces(DoFs, frozen); //incorrect integration
-    return giveSteadyStateMatrix("elastic") * DoFs;  //using VEM integration, only elastic material!
+    return giveStiffnessMatrix("elastic") * DoFs;  //using VEM integration, only elastic material!
 }
 
 //////////////////////////////////////////////////////////

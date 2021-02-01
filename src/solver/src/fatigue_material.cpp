@@ -246,7 +246,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
 
@@ -663,7 +663,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
 
 
 //////////////////////////////////////////////////////////
-Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
     Vector stress(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -925,7 +925,7 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
     Vector stress(strain.size() );
 
     for ( size_t i = 0; i < stress.size(); i++ ) {
@@ -1103,7 +1103,7 @@ Vector AllicheMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain) const{
+Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain) {
   AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
   Vector stress(strain.size() );
@@ -1327,7 +1327,7 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) const{
+Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
     Vector stress(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );

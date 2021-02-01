@@ -48,7 +48,7 @@ public:
     void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
     void giveReducedForceArray(Vector &fullDoFs, Vector &fDoFs) const;
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
-    void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const;
+    void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
     void addNode(Node *n) { nodes.push_back(n); };
     vector< bool >giveMechDoFsIndicator() { return mechDoFs; }

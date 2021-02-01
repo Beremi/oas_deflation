@@ -49,7 +49,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
     bool isDamageCoupled() const { return coup_dam; }
 protected:
@@ -132,7 +132,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
 protected:
   void setDamage(const double &new_damage){
@@ -193,7 +193,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
 };
 
@@ -237,7 +237,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     // virtual Vector giveStressWrong(const Vector &strain);
     void calculateDamage(const Vector &strain);
     virtual double giveValue(string code) const;
@@ -298,7 +298,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
 };
 
