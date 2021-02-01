@@ -515,8 +515,22 @@ Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
-    return R.transpose() * giveContactStrainNT(DoFs);
+    return this->R.transpose() * this->giveContactStrainNT(DoFs);
 };
+
+Vector RigidBodyContact :: giveContactStressXYZ(const Vector &DoFs) {
+    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs));
+};
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: transformToLocal(const Vector &DoFs) const {
+    return this->R.transpose() * DoFs;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
+    return this->R * DoFs;
+}
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
@@ -818,7 +832,7 @@ Matrix Transp1D :: giveCapacityMatrix() const {
     Matrix S(2, 2);
     double s = area * stats [ 0 ]->giveMassConstant() * length /  ( 2. * ndim );
 
-    
+
 
     S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = s; //finite volume
     if ( BolanderCapacityMatrix ) { //from Bolander's papers
@@ -1071,7 +1085,7 @@ Vector TranspQuad :: giveStrain(unsigned i, const Vector &DoFs){
     for(unsigned k=0; k<pressureGradPlain.size(); k++) {
         strain [ k ] = pressureGradPlain [ k ];
     }
-    
+
     //evaluate pressure at gauss point to account for nonlinearity
     strain[pressureGradPlain.size()] = matrix_vector_multiply(giveHMatrix(&ip_locs [ i ]), DoFs)[0];
 
