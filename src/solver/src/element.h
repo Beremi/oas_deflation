@@ -34,7 +34,7 @@ public:
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
-    virtual std :: string giveLineToSave(NodeContainer * nodes) const;
+    // virtual std :: string giveLineToSave(NodeContainer * nodes) const;
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
