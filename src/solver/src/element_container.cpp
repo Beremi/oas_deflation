@@ -111,21 +111,51 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 // }
 
 //////////////////////////////////////////////////////////
-void ElementContainer ::  saveElemStatsToFile(const string &filepath, std :: vector< unsigned > &elems_to_save) const {
+void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now) const {
     std :: ofstream outputfile( filepath );
     unsigned stat_id = 0;
     if ( outputfile.is_open() ) {
-        outputfile << "#element statuses saved from calculation";
+        outputfile << "#elem_id stat_id internal_variables...";
+        outputfile << "\ntime " << time_now;
         for ( auto const &elem_id : elems_to_save) {
           stat_id = 0;
-          for ( auto const &mat_stats : this->giveElement(elem_id)->giveMaterialStats()){
-            // elem_id - mat_stat_id - internal_variables
-            outputfile << elem_id << '\t' << stat_id++ << '\t' << mat_stats->giveLineToSave() << '\n';
+          for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats()){
+            // elem_id - stat_id -  mat_id - internal_variables
+            outputfile << '\n' << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t' << mat_stat->giveLineToSave();
           }
         }
         outputfile.close();
     }
 }
+
+void ElementContainer :: readElemStatsFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
+    string line, param;
+    double time_now;
+    unsigned elem_id, stat_id, mat_id;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
+            if ( line.at(0) == '#' ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> param;
+            if ( param.compare("time") == 0 ){
+              iss >> time_now;
+            } else {
+              elem_id = stoi(param);
+              iss >> stat_id >> mat_id;
+              this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss, matrs->giveMaterial(mat_id) );
+            }
+
+        }
+        inputfile.close();
+    }
+}
+
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: init() {

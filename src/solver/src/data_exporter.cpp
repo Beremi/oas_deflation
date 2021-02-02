@@ -1,5 +1,6 @@
 #include "data_exporter.h"
 #include "vtk_exporter.h"
+#include "exporter_model.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -558,6 +559,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     } else {
                         std :: cout << "no rigid body contacts exporter for dimension " << dimension << '\n';
                     }
+                } else if ( exptype.compare("ElementStatsExporter") == 0 ) {
+                    ElementStatsExporter *newexp = new ElementStatsExporter(e, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);

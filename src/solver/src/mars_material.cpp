@@ -227,6 +227,22 @@ Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
     return temp_stress;
 }
 
+std :: string MarsMaterialStatus :: giveLineToSave() const {
+  return "damage " + to_string(this->damage);
+}
+
+
+void MarsMaterialStatus :: readFromLine(istringstream &iss, Material *m) {
+  std :: string param;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("damage") == 0 ) {
+      iss >> this->damage;
+    }
+  }
+}
+
+
 //////////////////////////////////////////////////////////
 // CUSATIS MATERIAL
 

@@ -24,14 +24,9 @@ void MaterialStatus :: update() {
 }
 
 
-MaterialStatus* MaterialStatus :: readFromLine(istringstream &iss, Material *m, Element *e) {
-  return m->giveNewMaterialStatus(e);
-}
-
-
 //////////////////////////////////////////////////////////
 void MaterialStatus :: setEigenStrain(Vector &x) {
-    eigenstrain = x;  
+    eigenstrain = x;
 }
 
 //////////////////////////////////////////////////////////
@@ -46,7 +41,7 @@ TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : Ma
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain.resize(strain.size()-1); 
+    temp_strain.resize(strain.size()-1);
     for(unsigned k=0; k<temp_strain.size(); k++) temp_strain[k] = strain[k];
     updateEffectiveConductivity( strain[temp_strain.size()] ); //nonlinear effecto of pressure
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
@@ -55,10 +50,10 @@ Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
-    temp_strain.resize(strain.size()-1); 
+    temp_strain.resize(strain.size()-1);
     for(unsigned k=0; k<temp_strain.size(); k++) temp_strain[k] = strain[k];
     temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
-    return temp_stress; 
+    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
@@ -86,7 +81,7 @@ double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pressure) const{    
+double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pressure) const{
     TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
     if (tmat->giveParamA()<0) return tmat->givePermeability();
     else {
@@ -418,7 +413,7 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
         crackParam += pow(fullstrain [ i ], 3) * fullstrain [ i + 1 ];
     }
 
-    
+
     updateEffectiveConductivity(fullstrain [ 1 ]);
     effConductivity += tmat->giveTurtuosity() / ( 12. * tmat->giveViscosity() * fullstrain [ 2 ] ) * crackParam;
     temp_strain.resize(1);

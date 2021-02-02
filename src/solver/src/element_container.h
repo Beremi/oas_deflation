@@ -24,7 +24,8 @@ public:
     void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     // void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
-    void saveElemStatsToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
+    void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time) const;
+    void readElemStatsFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     void init();
     size_t giveSize() const { return elems.size(); }
     void findElementFriends();

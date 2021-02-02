@@ -37,8 +37,10 @@ public:
     virtual double giveDampingConstant() const { return 0; };
     virtual void setEigenStrain(Vector &x);
     void setID(unsigned i) { idx = i; };
-    virtual std :: string giveLineToSave() const { return "no internal variables to export"; }
-    virtual MaterialStatus* readFromLine(istringstream &iss, Material *m, Element *e);
+    virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
+    virtual void readFromLine(istringstream &iss, Material *m) {
+      std::cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
+    };
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
@@ -85,10 +87,10 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveDampingConstant() const;
-    virtual double giveValue(string code) const; 
+    virtual double giveValue(string code) const;
     virtual double giveEffectiveConductivity(string type) const;
-    virtual void updateEffectiveConductivity(double pressure);  
-    virtual double calculatePressureDependentPermeability(double pressure) const;  
+    virtual void updateEffectiveConductivity(double pressure);
+    virtual double calculatePressureDependentPermeability(double pressure) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -124,7 +126,7 @@ public:
     virtual ~TrsprtCoupledMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
-    virtual double giveEffectiveConductivity(string type) const; 
+    virtual double giveEffectiveConductivity(string type) const;
 };
 
 //////////////////////////////////////////////////////////
