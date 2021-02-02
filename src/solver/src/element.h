@@ -34,7 +34,7 @@ public:
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
-    virtual std :: string giveLineToSave(NodeContainer * nodes) const;
+    // virtual std :: string giveLineToSave(NodeContainer * nodes) const;
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
@@ -136,6 +136,10 @@ public:
     double giveArea() const { return area; }
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual Vector giveContactStrainXYZ(const Vector &DoFs) const;
+    virtual Vector giveContactStressXYZ(const Vector &DoFs);
+    virtual Vector transformToLocal(const Vector &DoFs) const;
+    virtual Vector transformToGlobal(const Vector &DoFs) const;
+
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     double giveCrackOpening() { return tempCrackOpening; };

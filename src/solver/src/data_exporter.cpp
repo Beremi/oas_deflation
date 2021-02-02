@@ -682,7 +682,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
     Vector intF0(2 * dim);
     Vector intF1(dim);
     Vector intF2(dim);
-    Vector elDoFvalues, elReactValues, strainNT;
+    Vector elDoFvalues, strainNT;
     vector< unsigned >elDoFs;
 
     vector< double >Volume(stress.size(), 0);
@@ -694,22 +694,15 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
-            elReactValues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
-                elReactValues [ i ] = reactions [ elDoFs [ i ] ];
             }
 
             // to each node correspond 0.5 of volume
             // TODO must be repaired for power tessellation
             single_volume = 0.5 * rbc->giveLength() * rbc->giveArea() / dim;
-            first = -1;
+            first = 1;
             ni = 0;
-            intF0 = el->giveInternalForces(elDoFvalues, false);
-            for ( size_t ii = 0; ii < dim; ii++ ) {
-                intF1 [ ii ] = intF0 [ ii ];
-                intF2 [ ii ] = intF0 [ ii + 3 * ( dim - 1 ) ];
-            }
             for ( auto const &n : el->giveNodes() ) {
                 auto res = std :: find(begin(* nodes), end(* nodes), n);
                 node_id = std :: distance(begin(* nodes), res);
@@ -717,16 +710,14 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 
                 stress [ node_id ] += dyadicProduct(
                   (
-                      ( ( first == -1 ) ? intF1 * ( -first ) : intF2  * ( -first ) ) +   // vyhodit
-                      rbc->giveContactStrainXYZ(elReactValues)
+                      rbc->giveContactStressXYZ(elDoFvalues)
                       * rbc->giveArea()  // vyhodit
-                      * rbc->giveLength()
                   )
                   * first
                   , rbc->giveVectorToNode(ni, 0) );  // tady může být jen poloha  IP (HonzaE článek 2020)
-                // TODO here is probably missing some value corresponding to internal moments, since only forces are taken into account to intF1 & intF2
+                // TODO here is probably missing some value corresponding to internal moments
                 // for node corresponding to end of element, traction needs to be reversed
-                first = 1;
+                first = -1;
                 ni++;
             }
         } else {

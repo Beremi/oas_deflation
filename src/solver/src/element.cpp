@@ -11,17 +11,17 @@ Element :: ~Element() {
     }
 }
 
-std :: string Element :: giveLineToSave(NodeContainer * nodes_all) const {
-  std :: string str = this->giveName() + "\t";
-  if ( this->nodes.size() > 2 ){
-    // for polygonal elems etc
-    str += to_string(this->nodes.size()) + "\t";
-  }
-  for ( auto const &node : this->nodes ){
-    str += to_string(nodes_all->giveNodeId(node)) + "\t";
-  }
-  return str;
-}
+// std :: string Element :: giveLineToSave(NodeContainer * nodes_all) const {
+//   std :: string str = this->giveName() + "\t";
+//   if ( this->nodes.size() > 2 ){
+//     // for polygonal elems etc
+//     str += to_string(this->nodes.size()) + "\t";
+//   }
+//   for ( auto const &node : this->nodes ){
+//     str += to_string(nodes_all->giveNodeId(node)) + "\t";
+//   }
+//   return str;
+// }
 
 //////////////////////////////////////////////////////////
 void Element :: init() {
@@ -529,8 +529,22 @@ Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
-    return R.transpose() * giveContactStrainNT(DoFs);
+    return this->R.transpose() * this->giveContactStrainNT(DoFs);
 };
+
+Vector RigidBodyContact :: giveContactStressXYZ(const Vector &DoFs) {
+    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs));
+};
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: transformToLocal(const Vector &DoFs) const {
+    return this->R.transpose() * DoFs;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
+    return this->R * DoFs;
+}
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
@@ -1083,7 +1097,7 @@ Vector TranspQuad :: giveStrain(unsigned i, const Vector &DoFs){
     for(unsigned k=0; k<pressureGradPlain.size(); k++) {
         strain [ k ] = pressureGradPlain [ k ];
     }
-    
+
     //evaluate pressure at gauss point to account for nonlinearity
     strain[pressureGradPlain.size()] = matrix_vector_multiply(giveHMatrix(&ip_locs [ i ]), DoFs)[0];
 
