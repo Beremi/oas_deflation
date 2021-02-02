@@ -198,7 +198,7 @@ private:
             n = BaseSolver :: nodes->giveNode(i);
             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
                 to_be_exported = true;
-                Particle *part = static_cast< Particle * >( n );
+                //Particle *part = static_cast< Particle * >( n ); //JE: This is not used anywhere else;
                 p = n->givePoint();
                 // check if node is in region to remesh
                 for ( auto const &regRemove : regionsToRemove ) {

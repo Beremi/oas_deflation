@@ -157,6 +157,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual double giveMassConstant() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -173,7 +174,7 @@ public:
     virtual MaterialStatus *giveNewMaterialStatus(Element *e);
     double giveElasticModulus() const { return E; }
     double givePoissonsRatio() const { return nu; }
-    double giveDensity() { return density; };
+    double giveDensity() const { return density; };
     bool isPlaneStress() { return planeStress; };
 };
 
