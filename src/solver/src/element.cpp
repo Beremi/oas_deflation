@@ -496,7 +496,7 @@ void RigidBodyContact :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
-    return Matrix(0, 0);
+    return Matrix(12, 12);
 }
 
 
