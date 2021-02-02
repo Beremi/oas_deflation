@@ -169,7 +169,6 @@ public:
 
 };
 
-
 //////////////////////////////////////////////////////////
 class TransientNonLinearMechanicalSolver : public TransientLinearMechanicalSolver /// solver of second order differential equation in time
 {

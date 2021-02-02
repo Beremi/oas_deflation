@@ -251,6 +251,10 @@ void SteadyStateLinearSolver :: solve() {
     // }
 
     updateFieldVariables(); //calculate master fields at the step end
+
+    //Here it is better to use the former one. For steady state analysis, it does not matter. For transient, it gives smoother results.
+    computeForcesAtIntegrationTime(true); 
+    //computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 }
 
 
@@ -275,7 +279,6 @@ void SteadyStateLinearSolver :: updateFieldVariables() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runAfterEachStep() {
-    computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
     Solver :: runAfterEachStep();
 }
 
@@ -627,6 +630,9 @@ void SteadyStateNonLinearSolver :: solve() {
             std :: cout << "shortening step, timestep = " << dt << '\n';
         }       
     }
+
+    //Possible to use, but result looks smoother without it
+    //if(!terminated)  computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ... 
 }
 
 //////////////////////////////////////////////////////////
@@ -826,6 +832,7 @@ void TransientLinearMechanicalSolver :: solve() {
 void TransientLinearMechanicalSolver :: init(const bool &initial){
     SteadyStateLinearSolver :: init(initial);
 
+    v = Vector(totalDoFnum);
     v_old = Vector(totalDoFnum);
     a_old = Vector(totalDoFnum);
     elems->prepareDampingMatrix(C);
@@ -890,7 +897,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver ::computeForcesAtStepEnd(const bool frozen){
     elems->integrateDampingForces( v, f_dam ); 
-    elems->integrateInertiaForces( a, f_acc ); 
+    //elems->integrateInertiaForces( a, f_acc ); 
     computeInternalExternalForces(trial_r, frozen); 
     residuals -= f_dam + f_acc;
 }

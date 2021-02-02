@@ -172,8 +172,14 @@ Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain){
     return ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(strain);
 };
 
-//////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////
+double ElasticMechMaterialStatus :: giveMassConstant() const{
+    ElasticMechMaterial * material = static_cast<ElasticMechMaterial*>(mat);
+    return material->giveDensity();
+}
+
+//////////////////////////////////////////////////////////
 Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
     temp_strain = strain;
     unsigned dim = 0;

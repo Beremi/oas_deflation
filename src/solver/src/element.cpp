@@ -1203,7 +1203,13 @@ Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
 Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    Matrix H(ndim,DoFids.size());
+    for(unsigned i=0; i<ndim; i++){
+        for(unsigned j=0; j<4; j++){ 
+            H[i][ndim*j+i] = phi[j];
+        }       
+    }
+    return H;
 }
 
 //////////////////////////////////////////////////////////
@@ -1235,5 +1241,5 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
 Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    return Matrix(0,0);
 }
