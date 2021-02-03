@@ -32,7 +32,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
     virtual std :: string giveLineToSave() const;
-    virtual void readFromLine(istringstream &iss, Material *m);
+    virtual void readFromLine(istringstream &iss);
 };
 
 

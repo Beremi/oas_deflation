@@ -9,6 +9,17 @@ Solver :: Solver(){
     name = "basic solver";
 }
 
+
+void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) {
+  elems = e; nodes = n; funcs = functions;
+  if ( this->ftlf.compare( "none" ) != 0 ){
+    std :: string param;
+    std :: string init_specs = elems->setFileToLoadFrom(this->ftlf);
+    istringstream iss2(init_specs);
+    iss2 >> param >> this->init_time >> this->init_step;
+  }
+}
+
 //////////////////////////////////////////////////////////
 Solver *Solver :: readFromFile(const string filename) {
     string param, paramA, line;
@@ -62,7 +73,7 @@ Solver *Solver :: readFromFile(const string filename) {
             TransientNonLinearTransportSolver *newsolver = new TransientNonLinearTransportSolver();
             newsolver->readFromFile(filename);
             cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
-            return newsolver;       
+            return newsolver;
         } else if ( param.compare("TransientLinearMechanicalSolver") == 0 ) {
             TransientLinearMechanicalSolver *newsolver = new TransientLinearMechanicalSolver();
             newsolver->readFromFile(filename);
@@ -131,8 +142,8 @@ void Solver :: setTime(double t) {
 //////////////////////////////////////////////////////////
 void Solver :: init(const bool &initial) {
     if ( initial ) {
-        step = 0;
-        time = 0.;
+        step = init_step;
+        time = init_time;
     }
 
     terminated = false;
@@ -186,7 +197,7 @@ void SteadyStateLinearSolver :: updateKeff(string matrixType){
 }
 
 //////////////////////////////////////////////////////////
-Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
+Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
@@ -212,6 +223,8 @@ Solver *SteadyStateLinearSolver ::  readFromFile(const string filename) {
                 iss >> conj_grad_precission;
             } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
                 iss >> conj_grad_relative_maxit;
+            } else if ( param.compare("load_from") == 0) {
+                iss >> this->ftlf;
             }
         }
         inputfile.close();
@@ -238,7 +251,7 @@ void SteadyStateLinearSolver :: solve() {
     computeForcesAtIntegrationTime(true);
 
     //solve linear system
-    nodes->giveReducedForceArray(residuals, f);    
+    nodes->giveReducedForceArray(residuals, f);
     if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
         terminated = true;
         cerr << "Conjugate gradients did not converge" << endl;
@@ -253,7 +266,7 @@ void SteadyStateLinearSolver :: solve() {
     updateFieldVariables(); //calculate master fields at the step end
 
     //Here it is better to use the former one. For steady state analysis, it does not matter. For transient, it gives smoother results.
-    computeForcesAtIntegrationTime(true); 
+    computeForcesAtIntegrationTime(true);
     //computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 }
 
@@ -267,7 +280,7 @@ void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, 
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runBeforeEachStep() {
-    Solver :: runBeforeEachStep();   
+    Solver :: runBeforeEachStep();
     cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
 }
 
@@ -319,7 +332,7 @@ void SteadyStateNonLinearSolver :: init(const bool &initial) {
 }
 
 //////////////////////////////////////////////////////////
-Solver *SteadyStateNonLinearSolver ::  readFromFile(const string filename) {
+Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     SteadyStateLinearSolver :: readFromFile(filename);
 
     maxIt = 30;
@@ -628,11 +641,11 @@ void SteadyStateNonLinearSolver :: solve() {
         } else if ( converged && it > shortenIt && dt > dtmin ) {
             dt = fmax(dt * step_decrease, dtmin);
             std :: cout << "shortening step, timestep = " << dt << '\n';
-        }       
+        }
     }
 
     //Possible to use, but result looks smoother without it
-    //if(!terminated)  computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ... 
+    //if(!terminated)  computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 }
 
 //////////////////////////////////////////////////////////
@@ -673,7 +686,7 @@ void SteadyStateNonLinearSolver :: printAllVectors() {
 void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
         SteadyStateLinearSolver :: runAfterEachStep();
-        
+
         W_int_oldM = W_intM;
         W_ext_oldM = W_extM;
         W_int_oldT = W_intT;
@@ -732,28 +745,28 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen){
-    elems->integrateDampingForces( v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam ); 
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen); 
+    elems->integrateDampingForces( v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen);
     residuals -= f_dam;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtStepEnd(const bool frozen){
-    elems->integrateDampingForces(  v , f_dam ); 
-    computeInternalExternalForces(trial_r, frozen); 
+    elems->integrateDampingForces(  v , f_dam );
+    computeInternalExternalForces(trial_r, frozen);
     residuals -= f_dam;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: updateKeff(string matrixType) {
-    SteadyStateLinearSolver :: updateKeff(matrixType);   
+    SteadyStateLinearSolver :: updateKeff(matrixType);
     Keff = C * ( ( 1. - alpha_m ) / ( dt * gamma ) ) + Keff * ( 1. - alpha_f );
 }
 
 //////////////////////////////////////////////////////////
 //void TransientLinearTransportSolver :: updateFeff() {
 //    nodes->giveReducedDoFArray(v,v_red);
-//    feff =  f - ( C * v_red ) * ( 1. + ( alpha_m - 1. ) / gamma ); //not used in the code, available for checking 
+//    feff =  f - ( C * v_red ) * ( 1. + ( alpha_m - 1. ) / gamma ); //not used in the code, available for checking
 //}
 
 //////////////////////////////////////////////////////////
@@ -769,13 +782,13 @@ void TransientLinearTransportSolver :: solve() {
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: runBeforeEachStep(){
-    SteadyStateLinearSolver :: runBeforeEachStep(); 
+    SteadyStateLinearSolver :: runBeforeEachStep();
     v_old = v;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: runAfterEachStep(){
-    SteadyStateLinearSolver :: runAfterEachStep(); 
+    SteadyStateLinearSolver :: runAfterEachStep();
 };
 
 //////////////////////////////////////////////////////////
@@ -802,7 +815,7 @@ void TransientNonLinearTransportSolver :: runBeforeEachStep(){
 
 //////////////////////////////////////////////////////////
 void TransientNonLinearTransportSolver :: runAfterEachStep(){
-    SteadyStateNonLinearSolver :: runAfterEachStep(); 
+    SteadyStateNonLinearSolver :: runAfterEachStep();
 };
 
 
@@ -823,7 +836,7 @@ TransientLinearMechanicalSolver :: ~TransientLinearMechanicalSolver() {}
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: solve() {
-    SteadyStateLinearSolver :: solve();    
+    SteadyStateLinearSolver :: solve();
 }
 
 
@@ -869,7 +882,7 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: updateKeff(string matrixType) {
-    SteadyStateLinearSolver :: updateKeff(matrixType); 
+    SteadyStateLinearSolver :: updateKeff(matrixType);
     Keff = Keff * ( 1. - alpha_f ) + C * ( ( 1 - alpha_f ) * gamma / dt / beta ) + M * ( ( 1 - alpha_m ) / dt / dt / beta );
 }
 
@@ -888,29 +901,29 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen){
-    elems->integrateDampingForces( v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam ); 
-    elems->integrateInertiaForces( a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc ); 
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen); 
+    elems->integrateDampingForces( v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam );
+    elems->integrateInertiaForces( a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen);
     residuals -= f_dam + f_acc;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver ::computeForcesAtStepEnd(const bool frozen){
-    elems->integrateDampingForces( v, f_dam ); 
-    //elems->integrateInertiaForces( a, f_acc ); 
-    computeInternalExternalForces(trial_r, frozen); 
+    elems->integrateDampingForces( v, f_dam );
+    //elems->integrateInertiaForces( a, f_acc );
+    computeInternalExternalForces(trial_r, frozen);
     residuals -= f_dam + f_acc;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: runBeforeEachStep(){
-    TransientLinearTransportSolver :: runBeforeEachStep(); 
+    TransientLinearTransportSolver :: runBeforeEachStep();
     a_old = a;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: runAfterEachStep(){
-    TransientLinearTransportSolver :: runAfterEachStep(); 
+    TransientLinearTransportSolver :: runAfterEachStep();
 };
 
 
@@ -938,7 +951,7 @@ void TransientNonLinearMechanicalSolver :: runBeforeEachStep(){
 
 //////////////////////////////////////////////////////////
 void TransientNonLinearMechanicalSolver :: runAfterEachStep(){
-    TransientNonLinearTransportSolver :: runAfterEachStep(); 
+    TransientNonLinearTransportSolver :: runAfterEachStep();
 };
 
 

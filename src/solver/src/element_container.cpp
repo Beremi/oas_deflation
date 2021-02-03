@@ -111,12 +111,12 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 // }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now) const {
+void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step) const {
     std :: ofstream outputfile( filepath );
     unsigned stat_id = 0;
     if ( outputfile.is_open() ) {
         outputfile << "#elem_id stat_id internal_variables...";
-        outputfile << "\ntime " << time_now;
+        outputfile << "\ntime " << time_now << " " << step;
         for ( auto const &elem_id : elems_to_save) {
           stat_id = 0;
           for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats()){
@@ -128,32 +128,65 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
     }
 }
 
-void ElementContainer :: readElemStatsFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
-    string line, param;
-    double time_now;
-    unsigned elem_id, stat_id, mat_id;
-    ifstream inputfile(filename.c_str() );
-    if ( inputfile.is_open() ) {
-        while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
-                continue;
-            }
-            istringstream iss(line);
-            iss >> param;
-            if ( param.compare("time") == 0 ){
-              iss >> time_now;
-            } else {
-              elem_id = stoi(param);
-              iss >> stat_id >> mat_id;
-              this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss, matrs->giveMaterial(mat_id) );
-            }
-
-        }
-        inputfile.close();
+// these methods must be separate, because at first, I need to set time of calculation in solver
+// but at that time, mat_stats are still before init() so all the values vould be reset after that
+std :: string ElementContainer :: setFileToLoadFrom(const std :: string &str ) {
+  this->file_to_load_from = str;
+  std :: string line, param;
+  ifstream inputfile(str.c_str() );
+  if ( inputfile.is_open() ) {
+    while ( getline(inputfile >> std :: ws, line) ) {
+      if ( line.at(0) == '#' || std :: isdigit( line.at(0) ) || line.empty() ) {
+          continue;
+      }
+      istringstream iss(line);
+      iss >> param;
+      if ( param.compare("time") == 0 ){
+        return line;
+      }
+    inputfile.close();
     }
+  }
+  std::cerr << "could not determine the starting time from the file \'" << str << "\'" << '\n';
+  std::cerr << "there is no line beginning with \'time\'" << '\n';
+  exit(EXIT_FAILURE);
+};
+
+
+void ElementContainer :: readElemStatsFromFile() {
+  string line, param;
+  unsigned elem_id, stat_id, mat_id;
+  ifstream inputfile(this->file_to_load_from.c_str() );
+  if ( inputfile.is_open() ) {
+      while ( getline(inputfile >> std :: ws, line) ) {
+          if ( !std::isdigit( line.at(0) ) || line.at(0) == '#' || line.empty() ) {
+              continue;
+          }
+          istringstream iss(line);
+          iss >> elem_id >> stat_id >> mat_id;
+          this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
+      }
+      inputfile.close();
+  }
+  // if LD file exists, it will be deleted, so rename it
+  unsigned LD_num = 0;
+  std :: string fnm = "LD";
+  // NOTE here GlobPaths :: RESULTDIR would be usefull
+  std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / (fnm + ".out") ).string();
+  std :: string fnm_fin;
+  while ( LD_num < 1000 ){
+    fnm_fin = (GlobPaths :: BASEDIR / "results" / (fnm + std :: to_string(LD_num) + ".out") ).string();
+    if ( !fs :: exists( fnm_fin ) ){
+      if ( fs :: exists( fnm_ini ) ){
+        std :: rename(fnm_ini.c_str(), fnm_fin.c_str());
+        std::cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
+        break;
+      } else {
+        std::cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
+      }
+    }
+    LD_num++;
+  }
 }
 
 
@@ -166,6 +199,9 @@ void ElementContainer :: init() {
         ( * e )->init();
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
+    }
+    if ( this->file_to_load_from.compare("none") != 0 ){
+      this->readElemStatsFromFile();
     }
 }
 

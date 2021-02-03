@@ -19,11 +19,14 @@ protected:
     NodeContainer *nodes;
     FunctionContainer *funcs;
     double time, dt, initdt, termination_time;
+    double init_time = 0.0;  ///> when starting from previously calculated results
     Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr, residuals;
     Vector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
+    unsigned init_step = 0;  ///> when starting from previously calculated results
     bool terminated;
+    std :: string ftlf = "none";  ///> string to keep in memory, because element container is not initialized when reading solver input
 
 public:
     Solver();
@@ -31,7 +34,7 @@ public:
     virtual void init(const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };
-    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) { elems = e; nodes = n; funcs = functions; }
+    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions);
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     Vector giveDoFValues() const { return r; }
@@ -62,7 +65,6 @@ protected:
     virtual void computeInternalExternalForces(const Vector &rr, const bool frozen);
     virtual void updateKeff(string matrixType);
 private:
-
 public:
     SteadyStateLinearSolver();
     virtual ~SteadyStateLinearSolver();     //destructor

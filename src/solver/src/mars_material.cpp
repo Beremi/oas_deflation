@@ -232,7 +232,7 @@ std :: string MarsMaterialStatus :: giveLineToSave() const {
 }
 
 
-void MarsMaterialStatus :: readFromLine(istringstream &iss, Material *m) {
+void MarsMaterialStatus :: readFromLine(istringstream &iss) {
   std :: string param;
   while ( !iss.eof() ) {
     iss >> param;
