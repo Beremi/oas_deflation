@@ -12,12 +12,6 @@ Solver :: Solver(){
 
 void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) {
   elems = e; nodes = n; funcs = functions;
-  if ( this->ftlf.compare( "none" ) != 0 ){
-    std :: string param;
-    std :: string init_specs = elems->setFileToLoadFrom(this->ftlf);
-    istringstream iss2(init_specs);
-    iss2 >> param >> this->init_time >> this->init_step;
-  }
 }
 
 //////////////////////////////////////////////////////////
@@ -141,6 +135,7 @@ void Solver :: setTime(double t) {
 
 //////////////////////////////////////////////////////////
 void Solver :: init(const bool &initial) {
+    elems->readMatStatsFromFile(this->init_time, this->init_step);
     if ( initial ) {
         step = init_step;
         time = init_time;
@@ -223,8 +218,10 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> conj_grad_precission;
             } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
                 iss >> conj_grad_relative_maxit;
-            } else if ( param.compare("load_from") == 0) {
-                iss >> this->ftlf;
+            } else if ( param.compare("init_time") == 0) {
+                iss >> this->init_time;
+            } else if ( param.compare("init_step") == 0) {
+                iss >> this->init_step;
             }
         }
         inputfile.close();

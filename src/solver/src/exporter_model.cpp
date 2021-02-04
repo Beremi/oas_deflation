@@ -36,8 +36,6 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
 
   elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step);
 
-  std::cout << "remove_previous = " << this->remove_previous << '\n';
-
   if ( remove_previous ){
     if ( this->last_saved_file.compare("none") != 0 ){
       if ( std :: remove( last_saved_file.c_str() ) == 0 ){

@@ -82,6 +82,12 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                     iss >> istr;
                     elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs );
                 }
+            } else if ( istr.compare("MatStatFiles") == 0 ) {
+                iss >> iint;
+                for ( int i = 0; i < iint; i++ ) {
+                    iss >> istr;
+                    elems.setFileToLoadStatsFrom( (baseDir / istr ).string() );
+                }
             } else if ( istr.compare("ConstrFiles") == 0 ) {
                 // read constraint files
                 iss >> iint;
