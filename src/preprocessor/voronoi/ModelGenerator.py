@@ -89,7 +89,7 @@ class Model:
         self.notchWidth = None
         self.notchDepth = None
         self.RWTHQuarter = False
-        self.elasticZone = False
+        self.elasticZone = None
 
         for i in range (len(r)):
 
@@ -133,8 +133,7 @@ class Model:
                 if (int(r[i+1])==1): self.periodicModel = True
                 if (int(r[i+1])==0): self.periodicModel = False
             if (r[i]=='elasticZone'):
-                if (int(r[i+1])==1): self.elasticZone = True
-                if (int(r[i+1])==0): self.elasticZone = False
+                self.elasticZone = float(r[i+1])
             #"""
             """
             keys = ['powerTes', 'activeMechanics', 'activeTransport', 'periodicModel']
@@ -281,16 +280,39 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
         materialZones = None
+        """
         if self.elasticZone ==True:
-            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=np.array([
-            0.5*self.maxLim[0]*(1-self.fracZoneWidth),
-            self.maxLim[1] * 0.2,
+            lim = np.array([
+            self.maxLim[0]*0.5  - self.maxLim[0]*self.fracZoneWidth*1.1,
+            self.maxLim[1] * 0.9,
             -self.maxLim[2]* 0.1,
-            self.maxLim[0]  - 0.5*self.maxLim[0]*(1-self.fracZoneWidth),
+            self.maxLim[0]*0.5  + self.maxLim[0]*self.fracZoneWidth*1.1,
             self.maxLim[1] * 1.1,
             self.maxLim[2] * 1.1
-            ]))
-
+            ])
+            print (lim)
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim)
+        """
+        if self.elasticZone ==1:
+            lim = np.array([
+            self.maxLim[0]*0.5  + self.maxLim[1] * 0.2,#+ self.maxLim[0]*self.fracZoneWidth*1,
+            self.maxLim[1] * 0.9,
+            -self.maxLim[2]* 0.1,
+            self.maxLim[0]*0.5  - self.maxLim[1] * 0.2,#- self.maxLim[0]*self.fracZoneWidth*1,
+            self.maxLim[1] * 1.1,
+            self.maxLim[2] * 1.1
+            ])
+            print (lim)
+            lim1=np.array([
+            self.maxLim[0]*0.5  - self.maxLim[0] * self.fracZoneWidth * 0.4,
+            self.maxLim[1] * 0.0,
+            -self.maxLim[2]* 0.1,
+            self.maxLim[0]*0.5  + self.maxLim[0] * self.fracZoneWidth * 0.4,
+            self.maxLim[1] * self.notchH*1.8,
+            self.maxLim[2]* 1.1,
+            ])
+            print (lim1)
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
 
     def run_2d_dogbone(self):
         (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef )
@@ -310,6 +332,8 @@ class Model:
         (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, 0 )
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
         self.materialZones =  None
+        if self.elasticZone >0:
+            self.materialZones = utilitiesModeling.assembleMaterialZones(self.elasticZone,3, model='3dcylinder', maxLim=self.maxLim)
 
     def run_3d_ReinhardtTension(self):
         #DURHAM - prism tension 250x60x50
@@ -326,6 +350,7 @@ class Model:
         (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.notches)    = utilitiesModeling.create3dRWTHShearCylinder(np.array([1e-6,0,0]), self.cylinderRad, self.cylinderHeight, self.minDist, self.trials, self.notchRadLeft, self.notchRadRight, self.notchWidth, self.notchWidth, self.notchDepth, quarter = self.RWTHQuarter )
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
         self.materialZones =  None
+
 
     def run_2d_RWTHShearCylinder(self):
         self.maxLim = np.array([2*self.cylinderRad, self.cylinderHeight])

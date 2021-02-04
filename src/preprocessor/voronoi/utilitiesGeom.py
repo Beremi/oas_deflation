@@ -322,6 +322,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     sys.stdout.flush()
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
+
     saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
@@ -643,8 +644,10 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
                 if dist<1e-10: subBlock.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
         cpldNds.append(subBlock)
 
+    print(cpldNds)
     savePeriodicBlock(master_folder,cpldNds,maxLim, nodes_out)
 
+    print (aux_nodes)
     #saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
@@ -665,26 +668,46 @@ def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas
 
 def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
     cf = open(os.path.join(master_folder,blocksFile),"w")
-
+#    print(cpldNds)
     nblocks = len(cpldNds)
     print("BLOCKS   ", nblocks)
-    #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
-    loads=["\t2\tey\t0\tgxy\t1","\t3\tvolumetricAverage\t0\tmicroSourcesX\t1\tmicroSourcesY\t2"]
-    names=["MechanicalPeriodicBC","TransportPeriodicBC"]
-    for q in range(nblocks):
-        ndepend = len(cpldNds[q])
-        #ex ey gxy sx sy sxy
-        cf.write("%s\tsize\t2\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],loads[q], ndepend))
+    if (len(maxLim)==2):
+        #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
+        loads=["\t2\tey\t0\tgxy\t1","\t3\tvolumetricAverage\t0\tmicroSourcesX\t1\tmicroSourcesY\t2"]
+        names=["MechanicalPeriodicBC","TransportPeriodicBC"]
+        for q in range(nblocks):
+            ndepend = len(cpldNds[q])
+            #ex ey gxy sx sy sxy
+            cf.write("%s\tsize\t2\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],loads[q], ndepend))
 
-        for i in range(len(cpldNds[q])):
-            cf.write("\t%d\t%d"%(cpldNds[q][i][1], cpldNds[q][i][0]))
+            for i in range(len(cpldNds[q])):
+                cf.write("\t%d\t%d"%(cpldNds[q][i][1], cpldNds[q][i][0]))
 
-        #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
-        #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
-        #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
+            #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
+            #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
+            #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
 
-        cf.write(os.linesep)
-    cf.close()
+            cf.write(os.linesep)
+        cf.close()
+
+    if (len(maxLim)==3):
+        #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
+        loads=["\t1\tsx\t1","\t3\tvolumetricAverage\t0\tmicroSourcesX\t1\tmicroSourcesY\t2"]
+        names=["MechanicalPeriodicBC","TransportPeriodicBC"]
+        for q in range(nblocks):
+            ndepend = len(cpldNds[q])
+            #ex ey gxy sx sy sxy
+            cf.write("%s\tsize\t3\t%e\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],maxLim[2],loads[q], ndepend))
+
+            for i in range(len(cpldNds[q])):
+                cf.write("\t%d\t%d"%(cpldNds[q][i][1], cpldNds[q][i][0]))
+
+            #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
+            #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
+            #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
+
+            cf.write(os.linesep)
+        cf.close()
 
     #plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
 
@@ -1011,38 +1034,6 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     start_time = time.time()
     dim = 3
 
-    #node order:
-    """
-    0: -1,  1,  0
-    1: 0,   1,  0   #do modelu
-    2: 1,   1,  0   #do modelu
-    3: -1,  0,  0
-    0: 0,   0,  0  ####### zakladni ctverec
-    5: 1,   0,  0   #do modelu
-    6: -1,   -1,  0
-    7: 0,   -1,  0
-    8: 1,   -1,  0
-
-    9: -1,  1,  1
-    10: 0,   1,  1  #do modelu
-    11: 1,   1,  1  #do modelu
-    12: -1,  0,  1
-    13: 0,   0,  1  #do modelu
-    14: 1,   0,  1  #do modelu
-    15: -1,   -1, 1
-    16: 0,   -1,  1
-    17: 1,   -1,  1
-
-    18: -1,  1,  -1
-    19: 0,   1,  -1
-    20: 1,   1,  -1
-    21: -1,  0,  -1
-    22: 0,   0,  -1
-    23: 1,   0,  -1
-    24: -1,   -1, -1
-    25: 0,   -1,  -1
-    26: 1,   -1,  -1
-    """
 
     print ('Periodic model, filtering ridges...', end = '')
     valid_ridges = np.empty((0,1)).astype(int)
@@ -1050,101 +1041,217 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     valid_ridge_vertices = []
 
     valid_node_idcs = []
-    valid_node_coords = np.empty((0,3)).astype(int)
+    valid_node_coords = np.empty((0,3))
     valid_vertices_idcs = []
     valid_vertices_coords = []
 
     coupledNodes = []
 
-    node_count = int(node_count / 27)
-    print ('actual nodes %d' %node_count)
+
+
     for ir,r in enumerate(vor.ridge_points):
-        nAidx = r[0]
-        nBidx = r[1]
-        ##print ('na %d nb%d \n' %(nAidx,nBidx))
-        nAbox = int (nAidx / node_count)
-        nBbox = int (nBidx / node_count)
+        nAidx = int(r[0])
+        nBidx = int(r[1])
+        nAcoords = node_coords[nAidx,:]
+        nBcoords = node_coords[nBidx,:]
+
+        nApos = np.zeros(3)
+        nApos[0] =  (nAcoords[0] / maxLim[0] )
+        nApos[1] =  (nAcoords[1] / maxLim[1] )
+        nApos[2] =  (nAcoords[2] / maxLim[2] )
+
+        nBpos = np.zeros(3)
+        nBpos[0] =  (nBcoords[0] / maxLim[0] )
+        nBpos[1] =  (nBcoords[1] / maxLim[1] )
+        nBpos[2] =  (nBcoords[2] / maxLim[2] )
+
         addRidge = False
 
-# connections of main box with:
-        #with itself
-        if ( nAbox == 9 and nBbox == 9 ):  addRidge = True
-        #center top center box
-        if ( nAbox == 9 and nBbox == 1 or nAbox == 1 and nBbox == 9):
-            if (nAbox == 9): coupledNodes.append(np.array([nAidx, nBidx]))
-            if (nBbox == 9): coupledNodes.append(np.array([nBidx, nAidx]))
-            addRidge = True
-        #right top center box
-        if ( nAbox == 9 and nBbox == 3 or nAbox == 3 and nBbox == 9):
-            if (nAbox == 9): coupledNodes.append(np.array([nAidx, nBidx]))
-            if (nBbox == 9): coupledNodes.append(np.array([nBidx, nAidx]))
-            addRidge = True
-        #right center center box
-        if ( nAbox == 9 and nBbox == 5 or nAbox == 5 and nBbox == 9):
-            if (nAbox == 9): coupledNodes.append(np.array([nAidx, nBidx]))
-            if (nBbox == 9): coupledNodes.append(np.array([nBidx, nAidx]))
-            addRidge = True
-        #center top rear box
-        if ( nAbox == 9 and nBbox == 10 or nAbox == 10 and nBbox == 9):
-            if (nAbox == 9): coupledNodes.append(np.array([nAidx, nBidx]))
-            if (nBbox == 9): coupledNodes.append(np.array([nBidx, nAidx]))
-            addRidge = True
-        #right top rear box
-        if ( nAbox == 9 and nBbox == 11 or nAbox == 11 and nBbox == 9):
-            if (nAbox == 9): coupledNodes.append(np.array([nAidx, nBidx]))
-            if (nBbox == 9): coupledNodes.append(np.array([nBidx, nAidx]))
-            addRidge = True
-        #center center rear box
-        if ( nAbox == 9 and nBbox == 13 or nAbox == 13 and nBbox == 9):
-            if (nAbox == 9): coupledNodes.append(np.array([nAidx, nBidx]))
-            if (nBbox == 9): coupledNodes.append(np.array([nBidx, nAidx]))
-            addRidge = True
-        #right center rear box
-        if ( nAbox == 9 and nBbox == 14 or nAbox == 14 and nBbox == 9):
-            if (nAbox == 9): coupledNodes.append(np.array([nAidx, nBidx]))
-            if (nBbox == 9): coupledNodes.append(np.array([nBidx, nAidx]))
-            addRidge = True
+        #inside original box
+        if ( 0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  ):
+             addRidge = True
+             finAIdx = nAidx
+             finBIdx = nBidx
 
-#connections between other boxes:
-        """
-        #right center center   XX   center top center
-        if ( nAbox == 5 and nBbox == 1 or nAbox == 1 and nBbox == 5):
-            vtcs = []
-            for i in (vor.ridge_vertices[ir]):
-                vtcs.append(vor.vertices[i,:])
-            if ridgeWithinCenterBox(vtcs, maxLim): addRidge = True
-        #right center center   XX   center center rear
-        if ( nAbox == 5 and nBbox == 13 or nAbox == 13 and nBbox == 5):
-            vtcs = []
-            for i in (vor.ridge_vertices[ir]):
-                vtcs.append(vor.vertices[i,:])
-            if ridgeWithinCenterBox(vtcs, maxLim): addRidge = True
-        #center center rear   XX   center top center
-        if ( nAbox == 13 and nBbox == 1 or nAbox == 1 and nBbox == 13):
-            vtcs = []
-            for i in (vor.ridge_vertices[ir]):
-                vtcs.append(vor.vertices[i,:])
-            if ridgeWithinCenterBox(vtcs, maxLim): addRidge = True
-        """
+        #PERIODIC X
+        elif ( (
+             1 < nApos[0] <2 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  )
+             or
+             (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             1 < nBpos[0] <2 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1 )
+             ):
+             if (0 < nApos[0] <1 and 1 < nBpos[0] <2):
+                 outerPointIdx = nBidx
+                 mirCoords = nBcoords - np.array([maxLim[0],0,0])
+             if (0 < nBpos[0] <1 and 1 < nApos[0] <2):
+                 outerPointIdx = nAidx
+                 mirCoords = nAcoords - np.array([maxLim[0],0,0])
+
+             for n in range(len(node_coords)):
+                 if (np.abs(np.linalg.norm(node_coords[n][0:3]-mirCoords))<1e-15):
+                     innerPointIdx = n
+
+             """
+             print ('napos %s' %nApos)
+             print ('nbpos %s' %nBpos)
+             print('cA %s' %(nAcoords/maxLim))
+             print('cB %s' %(nBcoords/maxLim))
+
+             print('mirCoords %s' %mirCoords)
+             print ('mirC: %s' %mirroredPointIdx)
+
+             print ('\ninnerP: %s' %node_coords[innerPointIdx])
+             print ('mirC: %s' %node_coords[outerPointIdx])
+             print ('d: %s' %(outerPointIdx-innerPointIdx))
+             """
+            # a = input('').split(" ")[0]
+
+
+             finBIdx = innerPointIdx
+             finAIdx = outerPointIdx
+
+             cpl = np.array([finAIdx, finBIdx])
+             cplInList = False
+             for c in coupledNodes:
+                 if (cpl[0]==c[0] and cpl[1]==c[1]):
+                     cplInList = True
+
+             if not cplInList:
+                 coupledNodes.append(np.array([finAIdx, finBIdx]))
+             """
+             print('rnodeA: %d ,  %s' %(nAidx, nAcoords))
+             print('rnodeB: %d ,  %s' %(nBidx, nBcoords))
+             print()
+             print('finA: %d ,  %s' %(finAIdx, node_coords[finAIdx]))
+             print('finB: %d ,  %s' %(finBIdx, node_coords[finBIdx]))
+             print()
+             print()
+            # a = input('').split(" ")[0]
+             """
+             addRidge = True
+
+        #PERIODIC Y
+        elif ( (
+             0 < nApos[0] <1 and
+             1 < nApos[1] <2 and
+             0 < nApos[2] <1 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  )
+             or
+             (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             0 < nBpos[0] <1 and
+             1 < nBpos[1] <2 and
+             0 < nBpos[2] <1 )
+             ):
+             if (0 < nApos[1] <1 and 1 < nBpos[1] <2):
+                 outerPointIdx = nBidx
+                 mirCoords = nBcoords - np.array([0,maxLim[1],0])
+             if (0 < nBpos[1] <1 and 1 < nApos[1] <2):
+                 outerPointIdx = nAidx
+                 mirCoords = nAcoords - np.array([0,maxLim[1],0])
+
+             for n in range(len(node_coords)):
+                 if (np.abs(np.linalg.norm(node_coords[n][0:3]-mirCoords))<1e-15):
+                    innerPointIdx = n
+
+
+             finBIdx = innerPointIdx
+             finAIdx = outerPointIdx
+
+             cpl = np.array([finAIdx, finBIdx])
+             cplInList = False
+             for c in coupledNodes:
+                 if (cpl[0]==c[0] and cpl[1]==c[1]):
+                     cplInList = True
+
+             if not cplInList:
+                 coupledNodes.append(np.array([finAIdx, finBIdx]))
+
+             addRidge = True
+
+        #PERIODIC Z
+        elif ( (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             1 < nApos[2] <2 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  )
+             or
+             (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             1 < nBpos[2] <2 )
+             ):
+             if (0 < nApos[2] <1 and 1 < nBpos[2] <2):
+                 outerPointIdx = nBidx
+                 mirCoords = nBcoords - np.array([0,0,maxLim[2]])
+             if (0 < nBpos[2] <1 and 1 < nApos[2] <2):
+                 outerPointIdx = nAidx
+                 mirCoords = nAcoords - np.array([0,0,maxLim[2]])
+
+             for n in range(len(node_coords)):
+                 if (np.abs(np.linalg.norm(node_coords[n][0:3]-mirCoords))<1e-15):
+                    innerPointIdx = n
+
+
+             finBIdx = innerPointIdx
+             finAIdx = outerPointIdx
+
+             cpl = np.array([finAIdx, finBIdx])
+             cplInList = False
+             for c in coupledNodes:
+                 if (cpl[0]==c[0] and cpl[1]==c[1]):
+                     cplInList = True
+
+             if not cplInList:
+                 coupledNodes.append(np.array([finAIdx, finBIdx]))
+
+             addRidge = True
+
+
 
 
         if addRidge :
-            if not (nAidx in valid_node_idcs):
-                valid_node_idcs.append(nAidx)
-                valid_node_coords = np.vstack((valid_node_coords, node_coords[nAidx]))
-            if not (nBidx in valid_node_idcs):
-                valid_node_idcs.append(nBidx)
-                valid_node_coords = np.vstack((valid_node_coords, node_coords[nBidx]))
+            if not (finAIdx in valid_node_idcs):
+                valid_node_idcs.append(finAIdx)
+                valid_node_coords = np.vstack((valid_node_coords, node_coords[finAIdx]))
+            if not (finBIdx in valid_node_idcs):
+                valid_node_idcs.append(finBIdx)
+                valid_node_coords = np.vstack((valid_node_coords, node_coords[finBIdx]))
+
             for i in (vor.ridge_vertices[ir]):
                 if not (i in valid_vertices_idcs):
-                    valid_vertices_idcs.append(i)
+                    valid_vertices_idcs.append(int(i))
                     valid_vertices_coords.append(vor.vertices[i,:])
 
 
-            valid_ridges = np.vstack((valid_ridges, ir))
+
+            valid_ridges = np.vstack((valid_ridges, int(ir)))
             valid_ridge_nodes = np.vstack((valid_ridge_nodes, r))
-            valid_ridge_vertices.append(vor.ridge_vertices[ir])
-            #print (vor.ridge_vertices[ir])
+            valid_ridge_vertices.append(vor.ridge_vertices[int(ir)])
 
     """
     valid_ridges
@@ -1156,32 +1263,50 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     valid_vertices_idcs
     valid_vertices_coords
     """
+
+
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    for c in (coupledNodes):
+        X = [node_coords[c[0]][0], node_coords[c[1]][0] ]
+        Y = [node_coords[c[0]][1], node_coords[c[1]][1] ]
+        Z = [node_coords[c[0]][2], node_coords[c[1]][2] ]
+        ax.scatter(X, Y, Z)
+        ax.plot3D(X, Y, Z)
+
+    plt.show()
+
+    """
     print ('renumbering node idcs in ridges...')
     valid_node_idcs = np.asarray(valid_node_idcs)
-    for rn in valid_ridge_nodes:
-        #print()
-        #print(rn)
-        #print(np.where(valid_nodes == rn[0])[0])
-        rn[0] = int(np.where(valid_node_idcs == rn[0])[0])
-        rn[1] = int(np.where(valid_node_idcs == rn[1])[0])
-        #print(rn)
-
+    #print(valid_ridge_nodes[20])
+    #for rn in valid_ridge_nodes:
+    #    rn[0] = int(np.where(valid_node_idcs == rn[0])[0])
+    #    rn[1] = int(np.where(valid_node_idcs == rn[1])[0])
+    #print(valid_ridge_nodes[20])
 
     print ('renumbering vertices idcs in ridges...')
     valid_vertices_idcs = np.asarray(valid_vertices_idcs)
-    #print(valid_vertices_idcs)
-    for vn in valid_ridge_vertices:
-        #print()
-        #print (vn)
-        for i in range(len(vn)):
-            vn[i] = int(np.where(valid_vertices_idcs == vn[i])[0])
-        #print (vn)
+    #for vn in valid_ridge_vertices:
+    #    for i in range(len(vn)):
+    #        vn[i] = int(np.where(valid_vertices_idcs == vn[i])[0])len(nodes_out)+len(vertices_out)
+    """
+
+    print('renumbering coupled nodes...')
+    for i in range(len(coupledNodes)):
+        cpldN=coupledNodes[i]
+        ai = int(np.where(valid_node_idcs == cpldN[0])[0])
+        bi = int(np.where(valid_node_idcs == cpldN[1])[0])
+        cpldN = np.array([ai, bi])
+
+
 
 
     node_count = len(valid_node_coords)
 
     print ('check of node count ...', end='')
-    if (len(valid_node_idcs)==len(valid_node_coords)): print ('ok')
+    if (len(valid_node_idcs)==len(valid_node_coords)): print ('ok %d' %len(valid_node_idcs))
     else:  print('NOT CORRECT !!!')
 
     print ('check of vertex count ...', end='')
@@ -1194,28 +1319,16 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     sys.stdout.flush()
 
     printout = False
-    # nody: [x,y,z] [powerR] [area]
     nodes_out = np.zeros( (node_count, (dim + 1 +1)))
     nodes_out[:,  0:dim] = valid_node_coords[:,  0:dim]
 
-    #if ((len(areas) == node_count)):
-    #   nodes_out[:,dim] = areas[:]
-
-    #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
-    #print ('Area Error: %.5E ' %(relAreaError) )
-
-    ########################################################################################################
     # ridges with nodes within sample
     validRidgeIdxs = []
 
 
-    #print('ridge points')
-    #adding ridges with at least one node in sample
-    #validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
     validRidgeIdxs = valid_ridges
-    print(validRidgeIdxs)
-
     validRidgeIdxs = np.asarray(validRidgeIdxs)
+    #print (validRidgeIdxs)
     ########################################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
@@ -1228,19 +1341,50 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     aux_nodes = []
     ########################################################################################################
     allCoplanar = True
-    for i in range (validRidgeIdxs.size):
+    for i in range (len(validRidgeIdxs)):
+    #    a = input('').split(" ")[0]
 
-        rdge = vor.ridge_vertices[validRidgeIdxs[i]]
+        ridgeIdx = int(validRidgeIdxs[i])
+
+
+        rdge = vor.ridge_vertices[ridgeIdx]
+        rdgeNa = vor.ridge_points[ridgeIdx][0]
+        rdgeNb = vor.ridge_points[ridgeIdx][1]
+
+        nodeA_oldIdx = valid_ridge_nodes[i][0]
+        nodeB_oldIdx = valid_ridge_nodes[i][1]
+
+        nodeA_newIdx =  int(np.where(valid_node_idcs == nodeA_oldIdx)[0])
+        nodeB_newIdx =  int(np.where(valid_node_idcs == nodeB_oldIdx)[0])
+
+        vertNr = len(rdge)
+
+        """
+        print('ridgeIdx %d' %ridgeIdx)
+        print('ridge %s' %rdge)
+        print('valid ridge nodes %s' %valid_ridge_nodes[i])
+        print('valid ridge vertices %s' %valid_ridge_vertices[i])
+
+        print('nodeA_vorIdx %s' %rdgeNa)
+        print('nodeB_vorIdx %s' %rdgeNb)
+        print('nodeA_oldIdx %s' %nodeA_oldIdx)
+        print('nodeB_oldIdx %s' %nodeB_oldIdx)
+        print('nodeA_newIdx %s' %nodeA_newIdx)
+        print('nodeB_newIdx %s' %nodeB_newIdx)
+
+
+        print('vertNr %s' %vertNr)
+
+        """
+
 
         #indices of all vertices that form the planar ridge
         for j in range (len(rdge)):
             vrtx = np.zeros ( (dim + 1 +1 +1) )
             #
-            #for d in range (dim):
-            #    vrtx [d] = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][d]
-            vrtx[0:dim] =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][j]][0:dim]
+            vrtx[0:dim] =  vor.vertices[rdge[j]][0:dim]
             #
-            vrtx[dim] = vor.ridge_vertices[validRidgeIdxs[i]][j]
+            vrtx[dim] = rdge[j]
             #
             if vrtx[dim] not in vertices_out_set:
                 verticesIdxDict.update( { vrtx[dim] : len(vertices_out)  } )
@@ -1251,18 +1395,20 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
         #ridges
         ########################################################
-        #array for the ridge: nodeA, nodeB, trBc, vertCount,newVertIdcs
-        nrVertices = len(vor.ridge_vertices[validRidgeIdxs[i]])
+        #array for the ridge: nodeA, nodeB, vertCount,newVertIdcs
+        nrVertices = len(rdge)
         rdg = np.zeros ( (2 + 1 + nrVertices  ) )
 
-        #nodes divided by the ridge
-        pointA = vor.ridge_points[validRidgeIdxs[i]][0]
-        pointB = vor.ridge_points[validRidgeIdxs[i]][1]
+        pointA = nodeA_newIdx
+        pointB = nodeB_newIdx
+        coordsA = valid_node_coords[pointA]
+        coordsB = valid_node_coords[pointB]
+
 
         #auxiliary nodes if one of them is out of sample
         if(pointA >= node_count and pointB<node_count):
-            pA = np.asarray( vor.points[pointA, :]  )
-            pB = np.asarray( vor.points[pointB, :]  )
+            pA = np.asarray( coordsA  )
+            pB = np.asarray( coordsB  )
             ptA = (pA + pB)/2
 
             pointA = node_count + len(aux_nodes)
@@ -1270,8 +1416,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
 
         if(pointB >= node_count  and pointA<node_count):
-            pA = np.asarray( vor.points[pointA, :]  )
-            pB = np.asarray( vor.points[pointB, :]  )
+            pA = np.asarray( coordsA  )
+            pB = np.asarray( coordsB  )
             ptB = (pA + pB)/2
 
             pointB = node_count + len(aux_nodes)
@@ -1284,29 +1430,29 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
         #adding vert idcs
         for v in range ( nrVertices ):
-            rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[validRidgeIdxs[i]][v] ]
+            rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[ridgeIdx][v] ]
 
 
         #coplanarity control
         maxE = 0
         for v in range ( nrVertices-3 ):
-            pA = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v]][:]
-            pB = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+1]][:]
-            pC = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+2]][:]
-            pD = vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][v+3]][:]
+            pA = vor.vertices[vor.ridge_vertices[ridgeIdx][v]][:]
+            pB = vor.vertices[vor.ridge_vertices[ridgeIdx][v+1]][:]
+            pC = vor.vertices[vor.ridge_vertices[ridgeIdx][v+2]][:]
+            pD = vor.vertices[vor.ridge_vertices[ridgeIdx][v+3]][:]
 
             tol = 1e-10
             val = equation_plane(pA, pB, pC, pD)
             if (np.abs(val) > maxE): maxE = np.abs(val)
             if ( val > tol):
                 allCoplanar = False
-                print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
+                #print('Not coplanar!!! Ridge nr. %d, err: %e' %(i, val ))
             #else: print('Coplanar  %d' %i)
 
         #normal of the ridge surface from first three vertices
-        planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:],
-                                     vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][1]][:],
-                                     vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][2]][:])
+        planeNormal = getPlaneNormalVector(vor.vertices[vor.ridge_vertices[ridgeIdx][0]][:],
+                                     vor.vertices[vor.ridge_vertices[ridgeIdx][1]][:],
+                                     vor.vertices[vor.ridge_vertices[ridgeIdx][2]][:])
 
         # vector connecting the nodes. Should be identical with plane normal. Otherwise the order of vertices will be swapped.
         pointNormal = vor.points[pointB] - vor.points[pointA]
@@ -1323,30 +1469,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
             rdg[3:len(rdg)]= rdg[3:len(rdg)][::-1]
             #print('po %s \n' %rdg)
 
-        ##############atan2((Vb x Va) . Vn, Va . Vb)##############
-        #average point within the ridge surface
-        """
-        avgPoint = np.zeros(3)
-        for d in range (3):
-            for l in range ( nrVertices ):
-                avgPoint [d] += vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][l]][d]
-            avgPoint[d] /= len(vor.ridge_vertices[validRidgeIdxs[i]])
-        #
 
-        #mutual angles between vertices and the average point
-        angles = np.zeros(nrVertices)
-        referenceVector =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][0]][:] - avgPoint
-
-        # computing the angles
-        # atan2((Vb x Va) . Vn, Va . Vb)
-        for l in range ( nrVertices ):
-            currVector =  vor.vertices[vor.ridge_vertices[validRidgeIdxs[i]][l]][:] - avgPoint
-            angles [l] = np.degrees( np.arctan2(  np.dot( np.cross( referenceVector, currVector ), planeNormal),
-                                                np.dot(referenceVector,currVector)   ) )
-            if (angles [l] < 0):
-                angles [l] = 360 - (-angles [l])
-        #print(angles)
-        """
 
         ridges_out.append(rdg)
     geom_time = time.time()
@@ -1363,8 +1486,13 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         for l in range (3, ln):
             ridges_out[i][l] += vertIdxStart
 
+    zeros = np.zeros(len(valid_node_coords))
+    zeros = np.vstack(zeros)
+    nodes_out=np.hstack((valid_node_coords, zeros, zeros))
 
 
+
+    #print (nodes_out)
     newAuxNodes = 0
     if (activeTransport):
         newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
@@ -1375,7 +1503,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
 
-
+    #print(aux_nodes)
+    """
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
         saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
@@ -1392,7 +1521,56 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
+    """
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    for c in (coupledNodes):
+        X = [nodes_out[c[0]][0], nodes_out[c[1]][0] ]
+        Y = [nodes_out[c[0]][1], nodes_out[c[1]][1] ]
+        Z = [nodes_out[c[0]][2], nodes_out[c[1]][2] ]
+        #print(X)
+        #print(Y)
+        #print(Z)
+        ax.scatter(X, Y, Z)
+        ax.plot3D(X, Y, Z)
+
+    plt.show()
+    """
+
+
+
+    """
+    #check vertices idcs
+    for r in ridges_out:
+        for v in r[3:int(r[2])]:
+            if not  (len(nodes_out) <v < len(nodes_out)+len(vertices_out)):
+                print('%d < %d < %d' %(len(nodes_out), v ,(len(nodes_out)+len(vertices_out))))
+    """
+
+
+    coupledNodes=np.asarray(coupledNodes)
+    subBlock = np.copy(coupledNodes)
+    coupledNodes = []
+    coupledNodes.append(subBlock)
+
+    savePeriodicBlock(master_folder,coupledNodes,maxLim, nodes_out)
+
+    if activeMechanics:
+        saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ)
+    else:
+        saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
+    if activeTransport:
+        saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out)
+    else:
+        saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
+
+
+    checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
+
 
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount
 
@@ -1708,7 +1886,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
         fl.write('#TXTNodalExporter translations 2 ux uy\n')
         fl.write('#TXTNodalExporter pressure 1 pressure\n')
         if not activeTransport:
-            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 1 damage pointData 1 nodal_stress\n')
+            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 2 damage crack_opening pointData 1 nodal_stress\n')
         fl.write('#VTKRCExporter faces  saveEvery 1e-1 cellData 1 damage\n')
         fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
     if activeTransport:
@@ -1728,6 +1906,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     #writing nodes
     #print(len(nodes_out))
     num = dim
+
     if (dim == 2):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY"
         fmt= nodetype + '\t%.15e\t%.15e'
@@ -1763,9 +1942,14 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
     print ('Mech elements: %d' %len(mechElemRidges))
 
     onlyMechNodesConnected = True
+    elaElems = []
+    fig, ax = plt.subplots()
+
 
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
+
+
         for i in range (len(mechElemRidges)):
             nodeA = nodes[int(mechElemRidges[i][0])]
             nodeB = nodes[int(mechElemRidges[i][1])]
@@ -1788,26 +1972,129 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
             if (dim==3):
-                if ( mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
+                triangle = False
+                if (mZ[0][0][0] > mZ[0][1][0]):
+                    triangle = True
+
+                #print (mZ[0][0][0])
+                #print (mZ[0][1][0])
+                #print (mZ[0][0][0] - mZ[0][1][0])
+                #print (triangle)
+
+                if ( triangle == False and
+                      ((mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
                       mZ[0][0][2] < nodeA[2] < mZ[0][1][2] and
                       mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
-                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
-                      mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
-                      #print('node in A')
-                if (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
+                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] )
+                      or
+                      mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][2] < nodeA[2] < mZ[0][3][2] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
-                      mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) :
+                      mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) ):
                       mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
-                      #print('node in B')
-                    #print('found ela element')
+                #print('len mz %d' %len(mZ))
+
+                if (  len(mZ)==2 and
+                      ((mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
+                      mZ[1][0][1] < nodeA[1] < mZ[1][1][1] and
+                      mZ[1][0][2] < nodeA[2] < mZ[1][1][2] and
+                      mZ[1][0][0] < nodeB[0] < mZ[1][1][0] and
+                      mZ[1][0][1] < nodeB[1] < mZ[1][1][1] and
+                      mZ[1][0][2] < nodeB[2] < mZ[1][1][2] )) ):
+                      mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([3])) )
+                      print('node in noptch')
+
+                if ( triangle == True ):
+                      isPresentA = False
+                      isPresentB = False
+
+                      xmin = mZ[0][1][0]
+                      xmax = mZ[0][0][0]
+                      ymin = mZ[0][0][1]
+                      ymax = mZ[0][1][1]
+                      zmin = mZ[0][0][2]
+                      zmax = mZ[0][1][2]
+
+                      xTop = (xmin+xmax)/2 - xmin
+                      yTop = ymax - ymin
+
+
+                      x = nodeA[0] - xmin
+                      y = ymax - nodeA[1]
+                      z = nodeA[2]
+
+                      #print ('cx %f' %(xmin+xTop*0.5/yTop))
+                      #print ('cy %f' %(xmax-yTop*0.05/xTop))
+                      if (nodeA[0] > xmin and nodeA[0]<(xmin+xmax)/2):
+                          xMINlim = xmin + xTop * y / yTop
+                          yMINlim = ymax - yTop * x / xTop
+
+                          if (  nodeA[0]>xMINlim and nodeA[1]>yMINlim and zmin<z<zmax):
+                              isPresentA = True
+                              #ax.scatter(nodeA[0], nodeA[1])
+                              #print ('x minlim %f' %xMINlim)
+                              #print ('y minlim %f' %yMINlim)
+
+                      if (nodeA[0] > (xmin+xmax)/2 and nodeA[0] < xmax ):
+                          xMAXlim = xmax - xTop * y / yTop
+                          yMINlim = ymax - yTop * (xmax-nodeA[0]) / xTop
+
+                          if (  nodeA[0]<xMAXlim and nodeA[1]>yMINlim and zmin<z<zmax):
+                              isPresentA = True
+                              #ax.scatter(nodeA[0], nodeA[1])
+                              #print ('xtop %f' %xTop)
+                              #print ('ytop %f' %yTop)
+                              #print ('x %f < %f' %(nodeA[0], xMAXlim))
+                              #print ('y %f > %f' %(nodeA[1], yMINlim))
+
+                              #a = input('').split(" ")[0]
+
+
+                      x = nodeB[0] - xmin
+                      y = ymax - nodeB[1]
+                      z = nodeB[2]
+
+                      if (nodeB[0] > xmin and nodeB[0]<xTop):
+                          xMINlim = xmin + xTop * y / yTop
+                          yMINlim = ymax - yTop * x / xTop
+
+                          if (  nodeB[0]>xMINlim and nodeB[1]>yMINlim and zmin<z<zmax):
+                              isPresentB = True
+
+                      if (nodeB[0] > xTop and nodeB[0] < xmax ):
+                          xMAXlim = xmax - xTop * y / yTop
+                          yMINlim = ymax - yTop * (xmax-nodeA[0]) / xTop
+
+                          if (  nodeB[0]<xMAXlim and nodeB[1]>yMINlim and zmin<z<zmax):
+                              isPresentB = True
+
+                      if isPresentA and isPresentB:
+                          mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
+                          elaElems.append(nodeA[0:3])
+                          elaElems.append(nodeB[0:3])
+
+                          #ax.scatter(nodeB[0], nodeB[1])
+                          #print('node in triangle')
+
 
                 else:
-                    mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+                      mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+                """
+                elif (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
+                          mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
+                          mZ[0][2][2] < nodeA[2] < mZ[0][3][2] and
+                          mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
+                          mZ[0][2][1] < nodeB[1] < mZ[0][3][1] and
+                          mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) :
+                          mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
+                          print('node in B')
+                        #print('found ela element')
+                """
+
     else:
         for i in range (len(mechElemRidges)):
             mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
@@ -1816,6 +2103,14 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         print ('MechElems connect only MechNodes. That is ok.')
     else:
         print ('MechElems CONNECT WRONG NODES !!!')
+
+    np.set_printoptions(threshold=np.inf)
+    #print()
+    np.asarray(elaElems)
+
+
+    #plt.show()
+
 
     if (notches!=None ):
         print('Filtering out elements connecting notches...' )
@@ -2426,9 +2721,13 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
     test_nodeCoords = np.genfromtxt(os.path.join(master_folder,nodesFile),  dtype= None, encoding='ascii', usecols=cols)
     print('\t\t %d nodes loaded.' %len(test_nodeCoords))
 
-    print('Loading back aux node coords...', end='')
-    test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
-    print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
+
+    if (os.path.exists(os.path.join(master_folder,auxNodesFile))):
+        print('Loading back aux node coords...', end='')
+        test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
+        print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
+    else:
+        test_auxNodeCoords = np.zeros(3)
 
     print('Loading back vertices coords...', end='')
     test_verticesCoords = np.genfromtxt(os.path.join(master_folder,verticesFile),  dtype= None, encoding='ascii', usecols=cols)
@@ -2466,12 +2765,14 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
                 wrongElems +=1
                 #a = input('').split(" ")[0]
                 #print(mechElem)
+                #print(val)
                 #print(mechElem[3:3+verticesNr])
                 #print(vertices)
         if (wrongElems==0):
             print('All faces coplanar. Mech Elems OK. MaxErr: %e' %maxErr)
         else:
-            print ('Wrong faces: %d !!!!' %wrongElems)
+            print ('Wrong faces: %d/%d !!!!' %(wrongElems, len(test_mechElems)))
+            print('MaxErr: %e' %maxErr)
             allOK = False
 
 
@@ -2500,7 +2801,7 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
             material =  int (trsprtElem[4+verticesNr])
 
             #checking coplanarity
-            allCoplanar, val = checkCoplanarity(vertices, 1e-15)
+            allCoplanar, val = checkCoplanarity(vertices, 1e-8)
             if (val > maxErr): maxErr = val
             if (allCoplanar == False):
                 wrongElems +=1

@@ -108,11 +108,13 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None):
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None):
     #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
     matZ = []
+    #matZone 2
+    matZ1 = []
     if (model=='box'):
         if (dim==2):
             boundA = np.array(  [ -1e-8             , -1e-8          ] )
@@ -162,11 +164,24 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
         matZ.append (boundA)
         boundB = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
         matZ.append (boundB)
-        boundA1 = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
-        matZ.append (boundA1)
-        boundB1 = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
-        matZ.append (boundB1)
+        materialZones.append(matZ)
 
+        boundA1 = np.array(  [ limits1[0]    ,  limits1[1],  limits1[2]  ] )
+        boundB1 = np.array(  [ limits1[3]    ,  limits1[4],  limits1[5]  ] )
+        matZ1.append(boundA1)
+        matZ1.append(boundB1)
+        materialZones.append(matZ1)
+
+    if (model=='3dcylinder'):
+        boundA = np.array(  [ -1e-8   -maxLim[0]          , -1e-8    -maxLim[1]         , -1e8 -maxLim[2]] )
+        matZ.append (boundA)
+        boundB = np.array(  [ elaX*maxLim[0]     , maxLim[1] + 1e8   , maxLim[2] + 1e8  ] )
+        matZ.append (boundB)
+
+        boundA1 = np.array(  [ maxLim[0]-elaX*maxLim[0]  , - 1e-8  -maxLim[1]      , -1e8-maxLim[2]] )
+        matZ.append (boundA1)
+        boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
+        matZ.append (boundB1)
         materialZones.append(matZ)
 
     return materialZones
@@ -932,7 +947,13 @@ def create3dPeriodicShear(maxLim, minDist, trials ):
 
     #1 loading function, single force top right, bilinear
     fn1 = utilitiesNumeric.sawToothConstFunc(value = -5e-4, period = 4)
-    functions.append (fn1)
+    #functions.append (fn1)
+
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, -1e-3]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
 
     mechIC_merged = []
 
@@ -3047,321 +3068,34 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
     mechBC_merged = []
     mechInitC_merged = []
 
-    periodicBand = 3* minDist
-
     print('assembling 3d periodic ')
     ###########generating of points in rectangle
     pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
 
-    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
-    #node_coords = np.loadtxt('test.out')
-
-    mirtype = []
-    coupledNodes = []
-    nodePositions = []
-    for i in range (len(node_coords)):
-        nodePositions.append(i+1)
-        mirtype.append(0)
     node_coords = np.asarray(node_coords)
-    print(len(node_coords))
 
-    nNds =  np.vstack((
-    node_coords + np.array([-maxLim[0], 1*maxLim[1], 0]),#
-    node_coords + np.array([0*maxLim[0], 1*maxLim[1], 0]),
-    node_coords + np.array([1*maxLim[0], 1*maxLim[1], 0]),
-    node_coords + np.array([-1*maxLim[0], 0*maxLim[1], 0]),#
+    nNds = np.vstack((
     node_coords,
-    node_coords + np.array([1*maxLim[0], 0*maxLim[1], 0]),
-    node_coords + np.array([-1*maxLim[0], -1*maxLim[1], 0]),
-    node_coords + np.array([0*maxLim[0], -1*maxLim[1], 0]),#
-    node_coords + np.array([1*maxLim[0], -1*maxLim[1], 0]),
-        node_coords + np.array([-1*maxLim[0], 1*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([0*maxLim[0], 1*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([1*maxLim[0], 1*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([-1*maxLim[0], 0*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([0*maxLim[0], 0*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([1*maxLim[0], 0*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([-1*maxLim[0], -1*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([0*maxLim[0], -1*maxLim[1], 1*maxLim[2]]),
-        node_coords + np.array([1*maxLim[0], -1*maxLim[1], 1*maxLim[2]]),
-    node_coords + np.array([-1*maxLim[0], 1*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([0*maxLim[0], 1*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([1*maxLim[0], 1*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([-1*maxLim[0], 0*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([0*maxLim[0], 0*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([1*maxLim[0], 0*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([-1*maxLim[0], -1*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([0*maxLim[0], -1*maxLim[1], -1*maxLim[2]]),
-    node_coords + np.array([1*maxLim[0], -1*maxLim[1], -1*maxLim[2]]))                      )
-    #plt.plot(node_coords[:,0]+1, node_coords[:,1], 'x', color='red');
-    ########### adding periodic points
-    """
-    print('Adding periodic points')mechBC_merged
-    for i in range (len(node_coords)):
-        point = np.asarray(node_coords[i,:])
-        #
-        xplus = False
-        xminus = False
-        yplus = False
-        yminus = False
-        zplus = False
-        zminus = False
-        #
-        if(point[0]<periodicBand):
-            xplus = True
-        if(point[0]>maxLim[0]-periodicBand):
-            xminus = True
-        if(point[1]<periodicBand):
-            yplus = True
-        if(point[1]>maxLim[1]-periodicBand):
-            yminus = True
-        if(point[2]<periodicBand):
-            zplus = True
-        if(point[2]>maxLim[2]-periodicBand):
-            zminus = True
+    node_coords + np.array([maxLim[0], 0, 0]),
+    node_coords + np.array([0, maxLim[1], 0]),
+    node_coords + np.array([0, 0, maxLim[2]]),
+    #
+    node_coords + np.array([-maxLim[0], 0, 0]),
+    node_coords + np.array([0, -maxLim[1], 0]),
+    node_coords + np.array([0, 0, -maxLim[2]]),
+    ))
 
-        k = i+1# len(node_coords)+1
-
-        #images due to one dimension
-
-        if xplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            nodePositions.append(-k)
-            node_coords = np.vstack(( node_coords, newPoint ))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(1)
-            nNds.append(newPoint)
-        if xminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if yplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[1] += maxLim[1]
-            nodePositions.append(-k)
-            #plt.plot(  newPoint[0] , newPoint[1] ,'o', color='red')
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(2)
-            nNds.append(newPoint)
-        if yminus:
-            newPoint = np.copy(point)
-            newPoint[1] -= maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if zplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[2] += maxLim[2]
-            nodePositions.append(-k)
-            #plt.plot(  newPoint[0] , newPoint[1] ,'o', color='red')
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(3)
-            nNds.append(newPoint)
-        if zminus:
-            newPoint = np.copy(point)
-            newPoint[2] -= maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-
-
-        if xplus and yplus and not zplus and not zminus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] += maxLim[1]
-            nodePositions.append(-k)
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(110)
-            nNds.append(newPoint)
-
-        if xminus and yplus and not zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] += maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if xplus and yminus  and not zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] -= maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if xminus and yminus  and not zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] -= maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-
-
-        if xplus and yplus and zplus and not zminus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] += maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(-k)
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(111)
-            nNds.append(newPoint)
-        if xminus and yplus and zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] += maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if xplus and yminus  and zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] -= maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if xminus and yminus  and zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] -= maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-
-
-
-
-        if xplus and yplus and not zplus and zminus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] += maxLim[1]
-            newPoint[2] -= maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if xminus and yplus and not zplus and zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] += maxLim[1]
-            newPoint[2] -= maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if xplus and yminus  and not zplus and zminus:
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] -= maxLim[1]
-            newPoint[2] -= maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-        if xminus and yminus  and not zplus and zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] -= maxLim[1]
-            newPoint[2] -= maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-            nNds.append(newPoint)
-
-
-
-        if  not xplus and not xminus and  yplus and zplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            #newPoint[0] += maxLim[0]
-            newPoint[1] += maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(-k)
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(11)
-        if xminus and yplus and zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] += maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-        if xplus and yminus  and zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] -= maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-        if xminus and yminus  and zplus and not zminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] -= maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-
-
-
-        if  not xplus and not xminus and  yplus and zplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            #newPoint[0] += maxLim[0]
-            newPoint[1] += maxLim[1]
-            newPoint[2] += maxLim[2]
-            nodePositions.append(-k)
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(11)
-
-    """
 
     """
     nNds = np.asarray(nNds)
     fig = plt.figure()
     ax = Axes3D(fig)
-    ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
+    #ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
     #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
     ax.scatter(nNds[:,0], nNds[:,1], nNds[:,2], color='r')
     if SHOW_PLOT:
         plt.show()
     """
-
-
-    #print (len(node_coords))
-
-    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
-    #node_coords = np.loadtxt('test.out')
 
 
 
@@ -3388,6 +3122,13 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     govNodesMechBC = []
     rigidPlates = []
 
+    #exact notch
+    exactNotch = False
+
+    #notch heaight
+    if not exactNotch:
+        nHeight = maxLim[1]*notch - minDist/4
+        #notch = nHeight / maxLim[1]
 
     if node_coords_init is None:
         node_coords.append( np.array([maxLim[0]/4, maxLim[1]/2, maxLim[2]/2]))
@@ -3472,8 +3213,10 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
                 nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch, maxLim[2]-indent])
             pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
             for i in range (oldLen, len(node_coords), 1):
-                leftTop.append(i)
-                #notchSide0.append(i)
+                if exactNotch:
+                    leftTop.append(i)
+                else:
+                    notchSide0.append(i)
 
             rightTop = []
             oldLen = len(node_coords)
@@ -3485,8 +3228,10 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
                 nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch, maxLim[2]-indent])
             pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
             for i in range (oldLen, len(node_coords), 1):
-                rightTop.append(i)
-                #notchSide1.append(i)
+                if exactNotch:
+                    rightTop.append(i)
+                else:
+                    notchSide1.append(i)
 
             notchTop = []
             notchTop.append(rightTop)
@@ -3587,12 +3332,14 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             notchFrac = []
             notchFrac.append(notchSide0)
             notchFrac.append(fracZone)
-            notches.append(notchFrac)
+            if exactNotch:
+                 notches.append(notchFrac)
 
             notchFrac1 = []
             notchFrac1.append(notchSide1)
             notchFrac1.append(fracZone)
-            notches.append(notchFrac1)
+            if exactNotch:
+                notches.append(notchFrac1)
 
         ##########################################generating of points, fracture zone
         maxLimF = np.array([
@@ -3691,7 +3438,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
         ##########################################generating of points, homogeneous volume
-        pointGenerators.generateNodesRect(maxLim, minDist/2, dim, trials, node_coords)
+        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
 
     if coupled:
         notches = []
@@ -5023,7 +4770,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         oldLen = len(node_coords)
         nodeA = np.array([indent, radius*0.99, radius*0.14])
         nodeB = np.array([height-indent, radius*0.99, radius*0.14])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, radius*0.99, radius*0.07])
         nodeB = np.array([height-indent, radius*0.99, radius*0.07])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
@@ -5032,7 +4779,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, radius*0.99, -radius*0.14])
         nodeB = np.array([height-indent, radius*0.99, -radius*0.14])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, radius*0.99, -radius*0.07])
         nodeB = np.array([height-indent, radius*0.99, -radius*0.07])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
@@ -5085,7 +4832,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         oldLen = len(node_coords)
         nodeA = np.array([indent, -radius*0.99, radius*0.14])
         nodeB = np.array([height-indent, -radius*0.99, radius*0.14])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, radius*0.07])
         nodeB = np.array([height-indent, -radius*0.99, radius*0.07])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
@@ -5094,7 +4841,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, -radius*0.14])
         nodeB = np.array([height-indent, -radius*0.99, -radius*0.14])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, -radius*0.07])
         nodeB = np.array([height-indent, -radius*0.99, -radius*0.07])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
