@@ -34,12 +34,14 @@ public:
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
+    // virtual std :: string giveLineToSave(NodeContainer * nodes) const;
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
-    virtual Matrix giveSteadyStateMatrix(string matrixType) const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
     vector< unsigned >giveDoFs() const { return DoFids; };
     vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
@@ -78,7 +80,7 @@ protected:
 public:
     GeometricalElement() { mat = nullptr; }
     ~GeometricalElement() {};
-    double giveIPValue(string code, unsigned ipnum) { ( void ) code; ( void ) ipnum; return 0; }
+    double giveIPValue(string code, unsigned ipnum) const { ( void ) code; ( void ) ipnum; return 0; }
 };
 
 //////////////////////////////////////////////////////////
@@ -91,8 +93,6 @@ protected:
 public:
     TransportElement() {}
     ~TransportElement() {};
-    virtual Matrix giveConductivityMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
-    virtual Matrix giveCapacityMatrix() const { return giveMassMatrix(); };
 };
 
 
@@ -106,7 +106,6 @@ protected:
 public:
     MechanicalElement() {}
     ~MechanicalElement() {};
-    virtual Matrix giveStiffnessMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
 };
 
 //////////////////////////////////////////////////////////
@@ -137,6 +136,10 @@ public:
     double giveArea() const { return area; }
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual Vector giveContactStrainXYZ(const Vector &DoFs) const;
+    virtual Vector giveContactStressXYZ(const Vector &DoFs);
+    virtual Vector transformToLocal(const Vector &DoFs) const;
+    virtual Vector transformToGlobal(const Vector &DoFs) const;
+
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     double giveCrackOpening() { return tempCrackOpening; };
@@ -191,9 +194,9 @@ public:
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Matrix giveCapacityMatrix() const;
+    virtual Matrix giveDampingMatrix() const;
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
-    //virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -208,7 +211,6 @@ private:
     void findFriends2D(ElementContainer *elemcont);
     void findFriends3D(ElementContainer *elemcont);
 
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     void findElementFriends(ElementContainer *elemcont);
@@ -216,6 +218,7 @@ public:
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     void init();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -234,6 +237,7 @@ public:
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////

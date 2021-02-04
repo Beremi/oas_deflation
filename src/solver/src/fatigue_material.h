@@ -40,6 +40,8 @@ private:
     double work_tot;
 
     void print() const;
+
+    bool coup_dam;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e);
     virtual ~FatigueShearMaterialStatus() {};
@@ -47,8 +49,15 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
+    bool isDamageCoupled() const { return coup_dam; }
+protected:
+  void setDamage(const double &new_damage){
+    if ( new_damage > this->temp_damageShear){
+      this->temp_damageShear = new_damage;
+    }
+  }
 };
 
 
@@ -60,8 +69,9 @@ private:
     double gamma;  ///< kinematic hardening modulus
     double S;  ///< damage strength
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
-    double m;  ///< parameter controling the pressure sensitivity
+    double mC, mT;  ///< parameters controling the pressure sensitivity (under Compression or Tension)
     bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
+    bool coup_dam;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -73,7 +83,8 @@ public:
     double giveS() const { return S; }
     double giveC() const { return c; }
     double giveR() const { return r; }
-    double giveM() const { return m; }
+    double giveMC() const { return mC; }
+    double giveMT() const { return mT; }
     virtual void init();
 
     bool useSlip() const { return use_slip; }
@@ -81,6 +92,7 @@ public:
     bool analyticalLambda() const { return analytical_lambda; }
     bool newIterativeApproachOn() const { return newIterOn; }
     bool bisectionMethOn() const { return bisecOn; }
+    bool isDamageCoupled() const { return coup_dam; }
 };
 
 //////////////////////////////////////////////////////////
@@ -120,8 +132,14 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
+protected:
+  void setDamage(const double &new_damage){
+    if ( new_damage > this->temp_damage){
+      this->temp_damage = new_damage;
+    }
+  }
 };
 
 
@@ -167,7 +185,7 @@ class FatigueMaterial;
 class FatigueMaterialStatus : public FatigueShearMaterialStatus, public DamagePlasticMaterialStatus
 {
 private:
-
+    bool coupled_damage;
 public:
     FatigueMaterialStatus(FatigueMaterial *m, Element *e);
     virtual ~FatigueMaterialStatus() {};
@@ -175,7 +193,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
 };
 
@@ -219,7 +237,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     // virtual Vector giveStressWrong(const Vector &strain);
     void calculateDamage(const Vector &strain);
     virtual double giveValue(string code) const;
@@ -280,7 +298,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
 };
 

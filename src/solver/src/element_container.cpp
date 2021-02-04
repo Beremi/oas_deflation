@@ -97,6 +97,99 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     }
 }
 
+
+//////////////////////////////////////////////////////////
+// void ElementContainer ::  saveToFile(const string &filepath, std :: vector< unsigned > &elems_to_save) const {
+//     std :: ofstream outputfile( filepath );
+//     if ( outputfile.is_open() ) {
+//         outputfile << "#elements saved from calculation";
+//         for ( auto const &elem_id : elems_to_save) {
+//           outputfile << this->giveElement(elem_id)->giveLineToSave(this->nodes) << '\n';
+//         }
+//         outputfile.close();
+//     }
+// }
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step) const {
+    std :: ofstream outputfile( filepath );
+    unsigned stat_id = 0;
+    if ( outputfile.is_open() ) {
+        outputfile << "#elem_id stat_id internal_variables...";
+        outputfile << "\ntime " << time_now << " " << step;
+        for ( auto const &elem_id : elems_to_save) {
+          stat_id = 0;
+          for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats()){
+            // elem_id - stat_id -  mat_id - internal_variables
+            outputfile << '\n' << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t' << mat_stat->giveLineToSave();
+          }
+        }
+        outputfile.close();
+    }
+}
+
+// these methods must be separate, because at first, I need to set time of calculation in solver
+// but at that time, mat_stats are still before init() so all the values vould be reset after that
+std :: string ElementContainer :: setFileToLoadFrom(const std :: string &str ) {
+  this->file_to_load_from = str;
+  std :: string line, param;
+  ifstream inputfile(str.c_str() );
+  if ( inputfile.is_open() ) {
+    while ( getline(inputfile >> std :: ws, line) ) {
+      if ( line.at(0) == '#' || std :: isdigit( line.at(0) ) || line.empty() ) {
+          continue;
+      }
+      istringstream iss(line);
+      iss >> param;
+      if ( param.compare("time") == 0 ){
+        return line;
+      }
+    inputfile.close();
+    }
+  }
+  std::cerr << "could not determine the starting time from the file \'" << str << "\'" << '\n';
+  std::cerr << "there is no line beginning with \'time\'" << '\n';
+  exit(EXIT_FAILURE);
+};
+
+
+void ElementContainer :: readElemStatsFromFile() {
+  string line, param;
+  unsigned elem_id, stat_id, mat_id;
+  ifstream inputfile(this->file_to_load_from.c_str() );
+  if ( inputfile.is_open() ) {
+      while ( getline(inputfile >> std :: ws, line) ) {
+          if ( !std::isdigit( line.at(0) ) || line.at(0) == '#' || line.empty() ) {
+              continue;
+          }
+          istringstream iss(line);
+          iss >> elem_id >> stat_id >> mat_id;
+          this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
+      }
+      inputfile.close();
+  }
+  // if LD file exists, it will be deleted, so rename it
+  unsigned LD_num = 0;
+  std :: string fnm = "LD";
+  // NOTE here GlobPaths :: RESULTDIR would be usefull
+  std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / (fnm + ".out") ).string();
+  std :: string fnm_fin;
+  while ( LD_num < 1000 ){
+    fnm_fin = (GlobPaths :: BASEDIR / "results" / (fnm + std :: to_string(LD_num) + ".out") ).string();
+    if ( !fs :: exists( fnm_fin ) ){
+      if ( fs :: exists( fnm_ini ) ){
+        std :: rename(fnm_ini.c_str(), fnm_fin.c_str());
+        std::cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
+        break;
+      } else {
+        std::cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
+      }
+    }
+    LD_num++;
+  }
+}
+
+
 //////////////////////////////////////////////////////////
 void ElementContainer :: init() {
     max_sol_order = 0;
@@ -106,6 +199,9 @@ void ElementContainer :: init() {
         ( * e )->init();
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
+    }
+    if ( this->file_to_load_from.compare("none") != 0 ){
+      this->readElemStatsFromFile();
     }
 }
 
@@ -118,22 +214,15 @@ void ElementContainer :: updateMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
+void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const {
     map< pair< size_t, size_t >, double >indices11;
+
+    (void) diffType; //not needed, matrix size is the same
 
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-        if ( matrixType.compare("mass") == 0 ) {
-            if ( !dynamic_cast< MechanicalElement * >( * e ) ) {
-                continue;
-            }
-        } else if ( matrixType.compare("capacity") == 0 ) {
-            if ( !dynamic_cast< TransportElement * >( * e ) ) {
-                continue;
-            }
-        }
         elDoFs = ( * e )->giveDoFs();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
@@ -160,69 +249,53 @@ void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix 
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K) const {
-    prepareSteadyStateMatrix(K, "");
+void ElementContainer :: prepareStiffnessMatrix(CoordinateIndexedSparseMatrix &K) const {
+    prepareStructuralMatrix(K, 0);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareCapacityMatrix(CoordinateIndexedSparseMatrix &C) const {
-    prepareSteadyStateMatrix(C, "capacity");
+void ElementContainer :: prepareDampingMatrix(CoordinateIndexedSparseMatrix &C) const {
+    prepareStructuralMatrix(C, 1);
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const {
-    prepareSteadyStateMatrix(M, "mass");
+    prepareStructuralMatrix(M, 2);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const {
+void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const {
+
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     Vector elDoFValues;
     Matrix k;
-    MechanicalElement *me;
-    TransportElement *te;
 
-    for ( unsigned so = 0; so <= max_sol_order; so++ ) {
-        for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-            if ( ( * e )->giveSolutionOrder() != so ) {
-                continue;                                  //correct order must be used;
-            }
-            if ( matrixType.compare("mass") == 0 ) {
-                me = dynamic_cast< MechanicalElement * >( * e );
-                if ( me ) {
-                    k = me->giveMassMatrix();
-                } else {
-                    continue;
-                }
-            } else if ( matrixType.compare("capacity") == 0 ) {
-                te = dynamic_cast< TransportElement * >( * e );
-                if ( te ) {
-                    k = te->giveCapacityMatrix();
-                } else {
-                    continue;
-                }
-            } else {
-                k = ( * e )->giveSteadyStateMatrix(matrixType);
-            }
-            elDoFs = ( * e )->giveDoFs();
-            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-                for ( unsigned j = i; j < elDoFs.size(); j++ ) {
-                    DoFi = nodes->giveDoFid(elDoFs [ i ]);
-                    DoFj = nodes->giveDoFid(elDoFs [ j ]);
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        if      ( diffType == 0 ) k = (*e)->giveStiffnessMatrix(matrixType); //stiffness or conductivity
+        else if ( diffType == 1 ) k = (*e)->giveDampingMatrix(); //damping or capacity
+        else if ( diffType == 2 ) k = (*e)->giveMassMatrix(); //mass
+        else {
+            cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
+            exit(1);
+        }
+        elDoFs = ( * e )->giveDoFs();
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            for ( unsigned j = i; j < elDoFs.size(); j++ ) {
+                DoFi = nodes->giveDoFid(elDoFs [ i ]);
+                DoFj = nodes->giveDoFid(elDoFs [ j ]);
 
-                    //diagonal
-                    if ( DoFi == DoFj ) {
-                        if ( DoFi < nfreeDoFs ) {
-                            K [ DoFi ] [ DoFi ] += k [ i ] [ i ];
-                        }
-                    } else {
-                        //remaining items
-                        if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                            K [ DoFi ] [ DoFj ] += k [ i ] [ j ];
-                            K [ DoFj ] [ DoFi ] += k [ j ] [ i ];
-                        }
+                //diagonal
+                if ( DoFi == DoFj ) {
+                    if ( DoFi < nfreeDoFs ) {
+                        K [ DoFi ] [ DoFi ] += k [ i ] [ i ];
+                    }
+                } else {
+                    //remaining items
+                    if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                        K [ DoFi ] [ DoFj ] += k [ i ] [ j ];
+                        K [ DoFj ] [ DoFi ] += k [ j ] [ i ];
                     }
                 }
             }
@@ -243,17 +316,22 @@ void ElementContainer :: updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateCapacityMatrix(CoordinateIndexedSparseMatrix &C) const {
-    updateSteadyStateMatrix(C, "capacity");
+void ElementContainer :: updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const {
+    updateStructuralMatrix(K, 0, param);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateDampingMatrix(CoordinateIndexedSparseMatrix &C) const {
+    updateStructuralMatrix(C, 1, "");
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) const {
-    updateSteadyStateMatrix(M, "mass");
+    updateStructuralMatrix(M, 2, "");
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f, bool frozen) {
+void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f *= 0;  // clear array
@@ -277,13 +355,47 @@ void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f, bool
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: giveInternalForces(Vector &full_r, Vector &full_f) {
-    giveInternalForces(full_r, full_f, false);
+void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const{
+    Vector elDoFvalues, elForces;
+    vector< unsigned >elDoFs;
+    full_f *= 0; //clear array
+
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        elDoFs = ( * e )->giveDoFs();
+        elDoFvalues.resize(elDoFs.size() );
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
+        }
+        if      (diffType==1) elForces = ( * e )->giveDampingMatrix() * elDoFvalues;  //damping or conductivity
+        else if (diffType==2) elForces = ( * e )->giveMassMatrix() * elDoFvalues;  //inertia
+        else {
+            cerr << "ElementContainer Error: time derivative matrix type " << diffType << " unknown" << endl;
+            exit(1);
+        }
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            full_f [ elDoFs [ i ] ] += elForces [ i ];
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: giveInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f) {
-    giveInternalForces(full_r, full_f, true);
+void ElementContainer :: integrateDampingForces(const Vector &full_v, Vector &full_f) const{
+    integrateDampingOrInertiaForces(full_v, full_f, 1);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: integrateInertiaForces(const Vector &full_a, Vector &full_f) const {
+    integrateDampingOrInertiaForces(full_a, full_f, 2);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f) {
+    integrateInternalForces(full_r, full_f, false);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f) {
+    integrateInternalForces(full_r, full_f, true);
 }
 
 //////////////////////////////////////////////////////////

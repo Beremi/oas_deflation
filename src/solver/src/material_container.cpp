@@ -19,6 +19,7 @@ void MaterialContainer :: readFromFile(const string filename) {
     size_t origsize = matrs.size();
     string line, matType;
     ifstream inputfile(filename.c_str() );
+    unsigned id = 0;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -48,6 +49,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteRVEMaterial") == 0 ) {
                     DiscreteRVEMaterial *newmat = new DiscreteRVEMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("DiscreteRVEMaterialPrecomputed") == 0 ) {
+                    DiscreteRVEMaterialPrecomputed *newmat = new DiscreteRVEMaterialPrecomputed();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("TrsprtCoupledMaterial") == 0 ) {
@@ -95,6 +100,8 @@ void MaterialContainer :: readFromFile(const string filename) {
                     exit(EXIT_FAILURE);
                 }
             }
+            matrs.back()->setId(id);
+            id++;
         }
         inputfile.close();
         cout << "Input file '" <<  filename << "' succesfully loaded; " << matrs.size() - origsize << " materials found" << endl;

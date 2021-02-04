@@ -1,5 +1,6 @@
 #include "data_exporter.h"
 #include "vtk_exporter.h"
+#include "exporter_model.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -214,12 +215,13 @@ void ForceGauge :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge :: ForceGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
+ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
     nodes = nc;
     filename = f;
     name = gname;
     n = nn;
-    codes = c;
+    codes.resize(1);
+    codes [ 0 ] = c;
     multiplier = m;
 }
 
@@ -296,7 +298,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
 */
 
 //////////////////////////////////////////////////////////
-DoFGauge :: DoFGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {
+DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {
 }
 
 //////////////////////////////////////////////////////////
@@ -321,10 +323,10 @@ void DoFGauge :: init() {
         }
     } else {
         if ( dim == 3 ) {
-            cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by ForceGauge in 3D model" << endl;
+            cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;
             exit(EXIT_FAILURE);
         } else if ( dim == 2 ) {
-            cerr << "Error in DoFGauge: only 'ux', 'uy' or 'rz' can be exported by ForceGauge in 2D model" << endl;
+            cerr << "Error in DoFGauge: only 'ux', 'uy' or 'rz' can be exported by DoFGauge in 2D model" << endl;
             exit(EXIT_FAILURE);
         }
     }
@@ -557,6 +559,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     } else {
                         std :: cout << "no rigid body contacts exporter for dimension " << dimension << '\n';
                     }
+                } else if ( exptype.compare("ElementStatsExporter") == 0 ) {
+                    ElementStatsExporter *newexp = new ElementStatsExporter(e, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -681,7 +687,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
     Vector intF0(2 * dim);
     Vector intF1(dim);
     Vector intF2(dim);
-    Vector elDoFvalues, elReactValues, strainNT;
+    Vector elDoFvalues, strainNT;
     vector< unsigned >elDoFs;
 
     vector< double >Volume(stress.size(), 0);
@@ -689,41 +695,34 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
     RigidBodyContact *rbc;
 
     for ( auto const &el : * elems ) {
-        if ( el->giveName().compare("RigidBodyContact") == 0 ) {
+        if ( el->giveName().compare("LTCBEAM") == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
-            elReactValues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
-                elReactValues [ i ] = reactions [ elDoFs [ i ] ];
             }
 
             // to each node correspond 0.5 of volume
             // TODO must be repaired for power tessellation
             single_volume = 0.5 * rbc->giveLength() * rbc->giveArea() / dim;
-            first = -1;
+            first = 1;
             ni = 0;
-            intF0 = el->giveInternalForces(elDoFvalues, false);
-            for ( size_t ii = 0; ii < dim; ii++ ) {
-                intF1 [ ii ] = intF0 [ ii ];
-                intF2 [ ii ] = intF0 [ ii + 3 * ( dim - 1 ) ];
-            }
             for ( auto const &n : el->giveNodes() ) {
                 auto res = std :: find(begin(* nodes), end(* nodes), n);
                 node_id = std :: distance(begin(* nodes), res);
                 Volume [ node_id ] += single_volume;
 
                 stress [ node_id ] += dyadicProduct(
-                    (
-                        ( ( first == -1 ) ? intF1 * ( -first ) : intF2  * ( -first ) ) +
-                        rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
-                    )
-                    * first
-                    , rbc->giveVectorToNode(ni, 0) );
-                // TODO here is probably missing some value corresponding to internal moments, since only forces are taken into account to intF1 & intF2
+                  (
+                      rbc->giveContactStressXYZ(elDoFvalues)
+                      * rbc->giveArea()  // vyhodit
+                  )
+                  * first
+                  , rbc->giveVectorToNode(ni, 0) );  // tady může být jen poloha  IP (HonzaE článek 2020)
+                // TODO here is probably missing some value corresponding to internal moments
                 // for node corresponding to end of element, traction needs to be reversed
-                first = 1;
+                first = -1;
                 ni++;
             }
         } else {

@@ -62,6 +62,30 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
 }
 
 //////////////////////////////////////////////////////////
+void NodeContainer :: saveToFile(const std :: string &filepath, std :: vector< unsigned > &nodes_to_save) const {
+    std :: ofstream outputfile( filepath );
+    if ( outputfile.is_open() ) {
+        outputfile << "#nodes saved from calculation";
+        for ( auto const &node_id : nodes_to_save) {
+          outputfile << this->giveNode(node_id)->giveLineToSave() << '\n';
+        }
+        outputfile.close();
+    }
+}
+
+unsigned NodeContainer :: giveNodeId(const Node * node) const {
+    // do not use this method for node that is not a part of this (nodeContainer)
+    auto res = std :: find(std :: begin(this->nodes), std :: end(this->nodes), node);
+    if (res != this->nodes.end()) {
+      // if node is not in container, return zero (but zero can be also for the first node)
+      // just to prevent errors here
+      return 0;
+    }
+    return std :: distance(std :: begin(this->nodes), res);
+}
+
+
+//////////////////////////////////////////////////////////
 void NodeContainer :: init() {
     establishDoFArray();
 }
@@ -212,23 +236,25 @@ void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
     }
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
+        if ( DoFid [ i ] < freeDoFs - constrDoFs  ) {
             f [ DoFid [ i ] ] = fullf [ i ];
         }
     }
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const {
+void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
     // #constr_new
     if ( this->giveConstraints()->isActive() ) {
         this->giveConstraints()->calculateMasterForces(f_int);
+        this->giveConstraints()->calculateMasterForces(f_dam);
+        this->giveConstraints()->calculateMasterForces(f_acc);
     }
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
         if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {
-            f_ext [ k ] += f_int [ k ];
+            f_ext [ k ] += f_int [ k ] + f_dam [ k ] + f_acc [ k ];
         }
     }
 }

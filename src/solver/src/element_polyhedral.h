@@ -45,8 +45,8 @@ public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
     virtual void init();
-    virtual Matrix giveSteadyStateMatrix(string matrixType) const;
-    virtual Matrix giveMassMatrix() const;
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
 };
 

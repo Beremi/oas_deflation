@@ -52,19 +52,27 @@ void RVEMaterial :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// transport RVE status
+// DISCRETE RVE MATERIAL
 DiscreteRVEMaterialStatus :: DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile) : RVEMaterialStatus(m, e, masterfile) {
     name = "transport RVE mat. status";
 }
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain = strain;
 
-    volumAverFunc->setYValue(0., 0);
+    double macro_pressure = 0;
+    if ( active_transport ) {
+        temp_strain.resize(strain.size()-1);
+        for (unsigned i = 0; i<temp_strain.size(); i++) temp_strain[i] = strain[i];
+        macro_pressure = strain[strain.size()-1];      
+    } else {
+        temp_strain = strain;
+    }
+
+    volumAverFunc->setYValue(0., 0.); 
 
     unsigned ndim = RVE->giveDimension();
-
+    
     unsigned stra_size = ndim * ndim;
     stra_size += ( ndim == 3 ) ? ndim * ndim : ndim; //in 2D only vector
     if ( !active_mechanics ) {
@@ -99,28 +107,41 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
             e->giveMatStatus(0)->setEigenStrain(eigstr);
         }
     }
+  
 
+    vector < double >  initial_permeability, initial_a;
     if ( active_transport ) {
         Transp1D *e;
-        Vector eigstr(0);
+        TrsprtMaterialStatus *s;
+        TrsprtMaterial *m;
+        Vector eigstr(1);
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
             e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
             if ( !e ) {
                 continue;
             }
-            normal = e->giveNormal();
+            s = static_cast< TrsprtMaterialStatus* >( e->giveMatStatus(0) );
+            m = static_cast< TrsprtMaterial* >( s->giveMaterial() );   
+            initial_permeability.push_back( m->givePermeability());
+            initial_a.push_back( m->giveParamA());
+            m->setPermeability( s->calculatePressureDependentPermeability(macro_pressure) ); //calculating pressure depedent conductivity
+            m->setParamA(-1.); //switch of linearity    
+            normal = e->giveNormal();            
             eigstr *= 0.;
             for ( unsigned v = 0; v < ndim; v++ ) {
-                eigstr [ 0 ] = -strain [ stra_size + v ] * normal.giveCoord(v);
+                eigstr [ 0 ] -= temp_strain [ stra_size + v ] * normal.giveCoord(v);
             }
-            e->giveMatStatus(0)->setEigenStrain(eigstr);
+            s->setEigenStrain(eigstr);
         }
     }
 
     //solve
     RVE->resetTime();
+    //RVE->giveSolver()->updateSteadyStateMatrix(); //needed when using linear solver - NO, internal forces automatically takes care, it can be switched on optionally
     RVE->giveSolver()->runBeforeEachStep();
     RVE->giveSolver()->solve();
+
+    //REMOVE MACROPRESSURE
 
     //collect results
     temp_stress.resize(stra_size + pres_size);
@@ -151,19 +172,26 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     }
 
 
-    if ( active_transport ) {
+    if ( active_transport ) {   
+        unsigned k = 0;
         double volume = 0.;
         double factor;
         Transp1D *e;
+        TrsprtMaterial *m;
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
             e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
             if ( e ) {
                 normal = e->giveNormal();
                 factor = e->giveArea() * e->giveLength() * e->giveMatStatus(0)->giveTempStress() [ 0 ];
                 for ( unsigned v = 0; v < ndim; v++ ) {
-                    temp_stress [ stra_size + v ] += factor * normal.giveCoord(v);
+                    temp_stress [ stra_size + v ] += factor * normal.giveCoord(v); 
                 }
                 volume += e->giveVolume();
+
+                m = static_cast< TrsprtMaterial* >( e->giveMatStatus(0)->giveMaterial() );
+                m->setPermeability( initial_permeability[k] );
+                m->setParamA( initial_a[k] ); //switch of nonlinearity   
+                k ++;
             }
         }
         for ( unsigned v = 0; v < ndim; v++ ) {
@@ -172,16 +200,22 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     }
 
     /*
-     * cout << "STRAIN ";
-     * for(unsigned v=0; v<stra_size; v++) cout << " " << temp_strain[v];
-     * cout << endl;
-     *
-     * cout << "STRESS ";
-     * for(unsigned v=0; v<stra_size; v++) cout << " " << temp_stress[v];
-     * cout << endl;
-     */
+    cout << "STRAIN ";
+    for(unsigned v=0; v<temp_strain.size(); v++) cout << " " << temp_strain[v];
+    cout << endl;
+    
+    cout << "STRESS ";
+    for(unsigned v=0; v<temp_strain.size(); v++) cout << " " << temp_stress[v];
+    cout << endl;
+    */
 
     return temp_stress;
+}
+
+/////////////////////////////////./////////////////////////
+Vector DiscreteRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+    //TODO: this is WRONG, needs fix in future
+    return giveStress(strain);
 }
 
 //////////////////////////////////////////////////////////
@@ -244,8 +278,6 @@ Matrix DiscreteRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned nd
         Leff /= volume;
     }
 
-
-
     //Keff.print();
 
     if ( !active_transport ) {
@@ -272,7 +304,7 @@ Matrix DiscreteRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned nd
 }
 
 //////////////////////////////////////////////////////////
-double DiscreteRVEMaterialStatus :: giveMassConstant() const {
+double DiscreteRVEMaterialStatus :: giveDampingConstant() const {
     ElementContainer *elems = RVE->giveElements();
     Transp1D *e;
     double volume = 0;
@@ -280,7 +312,7 @@ double DiscreteRVEMaterialStatus :: giveMassConstant() const {
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
         if ( e ) {
-            mass += e->giveVolume() * e->giveMatStatus(0)->giveMassConstant();
+            mass += e->giveVolume() * e->giveMatStatus(0)->giveDampingConstant();
             volume += e->giveVolume();
         }
     }
@@ -480,8 +512,90 @@ void DiscreteRVEMaterialStatus :: init() {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// dicrete RVE material
+// DISCRETE RVE MATERIAL
 MaterialStatus *DiscreteRVEMaterial :: giveNewMaterialStatus(Element *e) {
     DiscreteRVEMaterialStatus *newstat = new DiscreteRVEMaterialStatus(this, e, inputfile);
+    return newstat;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DISCRETE RVE MATERIAL STATUS PRE-COMPUTED
+DiscreteRVEMaterialPrecomputedStatus :: DiscreteRVEMaterialPrecomputedStatus(DiscreteRVEMaterialPrecomputed *m, Element *e, fs :: path masterfile) : DiscreteRVEMaterialStatus(m, e, masterfile) {
+    name = "transport RVE precomputed mat. status";
+}
+
+/////////////////////////////////./////////////////////////
+Vector DiscreteRVEMaterialPrecomputedStatus :: giveStress(const Vector &strain) {
+
+    double macro_pressure = 0;
+    if ( active_transport ) {
+        temp_strain.resize(strain.size()-1);
+        for (unsigned i = 0; i<temp_strain.size(); i++) temp_strain[i] = strain[i];
+        macro_pressure = strain[strain.size()-1];      
+    } else {
+        temp_strain = strain;
+    }
+    
+    TrsprtMaterialStatus* status = static_cast < TrsprtMaterialStatus* >(RVE->giveElements()->giveElement(0)->giveMatStatus(0));
+    TrsprtMaterial* material = static_cast < TrsprtMaterial* >(RVE->giveElements()->giveElement(0)->giveMaterial());
+    temp_nonlin = status->calculatePressureDependentPermeability(macro_pressure)/material->givePermeability();
+    DiscreteRVEMaterialPrecomputed* macromaterial = static_cast < DiscreteRVEMaterialPrecomputed* >(mat);
+    temp_stress = matrix_vector_multiply(macromaterial->givePrecomputedConductivity(),temp_strain)*temp_nonlin;
+    return temp_stress;
+}
+
+/////////////////////////////////./////////////////////////
+Vector DiscreteRVEMaterialPrecomputedStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+    return giveStress(strain);
+}
+
+//////////////////////////////////////////////////////////
+Matrix DiscreteRVEMaterialPrecomputedStatus :: giveStiffnessTensor(string type, unsigned ndim) const {
+    DiscreteRVEMaterialPrecomputed* macromaterial = static_cast < DiscreteRVEMaterialPrecomputed* >(mat);
+    return macromaterial->givePrecomputedConductivity() * temp_nonlin;
+
+}
+
+//////////////////////////////////////////////////////////
+double DiscreteRVEMaterialPrecomputedStatus :: giveDampingConstant() const {
+    DiscreteRVEMaterialPrecomputed* macromaterial = static_cast < DiscreteRVEMaterialPrecomputed* >(mat);
+    return macromaterial->givePrecomputedCapacity();
+};
+
+//////////////////////////////////////////////////////////
+void DiscreteRVEMaterialPrecomputedStatus :: init() {
+
+    DiscreteRVEMaterialStatus :: init();
+    DiscreteRVEMaterialPrecomputed* macromaterial = static_cast < DiscreteRVEMaterialPrecomputed* >(mat);    
+    Matrix stiff = macromaterial -> givePrecomputedConductivity();
+    if (stiff.size()==0){
+        //TODO: if this is needed, one should call it only once and distribute the result among all identical RVEs
+        cout << "Precomputing pressure fields on RVE" << endl;
+
+        unsigned ndim = RVE->giveDimension();
+        stiff = Matrix(ndim,ndim);
+
+        Vector strainDoFs(ndim+1);
+        Vector stress;
+        for(unsigned i=0; i<ndim; i++){
+            strainDoFs[i] = 1.;
+            stress = DiscreteRVEMaterialStatus :: giveStress(strainDoFs);
+            strainDoFs[i] = 0.;   
+            for(unsigned j=0; j<ndim; j++) stiff[i][j] = stress[j];
+        }
+
+        double c = DiscreteRVEMaterialStatus :: giveDampingConstant();
+
+
+        macromaterial->setPrecomputedConductivityAndCapacity(stiff,c);
+    }   
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DISCRETE RVE MATERIAL
+MaterialStatus *DiscreteRVEMaterialPrecomputed :: giveNewMaterialStatus(Element *e) {
+    DiscreteRVEMaterialPrecomputedStatus *newstat = new DiscreteRVEMaterialPrecomputedStatus(this, e, inputfile);
     return newstat;
 }

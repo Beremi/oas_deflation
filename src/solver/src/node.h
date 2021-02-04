@@ -38,6 +38,7 @@ public:
      * \param c2 the second argument.
      */
     virtual void readFromLine(istringstream &iss);
+    virtual std :: string giveLineToSave() const;
 
     Point givePoint() const { return point; };
     Point *givePointPointer() { return & point; };
@@ -65,7 +66,7 @@ private:
 
 protected:
 public:
-    AuxNode(unsigned dimension) { dim = dimension; nDoFs = 0; name = "auxiliary node"; };
+    AuxNode(unsigned dimension) { dim = dimension; nDoFs = 0; name = "AuxNode"; };
     virtual ~AuxNode() {};
 };
 
@@ -77,7 +78,7 @@ class MechNode : public Node
 private:
 protected:
 public:
-    MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "mechanical node"; isMechanical = true; };
+    MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "MechNode"; isMechanical = true; };
     virtual ~MechNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
@@ -105,7 +106,7 @@ private:
 
 protected:
 public:
-    TrsNode(unsigned dimension) { dim = dimension; nDoFs = 1; name = "transport node"; isTransport = true; };
+    TrsNode(unsigned dimension) { dim = dimension; nDoFs = 1; name = "TrsprtNode"; isTransport = true; };
     virtual ~TrsNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };
@@ -135,13 +136,14 @@ private:
     double r;  // radius in case of power tessellation
 protected:
 public:
-    Particle(unsigned dimension) : MechNode(dimension) { nDoFs = 3 * ( dim - 1 ); name = "particle"; };
+    Particle(unsigned dimension) : MechNode(dimension) { nDoFs = 3 * ( dim - 1 ); name = "Particle"; };
     virtual ~Particle() {};
 
     virtual void readFromLine(istringstream &iss);
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
+    virtual std :: string giveLineToSave() const;
 };
 
 #endif /* _NODE_H */

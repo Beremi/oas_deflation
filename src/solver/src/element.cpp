@@ -11,6 +11,18 @@ Element :: ~Element() {
     }
 }
 
+// std :: string Element :: giveLineToSave(NodeContainer * nodes_all) const {
+//   std :: string str = this->giveName() + "\t";
+//   if ( this->nodes.size() > 2 ){
+//     // for polygonal elems etc
+//     str += to_string(this->nodes.size()) + "\t";
+//   }
+//   for ( auto const &node : this->nodes ){
+//     str += to_string(nodes_all->giveNodeId(node)) + "\t";
+//   }
+//   return str;
+// }
+
 //////////////////////////////////////////////////////////
 void Element :: init() {
     unsigned totalDoFs = 0;
@@ -81,7 +93,7 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
 };
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveSteadyStateMatrix(string matrixType) const {
+Matrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
@@ -106,6 +118,20 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
         intF  += Bs [ i ].transpose() * (  stress * ip_weights [ i ] );
     }
     return intF;
+}
+
+//////////////////////////////////////////////////////////
+Matrix Element :: giveDampingMatrix() const {
+    unsigned nDoFs = DoFids.size();
+    Matrix M(nDoFs, nDoFs);
+    double c;
+    Matrix H;
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        H = giveHMatrix(& ip_locs [ i ]);
+        c = stats [ i ]->giveDampingConstant();
+        M += matrix_multiply(H.transpose(), H) * ( ip_weights [ i ] * c );
+    }
+    return M;
 }
 
 //////////////////////////////////////////////////////////
@@ -145,7 +171,7 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
 RigidBodyContact :: RigidBodyContact(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
-    name = "RigidBodyContact";
+    name = "LTCBEAM";
 }
 
 //////////////////////////////////////////////////////////
@@ -470,7 +496,7 @@ void RigidBodyContact :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
-    return Matrix(0, 0);
+    return Matrix(12, 12);
 }
 
 
@@ -503,8 +529,22 @@ Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
-    return R.transpose() * giveContactStrainNT(DoFs);
+    return this->R.transpose() * this->giveContactStrainNT(DoFs);
 };
+
+Vector RigidBodyContact :: giveContactStressXYZ(const Vector &DoFs) {
+    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs));
+};
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: transformToLocal(const Vector &DoFs) const {
+    return this->R.transpose() * DoFs;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
+    return this->R * DoFs;
+}
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
@@ -604,7 +644,7 @@ Transp1D :: Transp1D(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
     bound = false;
-    name = "Transp1D";
+    name = "LTCTRSP";
     BolanderCapacityMatrix = false;
 }
 
@@ -802,9 +842,9 @@ Matrix Transp1D :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D :: giveCapacityMatrix() const {
+Matrix Transp1D :: giveDampingMatrix() const {
     Matrix S(2, 2);
-    double s = area * stats [ 0 ]->giveMassConstant() * length /  ( 2. * ndim );
+    double s = area * stats [ 0 ]->giveDampingConstant() * length /  ( 2. * ndim );
 
     S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = s; //finite volume
     if ( BolanderCapacityMatrix ) { //from Bolander's papers
@@ -824,20 +864,6 @@ vector< double >Transp1D :: integrateLoad(BodyLoad *vl, double time) const {
     return load;
 }
 
-/*
- * //////////////////////////////////////////////////////////
- * Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen) const {
- *  ( void ) frozen;
- *  Vector pressureGrad(1);
- *  pressureGrad [ 0 ] = ( DoFs [ 1 ] - DoFs [ 0 ] ) / length;
- *  Vector flux = stats [ 0 ]->giveStress(pressureGrad);
- *  Vector intf(2);
- *  intf [ 0 ] = flux [ 0 ] * area;
- *  intf [ 1 ] = -intf [ 0 ];
- *  return intf;
- * };
- */
-
 //////////////////////////////////////////////////////////
 double Transp1D :: giveVolume() const {
     return area * length / ndim;
@@ -853,6 +879,17 @@ double Transp1D :: giveVolume(unsigned nodenum) const {
         cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
         exit(1);
     }
+};
+
+//////////////////////////////////////////////////////////
+Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
+    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
+
+    Vector strain(2);
+    strain [ 0 ] = pressureGradPlain [ 0 ];
+    strain [ 1 ] = (DoFs [ 0 ] + DoFs [ 1 ] ) / 2.;
+
+    return strain;
 };
 
 //////////////////////////////////////////////////////////
@@ -927,11 +964,12 @@ void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
 
 //////////////////////////////////////////////////////////
 Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
+    Vector pressureGradPlain = Transp1D :: giveStrain(i, DoFs);
 
     Vector pressureGrad(2 + 2 * friends.size() );
     pressureGrad [ 0 ] = pressureGradPlain [ 0 ];
-    pressureGrad [ 1 ] = area;
+    pressureGrad [ 1 ] = pressureGradPlain [ 1 ];
+    pressureGrad [ 2 ] = area;
 
     double elem_crack_opening;
     size_t m = 0;
@@ -940,8 +978,8 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         for ( unsigned k = 0; k < f->giveIPNum(); k++ ) {
             elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
         }
-        pressureGrad [ 2 * m + 2 ] += elem_crack_opening / f->giveIPNum(); //average crack opening in friend mechanical element
-        pressureGrad [ 2 * m + 3 ] = friendsweight [ m ]; //crack length in friend mechanical element
+        pressureGrad [ 2 * m + 3 ] += elem_crack_opening / f->giveIPNum(); //average crack opening in friend mechanical element
+        pressureGrad [ 2 * m + 4 ] = friendsweight [ m ]; //crack length in friend mechanical element
         m++;
     }
 
@@ -953,7 +991,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 // 2D QUADRILATERAL TRANSPORT ELEMENT
 TranspQuad :: TranspQuad() {
     ndim = 2;
-    name = "Transport Quadrilateral";
+    name = "TrsprtQuad";
 }
 
 //////////////////////////////////////////////////////////
@@ -963,10 +1001,10 @@ void TranspQuad :: setIntegrationPointsAndWeights() {
     ip_weights.resize(nnodes);
     stats.resize(nnodes);
     double q = 1. / pow(3., 0.5);
-    ip_locs [ 0 ] = Point(-q, -q);
-    ip_locs [ 1 ] = Point(q, -q);
-    ip_locs [ 2 ] = Point(q, q);
-    ip_locs [ 3 ] = Point(-q, q);
+    ip_locs [ 0 ] = Point( -q,  -q);
+    ip_locs [ 1 ] = Point(  q,  -q);
+    ip_locs [ 2 ] = Point(  q,   q);
+    ip_locs [ 3 ] = Point( -q,   q);
     Matrix phiGrad(ndim, 4);
     for ( unsigned k = 0; k < nnodes; k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this);
@@ -989,21 +1027,21 @@ void TranspQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Ma
 //////////////////////////////////////////////////////////
 void TranspQuad :: shapeF(const Point *x, Vector &phi) const {
     //x in natural coordinates
-    phi [ 0 ] = 0.25 * ( 1. + x->getX() ) * ( 1. + x->getY() );
-    phi [ 1 ] = 0.25 * ( 1. - x->getX() ) * ( 1. + x->getY() );
-    phi [ 2 ] = 0.25 * ( 1. - x->getX() ) * ( 1. - x->getY() );
-    phi [ 3 ] = 0.25 * ( 1. + x->getX() ) * ( 1. - x->getY() );
+    phi [ 0 ] = 0.25 * ( 1. - x->getX() ) * ( 1. - x->getY() );
+    phi [ 1 ] = 0.25 * ( 1. + x->getX() ) * ( 1. - x->getY() );
+    phi [ 2 ] = 0.25 * ( 1. + x->getX() ) * ( 1. + x->getY() );
+    phi [ 3 ] = 0.25 * ( 1. - x->getX() ) * ( 1. + x->getY() );
 }
 
 //////////////////////////////////////////////////////////
 double TranspQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     //x in natural coordinates
-    phiGrad [ 0 ] [ 0 ] = 0.25 * ( 1. + x->getY() );
+    phiGrad [ 0 ] [ 0 ] = -0.25 * ( 1. - x->getY() );
     phiGrad [ 0 ] [ 1 ] = -phiGrad [ 0 ] [ 0 ];
-    phiGrad [ 0 ] [ 2 ] = -0.25 * ( 1. - x->getY() );
+    phiGrad [ 0 ] [ 2 ] = 0.25 * ( 1. + x->getY() );
     phiGrad [ 0 ] [ 3 ] = -phiGrad [ 0 ] [ 2 ];
-    phiGrad [ 1 ] [ 0 ] = 0.25 * ( 1. + x->getX() );
-    phiGrad [ 1 ] [ 1 ] = 0.25 * ( 1. - x->getX() );
+    phiGrad [ 1 ] [ 0 ] = -0.25 * ( 1. - x->getX() );
+    phiGrad [ 1 ] [ 1 ] = -0.25 * ( 1. + x->getX() );
     phiGrad [ 1 ] [ 2 ] = -phiGrad [ 1 ] [ 1 ];
     phiGrad [ 1 ] [ 3 ] = -phiGrad [ 1 ] [ 0 ];
 
@@ -1045,16 +1083,33 @@ Matrix TranspQuad :: giveBMatrix(const Point *x) const {
 Matrix TranspQuad :: giveHMatrix(const Point *x) const {
     Vector phi(DoFids.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    Matrix H(1,DoFids.size());
+    for(unsigned k=0; k<DoFids.size(); k++) H[0][k] = phi[k];
+    return H;
 }
 
+
+//////////////////////////////////////////////////////////
+Vector TranspQuad :: giveStrain(unsigned i, const Vector &DoFs){
+    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
+
+    Vector strain(pressureGradPlain.size()+1);
+    for(unsigned k=0; k<pressureGradPlain.size(); k++) {
+        strain [ k ] = pressureGradPlain [ k ];
+    }
+
+    //evaluate pressure at gauss point to account for nonlinearity
+    strain[pressureGradPlain.size()] = matrix_vector_multiply(giveHMatrix(&ip_locs [ i ]), DoFs)[0];
+
+    return strain;
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
 MechanicalQuad :: MechanicalQuad() {
     ndim = 2;
-    name = "Mechanical Quadrilateral";
+    name = "MechanicalQuad";
 }
 
 //////////////////////////////////////////////////////////
@@ -1148,7 +1203,13 @@ Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
 Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    Matrix H(ndim,DoFids.size());
+    for(unsigned i=0; i<ndim; i++){
+        for(unsigned j=0; j<4; j++){ 
+            H[i][ndim*j+i] = phi[j];
+        }       
+    }
+    return H;
 }
 
 //////////////////////////////////////////////////////////
@@ -1156,7 +1217,7 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
 // 2D QUADRILATERAL COSSERAT MECHANICAL ELEMENT
 CosseratQuad :: CosseratQuad() {
     ndim = 2;
-    name = "Mechanical Cosserat Quadrilateral";
+    name = "CosseratQuad";
 }
 
 
@@ -1180,5 +1241,5 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
 Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    return Matrix(0,0);
 }

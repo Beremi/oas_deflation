@@ -32,33 +32,25 @@ class Function(object):
     name = "common"
     period = 0.01
     time_to_max = 1.0
+    symmetric = False
+    lower = None
 
     def __init__(self, ):
         super(Function, self).__init__()
 
 
 
-def plot_results(ax, stress, strain, ls='-', col='b', normal=3,
-                 print_x_label=False, print_y_label=False, label=None):
+def plot_results(ax, strain, stress, ls='-', col='c',
+                 x_label=None, y_label=None, label=None):
     if label is None:
-        ax.plot(strain*1e2, np.array(stress)*1e-6, ls=ls, color=col)
+        ax.plot(strain, np.array(stress), ls=ls, color=col)
     else:
-        ax.plot(strain*1e2, np.array(stress)*1e-6, ls=ls, color=col, label=label)
-    if normal == 0:
-        if print_x_label:
-            ax.set_xlabel(r"normal strain $\varepsilon_N$ [\%]")
-        if print_y_label:
-            ax.set_ylabel(r"normal stress $\sigma_N$ [MPa]")
-    elif normal == 1:
-        if print_x_label:
-            ax.set_xlabel(r"shear strain $\varepsilon_T$ [\%]")
-        if print_y_label:
-            ax.set_ylabel(r"shear stress $\sigma_T$ [MPa]")
-    elif normal == 2:
-        if print_x_label:
-            ax.set_xlabel(r"global strain $\varepsilon$ [\%]")
-        if print_y_label:
-            ax.set_ylabel(r"global stress $\sigma_{\mathrm{glob}}$ [MPa]")
+        ax.plot(strain, np.array(stress), ls=ls, color=col, label=label)
+
+    if x_label is not None:
+        ax.set_xlabel(x_label)
+    if y_label is not None:
+        ax.set_ylabel(y_label)
 
     # offset = ax.yaxis.get_major_formatter().get_offset()
     # print("offset = %s" % offset)
@@ -84,12 +76,16 @@ def genMechElemFile(folName="input_files"):
     return
 
 
-def genMechBCFile(folName="input_files"):
+def genMechBCFile(folName="input_files", force=False):
     bcFile = open("%s/mechBC.inp" % folName, 'w+')
 
     bcFile.write("# nodeIdx	KinTrX	KinTrY	KinRotZ	StTrX	StTrY	StRotZ\n")
-    bcFile.write("NodalBC 0	0	0	0	-1	-1	-1\n")
-    bcFile.write("NodalBC 1	1	2	0	-1	-1	-1")
+    if force:
+        bcFile.write("NodalBC 0	0	0	0	-1	-1	-1\n")
+        bcFile.write("NodalBC 1	-1	-1	0	1	2	-1")
+    else:
+        bcFile.write("NodalBC 0	0	0	0	-1	-1	-1\n")
+        bcFile.write("NodalBC 1	1	2	0	-1	-1	-1")
 
     bcFile.close()
     return
@@ -107,7 +103,7 @@ def generateSolverFile(num_steps, folName="input_files"):
 
 
 def generateFnFile(tensileLoad, shearLoad, folName="input_files", function=None):
-    sym = 0
+    sym = function.symmetric
     fnFile = open("%s/functions.inp" % folName, 'w+')
 
     fnFile.write("PWLFunction 1 0 0\n")
@@ -118,18 +114,30 @@ def generateFnFile(tensileLoad, shearLoad, folName="input_files", function=None)
         if tensileLoad - 1e-9 < 0:
             fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
         else:
-            fnFile.write("ConstSawToothFn value %lg period %lg sym %d\n"
-                          % (tensileLoad, function.period, sym))
-        fnFile.write("ConstSawToothFn value %lg period %lg sym %d\n"
-                      % (shearLoad, function.period,  sym))
+            fnFile.write("ConstSawToothFn value %lg period %lg sym %d"
+                          % (tensileLoad, function.period, int(sym)))
+            if function.lower is not None:
+                fnFile.write(" lower %lg" % (tensileLoad * function.lower))
+            fnFile.write("\n")
+        fnFile.write("ConstSawToothFn value %lg period %lg sym %d"
+                      % (shearLoad, function.period,  int(sym)))
+        if function.lower is not None:
+            fnFile.write(" lower %lg" % (shearLoad * function.lower))
+        fnFile.write("\n")
     elif function.name == 'LinSawToothFn':
         if tensileLoad - 1e-9 < 0:
             fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
         else:
-            fnFile.write("LinSawToothFn value %lg period %lg  time %lg sym %d\n"
-                          % (tensileLoad, function.period, function.time_to_max, sym))
-        fnFile.write("LinSawToothFn value %lg period %lg time %lg sym %d\n"
-                      % (shearLoad, function.period, function.time_to_max, sym))
+            fnFile.write("LinSawToothFn value %lg period %lg  time %lg sym %d"
+                          % (tensileLoad, function.period, function.time_to_max, int(sym)))
+            if function.lower is not None:
+                fnFile.write(" lower %lg" % (tensileLoad * function.lower))
+            fnFile.write("\n")
+        fnFile.write("LinSawToothFn value %lg period %lg time %lg sym %d"
+                      % (shearLoad, function.period, function.time_to_max, int(sym)))
+        if function.lower is not None:
+            fnFile.write(" lower %lg" % (shearLoad * function.lower))
+        fnFile.write("\n")
     else:
         print("function of type \'%s\' not implemented" % function)
         exit(1)
@@ -168,7 +176,11 @@ def genExpFile(length, perp_length=1.0, folName="input_files"):
         0.5*length, 0.5*perp_length, 1.5*length, 0.5*perp_length))
 
     expFile.write("ForceGauge LD loadX fx 1 1\n")
-    expFile.write("ForceGauge LD loadY fy 1 1")
+    expFile.write("ForceGauge LD loadY fy 1 1\n")
+    expFile.write("ValueGauge LD damageN damageN\n")
+    expFile.write("ValueGauge LD damageT damageT\n")
+    expFile.write("ValueGauge LD nonElaStrainN strainPLN\n")
+    expFile.write("ValueGauge LD nonElaStrainT strainPLT")
 
     expFile.close()
     return
@@ -199,10 +211,10 @@ def generateMaster(folName="input_files", ini_files="input_files",
 
 def generateInputs(tensileLoad, shearLoad,
                    length, perp_length, num_steps, folName,
-                   matFile="materials.inp", function=None):
+                   matFile="materials.inp", function=None, force=False):
 
     genMechElemFile(folName)
-    genMechBCFile(folName)
+    genMechBCFile(folName, force)
     generateSolverFile(num_steps, folName)
     generateFnFile(tensileLoad, shearLoad, folName, function=function)
     generateNodeFile(length, perp_length, folName)
@@ -238,66 +250,79 @@ def runCalculation(angle, masterFile="input_files/master.inp",
 def exportResults(folName="input_files"):
     LD_file = "%s/results/LD.out" % folName
 
-    data = np.genfromtxt(LD_file, skip_header=1, usecols=(2, 3, 4, 5))
+    try:
+        data = np.genfromtxt(LD_file, skip_header=1)
+    except Exception as e:
+        print(e, end=' ...')
+        print("but proceeding")
+        data = np.genfromtxt(LD_file, skip_header=1, skip_footer=1)
 
-    return data[:, 0], data[:, 1], data[:, 2], data[:, 3]
+    ##     time        displN      displT      loadN       loadT       damageN damageT
+    return data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5], data[:, 6], data[:, 7], data[:, 8], data[:, 9]
 
 
-def run_and_export_single(angle_deg, final_displacement, num_steps, tension,
+def run_and_export_single(angle_deg, final_load, num_steps, tension, force,
                           length, perp_length, folName,
-                          axShear, axTensile, axCombined, nohup=False,
+                          axDispl, axDamage, axSPi, axCombined, nohup=False,
                           matFile="materials.inp", function=None):
     angle = angle_deg * np.pi / 180.
     cc = np.cos(angle)
     ss = np.sin(angle)
-    shearLoad = final_displacement * cc
-    tensileLoad = final_displacement * ss * (tension and 1 or -1)
+    shearLoad = final_load * cc
+    tensileLoad = final_load * ss * (tension and 1 or -1)
 
 
     masterFile = generateInputs(tensileLoad, shearLoad,
                                length, perp_length, num_steps, folName,
-                               matFile, function,
+                               matFile, function, force,
                                )
 
     runCalculation(angle_deg, masterFile, nohup=nohup)
 
     ###########################################################################
+    time_c, displN, displT, loadN, loadT, damageN, damageT, sPiN, sPiT = exportResults(folName)
 
-    displN, displT, loadN, loadT = exportResults(folName)
-
-
-    stressN = np.append(0., loadN / (perp_length))
-    stressT = np.append(0., loadT / (perp_length)) * (tension and 1 or -1)
-    strainN = np.append(0., displN / length)
-    strainT = np.append(0., displT / length) * (tension and 1 or -1)
+    time_c = np.append(0., time_c)
+    stressN = np.append(0., loadN / (perp_length)) * 1e-6
+    stressT = np.append(0., loadT / (perp_length)) * (tension and 1 or -1) * 1e-6
+    strainN = np.append(0., displN / length) * 1e2
+    strainT = np.append(0., displT / length) * (tension and 1 or -1) * 1e2
+    damageN = np.append(0., damageN)
+    damageT = np.append(0., damageT)
+    sPiN = np.append(0., sPiN)
+    sPiT = np.append(0., sPiT)
 
     strains = np.sqrt( np.power(strainN, 2.) + np.power(strainT, 2.) ) * \
         (tension and 1 or -1)
 
-    plot_results(axShear, stressT, strainT, col='b', normal=1,
-                 # print_x_label=True
-                 )
-
-    plot_results(axTensile, stressN, strainN, col='r', normal=0,
-                 # print_x_label=True
-                 )
-
-    # stressGlobal = np.sqrt( np.power(stressN, 2.) +
-    #                        # alpha *
-    #                        np.power(stressT, 2.) ) * (tension and 1 or -1)
-    # plot_results(axCombined, stressGlobal, strains, col='g', normal=5,
-    #              label=r"$\sigma_{\mathrm{glob}}$")
     project_N = ss * np.array(stressN)
     project_T = cc * np.array(stressT)
     stressProjected = project_N + project_T
-    plot_results(axCombined, project_N, strains, col='r', normal=5,
+    plot_results(axCombined, strains, project_N, col='r',
                  label=r"$\sigma_{N,\mathrm{projected}}$")
-    plot_results(axCombined, project_T, strains, col='b', normal=5,
+    plot_results(axCombined, strains, project_T, col='c',
                  label=r"$\sigma_{T,\mathrm{projected}}$")
-    plot_results(axCombined, stressProjected, strains, col='k', normal=2,
+    plot_results(axCombined, strains, stressProjected, col='k',
                  # print_x_label=True,
                  label=r"$\sigma_{\mathrm{projected}}$")
-
+    ###########################################################################
+    plot_results(axDispl, time_c, strainN, col='r',
+                 label=r"$\varepsilon_{N,\mathrm{projected}}$")
+    plot_results(axDispl, time_c, strainT, col='c',
+                 label=r"$\varepsilon_{T,\mathrm{projected}}$")
+    plot_results(axDispl, time_c, strains, col='k',
+                 # print_x_label=True,
+                 label=r"$\varepsilon_{\mathrm{total}}$")
+    ###########################################################################
+    plot_results(axDamage, time_c, damageN, col='r',
+                 label=r"$\omega_{N}$")
+    plot_results(axDamage, time_c, damageT, col='c',
+                 label=r"$\omega_{T}$")
+    ###########################################################################
+    plot_results(axSPi, time_c, sPiN, col='r',
+                 label=r"$\varepsilon_{N}^{\pi}$")
+    plot_results(axSPi, time_c, sPiT, col='c',
+                 label=r"$\varepsilon_{T}^{\pi}$")
     return
 
 
@@ -307,11 +332,16 @@ if __name__ == '__main__':
     ###########################################################################
     length = 30e-3  # element length
     perp_length = length  # facet size (in 2D it is just length)
-    final_displacement = [1e-5, 1e-5]
     num_steps = 1000.
     # list of angles in degrees to plot curves for
+    angle_deg_all = [0., ]
     angle_deg_all = [0., 10., 20., 30., 40., 50., 60., 70., 80., 90., ]
-    tension_both = [True, False]
+    tension = True  # for symmetric cyclic function does not matter, only for loading from zero to some value
+    ## when force load applied, do not forget to set corresponding value of final_load
+    ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # DO NOT USE YET !!!!
+    force = False  # if True loading by force applied
+    ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ###########################################################################
     # material file must be in the same directory as this python script
     ###########################################################################
@@ -322,7 +352,7 @@ if __name__ == '__main__':
 
     ###########################################################################
     ### HERE SPECIFY NUMBER OF CYCLES
-    num_cycles = 100
+    num_cycles = 10
     period = 1.0 / float(num_cycles)
 
     ConstSawToothFn = Function()
@@ -336,83 +366,91 @@ if __name__ == '__main__':
 
     ##########################################################################
     ### HERE CHOSE THE FUNCTION WHICH TO USE FOR LOADING #####################
-    # function = LinearFn
+    function = LinearFn
+    function = LinSawToothFn
     function = ConstSawToothFn
-    # function = LinSawToothFn
+    function.symmetric = False
+    function.lower = 0.2
 
     ##########################################################################
     ### HERE CHOSE VALUE OF FINAL DISPLACEMNT ################################
     if function.name == "LinearFn":
-        final_displacement = [1e-3, 1e-3]  # first value is for tension, second for compression
+        final_load = 1e-3  # if compression, put here the absolute value and set the tension var. to False (line 312)
     elif function.name == "ConstSawToothFn":
-        final_displacement = [5e-5, 5e-5]
+        final_load = 5e-5
     elif function.name == "LinSawToothFn":
-        final_displacement = [1e-4, 1e-4]
+        final_load = 1e-4
     else:
         print("no such function defined %s" % function.name)
+
+    if force:  # set value of BC for force load (DO NOT USE YET !!!)
+        final_load = 2.5e6
 
     matFileName = matFile.split(".")[0]
     folName = matFileName + "_calculation"
     if not os.path.isdir(folName):
         os.makedirs(folName)
 
-    fig, axs = plt.subplots(len(angle_deg_all), 6,
-                            figsize=(300. * MTI,
+    fig, axs = plt.subplots(len(angle_deg_all), 4,
+                            figsize=(250. * MTI,
                                      50. * MTI * len(angle_deg_all)))
 
 
     ftsz = 16
     ftsz1 = 12
     for i, angle_deg in enumerate(angle_deg_all):
-        for j, tension in enumerate(tension_both):
-            if (len(angle_deg_all)==1):
-                axShear = axs[(tension and 4 or 1)]
-                axTensile = axs[(tension and 5 or 0)]
-                axCombined = axs[(tension and 3 or 2)]
-            else:
-                axShear = axs[i, (tension and 4 or 1)]
-                axTensile = axs[i, (tension and 5 or 0)]
-                axCombined = axs[i, (tension and 3 or 2)]
-            ###################################################################
-            try:
-                run_and_export_single(angle_deg, final_displacement[j],
-                                      num_steps, tension,
-                                      length, perp_length, folName,
-                                      axShear, axTensile, axCombined,
-                                      nohup=True, matFile=matFile,
-                                      function=function)
-            except Exception as e:
-                try:
-                    # this will probably not work on windows, therefore try catch is here
-                    cpnohup_file = "nohup_angle_%lg.out" % angle_deg
-                    os.system("cp nohup.out %s" % (cpnohup_file))
-                    print("something went wrong during %s calculation under angle %lg, for details see %s"
-                          % ((tension and "tensile" or "compressive"), angle_deg,
-                             cpnohup_file))
-                except Exception as ee:
-                    pass
-                print("Raised exception: ====================================")
-                print(e)
-                print("======================================================")
 
-            ###################################################################
-            if i == len(angle_deg_all)-1:
-                axShear.set_xlabel(r"shear strain $\varepsilon_T$ [\%]",
-                                   fontsize=ftsz1)
-                axTensile.set_xlabel(r"normal strain $\varepsilon_N$ [\%]",
-                                     fontsize=ftsz1)
-                axCombined.set_xlabel(r"total strain $\varepsilon_T$ [\%]",
-                                      fontsize=ftsz1)
-            if i == 0:
-                axCombined.set_title(tension and "tension" or "compression",
-                                     fontsize=ftsz)
-            if tension:
-                axTensile.set_ylabel("%lg degrees" % angle_deg, fontsize=ftsz1)
-                axTensile.yaxis.set_label_position("right")
-            if i == len(angle_deg_all)//2 and not tension:
-                axTensile.set_ylabel(
+        if (len(angle_deg_all)==1):
+            axCombined = axs[0]
+            axDispl = axs[1]
+            axDamage = axs[2]
+            axSPi = axs[3]
+        else:
+            axCombined = axs[i, 0]
+            axDispl = axs[i, 1]
+            axDamage = axs[i, 2]
+            axSPi = axs[i, 3]
+        ###################################################################
+        try:
+            run_and_export_single(angle_deg, final_load,
+                                  num_steps, tension, force,
+                                  length, perp_length, folName,
+                                  axDispl, axDamage, axSPi, axCombined,
+                                  nohup=True, matFile=matFile,
+                                  function=function)
+        except Exception as e:
+            try:
+                # this will probably not work on windows, therefore try catch is here
+                cpnohup_file = "nohup_angle_%lg.out" % angle_deg
+                os.system("cp nohup.out %s" % (cpnohup_file))
+                print("something went wrong during %s calculation under angle %lg, for details see %s"
+                      % ((tension and "tensile" or "compressive"), angle_deg,
+                         cpnohup_file))
+            except Exception as ee:
+                print(ee)
+                pass
+            print("Raised exception: ====================================")
+            print(e)
+            print("======================================================")
+
+        ###################################################################
+        if i == len(angle_deg_all)-1:
+            axCombined.set_xlabel(r"total strain $\varepsilon$ [\%]",
+                                  fontsize=ftsz1)
+        if i == 0:
+            axCombined.set_title(tension and "tension" or "compression",
+                                 fontsize=ftsz)
+
+        axSPi.set_ylabel("%lg degrees" % angle_deg, fontsize=ftsz1)
+        axSPi.yaxis.set_label_position("right")
+        if i == len(angle_deg_all)//2:
+            try:
+                axCombined.set_ylabel(
                     r"corresponding stress $\sigma$ [MPa]", fontsize=ftsz1,
                     labelpad=5)
+            except Exception as e:
+                print(e, end=' ...')
+                print(" label setting not succesfull ... but proceed")
 
     left_skip = 0.05
     fig.subplots_adjust(bottom=0.25/len(angle_deg_all),
@@ -421,7 +459,7 @@ if __name__ == '__main__':
                         hspace=0.30, wspace=0.30)
 
 
-    fig.savefig("%s_%s.pdf" % (matFileName, function.name))
+    fig.savefig("damage_%s_%s.pdf" % (matFileName, function.name))
     # plt.show()
     plt.close()
     try:
