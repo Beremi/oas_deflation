@@ -1263,6 +1263,72 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
 
 
+def create3dDam(maxLim, minDist, trials, Xtop):
+    print('Creating 3d Dam....')
+    #
+    node_coords, radii, mechBC_merged, mechInitC_merged  = assemble3dDam(maxLim, minDist, trials, Xtop);
+
+    node_coords = np.asarray(node_coords)
+    node_count = len(node_coords)
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], c = 'b', marker='o')
+    if SHOW_PLOT:
+        plt.show()
+    """
+    print('Conducting Voronoi tesselation...', end = '')
+    vor = utilitiesNumeric.runMirroredPowerDam(node_coords, radii, 3, maxLim, Xtop)
+    print('done.')
+
+    node_coords = node_coords[0:node_count]
+    areas = []
+    for i in range (node_count): areas.append(0)
+    areas = np.asarray(areas)
+
+    #fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
+    # if SHOW_PLOT:
+    #     plt.show()
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-3]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+    ### selecting vertices on the left surface
+    #right face
+    alpha = np.arctan( (maxLim[0] - Xtop)/maxLim[2] )
+    planenorm = np.array([np.cos(alpha), 0., np.sin(alpha)])
+    planeconst = -planenorm[0]*maxLim[0] - planenorm[1]*maxLim[1]
+    rightFace = np.where( abs( np.dot(vor.vertices,planenorm) + planeconst)<1e-8)[0]
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], [0,-1])
+        transportBC_merged.append(trsBC)
+
+    leftFaceBC = np.array([2,-1])
+    boundA = np.array(  [-1e-8 , 0, 0] )
+    boundB = np.array(  [ 1e-8 , maxLim[1], maxLim[2]]  )
+    leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    #print(leftFace)
+    for i in range (len(leftFace)):
+        trsBC = utilitiesMech.transportBC(leftFace[i], [0,-1])
+        transportBC_merged.append(trsBC)
+
+
+    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
 
 
 
@@ -5171,6 +5237,28 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
 
 
     return node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates
+
+def assemble3dDam(maxLim, minDist, trials, topsize):
+    node_coords = np.zeros((0,3))
+    radii = np.zeros(0)
+    mechBC_merged = []
+    mechIC_merged = []
+
+    ##########################################generating of points, homogeneous volume
+    rectBC = np.array([-1,-1,-1,-1,-1,-1])
+    #rect
+    oldLen = len(node_coords)
+    #pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+    node_coords, radii = pointGenerators.generateParticlesDam(maxLim, topsize, minDist/4., minDist, 0.8, 3, trials, node_coords, radii)
+    #
+    newLen = len(node_coords)-1
+
+   # print (nrOfPoints)
+  #  mBC = utilitiesGeom.mechanicalBC(dim, kvadrBC, oldLen, newLen)
+   # mechBC_merged.append(mBC)
+    ####################################################################################################
+
+    return node_coords, radii, mechBC_merged, mechIC_merged
 
 def assemble3dcylinderUniPressConfined(center, radius, height, minDist, trials, directionDim):
     indent = 1e-5

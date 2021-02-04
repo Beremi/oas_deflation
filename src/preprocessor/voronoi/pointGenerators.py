@@ -152,6 +152,53 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
 
         return node_coords, radii
 
+
+def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
+        gap = 0.1
+        Volume = np.prod(maxLim)- maxLim[1]*maxLim[2]*(maxLim[0]-topsize)/2.
+        d = np.flipud(np.linspace(minDiam,maxDiam,20))  #20 different diameters
+        prob = volumeRatio*fuller2D(d, maxDiam)
+        num = ((prob[:-1]-prob[1:])*Volume/(np.pi*np.square(d[:-1]/2.))+1.).astype(int)
+
+        #option to add external nodes
+        """
+        node_coords = np.loadtxt("repnodes.inp")
+        radii = node_coords[:,-1]
+        node_coords = node_coords[:,0:-1]
+        """
+
+        alpha = np.arctan( (maxLim[0] - topsize)/maxLim[2] )
+        planenorm = np.array([np.cos(alpha), 0., np.sin(alpha)])
+        planeconst = -planenorm[0]*maxLim[0] - planenorm[1]*maxLim[1]
+
+        iters = 0
+        di = 0
+        numi= 0
+        while (d[di]>minDiam and iters<trials):
+            if numi<num[di]:
+                point = np.random.rand(dim)*(maxLim-d[di]) + d[di]/2.
+                radius = d[di]/2.
+                if (np.dot(point,planenorm) + planeconst > -d[di]/2.):
+                    continue #violation of skewed boundary
+                if len(node_coords) == 0:
+                    node_coords = np.vstack((node_coords,point));
+                    radii = np.hstack((radii, radius));
+                    numi += 1
+                    continue
+
+                dist = min(np.sum(np.square(node_coords-point),1)-np.square((1+gap)*(radii+radius)))
+                if dist>0.:
+                    node_coords = np.vstack((node_coords, point));
+                    radii = np.hstack((radii, radius));
+                    iters = 0
+                    numi += 1
+                else: iters += 1
+            else:
+                di += 1
+                numi = 0.
+
+        return node_coords, radii
+
 def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
     return True
 try:
