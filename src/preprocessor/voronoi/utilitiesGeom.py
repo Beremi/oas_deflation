@@ -1047,6 +1047,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     coupledNodes = []
 
+    actual_node_count = len(node_coords) / 7
+    print ('actual node count: %d' %actual_node_count)
 
 
     for ir,r in enumerate(vor.ridge_points):
@@ -1265,7 +1267,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     """
 
 
-
+    """
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     for c in (coupledNodes):
@@ -1276,6 +1278,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         ax.plot3D(X, Y, Z)
 
     plt.show()
+    """
 
     """
     print ('renumbering node idcs in ridges...')
@@ -1293,17 +1296,30 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     #        vn[i] = int(np.where(valid_vertices_idcs == vn[i])[0])len(nodes_out)+len(vertices_out)
     """
 
+    node_count = len(valid_node_coords)
+
+    backupCpld = np.copy(np.asarray(coupledNodes))
+
     print('renumbering coupled nodes...')
+    coupledNodesOK = True
     for i in range(len(coupledNodes)):
         cpldN=coupledNodes[i]
         ai = int(np.where(valid_node_idcs == cpldN[0])[0])
         bi = int(np.where(valid_node_idcs == cpldN[1])[0])
-        cpldN = np.array([ai, bi])
+        coupledNodes[i][0] = ai
+        coupledNodes[i][1] = bi
 
 
+        if coupledNodes[i][0] > len(valid_node_idcs):
+            print ('%d > %d' %(coupledNodes[i][0], len(valid_node_idcs)))
+            print('ERR!!!')
+            a = input('').split(" ")[0]
+        if coupledNodes[i][1] > len(valid_node_idcs):
+            print ('%d > %d' %(coupledNodes[i][1], len(valid_node_idcs)))
+            print('ERR!!!')
+            a = input('').split(" ")[0]
 
 
-    node_count = len(valid_node_coords)
 
     print ('check of node count ...', end='')
     if (len(valid_node_idcs)==len(valid_node_coords)): print ('ok %d' %len(valid_node_idcs))
@@ -1489,7 +1505,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     zeros = np.zeros(len(valid_node_coords))
     zeros = np.vstack(zeros)
     nodes_out=np.hstack((valid_node_coords, zeros, zeros))
-
+    node_count = len(nodes_out)
 
 
     #print (nodes_out)
@@ -1548,6 +1564,25 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
                 print('%d < %d < %d' %(len(nodes_out), v ,(len(nodes_out)+len(vertices_out))))
     """
 
+    for i in range(len(coupledNodes)):
+        c = coupledNodes[i]
+        cb = backupCpld[i]
+        if (c[0] > node_count or c[1] > node_count):
+            print ('errr %d / %d' %(c[0], c[1]))
+            print ('back %d / %d' %(cb[0], cb[1]))
+
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    for c in (coupledNodes):
+        X = [nodes_out[c[0]][0], nodes_out[c[1]][0] ]
+        Y = [nodes_out[c[0]][1], nodes_out[c[1]][1] ]
+        Z = [nodes_out[c[0]][2], nodes_out[c[1]][2] ]
+        ax.scatter(X, Y, Z)
+        ax.plot3D(X, Y, Z)
+
+    plt.show()
+    """
 
     coupledNodes=np.asarray(coupledNodes)
     subBlock = np.copy(coupledNodes)

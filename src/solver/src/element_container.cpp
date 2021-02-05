@@ -121,7 +121,7 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
           stat_id = 0;
           for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats()){
             // elem_id - stat_id -  mat_id - internal_variables
-            outputfile << '\n' << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t' << mat_stat->giveLineToSave();
+            outputfile << "\nmatStat\t" << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t' << mat_stat->giveLineToSave();
           }
         }
         outputfile.close();
@@ -129,63 +129,80 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
 }
 
 // these methods must be separate, because at first, I need to set time of calculation in solver
-// but at that time, mat_stats are still before init() so all the values vould be reset after that
-std :: string ElementContainer :: setFileToLoadFrom(const std :: string &str ) {
-  this->file_to_load_from = str;
-  std :: string line, param;
-  ifstream inputfile(str.c_str() );
-  if ( inputfile.is_open() ) {
-    while ( getline(inputfile >> std :: ws, line) ) {
-      if ( line.at(0) == '#' || std :: isdigit( line.at(0) ) || line.empty() ) {
-          continue;
+// but at that time, mat_stats are still before init() so all the matStats vould be reset after that
+void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str ) {
+  this->file_to_load_from.push_back(str);
+  // TODO JK: make the following more universally, now it works only for LD, but the file can be named by any other name
+  if ( this->file_to_load_from.size() == 1 ){
+    // if LD file exists, it will be deleted, so rename it
+    unsigned LD_num = 0;
+    std :: string fnm = "LD";
+    // NOTE here GlobPaths :: RESULTDIR would be usefull
+    std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / (fnm + ".out") ).string();
+    std :: string fnm_fin;
+    while ( LD_num < 1000 ){
+      fnm_fin = (GlobPaths :: BASEDIR / "results" / (fnm + std :: to_string(LD_num) + ".out") ).string();
+      if ( !fs :: exists( fnm_fin ) ){
+        if ( fs :: exists( fnm_ini ) ){
+          std :: rename(fnm_ini.c_str(), fnm_fin.c_str());
+          std::cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
+          break;
+        } else {
+          std::cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
+        }
       }
-      istringstream iss(line);
-      iss >> param;
-      if ( param.compare("time") == 0 ){
-        return line;
-      }
-    inputfile.close();
+      LD_num++;
     }
   }
-  std::cerr << "could not determine the starting time from the file \'" << str << "\'" << '\n';
-  std::cerr << "there is no line beginning with \'time\'" << '\n';
-  exit(EXIT_FAILURE);
 };
 
 
-void ElementContainer :: readElemStatsFromFile() {
-  string line, param;
-  unsigned elem_id, stat_id, mat_id;
-  ifstream inputfile(this->file_to_load_from.c_str() );
-  if ( inputfile.is_open() ) {
-      while ( getline(inputfile >> std :: ws, line) ) {
-          if ( !std::isdigit( line.at(0) ) || line.at(0) == '#' || line.empty() ) {
-              continue;
+void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step) {
+  if ( this->file_to_load_from.size() != 0 ){
+    string line, param;
+    unsigned elem_id, stat_id, mat_id, st;
+    double timo;
+    std :: vector < double > initial_times;
+    std :: vector < unsigned > initial_steps;
+    for (auto const &file_with_stats : this->file_to_load_from){
+      ifstream inputfile(file_with_stats.c_str() );
+      if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+          if ( line.at(0) == '#' || line.empty() ) {
+            continue;
           }
           istringstream iss(line);
-          iss >> elem_id >> stat_id >> mat_id;
-          this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
-      }
-      inputfile.close();
-  }
-  // if LD file exists, it will be deleted, so rename it
-  unsigned LD_num = 0;
-  std :: string fnm = "LD";
-  // NOTE here GlobPaths :: RESULTDIR would be usefull
-  std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / (fnm + ".out") ).string();
-  std :: string fnm_fin;
-  while ( LD_num < 1000 ){
-    fnm_fin = (GlobPaths :: BASEDIR / "results" / (fnm + std :: to_string(LD_num) + ".out") ).string();
-    if ( !fs :: exists( fnm_fin ) ){
-      if ( fs :: exists( fnm_ini ) ){
-        std :: rename(fnm_ini.c_str(), fnm_fin.c_str());
-        std::cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
-        break;
+          iss >> param;
+          if ( param.compare("time") == 0 ){
+            iss >> timo >> st;
+            initial_times.push_back(timo);
+            initial_steps.push_back(st);
+          } else if (param.compare("matStat") == 0) {
+            iss >> elem_id >> stat_id >> mat_id;
+            this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
+          }
+        }
+        inputfile.close();
       } else {
-        std::cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
+        std::cerr << "there is no such file " << file_with_stats << '\n';
+        exit(EXIT_FAILURE);
       }
     }
-    LD_num++;
+    if ( initial_times.size() == 0 ){
+      std::cerr << "could not determine the starting time " << '\n';
+      std::cerr << "there is no line beginning with \'time\'" << '\n';
+      exit(EXIT_FAILURE);
+    }
+    // check if time and step in all the files with matStats
+    for ( unsigned i = 0; i < initial_times.size(); i++ ){
+      if ( fmax(initial_times[i] - initial_times[0], initial_steps[i] - initial_steps[0]) > 1e-6){
+        std::cerr << "times or steps in various files containing matStats differ" << '\n';
+        exit(EXIT_FAILURE);
+      }
+    }
+    // and set them accordign to values from files
+    ini_step = initial_steps[0];
+    ini_time = initial_times[0];
   }
 }
 
@@ -200,9 +217,9 @@ void ElementContainer :: init() {
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
     }
-    if ( this->file_to_load_from.compare("none") != 0 ){
-      this->readElemStatsFromFile();
-    }
+    // if ( this->file_to_load_from.compare("none") != 0 ){
+    //   this->readElemStatsFromFile();
+    // }
 }
 
 //////////////////////////////////////////////////////////
