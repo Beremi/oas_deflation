@@ -379,7 +379,7 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
             masters.resize(num);
             slaves.resize(num);
             for ( unsigned i = 0; i < num; i++ ) {
-                iss >> slaves [ i ] >> masters [ i ];
+               iss >> slaves [ i ] >> masters [ i ];
             }
         } else if ( param.compare("use_half_gammas") == 0 ) {
             use_half_gammas = true;

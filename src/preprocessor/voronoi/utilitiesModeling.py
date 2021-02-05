@@ -1331,13 +1331,6 @@ def create3dDam(maxLim, minDist, trials, Xtop):
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
 
-    #1 loading function
-    func1 = []
-    func1.append( np.array([0,0]) )
-    func1.append( np.array([1, -1e-3]) )
-    fn1 = utilitiesNumeric.generalFunc(func1)
-    functions.append (fn1)
-
     ########################################################################
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
@@ -1348,7 +1341,7 @@ def create3dDam(maxLim, minDist, trials, Xtop):
     planenorm = np.array([np.cos(alpha), 0., np.sin(alpha)])
     planeconst = -planenorm[0]*maxLim[0] - planenorm[1]*maxLim[1]
     rightFace = np.where( abs( np.dot(vor.vertices,planenorm) + planeconst)<1e-8)[0]
-    for i in range (len(leftFace)):
+    for i in range (len(rightFace)):
         trsBC = utilitiesMech.transportBC(rightFace[i], [0,-1])
         transportBC_merged.append(trsBC)
 
@@ -1358,8 +1351,13 @@ def create3dDam(maxLim, minDist, trials, Xtop):
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     #print(leftFace)
     for i in range (len(leftFace)):
-        trsBC = utilitiesMech.transportBC(leftFace[i], [0,-1])
+        trsBC = utilitiesMech.transportBC(leftFace[i], [i+1,-1])
         transportBC_merged.append(trsBC)
+        func1 = []
+        func1.append( np.array([0,0]) )
+        func1.append( np.array([1, (maxLim[2] - vor.vertices[leftFace[i],2])*1000.*9.81 ]) )
+        fn1 = utilitiesNumeric.generalFunc(func1)
+        functions.append (fn1)        
 
 
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions

@@ -127,8 +127,7 @@ void NodeContainer :: establishDoFArray() {
     vector< pair< unsigned, unsigned > >a;
     a.resize(blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
-        cout << "---- " << i << endl;
-        cout << blocked [ i ] << endl;
+
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }

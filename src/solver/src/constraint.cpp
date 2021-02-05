@@ -335,6 +335,7 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
 
     unsigned numFreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
 
+
     for ( auto const &jD : constraints ) {
         jD->init();
     }
