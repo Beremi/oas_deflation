@@ -228,7 +228,7 @@ Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
 }
 
 std :: string MarsMaterialStatus :: giveLineToSave() const {
-  return "damage " + to_string(this->damage);
+  return "damage " + to_string(this->damage) + " maxEpsN " + to_string(this->maxEpsN) + " maxEpsT " + to_string(this->maxEpsT) ;
 }
 
 
@@ -238,6 +238,10 @@ void MarsMaterialStatus :: readFromLine(istringstream &iss) {
     iss >> param;
     if ( param.compare("damage") == 0 ) {
       iss >> this->damage;
+    } else if ( param.compare("maxEpsN") == 0 ) {
+      iss >> this->maxEpsN;
+    } else if ( param.compare("maxEpsT") == 0 ) {
+      iss >> this->maxEpsT;
     }
   }
 }

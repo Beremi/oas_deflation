@@ -26,7 +26,6 @@ protected:
     int step;
     unsigned init_step = 0;  ///> when starting from previously calculated results
     bool terminated;
-    std :: string ftlf = "none";  ///> string to keep in memory, because element container is not initialized when reading solver input
 
 public:
     Solver();
@@ -44,6 +43,7 @@ public:
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
     void setTime(double t);
     void setStep(unsigned t) { step = t; };
+    void setInitialTimeAndStep(double t, unsigned s) { this->init_time = t; this->init_step = s; }
     virtual void setNextStepTime();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
