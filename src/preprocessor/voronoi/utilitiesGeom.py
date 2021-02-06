@@ -1304,8 +1304,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     coupledNodesOK = True
     for i in range(len(coupledNodes)):
         cpldN=coupledNodes[i]
-        ai = int(np.where(valid_node_idcs == cpldN[0])[0])
-        bi = int(np.where(valid_node_idcs == cpldN[1])[0])
+        ai = int(np.where(valid_node_idcs == cpldN[1])[0])
+        bi = int(np.where(valid_node_idcs == cpldN[0])[0])
         coupledNodes[i][0] = ai
         coupledNodes[i][1] = bi
 
