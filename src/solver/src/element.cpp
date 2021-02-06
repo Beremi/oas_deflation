@@ -172,6 +172,7 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
     name = "LTCBEAM";
+    vtk_cell_type = 3;
 }
 
 //////////////////////////////////////////////////////////
@@ -646,6 +647,7 @@ Transp1D :: Transp1D(const unsigned dim) {
     bound = false;
     name = "LTCTRSP";
     BolanderCapacityMatrix = false;
+    vtk_cell_type = 3;
 }
 
 //////////////////////////////////////////////////////////
@@ -989,13 +991,14 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL TRANSPORT ELEMENT
-TranspQuad :: TranspQuad() {
+TrsprtQuad :: TrsprtQuad() {
     ndim = 2;
     name = "TrsprtQuad";
+    vtk_cell_type = 9;
 }
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: setIntegrationPointsAndWeights() {
+void TrsprtQuad :: setIntegrationPointsAndWeights() {
     unsigned nnodes = nodes.size();
     ip_locs.resize(nnodes);
     ip_weights.resize(nnodes);
@@ -1013,7 +1016,7 @@ void TranspQuad :: setIntegrationPointsAndWeights() {
 };
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+void TrsprtQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num;
     nodes.resize(4);
     for ( unsigned k = 0; k < 4; k++ ) {
@@ -1025,7 +1028,7 @@ void TranspQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Ma
 }
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: shapeF(const Point *x, Vector &phi) const {
+void TrsprtQuad :: shapeF(const Point *x, Vector &phi) const {
     //x in natural coordinates
     phi [ 0 ] = 0.25 * ( 1. - x->getX() ) * ( 1. - x->getY() );
     phi [ 1 ] = 0.25 * ( 1. + x->getX() ) * ( 1. - x->getY() );
@@ -1034,7 +1037,7 @@ void TranspQuad :: shapeF(const Point *x, Vector &phi) const {
 }
 
 //////////////////////////////////////////////////////////
-double TranspQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
+double TrsprtQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     //x in natural coordinates
     phiGrad [ 0 ] [ 0 ] = -0.25 * ( 1. - x->getY() );
     phiGrad [ 0 ] [ 1 ] = -phiGrad [ 0 ] [ 0 ];
@@ -1068,19 +1071,25 @@ double TranspQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspQuad :: giveBMatrix(const Point *x) const {
+Matrix TrsprtQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, nodes.size() );
     shapeFGrad(x, phiG);
-    Matrix B(2, DoFids.size() );
+
+    /*
+    Matrix B(ndim, DoFids.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        B [ 0 ] [ i ] =   phiG [ 0 ] [ i ];
-        B [ 1 ] [ i ] =   phiG [ 1 ] [ i ];
+        for (unsigned v = 0; v<ndim; v++) B [ 0 ] [ v ] =   phiG [ 0 ] [ v ];
     }
-    return B;
+    B.print();
+    phiG.print();
+    exit(1);
+    */
+
+    return phiG;
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspQuad :: giveHMatrix(const Point *x) const {
+Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
     Vector phi(DoFids.size() );
     shapeF(x, phi);
     Matrix H(1,DoFids.size());
@@ -1090,7 +1099,7 @@ Matrix TranspQuad :: giveHMatrix(const Point *x) const {
 
 
 //////////////////////////////////////////////////////////
-Vector TranspQuad :: giveStrain(unsigned i, const Vector &DoFs){
+Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs){
     Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
 
     Vector strain(pressureGradPlain.size()+1);
@@ -1106,10 +1115,134 @@ Vector TranspQuad :: giveStrain(unsigned i, const Vector &DoFs){
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// 3D BRICK TRANSPORT ELEMENT
+TrsprtBrick :: TrsprtBrick() {
+    ndim = 3;
+    name = "TrsprtBrick";
+    vtk_cell_type = 12;
+}
+
+//////////////////////////////////////////////////////////
+void TrsprtBrick :: setIntegrationPointsAndWeights() {
+    unsigned nnodes = nodes.size();
+    ip_locs.resize(nnodes);
+    ip_weights.resize(nnodes);
+    stats.resize(nnodes);
+    double q = 1. / pow(3., 0.5);
+    ip_locs [ 0 ] = Point( -q,  -q, -q);
+    ip_locs [ 1 ] = Point(  q,  -q, -q);
+    ip_locs [ 2 ] = Point(  q,   q, -q);
+    ip_locs [ 3 ] = Point( -q,   q, -q);
+    ip_locs [ 4 ] = Point( -q,  -q,  q);
+    ip_locs [ 5 ] = Point(  q,  -q,  q);
+    ip_locs [ 6 ] = Point(  q,   q,  q);
+    ip_locs [ 7 ] = Point( -q,   q,  q);
+    Matrix phiGrad(ndim, 8);
+    for ( unsigned k = 0; k < nnodes; k++ ) {
+        stats [ k ] = mat->giveNewMaterialStatus(this);
+        ip_weights [ k ] = shapeFGrad(& ( ip_locs [ k ] ), phiGrad);
+    }
+};
+
+//////////////////////////////////////////////////////////
+void TrsprtBrick :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+    unsigned num;
+    nodes.resize(8);
+    for ( unsigned k = 0; k < 8; k++ ) {
+        iss >> num;
+        nodes [ k ] = fullnodes->giveNode(num);
+    }
+    iss >> num;
+    mat = fullmatrs->giveMaterial(num);
+}
+
+//////////////////////////////////////////////////////////
+void TrsprtBrick :: shapeF(const Point *x, Vector &phi) const {
+    //x in natural coordinates
+    phi [ 0 ] = 0.125 * ( 1. - x->getX() ) * ( 1. - x->getY() )  * ( 1. - x->getZ() );
+    phi [ 1 ] = 0.125 * ( 1. + x->getX() ) * ( 1. - x->getY() )  * ( 1. - x->getZ() );
+    phi [ 2 ] = 0.125 * ( 1. + x->getX() ) * ( 1. + x->getY() )  * ( 1. - x->getZ() );
+    phi [ 3 ] = 0.125 * ( 1. - x->getX() ) * ( 1. + x->getY() )  * ( 1. - x->getZ() );
+    phi [ 4 ] = 0.125 * ( 1. - x->getX() ) * ( 1. - x->getY() )  * ( 1. + x->getZ() );
+    phi [ 5 ] = 0.125 * ( 1. + x->getX() ) * ( 1. - x->getY() )  * ( 1. + x->getZ() );
+    phi [ 6 ] = 0.125 * ( 1. + x->getX() ) * ( 1. + x->getY() )  * ( 1. + x->getZ() );
+    phi [ 7 ] = 0.125 * ( 1. - x->getX() ) * ( 1. + x->getY() )  * ( 1. + x->getZ() );
+}
+
+//////////////////////////////////////////////////////////
+double TrsprtBrick :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
+    //x in natural coordinates
+    phiGrad [ 0 ] [ 0 ] = -0.125 * ( 1. - x->getY() )  * ( 1. - x->getZ() );
+    phiGrad [ 0 ] [ 1 ] = -phiGrad [ 0 ] [ 0 ];
+    phiGrad [ 0 ] [ 2 ] =  0.125 * ( 1. + x->getY() )  * ( 1. - x->getZ() );
+    phiGrad [ 0 ] [ 3 ] = -phiGrad [ 0 ] [ 2 ];
+    phiGrad [ 0 ] [ 4 ] = -0.125 * ( 1. - x->getY() )  * ( 1. + x->getZ() );
+    phiGrad [ 0 ] [ 5 ] = -phiGrad [ 0 ] [ 4 ];
+    phiGrad [ 0 ] [ 6 ] =  0.125 * ( 1. + x->getY() )  * ( 1. + x->getZ() );
+    phiGrad [ 0 ] [ 7 ] = -phiGrad [ 0 ] [ 6 ];
+    phiGrad [ 1 ] [ 0 ] = -0.125 * ( 1. - x->getX() )  * ( 1. - x->getZ() );
+    phiGrad [ 1 ] [ 1 ] = -0.125 * ( 1. + x->getX() )  * ( 1. - x->getZ() );
+    phiGrad [ 1 ] [ 2 ] = -phiGrad [ 1 ] [ 1 ];
+    phiGrad [ 1 ] [ 3 ] = -phiGrad [ 1 ] [ 0 ];
+    phiGrad [ 1 ] [ 4 ] = -0.125 * ( 1. - x->getX() )  * ( 1. + x->getZ() );
+    phiGrad [ 1 ] [ 5 ] = -0.125 * ( 1. + x->getX() )  * ( 1. + x->getZ() );
+    phiGrad [ 1 ] [ 6 ] = -phiGrad [ 1 ] [ 5 ];
+    phiGrad [ 1 ] [ 7 ] = -phiGrad [ 1 ] [ 4 ];
+    phiGrad [ 2 ] [ 0 ] = -0.125 * ( 1. - x->getX() )  * ( 1. - x->getY() );
+    phiGrad [ 2 ] [ 1 ] = -0.125 * ( 1. + x->getX() )  * ( 1. - x->getY() );
+    phiGrad [ 2 ] [ 2 ] = -0.125 * ( 1. + x->getX() )  * ( 1. + x->getY() );
+    phiGrad [ 2 ] [ 3 ] = -0.125 * ( 1. - x->getX() )  * ( 1. + x->getY() );
+    phiGrad [ 2 ] [ 4 ] = -phiGrad [ 2 ] [ 0 ];
+    phiGrad [ 2 ] [ 5 ] = -phiGrad [ 2 ] [ 1 ];
+    phiGrad [ 2 ] [ 6 ] = -phiGrad [ 2 ] [ 2 ];
+    phiGrad [ 2 ] [ 7 ] = -phiGrad [ 2 ] [ 3 ];
+
+
+    //Jacobi Matrix
+    Matrix Jac(3, 3);
+    Point n;
+    for ( unsigned i = 0; i < 8; i++ ) {
+        n = nodes [ i ]->givePoint();
+        Jac [ 0 ] [ 0 ] += phiGrad [ 0 ] [ i ] * n.getX();
+        Jac [ 0 ] [ 1 ] += phiGrad [ 0 ] [ i ] * n.getY();
+        Jac [ 0 ] [ 2 ] += phiGrad [ 0 ] [ i ] * n.getZ();
+        Jac [ 1 ] [ 0 ] += phiGrad [ 1 ] [ i ] * n.getX();
+        Jac [ 1 ] [ 1 ] += phiGrad [ 1 ] [ i ] * n.getY();
+        Jac [ 1 ] [ 2 ] += phiGrad [ 1 ] [ i ] * n.getZ();
+        Jac [ 2 ] [ 0 ] += phiGrad [ 2 ] [ i ] * n.getX();
+        Jac [ 2 ] [ 1 ] += phiGrad [ 2 ] [ i ] * n.getY();
+        Jac [ 2 ] [ 2 ] += phiGrad [ 2 ] [ i ] * n.getZ();
+    }
+    //detrminant and inverse of 3x3 matrix
+    double JacDet = Jac [ 0 ] [ 0 ] * ( Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ]) 
+                 -  Jac [ 0 ] [ 1 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ]) 
+                 +  Jac [ 0 ] [ 2 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 1 ]);
+
+    Matrix JacInv(3, 3);
+    JacInv [ 0 ] [ 0 ] =  (Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ]) / JacDet;
+    JacInv [ 0 ] [ 1 ] = -(Jac [ 0 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+    JacInv [ 0 ] [ 2 ] =  (Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 2 ] - Jac [ 1 ] [ 1 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+
+    JacInv [ 1 ] [ 0 ] = -(Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ]) / JacDet;
+    JacInv [ 1 ] [ 1 ] =  (Jac [ 0 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+    JacInv [ 1 ] [ 2 ] = -(Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 2 ] - Jac [ 1 ] [ 0 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+
+    JacInv [ 2 ] [ 0 ] =  (Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 1 ]) / JacDet;
+    JacInv [ 2 ] [ 1 ] = -(Jac [ 0 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 0 ] [ 1 ]) / JacDet;
+    JacInv [ 2 ] [ 2 ] =  (Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 1 ] [ 0 ] * Jac [ 0 ] [ 1 ]) / JacDet;
+
+    //transorm to physical space
+    phiGrad = JacInv * phiGrad;
+    return JacDet;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
 MechanicalQuad :: MechanicalQuad() {
     ndim = 2;
     name = "MechanicalQuad";
+    vtk_cell_type = 9;
 }
 
 //////////////////////////////////////////////////////////

@@ -42,7 +42,11 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TrsprtQuad") == 0 ) {
-                    TranspQuad *newelem = new TranspQuad();
+                    TrsprtQuad *newelem = new TrsprtQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("TrsprtBrick") == 0 ) {
+                    TrsprtBrick *newelem = new TrsprtBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MechanicalQuad") == 0 ) {

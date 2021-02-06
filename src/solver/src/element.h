@@ -28,6 +28,11 @@ protected:
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
+    virtual void setIntegrationPointsAndWeights() {};
+
+    unsigned vtk_cell_type = 0; //integer detrmining type of cell for VTK plotting, 
+    //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
+
 public:
     Element() { name = "basic element"; solution_order = 0; }
     virtual ~Element();
@@ -65,8 +70,8 @@ public:
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
     unsigned giveDimension() const { return ndim; }
-    virtual void setIntegrationPointsAndWeights() {};
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
+    unsigned giveVTKCellType() const {return vtk_cell_type;};
 };
 
 
@@ -122,6 +127,8 @@ protected:
 
     Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;
+    virtual void setIntegrationPointsAndWeights();
+
 public:
     RigidBodyContact(const unsigned dim);
     virtual Matrix giveAMatrix(Point a, Point x) const;
@@ -130,7 +137,6 @@ public:
     void init();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual void setIntegrationPointsAndWeights();
     vector< Node * >giveVertices() const { return vert; };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
@@ -181,11 +187,12 @@ protected:
     bool BolanderCapacityMatrix;
 
     virtual void checkNodeType() const;
+    virtual void setIntegrationPointsAndWeights();
+
 public:
     Transp1D(const unsigned dim);
     ~Transp1D() {};
     void init();
-    virtual void setIntegrationPointsAndWeights();
     double giveArea() const { return area; }
     Point giveNormal() const { return normal; }
     double giveLength() const { return length; }
@@ -224,14 +231,13 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL TRANSPORT ELEMENT
-class TranspQuad : public TransportElement
+class TrsprtQuad : public TransportElement
 {
 protected:
-
+    virtual void setIntegrationPointsAndWeights();
 public:
-    TranspQuad();
-    ~TranspQuad() {};
-    void setIntegrationPointsAndWeights();
+    TrsprtQuad();
+    ~TrsprtQuad() {};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void shapeF(const Point *x, Vector &phi) const;
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
@@ -242,15 +248,31 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// 3D BRICK TRANSPORT ELEMENT
+class TrsprtBrick : public TrsprtQuad
+{
+protected:
+    virtual void setIntegrationPointsAndWeights();
+
+public:
+    TrsprtBrick();
+    ~TrsprtBrick() {};
+    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void shapeF(const Point *x, Vector &phi) const;
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
 class MechanicalQuad : public MechanicalElement
 {
 protected:
+    virtual void setIntegrationPointsAndWeights();
 
 public:
     MechanicalQuad();
     ~MechanicalQuad() {};
-    void setIntegrationPointsAndWeights();
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void shapeF(const Point *x, Vector &phi) const;
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
