@@ -1303,9 +1303,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     print('renumbering coupled nodes...')
     coupledNodesOK = True
     for i in range(len(coupledNodes)):
-        cpldN=coupledNodes[i]
-        ai = int(np.where(valid_node_idcs == cpldN[0])[0])
-        bi = int(np.where(valid_node_idcs == cpldN[1])[0])
+        ai = int(np.where(valid_node_idcs == coupledNodes[i][0])[0])
+        bi = int(np.where(valid_node_idcs == coupledNodes[i][1])[0])
         coupledNodes[i][0] = ai
         coupledNodes[i][1] = bi
 
@@ -1588,6 +1587,63 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     subBlock = np.copy(coupledNodes)
     coupledNodes = []
     coupledNodes.append(subBlock)
+
+
+    vertices_out = np.array(vertices_out)
+    if (activeTransport):
+        subBlockTrsprt = []
+        for i in range (len(vertices_out)):
+            xplus  = 0
+            if (vertices_out[i][0]-maxLim[0]>0): xplus = -1
+            elif (vertices_out[i][0]<0): xplus = 1
+            yplus  = 0
+            if (vertices_out[i][1]-maxLim[1]>0): yplus = -1
+            elif (vertices_out[i][1]<0): yplus = 1
+            zplus  = 0
+            if (vertices_out[i][2]-maxLim[2]>0): zplus = -1
+            elif (vertices_out[i][2]<0): zplus = 1
+            if(xplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+            if(yplus):
+                perP = np.copy(vertices_out[i])
+                perP[1] += maxLim[1]*yplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+            if(zplus):
+                perP = np.copy(vertices_out[i])
+                perP[2] += maxLim[2]*zplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+
+            if(xplus and yplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                perP[1] += maxLim[1]*yplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+
+            if(xplus and zplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                perP[2] += maxLim[2]*zplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+
+            if(yplus and zplus):
+                perP = np.copy(vertices_out[i])
+                perP[1] += maxLim[1]*yplus
+                perP[2] += maxLim[2]*zplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+
+        coupledNodes.append(subBlockTrsprt)
+
+
+
+
 
     savePeriodicBlock(master_folder,coupledNodes,maxLim, nodes_out)
 
