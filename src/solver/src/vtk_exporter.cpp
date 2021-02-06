@@ -280,7 +280,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             // points_id.push_back(n - *nodes->begin());
         }
         all_points_id.push_back(points_id);
-        cell_types.push_back(points_id.size() * 2 - 1); // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
+        cell_types.push_back(el->giveVTKCellType());
         offset += points_id.size();
         offsets.push_back(offset);
         for ( unsigned i = 0; i < cell_data_size; i++ ) {

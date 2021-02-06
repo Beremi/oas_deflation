@@ -107,6 +107,7 @@ void NodeContainer :: establishDoFArray() {
     blockedDoFid.resize(blocked.size() );
     freeDoFs = totalDoFs - blocked.size();
 
+
     /////////////////////////////////////////////////////////////////
     // #constraint
     constrDoFs = constr->giveSize();
@@ -126,21 +127,25 @@ void NodeContainer :: establishDoFArray() {
     vector< pair< unsigned, unsigned > >a;
     a.resize(blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
+
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
     sort(a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
-    vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
-    for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
-        if ( prev->first == cur->first ) {
-            cerr << "Node Container Error: two Dirichlet BC assigned to the same DoF number " << cur->first << endl;
-            exit(1);
+    if (a.size()>0){
+        vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
+        for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
+            if ( prev->first == cur->first ) {
+                cerr << "Node Container Error: two Dirichlet BC assigned to the same DoF number " << cur->first << endl;
+                exit(1);
+            }
+            prev = cur;
         }
-        prev = cur;
+    }else{
+        cerr << "WARNING: no Dirichlet BC, the model does not prevent rigid-body motion" << endl;
     }
-
 
     unsigned cs = 0;
     unsigned k = 0;

@@ -36,7 +36,7 @@ def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
 
 
 ##run power, mirrored data
-def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
+def runMirroredPower (node_coords, radii, dim, maxLim, Xtop, shifts=0):
     points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
     vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
 
@@ -61,6 +61,11 @@ def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
     if (dim == 3):
         volumes = voronoi.voronoi_3d(vor, maxLim);
         return vor, volumes
+
+def runMirroredPowerDam (node_coords, radii, dim, maxLim, topsize, shifts=0):
+    points, radii = voronoi.mirror_dataDam(node_coords, topsize, dim, maxLim, shifts, weights=radii)#[:,:dim]
+    vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
+    return vor
 
 def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim, quarter = False):
     vor = Voronoi(voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim, quarter = quarter))

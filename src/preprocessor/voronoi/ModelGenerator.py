@@ -179,7 +179,8 @@ class Model:
             if (r[i]=='orthogonalFracZone'):
                 if (int(r[i+1])==1): self.orthogonalFracZone = True
                 if (int(r[i+1])==0): self.orthogonalFracZone = False
-
+            if (r[i]=='Xtopsize'):
+                self.Xtopsize = float(r[i+1])
             if (r[i]=='symmetric'):
                 if (int(r[i+1])==1): self.symmetric = True
 
@@ -262,6 +263,9 @@ class Model:
         if self.modelType =='2d_cantileverBending':
             self.run_2d_cantileverBending()
 
+        if self.modelType == '3d_dam':
+            self.run_3d_dam()
+
 
         #if (self.printout == False): enablePrint()
 
@@ -324,7 +328,6 @@ class Model:
         #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='dogbone',  D=self.dogboneD, thickness=0.1)
         self.materialZones = None
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)   = utilitiesModeling.create3dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac )
-
 
     def run_3d_torsionPress(self):
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
@@ -400,6 +403,9 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
 
+    def run_3d_dam(self):
+        self.materialZones = None
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create3dDam(self.maxLim, self.minDist, self.trials, self.Xtopsize)
 
     def saveGeometry(self):
         tube = False

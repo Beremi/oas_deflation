@@ -96,6 +96,7 @@ class DiscreteRVEMaterialPrecomputedStatus : public DiscreteRVEMaterialStatus
 {
 protected:
     double temp_nonlin;
+    bool is_master_status;
 
 public:
     DiscreteRVEMaterialPrecomputedStatus(DiscreteRVEMaterialPrecomputed *m, Element *e, fs :: path masterfile);
@@ -105,21 +106,26 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveDampingConstant() const;
+    virtual void update(); 
 };
 
 //////////////////////////////////////////////////////////
 class DiscreteRVEMaterialPrecomputed : public DiscreteRVEMaterial
 {
 protected:
+    TrsprtMaterialStatus* masterStatus;
+    TrsprtMaterial* masterMaterial;
     Matrix conductivity; // precomputed form one integration point, then used everywhere
     double capacity;
 public:
-    DiscreteRVEMaterialPrecomputed() { name = "transport RVE precomputed material"; conductivity = Matrix(0,0);};
+    DiscreteRVEMaterialPrecomputed() { name = "transport RVE precomputed material"; conductivity = Matrix(0,0); };
     virtual ~DiscreteRVEMaterialPrecomputed() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e);
     Matrix givePrecomputedConductivity() const { return conductivity;};
     double givePrecomputedCapacity() const { return capacity;};
-    void setPrecomputedConductivityAndCapacity(Matrix lam, double c) {conductivity=lam; capacity = c;} ;      
+    TrsprtMaterialStatus* giveMasterStatus() { return masterStatus;};
+    TrsprtMaterial* giveMasterMaterial() { return masterMaterial;};
+    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus* masterS,  TrsprtMaterial* masterM) {conductivity=lam; capacity = c; masterStatus = masterS; masterMaterial = masterM;} ;    
 };
 
 #endif /* _MAT_RVE_H */

@@ -1303,8 +1303,9 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     print('renumbering coupled nodes...')
     coupledNodesOK = True
     for i in range(len(coupledNodes)):
-        ai = int(np.where(valid_node_idcs == coupledNodes[i][0])[0])
-        bi = int(np.where(valid_node_idcs == coupledNodes[i][1])[0])
+        cpldN=coupledNodes[i]
+        ai = int(np.where(valid_node_idcs == cpldN[1])[0])
+        bi = int(np.where(valid_node_idcs == cpldN[0])[0])
         coupledNodes[i][0] = ai
         coupledNodes[i][1] = bi
 

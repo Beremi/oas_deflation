@@ -114,6 +114,31 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
         return dataOut, weightsOut
     return dataOut
 
+def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
+    '''Mirror data 3D'''
+    if (dim == 3):
+        dataOut =  np.vstack((data,
+            np.array([0,0,0]) + data * np.array([-1,1,1]),
+            #np.array([ sizes[0]*2 ,0,0]) + data * np.array([-1,1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,sizes[1]*2,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,1,-1]),
+            np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
+        ))
+        alpha = np.arctan( (sizes[0] - topsize)/sizes[2] )
+        planenorm = np.array([np.cos(alpha), 0., np.sin(alpha)])
+        planeconst = -planenorm[0]*sizes[0] - planenorm[1]*sizes[1]
+        distance_to_plane = np.dot(data,planenorm) + planeconst
+        correction_vec = np.outer(-distance_to_plane*2, planenorm)
+        dataOut =  np.vstack((dataOut,data+correction_vec))
+
+    dataOut += shifts
+    if weights is not None:
+        weightsOut = np.hstack([weights]*7)
+        return dataOut, weightsOut
+    return dataOut    
+
+
 def mirror_dataDogBone(data, dim, D, thickness = None):
     '''Mirror data dogbone 2D and 3D'''
     if (dim == 2):
