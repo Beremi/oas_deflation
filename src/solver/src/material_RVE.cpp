@@ -524,6 +524,7 @@ MaterialStatus *DiscreteRVEMaterial :: giveNewMaterialStatus(Element *e) {
 DiscreteRVEMaterialPrecomputedStatus :: DiscreteRVEMaterialPrecomputedStatus(DiscreteRVEMaterialPrecomputed *m, Element *e, fs :: path masterfile) : DiscreteRVEMaterialStatus(m, e, masterfile) {
     name = "transport RVE precomputed mat. status";
     is_master_status = false;
+    temp_nonlin = 1;
 }
 
 /////////////////////////////////./////////////////////////
@@ -541,6 +542,7 @@ Vector DiscreteRVEMaterialPrecomputedStatus :: giveStress(const Vector &strain) 
     DiscreteRVEMaterialPrecomputed* macromaterial = static_cast < DiscreteRVEMaterialPrecomputed* >(mat);
     temp_nonlin = macromaterial->giveMasterStatus()->calculatePressureDependentPermeability(macro_pressure)/macromaterial->giveMasterMaterial()->givePermeability();
     temp_stress = matrix_vector_multiply(macromaterial->givePrecomputedConductivity(),temp_strain)*temp_nonlin;
+
     return temp_stress;
 }
 
@@ -575,28 +577,36 @@ void DiscreteRVEMaterialPrecomputedStatus :: init() {
         //TODO: if this is needed, one should call it only once and distribute the result among all identical RVEs
         cout << "Precomputing pressure fields on RVE" << endl;
 
-        unsigned ndim = 3;//RVE->giveDimension();
+        unsigned ndim = RVE->giveDimension();
         stiff = Matrix(ndim,ndim);
+        double c;
+        if (0){
+            ndim = 3;
+            stiff = Matrix(ndim,ndim);
+            for ( unsigned p=0; p<ndim; p++) stiff[p][p] = 1e3*5e-18/8.9e-4;
+            c = 1.62e-8*1e3;
+        }else{   
+            Vector strainDoFs(ndim+1);
+            Vector stress;
+            for(unsigned i=0; i<ndim; i++){
+                strainDoFs[i] = 1.;
+                stress = DiscreteRVEMaterialStatus :: giveStress(strainDoFs);
+                strainDoFs[i] = 0.;   
+                for(unsigned j=0; j<ndim; j++) stiff[i][j] = stress[j];
+            }
 
-        /*   
-        Vector strainDoFs(ndim+1);
-        Vector stress;
-        for(unsigned i=0; i<ndim; i++){
-            strainDoFs[i] = 1.;
-            stress = DiscreteRVEMaterialStatus :: giveStress(strainDoFs);
-            strainDoFs[i] = 0.;   
-            for(unsigned j=0; j<ndim; j++) stiff[i][j] = stress[j];
+            c = DiscreteRVEMaterialStatus :: giveDampingConstant();
         }
 
-        double c = DiscreteRVEMaterialStatus :: giveDampingConstant();
-        */
-        for ( unsigned p=0; p<ndim; p++) stiff[p][p] = 1e3*5e-18/8.9e-4;
-        double c = 1.62e-8*1e3;
 
         TrsprtMaterialStatus* status = static_cast < TrsprtMaterialStatus* >(RVE->giveElements()->giveElement(0)->giveMatStatus(0));
         TrsprtMaterial* material = static_cast < TrsprtMaterial* >(RVE->giveElements()->giveElement(0)->giveMaterial());
         macromaterial->setPrecomputedConductivityAndCapacityAndMasterMaterial(stiff,c, status, material);
     }   
+
+    else{
+        active_transport = true;
+    }
 }
 
 //////////////////////////////////////////////////////////
