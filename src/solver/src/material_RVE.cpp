@@ -580,7 +580,7 @@ void DiscreteRVEMaterialPrecomputedStatus :: init() {
         unsigned ndim = RVE->giveDimension();
         stiff = Matrix(ndim,ndim);
         double c;
-        if (0){
+        if (1){
             ndim = 3;
             stiff = Matrix(ndim,ndim);
             for ( unsigned p=0; p<ndim; p++) stiff[p][p] = 1e3*5e-18/8.9e-4;
