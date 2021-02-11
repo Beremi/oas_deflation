@@ -918,6 +918,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
             ridges_out[i][l] += newAuxNodes
 
 
+
+
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
         saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
@@ -1362,7 +1364,6 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
         ridgeIdx = int(validRidgeIdxs[i])
 
-
         rdge = vor.ridge_vertices[ridgeIdx]
         rdgeNa = vor.ridge_points[ridgeIdx][0]
         rdgeNb = vor.ridge_points[ridgeIdx][1]
@@ -1374,24 +1375,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         nodeB_newIdx =  int(np.where(valid_node_idcs == nodeB_oldIdx)[0])
 
         vertNr = len(rdge)
-
-        """
-        print('ridgeIdx %d' %ridgeIdx)
-        print('ridge %s' %rdge)
-        print('valid ridge nodes %s' %valid_ridge_nodes[i])
-        print('valid ridge vertices %s' %valid_ridge_vertices[i])
-
-        print('nodeA_vorIdx %s' %rdgeNa)
-        print('nodeB_vorIdx %s' %rdgeNb)
-        print('nodeA_oldIdx %s' %nodeA_oldIdx)
-        print('nodeB_oldIdx %s' %nodeB_oldIdx)
-        print('nodeA_newIdx %s' %nodeA_newIdx)
-        print('nodeB_newIdx %s' %nodeB_newIdx)
-
-
-        print('vertNr %s' %vertNr)
-
-        """
+        if (vertNr<3):
+            print('Ridge has less than 3 vertices! %d' %vertNr)
 
 
         #indices of all vertices that form the planar ridge
@@ -1440,13 +1425,13 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
             aux_nodes.append(ptB)
 
         #
-        rdg[0] = pointA
-        rdg[1] = pointB
-        rdg[2] = nrVertices
+        rdg[0] = int(pointA)
+        rdg[1] = int(pointB)
+        rdg[2] = int(nrVertices)
 
         #adding vert idcs
         for v in range ( nrVertices ):
-            rdg[2+1+v] =  verticesIdxDict[ vor.ridge_vertices[ridgeIdx][v] ]
+            rdg[2+1+v] =  int(verticesIdxDict[ vor.ridge_vertices[ridgeIdx][v] ])
 
 
         #coplanarity control
@@ -1508,53 +1493,6 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     node_count = len(nodes_out)
 
 
-    #print (nodes_out)
-    newAuxNodes = 0
-    if (activeTransport):
-        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
-    vertIdxStart += newAuxNodes
-
-    for i in range (len(ridges_out)):
-        ln = len(np.asarray(ridges_out[i]) )
-        for l in range (3, ln):
-            ridges_out[i][l] += newAuxNodes
-
-    #print(aux_nodes)
-    """
-    if activeMechanics:
-        saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
-        saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches)
-    else:
-        saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
-
-    if activeTransport:
-        saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
-        #JM: save transport elements uz je volane drive
-        # je potreba, aby bylo volane prvni, protoze jeste generuje nove aux nodes
-        #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
-    else:
-        saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
-
-    """
-    """
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    for c in (coupledNodes):
-        X = [nodes_out[c[0]][0], nodes_out[c[1]][0] ]
-        Y = [nodes_out[c[0]][1], nodes_out[c[1]][1] ]
-        Z = [nodes_out[c[0]][2], nodes_out[c[1]][2] ]
-        #print(X)
-        #print(Y)
-        #print(Z)
-        ax.scatter(X, Y, Z)
-        ax.plot3D(X, Y, Z)
-
-    plt.show()
-    """
-
-
 
     """
     #check vertices idcs
@@ -1564,12 +1502,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
                 print('%d < %d < %d' %(len(nodes_out), v ,(len(nodes_out)+len(vertices_out))))
     """
 
-    for i in range(len(coupledNodes)):
-        c = coupledNodes[i]
-        cb = backupCpld[i]
-        if (c[0] > node_count or c[1] > node_count):
-            print ('errr %d / %d' %(c[0], c[1]))
-            print ('back %d / %d' %(cb[0], cb[1]))
+
 
     """
     fig = plt.figure()
@@ -1607,43 +1540,80 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
                 perP = np.copy(vertices_out[i])
                 perP[0] += maxLim[0]*xplus
                 index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(nodes_out), index+len(nodes_out)] ) )
             if(yplus):
                 perP = np.copy(vertices_out[i])
                 perP[1] += maxLim[1]*yplus
                 index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(nodes_out), index+len(nodes_out)] ) )
             if(zplus):
                 perP = np.copy(vertices_out[i])
                 perP[2] += maxLim[2]*zplus
                 index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(nodes_out), index+len(nodes_out)] ) )
 
             if(xplus and yplus):
                 perP = np.copy(vertices_out[i])
                 perP[0] += maxLim[0]*xplus
                 perP[1] += maxLim[1]*yplus
                 index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(nodes_out), index+len(nodes_out)] ) )
 
             if(xplus and zplus):
                 perP = np.copy(vertices_out[i])
                 perP[0] += maxLim[0]*xplus
                 perP[2] += maxLim[2]*zplus
                 index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(nodes_out), index+len(nodes_out)] ) )
 
             if(yplus and zplus):
                 perP = np.copy(vertices_out[i])
                 perP[1] += maxLim[1]*yplus
                 perP[2] += maxLim[2]*zplus
                 index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(nodes_out), index+len(nodes_out)] ) )
 
         coupledNodes.append(subBlockTrsprt)
 
 
+    print('Checking coupled nodes idcs...')
+    for i in range(len(coupledNodes[0])):
+        c = coupledNodes[0][i]
+        if (c[0] > node_count or c[1] > node_count):
+            print ('errr %d / %d' %(c[0], c[1]))
 
+    print('Checking coupled vertices idcs...')
+    for i in range(len(coupledNodes[1])):
+        c = coupledNodes[1][i]
+        if (c[0] < node_count or c[0] > node_count+len(vertices_out)) or (c[1] < node_count or c[1] > node_count+len(vertices_out)):
+            print ('vertices %d / %d' %(c[0], c[1]))
+            print ('range %d to %d \n' %(node_count, node_count+len(vertices_out)))
+
+    """
+    newAuxNodes = 0
+    if (activeTransport):
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,3, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=coupled)
+
+    vertIdxStart += newAuxNodes
+    for i in range (len(ridges_out)):
+        ln = len(np.asarray(ridges_out[i]) )
+        for l in range (3, ln):
+            ridges_out[i][l] += newAuxNodes
+    """
+
+
+    newAuxNodes = 0
+    if (activeTransport):
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, len(nodes_out), v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=coupled)
+    vertIdxStart += newAuxNodes
+
+    for i in range (len(ridges_out)):
+        ln = len(np.asarray(ridges_out[i]) )
+        for l in range (3, ln):
+            ridges_out[i][l] += newAuxNodes
+
+    print('aux nodes: %d ' %len(aux_nodes))
+    print('new aux nodes %d ' %newAuxNodes)
 
 
     savePeriodicBlock(master_folder,coupledNodes,maxLim, nodes_out)
@@ -1655,32 +1625,15 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out)
+        #saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
 
 
-    checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
-
+    #checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2274,14 +2227,21 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
     if (dim==3):
         for i in range (len(ridges_out)):
+            #print(i)
             ro = np.asarray(ridges_out[i])
+            #print(ro)
 
-            vrtA = ro[3]
-            vrtB = ro[4]
-            if (vrtA <node_count or vrtA>=(nds+aux+vrt)) or  (vrtB <node_count or vrtB>=(nds+aux+vrt)):
-                onlyVerticesConnected = False
+            for v in range (3, len(ro)-1):
+                vrtA = ro[v]
+                vrtB = ro[v+1]
+                if (vrtA <node_count or vrtA>=(nds+aux+vrt)) or  (vrtB <node_count or vrtB>=(nds+aux+vrt)):
+                    onlyVerticesConnected = False
 
-            #print (ro)
+            #print(ro)
+            #print (vrtA)
+            #print (vrtB)
+            #sa = input('').split(" ")[0]
+
             for n in range (3, len(ro)):
                 newPath = True
                 m = n+1
@@ -2291,7 +2251,13 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 #print('%d ; %d = %d ; %d' %(n,m, ro[n], ro[m]))
                 elem = transportElements_dict.get((path_ends), None)
                 if elem:
+                    #print ('init %s' %elem.connectedNodes)
+                    #print(ro)
                     elem.addConnectedNodes(ro)
+                    #print (elem.connectedNodes)
+                    #print('elem exists %s' %(elem.connectedNodes))
+                    #a = input('').split(" ")[0]
+
                 else:
                     connNds = []
                     connNds.clear()
@@ -2301,13 +2267,37 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                     #    print ('both aux')
                     #transportElements.append (utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1))
                     transportElements_dict[path_ends] = utilitiesMech.transportPath (ro[n], ro[m], connNds.copy(), 1)
+
+                    elem = transportElements_dict.get((path_ends), None)
+                    #print('new elem %s' %(elem.connectedNodes))
+
+            #a = input('').split(" ")[0]
             transportElements = transportElements_dict.values()
+
 
     if (onlyVerticesConnected):
         print('Transport elements connect only vertices. That is ok.')
     else:
         print('Transport elements CONNECT WRONG POINTS !!!!')
+        a = input('').split(" ")[0]
     sys.stdout.flush()
+
+    print(' first vertex number check...')
+    vertexCountok = 0
+    for elem in transportElements:
+
+        if len(elem.connectedNodes)<3:
+            #print ('low number of vertices in TRSPT path!!! %s ' %elem.getReducedString())
+            #a = input('').split(" ")[0]
+            vertexCountok = False
+            print(elem.getReducedString())
+        else:
+            vertexCountok +=1
+
+            #print(vertexCountok)
+
+    print('vertexCountok %d / %d' %(vertexCountok, len(transportElements)) )
+    a = input('').split(" ")[0]
 
     #  i[b], i[a] = i[a], i[b]
     print ('Reordering connected nodes...', end='')
@@ -2588,7 +2578,13 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         elem.vertexB += newAuxNodes
     sys.stdout.flush()
 
-
+    """
+    print('vertex number check...', end='')
+    for elem in transportElements:
+        if len(elem.connectedNodes)<3:
+            print ('low number of vertices in TRSPT path!!! %s' %elem.connectedNodes)
+            a = input('').split(" ")[0]
+    """
     print('Coplanarity control before saving...', end='')
     wrongRidges = 0
     nodes_out = np.asarray(nodes_out)
@@ -2666,7 +2662,9 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     print('Wrong elems: %d' %wrongRidges)
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
-    print(coupled)
+    #print(coupled)
+
+
     print('Trsprt elements: %d' %len(transportElements))
     with open(os.path.join(master_folder,trsprtElemsFile), 'w') as f:
         headerLine = '#ElemType\tvrtxAIdx\tvrtxBIdx\tnrOfNodes\tnodesIdx\tMaterial'
@@ -2674,7 +2672,9 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
         for element in transportElements:
             #print ("%s\n" % element.getString() )
             if (dim==2):f.write("%s\n" % element.getString(coupled=coupled) )
-            if (dim==3): f.write("%s\n" % element.getReducedString(coupled=coupled) )
+            if (dim==3):
+                f.write("%s\n" % element.getReducedString(coupled=coupled) )
+                #print(("%s\n" % element.getReducedString(coupled=coupled) ))
 
 
     return newAuxNodes

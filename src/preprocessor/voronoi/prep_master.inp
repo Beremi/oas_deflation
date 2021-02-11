@@ -39,7 +39,7 @@
 #Single Spring
 #Model 2d_singleSpring minDist 1 activeMechanics 1
 #
-#
+#PERIODIC MODELS
 #Model 2d_periodicShear Xsize 0.05 Ysize 0.05 minDist 0.004 activeMechanics 1 activeTransport 1 trials 5000
 Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMechanics 1 activeTransport 1 trials 400
 #
@@ -58,7 +58,7 @@ Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMech
 ####################################################################################
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
-#Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 1 activeMechanics 1 coupled 1 trials 100000
+#Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 1 activeMechanics 1 coupled 1 trials 1000
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0.5 loadWidth 0.01 minDist 0.007 fracZoneWidth 0.1 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.01
 #
 #
