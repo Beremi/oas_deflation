@@ -280,3 +280,12 @@ Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
     }
     return closest;
 }
+
+//////////////////////////////////////////////////////////
+Node* NodeContainer ::giveNode(unsigned const num) const { 
+    if (num>=nodes.size()){
+        cerr << "NodeContainer Error: node " << num << " requested, but only " << nodes.size() << " nodes exist" << endl;
+        exit(1);
+    }
+    return nodes [ num ]; 
+}

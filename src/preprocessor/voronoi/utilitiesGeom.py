@@ -673,7 +673,7 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
     print("BLOCKS   ", nblocks)
     if (len(maxLim)==2):
         #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
-        loads=["\t2\tey\t0\tgxy\t1","\t3\tvolumetricAverage\t0\tmicroSourcesX\t1\tmicroSourcesY\t2"]
+        loads=["\t2\tey\t0\tgxy\t1","\t3\tvolumetricAverage\t0\tgx\t1\tgy\t2"]
         names=["MechanicalPeriodicBC","TransportPeriodicBC"]
         for q in range(nblocks):
             ndepend = len(cpldNds[q])
@@ -692,7 +692,7 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
 
     if (len(maxLim)==3):
         #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
-        loads=["\t1\tsx\t1","\t3\tvolumetricAverage\t0\tmicroSourcesX\t1\tmicroSourcesY\t2"]
+        loads=["\t1\tsx\t1","\t3\tvolumetricAverage\t0\tgx\t1\tgy\t2"]
         names=["MechanicalPeriodicBC","TransportPeriodicBC"]
         for q in range(nblocks):
             ndepend = len(cpldNds[q])
@@ -1572,6 +1572,14 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
                 perP[2] += maxLim[2]*zplus
                 index, dist = findClosest(vertices_out, perP, dim)
                 if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(nodes_out), index+len(nodes_out)] ) )
+
+            if(xplus and yplus and zplus):
+                perP = np.copy(vertices_out[i])
+                perP[1] += maxLim[1]*yplus
+                perP[2] += maxLim[2]*zplus
+                perP[3] += maxLim[3]*zplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
 
         coupledNodes.append(subBlockTrsprt)
 

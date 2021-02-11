@@ -1074,17 +1074,6 @@ double TrsprtQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
 Matrix TrsprtQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, nodes.size() );
     shapeFGrad(x, phiG);
-
-    /*
-    Matrix B(ndim, DoFids.size() );
-    for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        for (unsigned v = 0; v<ndim; v++) B [ 0 ] [ v ] =   phiG [ 0 ] [ v ];
-    }
-    B.print();
-    phiG.print();
-    exit(1);
-    */
-
     return phiG;
 }
 
