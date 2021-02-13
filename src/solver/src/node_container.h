@@ -13,8 +13,9 @@ class NodeContainer
 private:
     vector< Node * >nodes;
     vector< unsigned >DoFid;         //mapping from particle order to DoF order for all DoFs
-    vector< unsigned >loadedDoFid;     //mapping from particle order to DoF order for loaded DoFs
-    vector< unsigned >blockedDoFid;  //mapping from particle order to DoF order for blocked DoFs
+    vector< unsigned >loadedDoFs;
+    vector< unsigned >bodyForceDoFs;
+    vector< unsigned >blockedDoFid;
     unsigned totalDoFs, freeDoFs;
     BCContainer *BC;
 
@@ -33,7 +34,9 @@ public:
 
     void setContainers(BCContainer *bc, ConstraintContainer *c) { constr = c; BC = bc; }
     void readFromFile(const string filename, const int dim);
-    Node *giveNode(unsigned const num) { return nodes [ num ]; }
+    void saveToFile(const std :: string &filepath, std :: vector< unsigned > &nodes_to_save) const;
+    unsigned giveNodeId(const Node * node) const;
+    Node *giveNode(unsigned const num) const;
     size_t giveSize() { return nodes.size(); };
     unsigned giveDoFid(unsigned i) const { return DoFid [ i ]; }
     void establishDoFArray(BCContainer *BC);
@@ -45,7 +48,7 @@ public:
     void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
     void giveReducedForceArray(Vector &fullDoFs, Vector &fDoFs) const;
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
-    void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const;
+    void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const;
     Node *findClosestMechanicalNode(Point A) const;
     void addNode(Node *n) { nodes.push_back(n); };
     vector< bool >giveMechDoFsIndicator() { return mechDoFs; }

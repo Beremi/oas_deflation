@@ -132,6 +132,7 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
             }
         }
     }
+
     return ( givePrescribedDisplacement(time) - dd ) / df;
 }
 

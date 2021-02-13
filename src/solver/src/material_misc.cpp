@@ -88,6 +88,10 @@ Vector BrittleMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 
+//////////////////////////////////////////////////////////
+Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
+    return Vector(0); //TOTO: FIX
+}
 
 //////////////////////////////////////////////////////////
 // BRITTLE MATERIAL
@@ -191,6 +195,10 @@ Vector ContactMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 
+//////////////////////////////////////////////////////////
+Vector ContactMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
+    return Vector(0); //TOTO: FIX
+}
 
 //////////////////////////////////////////////////////////
 // BRITTLE MATERIAL

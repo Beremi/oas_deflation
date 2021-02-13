@@ -62,6 +62,30 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
 }
 
 //////////////////////////////////////////////////////////
+void NodeContainer :: saveToFile(const std :: string &filepath, std :: vector< unsigned > &nodes_to_save) const {
+    std :: ofstream outputfile( filepath );
+    if ( outputfile.is_open() ) {
+        outputfile << "#nodes saved from calculation";
+        for ( auto const &node_id : nodes_to_save) {
+          outputfile << this->giveNode(node_id)->giveLineToSave() << '\n';
+        }
+        outputfile.close();
+    }
+}
+
+unsigned NodeContainer :: giveNodeId(const Node * node) const {
+    // do not use this method for node that is not a part of this (nodeContainer)
+    auto res = std :: find(std :: begin(this->nodes), std :: end(this->nodes), node);
+    if (res != this->nodes.end()) {
+      // if node is not in container, return zero (but zero can be also for the first node)
+      // just to prevent errors here
+      return 0;
+    }
+    return std :: distance(std :: begin(this->nodes), res);
+}
+
+
+//////////////////////////////////////////////////////////
 void NodeContainer :: init() {
     establishDoFArray();
 }
@@ -78,10 +102,11 @@ void NodeContainer :: establishDoFArray() {
     BC->calculateDoFfields();
     DoFid.resize(totalDoFs);
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
-    vector< unsigned >loaded = BC->giveArrayOfLoadedDoFs();
+    loadedDoFs = BC->giveArrayOfLoadedDoFs();
+    bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
     blockedDoFid.resize(blocked.size() );
-    loadedDoFid.resize(loaded.size() );
     freeDoFs = totalDoFs - blocked.size();
+
 
     /////////////////////////////////////////////////////////////////
     // #constraint
@@ -102,21 +127,25 @@ void NodeContainer :: establishDoFArray() {
     vector< pair< unsigned, unsigned > >a;
     a.resize(blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
+
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
     sort(a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
-    vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
-    for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
-        if ( prev->first == cur->first ) {
-            cerr << "Node Container Error: two Dirichlet BC assigned to the same DoF number " << cur->first << endl;
-            exit(1);
+    if (a.size()>0){
+        vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
+        for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
+            if ( prev->first == cur->first ) {
+                cerr << "Node Container Error: two Dirichlet BC assigned to the same DoF number " << cur->first << endl;
+                exit(1);
+            }
+            prev = cur;
         }
-        prev = cur;
+    }else{
+        cerr << "WARNING: no Dirichlet BC, the model does not prevent rigid-body motion" << endl;
     }
-
 
     unsigned cs = 0;
     unsigned k = 0;
@@ -139,9 +168,6 @@ void NodeContainer :: establishDoFArray() {
             * d = id - k - cs;
         }
     }
-    for ( unsigned i = 0; i < loaded.size(); i++ ) {
-        loadedDoFid [ i ] = loaded [ i ];
-    }
 
     //identify whether the DoF is mechanical or Transport
     mechDoFs.resize(totalDoFs);
@@ -162,12 +188,14 @@ void NodeContainer :: establishDoFArray() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
-    vector< double >loaded = BC->giveLoadedDoFValues(time);
-    for ( unsigned k = 0; k < loaded.size(); k++ ) {
-        // JK QUESTION why is here += when after every step load *= 0. Can loadedDoFid[k] indeces repeat? or can any value appear in place of other than loaded DoF?
-        //  in case not, I would remove load *= 0 after every step and here replace += with just =
-        // JK ANSWER (based on discussion with JE): in future, more stuff will be necessary to add to load and it will be nonzero
-        RHS [ loadedDoFid [ k ] ] += loaded [ k ];
+    vector< double >nodalLoad = BC->giveLoadedDoFValues(time);
+    for ( unsigned k = 0; k < nodalLoad.size(); k++ ) {
+        RHS [ loadedDoFs [ k ] ] += nodalLoad [ k ];
+    }
+
+    vector< double >bodyLoad = BC->giveBodyForceDoFValues(time);
+    for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
+        RHS [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
     }
 }
 
@@ -213,23 +241,25 @@ void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
     }
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs ) {
+        if ( DoFid [ i ] < freeDoFs - constrDoFs  ) {
             f [ DoFid [ i ] ] = fullf [ i ];
         }
     }
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_ext) const {
+void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
     // #constr_new
     if ( this->giveConstraints()->isActive() ) {
         this->giveConstraints()->calculateMasterForces(f_int);
+        this->giveConstraints()->calculateMasterForces(f_dam);
+        this->giveConstraints()->calculateMasterForces(f_acc);
     }
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
         if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {
-            f_ext [ k ] += f_int [ k ];
+            f_ext [ k ] += f_int [ k ] + f_dam [ k ] + f_acc [ k ];
         }
     }
 }
@@ -249,4 +279,13 @@ Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
         }
     }
     return closest;
+}
+
+//////////////////////////////////////////////////////////
+Node* NodeContainer ::giveNode(unsigned const num) const { 
+    if (num>=nodes.size()){
+        cerr << "NodeContainer Error: node " << num << " requested, but only " << nodes.size() << " nodes exist" << endl;
+        exit(1);
+    }
+    return nodes [ num ]; 
 }

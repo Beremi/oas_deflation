@@ -27,6 +27,17 @@ else:
 MTI = 0.0393700787  # mm to inch
 
 
+class Function(object):
+    """docstring for Function."""
+    name = "common"
+    period = 0.01
+    time_to_max = 1.0
+
+    def __init__(self, ):
+        super(Function, self).__init__()
+
+
+
 def plot_results(ax, stress, strain, ls='-', col='b', normal=3,
                  print_x_label=False, print_y_label=False, label=None):
     if label is None:
@@ -77,8 +88,8 @@ def genMechBCFile(folName="input_files"):
     bcFile = open("%s/mechBC.inp" % folName, 'w+')
 
     bcFile.write("# nodeIdx	KinTrX	KinTrY	KinRotZ	StTrX	StTrY	StRotZ\n")
-    bcFile.write("0	0	0	0	-1	-1	-1\n")
-    bcFile.write("1	1	2	0	-1	-1	-1")
+    bcFile.write("NodalBC 0	0	0	0	-1	-1	-1\n")
+    bcFile.write("NodalBC 1	1	2	0	-1	-1	-1")
 
     bcFile.close()
     return
@@ -95,13 +106,33 @@ def generateSolverFile(num_steps, folName="input_files"):
     return
 
 
-def generateFnFile(tensileLoad, shearLoad, folName="input_files"):
+def generateFnFile(tensileLoad, shearLoad, folName="input_files", function=None):
+    sym = 0
     fnFile = open("%s/functions.inp" % folName, 'w+')
 
     fnFile.write("PWLFunction 1 0 0\n")
-    fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
-    fnFile.write("PWLFunction 2 0 1 0 %lg" % shearLoad)
-
+    if function.name == "LinearFn":
+        fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
+        fnFile.write("PWLFunction 2 0 1 0 %lg" % shearLoad)
+    elif function.name == 'ConstSawToothFn':
+        if tensileLoad - 1e-9 < 0:
+            fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
+        else:
+            fnFile.write("ConstSawToothFn value %lg period %lg sym %d\n"
+                          % (tensileLoad, function.period, sym))
+        fnFile.write("ConstSawToothFn value %lg period %lg sym %d\n"
+                      % (shearLoad, function.period,  sym))
+    elif function.name == 'LinSawToothFn':
+        if tensileLoad - 1e-9 < 0:
+            fnFile.write("PWLFunction 2 0 1 0 %lg\n" % tensileLoad)
+        else:
+            fnFile.write("LinSawToothFn value %lg period %lg  time %lg sym %d\n"
+                          % (tensileLoad, function.period, function.time_to_max, sym))
+        fnFile.write("LinSawToothFn value %lg period %lg time %lg sym %d\n"
+                      % (shearLoad, function.period, function.time_to_max, sym))
+    else:
+        print("function of type \'%s\' not implemented" % function)
+        exit(1)
     fnFile.close()
     return
 
@@ -168,12 +199,12 @@ def generateMaster(folName="input_files", ini_files="input_files",
 
 def generateInputs(tensileLoad, shearLoad,
                    length, perp_length, num_steps, folName,
-                   matFile="materials.inp"):
+                   matFile="materials.inp", function=None):
 
     genMechElemFile(folName)
     genMechBCFile(folName)
     generateSolverFile(num_steps, folName)
-    generateFnFile(tensileLoad, shearLoad, folName)
+    generateFnFile(tensileLoad, shearLoad, folName, function=function)
     generateNodeFile(length, perp_length, folName)
     genExpFile(length, perp_length, folName)
     master = generateMaster(folName, matFile=matFile)
@@ -215,7 +246,7 @@ def exportResults(folName="input_files"):
 def run_and_export_single(angle_deg, final_displacement, num_steps, tension,
                           length, perp_length, folName,
                           axShear, axTensile, axCombined, nohup=False,
-                          matFile="materials.inp"):
+                          matFile="materials.inp", function=None):
     angle = angle_deg * np.pi / 180.
     cc = np.cos(angle)
     ss = np.sin(angle)
@@ -225,7 +256,7 @@ def run_and_export_single(angle_deg, final_displacement, num_steps, tension,
 
     masterFile = generateInputs(tensileLoad, shearLoad,
                                length, perp_length, num_steps, folName,
-                               matFile
+                               matFile, function,
                                )
 
     runCalculation(angle_deg, masterFile, nohup=nohup)
@@ -274,9 +305,9 @@ def run_and_export_single(angle_deg, final_displacement, num_steps, tension,
 
 if __name__ == '__main__':
     ###########################################################################
-    length = 24e-3  # element length
+    length = 30e-3  # element length
     perp_length = length  # facet size (in 2D it is just length)
-    final_displacement = [1e-3, 1e-3]
+    final_displacement = [1e-5, 1e-5]
     num_steps = 1000.
     # list of angles in degrees to plot curves for
     angle_deg_all = [0., 10., 20., 30., 40., 50., 60., 70., 80., 90., ]
@@ -285,6 +316,41 @@ if __name__ == '__main__':
     # material file must be in the same directory as this python script
     ###########################################################################
     matFile = "material.inp"
+
+    LinearFn = Function()
+    LinearFn.name = "LinearFn"
+
+    ###########################################################################
+    ### HERE SPECIFY NUMBER OF CYCLES
+    num_cycles = 100
+    period = 1.0 / float(num_cycles)
+
+    ConstSawToothFn = Function()
+    ConstSawToothFn.name = "ConstSawToothFn"
+    ConstSawToothFn.period = period
+
+    LinSawToothFn = Function()
+    LinSawToothFn.name = "LinSawToothFn"
+    LinSawToothFn.period = period
+    LinSawToothFn.time_to_max = 1.0
+
+    ##########################################################################
+    ### HERE CHOSE THE FUNCTION WHICH TO USE FOR LOADING #####################
+    # function = LinearFn
+    function = ConstSawToothFn
+    # function = LinSawToothFn
+
+    ##########################################################################
+    ### HERE CHOSE VALUE OF FINAL DISPLACEMNT ################################
+    if function.name == "LinearFn":
+        final_displacement = [1e-3, 1e-3]  # first value is for tension, second for compression
+    elif function.name == "ConstSawToothFn":
+        final_displacement = [5e-5, 5e-5]
+    elif function.name == "LinSawToothFn":
+        final_displacement = [1e-4, 1e-4]
+    else:
+        print("no such function defined %s" % function.name)
+
     matFileName = matFile.split(".")[0]
     folName = matFileName + "_calculation"
     if not os.path.isdir(folName):
@@ -313,7 +379,8 @@ if __name__ == '__main__':
                                       num_steps, tension,
                                       length, perp_length, folName,
                                       axShear, axTensile, axCombined,
-                                      nohup=True, matFile=matFile)
+                                      nohup=True, matFile=matFile,
+                                      function=function)
             except Exception as e:
                 try:
                     # this will probably not work on windows, therefore try catch is here
@@ -354,7 +421,7 @@ if __name__ == '__main__':
                         hspace=0.30, wspace=0.30)
 
 
-    fig.savefig("%s_results.pdf" % matFileName)
+    fig.savefig("%s_%s.pdf" % (matFileName, function.name))
     # plt.show()
     plt.close()
     try:

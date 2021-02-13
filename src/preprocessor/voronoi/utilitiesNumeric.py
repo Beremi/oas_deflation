@@ -14,6 +14,8 @@ from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
 
+SHOW_PLOT = False
+AXIS_ASPECT_EQUAL = False  # True may cause error using newer matplotlib versions
 ##run voronoi, mirrored data
 def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
     vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts)[:,:dim]) #the last column might be present representing radii
@@ -34,7 +36,7 @@ def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
 
 
 ##run power, mirrored data
-def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
+def runMirroredPower (node_coords, radii, dim, maxLim, Xtop, shifts=0):
     points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
     vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
 
@@ -47,8 +49,10 @@ def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
         ax.add_artist(circle)
     ax.set_xlim(0, maxLim[0])
     ax.set_ylim(0, maxLim[1])
-    ax.set_aspect('equal')
-    plt.show()
+    if AXIS_ASPECT_EQUAL:
+        ax.set_aspect('equal')
+    if SHOW_PLOT:
+        plt.show()
     """
 
     if (dim == 2):
@@ -57,6 +61,11 @@ def runMirroredPower (node_coords, radii, dim, maxLim, shifts=0):
     if (dim == 3):
         volumes = voronoi.voronoi_3d(vor, maxLim);
         return vor, volumes
+
+def runMirroredPowerDam (node_coords, radii, dim, maxLim, topsize, shifts=0):
+    points, radii = voronoi.mirror_dataDam(node_coords, topsize, dim, maxLim, shifts, weights=radii)#[:,:dim]
+    vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
+    return vor
 
 def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim, quarter = False):
     vor = Voronoi(voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim, quarter = quarter))
@@ -278,10 +287,12 @@ def reorderToDiagonal (node_count, node_coords, vor):
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1,1,1)
-    ax.set_aspect('equal')
+    if AXIS_ASPECT_EQUAL:
+        ax.set_aspect('equal')
     #plt.imshow(A)
     #plt.colorbar()
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     C = np.zeros( (node_count,node_count) )
     C = csr_matrix(A)
@@ -296,9 +307,11 @@ def reorderToDiagonal (node_count, node_coords, vor):
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1,1,1)
-    ax.set_aspect('equal')
+    if AXIS_ASPECT_EQUAL:
+        ax.set_aspect('equal')
     #plt.imshow(B)
     #plt.colorbar()
-    #plt.show()
+    # if SHOW_PLOT:
+    #     plt.show()
 
     return order

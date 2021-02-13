@@ -29,7 +29,7 @@ public:
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
     virtual void shapeF(const Point *x, Vector &phi) const { WachspressShapeF(x, phi); };
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const {return  WachspressShapeFGrad(x, phiGrad); };
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { return WachspressShapeFGrad(x, phiGrad); };
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual void setIntegrationPointsAndWeights();
@@ -40,13 +40,13 @@ public:
 class TranspVirtPolygonal : public TranspPolygonal
 {
 protected:
-    Matrix V1, V2, W1, W2; 
+    Matrix V1, V2, W1, W2;
 public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
     virtual void init();
-    virtual Matrix giveSteadyStateMatrix(string matrixType) const;
-    virtual Matrix giveMassMatrix() const;
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
 };
 
@@ -56,7 +56,7 @@ public:
 
 class TranspCondensedPolygonal : public TranspPolygonal
 {
-private:       
+private:
     Vector red2full;
     vector< double >angles;
     void fullShapeF(const Point *x, Vector &phi) const;
@@ -90,32 +90,32 @@ public:
  */
 
 /*
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-class TranspPolyhedral : public TranspPolygonal
-{
-protected:
-    vector< double >volumes;
-    vector< Point >faceCenters;
-    vector< vector< int > >faceConnectivity;
-    vector< double >determinants;
-
-    void findIntegrationPoints();
-    Vector WachspressShapeF(Point x) const;
-    Matrix WachspressShapeFGrad(Point x) const;
-public:
-    TranspPolyhedral(const unsigned dim);
-    ~TranspPolyhedral() {};
-    virtual void init();
-    virtual Vector shapeF(Point x) const { return WachspressShapeF(x); };
-    virtual Matrix shapeFGrad(Point x) const { return WachspressShapeFGrad(x); };
-    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    virtual Matrix giveConductivityMatrix(string matrixType) const;
-    virtual Matrix giveCapacityMatrix() const;
-    virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
-};
-*/
+ * //////////////////////////////////////////////////////////
+ * //////////////////////////////////////////////////////////
+ * class TranspPolyhedral : public TranspPolygonal
+ * {
+ * protected:
+ *  vector< double >volumes;
+ *  vector< Point >faceCenters;
+ *  vector< vector< int > >faceConnectivity;
+ *  vector< double >determinants;
+ *
+ *  void findIntegrationPoints();
+ *  Vector WachspressShapeF(Point x) const;
+ *  Matrix WachspressShapeFGrad(Point x) const;
+ * public:
+ *  TranspPolyhedral(const unsigned dim);
+ *  ~TranspPolyhedral() {};
+ *  virtual void init();
+ *  virtual Vector shapeF(Point x) const { return WachspressShapeF(x); };
+ *  virtual Matrix shapeFGrad(Point x) const { return WachspressShapeFGrad(x); };
+ *  void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+ *  virtual Matrix giveConductivityMatrix(string matrixType) const;
+ *  virtual Matrix giveCapacityMatrix() const;
+ *  virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
+ *  virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+ * };
+ */
 
 /*
  * class TranspVirtPolyhedral : public TranspPolyhedral

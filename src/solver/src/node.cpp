@@ -16,6 +16,16 @@ void Node :: readFromLine(istringstream &iss) {
     }
 }
 
+
+std :: string Node :: giveLineToSave() const {
+  std :: string  str = this->name + "\t" + to_string(this->point.getX()) +
+      "\t" + to_string(this->point.getY());
+  if ( this->dim == 3 ){
+    str += "\t" + to_string(this->point.getZ());
+  }
+  return str;
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
@@ -28,7 +38,7 @@ MechDoF :: MechDoF(unsigned dimension) : MechNode(dimension) {
     point = Point(0, 0, 0);
     nDoFs = dimension;
     dim = dimension;
-    name = "Mechanical DoF";
+    name = "MechDoF";
 }
 
 //////////////////////////////////////////////////////////
@@ -71,7 +81,7 @@ TrsDoF :: TrsDoF(unsigned dimension) : TrsNode(dimension) {
     point = Point(0, 0, 0);
     nDoFs = dimension;
     dim = dimension;
-    name = "Transport DoF";
+    name = "TrsDoF";
 }
 
 
@@ -100,4 +110,10 @@ double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
     } else {
         return MechNode :: giveDoFBasedValue(code, DoFs);
     }
+};
+
+
+//////////////////////////////////////////////////////////
+std :: string Particle :: giveLineToSave() const {
+  return Node :: giveLineToSave() + "\t" + to_string(this->r);
 };

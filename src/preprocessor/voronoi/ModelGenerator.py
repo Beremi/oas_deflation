@@ -15,6 +15,7 @@ from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import utilitiesGeom, utilitiesMech, utilitiesModeling, utilitiesNumeric, voronoi
+from utilitiesGeom import mechBCFile
 
 # Disable
 def blockPrint():
@@ -46,12 +47,17 @@ class Model:
         self.mirtype = []
 
         self.govNodes = []
+        self.govNodesTrspt = []
         self.rigidPlates = []
+        self.rigidPlatesTrspt = []
         self.constraint = False
+        self.constraintTrspt = False
+
+        self.edgeMinDistCoef=1.0
 
         self.node_coords = []
 
-        self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = None
+        self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC = None
 
         self.functions = []
         self.radii = []
@@ -83,6 +89,7 @@ class Model:
         self.notchWidth = None
         self.notchDepth = None
         self.RWTHQuarter = False
+        self.elasticZone = None
 
         for i in range (len(r)):
 
@@ -125,12 +132,18 @@ class Model:
             if (r[i]=='periodicModel'):
                 if (int(r[i+1])==1): self.periodicModel = True
                 if (int(r[i+1])==0): self.periodicModel = False
+            if (r[i]=='elasticZone'):
+                self.elasticZone = float(r[i+1])
             #"""
             """
             keys = ['powerTes', 'activeMechanics', 'activeTransport', 'periodicModel']
             if r[i] in keys:
                 setattr(self, r[i], bool(r[i+1]))
             """
+            if (r[i]=='edgeMinDistCoef'):
+                self.edgeMinDistCoef = float(r[i+1])
+
+
             if (r[i]=='cylinderRad'):
                 self.cylinderRad = float(r[i+1])
             if (r[i]=='cylinderHeight'):
@@ -166,7 +179,8 @@ class Model:
             if (r[i]=='orthogonalFracZone'):
                 if (int(r[i+1])==1): self.orthogonalFracZone = True
                 if (int(r[i+1])==0): self.orthogonalFracZone = False
-
+            if (r[i]=='Xtopsize'):
+                self.Xtopsize = float(r[i+1])
             if (r[i]=='symmetric'):
                 if (int(r[i+1])==1): self.symmetric = True
 
@@ -174,15 +188,19 @@ class Model:
 
         print('done.')
 
-    def setDirectory(self):
-        if self.userSeed == -1:
-            self.seed = np.random.randint(1000.0)
-            np.random.seed(seed=self.seed)
-        else:
-            self.seed = self.userSeed
-            np.random.seed(seed=self.seed)
+    def setDirectory(self, dirNam=None):
+        if dirNam is None:
+            if self.userSeed == -1:
+                self.seed = np.random.randint(1000.0)
+                np.random.seed(seed=self.seed)
+            else:
+                self.seed = self.userSeed
+                np.random.seed(seed=self.seed)
 
-        self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
+            self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
+        else:
+            self.master_folder = dirNam
+
         try:
             if not os.path.exists(self.master_folder):
                 os.makedirs(self.master_folder)
@@ -191,7 +209,7 @@ class Model:
             sys.exit()
 
 
-    def createModel(self):
+    def createModel(self, node_coords_init=None):
         print ('Creating model %s' %self.modelType)
         #
         #if (self.printout == False): blockPrint()
@@ -203,9 +221,9 @@ class Model:
             self.run_3d_BiparvaTubeTransport()
 
         if self.modelType == '2d_notched3pb':
-            self.run_2d_notched3pb()
+            self.run_2d_notched3pb(node_coords_init=node_coords_init)
         if self.modelType == '3d_notched3pb':
-            self.run_3d_notched3pb()
+            self.run_3d_notched3pb(node_coords_init=node_coords_init)
 
         if self.modelType == '2d_dogbone':
             self.run_2d_dogbone()
@@ -245,6 +263,9 @@ class Model:
         if self.modelType =='2d_cantileverBending':
             self.run_2d_cantileverBending()
 
+        if self.modelType == '3d_dam':
+            self.run_3d_dam()
+
 
         #if (self.printout == False): enablePrint()
 
@@ -253,19 +274,52 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_singleSpring', maxLim=np.array([self.minDist, 1]) )
         materialZones = None
 
-    def run_2d_notched3pb(self):
+    def run_2d_notched3pb(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth)
+        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
-    def run_3d_notched3pb(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled)
+    def run_3d_notched3pb(self, node_coords_init=None):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
         materialZones = None
+        """
+        if self.elasticZone ==True:
+            lim = np.array([
+            self.maxLim[0]*0.5  - self.maxLim[0]*self.fracZoneWidth*1.1,
+            self.maxLim[1] * 0.9,
+            -self.maxLim[2]* 0.1,
+            self.maxLim[0]*0.5  + self.maxLim[0]*self.fracZoneWidth*1.1,
+            self.maxLim[1] * 1.1,
+            self.maxLim[2] * 1.1
+            ])
+            print (lim)
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim)
+        """
+        if self.elasticZone ==1:
+            lim = np.array([
+            self.maxLim[0]*0.5  + self.maxLim[1] * 0.2,#+ self.maxLim[0]*self.fracZoneWidth*1,
+            self.maxLim[1] * 0.9,
+            -self.maxLim[2]* 0.1,
+            self.maxLim[0]*0.5  - self.maxLim[1] * 0.2,#- self.maxLim[0]*self.fracZoneWidth*1,
+            self.maxLim[1] * 1.1,
+            self.maxLim[2] * 1.1
+            ])
+            print (lim)
+            lim1=np.array([
+            self.maxLim[0]*0.5  - self.maxLim[0] * self.fracZoneWidth * 0.4,
+            self.maxLim[1] * 0.0,
+            -self.maxLim[2]* 0.1,
+            self.maxLim[0]*0.5  + self.maxLim[0] * self.fracZoneWidth * 0.4,
+            self.maxLim[1] * self.notchH*1.8,
+            self.maxLim[2]* 1.1,
+            ])
+            print (lim1)
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef )
         self.materialZones=None
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
@@ -275,13 +329,14 @@ class Model:
         self.materialZones = None
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)   = utilitiesModeling.create3dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac )
 
-
     def run_3d_torsionPress(self):
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='box', maxLim=self.maxLim)
         (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, 0 )
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
         self.materialZones =  None
+        if self.elasticZone >0:
+            self.materialZones = utilitiesModeling.assembleMaterialZones(self.elasticZone,3, model='3dcylinder', maxLim=self.maxLim)
 
     def run_3d_ReinhardtTension(self):
         #DURHAM - prism tension 250x60x50
@@ -298,6 +353,7 @@ class Model:
         (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.notches)    = utilitiesModeling.create3dRWTHShearCylinder(np.array([1e-6,0,0]), self.cylinderRad, self.cylinderHeight, self.minDist, self.trials, self.notchRadLeft, self.notchRadRight, self.notchWidth, self.notchWidth, self.notchDepth, quarter = self.RWTHQuarter )
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
         self.materialZones =  None
+
 
     def run_2d_RWTHShearCylinder(self):
         self.maxLim = np.array([2*self.cylinderRad, self.cylinderHeight])
@@ -331,7 +387,7 @@ class Model:
 
 
     def run_3d_coupledBrazilianDisc(self):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
@@ -347,11 +403,13 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
 
+    def run_3d_dam(self):
+        self.materialZones = None
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create3dDam(self.maxLim, self.minDist, self.trials, self.Xtopsize)
 
     def saveGeometry(self):
         tube = False
-        if self.modelType == '3d_BiparvaTubeTransport':
-            tube = True
+        if self.modelType == '3d_BiparvaTubeTransport': tube = True
 
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
@@ -375,6 +433,11 @@ class Model:
         print ('done.')
 
     def saveRest(self, solver, master_file):
+        # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
+        bc_path = os.path.join(self.master_folder,
+                               utilitiesGeom.mechBCFile)
+        if os.path.isfile(bc_path):
+            os.remove(bc_path)
         print('Saving files...', end='')
         utilitiesGeom.saveMaterials(self.master_folder, self.materials)
         utilitiesGeom.saveFunctions(self.master_folder, self.functions)
@@ -396,6 +459,18 @@ class Model:
                         utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
                         self.constraint = True
 
+        self.totalNodeCount += len(self.govNodes)
+
+
+        #saving transport rigid plates
+        if self.govNodesTrspt != None:
+            if self.rigidPlatesTrspt != None:
+                if self.govNodesTrsptBC != None:
+                    utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart)
+                    self.constraintTrspt = True
+
+
+
         if (self.measuringGauges!=None):
             utilitiesGeom.saveMeasuringGauges(self.master_folder, self.dimension, self.measuringGauges)
 
@@ -403,13 +478,15 @@ class Model:
             if self.powerTes:
                 utilitiesGeom.saveRadii(self.master_folder, self.radii)
 
-        utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint,
+        utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint, constraintTrspt=self.constraintTrspt,
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
-        print ('done.')
+        # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
+        dst_file = os.path.join(self.master_folder,master_file)
+        if not os.path.isfile(dst_file):
+            print ('Copying prep_master used...', end='')
+            copyfile(master_file, dst_file)
 
-        print ('Copying prep_master used...', end='')
-        copyfile(master_file, os.path.join(self.master_folder,master_file))
         print ('done.')
 
     def addMaterial(self, row):
@@ -697,6 +774,7 @@ if __name__ == '__main__':
             model.createModel()
             model.saveGeometry()
             model.saveRest(solver, file)
+
 
 
 

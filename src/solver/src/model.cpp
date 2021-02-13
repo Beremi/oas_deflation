@@ -10,7 +10,7 @@ Model :: Model(bool pT) {
 }
 
 //////////////////////////////////////////////////////////
-void Model :: init() {    //initialization
+void Model :: init(const bool &initial) {     //initialization
     pblocks.apply();
     bconds.init();
     nodes.init();
@@ -18,15 +18,15 @@ void Model :: init() {    //initialization
     elems.init();
     constr.init(& nodes, & bconds);
     elems.findElementFriends();
-    exporters.init();
-    solver->init();
-    cout << "Initialition completed" << endl;
+    exporters.init(initial);
+    solver->init(initial);
+    cout << "Initialization completed" << endl;
 }
 
 //////////////////////////////////////////////////////////
 void Model :: solve() {
     //solution
-    while ( !solver->isTerminated() ) {  
+    while ( !solver->isTerminated() ) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
         exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
@@ -40,10 +40,12 @@ void Model :: solve() {
 }
 
 //////////////////////////////////////////////////////////
-void Model :: readFromFile(const string filename) {
+void Model :: readFromFile(const string filename, const bool &initial) {
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
-    resultDir = baseDir / "results";
+    if ( initial ) {
+        resultDir = baseDir / "results";
+    }
 
     exporters.setResultDirectory(resultDir);
 
@@ -80,6 +82,12 @@ void Model :: readFromFile(const string filename) {
                     iss >> istr;
                     elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs );
                 }
+            } else if ( istr.compare("MatStatFiles") == 0 ) {
+                iss >> iint;
+                for ( int i = 0; i < iint; i++ ) {
+                    iss >> istr;
+                    elems.setFileToLoadStatsFrom( (baseDir / istr ).string() );
+                }
             } else if ( istr.compare("ConstrFiles") == 0 ) {
                 // read constraint files
                 iss >> iint;
@@ -91,7 +99,7 @@ void Model :: readFromFile(const string filename) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes );
+                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems );
                 }
             } else if ( istr.compare("FunctionFiles") == 0 ) {
                 iss >> std :: skipws >> iint;
@@ -111,10 +119,11 @@ void Model :: readFromFile(const string filename) {
                     iss >> istr;
                     pblocks.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
-            } else if ( istr.compare("Solver") == 0 ) {
+            } else if ( initial && istr.compare("Solver") == 0 ) {
                 iss >> istr;
                 solver = new Solver();
                 solver = solver->readFromFile( ( baseDir / istr ).string() );
+                // QUESTION JK: why is this here and not in the constructor? together with new Solver() ?
                 solver->setContainers(& elems, & nodes, & funcs);
             }
         }
@@ -124,4 +133,27 @@ void Model :: readFromFile(const string filename) {
         cerr << "Error: unable to open input file '" <<  fullPath.string() <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
+}
+
+
+void Model :: clear() {
+    // TODO JK: check containers for memory leaks
+    // initialize new model with clear geometry, only solver remains
+    funcs = FunctionContainer();
+    bconds = BCContainer();
+    constr = ConstraintContainer();
+    nodes = NodeContainer();
+    matrs = MaterialContainer();
+    elems = ElementContainer();
+    exporters = ExporterContainer();
+    pblocks = PBlockContainer();
+
+    nodes.setContainers(& bconds, & constr);
+    bconds.setContainers(& funcs);
+    elems.setContainers(& nodes, & bconds);
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
+    std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
+
+    solver->setContainers(& elems, & nodes, & funcs);
+    std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 }

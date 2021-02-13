@@ -7,8 +7,9 @@ import os
 import utilitiesMech
 import utilitiesGeom
 from mpl_toolkits.mplot3d import Axes3D
+from regions import *
 
-
+SHOW_PLOT = False
 
 
 def randPointInRectangle(dim, maxLim, useLowBound=False):
@@ -48,7 +49,7 @@ def generateNodesRect(maxLim, minDist, dim, trials, node_coords, useLowBound=Fal
             coords = randPointInRectangle(dim, maxLim,useLowBound=useLowBound)
             distIsGood = True
             #
-            distIsGood = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords, coords)
+            distIsGood = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords, list(coords))
             #distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
             #distIsGood = cutilitiesGeom.heckMutDistancesCKDTree(dim, minDist, node_coords, coords)
 
@@ -80,7 +81,40 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         prob = volumeRatio*fuller2D(d, maxDiam)
         num = ((prob[:-1]-prob[1:])*Volume/(np.pi*np.square(d[:-1]/2.))+1.).astype(int)
 
-        point = np.zeros(dim+1)
+        #add regular boundary
+        """
+        point = np.zeros(dim)
+        n0 = int(2.*maxLim[0]/(maxDiam+minDiam))
+        n1 = int(2.*maxLim[1]/(maxDiam+minDiam))
+        s0 = maxLim[0]/n0;
+        s1 = maxLim[1]/n1;
+        for i in range(n0+1):
+            point[0] = i*s0
+            point[1] = 0
+            node_coords = np.vstack((node_coords, point));  
+            radii = np.hstack((radii, 0));          
+            point[1] = maxLim[1]
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
+        for i in range(n0-1):
+            point[1] = (i+1)*s1
+            point[0] = 0
+            node_coords = np.vstack((node_coords, point));  
+            radii = np.hstack((radii, 0));          
+            point[0] = maxLim[0]
+            node_coords = np.vstack((node_coords, point));             
+            radii = np.hstack((radii, 0));
+    
+        print(node_coords)    
+        """        
+
+        #option to add external nodes
+        """
+        node_coords = np.loadtxt("repnodes.inp")
+        radii = node_coords[:,-1]
+        node_coords = node_coords[:,0:-1]
+        """
+
         iters = 0
         di = 0
         numi= 0
@@ -115,6 +149,53 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
                 node_coords[20*i+j,1] = (j+0.5)/20+np.random.rand()/1000.
         print(node_coords.shape, radii.shape)
         """
+
+        return node_coords, radii
+
+
+def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
+        gap = 0.1
+        Volume = np.prod(maxLim)- maxLim[1]*maxLim[2]*(maxLim[0]-topsize)/2.
+        d = np.flipud(np.linspace(minDiam,maxDiam,20))  #20 different diameters
+        prob = volumeRatio*fuller2D(d, maxDiam)
+        num = ((prob[:-1]-prob[1:])*Volume/(np.pi*np.square(d[:-1]/2.))+1.).astype(int)
+
+        #option to add external nodes
+        """
+        node_coords = np.loadtxt("repnodes.inp")
+        radii = node_coords[:,-1]
+        node_coords = node_coords[:,0:-1]
+        """
+
+        alpha = np.arctan( (maxLim[0] - topsize)/maxLim[2] )
+        planenorm = np.array([np.cos(alpha), 0., np.sin(alpha)])
+        planeconst = -planenorm[0]*maxLim[0] - planenorm[1]*maxLim[1]
+
+        iters = 0
+        di = 0
+        numi= 0
+        while (d[di]>minDiam and iters<trials):
+            if numi<num[di]:
+                point = np.random.rand(dim)*(maxLim-d[di]) + d[di]/2.
+                radius = d[di]/2.
+                if (np.dot(point,planenorm) + planeconst > -d[di]/2.):
+                    continue #violation of skewed boundary
+                if len(node_coords) == 0:
+                    node_coords = np.vstack((node_coords,point));
+                    radii = np.hstack((radii, radius));
+                    numi += 1
+                    continue
+
+                dist = min(np.sum(np.square(node_coords-point),1)-np.square((1+gap)*(radii+radius)))
+                if dist>0.:
+                    node_coords = np.vstack((node_coords, point));
+                    radii = np.hstack((radii, radius));
+                    iters = 0
+                    numi += 1
+                else: iters += 1
+            else:
+                di += 1
+                numi = 0.
 
         return node_coords, radii
 
@@ -266,7 +347,8 @@ def generateOrtogrid(maxLim, minDist, dim, node_coords, size):
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter(orthogrid[:,0],orthogrid[:,1],orthogrid[:,2])
-        plt.show()
+        if SHOW_PLOT:
+            plt.show()
         #
         #"""
 
@@ -351,7 +433,8 @@ def generateOrtogrid_variable(maxLim, minDist, node_coords, dimensions):
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter(orthogrid[:,0],orthogrid[:,1],orthogrid[:,2])
-        plt.show()
+        if SHOW_PLOT:
+            plt.show()
         #
         #"""
 
@@ -464,7 +547,6 @@ def randPointInCircle(center, radius, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
     point = np.zeros(3)
-    point += center
 
     rn = np.random.uniform()
 
@@ -478,13 +560,13 @@ def randPointInCircle(center, radius, directionDim):
         point[0] = radius * np.cos(angle) * rn
         point[1] = radius * np.sin(angle) * rn
 
+    point += center
     return point
 
 def randPointInAnnulus(center, radius, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
     point = np.zeros(3)
-    point += center
 
     effRadius = (radius - thickness) + thickness *  np.random.uniform()
 
@@ -498,13 +580,13 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
         point[0] =  np.cos(angle) * effRadius
         point[1] =  np.sin(angle) * effRadius
 
+    point += center
     return point
 
 def randPointInTube(center, radius, height, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
     point = np.zeros(3)
-    point += center
 
     effRadius = (radius - thickness) + thickness *  np.random.uniform()
 
@@ -521,6 +603,7 @@ def randPointInTube(center, radius, height, thickness, directionDim):
         point[1] =  np.sin(angle) * effRadius
         point[2] = height * np.random.uniform()
 
+    point += center
     return point
 
 
@@ -661,6 +744,177 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+def distance(a, b):
+    dst = 0;
+    for coord_a, coord_b in zip(a, b):
+        dst += (coord_a - coord_b) ** 2.0
+    return dst ** 0.5
+
+
+def minDistTrans(lminR, lmin, dst, rR, rT):
+    return lminR + (lmin - lminR) * ( dst - rR ) / (rT - rR)
+
+
+
+def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
+                        centersToRemesh, centersPreviouslyRemeshed,
+                        radiusRemesh, radiusTransitional,
+                        dim=2, rectLims=None):
+    PRINT_TEST = False
+    print ( 'Generating points to update geometry' )
+    border_block = Block(Point(rectLims[0][0], rectLims[0][1]),
+                         Point(rectLims[1][0], rectLims[1][1]))
+    tr = 0
+    # remesh fine areas
+    ci = 0
+    for center in centersToRemesh:
+        tr = 0
+        # print("generating in remesh area %d - " % (ci), end=' ' )
+        # print(center)
+        ci += 1
+        while (tr<trials):
+            tr = 0
+            distIsGood = False
+            while (distIsGood == False):
+                if PRINT_TEST:
+                    print("generating node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
+                distIsGood = True
+                if (tr > trials): break
+                if len(center) == 2:
+                    center = np.append(center, 0.)
+
+                coords = randPointInCircle(center,
+                                           radiusRemesh, directionDim=2)[:dim]  # so far for 2D
+                # check if generated point is not outside the specimen
+                if rectLims is not None:
+                    if not border_block.IsInside(Point(coords[0], coords[1])):
+                        distIsGood = False
+                        tr += 1
+                        continue
+                # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                          radiusRemesh,
+                                          centersPreviouslyRemeshed,
+                                          list(coords))
+                if not distIsGood:
+                    tr += 1
+                    continue
+
+                # check distances to other nodes
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                             minDistRemesh,
+                                             node_coords, list(coords))
+                if not distIsGood:
+                    tr +=1
+                    continue
+
+            #Adding node coords
+            if (tr < trials):
+                if PRINT_TEST:
+                    print("appending node in remesh area ---------------------", end=' ' )
+                    print(coords)
+                node_coords.append(coords)
+
+        # after remesh of fine area, append this one into centers previously remeshed
+        centersPreviouslyRemeshed.append(center)
+    ##########################################################################
+    # print(centersPreviouslyRemeshed)
+    # remesh the transitional areas - same centers, just different radius and only outer ring
+    ci = 0
+    tr = 0
+    for center in centersToRemesh:
+        # if PRINT_TEST:
+        #     print("generating in transitional area %d" % ci, end='\r' )
+        tr = 0
+        ci += 1
+        while (tr<trials):
+            tr = 0
+            distIsGood = False
+            while (distIsGood == False):
+                if PRINT_TEST:
+                    print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
+                if (tr > trials): break
+                distIsGood = True
+                if len(center) == 2:
+                    center = np.append(center, 0.)
+
+                coords = randPointInAnnulus(
+                            center,
+                            radiusTransitional,
+                            thickness=(radiusTransitional-radiusRemesh),
+                            directionDim=2)[:dim]  # so far for 2D
+
+                # check if generated point is not outside the specimen
+                if rectLims is not None:
+                    if not border_block.IsInside(Point(coords[0], coords[1])):
+                        distIsGood = False
+                        tr += 1
+                        continue
+
+                # check distances to already remeshed centers - to prevent putting nodes there centers
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                        radiusRemesh,
+                                        centersPreviouslyRemeshed,
+                                        list(coords))
+                if not distIsGood:
+                    tr += 1
+                    continue
+
+
+                # TODO tady neco nesedí: viz obrázek co to exportuje
+                mdt = minDistTrans(minDistRemesh, minDist, distance(coords,
+                                                                    center),
+                             radiusRemesh, radiusTransitional)
+                # mdt = (minDistRemesh + (minDist - minDistRemesh) *
+                #                  ( distance(coords, center) - radiusRemesh ) /
+                #                  (radiusTransitional - radiusRemesh)
+                #                 )
+
+                # print(minDist, minDistRemesh, mdt)
+                # print(minDistTrans(minDistRemesh, minDist, radiusTransitional,
+                #              radiusRemesh, radiusTransitional))
+
+                # check distances to other nodes
+                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                            mdt,
+                                            node_coords, list(coords))
+                if not distIsGood:
+                    tr += 1
+                    continue
+
+
+            #Adding node coords
+            if (tr < trials):
+                if PRINT_TEST:
+                    print("appending node in transitional area ----------", end=' ' )
+                    print(coords)
+                node_coords.append(coords)
+
+    return node_coords
+
+
+try:
+    from point_generators_cython import generateNodesRemesh_cython as generateNodesRemesh
+    print('Using Cython version of point generator - generateNodesRemesh.')
+except Exception as e:
+    print(e)
+    print('''Cython version of point generator - generateNodesRemesh - not avaliable yet.''')
+    # print('''Using Python version of generator. To use the Cython version the
+    #       the code has to be build using: python setup.py build_ext --inplace.''')
+
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+
 def randPointInCilinder(center, radius, height, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
@@ -765,7 +1019,7 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
     else:
         #print('Equid')
-        mD = minDist 
+        mD = minDist
         length = np.linalg.norm(nodeA - nodeB)
         nodeNr = int (length / mD)
         indnt = (length-(nodeNr-1)*mD) / 2

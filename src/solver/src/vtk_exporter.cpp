@@ -87,7 +87,7 @@ void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *e
     for ( auto const &e : * elems ) {
         rbc = nullptr;
         // NOTE do not use this for transport elements
-        if ( e->giveName().compare("RigidBodyContact") == 0 ) {
+        if ( e->giveName().compare("LTCBEAM") == 0 ) {
             elDoFs = e->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -133,7 +133,7 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
     for ( auto const &e : * elems ) {
         rbc = nullptr;
         // NOTE do not use this for transport elements
-        if ( e->giveName().compare("RigidBodyContact") == 0 ) {
+        if ( e->giveName().compare("LTCBEAM") == 0 ) {
             elDoFs = e->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -280,7 +280,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             // points_id.push_back(n - *nodes->begin());
         }
         all_points_id.push_back(points_id);
-        cell_types.push_back(points_id.size() * 2 - 1); // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
+        cell_types.push_back(el->giveVTKCellType());
         offset += points_id.size();
         offsets.push_back(offset);
         for ( unsigned i = 0; i < cell_data_size; i++ ) {
@@ -633,7 +633,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     int offset = 0;
     unsigned node_id_i;
     for ( auto const &el : * elems ) {
-        if ( el->giveName().compare("RigidBodyContact") != 0 ) {
+        if ( el->giveName().compare("LTCBEAM") != 0 ) {
             continue;
         }
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( el );

@@ -46,11 +46,11 @@ protected:
 
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
 
-    virtual void genereteNewDoFs(NodeContainer *nodes);
-    virtual void genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
-    virtual void genereteExporters(NodeContainer *nodes, ExporterContainer *ex);
+    virtual void generateNewDoFs(NodeContainer *nodes);
+    virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+    virtual void generateExporters(NodeContainer *nodes, ExporterContainer *ex);
     virtual void readLoading(istringstream &iss);
-    virtual void genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
+    virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
     MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; };
     virtual ~MechanicalPeriodicBC() {};
@@ -66,11 +66,11 @@ class TransportPeriodicBC : public MechanicalPeriodicBC
 {
 protected:
     vector< int >microscaleSources; ///< sources at nodes due to mohogenized macroscale pressure gradient
-    virtual void genereteNewDoFs(NodeContainer *nodes);
-    virtual void genereteConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
-    virtual void genereteExporters(NodeContainer *nodes, ExporterContainer *ex);
+    virtual void generateNewDoFs(NodeContainer *nodes);
+    virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+    virtual void generateExporters(NodeContainer *nodes, ExporterContainer *ex);
     virtual void readLoading(istringstream &iss);
-    virtual void genereteRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
+    virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
     TransportPeriodicBC() { name = "TransportPeriodicBC"; };
     virtual ~TransportPeriodicBC() {};
@@ -92,7 +92,7 @@ protected:
     bool transport = false;
     unsigned master_id, ndim;
     std :: string which;  ///< which direction to fix (e.g. to leave expansion in perpendicualr direction)
-    void checkMechTransport( Node *master );
+    void checkMechTransport(Node *master);
 };
 
 class CoordRigidPlate : public RigidPlate

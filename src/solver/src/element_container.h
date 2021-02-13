@@ -14,28 +14,36 @@ private:
     NodeContainer *nodes;
     BCContainer *bconds;
     unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
+    void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
+    void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const;
+    void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
+    std :: vector<std :: string> file_to_load_from;
 
 public:
     ElementContainer() {};
     ~ElementContainer();
     void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
+    // void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
+    void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time, const unsigned &step) const;
+    void readMatStatsFromFile(double &ini_time, unsigned &ini_step);
+    void setFileToLoadStatsFrom(const std :: string &str );
     void init();
     size_t giveSize() const { return elems.size(); }
     void findElementFriends();
     void updateMaterialStatuses();
-    void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const;
-    void prepareSteadyStateMatrix(CoordinateIndexedSparseMatrix &K) const;
-    void updateSteadyStateMatrix(CoordinateIndexedSparseMatrix &K, string matrixType) const;
-    void prepareCapacityMatrix(CoordinateIndexedSparseMatrix &C) const;
-    void updateCapacityMatrix(CoordinateIndexedSparseMatrix &C) const;
+    void prepareStiffnessMatrix(CoordinateIndexedSparseMatrix &K) const;
+    void updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const;
+    void prepareDampingMatrix(CoordinateIndexedSparseMatrix &C) const;
+    void updateDampingMatrix(CoordinateIndexedSparseMatrix &C) const;
     void prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const;
     void updateMassMatrix(CoordinateIndexedSparseMatrix &M) const;
-    void addBodyForces(Vector &R, double time) const;
-    void giveInternalForces(Vector &full_r, Vector &full_f);                       ///< return internal forces with temporary update of internal variables
-    void giveInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f); ///< return internal forces based on current state of internal variables
-    void giveInternalForces(Vector &full_r, Vector &full_f, bool frozen);          ///< return internal forces with or without frozen internal variables
-    Element *giveElement(unsigned const num) { return elems [ num ]; }
+    void integrateInternalForces(Vector &full_r, Vector &full_f);                       ///< return internal forces with temporary update of internal variables
+    void integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f); ///< return internal forces based on current state of internal variables
+    void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen);          ///< return internal forces with or without frozen internal variables
+    void integrateDampingForces(const Vector &full_v, Vector &full_f) const;
+    void integrateInertiaForces(const Vector &full_a, Vector &full_f) const;
+    Element *giveElement(unsigned const num) const { return elems [ num ]; }
 
     vector< Element * > :: iterator begin() { return elems.begin(); }
     vector< Element * > :: iterator end() { return elems.end(); }

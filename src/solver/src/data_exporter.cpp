@@ -1,5 +1,6 @@
 #include "data_exporter.h"
 #include "vtk_exporter.h"
+#include "exporter_model.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -9,6 +10,13 @@ void DataExporter :: giveFileName(unsigned step, char *buffer) const {
 }
 
 //////////////////////////////////////////////////////////
+/*!
+    DataExporter optional parameters.
+    Keywords:
+    - timeEach [float] - time each (TODO: better description)
+    - time_last [float] - time shift (TODO: better description)
+    - precision [float] - precision of stored values
+*/
 void DataExporter :: readFromLine(istringstream &iss) {
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -41,6 +49,16 @@ bool DataExporter :: doExportNow(const double &time) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM NODES TO TXT
+/*!
+    Export from nodes to txt.
+    Parameters:
+    - filename [string] - file to store results (e.g. LD -> results/LD.out)
+    - num [int] - number of components to read
+    - codes [string] - component name (ux, uy, uz, pressure, rotx, roty, rotz) (TODO: links to component names)
+
+    These parameters can be followed by optional keywords:
+    - see DataExporter::readFromLine
+*/
 void TXTNodalExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
@@ -81,6 +99,16 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM ELEMENTS TO TXT
+/*!
+    Export from elements to txt.
+    Parameters:
+    - filename [string] - file to store results (e.g. elem -> results/elem.out)
+    - num [int] - number of components to read
+    - codes [string] - component labels
+
+    These parameters can be followed by optional keywords:
+    - see DataExporter::readFromLine
+*/
 void TXTElementExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
@@ -95,6 +123,16 @@ void TXTElementExporter :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
+/*!
+    Export from Gauss points to txt.
+    Parameters:
+    - filename [string] - file to store results (e.g. gauss -> results/gauss.out)
+    - num [int] - number of components to read
+    - codes [string] - component labels (TODO: links to possible values)
+
+    These parameters can be followed by optional keywords:
+    - see DataExporter::readFromLine
+*/
 void TXTGaussPointExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
@@ -150,6 +188,18 @@ void Gauge :: giveFileName(unsigned step, char *buffer) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF FORCES
+/*!
+    Export Forces to txt.
+    Parameters:
+    - filename [string] - file to store results (e.g. LD -> results/LD.out)
+    - name - label placed in table header
+    - codes [string] - force component name (2D - fx, fy, mz) and (3D fx, fy, fz, mx, my, mz)
+    - num [int] - number of nodes to read
+    - n [int] - node numbers
+
+    These parameters can be followed by optional keywords:
+    - see DataExporter::readFromLine
+*/
 void ForceGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
@@ -165,12 +215,13 @@ void ForceGauge :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge :: ForceGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
+ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
     nodes = nc;
     filename = f;
     name = gname;
     n = nn;
-    codes = c;
+    codes.resize(1);
+    codes [ 0 ] = c;
     multiplier = m;
 }
 
@@ -233,45 +284,75 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DEGREES OF FREEDOM
-void DoFGauge :: readFromLine(istringstream &iss) {
-    iss >> filename;
-    iss >> name;
-    iss >> nodenum;
-    iss >> direction;
-    DataExporter :: readFromLine(iss);
-}
+/*!
+    Export DoF from nodes to txt.
+    Parameters:
+    - filename [string] - file to store results (e.g. LD -> results/LD.out)
+    - name - label placed in table header
+    - codes [string] - component name (2D - ux, uy, rz) and (3D ux, uy, uz, rx, ry, rz)
+    - num [int] - number of nodes to read
+    - n [int] - node numbers
+
+    These parameters can be followed by optional keywords:
+    - see DataExporter::readFromLine
+*/
 
 //////////////////////////////////////////////////////////
-DoFGauge :: DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension) : Gauge(dimension) {
-    filename = f;
-    name = gname;
-    direction = dir;
-    nodes = nn;
-    nodenum = n;
-    multiplier = m;
+DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {
 }
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
-    n = nodes->giveNode(nodenum);
-    DoF = n->giveStartingDoF() + direction;
     time_each = 0;
     time_last = 0;
+    unsigned DoFpos = 0;
+    if ( codes [ 0 ].compare("ux") == 0 ) {
+        DoFpos = 0;
+    } else if ( codes [ 0 ].compare("uy") == 0 ) {
+        DoFpos = 1;
+    } else if ( codes [ 0 ].compare("uz") == 0 && dim > 2 ) {
+        DoFpos = 2;
+    } else if ( codes [ 0 ].compare("rx") == 0 && dim > 2 ) {
+        DoFpos = 3;
+    } else if ( codes [ 0 ].compare("ry") == 0 && dim > 2 ) {
+        DoFpos = 4;
+    } else if ( codes [ 0 ].compare("rz") == 0 ) {
+        DoFpos = 5;
+        if ( dim == 2 ) {
+            DoFpos = 2;
+        }
+    } else {
+        if ( dim == 3 ) {
+            cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;
+            exit(EXIT_FAILURE);
+        } else if ( dim == 2 ) {
+            cerr << "Error in DoFGauge: only 'ux', 'uy' or 'rz' can be exported by DoFGauge in 2D model" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    DoFs.resize(n.size() );
+    for ( unsigned i = 0; i < n.size(); i++ ) {
+        DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + DoFpos;
+    }
 }
 
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) step;
     ( void ) reactions;
     char buffer [ 100 ];
+    double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        outputfile << "\t" <<  full_f [ DoF ] * multiplier;
+        for ( unsigned i = 0; i < DoFs.size(); i++ ) {
+            value += full_f [ DoFs [ i ] ];
+        }
+        outputfile <<  "\t" << value * multiplier;
     }
     outputfile.close();
 }
@@ -279,6 +360,18 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
+/*!
+    Export displacements (nodeB-nodeA) to txt.
+    Parameters:
+    - filename [string] - file to store results (e.g. LD -> results/LD.out)
+    - name [string] - label placed in table header
+    - codes [string] - displacement code (ux, uy, uz)
+    - coordinatesA [float] - coordinates of gauge point A (2D x y) (2D x y z)
+    - coordinatesB [float] - coordinates of gauge point B (2D x y) (2D x y z)
+
+    These parameters can be followed by optional keywords:
+    - see DataExporter::readFromLine
+*/
 void DisplacementGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
@@ -328,6 +421,16 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
+/*!
+    Export displacements of the structure to txt.
+    Parameters:
+    - filename [string] - file to store results (e.g. LD -> results/LD.out)
+    - name [string]- label placed in table header
+    - codes [string] - displacement code (one of ux, uy, uz)
+
+    These parameters can be followed by optional keywords:
+    - see DataExporter::readFromLine
+*/
 void StructuralExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
@@ -378,6 +481,20 @@ ExporterContainer :: ~ExporterContainer() {
 }
 
 //////////////////////////////////////////////////////////
+//!  Container class for Exporters.
+/*!
+  Input file keywords:
+  - %TXTNodalExporter - for other parameters see TXTNodalExporter::readFromLine
+  - %TXTElementExporter - for other parameters see TXTElementExporter::readFromLine
+  - %ForceGauge - for other parameters see ForceGauge::readFromLine
+  - %DisplacementGauge - for other parameters see DisplacementGauge::readFromLine
+  - %ValueGauge || %StructuralExporter - for other parameters see StructuralExporter::readFromLine
+  - %DoFGauge - for other parameters see DoFGauge::readFromLine
+  - %TXTGaussPointExporter - for other parameters see TXTGaussPointExporter::readFromLine
+  - %VTKElementExporter - for other parameters see VTKElementExporter::readFromLine
+  - %VTKRBExporter - for other parameters see VTKRB2DExporter::readFromLine
+  - %VTKRCExporter - for other parameters see VTKRCExporter::readFromLine
+*/
 void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
     size_t origsize = exporters.size();
     string line, exptype;
@@ -392,7 +509,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             }
             istringstream iss(line);
             iss >> exptype;
-            if ( !exptype.rfind("#", 0) == 0 ) {
+            if ( !(exptype.rfind("#", 0) == 0 )) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {
                     TXTNodalExporter *newexp = new TXTNodalExporter(n, dimension);
                     newexp->readFromLine(iss);
@@ -442,6 +559,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     } else {
                         std :: cout << "no rigid body contacts exporter for dimension " << dimension << '\n';
                     }
+                } else if ( exptype.compare("ElementStatsExporter") == 0 ) {
+                    ElementStatsExporter *newexp = new ElementStatsExporter(e, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -457,7 +578,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 }
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: init() {
+void ExporterContainer :: init(const bool &initial) {
     fs :: create_directories(resultDir);
 
     bool newname;
@@ -477,39 +598,41 @@ void ExporterContainer :: init() {
         }
     }
 
-    //gauge files header
-    char buffer [ 100 ];
-    for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string() );
-        if ( outputfile.good() ) {
-            outputfile << "#step" << "\t" << "time";
-        }
-        outputfile.close();
-    }
-
-    for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        Gauge *g = dynamic_cast< Gauge * >( * d );
-        if ( g ) {
-            ( * d )->giveFileName(0, buffer);
+    if ( initial ) {
+        //gauge files header
+        char buffer [ 100 ];
+        for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
+            ( * unique )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string() );
             if ( outputfile.good() ) {
-                outputfile << "\t" << g->giveName();
+                outputfile << "#step" << "\t" << "time";
             }
             outputfile.close();
         }
-    }
 
-    for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
-        if ( outputfile.good() ) {
-            outputfile << endl;
+        for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
+            Gauge *g = dynamic_cast< Gauge * >( * d );
+            if ( g ) {
+                ( * d )->giveFileName(0, buffer);
+                ofstream outputfile;
+                outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+                if ( outputfile.good() ) {
+                    outputfile << "\t" << g->giveName();
+                }
+                outputfile.close();
+            }
         }
-        outputfile.close();
+
+        for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
+            ( * unique )->giveFileName(0, buffer);
+            ofstream outputfile;
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            if ( outputfile.good() ) {
+                outputfile << endl;
+            }
+            outputfile.close();
+        }
     }
 };
 
@@ -547,8 +670,10 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 };
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: appendToAllNames(string app){
-    for ( auto &d : exporters) d->appendToName(app);
+void ExporterContainer :: appendToAllNames(string app) {
+    for ( auto &d : exporters ) {
+        d->appendToName(app);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -558,8 +683,11 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
     // stress_zero = Vector((double)0, dim);
 
     unsigned node_id, ni;
-    int first;
-    Vector elDoFvalues, elReactValues, strainNT;
+    double first;
+    Vector intF0(2 * dim);
+    Vector intF1(dim);
+    Vector intF2(dim);
+    Vector elDoFvalues, strainNT;
     vector< unsigned >elDoFs;
 
     vector< double >Volume(stress.size(), 0);
@@ -567,20 +695,18 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
     RigidBodyContact *rbc;
 
     for ( auto const &el : * elems ) {
-        if ( el->giveName().compare("RigidBodyContact") == 0 ) {
+        if ( el->giveName().compare("LTCBEAM") == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
-            elReactValues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
-                elReactValues [ i ] = reactions [ elDoFs [ i ] ];
             }
 
             // to each node correspond 0.5 of volume
             // TODO must be repaired for power tessellation
             single_volume = 0.5 * rbc->giveLength() * rbc->giveArea() / dim;
-            first = -1;
+            first = 1;
             ni = 0;
             for ( auto const &n : el->giveNodes() ) {
                 auto res = std :: find(begin(* nodes), end(* nodes), n);
@@ -588,13 +714,15 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
                 Volume [ node_id ] += single_volume;
 
                 stress [ node_id ] += dyadicProduct(
-                    ( el->giveInternalForces(elDoFvalues, false)
-                      + rbc->giveContactStrainXYZ(elReactValues) * rbc->giveArea() * rbc->giveLength()
-                    )
-                    * first
-                    , rbc->giveDistanceToNode(ni, 0) );
+                  (
+                      rbc->giveContactStressXYZ(elDoFvalues)
+                      * rbc->giveArea()  // vyhodit
+                  )
+                  * first
+                  , rbc->giveVectorToNode(ni, 0) );  // tady může být jen poloha  IP (HonzaE článek 2020)
+                // TODO here is probably missing some value corresponding to internal moments
                 // for node corresponding to end of element, traction needs to be reversed
-                first = 1;
+                first = -1;
                 ni++;
             }
         } else {
@@ -611,11 +739,11 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 }
 
 
-void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > & NodeTypes, fs :: path resultDir) {
-  // if NodeTypes.empty() then save all nodes
-  // TODO finish this, now (for adaptivity) just save path to file with particles
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {
+    // if NodeTypes.empty() then save all nodes
+    // TODO finish this, now (for adaptivity) just save path to file with particles
 }
 
-void saveElems(const ElementContainer &elems, const std :: vector< std :: string > & ElemTypes, fs :: path resultDir) {
-  // if ElemTypes.empty() then save all elems
+void saveElems(const ElementContainer &elems, const std :: vector< std :: string > &ElemTypes, fs :: path resultDir) {
+    // if ElemTypes.empty() then save all elems
 }

@@ -216,10 +216,34 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain) {
+    computeDamage(addEigenStrain(strain) );
+    return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain);
+}
+
+//////////////////////////////////////////////////////////
+Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
     temp_strain = strain;
-    computeDamage(addEigenStrain(strain));
-    temp_stress = DisMechMaterialStatus :: giveStress(strain) * ( 1 - temp_damage );
+    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain) * ( 1. - temp_damage );
     return temp_stress;
+}
+
+std :: string MarsMaterialStatus :: giveLineToSave() const {
+  return "damage " + to_string(this->damage) + " maxEpsN " + to_string(this->maxEpsN) + " maxEpsT " + to_string(this->maxEpsT) ;
+}
+
+
+void MarsMaterialStatus :: readFromLine(istringstream &iss) {
+  std :: string param;
+  while ( !iss.eof() ) {
+    iss >> param;
+    if ( param.compare("damage") == 0 ) {
+      iss >> this->damage;
+    } else if ( param.compare("maxEpsN") == 0 ) {
+      iss >> this->maxEpsN;
+    } else if ( param.compare("maxEpsT") == 0 ) {
+      iss >> this->maxEpsT;
+    }
+  }
 }
 
 

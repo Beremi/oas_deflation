@@ -6,6 +6,7 @@
 #include "material_container.h"
 
 class ElementContainer; //forward declaration;
+class BodyLoad; //forward declaration
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -27,24 +28,32 @@ protected:
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
+    virtual void setIntegrationPointsAndWeights() {};
+
+    unsigned vtk_cell_type = 0; //integer detrmining type of cell for VTK plotting, 
+    //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
+
 public:
     Element() { name = "basic element"; solution_order = 0; }
     virtual ~Element();
-    void setID(unsigned i){idx = i;};
-    unsigned giveID() const {return idx;};
+    void setID(unsigned i) { idx = i; };
+    unsigned giveID() const { return idx; };
     virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
+    // virtual std :: string giveLineToSave(NodeContainer * nodes) const;
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
-    virtual Matrix giveSteadyStateMatrix(string matrixType) const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
-    vector< unsigned >giveDoFs() { return DoFids; };
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
+    vector< unsigned >giveDoFs() const { return DoFids; };
+    vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
     virtual double giveValue(string code) const;
     string giveName() const { return name; }
     size_t giveIPNum() const { return ip_locs.size(); };
-    Point giveIPLoc(unsigned k) const { return ip_locs[k]; };
+    Point giveIPLoc(unsigned k) const { return ip_locs [ k ]; };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
     vector< Node * >giveNodes() const { return nodes; }
@@ -61,7 +70,8 @@ public:
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
     unsigned giveDimension() const { return ndim; }
-    virtual void setIntegrationPointsAndWeights() {};
+    virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
+    unsigned giveVTKCellType() const {return vtk_cell_type;};
 };
 
 
@@ -75,7 +85,7 @@ protected:
 public:
     GeometricalElement() { mat = nullptr; }
     ~GeometricalElement() {};
-    double giveIPValue(string code, unsigned ipnum) { ( void ) code; ( void ) ipnum; return 0; }
+    double giveIPValue(string code, unsigned ipnum) const { ( void ) code; ( void ) ipnum; return 0; }
 };
 
 //////////////////////////////////////////////////////////
@@ -88,8 +98,6 @@ protected:
 public:
     TransportElement() {}
     ~TransportElement() {};
-    virtual Matrix giveConductivityMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
-    virtual Matrix giveCapacityMatrix() const { return giveMassMatrix(); };
 };
 
 
@@ -103,7 +111,6 @@ protected:
 public:
     MechanicalElement() {}
     ~MechanicalElement() {};
-    virtual Matrix giveStiffnessMatrix(string matrixType) const { return giveSteadyStateMatrix(matrixType); };
 };
 
 //////////////////////////////////////////////////////////
@@ -120,6 +127,8 @@ protected:
 
     Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;
+    virtual void setIntegrationPointsAndWeights();
+
 public:
     RigidBodyContact(const unsigned dim);
     virtual Matrix giveAMatrix(Point a, Point x) const;
@@ -128,16 +137,19 @@ public:
     void init();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual void setIntegrationPointsAndWeights();
     vector< Node * >giveVertices() const { return vert; };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual Vector giveContactStrainXYZ(const Vector &DoFs) const;
+    virtual Vector giveContactStressXYZ(const Vector &DoFs);
+    virtual Vector transformToLocal(const Vector &DoFs) const;
+    virtual Vector transformToGlobal(const Vector &DoFs) const;
+
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     double giveCrackOpening() { return tempCrackOpening; };
-    Vector giveDistanceToNode(const unsigned &node_i, const unsigned &ip_id) const;
+    Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     Point giveNormal() const { return normal; };
     Point giveT1() const { return t1; };
     Point giveT2() const { return t2; };
@@ -172,14 +184,15 @@ protected:
     bool bound;
     Point normal;
     double length, area;
-    bool reducedCapacityMatrix;
+    bool BolanderCapacityMatrix;
 
     virtual void checkNodeType() const;
+    virtual void setIntegrationPointsAndWeights();
+
 public:
     Transp1D(const unsigned dim);
     ~Transp1D() {};
     void init();
-    virtual void setIntegrationPointsAndWeights();
     double giveArea() const { return area; }
     Point giveNormal() const { return normal; }
     double giveLength() const { return length; }
@@ -188,9 +201,9 @@ public:
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    //Matrix giveConductivityMatrix(string matrixType) const;
-    //Matrix giveCapacityMatrix() const;
-    //virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
+    virtual Matrix giveDampingMatrix() const;
+    virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -205,7 +218,6 @@ private:
     void findFriends2D(ElementContainer *elemcont);
     void findFriends3D(ElementContainer *elemcont);
 
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     void findElementFriends(ElementContainer *elemcont);
@@ -213,24 +225,41 @@ public:
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     void init();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL TRANSPORT ELEMENT
-class TranspQuad : public TransportElement
+class TrsprtQuad : public TransportElement
 {
 protected:
-
+    virtual void setIntegrationPointsAndWeights();
 public:
-    TranspQuad();
-    ~TranspQuad() {};
-    void setIntegrationPointsAndWeights();
+    TrsprtQuad();
+    ~TrsprtQuad() {};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void shapeF(const Point *x, Vector &phi) const;
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK TRANSPORT ELEMENT
+class TrsprtBrick : public TrsprtQuad
+{
+protected:
+    virtual void setIntegrationPointsAndWeights();
+
+public:
+    TrsprtBrick();
+    ~TrsprtBrick() {};
+    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void shapeF(const Point *x, Vector &phi) const;
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -239,11 +268,11 @@ public:
 class MechanicalQuad : public MechanicalElement
 {
 protected:
+    virtual void setIntegrationPointsAndWeights();
 
 public:
     MechanicalQuad();
     ~MechanicalQuad() {};
-    void setIntegrationPointsAndWeights();
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void shapeF(const Point *x, Vector &phi) const;
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;

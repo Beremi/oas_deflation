@@ -2,6 +2,36 @@
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// GENERAL SPATIAL FUNCTION
+void GeneralSpatialFunction :: readFromLine(istringstream &iss) {
+    iss >> expression_string;
+
+    symbol_table_t symbols;
+    parser_t parser;
+    symbols.add_variable("x", x);
+    symbols.add_variable("y", y);
+    symbols.add_variable("z", z);
+    symbols.add_constants();
+    expression.register_symbol_table(symbols);
+    parser.compile(expression_string, expression);
+}
+
+//////////////////////////////////////////////////////////
+double GeneralSpatialFunction :: giveY(const Point *xyz) {
+    x = xyz->getX();
+    y = xyz->getY();
+    z = xyz->getZ();
+
+    return expression.value();
+}
+
+//////////////////////////////////////////////////////////
+double GeneralSpatialFunction :: giveNextEtreme(const double &t) const {
+    return INFINITY;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // PIECE-WISE LINEAR FUNCTION
 void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
     unsigned num;
@@ -17,7 +47,7 @@ void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-double PieceWiseLinearFunction :: giveY(double t)  {
+double PieceWiseLinearFunction :: giveY(double t) const {
     if ( x.size() <= 0 ) {
         return 0;
     }
@@ -120,7 +150,7 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-double ConstSawToothFunction :: giveY(double t)  {
+double ConstSawToothFunction :: giveY(double t) const {
     if ( lower > 0 && t < abs(time_shift) ) {
         return multip * t * lower / ( abs(time_shift) );
     } else {
@@ -178,7 +208,7 @@ void LinSawToothFunction :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-double LinSawToothFunction :: giveY(double t)  {
+double LinSawToothFunction :: giveY(double t) const {
     // only multiply result of the constant saw tooth function by linearly increasing time function SawToot(t) * (t_m * t)
     double value = ConstSawToothFunction :: giveY(t);
     return value * time_multiplier * t;
@@ -205,103 +235,12 @@ void VaryingSawToothFunction :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-double VaryingSawToothFunction :: giveY(double t)  {
+double VaryingSawToothFunction :: giveY(double t) const {
     // only multiply result of the constant saw tooth function by linearly increasing time function SawToot(t) * (t_m * t)
     double value = ConstSawToothFunction :: giveY(t);
     double value2 = PieceWiseLinearFunction :: giveY(t);
     return ( value * value2 ) + shift;
 }
-
-
-//////////////////////////////////////////////////////////
-// JM: Rotation function using angle from a ConstSawToothFunction
-void ConstSawToothRotationFunction :: readFromLine(istringstream &iss) {
-    // read ConstSawToothFunction from file
-    ConstSawToothFunction :: readFromLine(iss);
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
-    string param;
-    //
-    double angX;
-    double angY;
-    double angZ;
-    double nodeX;
-    double nodeY;
-    double nodeZ;
-    //
-    currentTime = 0;
-    previousTime = 0;
-    //
-    while ( !iss.eof() ) {
-        iss >> param;
-        //cout << param << endl;
-        if ( param.compare("rotAngles") == 0 ) {
-            iss >> angX >> angY >> angZ;
-            rotationAngles = Point(angX, angY, angZ);
-        } else if ( param.compare("initNodeCrds") == 0 ) {
-            iss >> nodeX >> nodeY >> nodeZ;
-            initNodePosition = Point(nodeX, nodeY, nodeZ);
-        } else if ( param.compare("displType") == 0 ) {
-            iss >> displacementType;
-        }
-    }
-}
-
-void ConstSawToothRotationFunction :: setCurrentTime(double t) {
-    if ( t >= currentTime ) {
-        previousTime = currentTime;
-        currentTime = t;
-    }
-    if ( t < currentTime ) {
-        currentTime = t;
-    }
-}
-// JM: Return value depending on displacement type
-//////////////////////////////////////////////////////////
-double ConstSawToothRotationFunction :: giveY(double t)  {
-    //
-    ConstSawToothRotationFunction :: setCurrentTime(t);
-    //
-    double currentAngleX  = rotationAngles.x * ConstSawToothFunction :: giveY(currentTime);
-    double previousAngleX = 0;
-
-    // delta Coordinate X
-    if ( displacementType == 0 ) {
-        double val = 0;
-        return val;
-    }
-    // delta Coordinate Y
-    else if ( displacementType == 1 ) {
-        double val = -( cos(currentAngleX) * initNodePosition.y - sin(currentAngleX) * initNodePosition.z )
-                     + ( cos(previousAngleX) * initNodePosition.y - sin(previousAngleX) * initNodePosition.z );
-        return val;
-    }
-    // delta Coordinate Z
-    else if ( displacementType == 2 ) {
-        double val = -( sin(currentAngleX) * initNodePosition.y + cos(currentAngleX) * initNodePosition.z )
-                     + ( sin(previousAngleX) * initNodePosition.y + cos(previousAngleX) * initNodePosition.z );
-        return val;
-    }
-    // Angle around X
-    /*
-     * else if ( displacementType == 3){
-     * return 0;
-     * //  return currentAngleX;
-     * }
-     * // Angle around Y
-     * else if ( displacementType == 4){
-     *  return 0;
-     * //  return currentAngleY;
-     * }
-     * // Angle around Z
-     * else if ( displacementType == 5){
-     *  return 0;
-     * //  return currentAngleZ;
-     * }
-     */
-    return 0;
-}
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -340,7 +279,7 @@ void SinusFunction :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-double SinusFunction :: giveY(double t)  {
+double SinusFunction :: giveY(double t) const {
     return amplitude * sin(2 * M_PI * t / period) + shift;
 }
 
@@ -374,7 +313,11 @@ void FunctionContainer :: readFromFile(const string filename) {
             istringstream iss(line);
             iss >> ftype;
             if ( !ftype.rfind("#", 0) == 0 ) {
-                if ( ftype.compare("PWLFunction") == 0 ) {
+                if ( ftype.compare("GeneralSpatialFunction") == 0 ) {
+                    GeneralSpatialFunction *newf = new GeneralSpatialFunction();
+                    newf->readFromLine(iss);
+                    functions.push_back(newf);
+                } else if ( ftype.compare("PWLFunction") == 0 ) {
                     PieceWiseLinearFunction *newf = new PieceWiseLinearFunction();
                     newf->readFromLine(iss);
                     functions.push_back(newf);
@@ -395,12 +338,6 @@ void FunctionContainer :: readFromFile(const string filename) {
                     newf->readFromLine(iss);
                     // it is necessary to specify which of two parent classes will the tree go throug
                     functions.push_back( ( ConstSawToothFunction * ) newf );
-                }
-                //JM
-                else if ( ftype.compare("ConstSawToothRotationFunction") == 0 ) {
-                    ConstSawToothRotationFunction *newf = new ConstSawToothRotationFunction();
-                    newf->readFromLine(iss);
-                    functions.push_back(newf);
                 } else {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -413,11 +350,6 @@ void FunctionContainer :: readFromFile(const string filename) {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
-}
-
-//////////////////////////////////////////////////////////
-double FunctionContainer :: giveY(unsigned f, double t)  {
-    return functions [ f ]->giveY(t);
 }
 
 //////////////////////////////////////////////////////////

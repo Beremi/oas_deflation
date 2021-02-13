@@ -24,7 +24,7 @@ public:
     virtual void giveFileName(unsigned step, char *buffer) const;
     string giveFileName() const { return filename; };
     virtual void init() {};
-    void appendToName(string app){ filename = filename + app;};
+    void appendToName(string app) { filename = filename + app; };
 protected:
     unsigned dim;
     string filename;
@@ -98,19 +98,33 @@ public:
 // EXPORT OF FORCES
 class ForceGauge : public Gauge
 {
-private:
+protected:
     NodeContainer *nodes;
     vector< unsigned >DoFs;
     vector< unsigned >n;
 public:
     ForceGauge(NodeContainer *n, unsigned dimension) : Gauge(dimension) { nodes = n; multiplier = 1; };
-    ForceGauge(string &f, string &gname, vector< string > &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
+    ForceGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
-protected:
 };
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF DoFs
+class DoFGauge : public ForceGauge
+{
+public:
+    DoFGauge(NodeContainer *n, unsigned dimension) : ForceGauge(n, dimension) {};
+    DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
+    ~DoFGauge() {};
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void init();
+};
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -151,27 +165,6 @@ protected:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// EXPORT OF DoFs
-class DoFGauge : public Gauge
-{
-private:
-    unsigned DoF;
-    Node *n;
-    unsigned direction;
-    unsigned nodenum;
-    NodeContainer *nodes;
-public:
-    DoFGauge(NodeContainer *nn, unsigned dimension) : Gauge(dimension) { nodes = nn; multiplier = 1; };
-    DoFGauge(string &f, string &gname, unsigned n, unsigned dir, NodeContainer *nn, double m, unsigned dimension);
-    ~DoFGauge() {};
-    void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
-    virtual void init();
-protected:
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
 // CONTAINER FOR EXPORTERS
 class ExporterContainer
 {
@@ -186,7 +179,7 @@ public:
     void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const;
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
-    void init();
+    void init(const bool &initial = true);
     void setResultDirectory(fs :: path directory) { resultDir = directory; }
     fs :: path giveDirectoryPath() { return resultDir; }
     void appendToAllNames(string app);
@@ -195,8 +188,8 @@ protected:
 
 void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
 
-void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > & NodeTypes, fs :: path resultDir);
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir);
 
-void saveElems(const ElementContainer &elems, const std :: vector< std :: string > & ElemTypes, fs :: path resultDir);
+void saveElems(const ElementContainer &elems, const std :: vector< std :: string > &ElemTypes, fs :: path resultDir);
 
 #endif /* _EXPORTER_C_H */

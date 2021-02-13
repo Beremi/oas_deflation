@@ -28,6 +28,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
 };
 
@@ -68,6 +69,7 @@ public:
 //     virtual void update();
 //     virtual Vector giveNormalShearStiffness(string type) const;
 //     virtual Vector giveStress(const Vector &strain);
+//     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
 //     virtual double giveValue(string code) const;
 // };
 //
@@ -106,6 +108,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     // virtual double giveValue(string code) const;
 };
 

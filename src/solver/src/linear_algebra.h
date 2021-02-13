@@ -37,10 +37,10 @@ public:
     double getX() const;
     double getY() const;
     double getZ() const;
-    double giveCoord(unsigned i) const { if(i==0) return x; else if(i==1) return y; else if(i==2) return z; else { cerr << "Point Error: attempt to read coordinate " <<  i << endl; exit(0);} };    
+    double giveCoord(unsigned i) const { if ( i == 0 ) { return x; } else if ( i == 1 ) { return y; } else if ( i == 2 ) { return z; } else { cerr << "Point Error: attempt to read coordinate " <<  i << endl; exit(0); } };
     void set(double x, double y, double z);
     void set(const Point &p);
-    void set(const Point *p);    
+    void set(const Point *p);
 
     bool operator==(const Point &p) const;
     bool operator!=(const Point &p) const;

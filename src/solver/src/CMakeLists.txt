@@ -22,6 +22,7 @@ set (solver_files
     node.cpp
     solver.cpp
     vtk_exporter.cpp
+    exporter_model.cpp
     constraint.cpp
     preprocessing_block.cpp
     function.cpp

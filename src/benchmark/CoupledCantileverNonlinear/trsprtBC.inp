@@ -1,36 +1,36 @@
 # vrtxIdx	TrsptP	TrsptJ
-232	2	-1
-230	2	-1
-228	2	-1
-225	2	-1
-226	2	-1
-259	2	-1
-278	2	-1
-276	2	-1
-244	2	-1
-243	2	-1
-241	2	-1
-240	2	-1
-172	2	-1
-173	2	-1
-169	2	-1
-170	2	-1
-273	2	-1
-272	2	-1
-196	3	-1
-211	3	-1
-210	3	-1
-212	3	-1
-219	3	-1
-218	3	-1
-181	3	-1
-182	3	-1
-254	3	-1
-251	3	-1
-250	3	-1
-189	3	-1
-190	3	-1
-192	3	-1
-191	3	-1
-143	3	-1
-142	3	-1
+NodalBC	232	2	-1
+NodalBC	230	2	-1
+NodalBC	228	2	-1
+NodalBC	225	2	-1
+NodalBC	226	2	-1
+NodalBC	259	2	-1
+NodalBC	278	2	-1
+NodalBC	276	2	-1
+NodalBC	244	2	-1
+NodalBC	243	2	-1
+NodalBC	241	2	-1
+NodalBC	240	2	-1
+NodalBC	172	2	-1
+NodalBC	173	2	-1
+NodalBC	169	2	-1
+NodalBC	170	2	-1
+NodalBC	273	2	-1
+NodalBC	272	2	-1
+NodalBC	196	3	-1
+NodalBC	211	3	-1
+NodalBC	210	3	-1
+NodalBC	212	3	-1
+NodalBC	219	3	-1
+NodalBC	218	3	-1
+NodalBC	181	3	-1
+NodalBC	182	3	-1
+NodalBC	254	3	-1
+NodalBC	251	3	-1
+NodalBC	250	3	-1
+NodalBC	189	3	-1
+NodalBC	190	3	-1
+NodalBC	192	3	-1
+NodalBC	191	3	-1
+NodalBC	143	3	-1
+NodalBC	142	3	-1

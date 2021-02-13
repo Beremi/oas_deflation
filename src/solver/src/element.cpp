@@ -1,5 +1,6 @@
 #include "element.h"
 #include "element_container.h"
+#include "boundary_condition.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -9,6 +10,18 @@ Element :: ~Element() {
         delete * e;
     }
 }
+
+// std :: string Element :: giveLineToSave(NodeContainer * nodes_all) const {
+//   std :: string str = this->giveName() + "\t";
+//   if ( this->nodes.size() > 2 ){
+//     // for polygonal elems etc
+//     str += to_string(this->nodes.size()) + "\t";
+//   }
+//   for ( auto const &node : this->nodes ){
+//     str += to_string(nodes_all->giveNodeId(node)) + "\t";
+//   }
+//   return str;
+// }
 
 //////////////////////////////////////////////////////////
 void Element :: init() {
@@ -36,11 +49,20 @@ void Element :: init() {
 }
 
 //////////////////////////////////////////////////////////
+vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
+    vector< unsigned >DoFinDir(nodes.size() );
+    for ( unsigned i = 0; i < nodes.size(); i++ ) {
+        DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
+    }
+    return DoFinDir;
+}
+
+//////////////////////////////////////////////////////////
 void Element :: initMaterialStatuses() {
-    unsigned num =0;
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num ++ ) {
+    unsigned num = 0;
+    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num++ ) {
         ( * m )->setID(num);
-        ( * m )->init();        
+        ( * m )->init();
     }
 }
 
@@ -71,12 +93,12 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
 };
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveSteadyStateMatrix(string matrixType) const {
+Matrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);        
+        D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * ip_weights [ i ] );
     }
     return K;
@@ -88,10 +110,10 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
     intF.resize(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        if ( frozen) { 
-            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs) , ndim); //frozen internal variables
-        }else {
-            stress = stats [ i ]->giveStress(giveStrain(i, DoFs)); //full evaluation of stress including change of state variables
+        if ( frozen ) {
+            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs));  //frozen internal variables
+        } else  {
+            stress = stats [ i ]->giveStress(giveStrain(i, DoFs) ); //full evaluation of stress including change of state variables
         }
         intF  += Bs [ i ].transpose() * (  stress * ip_weights [ i ] );
     }
@@ -99,17 +121,48 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
 }
 
 //////////////////////////////////////////////////////////
+Matrix Element :: giveDampingMatrix() const {
+    unsigned nDoFs = DoFids.size();
+    Matrix M(nDoFs, nDoFs);
+    double c;
+    Matrix H;
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        H = giveHMatrix(& ip_locs [ i ]);
+        c = stats [ i ]->giveDampingConstant();
+        M += matrix_multiply(H.transpose(), H) * ( ip_weights [ i ] * c );
+    }
+    return M;
+}
+
+//////////////////////////////////////////////////////////
 Matrix Element :: giveMassMatrix() const {
     unsigned nDoFs = DoFids.size();
     Matrix M(nDoFs, nDoFs);
-    Vector phi(nDoFs);
     double c;
+    Matrix H;
     for ( unsigned i = 0; i < stats.size(); i++ ) {
-        shapeF(& ip_locs [ i ], phi);
+        H = giveHMatrix(& ip_locs [ i ]);
         c = stats [ i ]->giveMassConstant();
-        M += dyadicProduct(phi, phi) * ( ip_weights [ i ] * c );
+        M += matrix_multiply(H.transpose(), H) * ( ip_weights [ i ] * c );
     }
     return M;
+}
+
+//////////////////////////////////////////////////////////
+vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
+    unsigned nDoFs = DoFids.size();
+    vector< double >load(nDoFs);
+    double fvalue;
+    unsigned dir = vl->giveDirection();
+    Matrix H;
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        H = giveHMatrix(& ip_locs [ i ]);
+        fvalue = vl->giveValue(& ip_locs [ i ], time);
+        for ( unsigned j = 0; j < nDoFs; j++ ) {
+            load [ j ] += H [ dir ] [ j ] * fvalue * ip_weights [ i ];
+        }
+    }
+    return load;
 }
 
 //////////////////////////////////////////////////////////
@@ -118,7 +171,8 @@ Matrix Element :: giveMassMatrix() const {
 RigidBodyContact :: RigidBodyContact(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
-    name = "RigidBodyContact";
+    name = "LTCBEAM";
+    vtk_cell_type = 3;
 }
 
 //////////////////////////////////////////////////////////
@@ -422,7 +476,8 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         exit(EXIT_FAILURE);
     }
 
-    ip_weights [ 0 ] = length * area;  // NOTE JK: this works for stiffness matrix, since there is actually A * L, but not for the mass matrix, where volume should be taken (divide by dim)
+    ip_weights [ 0 ] = length * area;  // NOTE JK: this works for stiffness matrix, since there is actually A * L, but not for the mass matrix, where volume should be taken (divide by dim) // JE: Agreed, independent integration of mass has been included for this element
+
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
 }
 
@@ -442,7 +497,7 @@ void RigidBodyContact :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
-    return Matrix(0, 0);
+    return Matrix(12, 12);
 }
 
 
@@ -470,16 +525,30 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
-    return Bs[0] * DoFs;
+    return Bs [ 0 ] * DoFs;
 };
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
-    return R.transpose() * giveContactStrainNT(DoFs);
+    return this->R.transpose() * this->giveContactStrainNT(DoFs);
+};
+
+Vector RigidBodyContact :: giveContactStressXYZ(const Vector &DoFs) {
+    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs));
 };
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveDistanceToNode(const unsigned &node_i, const unsigned &ip_id) const {
+Vector RigidBodyContact :: transformToLocal(const Vector &DoFs) const {
+    return this->R.transpose() * DoFs;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
+    return this->R * DoFs;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
     Point distance = this->ip_locs [ ip_id ] - this->nodes [ node_i ]->givePoint();
     Vector dst( ( double ) 0, ndim );
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -487,7 +556,7 @@ Vector RigidBodyContact :: giveDistanceToNode(const unsigned &node_i, const unsi
             dst [ i ] = distance.getX();
         } else if ( i == 1 ) {
             dst [ i ] = distance.getY();
-        } else if ( i == 2 )                                                  {
+        } else if ( i == 2 ) {
             dst [ i ] = distance.getZ();
         }
     }
@@ -562,7 +631,7 @@ Matrix Truss :: giveHMatrix(const Point *x) const {
 }
 //////////////////////////////////////////////////////////
 Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
-    Vector strain = Bs[0] * DoFs;
+    Vector strain = Bs [ 0 ] * DoFs;
     for ( size_t k = 1; k < strain.size(); k++ ) {
         strain [ k ] = 0;                                  //only normal strain active in truss
     }
@@ -576,8 +645,9 @@ Transp1D :: Transp1D(const unsigned dim) {
     ndim = dim;
     nodes.resize(2);
     bound = false;
-    name = "Transp1D";
-    reducedCapacityMatrix = false;
+    name = "LTCTRSP";
+    BolanderCapacityMatrix = false;
+    vtk_cell_type = 3;
 }
 
 //////////////////////////////////////////////////////////
@@ -601,8 +671,8 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
 
     string code;
     while ( iss >> code ) {
-        if ( code.compare("reducedCapacityMatrix") == 0 ) {
-            reducedCapacityMatrix = true;
+        if ( code.compare("BolanderCapacityMatrix") == 0 ) {
+            BolanderCapacityMatrix = true;
         }
     }
 
@@ -616,7 +686,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     ip_locs.resize(1);
     ip_weights.resize(1);
     stats.resize(1);
-    
+
     ip_locs [ 0 ] = ( nodes [ 0 ]->givePoint() + nodes [ 1 ]->givePoint() ) / 2.;
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
@@ -624,7 +694,6 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
     Point t;
     if ( ndim == 2 ) {
-
         if ( !( vert.size() == 2 ) ) {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
@@ -633,7 +702,6 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
         t = t / area;
-
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
@@ -642,7 +710,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         //
 
         if (  vert.size() < 3  ) {
-            cerr << name << " Error: three or more vertices are required, only "<< vert.size() << " provided" << endl;
+            cerr << name << " Error: three or more vertices are required, only " << vert.size() << " provided" << endl;
             exit(1);
         }
 
@@ -733,7 +801,6 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
 //////////////////////////////////////////////////////////
 void Transp1D :: init() {
-
     Element :: init(); //calling base class method;
 
     checkNodeType();
@@ -768,47 +835,36 @@ Matrix Transp1D :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveHMatrix(const Point *x) const {
-    return Matrix(0, 0);
+    Matrix H(1, 2);
+    double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
+    double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
+    H [ 0 ] [ 0 ] = l1 / length;
+    H [ 0 ] [ 1 ] = l2 / length;
+    return H;
 }
-/*
- * //////////////////////////////////////////////////////////
- * Matrix Transp1D :: giveConductivityMatrix(string matrixType) const {
- *  ( void ) matrixType;
- *  TrsprtMaterialStatus *tstat = static_cast< TrsprtMaterialStatus * >( stats [ 0 ] );
- *  double c = area * tstat->giveEffectiveConductivity(matrixType) / length;
- *  Matrix C(2, 2);
- *  C [ 0 ] [ 0 ] = C [ 1 ] [ 1 ] = c;
- *  C [ 1 ] [ 0 ] = C [ 0 ] [ 1 ] = -c;
- *  return C;
- * }
- *
- * //////////////////////////////////////////////////////////
- * Matrix Transp1D :: giveCapacityMatrix() const {
- *  Matrix S(2, 2);
- *  TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
- *  double s = area * tmat->giveCapacity() * tmat->giveDensity() * length / ( 12. );
- *
- *  if ( reducedCapacityMatrix ) {    //derived based on assumption of constant pressure
- *      S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 3 * s;
- *  } else {    //derived based on linear assumption of pressure
- *      S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2 * s;
- *      S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s;
- *  }
- *  return S;
- * }
- *
- * //////////////////////////////////////////////////////////
- * Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen) const {
- *  ( void ) frozen;
- *  Vector pressureGrad(1);
- *  pressureGrad [ 0 ] = ( DoFs [ 1 ] - DoFs [ 0 ] ) / length;
- *  Vector flux = stats [ 0 ]->giveStress(pressureGrad);
- *  Vector intf(2);
- *  intf [ 0 ] = flux [ 0 ] * area;
- *  intf [ 1 ] = -intf [ 0 ];
- *  return intf;
- * };
- */
+
+//////////////////////////////////////////////////////////
+Matrix Transp1D :: giveDampingMatrix() const {
+    Matrix S(2, 2);
+    double s = area * stats [ 0 ]->giveDampingConstant() * length /  ( 2. * ndim );
+
+    S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = s; //finite volume
+    if ( BolanderCapacityMatrix ) { //from Bolander's papers
+        S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2. / 3. * s;
+        S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s / 3.;
+    }
+    return S;
+}
+
+
+//////////////////////////////////////////////////////////
+vector< double >Transp1D :: integrateLoad(BodyLoad *vl, double time) const {
+    vector< double >load = Element :: integrateLoad(vl, time);
+    for ( auto &p:load ) {
+        p /= ndim;
+    }
+    return load;
+}
 
 //////////////////////////////////////////////////////////
 double Transp1D :: giveVolume() const {
@@ -825,6 +881,17 @@ double Transp1D :: giveVolume(unsigned nodenum) const {
         cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
         exit(1);
     }
+};
+
+//////////////////////////////////////////////////////////
+Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
+    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
+
+    Vector strain(2);
+    strain [ 0 ] = pressureGradPlain [ 0 ];
+    strain [ 1 ] = (DoFs [ 0 ] + DoFs [ 1 ] ) / 2.;
+
+    return strain;
 };
 
 //////////////////////////////////////////////////////////
@@ -860,7 +927,7 @@ void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
             if ( rbc ) {
                 if ( ( rbc->giveNode(0) == vert [ i ] && rbc->giveNode(1) == vert [ j ] ) || ( rbc->giveNode(0) == vert [ j ] && rbc->giveNode(1) == vert [ i ] ) ) {
                     friends.push_back(rbc);
-                    friendsweight.push_back( ( centroid - ( vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 2. ).norm() );                    
+                    friendsweight.push_back( ( centroid - ( vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 2. ).norm() );
                     break; //only one friend avalilable in 3D for given pair
                 }
             }
@@ -872,14 +939,18 @@ void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
 double Transp1DCoupled :: giveValue(string code) const {
     if ( code.compare("numOfFriends") == 0 ) {
         return friends.size();
-    }else return  Transp1D :: giveValue(code);
+    } else  {
+        return Transp1D :: giveValue(code);
+    }
 };
 
 //////////////////////////////////////////////////////////
-double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const{
+double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
     if ( code.compare("numOfFriends") == 0 ) {
         return friends.size();
-    }else return  Transp1D :: giveIPValue(code,ipnum);
+    } else  {
+        return Transp1D :: giveIPValue(code, ipnum);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -895,11 +966,12 @@ void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
 
 //////////////////////////////////////////////////////////
 Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
+    Vector pressureGradPlain = Transp1D :: giveStrain(i, DoFs);
 
     Vector pressureGrad(2 + 2 * friends.size() );
-    pressureGrad[0] = pressureGradPlain[0];
-    pressureGrad [ 1 ] = area;
+    pressureGrad [ 0 ] = pressureGradPlain [ 0 ];
+    pressureGrad [ 1 ] = pressureGradPlain [ 1 ];
+    pressureGrad [ 2 ] = area;
 
     double elem_crack_opening;
     size_t m = 0;
@@ -908,8 +980,8 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         for ( unsigned k = 0; k < f->giveIPNum(); k++ ) {
             elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
         }
-        pressureGrad [ 2 * m + 2 ] += elem_crack_opening / f->giveIPNum(); //average crack opening in friend mechanical element
-        pressureGrad [ 2 * m + 3 ] = friendsweight [ m ]; //crack length in friend mechanical element
+        pressureGrad [ 2 * m + 3 ] += elem_crack_opening / f->giveIPNum(); //average crack opening in friend mechanical element
+        pressureGrad [ 2 * m + 4 ] = friendsweight [ m ]; //crack length in friend mechanical element
         m++;
     }
 
@@ -919,22 +991,23 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL TRANSPORT ELEMENT
-TranspQuad :: TranspQuad() {
+TrsprtQuad :: TrsprtQuad() {
     ndim = 2;
-    name = "Transport Quadrilateral";
+    name = "TrsprtQuad";
+    vtk_cell_type = 9;
 }
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: setIntegrationPointsAndWeights() {
+void TrsprtQuad :: setIntegrationPointsAndWeights() {
     unsigned nnodes = nodes.size();
     ip_locs.resize(nnodes);
     ip_weights.resize(nnodes);
     stats.resize(nnodes);
     double q = 1. / pow(3., 0.5);
-    ip_locs [ 0 ] = Point(-q, -q);
-    ip_locs [ 1 ] = Point(q, -q);
-    ip_locs [ 2 ] = Point(q, q);
-    ip_locs [ 3 ] = Point(-q, q);
+    ip_locs [ 0 ] = Point( -q,  -q);
+    ip_locs [ 1 ] = Point(  q,  -q);
+    ip_locs [ 2 ] = Point(  q,   q);
+    ip_locs [ 3 ] = Point( -q,   q);
     Matrix phiGrad(ndim, 4);
     for ( unsigned k = 0; k < nnodes; k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this);
@@ -943,7 +1016,7 @@ void TranspQuad :: setIntegrationPointsAndWeights() {
 };
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+void TrsprtQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num;
     nodes.resize(4);
     for ( unsigned k = 0; k < 4; k++ ) {
@@ -955,23 +1028,23 @@ void TranspQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Ma
 }
 
 //////////////////////////////////////////////////////////
-void TranspQuad :: shapeF(const Point *x, Vector &phi) const {
+void TrsprtQuad :: shapeF(const Point *x, Vector &phi) const {
     //x in natural coordinates
-    phi [ 0 ] = 0.25 * ( 1. + x->getX() ) * ( 1. + x->getY() );
-    phi [ 1 ] = 0.25 * ( 1. - x->getX() ) * ( 1. + x->getY() );
-    phi [ 2 ] = 0.25 * ( 1. - x->getX() ) * ( 1. - x->getY() );
-    phi [ 3 ] = 0.25 * ( 1. + x->getX() ) * ( 1. - x->getY() );
+    phi [ 0 ] = 0.25 * ( 1. - x->getX() ) * ( 1. - x->getY() );
+    phi [ 1 ] = 0.25 * ( 1. + x->getX() ) * ( 1. - x->getY() );
+    phi [ 2 ] = 0.25 * ( 1. + x->getX() ) * ( 1. + x->getY() );
+    phi [ 3 ] = 0.25 * ( 1. - x->getX() ) * ( 1. + x->getY() );
 }
 
 //////////////////////////////////////////////////////////
-double TranspQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
+double TrsprtQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     //x in natural coordinates
-    phiGrad [ 0 ] [ 0 ] = 0.25 * ( 1. + x->getY() );
+    phiGrad [ 0 ] [ 0 ] = -0.25 * ( 1. - x->getY() );
     phiGrad [ 0 ] [ 1 ] = -phiGrad [ 0 ] [ 0 ];
-    phiGrad [ 0 ] [ 2 ] = -0.25 * ( 1. - x->getY() );
+    phiGrad [ 0 ] [ 2 ] = 0.25 * ( 1. + x->getY() );
     phiGrad [ 0 ] [ 3 ] = -phiGrad [ 0 ] [ 2 ];
-    phiGrad [ 1 ] [ 0 ] = 0.25 * ( 1. + x->getX() );
-    phiGrad [ 1 ] [ 1 ] = 0.25 * ( 1. - x->getX() );
+    phiGrad [ 1 ] [ 0 ] = -0.25 * ( 1. - x->getX() );
+    phiGrad [ 1 ] [ 1 ] = -0.25 * ( 1. + x->getX() );
     phiGrad [ 1 ] [ 2 ] = -phiGrad [ 1 ] [ 1 ];
     phiGrad [ 1 ] [ 3 ] = -phiGrad [ 1 ] [ 0 ];
 
@@ -998,31 +1071,167 @@ double TranspQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspQuad :: giveBMatrix(const Point *x) const {
+Matrix TrsprtQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, nodes.size() );
     shapeFGrad(x, phiG);
-    Matrix B(2, DoFids.size() );
-    for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        B [ 0 ] [ i ] =   phiG [ 0 ] [ i ];
-        B [ 1 ] [ i ] =   phiG [ 1 ] [ i ];
-    }
-    return B;
+    return phiG;
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspQuad :: giveHMatrix(const Point *x) const {
+Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
     Vector phi(DoFids.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    Matrix H(1,DoFids.size());
+    for(unsigned k=0; k<DoFids.size(); k++) H[0][k] = phi[k];
+    return H;
 }
 
+
+//////////////////////////////////////////////////////////
+Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs){
+    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
+
+    Vector strain(pressureGradPlain.size()+1);
+    for(unsigned k=0; k<pressureGradPlain.size(); k++) {
+        strain [ k ] = pressureGradPlain [ k ];
+    }
+
+    //evaluate pressure at gauss point to account for nonlinearity
+    strain[pressureGradPlain.size()] = matrix_vector_multiply(giveHMatrix(&ip_locs [ i ]), DoFs)[0];
+
+    return strain;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK TRANSPORT ELEMENT
+TrsprtBrick :: TrsprtBrick() {
+    ndim = 3;
+    name = "TrsprtBrick";
+    vtk_cell_type = 12;
+}
+
+//////////////////////////////////////////////////////////
+void TrsprtBrick :: setIntegrationPointsAndWeights() {
+    unsigned nnodes = nodes.size();
+    ip_locs.resize(nnodes);
+    ip_weights.resize(nnodes);
+    stats.resize(nnodes);
+    double q = 1. / pow(3., 0.5);
+    ip_locs [ 0 ] = Point( -q,  -q, -q);
+    ip_locs [ 1 ] = Point(  q,  -q, -q);
+    ip_locs [ 2 ] = Point(  q,   q, -q);
+    ip_locs [ 3 ] = Point( -q,   q, -q);
+    ip_locs [ 4 ] = Point( -q,  -q,  q);
+    ip_locs [ 5 ] = Point(  q,  -q,  q);
+    ip_locs [ 6 ] = Point(  q,   q,  q);
+    ip_locs [ 7 ] = Point( -q,   q,  q);
+    Matrix phiGrad(ndim, 8);
+    for ( unsigned k = 0; k < nnodes; k++ ) {
+        stats [ k ] = mat->giveNewMaterialStatus(this);
+        ip_weights [ k ] = shapeFGrad(& ( ip_locs [ k ] ), phiGrad);
+    }
+};
+
+//////////////////////////////////////////////////////////
+void TrsprtBrick :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+    unsigned num;
+    nodes.resize(8);
+    for ( unsigned k = 0; k < 8; k++ ) {
+        iss >> num;
+        nodes [ k ] = fullnodes->giveNode(num);
+    }
+    iss >> num;
+    mat = fullmatrs->giveMaterial(num);
+}
+
+//////////////////////////////////////////////////////////
+void TrsprtBrick :: shapeF(const Point *x, Vector &phi) const {
+    //x in natural coordinates
+    phi [ 0 ] = 0.125 * ( 1. - x->getX() ) * ( 1. - x->getY() )  * ( 1. - x->getZ() );
+    phi [ 1 ] = 0.125 * ( 1. + x->getX() ) * ( 1. - x->getY() )  * ( 1. - x->getZ() );
+    phi [ 2 ] = 0.125 * ( 1. + x->getX() ) * ( 1. + x->getY() )  * ( 1. - x->getZ() );
+    phi [ 3 ] = 0.125 * ( 1. - x->getX() ) * ( 1. + x->getY() )  * ( 1. - x->getZ() );
+    phi [ 4 ] = 0.125 * ( 1. - x->getX() ) * ( 1. - x->getY() )  * ( 1. + x->getZ() );
+    phi [ 5 ] = 0.125 * ( 1. + x->getX() ) * ( 1. - x->getY() )  * ( 1. + x->getZ() );
+    phi [ 6 ] = 0.125 * ( 1. + x->getX() ) * ( 1. + x->getY() )  * ( 1. + x->getZ() );
+    phi [ 7 ] = 0.125 * ( 1. - x->getX() ) * ( 1. + x->getY() )  * ( 1. + x->getZ() );
+}
+
+//////////////////////////////////////////////////////////
+double TrsprtBrick :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
+    //x in natural coordinates
+    phiGrad [ 0 ] [ 0 ] = -0.125 * ( 1. - x->getY() )  * ( 1. - x->getZ() );
+    phiGrad [ 0 ] [ 1 ] = -phiGrad [ 0 ] [ 0 ];
+    phiGrad [ 0 ] [ 2 ] =  0.125 * ( 1. + x->getY() )  * ( 1. - x->getZ() );
+    phiGrad [ 0 ] [ 3 ] = -phiGrad [ 0 ] [ 2 ];
+    phiGrad [ 0 ] [ 4 ] = -0.125 * ( 1. - x->getY() )  * ( 1. + x->getZ() );
+    phiGrad [ 0 ] [ 5 ] = -phiGrad [ 0 ] [ 4 ];
+    phiGrad [ 0 ] [ 6 ] =  0.125 * ( 1. + x->getY() )  * ( 1. + x->getZ() );
+    phiGrad [ 0 ] [ 7 ] = -phiGrad [ 0 ] [ 6 ];
+    phiGrad [ 1 ] [ 0 ] = -0.125 * ( 1. - x->getX() )  * ( 1. - x->getZ() );
+    phiGrad [ 1 ] [ 1 ] = -0.125 * ( 1. + x->getX() )  * ( 1. - x->getZ() );
+    phiGrad [ 1 ] [ 2 ] = -phiGrad [ 1 ] [ 1 ];
+    phiGrad [ 1 ] [ 3 ] = -phiGrad [ 1 ] [ 0 ];
+    phiGrad [ 1 ] [ 4 ] = -0.125 * ( 1. - x->getX() )  * ( 1. + x->getZ() );
+    phiGrad [ 1 ] [ 5 ] = -0.125 * ( 1. + x->getX() )  * ( 1. + x->getZ() );
+    phiGrad [ 1 ] [ 6 ] = -phiGrad [ 1 ] [ 5 ];
+    phiGrad [ 1 ] [ 7 ] = -phiGrad [ 1 ] [ 4 ];
+    phiGrad [ 2 ] [ 0 ] = -0.125 * ( 1. - x->getX() )  * ( 1. - x->getY() );
+    phiGrad [ 2 ] [ 1 ] = -0.125 * ( 1. + x->getX() )  * ( 1. - x->getY() );
+    phiGrad [ 2 ] [ 2 ] = -0.125 * ( 1. + x->getX() )  * ( 1. + x->getY() );
+    phiGrad [ 2 ] [ 3 ] = -0.125 * ( 1. - x->getX() )  * ( 1. + x->getY() );
+    phiGrad [ 2 ] [ 4 ] = -phiGrad [ 2 ] [ 0 ];
+    phiGrad [ 2 ] [ 5 ] = -phiGrad [ 2 ] [ 1 ];
+    phiGrad [ 2 ] [ 6 ] = -phiGrad [ 2 ] [ 2 ];
+    phiGrad [ 2 ] [ 7 ] = -phiGrad [ 2 ] [ 3 ];
+
+
+    //Jacobi Matrix
+    Matrix Jac(3, 3);
+    Point n;
+    for ( unsigned i = 0; i < 8; i++ ) {
+        n = nodes [ i ]->givePoint();
+        Jac [ 0 ] [ 0 ] += phiGrad [ 0 ] [ i ] * n.getX();
+        Jac [ 0 ] [ 1 ] += phiGrad [ 0 ] [ i ] * n.getY();
+        Jac [ 0 ] [ 2 ] += phiGrad [ 0 ] [ i ] * n.getZ();
+        Jac [ 1 ] [ 0 ] += phiGrad [ 1 ] [ i ] * n.getX();
+        Jac [ 1 ] [ 1 ] += phiGrad [ 1 ] [ i ] * n.getY();
+        Jac [ 1 ] [ 2 ] += phiGrad [ 1 ] [ i ] * n.getZ();
+        Jac [ 2 ] [ 0 ] += phiGrad [ 2 ] [ i ] * n.getX();
+        Jac [ 2 ] [ 1 ] += phiGrad [ 2 ] [ i ] * n.getY();
+        Jac [ 2 ] [ 2 ] += phiGrad [ 2 ] [ i ] * n.getZ();
+    }
+    //detrminant and inverse of 3x3 matrix
+    double JacDet = Jac [ 0 ] [ 0 ] * ( Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ]) 
+                 -  Jac [ 0 ] [ 1 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ]) 
+                 +  Jac [ 0 ] [ 2 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 1 ]);
+
+    Matrix JacInv(3, 3);
+    JacInv [ 0 ] [ 0 ] =  (Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ]) / JacDet;
+    JacInv [ 0 ] [ 1 ] = -(Jac [ 0 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+    JacInv [ 0 ] [ 2 ] =  (Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 2 ] - Jac [ 1 ] [ 1 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+
+    JacInv [ 1 ] [ 0 ] = -(Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ]) / JacDet;
+    JacInv [ 1 ] [ 1 ] =  (Jac [ 0 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+    JacInv [ 1 ] [ 2 ] = -(Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 2 ] - Jac [ 1 ] [ 0 ] * Jac [ 0 ] [ 2 ]) / JacDet;
+
+    JacInv [ 2 ] [ 0 ] =  (Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 1 ]) / JacDet;
+    JacInv [ 2 ] [ 1 ] = -(Jac [ 0 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 0 ] [ 1 ]) / JacDet;
+    JacInv [ 2 ] [ 2 ] =  (Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 1 ] [ 0 ] * Jac [ 0 ] [ 1 ]) / JacDet;
+
+    //transorm to physical space
+    phiGrad = JacInv * phiGrad;
+    return JacDet;
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
 MechanicalQuad :: MechanicalQuad() {
     ndim = 2;
-    name = "Mechanical Quadrilateral";
+    name = "MechanicalQuad";
+    vtk_cell_type = 9;
 }
 
 //////////////////////////////////////////////////////////
@@ -1116,7 +1325,13 @@ Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
 Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    Matrix H(ndim,DoFids.size());
+    for(unsigned i=0; i<ndim; i++){
+        for(unsigned j=0; j<4; j++){ 
+            H[i][ndim*j+i] = phi[j];
+        }       
+    }
+    return H;
 }
 
 //////////////////////////////////////////////////////////
@@ -1124,7 +1339,7 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
 // 2D QUADRILATERAL COSSERAT MECHANICAL ELEMENT
 CosseratQuad :: CosseratQuad() {
     ndim = 2;
-    name = "Mechanical Cosserat Quadrilateral";
+    name = "CosseratQuad";
 }
 
 
@@ -1148,5 +1363,5 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
 Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shapeF(x, phi);
-    return dyadicProduct(phi, phi);
+    return Matrix(0,0);
 }
