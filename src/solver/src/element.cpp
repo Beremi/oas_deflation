@@ -1061,8 +1061,8 @@ double TrsprtQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     double JacDet = Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 0 ];
     Matrix JacInv(2, 2);
     JacInv [ 0 ] [ 0 ] = Jac [ 1 ] [ 1 ] / JacDet;
-    JacInv [ 1 ] [ 0 ] = -Jac [ 0 ] [ 1 ] / JacDet;
-    JacInv [ 0 ] [ 1 ] = -Jac [ 1 ] [ 0 ] / JacDet;
+    JacInv [ 0 ] [ 1 ] = -Jac [ 0 ] [ 1 ] / JacDet;
+    JacInv [ 1 ] [ 0 ] = -Jac [ 1 ] [ 0 ] / JacDet;
     JacInv [ 1 ] [ 1 ] = Jac [ 0 ] [ 0 ] / JacDet;
 
     //transorm to physical space
@@ -1299,12 +1299,13 @@ double MechanicalQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     double JacDet = Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 0 ];
     Matrix JacInv(2, 2);
     JacInv [ 0 ] [ 0 ] = Jac [ 1 ] [ 1 ] / JacDet;
-    JacInv [ 1 ] [ 0 ] = -Jac [ 0 ] [ 1 ] / JacDet;
-    JacInv [ 0 ] [ 1 ] = -Jac [ 1 ] [ 0 ] / JacDet;
+    JacInv [ 0 ] [ 1 ] = -Jac [ 0 ] [ 1 ] / JacDet;
+    JacInv [ 1 ] [ 0 ] = -Jac [ 1 ] [ 0 ] / JacDet;
     JacInv [ 1 ] [ 1 ] = Jac [ 0 ] [ 0 ] / JacDet;
 
     //transorm to physical space
     phiGrad = JacInv * phiGrad;
+
     return JacDet;
 }
 
