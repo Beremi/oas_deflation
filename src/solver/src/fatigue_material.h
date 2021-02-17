@@ -41,7 +41,7 @@ private:
 
     void print() const;
 
-    bool coup_dam;
+    bool coup_dam, comp_dam;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e);
     virtual ~FatigueShearMaterialStatus() {};
@@ -71,7 +71,7 @@ private:
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
     double mC, mT;  ///< parameters controling the pressure sensitivity (under Compression or Tension)
     bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
-    bool coup_dam;
+    bool coup_dam, comp_dam;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -93,6 +93,7 @@ public:
     bool newIterativeApproachOn() const { return newIterOn; }
     bool bisectionMethOn() const { return bisecOn; }
     bool isDamageCoupled() const { return coup_dam; }
+    bool isCompressiveDamageOff() const { return comp_dam; }
 };
 
 //////////////////////////////////////////////////////////
