@@ -117,8 +117,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
     stress [ 0 ] = stiffN * strain [ 0 ]; //normal stress
 
+    double sensititvity_param = (( stress[ 0 ] < 0.0 ) ? m->giveMC() : m->giveMT());
+
     //kill element when excessive tension occur
-    if ( m->giveTauBar() - m->giveMT() * stress [ 0 ] <= 0 ) {
+    if ( m->giveTauBar() - sensititvity_param * stress [ 0 ] <= 0 ) {
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
         }
@@ -134,7 +136,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     Point sgn1;
     double dLambda;
     double part1;
-    part1 = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveMC() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+    part1 = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
 
     for ( unsigned i = 1; i < strain.size(); i++ ) {
         if ( i == 1 ) {
@@ -186,7 +188,8 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
             //compute trials
             tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiffT;
 
-            f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - ( m->giveMC() * stress [ 0 ] ) );
+            f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - (
+              sensititvity_param * stress[ 0 ] ) );
 
             if ( f_trial < 0 ) {
                 // std::cout << " elastic" << '\t';
@@ -209,12 +212,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
                 Ynext = 0.5 * stiffT * ( slip_cur - temp_sPi ).sqNorm();
 
-                // part1 = pow(1 - temp_damageShear * HeavisideCompression, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveMC() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
-
-                if ( comp_dam && stress[ 0 ]  < 0 ) {
-                  part1 = 0;
+                if ( comp_dam && stress[ 0 ] < 0.0 ) {
+                  part1 = 0.0;
                 } else {
-                  part1 = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - m->giveMC() * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+                  part1 = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
                 }
                 temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * part1) ); //limited by <0 1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
@@ -380,6 +381,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     bisecOn = false;
 
     this->coup_dam = false;
+    this->comp_dam = false;
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
