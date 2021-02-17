@@ -427,7 +427,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             bisecOn = true;
         } else if ( param.compare("couple_damage") == 0 ) {
             iss >> coup_dam;
-        } else if ( param.compare("compDamageOff") == 0 ) {
+        } else if ( param.compare("comp_damage_off") == 0 ) {
             iss >> comp_dam;
         }
     }
