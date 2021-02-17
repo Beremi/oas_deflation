@@ -413,7 +413,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             bm = true;
             iss >> mC;
         } else if ( param.compare("aT") == 0 ) {
-            bm = true;
+            bat = true;
             iss >> mT;
         } else if ( param.compare("use_displacements") == 0 ) {
             use_slip = true;
