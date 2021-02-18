@@ -673,7 +673,7 @@ def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
     print("BLOCKS   ", nblocks)
     if (len(maxLim)==2):
         #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
-        loads=["\t2\tey\t0\tgxy\t1","\t3\tvolumetricAverage\t0\tgx\t1\tgy\t2"]
+        loads=["\t2\tey\t0\tgxy\t1","\t3\tvolumetricAverage\t0\tgx\t1"]
         names=["MechanicalPeriodicBC","TransportPeriodicBC"]
         for q in range(nblocks):
             ndepend = len(cpldNds[q])
