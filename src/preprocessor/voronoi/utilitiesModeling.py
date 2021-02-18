@@ -3138,16 +3138,73 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
 
     node_coords = np.asarray(node_coords)
 
+    limit = 3*minDist
+    XA = np.where(node_coords[:,0]<limit)[0]
+    XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
+    YA = np.where(node_coords[:,1]<limit)[0]
+    YB = np.where(node_coords[:,1]>maxLim[1]-limit)[0]
+    ZA = np.where(node_coords[:,2]<limit)[0]
+    ZB = np.where(node_coords[:,2]>maxLim[2]-limit)[0]
+
+    XAYA = XA[np.where(node_coords[XA,1]<limit)[0]]
+    XAYB = XA[np.where(node_coords[XA,1]>maxLim[1]-limit)[0]]
+    XBYA = XB[np.where(node_coords[XB,1]<limit)[0]]
+    XBYB = XB[np.where(node_coords[XB,1]>maxLim[1]-limit)[0]]
+
+    XAZA = XA[np.where(node_coords[XA,2]<limit)[0]]
+    XAZB = XA[np.where(node_coords[XA,2]>maxLim[2]-limit)[0]]
+    XBZA = XB[np.where(node_coords[XB,2]<limit)[0]]
+    XBZB = XB[np.where(node_coords[XB,2]>maxLim[2]-limit)[0]]
+
+    YAZA = YA[np.where(node_coords[YA,2]<limit)[0]]
+    YAZB = YA[np.where(node_coords[YA,2]>maxLim[2]-limit)[0]]
+    YBZA = YB[np.where(node_coords[YB,2]<limit)[0]]
+    YBZB = YB[np.where(node_coords[YB,2]>maxLim[2]-limit)[0]]
+
+    XAYAZA = XAYA[np.where(node_coords[XAYA,2]<limit)[0]]
+    XAYBZA = XAYB[np.where(node_coords[XAYB,2]<limit)[0]]
+    XBYAZA = XBYA[np.where(node_coords[XBYA,2]<limit)[0]]
+    XBYBZA = XBYB[np.where(node_coords[XBYB,2]<limit)[0]]
+    XAYAZB = XAYA[np.where(node_coords[XAYA,2]>maxLim[2]-limit)[0]]
+    XAYBZB = XAYB[np.where(node_coords[XAYB,2]>maxLim[2]-limit)[0]]
+    XBYAZB = XBYA[np.where(node_coords[XBYA,2]>maxLim[2]-limit)[0]]
+    XBYBZB = XBYB[np.where(node_coords[XBYB,2]>maxLim[2]-limit)[0]]
+
     nNds = np.vstack((
     node_coords,
-    node_coords + np.array([maxLim[0], 0, 0]),
-    node_coords + np.array([0, maxLim[1], 0]),
-    node_coords + np.array([0, 0, maxLim[2]]),
+    node_coords[XA] + np.array([maxLim[0], 0, 0]),
+    node_coords[YA] + np.array([0, maxLim[1], 0]),
+    node_coords[ZA] + np.array([0, 0, maxLim[2]]),
     #
-    node_coords + np.array([-maxLim[0], 0, 0]),
-    node_coords + np.array([0, -maxLim[1], 0]),
-    node_coords + np.array([0, 0, -maxLim[2]]),
+    node_coords[XB] + np.array([-maxLim[0], 0, 0]),
+    node_coords[YB] + np.array([0, -maxLim[1], 0]),
+    node_coords[ZB] + np.array([0, 0, -maxLim[2]]),
+    #
+    node_coords[XAYA] + np.array([maxLim[0], maxLim[1], 0]),
+    node_coords[XBYA] + np.array([-maxLim[0], maxLim[1], 0]),
+    node_coords[XAYB] + np.array([maxLim[0], -maxLim[1], 0]),
+    node_coords[XBYB] + np.array([-maxLim[0], -maxLim[1], 0]),
+    #
+    node_coords[XAZA] + np.array([maxLim[0], 0, maxLim[2]]),
+    node_coords[XBZA] + np.array([-maxLim[0], 0, maxLim[2]]),
+    node_coords[XAZB] + np.array([maxLim[0], 0, -maxLim[2]]),
+    node_coords[XBZB] + np.array([-maxLim[0], 0, -maxLim[2]]),
+    #
+    node_coords[YAZA] + np.array([0, maxLim[1], maxLim[2]]),
+    node_coords[YBZA] + np.array([0, -maxLim[1], maxLim[2]]),
+    node_coords[YAZB] + np.array([0, maxLim[1], -maxLim[2]]),
+    node_coords[YBZB] + np.array([0, -maxLim[1], -maxLim[2]]),
+    #
+    node_coords[XAYAZA] + np.array([maxLim[0], maxLim[1], maxLim[2]]),
+    node_coords[XBYAZA] + np.array([-maxLim[0], maxLim[1], maxLim[2]]),
+    node_coords[XAYBZA] + np.array([maxLim[0], -maxLim[1], maxLim[2]]),
+    node_coords[XAYAZB] + np.array([maxLim[0], maxLim[1], -maxLim[2]]),
+    node_coords[XAYBZB] + np.array([maxLim[0], -maxLim[1], -maxLim[2]]),
+    node_coords[XBYAZB] + np.array([-maxLim[0], maxLim[1], -maxLim[2]]),
+    node_coords[XBYBZA] + np.array([-maxLim[0], -maxLim[1], maxLim[2]]),
+    node_coords[XBYBZB] + np.array([-maxLim[0], -maxLim[1], -maxLim[2]])
     ))
+
 
 
     """

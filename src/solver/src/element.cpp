@@ -770,7 +770,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm();
+            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             ip_locs [ 0 ] += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;

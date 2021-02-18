@@ -1233,7 +1233,173 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
              addRidge = True
 
+        #PERIODIC X Y
+        elif ( (
+             1 < nApos[0] <2 and
+             1 < nApos[1] <2 and
+             0 < nApos[2] <1 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  )
+             or
+             (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             1 < nBpos[0] <2 and
+             1 < nBpos[1] <2 and
+             0 < nBpos[2] <1 )
+             ):
+             if (0 < nApos[0] <1 and 1 < nBpos[0] <2):
+                 outerPointIdx = nBidx
+                 mirCoords = nBcoords - np.array([maxLim[0],maxLim[1],0])
+             if (0 < nBpos[0] <1 and 1 < nApos[0] <2):
+                 outerPointIdx = nAidx
+                 mirCoords = nAcoords - np.array([maxLim[0],maxLim[1],0])
 
+             for n in range(len(node_coords)):
+                 if (np.abs(np.linalg.norm(node_coords[n][0:3]-mirCoords))<1e-15):
+                    innerPointIdx = n
+
+             finBIdx = innerPointIdx
+             finAIdx = outerPointIdx
+
+             cpl = np.array([finAIdx, finBIdx])
+             cplInList = False
+             for c in coupledNodes:
+                 if (cpl[0]==c[0] and cpl[1]==c[1]):
+                     cplInList = True
+
+             if not cplInList:
+                 coupledNodes.append(np.array([finAIdx, finBIdx]))
+
+             addRidge = True
+
+        #PERIODIC X Z
+        elif ( (
+             1 < nApos[0] <2 and
+             0 < nApos[1] <1 and
+             1 < nApos[2] <2 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  )
+             or
+             (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             1 < nBpos[0] <2 and
+             0 < nBpos[1] <1 and
+             1 < nBpos[2] <2 )
+             ):
+             if (0 < nApos[0] <1 and 1 < nBpos[0] <2):
+                 outerPointIdx = nBidx
+                 mirCoords = nBcoords - np.array([maxLim[0],0,maxLim[2]])
+             if (0 < nBpos[0] <1 and 1 < nApos[0] <2):
+                 outerPointIdx = nAidx
+                 mirCoords = nAcoords - np.array([maxLim[0],0,maxLim[2]])
+
+             for n in range(len(node_coords)):
+                 if (np.abs(np.linalg.norm(node_coords[n][0:3]-mirCoords))<1e-15):
+                    innerPointIdx = n
+
+             finBIdx = innerPointIdx
+             finAIdx = outerPointIdx
+
+             cpl = np.array([finAIdx, finBIdx])
+             cplInList = False
+             for c in coupledNodes:
+                 if (cpl[0]==c[0] and cpl[1]==c[1]):
+                     cplInList = True
+
+             if not cplInList:
+                 coupledNodes.append(np.array([finAIdx, finBIdx]))
+
+             addRidge = True
+
+        #PERIODIC Y Z
+        elif ( (
+             0 < nApos[0] <1 and
+             1 < nApos[1] <2 and
+             1 < nApos[2] <2 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  )
+             or
+             (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             0 < nBpos[0] <1 and
+             1 < nBpos[1] <2 and
+             1 < nBpos[2] <2 )
+             ):
+             if (0 < nApos[2] <1 and 1 < nBpos[2] <2):
+                 outerPointIdx = nBidx
+                 mirCoords = nBcoords - np.array([0,maxLim[1],maxLim[2]])
+             if (0 < nBpos[2] <1 and 1 < nApos[2] <2):
+                 outerPointIdx = nAidx
+                 mirCoords = nAcoords - np.array([0,maxLim[1],maxLim[2]])
+
+             for n in range(len(node_coords)):
+                 if (np.abs(np.linalg.norm(node_coords[n][0:3]-mirCoords))<1e-15):
+                    innerPointIdx = n
+
+             finBIdx = innerPointIdx
+             finAIdx = outerPointIdx
+
+             cpl = np.array([finAIdx, finBIdx])
+             cplInList = False
+             for c in coupledNodes:
+                 if (cpl[0]==c[0] and cpl[1]==c[1]):
+                     cplInList = True
+
+             if not cplInList:
+                 coupledNodes.append(np.array([finAIdx, finBIdx]))
+
+             addRidge = True
+
+        #PERIODIC X Y Z
+        elif ( (
+             1 < nApos[0] <2 and
+             1 < nApos[1] <2 and
+             1 < nApos[2] <2 and
+             0 < nBpos[0] <1 and
+             0 < nBpos[1] <1 and
+             0 < nBpos[2] <1  )
+             or
+             (
+             0 < nApos[0] <1 and
+             0 < nApos[1] <1 and
+             0 < nApos[2] <1 and
+             1 < nBpos[0] <2 and
+             1 < nBpos[1] <2 and
+             1 < nBpos[2] <2 )
+             ):
+             if (0 < nApos[0] <1 and 1 < nBpos[0] <2):
+                 outerPointIdx = nBidx
+                 mirCoords = nBcoords - np.array([maxLim[0],maxLim[1],maxLim[2]])
+             if (0 < nBpos[0] <1 and 1 < nApos[0] <2):
+                 outerPointIdx = nAidx
+                 mirCoords = nAcoords - np.array([maxLim[0],maxLim[1],maxLim[2]])
+
+             for n in range(len(node_coords)):
+                 if (np.abs(np.linalg.norm(node_coords[n][0:3]-mirCoords))<1e-15):
+                    innerPointIdx = n
+
+             finBIdx = innerPointIdx
+             finAIdx = outerPointIdx
+
+             cpl = np.array([finAIdx, finBIdx])
+             cplInList = False
+             for c in coupledNodes:
+                 if (cpl[0]==c[0] and cpl[1]==c[1]):
+                     cplInList = True
+
+             if not cplInList:
+                 coupledNodes.append(np.array([finAIdx, finBIdx]))
+
+             addRidge = True
 
 
         if addRidge :
@@ -1346,11 +1512,19 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     validRidgeIdxs = np.asarray(validRidgeIdxs)
     #print (validRidgeIdxs)
     ########################################################################################################
-    # vertices: [xA,yA,zA] [origIdx]
-    vertices_out = []
-    vertices_out_set = set()
     # dictionary of original and new indices of vertices
     verticesIdxDict = {}
+    # vertices: [xA,yA,zA] [origIdx]
+    # select all inside the cube
+    idx = np.where(np.all(abs(vor.vertices-maxLim/2.)<maxLim/2., axis=1))[0]   
+    vertices_out = np.zeros((len(idx), dim+3))
+    vertices_out[:,0:dim] = vor.vertices[idx]
+    vertices_out[:,dim] = idx  
+    vertices_out[:,dim+1] = np.arange(len(idx))      
+    vertices_out_set = set(idx)
+    for j in range (len(vertices_out)): 
+        verticesIdxDict.update( { idx[j] : j  } )
+
     # ridges: nodeAidx, nodeBidx, trsprtBC, vertIdx
     ridges_out = []
     #auxiliary nodes
@@ -1391,8 +1565,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
         print('vertNr %s' %vertNr)
 
-        """
-
+        """                              
 
         #indices of all vertices that form the planar ridge
         for j in range (len(rdge)):
@@ -1406,7 +1579,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
                 verticesIdxDict.update( { vrtx[dim] : len(vertices_out)  } )
                 vrtx [dim +1] = len(vertices_out)
                 vrtx [dim +2] = 0
-                vertices_out.append(vrtx)
+                vertices_out = np.vstack((vertices_out, vrtx))
                 vertices_out_set.add(vrtx[dim])
 
         #ridges
@@ -1510,6 +1683,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     #print (nodes_out)
     newAuxNodes = 0
+
+    #print(nodes_out)
     if (activeTransport):
         newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
     vertIdxStart += newAuxNodes
@@ -1591,6 +1766,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
 
     vertices_out = np.array(vertices_out)
+
     if (activeTransport):
         subBlockTrsprt = []
         for i in range (len(vertices_out)):
@@ -1603,50 +1779,55 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
             zplus  = 0
             if (vertices_out[i][2]-maxLim[2]>0): zplus = -1
             elif (vertices_out[i][2]<0): zplus = 1
-            if(xplus):
-                perP = np.copy(vertices_out[i])
-                perP[0] += maxLim[0]*xplus
-                index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
-            if(yplus):
-                perP = np.copy(vertices_out[i])
-                perP[1] += maxLim[1]*yplus
-                index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
-            if(zplus):
-                perP = np.copy(vertices_out[i])
-                perP[2] += maxLim[2]*zplus
-                index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
-
-            if(xplus and yplus):
-                perP = np.copy(vertices_out[i])
-                perP[0] += maxLim[0]*xplus
-                perP[1] += maxLim[1]*yplus
-                index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
-
-            if(xplus and zplus):
-                perP = np.copy(vertices_out[i])
-                perP[0] += maxLim[0]*xplus
-                perP[2] += maxLim[2]*zplus
-                index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
-
-            if(yplus and zplus):
-                perP = np.copy(vertices_out[i])
-                perP[1] += maxLim[1]*yplus
-                perP[2] += maxLim[2]*zplus
-                index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
-
             if(xplus and yplus and zplus):
                 perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
                 perP[1] += maxLim[1]*yplus
                 perP[2] += maxLim[2]*zplus
-                perP[3] += maxLim[3]*zplus
                 index, dist = findClosest(vertices_out, perP, dim)
-                if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ index+len(nodes_out), i+len(nodes_out)] ) )
+                else: print("TROUBLE XYZ", dist, perP[0:3])
+            elif(xplus and yplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                perP[1] += maxLim[1]*yplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ index+len(nodes_out), i+len(nodes_out)] ) )
+                else: print("TROUBLE XY", dist, perP[0:3])
+
+            elif(xplus and zplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                perP[2] += maxLim[2]*zplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ index+len(nodes_out), i+len(nodes_out)] ) )
+                else: print("TROUBLE XZ", dist, perP[0:3])
+            elif(yplus and zplus):
+                perP = np.copy(vertices_out[i])
+                perP[1] += maxLim[1]*yplus
+                perP[2] += maxLim[2]*zplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ index+len(nodes_out), i+len(nodes_out)] ) )
+                else: print("TROUBLE YZ", dist, perP[0:3])
+            elif(xplus):
+                perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: 
+                    subBlockTrsprt.append ( np.array( [ index+len(nodes_out), i+len(nodes_out)] ) )
+                else: print("TROUBLE X", dist, perP[0:3])
+            elif(yplus):
+                perP = np.copy(vertices_out[i])
+                perP[1] += maxLim[1]*yplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ index+len(nodes_out), i+len(nodes_out)] ) )
+                else: print("TROUBLE Y", dist, perP[0:3])
+            elif(zplus):
+                perP = np.copy(vertices_out[i])
+                perP[2] += maxLim[2]*zplus
+                index, dist = findClosest(vertices_out, perP, dim)
+                if dist<1e-10: subBlockTrsprt.append ( np.array( [ index+len(nodes_out), i+len(nodes_out)] ) )
+                else: print("TROUBLE Z", dist, perP[0:3])
 
         coupledNodes.append(subBlockTrsprt)
 
@@ -2281,7 +2462,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 onlyVerticesConnected = False
 
     if (dim==3):
-        for i in range (len(ridges_out)):
+        for i in range (len(ridges_out)):            
             ro = np.asarray(ridges_out[i])
 
             vrtA = ro[3]
@@ -2683,7 +2864,6 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             #print ("%s\n" % element.getString() )
             if (dim==2):f.write("%s\n" % element.getString(coupled=coupled) )
             if (dim==3): f.write("%s\n" % element.getReducedString(coupled=coupled) )
-
 
     return newAuxNodes
 
