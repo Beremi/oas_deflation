@@ -1148,7 +1148,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
             # a = input('').split(" ")[0]
              """
              addRidge = True
-
+        """
         #PERIODIC Y
         elif ( (
              0 < nApos[0] <1 and
@@ -1235,7 +1235,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
              addRidge = True
 
-
+        """
 
 
         if addRidge :
@@ -1299,7 +1299,10 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     """
 
     node_count = len(valid_node_coords)
-
+    print(node_count)
+    print(actual_node_count)
+    #node_count = int(actual_node_count)
+    a = input('').split(" ")[0]
     backupCpld = np.copy(np.asarray(coupledNodes))
 
     print('renumbering coupled nodes...')
@@ -1575,9 +1578,9 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
             if(xplus and yplus and zplus):
                 perP = np.copy(vertices_out[i])
+                perP[0] += maxLim[0]*xplus
                 perP[1] += maxLim[1]*yplus
                 perP[2] += maxLim[2]*zplus
-                perP[3] += maxLim[3]*zplus
                 index, dist = findClosest(vertices_out, perP, dim)
                 if dist<1e-10: subBlockTrsprt.append ( np.array( [ i+len(valid_ridge_nodes), index+len(valid_ridge_nodes)] ) )
 
@@ -1620,9 +1623,15 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
 
-    print('aux nodes: %d ' %len(aux_nodes))
-    print('new aux nodes %d ' %newAuxNodes)
+    #print('aux nodes: %d ' %len(aux_nodes))
+    #print('new aux nodes %d ' %newAuxNodes)
 
+
+    print ('Nodes: %d' %len(nodes_out))
+    print ('Vertices: %d' %len(vertices_out))
+    print ('total: %d' %(len(nodes_out)+len(vertices_out)))
+
+    a = input('').split(" ")[0]
 
     savePeriodicBlock(master_folder,coupledNodes,maxLim, nodes_out)
 
@@ -1639,7 +1648,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
 
 
-    #checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
+    checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount
 
@@ -2298,7 +2307,11 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             #print ('low number of vertices in TRSPT path!!! %s ' %elem.getReducedString())
             #a = input('').split(" ")[0]
             vertexCountok = False
+            print()
             print(elem.getReducedString())
+            print('vert coords:')
+            print(nodes_out[int(elem.connectedNodes[0])])
+            print(nodes_out[int(elem.connectedNodes[1])])
         else:
             vertexCountok +=1
 
@@ -2835,6 +2848,7 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
 
     test_solverNodeArray = np.vstack((test_nodeCoords, test_auxNodeCoords, test_verticesCoords))
 
+
     if (activeMechanics):
         print('Loading back mechanical elements...', end='')
         test_mechElems = []
@@ -2855,6 +2869,13 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
             verticesNr = int(mechElem[3])
             vertices = []
             for v in range (verticesNr):
+                if (int(mechElem[4+v])<len(test_nodeCoords) or int(mechElem[4+v])>len(test_solverNodeArray)):
+                    print('Mech Vertex idcs errror:')
+                    print(int(mechElem[4+v]))
+                    print(len(test_nodeCoords))
+                    print(len(test_solverNodeArray))
+
+                    a = input('').split(" ")[0]
                 vertices.append(test_solverNodeArray [int(mechElem[4+v])] )
             material =  int (mechElem[4+verticesNr])
 
@@ -2897,7 +2918,17 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
             verticesNr = int(trsprtElem[3])
             vertices = []
             for v in range (verticesNr):
+
+                if (int(trsprtElem[4+v])>len(test_nodeCoords)):
+                    print('Trsprt Vertex idcs errror:')
+                    print(int(trsprtElem[4+v]))
+                    print(len(test_nodeCoords))
+                    print(len(test_solverNodeArray))
+
+                    a = input('').split(" ")[0]
+
                 vertices.append(test_solverNodeArray [int(trsprtElem[4+v])] )
+
             material =  int (trsprtElem[4+verticesNr])
 
             #checking coplanarity

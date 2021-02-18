@@ -336,8 +336,8 @@ if __name__ == '__main__':
 
     ##########################################################################
     ### HERE CHOSE THE FUNCTION WHICH TO USE FOR LOADING #####################
-    # function = LinearFn
-    function = ConstSawToothFn
+    function = LinearFn
+    #function = ConstSawToothFn
     # function = LinSawToothFn
 
     ##########################################################################
