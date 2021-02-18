@@ -135,8 +135,8 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     double z = 0;
     Point sgn1;
     double dLambda;
-    double part1;
-    part1 = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+    double omega_dot;//rate of shear damage (to be multiplied by lambda and added to current damageShear)
+    omega_dot = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
 
     for ( unsigned i = 1; i < strain.size(); i++ ) {
         if ( i == 1 ) {
@@ -213,11 +213,13 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
                 Ynext = 0.5 * stiffT * ( slip_cur - temp_sPi ).sqNorm();
 
                 if ( comp_dam && stress[ 0 ] < 0.0 ) {
-                  part1 = 0.0;
+                    //when under compression, do not increase shear damage (damage rate = 0)
+                  omega_dot = 0.0;//increment of shear damage
                 } else {
-                  part1 = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+                    //increment of shear damage as the derivative of phi wrt thermodyn force
+                    omega_dot = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
                 }
-                temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * part1) ); //limited by <0 1)
+                temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) ); //limited by <0 1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
                 temp_zIso += dLambda;
@@ -234,7 +236,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
     partA = ( 1 - temp_damageShear ) * stiffT;
     partB = ( ( 1 - temp_damageShear ) * pow(stiffT, 2) ) / ( stiffT + ( m->giveGamma() + m->giveKin() ) * ( 1 - temp_damageShear ) );
     // in partC, norms are used to obtain scalar, not sure if it is correct
-    partC = ( pow(stiffT, 2) * ( temp_slip - temp_sPi ).norm() * part1 * sgn1.norm() ) / ( ( stiffT / ( 1 - temp_damageShear ) ) + m->giveGamma() + m->giveKin() );
+    partC = ( pow(stiffT, 2) * ( temp_slip - temp_sPi ).norm() * omega_dot * sgn1.norm() ) / ( ( stiffT / ( 1 - temp_damageShear ) ) + m->giveGamma() + m->giveKin() );
     tang_stiff = fmax(0, partA - partB - partC);
 
     // tau trial units are MPa * m in case of slip in absolute values (displacement instead of strain)
