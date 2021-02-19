@@ -5,7 +5,7 @@ import dmga2py
 
 from pydmga.draw import geometry
 from pydmga.draw import assets
-from pydmga.draw import render
+#from pydmga.draw import render
 
 print("[TEST] new geometry")
 g1 = dmga2py.new_orthogonal_geometry(0, 0, 0, 5.0, 5.0, 5.0, 0, 0, 0)

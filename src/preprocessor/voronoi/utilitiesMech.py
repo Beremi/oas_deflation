@@ -202,11 +202,12 @@ class transportPath:
         for i in range (0, self.nds, 2):
             line+='\t%d'%(self.connectedNodes[i])
 
-        #if (ndNr==2) :
+        if (ndNr==2) :
             #print()
             #print (self.connectedNodes)
             #print (line)
-
+            #element to be removed
+            line = "#" + line
 
         #print()
         #print (self.connectedNodes)
@@ -215,8 +216,8 @@ class transportPath:
         #line+='\t%d'%(self.connectedNodes[len(self.connectedNodes)-1])
         line +='\t' + '%d'%(self.material)
         return line
-
-
+    def printConnectedNodes(self):
+        print (self.connectedNodes)
 
 ##################################################
 

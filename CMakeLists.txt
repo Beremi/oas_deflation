@@ -77,7 +77,7 @@ if (MSVC)
     # /wd4996 # The compiler encountered a deprecated declaration.
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W4 -wd4786 -wd4100 -wd4996 -wd4706 -wd4512 -wd4251 -wd4800")
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
-	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi")
+	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
     #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC") # -Wextra
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")

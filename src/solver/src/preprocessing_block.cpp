@@ -235,6 +235,38 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
         funcs->addFunction(newf);
     } else {  //volumetric average
+
+        VolumetricAverage *va;
+        vector< Node * >vm;
+
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            if ( nodes->giveNode(n)->doesMechanics() && ( dynamic_cast< MechDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
+                vm.push_back(nodes->giveNode(n) );
+            }
+        }
+        if ( vm.size() > 0 ) {
+            unsigned nDoFs = 3;
+            if ( dim == 3 ) {
+                nDoFs = 6;
+            }
+            MechDoF *pn = new MechDoF(nDoFs);
+            nodes->addNode(pn);
+
+            vector <unsigned> dirs(vm.size() );
+
+            for ( unsigned vi = 0; vi < nDoFs; vi++ ) {
+                fill(dirs.begin(), dirs.end(), vi);
+                va = new VolumetricAverage(vm, dirs, pn, vi, elems, constrs);
+                constrs->addConstraint(va);
+            }
+
+            BoundaryCondition *bc;
+            vector< int >dBC, nBC;
+            dBC.resize(nDoFs, volumetricAverageRigidBC);
+            nBC.resize(nDoFs, -1);
+            bc = new BoundaryCondition(pn, dBC, nBC);
+            bcs->addBoundaryCondition(bc);
+        }
     }
 }
 
@@ -586,6 +618,29 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
         funcs->addFunction(newf);
     } else {  //volumetric average
+
+        VolumetricAverage *va;
+        vector< Node * >vm;
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
+                vm.push_back(nodes->giveNode(n) );
+            }
+        }
+        if ( vm.size() > 0 ) {
+            TrsDoF *tn = new TrsDoF(1);
+            nodes->addNode(tn);
+
+            vector <unsigned> dirs(vm.size() );
+            va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
+            constrs->addConstraint(va);
+
+            BoundaryCondition *bc;
+            vector< int >dBC, nBC;
+            dBC.resize(1, volumetricAverageRigidBC);
+            nBC.resize(1, -1);
+            bc = new BoundaryCondition(tn, dBC, nBC);
+            bcs->addBoundaryCondition(bc);
+        }
     }
 }
 

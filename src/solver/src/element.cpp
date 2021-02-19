@@ -407,7 +407,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm();
+            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm()/2.;
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             ip_locs [ 0 ] += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
@@ -770,7 +770,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm();
+            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             ip_locs [ 0 ] += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
@@ -1061,8 +1061,8 @@ double TrsprtQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     double JacDet = Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 0 ];
     Matrix JacInv(2, 2);
     JacInv [ 0 ] [ 0 ] = Jac [ 1 ] [ 1 ] / JacDet;
-    JacInv [ 1 ] [ 0 ] = -Jac [ 0 ] [ 1 ] / JacDet;
-    JacInv [ 0 ] [ 1 ] = -Jac [ 1 ] [ 0 ] / JacDet;
+    JacInv [ 0 ] [ 1 ] = -Jac [ 0 ] [ 1 ] / JacDet;
+    JacInv [ 1 ] [ 0 ] = -Jac [ 1 ] [ 0 ] / JacDet;
     JacInv [ 1 ] [ 1 ] = Jac [ 0 ] [ 0 ] / JacDet;
 
     //transorm to physical space
@@ -1299,12 +1299,13 @@ double MechanicalQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     double JacDet = Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 0 ];
     Matrix JacInv(2, 2);
     JacInv [ 0 ] [ 0 ] = Jac [ 1 ] [ 1 ] / JacDet;
-    JacInv [ 1 ] [ 0 ] = -Jac [ 0 ] [ 1 ] / JacDet;
-    JacInv [ 0 ] [ 1 ] = -Jac [ 1 ] [ 0 ] / JacDet;
+    JacInv [ 0 ] [ 1 ] = -Jac [ 0 ] [ 1 ] / JacDet;
+    JacInv [ 1 ] [ 0 ] = -Jac [ 1 ] [ 0 ] / JacDet;
     JacInv [ 1 ] [ 1 ] = Jac [ 0 ] [ 0 ] / JacDet;
 
     //transorm to physical space
     phiGrad = JacInv * phiGrad;
+
     return JacDet;
 }
 

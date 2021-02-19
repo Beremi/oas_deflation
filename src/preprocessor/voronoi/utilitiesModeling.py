@@ -925,16 +925,19 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
 
 
 
-def create3dPeriodicShear(maxLim, minDist, trials ):
+def create3dPeriodicShear(maxLim, minDist, trials, powerTes ):
     print('Creating 3d periodic rectangle, shear loaded.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
-    #node_coords, mechBC_merged, mechInitC_merged , nodePositions, coupledNodes, mirtype = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, radii = asssemble3dPeriodicRectangle(maxLim, minDist, trials, powerTes );
 
     print ('Conducting Voronoi tesselation...', end ='')
-    vor = Voronoi(node_coords)
-    volumes = voronoi.voronoi_3d(vor, maxLim)
+    if powerTes == False:
+        vor = Voronoi(node_coords)
+        volumes = voronoi.voronoi_3d(vor, maxLim)
+    else:
+        vor, areas = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim)
+
     print('done.')
 
 
@@ -988,7 +991,7 @@ def create3dPeriodicShear(maxLim, minDist, trials ):
     #return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
     """
 
-    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions, radii
 
 
 
@@ -1357,7 +1360,7 @@ def create3dDam(maxLim, minDist, trials, Xtop):
         func1.append( np.array([0,0]) )
         func1.append( np.array([1, (maxLim[2] - vor.vertices[leftFace[i],2])*1000.*9.81 ]) )
         fn1 = utilitiesNumeric.generalFunc(func1)
-        functions.append (fn1)        
+        functions.append (fn1)
 
 
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
@@ -3125,31 +3128,115 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
 
 
 
-def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
+def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     dim = 3
     #lists for the model
     node_coords = []
     mechBC_merged = []
     mechInitC_merged = []
+    radii = np.zeros(0)
 
     print('assembling 3d periodic ')
     ###########generating of points in rectangle
-    pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
+    if powerTes == False:
+        pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
+    else:
+        node_coords = np.zeros((0,dim))
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.8, dim, trials, node_coords, radii)
 
     node_coords = np.asarray(node_coords)
+    radii = np.asarray(radii)
+
+    node_coords_backup = np.copy(node_coords)
+    radii_backup = np.copy(radii)
+
+
+    limit = 3*minDist
+    XA = np.where(node_coords[:,0]<limit)[0]
+    XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
+    YA = np.where(node_coords[:,1]<limit)[0]
+    YB = np.where(node_coords[:,1]>maxLim[1]-limit)[0]
+    ZA = np.where(node_coords[:,2]<limit)[0]
+    ZB = np.where(node_coords[:,2]>maxLim[2]-limit)[0]
+
+    XAYA = XA[np.where(node_coords[XA,1]<limit)[0]]
+    XAYB = XA[np.where(node_coords[XA,1]>maxLim[1]-limit)[0]]
+    XBYA = XB[np.where(node_coords[XB,1]<limit)[0]]
+    XBYB = XB[np.where(node_coords[XB,1]>maxLim[1]-limit)[0]]
+
+    XAZA = XA[np.where(node_coords[XA,2]<limit)[0]]
+    XAZB = XA[np.where(node_coords[XA,2]>maxLim[2]-limit)[0]]
+    XBZA = XB[np.where(node_coords[XB,2]<limit)[0]]
+    XBZB = XB[np.where(node_coords[XB,2]>maxLim[2]-limit)[0]]
+
+    YAZA = YA[np.where(node_coords[YA,2]<limit)[0]]
+    YAZB = YA[np.where(node_coords[YA,2]>maxLim[2]-limit)[0]]
+    YBZA = YB[np.where(node_coords[YB,2]<limit)[0]]
+    YBZB = YB[np.where(node_coords[YB,2]>maxLim[2]-limit)[0]]
+
+    XAYAZA = XAYA[np.where(node_coords[XAYA,2]<limit)[0]]
+    XAYBZA = XAYB[np.where(node_coords[XAYB,2]<limit)[0]]
+    XBYAZA = XBYA[np.where(node_coords[XBYA,2]<limit)[0]]
+    XBYBZA = XBYB[np.where(node_coords[XBYB,2]<limit)[0]]
+    XAYAZB = XAYA[np.where(node_coords[XAYA,2]>maxLim[2]-limit)[0]]
+    XAYBZB = XAYB[np.where(node_coords[XAYB,2]>maxLim[2]-limit)[0]]
+    XBYAZB = XBYA[np.where(node_coords[XBYA,2]>maxLim[2]-limit)[0]]
+    XBYBZB = XBYB[np.where(node_coords[XBYB,2]>maxLim[2]-limit)[0]]
 
     nNds = np.vstack((
     node_coords,
-    node_coords + np.array([maxLim[0], 0, 0]),
-    node_coords + np.array([0, maxLim[1], 0]),
-    node_coords + np.array([0, 0, maxLim[2]]),
+    node_coords[XA] + np.array([maxLim[0], 0, 0]),
+    node_coords[YA] + np.array([0, maxLim[1], 0]),
+    node_coords[ZA] + np.array([0, 0, maxLim[2]]),
     #
-    node_coords + np.array([-maxLim[0], 0, 0]),
-    node_coords + np.array([0, -maxLim[1], 0]),
-    node_coords + np.array([0, 0, -maxLim[2]]),
+    node_coords[XB] + np.array([-maxLim[0], 0, 0]),
+    node_coords[YB] + np.array([0, -maxLim[1], 0]),
+    node_coords[ZB] + np.array([0, 0, -maxLim[2]]),
+    #
+    node_coords[XAYA] + np.array([maxLim[0], maxLim[1], 0]),
+    node_coords[XBYA] + np.array([-maxLim[0], maxLim[1], 0]),
+    node_coords[XAYB] + np.array([maxLim[0], -maxLim[1], 0]),
+    node_coords[XBYB] + np.array([-maxLim[0], -maxLim[1], 0]),
+    #
+    node_coords[XAZA] + np.array([maxLim[0], 0, maxLim[2]]),
+    node_coords[XBZA] + np.array([-maxLim[0], 0, maxLim[2]]),
+    node_coords[XAZB] + np.array([maxLim[0], 0, -maxLim[2]]),
+    node_coords[XBZB] + np.array([-maxLim[0], 0, -maxLim[2]]),
+    #
+    node_coords[YAZA] + np.array([0, maxLim[1], maxLim[2]]),
+    node_coords[YBZA] + np.array([0, -maxLim[1], maxLim[2]]),
+    node_coords[YAZB] + np.array([0, maxLim[1], -maxLim[2]]),
+    node_coords[YBZB] + np.array([0, -maxLim[1], -maxLim[2]]),
+    #
+    node_coords[XAYAZA] + np.array([maxLim[0], maxLim[1], maxLim[2]]),
+    node_coords[XBYAZA] + np.array([-maxLim[0], maxLim[1], maxLim[2]]),
+    node_coords[XAYBZA] + np.array([maxLim[0], -maxLim[1], maxLim[2]]),
+    node_coords[XAYAZB] + np.array([maxLim[0], maxLim[1], -maxLim[2]]),
+    node_coords[XAYBZB] + np.array([maxLim[0], -maxLim[1], -maxLim[2]]),
+    node_coords[XBYAZB] + np.array([-maxLim[0], maxLim[1], -maxLim[2]]),
+    node_coords[XBYBZA] + np.array([-maxLim[0], -maxLim[1], maxLim[2]]),
+    node_coords[XBYBZB] + np.array([-maxLim[0], -maxLim[1], -maxLim[2]])
     ))
 
 
+    for i in range (len(node_coords_backup), len(nNds)):
+        searchedCoords = nNds[i,:]
+        if (searchedCoords[0]<maxLim[0]): searchedCoords[0]+=maxLim[0]
+        if (searchedCoords[0]>maxLim[0]): searchedCoords[0]-=maxLim[0]
+        if (searchedCoords[1]<maxLim[1]): searchedCoords[1]+=maxLim[1]
+        if (searchedCoords[1]>maxLim[1]): searchedCoords[1]-=maxLim[1]
+        if (searchedCoords[2]<maxLim[2]): searchedCoords[2]+=maxLim[2]
+        if (searchedCoords[2]>maxLim[2]): searchedCoords[2]-=maxLim[2]
+
+        #print()
+        #print ('searching for %s' % searchedCoords)
+        index, dist = utilitiesGeom.findClosest(node_coords_backup, nNds[i,:], 3)
+        if dist<1e-10:
+            #print('found %d' %index)
+            #print('coords %s' %node_coords_backup[index])
+            radii = np.hstack((radii, radii[index] ))
+
+    
     """
     nNds = np.asarray(nNds)
     fig = plt.figure()
@@ -3163,7 +3250,7 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
 
 
 
-    return nNds, mechBC_merged, mechInitC_merged #, nodePositions, coupledNodes, mirtype
+    return nNds, mechBC_merged, mechInitC_merged, radii #, nodePositions, coupledNodes, mirtype
 
 
 

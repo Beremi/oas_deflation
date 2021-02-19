@@ -36,7 +36,7 @@ def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
 
 
 ##run power, mirrored data
-def runMirroredPower (node_coords, radii, dim, maxLim, Xtop, shifts=0):
+def runMirroredPower (node_coords, radii, dim, maxLim, Xtop=0, shifts=0):
     points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
     vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
 
