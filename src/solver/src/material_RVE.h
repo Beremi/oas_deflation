@@ -28,12 +28,14 @@ protected:
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
 
+    virtual void generateRandomFixedBC(){};
     virtual void generateVolumetricAverageBC() {};
 public:
     RVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~RVEMaterialStatus();
     virtual void init();
     virtual void update();
+    Model* giveWholeRVE(){return RVE;};
 };
 
 //////////////////////////////////////////////////////////
@@ -59,6 +61,7 @@ class DiscreteRVEMaterial;
 class DiscreteRVEMaterialStatus : public RVEMaterialStatus
 {
 protected:
+    virtual void generateRandomFixedBC();
     virtual void generateVolumetricAverageBC();
     void calculateCentroid();
 
@@ -125,7 +128,7 @@ public:
     double givePrecomputedCapacity() const { return capacity;};
     TrsprtMaterialStatus* giveMasterStatus() { return masterStatus;};
     TrsprtMaterial* giveMasterMaterial() { return masterMaterial;};
-    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus* masterS,  TrsprtMaterial* masterM) {conductivity=lam; capacity = c; masterStatus = masterS; masterMaterial = masterM;} ;    
+    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus* masterS,  TrsprtMaterial* masterM);
 };
 
 #endif /* _MAT_RVE_H */
