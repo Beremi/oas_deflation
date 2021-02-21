@@ -782,7 +782,13 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     if ( abs(normal * t) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
-        cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
+        cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << endl;
+        cout << " normal v.:"; 
+        for(unsigned p=0; p<ndim; p++ ) cout << "\t" << normal.giveCoord(p);
+        cout << endl;
+        cout << " contact v.:"; 
+        for(unsigned p=0; p<ndim; p++ ) cout << "\t" << t.giveCoord(p);
+        cout << endl;
         exit(1);
     }
 

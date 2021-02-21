@@ -365,12 +365,12 @@ class Model:
         self.materialZones =  None
 
     def run_2d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.masters)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 
     def run_3d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii, self.masters)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials, self.powerTes )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials, self.powerTes )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -396,7 +396,7 @@ class Model:
 
     def run_2d_coupledRVE(self):
         print('2d_coupledRVE')
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.masters)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -428,7 +428,7 @@ class Model:
             self.areas,
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
-            notches=self.notches, isTube=tube, coupled=self.coupled, masters=self.masters)
+            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist)
 
         #if (self.printout == False): enablePrint()
         print ('done.')
