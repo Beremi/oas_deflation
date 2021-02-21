@@ -143,6 +143,10 @@ void VolumetricAverage :: init() {
 
     //find slave position in array
     unsigned slaveid = find(nodes.begin(), nodes.end(), slaveNode) - nodes.begin();
+    if(slaveid==nodes.size()){
+        cerr << "Volumetric average Error: slave node not included in node list" << endl;
+        exit(1);
+    } 
 
     // calculate volumes associated with nodes
     unsigned r;
@@ -169,12 +173,13 @@ void VolumetricAverage :: init() {
 
     //rearange everything and update weights
     double factor = m [ slaveid ];
+    cout << slaveid << " " << factor << m.size() << endl;
     double fullVolume = 0;
     for ( auto &s: m ) {
         fullVolume += s;
         s /= -factor;
     }
-    cout << "FULL VOLUME ********************************** " << fullVolume << endl;
+    cout << "volumetric Average: check of volume " << fullVolume << endl;
     m [ slaveid ] = fullVolume / factor;
     nodes [ slaveid ] = masternode;
     dirs [ slaveid ] = masterdir;
@@ -201,8 +206,8 @@ void VolumetricAverage :: init() {
             multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end() );
         }
     }
-
     JointDoF :: init();
+
 }
 
 //////////////////////////////////////////////////////////

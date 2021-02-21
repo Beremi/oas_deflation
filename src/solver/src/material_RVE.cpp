@@ -19,7 +19,12 @@ RVEMaterialStatus :: ~RVEMaterialStatus() {
 //////////////////////////////////////////////////////////
 void RVEMaterialStatus :: init() {
     RVE->readFromFile(inputfile.string() );
-    generateVolumetricAverageBC();
+    //here the structre of model initialization should be coppied
+    //we needed to insert volumetric average generation after applying preprocessing block, otherwise constraints from preprocessing block would not be active
+    //therefore, preprocessing blocks are now called in reader instead of model initialization
+
+    //generateVolumetricAverageBC();
+    generateRandomFixedBC();    
     RVE->init();
 
     stringstream appendname;
@@ -69,8 +74,6 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
         temp_strain = strain;
     }
 
-    volumAverFunc->setYValue(0., 0.); 
-
     unsigned ndim = RVE->giveDimension();
     
     unsigned stra_size = ndim * ndim;
@@ -108,7 +111,6 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
         }
     }
   
-
     vector < double >  initial_permeability, initial_a;
     if ( active_transport ) {
         Transp1D *e;
@@ -320,7 +322,70 @@ double DiscreteRVEMaterialStatus :: giveDampingConstant() const {
 };
 
 //////////////////////////////////////////////////////////
+void DiscreteRVEMaterialStatus :: generateRandomFixedBC() {
+    BCContainer *bconds = RVE->giveBC();
+    FunctionContainer *funcs = RVE->giveFunctions();
+    ConstraintContainer *constrs = RVE->giveConstraints();
+
+    //mechanics
+    JointDoF *jd;
+    Node * masternode;    
+    active_mechanics = false;
+    for ( unsigned j = 0; j < constrs->giveSize(); j++ ) {
+        if (active_mechanics) break; 
+        jd = constrs->giveConstraint(j);
+        for (unsigned k=0; k<jd->giveNumOfMasters(); k++){
+            masternode = jd->giveMasterNode(0);
+            if ( masternode->doesMechanics() && ( dynamic_cast< MechDoF * >( masternode ) == nullptr ) ) {      
+                BoundaryCondition *bc;
+                vector< int >dBC, nBC;
+                dBC.resize(masternode->giveNumberOfDoFs(), funcs->giveSize() ); //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+                nBC.resize(masternode->giveNumberOfDoFs(), -1);
+                bc = new BoundaryCondition(masternode, dBC, nBC);
+                bconds->addBoundaryCondition(bc);                
+
+                active_mechanics = true;              
+                break;
+            }  
+        }           
+    }
+
+    //transport
+    active_transport = false;
+    for ( unsigned j = 0; j < constrs->giveSize(); j++ ) {
+        if (active_transport) break;
+        jd = constrs->giveConstraint(j);
+        for (unsigned k=0; k<jd->giveNumOfMasters(); k++){
+            masternode = jd->giveMasterNode(0);
+            if ( masternode->doesTransport() && ( dynamic_cast< TrsDoF * >( masternode ) == nullptr ) ) {   
+                BoundaryCondition *bc;
+                vector< int >dBC, nBC;
+                dBC.resize(masternode->giveNumberOfDoFs(), funcs->giveSize() ); //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+                nBC.resize(masternode->giveNumberOfDoFs(), -1);
+                bc = new BoundaryCondition(masternode, dBC, nBC);
+                bconds->addBoundaryCondition(bc);                
+
+                active_transport = true;              
+                break;
+            }   
+        }           
+    }
+
+
+    //add constant function
+    vector< double >x, y;
+    x.resize(1, 0);
+    y.resize(1, 0);
+    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+    funcs->addFunction(newf);
+}
+
+
+
+//////////////////////////////////////////////////////////
 void DiscreteRVEMaterialStatus :: generateVolumetricAverageBC() {
+    //this function applies volumetric constraint
+    //it is not really wise to use it as it leads to relatively full stiffness matrix after transfer to constraint space
     NodeContainer *nodes = RVE->giveNodes();
     BCContainer *bconds = RVE->giveBC();
     FunctionContainer *funcs = RVE->giveFunctions();
@@ -579,25 +644,15 @@ void DiscreteRVEMaterialPrecomputedStatus :: init() {
 
         unsigned ndim = RVE->giveDimension();
         stiff = Matrix(ndim,ndim);
-        double c;
-        if (1){
-            ndim = 3;
-            stiff = Matrix(ndim,ndim);
-            for ( unsigned p=0; p<ndim; p++) stiff[p][p] = 1e3*5e-18/8.9e-4;
-            c = 1.62e-8*1e3;
-        }else{   
-            Vector strainDoFs(ndim+1);
-            Vector stress;
-            for(unsigned i=0; i<ndim; i++){
-                strainDoFs[i] = 1.;
-                stress = DiscreteRVEMaterialStatus :: giveStress(strainDoFs);
-                strainDoFs[i] = 0.;   
-                for(unsigned j=0; j<ndim; j++) stiff[i][j] = stress[j];
-            }
-
-            c = DiscreteRVEMaterialStatus :: giveDampingConstant();
+        Vector strainDoFs(ndim+1);
+        Vector stress;
+        for(unsigned i=0; i<ndim; i++){
+            strainDoFs[i] = 1.;
+            stress = DiscreteRVEMaterialStatus :: giveStress(strainDoFs);
+            strainDoFs[i] = 0.;   
+            for(unsigned j=0; j<ndim; j++) stiff[i][j] = stress[j];
         }
-
+        double c = DiscreteRVEMaterialStatus :: giveDampingConstant();
 
         TrsprtMaterialStatus* status = static_cast < TrsprtMaterialStatus* >(RVE->giveElements()->giveElement(0)->giveMatStatus(0));
         TrsprtMaterial* material = static_cast < TrsprtMaterial* >(RVE->giveElements()->giveElement(0)->giveMaterial());
@@ -608,6 +663,32 @@ void DiscreteRVEMaterialPrecomputedStatus :: init() {
         active_transport = true;
     }
 }
+
+//////////////////////////////////////////////////////////
+void DiscreteRVEMaterialPrecomputed :: setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus* masterS,  TrsprtMaterial* masterM){
+    conductivity=lam; 
+    capacity = c;
+    masterStatus = masterS;
+    masterMaterial = masterM;
+
+    char* buffer = "precomputed_conductivity.out";   
+    ofstream outputfile( ( masterModel->giveResultDirectory() / buffer ).string() );
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(10);
+
+        unsigned size = conductivity.numRows();        
+        for ( unsigned i = 0; i < size; i++ ) {
+            for ( unsigned j = 0; j < size; j++ ) {
+                if (j>0) outputfile << "\t";
+                outputfile << conductivity[i][j];
+            }
+            outputfile << endl;
+        }
+        outputfile.close();
+    }
+}    
+
 
 //////////////////////////////////////////////////////////
 void DiscreteRVEMaterialPrecomputedStatus :: update(){

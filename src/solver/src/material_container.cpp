@@ -15,6 +15,15 @@ void MaterialContainer :: init() {
 }
 
 //////////////////////////////////////////////////////////
+Material* MaterialContainer :: giveMaterial(unsigned const mat){
+    if (mat>=matrs.size()){
+        cerr << "MaterialContainer Error: material " << mat << " requested, but only " << matrs.size() << " materials exist" << endl;
+        exit(1);
+    }
+    return matrs [ mat ]; 
+}
+
+//////////////////////////////////////////////////////////
 void MaterialContainer :: readFromFile(const string filename) {
     size_t origsize = matrs.size();
     string line, matType;

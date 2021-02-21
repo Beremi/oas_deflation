@@ -342,7 +342,6 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         /////////////////////////////////////////////////////////
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
-        t = t / area;
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
@@ -368,16 +367,8 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point n = cross(vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
-        if ( fabs(n.x) > fabs(n.z) ) {
-            t2 = Point(-n.y, n.x, 0.0f);
-        } else {
-            t2 = Point(0.0f, -n.z, n.y);
-        }
-        t = cross(t2, n);
-        t /= t.norm();
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
@@ -432,8 +423,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         // exit(1);
     }
 
-    //Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
-
+    // Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
     // Matrix R;
     if ( ndim == 2 ) {
         t1 = Point(-normal.y, normal.x);
@@ -443,6 +433,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         R [ 1 ] [ 0 ] = t1.x;
         R [ 1 ] [ 1 ] = t1.y;
     } else if ( ndim == 3 ) {
+        // coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
         if ( ( normal - arbit ).norm() < 1e-3 ) {
             t1 = cross(arbit, normal);
@@ -450,7 +441,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             t2 = cross(normal, t1);
             t2.normalize();
         } else {
-            // the following results in zeros in stiffness matrix in case of normal in direstion of any of global base axes
+            // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
             if ( abs(normal.x) > 1e-3 ) {
                 t1 = Point(-normal.y / normal.x, 1, 0);
             } else if ( abs(normal.y) > 1e-3 ) {

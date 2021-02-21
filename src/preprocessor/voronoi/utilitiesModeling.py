@@ -869,7 +869,7 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
     print('Creating 2d periodic rectangle, shear loaded.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype = asssemble2dPeriodicShear(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, masters = asssemble2dPeriodicShear(maxLim, minDist, trials );
 
     print ('Conducting Voronoi tesselation...', end ='')
     vor = Voronoi(node_coords)
@@ -921,7 +921,7 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
         trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, masters
 
 
 
@@ -929,7 +929,7 @@ def create3dPeriodicShear(maxLim, minDist, trials ):
     print('Creating 3d periodic rectangle, shear loaded.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, masters = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
     #node_coords, mechBC_merged, mechInitC_merged , nodePositions, coupledNodes, mirtype = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
 
     print ('Conducting Voronoi tesselation...', end ='')
@@ -988,7 +988,7 @@ def create3dPeriodicShear(maxLim, minDist, trials ):
     #return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
     """
 
-    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions, masters
 
 
 
@@ -997,7 +997,7 @@ def create2dCoupledRVE(maxLim, minDist, trials ):
     print('Creating 2d periodic RVE.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype = asssemble2dPeriodicShear(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, masters = asssemble2dPeriodicShear(maxLim, minDist, trials );
 
     print ('Conducting Voronoi tesselation...', end ='')
     vor = Voronoi(node_coords)
@@ -1051,7 +1051,7 @@ def create2dCoupledRVE(maxLim, minDist, trials ):
 
     print("BOUNDARY CONDITIONS",transportBC_merged)
 
-    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, masters
 
 
 def assembleTwoNodeSpringTest (maxLim, idt):
@@ -3001,126 +3001,56 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
     mechBC_merged = []
     mechInitC_merged = []
 
-    periodicBand = 3 * minDist
-
+    print('assembling 2d periodic ')
     ###########generating of points in rectangle
     pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
 
-    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
-    #node_coords = np.loadtxt('test.out')
-
-    mirtype = []
-    coupledNodes = []
-    nodePositions = []
-    for i in range (len(node_coords)):
-        nodePositions.append(i+1)
-        mirtype.append(0)
     node_coords = np.asarray(node_coords)
-    print(len(node_coords))
+    masters = np.ones(len(node_coords)).astype(int)*(-1)
 
-    #plt.plot(node_coords[:,0]+1, node_coords[:,1], 'x', color='red');
-    ########### adding periodic points
-    print('Adding periodic points')
-    for i in range (len(node_coords)):
-        point = np.asarray(node_coords[i,:])
-        #
-        xplus = False
-        xminus = False
-        yplus = False
-        yminus = False
-        #
-        if(point[0]<periodicBand):
-            xplus = True
-        if(point[0]>maxLim[0]-periodicBand):
-            xminus = True
-        if(point[1]<periodicBand):
-            yplus = True
-        if(point[1]>maxLim[1]-periodicBand):
-            yminus = True
+    limit = 3*minDist
+    XA = np.where(node_coords[:,0]<limit)[0]
+    XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
+    YA = np.where(node_coords[:,1]<limit)[0]
+    YB = np.where(node_coords[:,1]>maxLim[1]-limit)[0]
 
-        k = i+1# len(node_coords)+1
+    XAYA = XA[np.where(node_coords[XA,1]<limit)[0]]
+    XAYB = XA[np.where(node_coords[XA,1]>maxLim[1]-limit)[0]]
+    XBYA = XB[np.where(node_coords[XB,1]<limit)[0]]
+    XBYB = XB[np.where(node_coords[XB,1]>maxLim[1]-limit)[0]]
 
-        #images due to one dimension
-        if xplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            nodePositions.append(-k)
-            node_coords = np.vstack(( node_coords, newPoint ))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(1)
-        if xminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-        if yplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[1] += maxLim[1]
-            nodePositions.append(-k)
-            #plt.plot(  newPoint[0] , newPoint[1] ,'o', color='red')
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(2)
-        if yminus:
-            newPoint = np.copy(point)
-            newPoint[1] -= maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
+    nNds = np.vstack((
+    node_coords,
+    node_coords[XA] + np.array([maxLim[0], 0]),
+    node_coords[YA] + np.array([0, maxLim[1]]),
+    #
+    node_coords[XB] + np.array([-maxLim[0], 0]),
+    node_coords[YB] + np.array([0, -maxLim[1]]),
+    #
+    node_coords[XAYA] + np.array([maxLim[0], maxLim[1]]),
+    node_coords[XBYA] + np.array([-maxLim[0], maxLim[1]]),
+    node_coords[XAYB] + np.array([maxLim[0], -maxLim[1]]),
+    node_coords[XBYB] + np.array([-maxLim[0], -maxLim[1]])
+    ))
 
-        if xplus and yplus:
-            #k = len(node_coords)+1
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] += maxLim[1]
-            nodePositions.append(-k)
-            node_coords = np.vstack((node_coords, newPoint))
-            coupledNodes.append( np.array([i, len(node_coords)-1]) )
-            mirtype.append(3)
-
-        if xminus and yplus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] += maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-        if xplus and yminus:
-            newPoint = np.copy(point)
-            newPoint[0] += maxLim[0]
-            newPoint[1] -= maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-
-        if xminus and yminus:
-            newPoint = np.copy(point)
-            newPoint[0] -= maxLim[0]
-            newPoint[1] -= maxLim[1]
-            nodePositions.append(0)
-            node_coords = np.vstack((node_coords, newPoint))
-            mirtype.append(-1)
-
-    #plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
-
-    #for i in range (len(coupledNodes)):
-    #    plt.plot( node_coords[ abs(coupledNodes[i][0]),0 ] , node_coords[ abs(coupledNodes[i][0]),1 ] ,'o', color='red')
-    #    plt.plot( node_coords[ abs(coupledNodes[i][1]),0 ] , node_coords[ abs(coupledNodes[i][1]),1 ] ,'o', color='green')
-
-    # if SHOW_PLOT:
-    #     plt.show()
-
-    #print (len(node_coords))
-
-    #np.savetxt('test.out', np.asarray(node_coords), delimiter='\t')
-    #node_coords = np.loadtxt('test.out')
+    masters = np.hstack(( masters,XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))
 
 
 
-    return node_coords, mechBC_merged, mechInitC_merged, nodePositions, coupledNodes, mirtype
+    """
+    nNds = np.asarray(nNds)
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    #ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
+    #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
+    ax.scatter(nNds[:,0], nNds[:,1], nNds[:,2], color='r')
+    if SHOW_PLOT:
+        plt.show()
+    """
+
+
+
+    return nNds, mechBC_merged, mechInitC_merged, masters #, nodePositions, coupledNodes, mirtype
 
 
 
@@ -3137,6 +3067,7 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
     pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
 
     node_coords = np.asarray(node_coords)
+    masters = np.ones(len(node_coords)).astype(int)*(-1)
 
     limit = 3*minDist
     XA = np.where(node_coords[:,0]<limit)[0]
@@ -3205,6 +3136,8 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
     node_coords[XBYBZB] + np.array([-maxLim[0], -maxLim[1], -maxLim[2]])
     ))
 
+    masters = np.hstack(( masters,XA,YA,ZA,XB,YB,ZB,XAYA,XBYA,XAYB,XBYB,XAZA,XBZA,XAZB,XBZB,YAZA,YBZA,YAZB,YBZB,XAYAZA,XBYAZA,XAYBZA,XAYAZB,XAYBZB,XBYAZB,XBYBZA,XBYBZB ))
+
 
 
     """
@@ -3220,7 +3153,7 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
 
 
 
-    return nNds, mechBC_merged, mechInitC_merged #, nodePositions, coupledNodes, mirtype
+    return nNds, mechBC_merged, mechInitC_merged, masters #, nodePositions, coupledNodes, mirtype
 
 
 

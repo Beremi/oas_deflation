@@ -80,6 +80,8 @@ class Model:
         self.dimension = int(r[1][0])
         self.maxLim = np.zeros((self.dimension))
 
+        self.masters = []
+
         #RWTH cylinderRad
         #cylinderHeight 0.1 cylinderRad 0.1 minDist 0.02 notchRadLeft 0.08 notchRadRight 0.05 notchWidth 0.01
         self.notchRadLeft = None
@@ -363,12 +365,12 @@ class Model:
         self.materialZones =  None
 
     def run_2d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.masters)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 
     def run_3d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.masters)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -394,7 +396,7 @@ class Model:
 
     def run_2d_coupledRVE(self):
         print('2d_coupledRVE')
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.masters)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -427,7 +429,7 @@ class Model:
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
             nodePositions=self.nodePositions, coupledNodes=self.coupledNodes,
-            mirtype=self.mirtype, notches=self.notches, isTube=tube, coupled=self.coupled)
+            mirtype=self.mirtype, notches=self.notches, isTube=tube, coupled=self.coupled, masters=self.masters)
 
         #if (self.printout == False): enablePrint()
         print ('done.')
