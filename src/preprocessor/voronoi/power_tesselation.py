@@ -6,6 +6,7 @@ from pydmga.geometry import BoxGeometry
 from pydmga.container import Container
 from pydmga.diagram import Diagram
 import numpy as np
+from scipy.spatial.distance import cdist
 
 class TimeFilter(logging.Filter):
 
@@ -140,6 +141,11 @@ class PowerTesselation(object):
                 zmin, zmax = 0, 1
             else:
                 xmin, ymin, zmin, xmax, ymax, zmax = limits
+
+        point_distances = cdist(points, points)
+        point_distances = point_distances[np.triu_indices(point_distances.shape[0], k=1)]
+        if np.nanmin(point_distances) == 0:
+            raise ValueError('There are identical points (distance is zero).')
 
         start = time.time()
         #dx = xmax - xmin

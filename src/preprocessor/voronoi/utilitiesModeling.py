@@ -925,16 +925,19 @@ def create2dPeriodicShear(maxLim, minDist, trials ):
 
 
 
-def create3dPeriodicShear(maxLim, minDist, trials ):
+def create3dPeriodicShear(maxLim, minDist, trials, powerTes ):
     print('Creating 3d periodic rectangle, shear loaded.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged, masters = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
-    #node_coords, mechBC_merged, mechInitC_merged , nodePositions, coupledNodes, mirtype = asssemble3dPeriodicRectangle(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, radii, masters = asssemble3dPeriodicRectangle(maxLim, minDist, trials, powerTes );
 
     print ('Conducting Voronoi tesselation...', end ='')
-    vor = Voronoi(node_coords)
-    volumes = voronoi.voronoi_3d(vor, maxLim)
+    if powerTes == False:
+        vor = Voronoi(node_coords)
+        volumes = voronoi.voronoi_3d(vor, maxLim)
+    else:
+        vor, areas = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim)
+
     print('done.')
 
 
@@ -988,9 +991,7 @@ def create3dPeriodicShear(maxLim, minDist, trials ):
     #return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, nodePositions, coupledNodes, mirtype
     """
 
-    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions, masters
-
-
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions, radii, masters
 
 
 def create2dCoupledRVE(maxLim, minDist, trials ):
@@ -1357,7 +1358,7 @@ def create3dDam(maxLim, minDist, trials, Xtop):
         func1.append( np.array([0,0]) )
         func1.append( np.array([1, (maxLim[2] - vor.vertices[leftFace[i],2])*1000.*9.81 ]) )
         fn1 = utilitiesNumeric.generalFunc(func1)
-        functions.append (fn1)        
+        functions.append (fn1)
 
 
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
@@ -3008,7 +3009,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
     node_coords = np.asarray(node_coords)
     masters = np.ones(len(node_coords)).astype(int)*(-1)
 
-    limit = 3*minDist
+    limit = 4*minDist
     XA = np.where(node_coords[:,0]<limit)[0]
     XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
     YA = np.where(node_coords[:,1]<limit)[0]
@@ -3055,7 +3056,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
 
 
 
-def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
+def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     dim = 3
     #lists for the model
     node_coords = []
@@ -3064,12 +3065,17 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
 
     print('assembling 3d periodic ')
     ###########generating of points in rectangle
-    pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
+    if powerTes == False:
+        pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
+        radii = np.zeros(len(node_coords))
+    else:
+        node_coords = np.zeros((0,dim))
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.8, dim, trials, node_coords, radii)
 
     node_coords = np.asarray(node_coords)
     masters = np.ones(len(node_coords)).astype(int)*(-1)
 
-    limit = 3*minDist
+    limit = 4*minDist
     XA = np.where(node_coords[:,0]<limit)[0]
     XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
     YA = np.where(node_coords[:,1]<limit)[0]
@@ -3137,9 +3143,8 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
     ))
 
     masters = np.hstack(( masters,XA,YA,ZA,XB,YB,ZB,XAYA,XBYA,XAYB,XBYB,XAZA,XBZA,XAZB,XBZB,YAZA,YBZA,YAZB,YBZB,XAYAZA,XBYAZA,XAYBZA,XAYAZB,XAYBZB,XBYAZB,XBYBZA,XBYBZB ))
-
-
-
+    radii = np.hstack(( radii, radii[np.hstack((XA,YA,ZA,XB,YB,ZB,XAYA,XBYA,XAYB,XBYB,XAZA,XBZA,XAZB,XBZB,YAZA,YBZA,YAZB,YBZB,XAYAZA,XBYAZA,XAYBZA,XAYAZB,XAYBZB,XBYAZB,XBYBZA,XBYBZB ))]))
+   
     """
     nNds = np.asarray(nNds)
     fig = plt.figure()
@@ -3151,14 +3156,7 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials):
         plt.show()
     """
 
-
-
-    return nNds, mechBC_merged, mechInitC_merged, masters #, nodePositions, coupledNodes, mirtype
-
-
-
-
-
+    return nNds, mechBC_merged, mechInitC_merged, radii, masters 
 
 
 

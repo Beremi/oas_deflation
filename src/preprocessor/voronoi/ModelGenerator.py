@@ -370,7 +370,7 @@ class Model:
         self.periodicModel = 1
 
     def run_3d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.masters)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii, self.masters)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials, self.powerTes )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -428,8 +428,7 @@ class Model:
             self.areas,
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
-            nodePositions=self.nodePositions, coupledNodes=self.coupledNodes,
-            mirtype=self.mirtype, notches=self.notches, isTube=tube, coupled=self.coupled, masters=self.masters)
+            notches=self.notches, isTube=tube, coupled=self.coupled, masters=self.masters)
 
         #if (self.printout == False): enablePrint()
         print ('done.')

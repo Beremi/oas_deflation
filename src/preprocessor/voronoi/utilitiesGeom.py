@@ -176,7 +176,7 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, nodePositions = None, coupledNodes = None, mirtype = None, notches = None, isTube=False, coupled=False, masters=False):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, masters=False):
     if (dim == 2):
         if (periodicModel == 0):
             vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled)
@@ -697,19 +697,6 @@ def excludeSelectedPts_old (boundPtA , boundPtB, points):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, masters = []):
     start_time = time.time()
     dim = len(maxLim)
@@ -776,8 +763,6 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
             valid_ridge_vertices.append(vor.ridge_vertices[int(ir)])
 
 
-    printout = False
-
     # Transport Elements
     ########################################################################################################
     is_inside = np.all(abs(vor.vertices-maxLim/2.)<=maxLim/2., axis=1)
@@ -819,8 +804,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     
                         dist = np.sum(np.square(inside_coords-match),axis=1)
                         master = np.argmin(dist)                    
-                        if (dist[master]>1e-10):
-                            print("master not found")
+                        if (dist[master]>1e-15):
+                            print("master not found, min square dist ", dist[master] )
                             exit(1)
                         else: 
                             coupledNodesTrsp = np.vstack( (coupledNodesTrsp, np.array([newslave, valid_vert_idcs[master]]).astype(int) ))
@@ -1578,7 +1563,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                 onlyVerticesConnected = False
 
     if (dim==3):
-        for i in range (len(ridges_out)):            
+        for i in range (len(ridges_out)):
             ro = np.asarray(ridges_out[i])
 
             vrtA = ro[3]
