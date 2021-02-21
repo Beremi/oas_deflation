@@ -936,7 +936,7 @@ def create3dPeriodicShear(maxLim, minDist, trials, powerTes ):
         vor = Voronoi(node_coords)
         volumes = voronoi.voronoi_3d(vor, maxLim)
     else:
-        vor, areas = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim)
+        vor, volumes = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim, nomirror = True)
 
     print('done.')
 
@@ -3151,7 +3151,10 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     radii_backup = np.copy(radii)
 
 
-    limit = 3*minDist
+
+    limit =  maxLim[0] / 2.
+
+
     XA = np.where(node_coords[:,0]<limit)[0]
     XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
     YA = np.where(node_coords[:,1]<limit)[0]
@@ -3219,24 +3222,8 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     ))
 
 
-    for i in range (len(node_coords_backup), len(nNds)):
-        searchedCoords = nNds[i,:]
-        if (searchedCoords[0]<maxLim[0]): searchedCoords[0]+=maxLim[0]
-        if (searchedCoords[0]>maxLim[0]): searchedCoords[0]-=maxLim[0]
-        if (searchedCoords[1]<maxLim[1]): searchedCoords[1]+=maxLim[1]
-        if (searchedCoords[1]>maxLim[1]): searchedCoords[1]-=maxLim[1]
-        if (searchedCoords[2]<maxLim[2]): searchedCoords[2]+=maxLim[2]
-        if (searchedCoords[2]>maxLim[2]): searchedCoords[2]-=maxLim[2]
 
-        #print()
-        #print ('searching for %s' % searchedCoords)
-        index, dist = utilitiesGeom.findClosest(node_coords_backup, nNds[i,:], 3)
-        if dist<1e-10:
-            #print('found %d' %index)
-            #print('coords %s' %node_coords_backup[index])
-            radii = np.hstack((radii, radii[index] ))
 
-    
     """
     nNds = np.asarray(nNds)
     fig = plt.figure()
@@ -3244,10 +3231,27 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     #ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
     #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
     ax.scatter(nNds[:,0], nNds[:,1], nNds[:,2], color='r')
-    if SHOW_PLOT:
-        plt.show()
+    plt.show()
     """
 
+
+    if powerTes:
+        for i in range (len(node_coords_backup), len(nNds)):
+            searchedCoords = np.copy(nNds[i,:])
+            if (searchedCoords[0]<maxLim[0]): searchedCoords[0]+=maxLim[0]
+            if (searchedCoords[0]>maxLim[0]): searchedCoords[0]-=maxLim[0]
+            if (searchedCoords[1]<maxLim[1]): searchedCoords[1]+=maxLim[1]
+            if (searchedCoords[1]>maxLim[1]): searchedCoords[1]-=maxLim[1]
+            if (searchedCoords[2]<maxLim[2]): searchedCoords[2]+=maxLim[2]
+            if (searchedCoords[2]>maxLim[2]): searchedCoords[2]-=maxLim[2]
+
+            #print()
+            #print ('searching for %s' % searchedCoords)
+            index, dist = utilitiesGeom.findClosest(node_coords_backup, searchedCoords, 3)
+            if dist<1e-10:
+                #print('found %d' %index)
+                #print('coords %s' %node_coords_backup[index])
+                radii = np.hstack((radii, radii[index] ))
 
 
     return nNds, mechBC_merged, mechInitC_merged, radii #, nodePositions, coupledNodes, mirtype

@@ -772,6 +772,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     ########################################################################################################
     allCoplanar = True
     for i in range (validRidgeIdxs.size):
+        sys.stdout.write('\rRidge nr.'+str(i)+' / '+str(validRidgeIdxs.size))
+        sys.stdout.flush()
 
         rdge = vor.ridge_vertices[validRidgeIdxs[i]]
         #indices of all vertices that form the planar ridge
@@ -996,7 +998,7 @@ def excludeSelectedPts_old (boundPtA , boundPtB, points):
     >>> boundPtB = np.array([1, 1])
     >>> points = np.array([[.5, .5], [.1, .9], [2, .1], [2, 3]])
     >>> excludeSelectedPts_old(boundPtA, boundPtB, points)
-    array([2, 3])
+    array([2, 3])asssemble3dPeriodicRectangle
     '''
     dim = len (boundPtA)
     #
@@ -1047,13 +1049,47 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     coupledNodes = []
 
-    actual_node_count = len(node_coords) / 7
-    print ('actual node count: %d' %actual_node_count)
+    print()
+    print()
+    print('Pocet vygenerovanych nodu: %d' %len(node_coords))
+    print('Pocet nodu, se kterymi pocital voronoj: %d' %len(vor.points))
+
+    maxIdx = -1
+    for ir,r in enumerate(vor.ridge_points):
+         if int(r[0]) > maxIdx:
+             maxIdx = int(r[0])
+         if int(r[1]) > maxIdx:
+            maxIdx = int(r[1])
+    print('Nejvyssi index nodu v ridges: %d' %maxIdx)
+
+    if (len(vor.points)-1 == (maxIdx)):
+        print ('Ridge spojuji jen nody v samplu.')
+        print(' Tohle dela powerTes 0')
+        print ('Export probehne v poradku.')
+    elif (len(vor.points)-1 < (maxIdx)):
+        print('Ridge se odkazuji na nejake nody s indexy, ktere nejsou v samplu. !!!')
+        print(' Tohle dela powerTes 1')
+        print('Nastane chyba index out of bounds...')
+    print('Stiskni enter!')
+    print()
+    a = input('').split(" ")[0]
 
 
     for ir,r in enumerate(vor.ridge_points):
+        sys.stdout.write('\rRidge nr.'+str(ir)+' / '+str(len(vor.ridge_points))+' ')
+        sys.stdout.flush()
+
+
+
+
         nAidx = int(r[0])
         nBidx = int(r[1])
+
+        if (nAidx > len(vor.points) ):
+            print (nAidx)
+        if (nBidx > len(vor.points) ):
+            print (nBidx)
+
         nAcoords = node_coords[nAidx,:]
         nBcoords = node_coords[nBidx,:]
 
@@ -1466,6 +1502,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     backupCpld = np.copy(np.asarray(coupledNodes))
 
+    print()
     print('renumbering coupled nodes...')
     coupledNodesOK = True
     for i in range(len(coupledNodes)):
@@ -1532,6 +1569,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     ########################################################################################################
     allCoplanar = True
     for i in range (len(validRidgeIdxs)):
+        sys.stdout.write('\rRidge nr.'+str(i)+' / '+str(validRidgeIdxs.size)+' ')
+        sys.stdout.flush()
     #    a = input('').split(" ")[0]
 
         ridgeIdx = int(validRidgeIdxs[i])
