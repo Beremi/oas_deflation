@@ -703,7 +703,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     sys.stdout.flush()
 
     # Mechanical Elements
-    ########################################################################################################
+    #######################################################################################################
+
     print ('Periodic model, filtering ridges...', end = '')
     is_inside = np.all(abs(vor.points-maxLim/2.)<=maxLim/2., axis=1)
     valid_node_idcs = np.where(is_inside)[0]
@@ -718,7 +719,39 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     
     coupledNodesMech = np.zeros((0,2)).astype(int)
 
+    
+    print('\nPocet nodu, se kterymi pocital voronoj: %d' %len(vor.points))
+
+    maxIdx = -1
     for ir,r in enumerate(vor.ridge_points):
+         if int(r[0]) > maxIdx:
+             maxIdx = int(r[0])
+         if int(r[1]) > maxIdx:
+            maxIdx = int(r[1])
+    print('Nejvyssi index nodu v ridges: %d' %maxIdx)
+
+    if (len(vor.points)-1 == (maxIdx)):
+        print ('Ridge spojuji jen nody v samplu.')
+        print(' Tohle dela powerTes 0')
+        print ('Export probehne v poradku.')
+    elif (len(vor.points)-1 < (maxIdx)):
+        print('Ridge se odkazuji na nejake nody s indexy, ktere nejsou v samplu. !!!')
+        print(' Tohle dela powerTes 1')
+        print('Nastane chyba index out of bounds...')
+    print('Stiskni enter!\n')
+    a = input('').split(" ")[0]
+
+
+    coupledNodesMech = np.zeros((0,2)).astype(int)
+
+    actual_node_count = len(valid_node_idcs)
+    print ('actual node count: %d' %actual_node_count)
+
+
+    for ir,r in enumerate(vor.ridge_points):
+        sys.stdout.write('\rRidge nr.'+str(ir)+' / '+str(len(vor.ridge_points))+' ')
+        sys.stdout.flush()
+
         nAidx = int(r[0])
         nBidx = int(r[1])
 
@@ -765,12 +798,12 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     trsprtElemVerts = np.zeros((0,2)).astype(int)
     trsprtElemNodes = []
-    
+
     coupledNodesTrsp = np.zeros((0,2)).astype(int)
 
-    for ir,r in enumerate(vor.ridge_vertices):        
+    for ir,r in enumerate(vor.ridge_vertices): 
         vAidx = r[-1]
-        for vBidx in r:        
+        for vBidx in r:
             is_diagonal = (is_positive[vAidx] and is_positive[vBidx]) and np.any(is_plus_only[vAidx]) and np.any(is_plus_only[vBidx])
             v = 0
             while is_diagonal and v<dim:
@@ -779,49 +812,49 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
             if ( (is_inside[vBidx] and is_positive[vAidx]) or (is_inside[vAidx] and is_positive[vBidx]) or is_diagonal):
                 for vXidx in [vAidx,vBidx]:
-                    foundnewslave = False                 
-                    if not vXidx in valid_vert_idcs:                                
+                    foundnewslave = False
+                    if not vXidx in valid_vert_idcs:
                         valid_vert_idcs = np.hstack((valid_vert_idcs, vXidx))
                         foundnewslave = True
-                        newslave = vXidx                                                    
+                        newslave = vXidx
                     if foundnewslave:
                         match = np.zeros(dim)
-                        for i in range(dim): 
-                            if vor.vertices[newslave,i]>maxLim[i]: 
+                        for i in range(dim):
+                            if vor.vertices[newslave,i]>maxLim[i]:
                                 match[i] = vor.vertices[newslave,i]-maxLim[i]
                             else: match[i] = vor.vertices[newslave,i]
-    
+
                         dist = np.sum(np.square(inside_coords-match),axis=1)
                         master = np.argmin(dist)                    
                         if (dist[master]>1e-6):
                             print("Trasnport master not found, min square dist ", dist[master], vor.vertices[newslave] )
                             exit(1)
-                        else: 
+                        else:
                             coupledNodesTrsp = np.vstack( (coupledNodesTrsp, np.array([newslave, valid_vert_idcs[master]]).astype(int) ))
-           
+
 
                 trspVert = np.sort(np.array([vAidx,vBidx]).astype(int))
                 fA = np.where(trsprtElemVerts[:,0]==trspVert[0])[0]
                 fA = fA[ np.where(trsprtElemVerts[fA,1]==trspVert[1])[0] ]
-                if (len(fA)==0): 
+                if (len(fA)==0):
                     trsprtElemVerts = np.vstack((trsprtElemVerts, trspVert))
                     trsprtElemNodes.append(vor.ridge_points[ir])
                 else:
                    trsprtElemNodes[fA[0]] = np.hstack((trsprtElemNodes[fA[0]], vor.ridge_points[ir]))
             vAidx = vBidx
 
-    
+
     #build surfaces of contact elements
     for i,p in enumerate(trsprtElemNodes):
         q = [p[0],p[1]]
         p = p[2:]
-        
+
         while len(p)>0:
             idx = np.where(p==q[-1])[0]
             if (not len(idx)==1):
                 cout << "Error in continuity of the transport facet" << endl;
                 exit();
-            if idx[0]%2==0: 
+            if idx[0]%2==0:
                 q.append(p[idx[0]+1])
                 p = np.hstack((p[:idx[0]],p[idx[0]+2:]))
             else:
@@ -844,9 +877,9 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     mapping[falseaux] = sort_idx[np.searchsorted(valid_node_idcs,mechauxnodes[falseaux],sorter = sort_idx)]
     mapping[trueaux] = np.arange(len(trueaux))+numnodes
 
-    
+
     sort_idx = mechauxnodes.argsort()
-    for i in range(len(trsprtElemNodes)): 
+    for i in range(len(trsprtElemNodes)):
         m = sort_idx[np.searchsorted(mechauxnodes,trsprtElemNodes[i],sorter = sort_idx)]
         trsprtElemNodes[i] = mapping[m]
     mechauxnodes = mechauxnodes[trueaux]
@@ -856,8 +889,8 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     mechElemPoints = sort_idx[np.searchsorted(valid_node_idcs,mechElemPoints,sorter = sort_idx)]
 
     coupledNodesMech = np.array(coupledNodesMech).astype(int)
-    coupledNodesMech = sort_idx[np.searchsorted(valid_node_idcs,coupledNodesMech,sorter = sort_idx)]    
-    
+    coupledNodesMech = sort_idx[np.searchsorted(valid_node_idcs,coupledNodesMech,sorter = sort_idx)]
+
 
     valid_vert_idcs = np.array(valid_vert_idcs).astype(int) #vertices with degrees of freedom
     numverts = len(valid_vert_idcs)
@@ -889,7 +922,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     
     fig = plt.figure()
     ax = plt.axes(projection='3d')
-    for p in trsprtElemVerts:           
+    for p in trsprtElemVerts:
         ax.plot(fullnodes[p,0],fullnodes[p,1],fullnodes[p,2],color="k")
 
     for p in mechElemVerts:           
@@ -919,7 +952,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
             inpf.write("LTCBEAM\t%d\t%d\t%d"%(mechElemPoints[k,0],mechElemPoints[k,1], len(mechElemVerts[k]) ))
             for p in mechElemVerts[k]:
                 inpf.write("\t%d"%(p))
-            inpf.write("\t0\n")    
+            inpf.write("\t0\n")
         inpf.close()
 
     if activeTransport:
@@ -929,7 +962,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
             inpf.write("LTCTRSP\t%d\t%d\t%d"%(trsprtElemVerts[k,0],trsprtElemVerts[k,1], len(trsprtElemNodes[k]) ))
             for p in trsprtElemNodes[k]:
                 inpf.write("\t%d"%(p))
-            inpf.write("\t1\n")    
+            inpf.write("\t1\n")
         inpf.close()
 
 

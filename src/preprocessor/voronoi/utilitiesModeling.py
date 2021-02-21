@@ -3071,15 +3071,17 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     mechBC_merged = []
     mechInitC_merged = []
 
+
     print('assembling 3d periodic ')
     ###########generating of points in rectangle
     if powerTes == False:
         pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
-        radii = np.zeros(len(node_coords))
+
     else:
         node_coords = np.zeros((0,dim))
-        radii = np.zeros(0)
+        radii = np.zeros(len(node_coords))
         node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.8, dim, trials, node_coords, radii)
+
 
     node_coords = np.asarray(node_coords)
     #masters = np.ones(len(node_coords)).astype(int)*(-1)
@@ -3152,8 +3154,10 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     ))
 
     #masters = np.hstack(( masters,XA,YA,ZA,XB,YB,ZB,XAYA,XBYA,XAYB,XBYB,XAZA,XBZA,XAZB,XBZB,YAZA,YBZA,YAZB,YBZB,XAYAZA,XBYAZA,XAYBZA,XAYAZB,XAYBZB,XBYAZB,XBYBZA,XBYBZB ))
-    radii = np.hstack(( radii, radii[np.hstack((XA,YA,ZA,XB,YB,ZB,XAYA,XBYA,XAYB,XBYB,XAZA,XBZA,XAZB,XBZB,YAZA,YBZA,YAZB,YBZB,XAYAZA,XBYAZA,XAYBZA,XAYAZB,XAYBZB,XBYAZB,XBYBZA,XBYBZB ))]))
-   
+    if powerTes == True:
+        radii = np.hstack(( radii, radii[np.hstack((XA,YA,ZA,XB,YB,ZB,XAYA,XBYA,XAYB,XBYB,XAZA,XBZA,XAZB,XBZB,YAZA,YBZA,YAZB,YBZB,XAYAZA,XBYAZA,XAYBZA,XAYAZB,XAYBZB,XBYAZB,XBYBZA,XBYBZB ))]))
+    else:
+        radii = []
     """
     nNds = np.asarray(nNds)
     fig = plt.figure()
@@ -3164,8 +3168,7 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     if SHOW_PLOT:
         plt.show()
     """
-
-    return nNds, mechBC_merged, mechInitC_merged, radii#, masters 
+    return nNds, mechBC_merged, mechInitC_merged, radii
 
 
 

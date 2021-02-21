@@ -60,8 +60,12 @@ def runPowerPlain (node_coords, radii, dim, maxLim, Xtop=0, shifts=0):
 
 
 ##run power, mirrored data
-def runMirroredPower (node_coords, radii, dim, maxLim, Xtop=0, shifts=0):
-    points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
+def runMirroredPower (node_coords, radii, dim, maxLim, Xtop=0, shifts=0, nomirror = False):
+    if nomirror == False:
+        points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
+    else:
+        points = np.copy(node_coords)
+
     vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
 
     """

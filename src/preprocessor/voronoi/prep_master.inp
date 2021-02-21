@@ -41,7 +41,7 @@
 #
 #PERIODIC MODELS
 #Model 2d_periodicShear Xsize 0.05 Ysize 0.05 minDist 0.004 activeMechanics 1 activeTransport 1 trials 5000
-Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.002 activeMechanics 1 activeTransport 1 trials 400 powerTes 1
+Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMechanics 1 activeTransport 1 trials 400 powerTes 1
 #
 #
 #Model 3d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0007 notchRadRight 0.0245 notchRadLeft 0.0275 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 200 RWTHQuarter 1
