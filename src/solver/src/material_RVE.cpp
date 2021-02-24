@@ -23,8 +23,8 @@ void RVEMaterialStatus :: init() {
     //we needed to insert volumetric average generation after applying preprocessing block, otherwise constraints from preprocessing block would not be active
     //therefore, preprocessing blocks are now called in reader instead of model initialization
 
-    //generateVolumetricAverageBC();
-    generateRandomFixedBC();    
+    //generateVolumetricAverageBC(); //not good idea because the stiffness matrix becomes full
+    generateRandomFixedBC();   
     RVE->init();
 
     stringstream appendname;

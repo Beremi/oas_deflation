@@ -365,7 +365,7 @@ class Model:
         self.materialZones =  None
 
     def run_2d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials, self.powerTes )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -396,7 +396,7 @@ class Model:
 
     def run_2d_coupledRVE(self):
         print('2d_coupledRVE')
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials, self.powerTes )
         self.materialZones=None
         self.periodicModel = 1
 

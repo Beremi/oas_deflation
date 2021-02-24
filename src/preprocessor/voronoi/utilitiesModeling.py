@@ -865,11 +865,11 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
 
     return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
 
-def create2dPeriodicShear(maxLim, minDist, trials ):
+def create2dPeriodicShear(maxLim, minDist, trials, powerTes ):
     print('Creating 2d periodic rectangle, shear loaded.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged, radii = asssemble2dPeriodicShear(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, radii = asssemble2dPeriodicShear(maxLim, minDist, trials, powerTes );
 
     print ('Conducting Voronoi tesselation...', end ='')
     vor = Voronoi(node_coords)
@@ -993,11 +993,11 @@ def create3dPeriodicShear(maxLim, minDist, trials, powerTes ):
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions, radii
 
 
-def create2dCoupledRVE(maxLim, minDist, trials ):
+def create2dCoupledRVE(maxLim, minDist, trials, powerTes ):
     print('Creating 2d periodic RVE.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged, radii = asssemble2dPeriodicShear(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechInitC_merged, radii = asssemble2dPeriodicShear(maxLim, minDist, trials, powerTes );
 
     print ('Conducting Voronoi tesselation...', end ='')
     vor = Voronoi(node_coords)
@@ -2994,7 +2994,7 @@ def assemble3dDogBone(D, minDist, trials, excentricity = 20):
 
 
 
-def asssemble2dPeriodicShear (maxLim, minDist, trials):
+def asssemble2dPeriodicShear (maxLim, minDist, trials, powerTes):
     dim = 2
     #lists for the model
     node_coords = []
@@ -3018,7 +3018,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
     node_coords = np.asarray(node_coords)
     #masters = np.ones(len(node_coords)).astype(int)*(-1)
 
-    limit = 5*minDist
+    limit = 8*minDist
     XA = np.where(node_coords[:,0]<limit)[0]
     XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
     YA = np.where(node_coords[:,1]<limit)[0]

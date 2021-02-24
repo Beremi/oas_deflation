@@ -110,6 +110,7 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
 
         #option to add external nodes
         """
+        print("LOADING EXTERNAL NODES")
         node_coords = np.loadtxt("repnodes.inp")
         radii = node_coords[:,-1]
         node_coords = node_coords[:,0:-1]
