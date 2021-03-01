@@ -679,13 +679,13 @@ def create2DUniaxialTension(maxLim, minDist, trials, dim, powerTes):
     return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
 
-def createCoupledArtificialCrack(maxLim, minDist, trials, notchH):
+def create2dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
     dim = 2
     print('Creating coupled artificial crack')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     slitWidth = minDist*0.8
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates = assembleCoupledArtificialCrack(maxLim, minDist, trials, slitWidth, notchH);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates = assemble2dCoupledArtificialCrack(maxLim, minDist, trials, slitWidth, notchH);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
@@ -752,6 +752,106 @@ def createCoupledArtificialCrack(maxLim, minDist, trials, notchH):
 
 
     return node_coords, mechBC_merged, transportBC_merged,  notches, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions
+
+
+
+
+
+
+def create3dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
+    dim = 3
+    print('Creating coupled artificial crack')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    slitWidth = minDist*1
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates = assemble3dCoupledArtificialCrack(maxLim, minDist, trials, slitWidth, notchH);
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    print('done.')
+
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    # if SHOW_PLOT:
+    #     plt.show()
+
+    functions = []
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, -1e-3]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+    func3 = []
+    func3.append( np.array([0,0]) )
+    func3.append( np.array([1, 1e-3]) )
+    fn3 = utilitiesNumeric.generalFunc(func3)
+    functions.append (fn3)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+
+
+    #"""
+    ### selecting vertices on the bottom surface
+    boundA = np.zeros(3)-1e-8
+    boundB = np.array([maxLim[0], 1e-8, maxLim[2]+1e-8])
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    fn1 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn1)
+    """
+    for i,k in enumerate(faces1):
+        trsBC = utilitiesMech.transportBC(k,[3,-1])
+        transportBC_merged.append(trsBC)
+
+    #"""
+    ### selecting vertices on the top surface
+    boundA = np.array([-1e-8, maxLim[1]-1e-8, -1e-8])
+    boundB = np.array([maxLim[0], maxLim[1]+1e-8, maxLim[2]+1e-8])
+    faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces2,:]
+
+    fn1 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn1)
+    """
+    for i,k in enumerate(faces2):
+        trsBC = utilitiesMech.transportBC(k,[4,-1])
+        transportBC_merged.append(trsBC)
+
+    #"""
+
+    govNodesTrspt = []
+    govNodesTrsptBC = []
+    rigidPlatesTrspt = []
+
+    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptLeftRigidPlate.setDirectNodes(faces1)
+    trsptLeftRigidPlateMechBC = np.array([3,-1])
+    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+
+    trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptRightRigidPlate.setDirectNodes(faces2)
+    trsptRightRigidPlateMechBC = np.array([4,-1])
+    rigidPlatesTrspt.append(trsptRightRigidPlate)
+    govNodesTrspt.append(np.array([ -1, -1, -1]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+
+    #return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+
+    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, volumes, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+
+
 
 
 def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, trials):
@@ -2662,7 +2762,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
 
 
 
-def assembleCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
+def assemble2dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
     dim = 2
     #lists for the model
     node_coords = []
@@ -2733,6 +2833,80 @@ def assembleCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
 
     return node_coords, mechBC_merged, mechInitC_merged, [], govNodes, govNodesMechBC, rigidPlates
 
+
+
+
+
+
+
+def assemble3dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
+    dim = 3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+    #an indent due to mirroring of the data for voronoi tess.
+    indent = 1e-8
+    notchWidth = slitWidth/2
+    #generating notch points
+
+    node_coords.append(np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch/2 , maxLim[2]/2]))
+    nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
+    nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-indent, maxLim[2]-indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials*10)
+    #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=True, equidist=True)
+
+    nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
+    nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-indent, maxLim[2]-indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials*10)
+    #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=True, equidist=True)
+
+    #node_coords.append(np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch]))
+    #node_coords.append(np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch]))
+
+
+    ##################### CONSTRAINTS AND RIGID PLATES
+    #rigid plate left slit face
+    indentRP = 1e-6
+    leftRigidPlateMechBC = np.array([1, 0,0,  0,0,0, -1,-1,-1, -1,-1,-1])#np.array([1,0,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([ maxLim[0]/2-notchWidth-indentRP, maxLim[0]/2-notchWidth+indentRP, -indentRP, maxLim[1]*notch+indentRP, -indentRP, maxLim[2]+indentRP ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2-notchWidth, indent, maxLim[2]/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+    #rigid plate right slit face
+    rightRigidPlateMechBC = np.array([2, 0,0,    0,0,0, -1,-1,-1, -1,-1,-1]) #np.array([2,0,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([ maxLim[0]/2+notchWidth-indentRP, maxLim[0]/2+notchWidth+indentRP, -indentRP, maxLim[1]*notch+indentRP,  -indentRP, maxLim[2]+indentRP ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2+notchWidth, indent, maxLim[2]/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+
+    facesMult = 1
+    ########################################## rest of  faces
+    nodeA =  np.array([indent , maxLim[1] - indent, indent])
+    nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+
+    nodeA =  np.array([indent ,  indent, indent])
+    nodeB =  np.array([maxLim[0] - indent,  indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+
+
+
+    #rect
+    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+    print('generated nodes %d' %len(node_coords))
+    return node_coords, mechBC_merged, mechInitC_merged, [], govNodes, govNodesMechBC, rigidPlates
 
 
 
@@ -3003,7 +3177,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
 
     print('assembling 2d periodic ')
     ###########generating of points in rectangle
-    
+
 
     if powerTes == False:
         pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
@@ -3045,7 +3219,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
 
     #masters = np.hstack(( masters,XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))
     radii = np.hstack(( radii, radii[np.hstack((XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))]))
-   
+
     """
     nNds = np.asarray(nNds)
     fig = plt.figure()
@@ -3059,7 +3233,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials):
 
 
 
-    return nNds, mechBC_merged, mechInitC_merged, radii#, masters 
+    return nNds, mechBC_merged, mechInitC_merged, radii#, masters
 
 
 

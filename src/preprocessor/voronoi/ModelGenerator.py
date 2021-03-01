@@ -256,6 +256,9 @@ class Model:
         if self.modelType == '2d_coupledArtificialCrack':
             self.run_2d_coupledArtificialCrack()
 
+        if self.modelType == '3d_coupledArtificialCrack':
+            self.run_3d_coupledArtificialCrack()
+
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
@@ -385,7 +388,11 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
 
     def run_2d_coupledArtificialCrack(self):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
+    def run_3d_coupledArtificialCrack(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
 
 
     def run_3d_coupledBrazilianDisc(self):

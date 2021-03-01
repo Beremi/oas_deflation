@@ -9,6 +9,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import utilitiesMech
 import Preprocessor as prepro
 
+
+
+
 masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
 verticesFile                = "vertices.inp"
@@ -716,10 +719,10 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     mechElemPoints = np.zeros((0,2)).astype(int)
     mechElemVerts = []
-    
+
     coupledNodesMech = np.zeros((0,2)).astype(int)
 
-    
+
     print('\nPocet nodu, se kterymi pocital voronoj: %d' %len(vor.points))
 
     maxIdx = -1
@@ -763,24 +766,24 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
         if  ( (is_inside[nBidx] and is_positive[nAidx]) or (is_inside[nAidx] and is_positive[nBidx]) or is_diagonal):
             for nXidx in [nAidx,nBidx]:
-                foundnewslave = False                 
-                if not nXidx in valid_node_idcs:                                
+                foundnewslave = False
+                if not nXidx in valid_node_idcs:
                     valid_node_idcs = np.hstack((valid_node_idcs, nXidx))
                     foundnewslave = True
-                    newslave = nXidx                                                    
+                    newslave = nXidx
                 if foundnewslave:
                     match = np.zeros(dim)
-                    for i in range(dim): 
-                        if vor.points[newslave,i]>maxLim[i]: 
+                    for i in range(dim):
+                        if vor.points[newslave,i]>maxLim[i]:
                             match[i] = vor.points[newslave,i]-maxLim[i]
                         else: match[i] = vor.points[newslave,i]
-    
+
                     dist = np.sum(np.square(inside_coords-match),axis=1)
-                    master = np.argmin(dist)                    
+                    master = np.argmin(dist)
                     if (dist[master]>1e-15):
                         print("Mechanical master not found, min square dist ", dist[master], vor.points[newslave] )
                         exit(1)
-                    else: 
+                    else:
                         coupledNodesMech = np.vstack( (coupledNodesMech, np.array([newslave, valid_node_idcs[master]]).astype(int) ))
 
             mechElemPoints = np.vstack((mechElemPoints, r))
@@ -801,7 +804,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     coupledNodesTrsp = np.zeros((0,2)).astype(int)
 
-    for ir,r in enumerate(vor.ridge_vertices): 
+    for ir,r in enumerate(vor.ridge_vertices):
         vAidx = r[-1]
         for vBidx in r:
             is_diagonal = (is_positive[vAidx] and is_positive[vBidx]) and np.any(is_plus_only[vAidx]) and np.any(is_plus_only[vBidx])
@@ -825,7 +828,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
                             else: match[i] = vor.vertices[newslave,i]
 
                         dist = np.sum(np.square(inside_coords-match),axis=1)
-                        master = np.argmin(dist)                    
+                        master = np.argmin(dist)
                         if (dist[master]>1e-6):
                             print("Trasnport master not found, min square dist ", dist[master], vor.vertices[newslave] )
                             exit(1)
@@ -904,7 +907,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
     mapping[falseaux] = sort_idx[np.searchsorted(valid_vert_idcs,trspauxnodes[falseaux],sorter = sort_idx)]+numnodes+len(mechauxnodes)+len(trueaux)
 
     sort_idx = trspauxnodes.argsort()
-    for i in range(len(mechElemVerts)): 
+    for i in range(len(mechElemVerts)):
         m = sort_idx[np.searchsorted(trspauxnodes,mechElemVerts[i],sorter = sort_idx)]
         mechElemVerts[i] = mapping[m]
     trspauxnodes = trspauxnodes[trueaux]
@@ -919,15 +922,15 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     """
     fullnodes = np.vstack((vor.points[valid_node_idcs], vor.points[mechauxnodes], vor.vertices[trspauxnodes], vor.vertices[valid_vert_idcs]))
-    
+
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     for p in trsprtElemVerts:
         ax.plot(fullnodes[p,0],fullnodes[p,1],fullnodes[p,2],color="k")
 
-    for p in mechElemVerts:           
+    for p in mechElemVerts:
         ax.plot(vor.vertices[p,0],vor.vertices[p,1],vor.vertices[p,2],color="b", ls=":")
-    
+
     plt.show()
     """
 
@@ -1297,7 +1300,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
         fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
     if activeTransport:
         fl.write('TXTNodalExporter pressure 1 pressure\n')
-        fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 1 damage pointData 1 pressure\n')
+        fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 2 damage crack_opening pointData 1 pressure\n')
 
     fl.close()
 
