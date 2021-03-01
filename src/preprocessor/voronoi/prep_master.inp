@@ -22,7 +22,7 @@
 #
 #
 # Dogbones # pro normalni model roughDogBone 0 elasticZone 0
-Model 2d_dogbone dogboneD 0.4 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 10000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 
+Model 2d_dogbone dogboneD 0.2 minDist 0.004 dogboneExcentricityFrac 50 activeMechanics 1 trials 20000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 1
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press

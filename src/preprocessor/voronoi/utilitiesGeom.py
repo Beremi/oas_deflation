@@ -179,10 +179,10 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0, node_indices_dogbone=[]):
     if (dim == 2):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled)
+            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled, node_indices_dogbone=node_indices_dogbone)
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeMechanics, activeTransport, minDist, mZ=mZ)
     if (dim == 3):
@@ -194,7 +194,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
 
 
 #Extract geometry 2d
-def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None, coupled=False):
+def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None, coupled=False, node_indices_dogbone=[]):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -206,10 +206,17 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area error: %.5e ' %(relAreaError)  )
     ########################################################################################
-    cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
+
+    node_indices_dogbone = np.asarray(node_indices_dogbone)
+    #print((node_indices_dogbone))
+    if len(node_indices_dogbone) > 0:
+        cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
+        cond = np.all(cond, axis=1)
+    else:
+        cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
     validRidgeIdxs = np.where(cond)[0]
     #print(validRidgeIdxs.shape)
-    #print(validRidgeIdxs)
+    print(validRidgeIdxs)
 
     #REMOVE
     #validRidgeIdxs = []
@@ -1311,6 +1318,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
 def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     print('Saving nodes: %s...' %nodetype, end='')
     sys.stdout.flush()
+
     nodes_out = np.array(nodes_out)
     #writing nodes
     #print(len(nodes_out))
@@ -1334,7 +1342,8 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
 
 
     fl=open(os.path.join(master_folder,filename),'w')
-    np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
+    if len(nodes_out) > 0:
+        np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
     fl.close()
     print('done.')
     sys.stdout.flush()

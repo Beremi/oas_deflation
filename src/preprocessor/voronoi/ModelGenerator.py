@@ -93,6 +93,8 @@ class Model:
         self.RWTHQuarter = False
         self.elasticZone = None
 
+        self.node_indices_dogbone = []
+
         for i in range (len(r)):
 
             if (r[i]=='printout'):
@@ -146,6 +148,11 @@ class Model:
             if (r[i]=='roughDogBone'):
                 if (int(r[i+1])==1): self.roughDogBone = True
                 if (int(r[i+1])==0): self.roughDogBone = False
+            if (r[i]=='roughEdgeDogbone'):
+                if (int(r[i+1])==1): self.roughEdgeDogbone = True
+                if (int(r[i+1])==0): self.roughEdgeDogbone = False
+
+
 
             if (r[i]=='edgeMinDistCoef'):
                 self.edgeMinDistCoef = float(r[i+1])
@@ -329,7 +336,7 @@ class Model:
             self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone )
         self.materialZones=None
         if self.elasticZone > 0:
             self.materialZones= utilitiesModeling.assembleMaterialZones(1/4*self.dogboneD, 2, model='dogbone', D=self.dogboneD)
@@ -442,7 +449,7 @@ class Model:
             self.areas,
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
-            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist)
+            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone)
 
         #if (self.printout == False): enablePrint()
         print ('done.')

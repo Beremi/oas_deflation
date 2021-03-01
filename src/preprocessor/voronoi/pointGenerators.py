@@ -91,22 +91,22 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         for i in range(n0+1):
             point[0] = i*s0
             point[1] = 0
-            node_coords = np.vstack((node_coords, point));  
-            radii = np.hstack((radii, 0));          
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
             point[1] = maxLim[1]
             node_coords = np.vstack((node_coords, point));
             radii = np.hstack((radii, 0));
         for i in range(n0-1):
             point[1] = (i+1)*s1
             point[0] = 0
-            node_coords = np.vstack((node_coords, point));  
-            radii = np.hstack((radii, 0));          
-            point[0] = maxLim[0]
-            node_coords = np.vstack((node_coords, point));             
+            node_coords = np.vstack((node_coords, point));
             radii = np.hstack((radii, 0));
-    
-        print(node_coords)    
-        """        
+            point[0] = maxLim[0]
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
+
+        print(node_coords)
+        """
 
         #option to add external nodes
         """
