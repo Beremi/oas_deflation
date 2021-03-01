@@ -143,9 +143,9 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             matZ.append (boundA)
             boundB = np.array(  [ D+1e-8   ,  elaX] )
             matZ.append (boundB)
-            boundA1 = np.array(  [ -1e-8, 6/4*D+1e-8] )
+            boundA1 = np.array(  [ -1e-8, 6/4*D - elaX] )
             matZ.append (boundA1)
-            boundB1 = np.array(  [ D  , 6/4*D - elaX]  )
+            boundB1 = np.array(  [ D  ,  6/4*D+1e-8]  )
             matZ.append (boundB1)
             materialZones.append(matZ)
         if (dim==3):
@@ -1193,10 +1193,10 @@ def assembleTwoNodeSpringTest (maxLim, idt):
 
 
 
-def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0):
+def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=False):
     print('Creating 2d dog bone....')
     #
-    node_coords, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef);
+    node_coords, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone);
 
     node_coords = np.asarray(node_coords)
     """
@@ -2910,7 +2910,7 @@ def assemble3dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch)
 
 
 
-def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0):
+def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0, roughDogBone=False):
     dim = 2
     #lists for the model
     node_coords = []
@@ -2923,6 +2923,11 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     indent = 1e-6
 
     oldLen = len(node_coords)
+
+    if roughDogBone == True:
+        altMinDist = 3 * minDist
+    else:
+        altMinDist = minDist
 
     if symmetric == True:
         nodeA = np.array([0.2*D+2*indent,  3/4 * D - indent -minDist/2])
@@ -2950,12 +2955,12 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     #top line of dogbone
     nodeA = np.array([indent, indent])
     nodeB = np.array([indent+D, indent])
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials, True, True)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, True)
 
     #bottom line of dogbone
     nodeA = np.array([indent,  6/4 * D - indent])
     nodeB = np.array([D-indent, 6/4 * D - indent])
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials, True, True)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, True)
 
     uniquePoints =  (len(node_coords)) - oldLen
 
@@ -3002,14 +3007,29 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     #    angleLimitA =    np.pi
     mirroredPointsB = pointGenerators.generateNodesCircle2dRand(centreB, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*2)
 
+    if roughDogBone == True:
+        #top rough rectangle
+        oldLen = len(node_coords)
+        maxLim = np.array([  D    ,  1/4*D ])
+        pointGenerators.generateNodesRect(maxLim, altMinDist, 2, trials, node_coords)
+        #bottom rough rectangle
+        oldLen = len(node_coords)
+        maxLimF = np.array([     indent,       5/4 * D,        D,        6/4 * D   ])
+        pointGenerators.generateNodesRect(maxLimF, altMinDist, 2, trials, node_coords, useLowBound=True)
+        # middle fine asssemble3dPeriodicRectanglemaxLimF = np.array([     indent,       5/4 * D,        D,        6/4 * D   ])
+        maxLimF = np.array([     indent,       1/4 * D,        D,        5/4 * D   ])
+        pointGenerators.generateNodesRect(maxLimF, minDist, 2, trials, node_coords, useLowBound=True)
 
-    #rectangle of dogbone
-    oldLen = len(node_coords)
-    maxLim = np.array([  D    ,  6/4*D ])
-    #if symmetric == True:
-    #    maxLim = np.array([  D    ,  3/4*D ])
-    pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
-    nrOfPoints =  (len(node_coords)) - oldLen
+        nrOfPoints =  (len(node_coords)) - oldLen
+
+    else:
+        #rectangle of dogbone
+        oldLen = len(node_coords)
+        maxLim = np.array([  D    ,  6/4*D ])
+        #if symmetric == True:
+        #    maxLim = np.array([  D    ,  3/4*D ])
+        pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
+        nrOfPoints =  (len(node_coords)) - oldLen
 
     #dumping points outside bone
     radius = np.linalg.norm( centreB - np.array([D, 1/4*D]))
