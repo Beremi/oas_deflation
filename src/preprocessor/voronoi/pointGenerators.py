@@ -91,22 +91,22 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         for i in range(n0+1):
             point[0] = i*s0
             point[1] = 0
-            node_coords = np.vstack((node_coords, point));  
-            radii = np.hstack((radii, 0));          
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
             point[1] = maxLim[1]
             node_coords = np.vstack((node_coords, point));
             radii = np.hstack((radii, 0));
         for i in range(n0-1):
             point[1] = (i+1)*s1
             point[0] = 0
-            node_coords = np.vstack((node_coords, point));  
-            radii = np.hstack((radii, 0));          
-            point[0] = maxLim[0]
-            node_coords = np.vstack((node_coords, point));             
+            node_coords = np.vstack((node_coords, point));
             radii = np.hstack((radii, 0));
-    
-        print(node_coords)    
-        """        
+            point[0] = maxLim[0]
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
+
+        print(node_coords)
+        """
 
         #option to add external nodes
         """
@@ -200,7 +200,8 @@ def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, tr
         return node_coords, radii
 
 def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
-    return True
+    raise NotImplementedError('''Not implemented in Python, only Cython version available. To use the Cython version
+          the code has to be build using: python setup.py build_ext --inplace.''')
 try:
     from point_generators_cython import generateNodesRectPeriodic_cython as generateNodesRectPeriodic
     print('Using Cython version of point generator - generateNodesRectPeriodic.')
