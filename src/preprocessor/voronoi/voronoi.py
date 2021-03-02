@@ -136,7 +136,7 @@ def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
     if weights is not None:
         weightsOut = np.hstack([weights]*7)
         return dataOut, weightsOut
-    return dataOut    
+    return dataOut
 
 
 def mirror_dataDogBone(data, dim, D, thickness = None):
@@ -194,8 +194,7 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
     dataOut = np.asarray(dataOut)
     fig, ax = plt.subplots()
     ax.scatter(dataOut[:,0], dataOut[:,1])
-    if SHOW_PLOT:
-        plt.show()
+    plt.show()
     """
     return dataOut
 

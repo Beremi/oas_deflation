@@ -210,13 +210,23 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     node_indices_dogbone = np.asarray(node_indices_dogbone)
     #print((node_indices_dogbone))
     if len(node_indices_dogbone) > 0:
-        cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
-        cond = np.all(cond, axis=1)
+        #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
+        #cond = np.all(cond, axis=1)
+        #validRidgeIdxs = np.where(cond)[0]
+        validRidgeIdxs = []
+        for i in range (vor.ridge_points.shape[0]):
+            pr = False
+            for p in range (2):
+                if (vor.ridge_points[i][p] in node_indices_dogbone):
+                    pr=True
+            if (pr):
+               validRidgeIdxs.append(i)
+        validRidgeIdxs = np.asarray(validRidgeIdxs)
     else:
         cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
-    validRidgeIdxs = np.where(cond)[0]
+        validRidgeIdxs = np.where(cond)[0]
     #print(validRidgeIdxs.shape)
-    print(validRidgeIdxs)
+#    print(validRidgeIdxs)
 
     #REMOVE
     #validRidgeIdxs = []
@@ -243,7 +253,12 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     #vertices
     ####################################################
     #list of vertices, list of beams
+    print()
     for i in range (validRidgeIdxs.size):
+        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' + str(validRidgeIdxs.size))
+        sys.stdout.flush()
+
+
         #array for two vertices A and B
         vrtxA = np.zeros ( (dim  +1 +1 ) )
         vrtxB = np.zeros ( (dim  +1 +1 ) )
@@ -294,6 +309,25 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         pointB = vor.ridge_points[validRidgeIdxs[i],1]
 
         #creating auxiliary nodes if one of nodes is outside
+        if len(node_indices_dogbone)>0:
+            if(pointA in node_indices_dogbone  and pointB not in node_indices_dogbone):
+                pA = np.asarray( vor.points[pointA, :]  )
+                pB = np.asarray( vor.points[pointB, :]  )
+                ptB = (pA + pB)/2
+
+                pointB = node_count + len(aux_nodes)
+                aux_nodes.append(ptB)
+
+            if(pointA not in node_indices_dogbone  and pointB in node_indices_dogbone):
+                pA = np.asarray( vor.points[pointA, :]  )
+                pB = np.asarray( vor.points[pointB, :]  )
+                ptA = (pA + pB)/2
+
+                pointA = node_count + len(aux_nodes)
+                aux_nodes.append(ptA)
+
+
+
         if(pointA >= node_count and pointB<node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
@@ -462,6 +496,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     ########################################################################################################
     allCoplanar = True
     for i in range (validRidgeIdxs.size):
+        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' + str(validRidgeIdxs.size))
+        sys.stdout.flush()
 
         rdge = vor.ridge_vertices[validRidgeIdxs[i]]
         #indices of all vertices that form the planar ridge
@@ -1303,7 +1339,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics):
         fl.write('#TXTNodalExporter pressure 1 pressure\n')
         if not activeTransport:
             fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 2 damage crack_opening pointData 1 nodal_stress\n')
-        fl.write('#VTKRCExporter faces  saveEvery 1e-1 cellData 1 damage\n')
+        fl.write('#VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage\n')
         fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
     if activeTransport:
         fl.write('TXTNodalExporter pressure 1 pressure\n')

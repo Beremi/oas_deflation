@@ -149,8 +149,7 @@ class Model:
                 if (int(r[i+1])==1): self.roughDogBone = True
                 if (int(r[i+1])==0): self.roughDogBone = False
             if (r[i]=='roughEdgeDogbone'):
-                if (int(r[i+1])==1): self.roughEdgeDogbone = True
-                if (int(r[i+1])==0): self.roughEdgeDogbone = False
+                self.roughEdgeDogbone = int(r[i+1])
 
 
 

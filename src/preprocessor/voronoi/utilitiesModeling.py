@@ -1193,7 +1193,7 @@ def assembleTwoNodeSpringTest (maxLim, idt):
 
 
 
-def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=False, roughEdgeDogbone = False):
+def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=False, roughEdgeDogbone = 0):
     print('Creating 2d dog bone....')
     #
 
@@ -1207,7 +1207,7 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, 
     ax.scatter(node_coords_all[:,0], node_coords_all[:,1])
     ax.scatter(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1])
     plt.show()
-    """
+    #"""
 
     print('Conducting Voronoi tesselation...', end = '')
     vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords_all, 2, D)
@@ -2913,13 +2913,12 @@ def assemble3dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch)
 
 
 
-def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0, roughDogBone=False, roughEdgeDogbone=False):
+def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0, roughDogBone=False, roughEdgeDogbone=0 ):
 
-    if roughEdgeDogbone:
+    if roughDogBone == True:
         sampleCircularBorders = False
     else:
         sampleCircularBorders = True
-
 
     dim = 2
     #lists for the model
@@ -3003,7 +3002,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
 
     centreA = np.array( [-0.525 * D, 3/4 * D] )
     centreB = np.array( [ 1.525 * D, 3/4 * D] )
-    if sampleCircularBorders:
+    if roughEdgeDogbone==0:
         #sampling on circular borders
         radius = 0.725*D
         angleLimitA =   -np.arcsin( 0.5*D / radius)
@@ -3047,6 +3046,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
 
 
     node_coords_all = np.copy ( node_coords )
+    node_coords_dogbone = []
     node_indices_dogbone = []
 
     #dumping points outside bone
@@ -3060,7 +3060,15 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         distB = np.linalg.norm( node - centreB)
         if (distA > radius and distB > radius):
             node_indices_dogbone.append(i)
+            node_coords_dogbone.append(node)
     print('done.')
+    node_coords_dogbone = np.asarray(node_coords_dogbone)
+
+    """
+    plt.plot(node_coords_all[:,0], node_coords_all[:,1], 'o', color='black');
+    plt.plot(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1], 'x', color='red');
+    plt.show()
+    #"""
 
     #mirrored circles. Not to be in the model at the end
     #node_count = len(node_coords_out)
@@ -3068,42 +3076,86 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
     #plt.show()
 
+    if roughEdgeDogbone == 2:
+        mirrored_coords = []
+        #mirroring rough edge dogbone circular borders
+        dogboneRadius = 0.725*D
+        leftCenter = np.array( [-0.525 * D, 3/4 * D] )
+        rightCenter = np.array( [ 1.525 * D, 3/4 * D] )
+        for node in node_coords_dogbone:
+            if node[0]<D/2:
+                #left half, mirroring to left center
+                nodeRad = np.linalg.norm(leftCenter-node)
+                distFromEdge = nodeRad - dogboneRadius
+                mirroredNodeRad = nodeRad - 2*distFromEdge
+                #
+                relativeNodeCoords = node - leftCenter
+                mirroredNodeRelativeCoords = relativeNodeCoords * (mirroredNodeRad/nodeRad)
+                mirroredNodeAbsoluteCoords = mirroredNodeRelativeCoords + leftCenter
+                #
+                if (mirroredNodeAbsoluteCoords[0]>=0):
+                    mirrored_coords.append(mirroredNodeAbsoluteCoords)
+                    """
+                    print()
+                    print ('dist from edge %s' %distFromEdge)
+                    print ('mirroredNodeRad %s' %mirroredNodeRad)
+                    print ('nodeRad %s' %nodeRad)
+                    print ('dogboneRadius %s' %dogboneRadius)
+                    plt.plot(node_coords_dogbone[:,0], node_coords_dogbone[:,1], '.', color='black');
+                    plt.plot(leftCenter[0], leftCenter[1], 'o', color='black');
+                    plt.plot(mirroredNodeAbsoluteCoords[0], mirroredNodeAbsoluteCoords[1], 'o', color='red');
+                    plt.plot(node[0], node[1], 'o', color='blue');
+                    plt.show()
+                    """
+            else:
+                #right half, mirroring to left center
+                nodeRad = np.linalg.norm(rightCenter-node)
+                distFromEdge = nodeRad - dogboneRadius
+                mirroredNodeRad = nodeRad - 2*distFromEdge
+                #
+                relativeNodeCoords = rightCenter - node
+                mirroredNodeRelativeCoords = relativeNodeCoords * (mirroredNodeRad/nodeRad)
+                mirroredNodeAbsoluteCoords = rightCenter - mirroredNodeRelativeCoords
+                #
+                if (mirroredNodeAbsoluteCoords[0]<=D):
+                    mirrored_coords.append(mirroredNodeAbsoluteCoords)
 
-    mirroredMiddle = []
-    mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  -minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  -minDist/2 ]))
+        mirrored_coords = np.asarray(mirrored_coords)
+        """
+        plt.plot(mirrored_coords[:,0], mirrored_coords[:,1], 'o', color='black');
+        plt.plot(node_coords_dogbone[:,0], node_coords_dogbone[:,1], 'x', color='red');
+        plt.show()
+        #"""
+        node_coords_dogbone = np.vstack((node_coords_dogbone, mirrored_coords))
+        node_coords_all = np.copy(node_coords_dogbone)
+
+        node_indices_dogbone = []
+        for i in range(len(node_coords_all)):
+            node = node_coords_all[i]
+            distA = np.linalg.norm( node - centreA)
+            distB = np.linalg.norm( node - centreB)
+            if (distA > radius and distB > radius):
+                node_indices_dogbone.append(i)
+
+
+
 
     if sampleCircularBorders == True:
+        mirroredMiddle = []
+        mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  +minDist/2 ]))
+        mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  +minDist/2 ]))
+        mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  -minDist/2 ]))
+        mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  -minDist/2 ]))
+
         node_coords_all = np.vstack( (node_coords_all, mirroredPointsA, mirroredPointsB) )
-    else:
-        node_coords_all = np.vstack( (node_coords_all) )
 
-    nc = np.asarray(node_coords_out)
-    #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    # if SHOW_PLOT:
-    #     plt.show()
 
-    sympoints = []
     """
-    if symmetric == True:
-        print ('Mirroring second symmetric half of dogbone...')
-        for i in range (uniquePoints, len(node_coords_out), 1):
-            newPoint = np.copy(node_coords_out[i])
-            newPoint[1] = newPoint[1] *-1 + D*6/4 + 2*indent
-            node_coords_out = np.vstack( (node_coords_out, newPoint ) )
-            sympoints.append(newPoint)
-    """
-    sympoints = np.asarray(sympoints)
+    plt.plot(node_coords_all[:,0], node_coords_all[:,1], 'o', color='green');
+    plt.plot(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1], 'x', color='red');
+    plt.show()
+    #"""
 
-    #if symmetric:
-        #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-        #plt.plot(sympoints[:,0], sympoints[:,1], 'x', color='red');
-    # if SHOW_PLOT:
-    #     plt.show()
-
-    nc = np.asarray(node_coords_out)
     node_count = len (node_coords_all)
     return node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates
 
