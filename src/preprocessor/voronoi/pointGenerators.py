@@ -607,7 +607,7 @@ def randPointInTube(center, radius, height, thickness, directionDim):
     return point
 
 
-def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = None):
+def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = None, radiusSpread = 0):
     print ('Generating a 2d circle border. Ctr [%f, %f], Rad: %f, Angle limit +-%f' %(center[0],center[1], radius, np.degrees(angleLimitA-angleLimitB)))
 
     mirroredPoints = []
@@ -617,10 +617,10 @@ def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angl
         #
         distIsGood = False
         while (distIsGood == False):
-            if (mirrorIndent != None):
+            if (mirrorIndent >0):
                 coords, mirrored_coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
             else:
-                coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
+                coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent, radiusSpread=radiusSpread)
             #
             distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords)
             #
@@ -632,29 +632,34 @@ def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angl
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
-            if (mirrorIndent != None):
+            if (mirrorIndent >0):
                 mirroredPoints.append(mirrored_coords)
 
-    if (mirrorIndent != None):
+    if (mirrorIndent >0):
         return mirroredPoints
 
-def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = None):
+def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = None, radiusSpread=0):
     if (angleLimitA == None): angle = np.random.uniform() * np.pi * 2
     else:   angle = np.random.uniform(low=angleLimitA, high=angleLimitB) #* np.pi * 2
+
+    if mirrorIndent > 0:
+        radiusSpread = 0
 
     if (len(center) == 3):
         point = np.zeros(3)
         point += center
 
+        samplingRadius = radius + np.random.uniform(low=-radiusSpread, high = radiusSpread)
+
         if (directionDim == 0 ):
-            point[1] = radius * np.cos(angle)
-            point[2] = radius * np.sin(angle)
+            point[1] = samplingRadius * np.cos(angle)
+            point[2] = samplingRadius * np.sin(angle)
         if (directionDim == 1):
-            point[0] = radius * np.cos(angle)
-            point[2] = radius * np.sin(angle)
+            point[0] = samplingRadius * np.cos(angle)
+            point[2] = samplingRadius * np.sin(angle)
         if (directionDim == 2):
-            point[0] = radius * np.cos(angle)
-            point[1] = radius * np.sin(angle)
+            point[0] = samplingRadius * np.cos(angle)
+            point[1] = samplingRadius * np.sin(angle)
         return point
 
     if (len(center) == 2):
@@ -662,9 +667,13 @@ def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLim
         point += center
         mirroredPoint = np.zeros(2)
         mirroredPoint += center
-        point[0] += radius * np.cos(angle)
-        point[1] += radius * np.sin(angle)
-        if (mirrorIndent!=None):
+
+        samplingRadius = radius + np.random.uniform(low=-radiusSpread, high = radiusSpread)
+        #print(samplingRadius)
+        point[0] += samplingRadius * np.cos(angle)
+        point[1] += samplingRadius * np.sin(angle)
+
+        if (mirrorIndent>0):
             mirroredPoint[0] += (radius-2*mirrorIndent) * np.cos(angle)
             mirroredPoint[1] += (radius-2*mirrorIndent) * np.sin(angle)
             return point,mirroredPoint
