@@ -200,7 +200,8 @@ def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, tr
         return node_coords, radii
 
 def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
-    return True
+    raise NotImplementedError('''Not implemented in Python, only Cython version available. To use the Cython version
+          the code has to be build using: python setup.py build_ext --inplace.''')
 try:
     from point_generators_cython import generateNodesRectPeriodic_cython as generateNodesRectPeriodic
     print('Using Cython version of point generator - generateNodesRectPeriodic.')
