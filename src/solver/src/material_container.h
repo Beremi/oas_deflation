@@ -23,7 +23,7 @@ public:
 
     void readFromFile(const string filename);
     void init();
-    Material *giveMaterial(unsigned const mat) { return matrs [ mat ]; }
+    Material *giveMaterial(unsigned const mat);
 protected:
 };
 

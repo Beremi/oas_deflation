@@ -1,0 +1,8 @@
+MechanicalQuad 0 4 5 1	0
+MechanicalQuad 1 5 6 2	0
+MechanicalQuad 2 6 7 3	0
+MechanicalQuad 4 8 9 5	0
+MechanicalQuad 5 9 10 6	0
+MechanicalQuad 6 10 11 7	0
+MechanicalQuad 9 8 11 10	0
+MechanicalQuad 8 12 13 11	0

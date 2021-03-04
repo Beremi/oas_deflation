@@ -80,6 +80,8 @@ class Model:
         self.dimension = int(r[1][0])
         self.maxLim = np.zeros((self.dimension))
 
+        self.masters = []
+
         #RWTH cylinderRad
         #cylinderHeight 0.1 cylinderRad 0.1 minDist 0.02 notchRadLeft 0.08 notchRadRight 0.05 notchWidth 0.01
         self.notchRadLeft = None
@@ -90,6 +92,8 @@ class Model:
         self.notchDepth = None
         self.RWTHQuarter = False
         self.elasticZone = None
+
+        self.node_indices_dogbone = []
 
         for i in range (len(r)):
 
@@ -140,6 +144,15 @@ class Model:
             if r[i] in keys:
                 setattr(self, r[i], bool(r[i+1]))
             """
+
+            if (r[i]=='roughDogBone'):
+                if (int(r[i+1])==1): self.roughDogBone = True
+                if (int(r[i+1])==0): self.roughDogBone = False
+            if (r[i]=='roughEdgeDogbone'):
+                self.roughEdgeDogbone = int(r[i+1])
+
+
+
             if (r[i]=='edgeMinDistCoef'):
                 self.edgeMinDistCoef = float(r[i+1])
 
@@ -254,6 +267,9 @@ class Model:
         if self.modelType == '2d_coupledArtificialCrack':
             self.run_2d_coupledArtificialCrack()
 
+        if self.modelType == '3d_coupledArtificialCrack':
+            self.run_3d_coupledArtificialCrack()
+
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
@@ -319,8 +335,10 @@ class Model:
             self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone )
         self.materialZones=None
+        if self.elasticZone > 0:
+            self.materialZones= utilitiesModeling.assembleMaterialZones(1/4*self.dogboneD, 2, model='dogbone', D=self.dogboneD)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
     def run_3d_dogbone(self):
@@ -363,12 +381,12 @@ class Model:
         self.materialZones =  None
 
     def run_2d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dPeriodicShear(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 
     def run_3d_periodicShear(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create3dPeriodicShear(self.maxLim, self.minDist, self.trials, self.powerTes )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -383,7 +401,11 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
 
     def run_2d_coupledArtificialCrack(self):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
+    def run_3d_coupledArtificialCrack(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
 
 
     def run_3d_coupledBrazilianDisc(self):
@@ -394,7 +416,7 @@ class Model:
 
     def run_2d_coupledRVE(self):
         print('2d_coupledRVE')
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.nodePositions, self.coupledNodes, self.mirtype)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials )
         self.materialZones=None
         self.periodicModel = 1
 
@@ -426,8 +448,7 @@ class Model:
             self.areas,
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
-            nodePositions=self.nodePositions, coupledNodes=self.coupledNodes,
-            mirtype=self.mirtype, notches=self.notches, isTube=tube, coupled=self.coupled)
+            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone)
 
         #if (self.printout == False): enablePrint()
         print ('done.')

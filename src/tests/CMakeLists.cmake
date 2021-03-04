@@ -35,8 +35,15 @@ add_test(
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:DiscreteModel>
   )
 
+add_test(
+  NAME SpringMechElastic_3D
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests/SpringMechElastic_3D
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:DiscreteModel>
+  )
+
 set_tests_properties(
   SpringMechElastic
+  SpringMechElastic_3D
   PROPERTIES
     LABELS "tests"
     TIMEOUT 10

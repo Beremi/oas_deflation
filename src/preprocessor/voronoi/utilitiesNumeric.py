@@ -30,14 +30,45 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
 ##run voronoi, mirrored data
 def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
     vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[:,:dim]) #the last column might be present representing radii
+    #fig, ax = plt.subplots()
+    #voronoi_plot_2d(vor, ax=ax)
+    #plt.show()
     return vor
 
+##run power, no mirroring data
+def runPowerPlain (node_coords, radii, dim, maxLim, Xtop=0, shifts=0):
+    vor = PowerTesselation(node_coords, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
 
+    """
+    fig, ax = plt.subplots()
+    voronoi_plot_2d(vor, ax=ax)
+    ax.scatter(vor.vertices[:, 0], vor.vertices[:, 1], color='r', zorder=100)
+    for (x, y), r in zip(points, radii):
+        circle = plt.Circle((x, y), r, color='r', fill=False)
+        ax.add_artist(circle)
+    ax.set_xlim(0, maxLim[0])
+    ax.set_ylim(0, maxLim[1])
+    if AXIS_ASPECT_EQUAL:
+        ax.set_aspect('equal')
+    if SHOW_PLOT:
+        plt.show()
+    """
+
+    if (dim == 2):
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim, shifts = shifts) #power.power_2d(node_coords, radii, dim, maxLim)
+        return vor, regions, vertices, polygons, areas, centroids, points
+    if (dim == 3):
+        volumes = voronoi.voronoi_3d(vor, maxLim);
+        return vor, volumes
 
 
 ##run power, mirrored data
-def runMirroredPower (node_coords, radii, dim, maxLim, Xtop, shifts=0):
-    points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
+def runMirroredPower (node_coords, radii, dim, maxLim, Xtop=0, shifts=0, nomirror = False):
+    if nomirror == False:
+        points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
+    else:
+        points = np.copy(node_coords)
+
     vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
 
     """

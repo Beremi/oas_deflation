@@ -203,9 +203,11 @@ class transportPath:
             line+='\t%d'%(self.connectedNodes[i])
 
         if (ndNr==2) :
-            print()
-            print (self.connectedNodes)
-            print (line)
+            #print()
+            #print (self.connectedNodes)
+            #print (line)
+            #element to be removed
+            line = "#" + line
 
         #print()
         #print (self.connectedNodes)

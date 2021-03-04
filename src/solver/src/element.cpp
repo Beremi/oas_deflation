@@ -87,6 +87,8 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
         return ip_locs [ ipnum ].y;
     } else if ( code.compare("z") == 0 ) {
         return ip_locs [ ipnum ].z;
+    } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
+        return stats [ ipnum ]->giveMaterial()->giveId();
     } else {
         return stats [ ipnum ]->giveValue(code);
     }
@@ -354,7 +356,6 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         /////////////////////////////////////////////////////////
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
-        t = t / area;
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
@@ -380,16 +381,8 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point n = cross(vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
-        if ( fabs(n.x) > fabs(n.z) ) {
-            t2 = Point(-n.y, n.x, 0.0f);
-        } else {
-            t2 = Point(0.0f, -n.z, n.y);
-        }
-        t = cross(t2, n);
-        t /= t.norm();
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
@@ -419,7 +412,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm();
+            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm()/2.;
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             ip_locs [ 0 ] += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
@@ -444,8 +437,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         // exit(1);
     }
 
-    //Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
-
+    // Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
     // Matrix R;
     if ( ndim == 2 ) {
         t1 = Point(-normal.y, normal.x);
@@ -455,6 +447,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         R [ 1 ] [ 0 ] = t1.x;
         R [ 1 ] [ 1 ] = t1.y;
     } else if ( ndim == 3 ) {
+        // coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
         if ( ( normal - arbit ).norm() < 1e-3 ) {
             t1 = cross(arbit, normal);
@@ -462,7 +455,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             t2 = cross(normal, t1);
             t2.normalize();
         } else {
-            // the following results in zeros in stiffness matrix in case of normal in direstion of any of global base axes
+            // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
             if ( abs(normal.x) > 1e-3 ) {
                 t1 = Point(-normal.y / normal.x, 1, 0);
             } else if ( abs(normal.y) > 1e-3 ) {
@@ -782,7 +775,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm();
+            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             ip_locs [ 0 ] += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
@@ -803,7 +796,13 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     if ( abs(normal * t) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
-        cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
+        cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << endl;
+        cout << " normal v.:"; 
+        for(unsigned p=0; p<ndim; p++ ) cout << "\t" << normal.giveCoord(p);
+        cout << endl;
+        cout << " contact v.:"; 
+        for(unsigned p=0; p<ndim; p++ ) cout << "\t" << t.giveCoord(p);
+        cout << endl;
         exit(1);
     }
 
@@ -1073,8 +1072,8 @@ double TrsprtQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     double JacDet = Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 0 ];
     Matrix JacInv(2, 2);
     JacInv [ 0 ] [ 0 ] = Jac [ 1 ] [ 1 ] / JacDet;
-    JacInv [ 1 ] [ 0 ] = -Jac [ 0 ] [ 1 ] / JacDet;
-    JacInv [ 0 ] [ 1 ] = -Jac [ 1 ] [ 0 ] / JacDet;
+    JacInv [ 0 ] [ 1 ] = -Jac [ 0 ] [ 1 ] / JacDet;
+    JacInv [ 1 ] [ 0 ] = -Jac [ 1 ] [ 0 ] / JacDet;
     JacInv [ 1 ] [ 1 ] = Jac [ 0 ] [ 0 ] / JacDet;
 
     //transorm to physical space
@@ -1311,12 +1310,13 @@ double MechanicalQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
     double JacDet = Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 0 ];
     Matrix JacInv(2, 2);
     JacInv [ 0 ] [ 0 ] = Jac [ 1 ] [ 1 ] / JacDet;
-    JacInv [ 1 ] [ 0 ] = -Jac [ 0 ] [ 1 ] / JacDet;
-    JacInv [ 0 ] [ 1 ] = -Jac [ 1 ] [ 0 ] / JacDet;
+    JacInv [ 0 ] [ 1 ] = -Jac [ 0 ] [ 1 ] / JacDet;
+    JacInv [ 1 ] [ 0 ] = -Jac [ 1 ] [ 0 ] / JacDet;
     JacInv [ 1 ] [ 1 ] = Jac [ 0 ] [ 0 ] / JacDet;
 
     //transorm to physical space
     phiGrad = JacInv * phiGrad;
+
     return JacDet;
 }
 

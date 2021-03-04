@@ -11,7 +11,7 @@ Model :: Model(bool pT) {
 
 //////////////////////////////////////////////////////////
 void Model :: init(const bool &initial) {     //initialization
-    pblocks.apply();
+    //pblocks.apply(); //moved to reader
     bconds.init();
     nodes.init();
     matrs.init();
@@ -133,6 +133,10 @@ void Model :: readFromFile(const string filename, const bool &initial) {
         cerr << "Error: unable to open input file '" <<  fullPath.string() <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
+
+    //here we apply periodic blocks to generate all the necessary objects
+    //it was removed from Model initialization, because it had to be called in advance for RVE materials
+    pblocks.apply();
 }
 
 

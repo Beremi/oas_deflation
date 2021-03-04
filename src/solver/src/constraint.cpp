@@ -131,6 +131,7 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
 
 //////////////////////////////////////////////////////////
 void VolumetricAverage :: init() {
+
     //collect all slaves from other joint DoFs
     vector< unsigned >otherslaves;
     otherslaves.resize(constraints->giveSize() );
@@ -142,9 +143,14 @@ void VolumetricAverage :: init() {
 
     //find slave position in array
     unsigned slaveid = find(nodes.begin(), nodes.end(), slaveNode) - nodes.begin();
+    if(slaveid==nodes.size()){
+        cerr << "Volumetric average Error: slave node not included in node list" << endl;
+        exit(1);
+    } 
 
     // calculate volumes associated with nodes
     unsigned r;
+    unsigned s=nodes.size();
     vector< double >m;
     m.resize(nodes.size() );
     Transp1D *et;
@@ -154,24 +160,26 @@ void VolumetricAverage :: init() {
         em = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
         if ( et ) {
             for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
-                m [ r ] += et->giveVolume(p);
+                r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );    
+                if (r<s) m [ r ] += et->giveVolume(p);
             }
         } else if ( em )    {
             for ( unsigned p = 0; p < 2; p++ ) {
                 r = ( std :: find(nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
-                m [ r ] += em->giveVolume(p);
+                if (r<s) m [ r ] += em->giveVolume(p);
             }
         }
     }
 
     //rearange everything and update weights
     double factor = m [ slaveid ];
+    cout << slaveid << " " << factor << m.size() << endl;
     double fullVolume = 0;
     for ( auto &s: m ) {
         fullVolume += s;
         s /= -factor;
     }
+    cout << "volumetric Average: check of volume " << fullVolume << endl;
     m [ slaveid ] = fullVolume / factor;
     nodes [ slaveid ] = masternode;
     dirs [ slaveid ] = masterdir;
@@ -198,8 +206,8 @@ void VolumetricAverage :: init() {
             multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end() );
         }
     }
-
     JointDoF :: init();
+
 }
 
 //////////////////////////////////////////////////////////
@@ -371,7 +379,8 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
         // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
 
         if ( i < numFreeDoFs - constraints.size() ) {
-            std :: cerr << "should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << '\n';
+            std :: cerr << "CONSTRAINT error: should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << endl;
+            cout << i << " " << jD->giveSlaveDoF() << " " <<  numFreeDoFs << " " << numFreeDoFs - constraints.size() << endl;
             exit(1);
         } else if ( i >= numFreeDoFs ) {
             // Point A = jD->giveSlaveNode()->givePoint();
