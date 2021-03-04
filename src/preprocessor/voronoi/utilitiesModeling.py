@@ -3019,6 +3019,23 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         mirroredPointsA = []
         mirroredPointsB = []
 
+    #"random sampling along the border"
+    if roughEdgeDogbone==3:
+        radius = 0.725*D
+        radiusSpread = minDist
+        angleLimitA =   -np.arcsin( 0.5*D / radius)
+        angleLimitB =   np.arcsin( 0.5*D / radius)
+        pointGenerators.generateNodesCircle2dRand(centreA, radius+radiusSpread, minDist, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = 0, radiusSpread = radiusSpread )
+        angleLimitA =   np.pi-np.arcsin( 0.5*D / radius)
+        angleLimitB =   np.pi+np.arcsin( 0.5*D / radius)
+        pointGenerators.generateNodesCircle2dRand(centreB, radius+radiusSpread, minDist, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent =0,
+        radiusSpread = radiusSpread)
+    """
+        node_coords = np.asarray(node_coords)
+        plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+        plt.show()
+    #"""
+
 
     if roughDogBone == True:
         #top rough rectangle
@@ -3064,19 +3081,12 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     print('done.')
     node_coords_dogbone = np.asarray(node_coords_dogbone)
 
-    """
-    plt.plot(node_coords_all[:,0], node_coords_all[:,1], 'o', color='black');
-    plt.plot(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1], 'x', color='red');
-    plt.show()
-    #"""
 
-    #mirrored circles. Not to be in the model at the end
-    #node_count = len(node_coords_out)
-    #nc = np.asarray(node_coords_out)
-    #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    #plt.show()
 
-    if roughEdgeDogbone == 2:
+
+
+
+    if roughEdgeDogbone == 2 or roughEdgeDogbone == 3:
         mirrored_coords = []
         #mirroring rough edge dogbone circular borders
         dogboneRadius = 0.725*D

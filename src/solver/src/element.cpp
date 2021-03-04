@@ -87,6 +87,8 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
         return ip_locs [ ipnum ].y;
     } else if ( code.compare("z") == 0 ) {
         return ip_locs [ ipnum ].z;
+    } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
+        return stats [ ipnum ]->giveMaterial()->giveId();
     } else {
         return stats [ ipnum ]->giveValue(code);
     }
