@@ -41,6 +41,7 @@ public:
     virtual void readFromLine(istringstream &iss) {
       std::cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
+    virtual bool isElastic(const bool &now=false) const;
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
@@ -226,6 +227,7 @@ public:
     virtual Vector giveStress(const Vector &strain);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     double giveDensity() const;
+    virtual bool isElastic(const bool &now=false) const { return true; };
 };
 
 //////////////////////////////////////////////////////////

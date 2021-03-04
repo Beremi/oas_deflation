@@ -18,12 +18,18 @@ void Node :: readFromLine(istringstream &iss) {
 
 
 std :: string Node :: giveLineToSave() const {
-  std :: string  str = this->name + "\t" + to_string(this->point.getX()) +
-      "\t" + to_string(this->point.getY());
+  std::ostringstream out;
+  out.precision(10);
+  out << this->name << '\t';
+
+  out << std::fixed << this->point.getX();
+  out << '\t';
+  out << std::fixed << this->point.getY();
   if ( this->dim == 3 ){
-    str += "\t" + to_string(this->point.getZ());
+    out << '\t';
+    out << std::fixed << this->point.getZ();
   }
-  return str;
+  return out.str();
 }
 
 //////////////////////////////////////////////////////////
@@ -115,5 +121,9 @@ double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 std :: string Particle :: giveLineToSave() const {
-  return Node :: giveLineToSave() + "\t" + to_string(this->r);
+  std::ostringstream out;
+  out.precision(10);
+  out << Node :: giveLineToSave() << "\t";
+  out << std :: fixed << this->r;
+  return out.str();
 };

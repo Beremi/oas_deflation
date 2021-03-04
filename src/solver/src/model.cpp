@@ -152,8 +152,8 @@ void Model :: clear() {
     bconds.setContainers(& funcs);
     elems.setContainers(& nodes, & bconds);
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
-    std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
+    // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 
     solver->setContainers(& elems, & nodes, & funcs);
-    std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
+    // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 }

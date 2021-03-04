@@ -72,6 +72,7 @@ public:
     unsigned giveDimension() const { return ndim; }
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     unsigned giveVTKCellType() const {return vtk_cell_type;};
+    virtual void changeMaterial( Material *newmat);
 };
 
 

@@ -41,6 +41,7 @@ public:
     BCContainer *giveBC() { return & bconds; };
     ConstraintContainer *giveConstraints() { return & constr; };
     ExporterContainer *giveExporters() { return & exporters; };
+    MaterialContainer *giveMaterials() { return & matrs; };
 
     unsigned giveDimension() const { return ndim; };
     void resetTime() { solver->setTime(0); solver->setStep(0); }
