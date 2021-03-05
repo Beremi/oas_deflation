@@ -140,6 +140,12 @@ class Model:
                 self.trials = int(r[i+1])
 
 
+            if (r[i]=='randomizeMaterial'):
+                if (int(r[i+1])==1): self.randomizeMaterial = True
+                if (int(r[i+1])==0): self.randomizeMaterial = False
+
+
+
             if (r[i]=='powerTes'):
                 if (int(r[i+1])==1): self.powerTes = True
                 if (int(r[i+1])==0): self.powerTes = False
@@ -476,7 +482,7 @@ class Model:
             self.areas,
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
-            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone)
+            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial)
 
         #if (self.printout == False): enablePrint()
         print ('done.')

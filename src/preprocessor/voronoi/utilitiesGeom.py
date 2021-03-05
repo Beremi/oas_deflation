@@ -179,22 +179,22 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0, node_indices_dogbone=[]):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0, node_indices_dogbone=[], randomizeMaterial=False):
     if (dim == 2):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled, node_indices_dogbone=node_indices_dogbone)
+            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial)
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeMechanics, activeTransport, minDist, mZ=mZ)
     if (dim == 3):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled)
+            vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, randomizeMaterial=randomizeMaterial)
         if (periodicModel == 1):
             vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3Dperiodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ,  notches = notches, isTube=isTube)
     return vert_count, verticesIdxDict, vertIdxStart, totalNodeCount
 
 
 #Extract geometry 2d
-def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None, coupled=False, node_indices_dogbone=[]):
+def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None, coupled=False, node_indices_dogbone=[], randomizeMaterial=False):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -370,7 +370,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
@@ -454,10 +454,9 @@ def ridgeWithinCenterBox(vertices, maxLim):
 
     return within
 
-def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False):
+def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, randomizeMaterial=False):
     start_time = time.time()
     dim = 3
-
 
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
@@ -647,7 +646,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
         saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
 
@@ -1302,16 +1301,18 @@ conj_grad_relative_maxit\t2\n' %(solStep,  maxStep, minStep, simTime, limitToler
      fl.close()
      print('done.')
 
-def saveMaterials (master_folder,materials):
+def saveMaterials (master_folder,materials, regime = 'w'):
+    print()
     print ('Saving materials...', end='')
     sys.stdout.flush()
-    ### MATERIALS
-    with open(os.path.join(master_folder,materialsFile), 'w') as f:
-        headerLine = 'matType\tYoungM\tPoisson\tTranspC\tTranspS\tDensity'
-       # f.write("%s\n" % headerLine )
-        for item in materials:
-            f.write("%s\n" % item.getString() )
-          # print (item.getString())
+
+    if not os.path.exists(os.path.join(master_folder,materialsFile)):
+        with open(os.path.join(master_folder,materialsFile), regime) as f:
+            for item in materials:
+                f.write("%s\n" % item.getString() )
+    else:
+        print ('materials already saved, skipping...', end='')
+
     print('done')
 
 def saveFunctions (master_folder,functions):
@@ -1385,7 +1386,8 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     sys.stdout.flush()
 
 
-def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None, notches = None):
+
+def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None, notches = None, randomizeMaterial = False):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
@@ -1420,7 +1422,6 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                         if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2]) < mZ[rebar][1] ):
                             inRebar = True
                     if inRebar:
-                        #print('rebar element')
                         mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
                     else:
                         mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
@@ -1434,7 +1435,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
-                    #print('found ela element')
+
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
@@ -1602,10 +1603,13 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         print('done.')
 
 
+    if randomizeMaterial == True:
+        randomizeMechMaterial(master_folder, mechElemRidges, nodes, materialType='mars')
+
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
-        print(mechElemRidges[0])
+        #print(mechElemRidges[0])
         np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
 
@@ -1620,6 +1624,55 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
             np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
     sys.stdout.flush()
+
+
+def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType='mars'):
+    print('Randomizing materials...')
+    materials = []
+    for i in range(len(mechanicalRidges)):
+        sys.stdout.write('\r'+'Mech elem. nr. ' + str(i) + '/' + str(len(mechanicalRidges)))
+        sys.stdout.flush()
+
+        element = mechanicalRidges[i]
+    #    print(element)
+
+        nodeA = nodes[int(element[0])]
+        nodeB = nodes[int(element[1])]
+        integrationPoint = (nodeA-nodeB) /2
+
+        material = getRandomizedMaterialProperties(integrationPoint, materialType)
+        materials.append(material)
+
+        #zmena indexu materialu prvku
+        element[-1] = i
+
+
+
+    saveMaterials(master_folder, materials)
+
+
+
+def getRandomizedMaterialProperties(integrationPoint, materialType='mars'):
+    #initial material properties
+    if materialType == 'mars':
+        initYoung = 30e9
+        initAlpha = 0.25
+        initDensity = 2200
+        initFt = 2.5e6
+        initGt = 50
+
+        #tady se zrandomizuji parametry materialu
+        randCoef =  np.random.uniform(low=0.9, high=1.1)
+        myYoung = initYoung * randCoef
+        myAlpha = initAlpha * randCoef
+        myDensity = initDensity * randCoef
+        myFt = initFt * randCoef
+        myGt = initGt * randCoef
+
+        material =  utilitiesMech.MarsMaterial(myYoung, myAlpha, myDensity, myFt, myGt)
+
+    return material
+
 
 
 def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False, mZ=[]):

@@ -25,7 +25,7 @@
 # roughEdgeDogbone 0 - presne nasamplovane kruznice
 # roughEdgeDogbone 1 - prvky s obema nody v modelu 
 # roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-#Model 2d_dogbone dogboneD 0.3 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 10000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 3
+Model 2d_dogbone dogboneD 0.3 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 10000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 3 randomizeMaterial 1
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
@@ -65,7 +65,7 @@
 #Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 1 activeMechanics 1 coupled 1 trials 1000
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0.5 loadWidth 0.01 minDist 0.007 fracZoneWidth 0.1 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.01
 #
-Model 2d_corrosionRebar Xsize 0.06 Ysize 0.1 minDist 0.002 rebarMinDist 0.0015 rebarDiameter 0.02 rebarCount 2 rebarDepth 0.02  activeTransport 1 activeMechanics 1 coupled 1 trials 10000
+#Model 2d_corrosionRebar Xsize 0.06 Ysize 0.1 minDist 0.002 rebarMinDist 0.0015 rebarDiameter 0.02 rebarCount 2 rebarDepth 0.02  activeTransport 1 activeMechanics 1 coupled 1 trials 10000
 #
 #
 ####################################################################################
