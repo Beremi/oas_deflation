@@ -108,7 +108,7 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None):
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None):
     #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
@@ -183,6 +183,19 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
         boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
         matZ.append (boundB1)
         materialZones.append(matZ)
+
+    #centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+    if (model=='2d_corrosionRebar'):
+        for r in range(rebarCount):
+            radius = rebarDiameter/2 * 1.01
+            center = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            matZ = []
+            matZ.append('circle')
+            matZ.append(radius)
+            matZ.append(center)
+            matZ.append(rebarCount)
+            materialZones.append(matZ)
+
 
     return materialZones
 
@@ -850,6 +863,92 @@ def create3dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
     #return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
 
     return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, volumes, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+
+
+
+
+
+
+
+def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth):
+    print('Creating corrosion rebar model...')
+    dim=2
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    sampleBorders = True
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders)
+
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    print('done.')
+
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
+
+    functions = []
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 mech loading function
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #2 mech loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, -1e-3]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    govNodesTrspt = []
+    govNodesTrsptBC = []
+    rigidPlatesTrspt = []
+
+
+    ### selecting vertices on the bottom surface
+    boundA = np.zeros(2)-1e-8
+    boundB = np.array([maxLim[0], 1e-8])
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    fn1 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn1)
+
+    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptLeftRigidPlate.setDirectNodes(faces1)
+    trsptLeftRigidPlateMechBC = np.array([0,-1])
+    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+
+
+    #"""
+    ### selecting vertices on the top surface
+    boundA = np.array([-1e-8, maxLim[1]-1e-8])
+    boundB = np.array([maxLim[0], maxLim[1]+1e-8])
+    faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
+    trsptRightRigidPlate.setDirectNodes(faces2)
+    trsptRightRigidPlateMechBC = np.array([3,-1])
+    rigidPlatesTrspt.append(trsptRightRigidPlate)
+    govNodesTrspt.append(np.array([ -1, -1, -1]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+
+
+
+
+    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+
 
 
 
@@ -2762,6 +2861,79 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
 
 
     return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
+
+
+
+
+def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders):
+    dim = 2
+
+    node_coords = []
+
+
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+    #an indent due to mirroring of the data for voronoi tess.
+    indent = 1e-8
+    indentRP = 1e-7
+
+    node_coords.append(np.array([indent, indent]))
+
+    if sampleBorders:
+        #top
+        nodeA = np.array([indent, maxLim[1]-indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+        leftRigidPlateMechBC = np.array([-1, 2,0,   -1,-1,-1])
+        leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, maxLim[1]-indentRP, maxLim[1]+indentRP ]))
+        rigidPlates.append(leftRigidPlate)
+        govNodes.append(np.array([ maxLim[0]/2, maxLim[1]-indent ]))
+        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+        #bottom
+        nodeA = np.array([indent, indent])
+        nodeB = np.array([maxLim[0]-indent, indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+        rightRigidPlateMechBC = np.array([0, 1,0,   -1,-1,-1])
+        rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
+        rigidPlates.append(rightRigidPlate)
+        govNodes.append(np.array([ maxLim[0]/2, indent ]))
+        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+        #left
+        nodeA = np.array([indent, indent])
+        nodeB = np.array([indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+        #right
+        nodeA = np.array([maxLim[0]-indent, indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+
+    #rebar
+    for r in range (rebarCount):
+        #rebar edge
+        centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+        pointGenerators.generateNodesCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials )
+        #rebar crossection
+        pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
+
+    #rect
+    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+
+    node_coords = np.asarray(node_coords)
+    plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+    plt.show()
+
+
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates
 
 
 

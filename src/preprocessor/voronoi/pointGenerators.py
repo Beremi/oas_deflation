@@ -447,6 +447,30 @@ def generateOrtogrid_variable(maxLim, minDist, node_coords, dimensions):
         node_coords.append(orthogrid[i,:])
 
 
+def generateNodesOrtoCircle2dRand(center, radius, minDist, node_coords, trials):
+    print ('Generating a 3d circle surface. Ctr [%f, %f], Rad: %f' %(center[0],center[1], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInCircle(center, radius, 0)
+            coords = np.copy(coords[0:2])
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+
 def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d circle surface. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
@@ -468,6 +492,8 @@ def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_co
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
+
+
 
 def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d annulus surface. Ctr [%f, %f, %f], Rad: %f, Thick: %f' %(center[0],center[1],center[2], radius, thickness))
@@ -545,24 +571,32 @@ def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, n
             node_coords.append(coords)
 
 def randPointInCircle(center, radius, directionDim):
+
+
     angle = np.random.uniform() * np.pi * 2
 
-    point = np.zeros(3)
+    point = np.zeros(len(center))
 
     rn = np.random.uniform()
 
     if (directionDim == 0 ):
-        point[1] = radius * np.cos(angle) * rn
-        point[2] = radius * np.sin(angle) * rn
+        if len(center) == 2:
+            point[0] = radius * np.cos(angle) * rn
+            point[1] = radius * np.sin(angle) * rn
+        if len(center) == 3:
+            point[1] = radius * np.cos(angle) * rn
+            point[2] = radius * np.sin(angle) * rn
+    """
     if (directionDim == 1):
         point[0] = radius * np.cos(angle) * rn
         point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
         point[0] = radius * np.cos(angle) * rn
         point[1] = radius * np.sin(angle) * rn
+    """
 
     point += center
-    return point
+    return point[0:len(center)]
 
 def randPointInAnnulus(center, radius, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
@@ -608,8 +642,8 @@ def randPointInTube(center, radius, height, thickness, directionDim):
     return point
 
 
-def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = None, radiusSpread = 0):
-    print ('Generating a 2d circle border. Ctr [%f, %f], Rad: %f, Angle limit +-%f' %(center[0],center[1], radius, np.degrees(angleLimitA-angleLimitB)))
+def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = 0, radiusSpread = 0):
+    #print ('Generating a 2d circle border. Ctr [%s, %s], Rad: %s, Angle limit +-%s' %(center[0],center[1], radius, np.degrees(angleLimitA-angleLimitB)))
 
     mirroredPoints = []
     tr=0

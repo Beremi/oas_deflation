@@ -375,7 +375,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, coupled=coupled)
+        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, coupled=coupled, mZ=mZ)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
@@ -1412,7 +1412,20 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                 onlyMechNodesConnected = False
 
             if (dim==2):
-                if ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
+
+                #rebars
+                if (mZ[0][0]=='circle'):
+                    inRebar = False
+                    for rebar in range (mZ[0][3]):
+                        if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2]) < mZ[rebar][1] ):
+                            inRebar = True
+                    if inRebar:
+                        #print('rebar element')
+                        mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                    else:
+                        mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+
+                elif ( (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
                       mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeB[1] < mZ[0][1][1]) or
@@ -1424,6 +1437,8 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                     #print('found ela element')
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
+
+
 
             if (dim==3):
                 triangle = False
@@ -1460,7 +1475,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                       mZ[1][0][1] < nodeB[1] < mZ[1][1][1] and
                       mZ[1][0][2] < nodeB[2] < mZ[1][1][2] )) ):
                       mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([3])) )
-                      print('node in noptch')
+                      print('node in notch')
 
                 if ( triangle == True ):
                       isPresentA = False
@@ -1607,7 +1622,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
     sys.stdout.flush()
 
 
-def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False):
+def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False, mZ=[]):
     print('Creating TRSPRT elements...', end='')
     sys.stdout.flush()
     transportElements = []
@@ -2026,6 +2041,32 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     print('done. ', end='')
     #print('Updated elems: %d' %updatedElems)
     print('Wrong elems: %d' %wrongRidges)
+
+
+    if len(mZ)>0:
+        print ('Material zones detected for transport')
+        if dim == 2:
+            for elem in transportElements:
+                if mZ[0][0] =='circle':
+                    inRebar = False
+                    vo = np.asarray(vertices_out)
+                    vertA = vo[int(elem.vertexA - len(nodes_out)-len(aux_nodes)),0:2]
+                    vertB = vo[int(elem.vertexB - len(nodes_out)-len(aux_nodes)),0:2]
+
+                    for rebar in range (mZ[0][3]):
+                        if ((np.linalg.norm(vertA-mZ[rebar][2]) < mZ[rebar][1] ) and
+                        (np.linalg.norm(vertB-mZ[rebar][2]) < mZ[rebar][1] )):
+                            inRebar = True
+
+                    if inRebar:
+                        #print('inrebar')
+                        elem.material = 3
+                        #print(elem.material)
+
+
+
+
+
     print('Saving TRSPRT elements...', end='')
     sys.stdout.flush()
     print(coupled)

@@ -95,7 +95,27 @@ class Model:
 
         self.node_indices_dogbone = []
 
+
+        self.rebarMinDist = None
+        self.rebarDiameter = None
+        self.rebarCount = None
+        self.rebarDepth = None
+
+
+
         for i in range (len(r)):
+
+            if (r[i]=='rebarMinDist'):
+                self.rebarMinDist = float(r[i+1])
+            if (r[i]=='rebarDiameter'):
+                self.rebarDiameter = float(r[i+1])
+            if (r[i]=='rebarCount'):
+                self.rebarCount = int(r[i+1])
+            if (r[i]=='rebarDepth'):
+                self.rebarDepth = float(r[i+1])
+
+
+
 
             if (r[i]=='printout'):
                 if r[i+1] == 1:
@@ -270,6 +290,9 @@ class Model:
         if self.modelType == '3d_coupledArtificialCrack':
             self.run_3d_coupledArtificialCrack()
 
+        if self.modelType == '2d_corrosionRebar':
+            self.run_2d_corrosionRebar()
+
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
@@ -412,6 +435,11 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
+
+    def run_2d_corrosionRebar(self):
+
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth)
+        self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
 
 
     def run_2d_coupledRVE(self):
