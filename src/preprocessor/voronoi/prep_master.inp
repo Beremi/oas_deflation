@@ -55,7 +55,7 @@
 #
 #Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.005 activeTransport 1
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
-Model 3d_BiparvaTubeTransport minDist 0.005 cylinderRad 0.07 cylinderHeight 0.1 tubeThickness 0.02 activeTransport 1 trials 10000 activeMechanics 0
+Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.03 cylinderHeight 0.03 tubeThickness 0.01 activeTransport 1 activeMechanics 1 coupled 1 trials 10000 
 #
 #
 ####################################################################################

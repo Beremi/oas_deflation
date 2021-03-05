@@ -331,8 +331,8 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
 def mirror_dataTube(data, center, radius, height, thickness, directionDim):
     data = np.asarray(data)
-    outerRad = radius + 1e-2
-    innerRad = radius - thickness - 1e-2
+    outerRad = radius * 1.01
+    innerRad = (radius - thickness)*0.99
 
     if (directionDim == 0):
         dataOut =  np.vstack((data,

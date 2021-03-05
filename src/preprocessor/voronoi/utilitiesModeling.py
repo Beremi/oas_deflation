@@ -2283,11 +2283,19 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     functions = []
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
-    fn1 = utilitiesNumeric.constantFunc(1)
+
+
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-3]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    fn1 = utilitiesNumeric.constantFunc(100)
     functions.append (fn1)
 
     ### sampling of nodes
-    node_coords, mechBC_merged, mechIC_merged = assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials)
+    node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials)
     node_coords = np.asarray(node_coords)
 
     fig = plt.figure()
@@ -2309,7 +2317,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     modelVertices = utilitiesGeom.returnSelectedPtsRadial (radius-thickness-1e-3 , radius+1e-3 , vor.vertices)
     ### selecting vertices on the outer surface
 
-    outerFaceBC = np.array([1,-1])
+    outerFaceBC = np.array([2,-1])
     outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices)
     for i in range (len(outerFace)):
         trsBC = utilitiesMech.transportBC(outerFace[i], outerFaceBC)
@@ -2322,7 +2330,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     if SHOW_PLOT:
         plt.show()
 
-    innerFaceBC = np.array([0,-1])
+    innerFaceBC = np.array([-1,-1])
     innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices)
     for i in range (len(innerFace)):
         trsBC = utilitiesMech.transportBC(innerFace[i], innerFaceBC)
@@ -2338,8 +2346,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
 
 
     radii = np.zeros((len(node_coords))) + minDist
-
-    return node_coords, mechBC_merged, transportBC_merged, vor, volumes, functions, radii
+    return node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii
 
 
 
@@ -5665,29 +5672,51 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
     node_coords = []
     mechBC_merged = []
     mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
 
     mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
-    node_coords.append( np.array([  0,  radius-thickness/2,  0 ]))
+    node_coords.append( np.array([  indent,  radius-thickness/2,  0 ]))
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
-    mechBC_merged.append(mBC)
+    #mechBC_merged.append(mBC)
 
     ###############generating of points supported surface left face ###############
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-thickness, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-thickness, directionDim, minDist, node_coords, trials)
     pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
+
+    indentRP = 1e-6
+    leftRigidPlateMechBC = np.array([0, 0,0, 0,-1,-1,  -1,-1,-1,   -1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
+    -indentRP, indentRP,
+    -radius-indentRP, radius+indentRP,
+    -radius-indentRP, radius+indentRP, ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ 0,0,0 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
 
     nodeA = center.copy()
     nodeA[directionDim] += float(height)
 
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-thickness, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-thickness, directionDim, minDist, node_coords, trials)
     pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
 
+    rightRigidPlateMechBC = np.array([1, 0,0, -1,-1,-1,  -1,-1,-1,   -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
+    -indentRP+height, indentRP+height,
+    -radius-indentRP, radius+indentRP,
+    -radius-indentRP, radius+indentRP, ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ height ,0,0 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
 
     ###############generating of points rectangular volume ###############
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    #pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
 
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness+1e-5, height, directionDim, minDist,  node_coords, trials)
+    #pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness+1e-5, height, directionDim, minDist,  node_coords, trials)
     #######################################################################
 
     ###############generating of points rectangular volume ###############
@@ -5695,7 +5724,7 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
     #######################################################################
 
 
-    return node_coords, mechBC_merged, mechInitC_merged
+    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
 
 
 
