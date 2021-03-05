@@ -673,7 +673,7 @@ def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angl
     if (mirrorIndent >0):
         return mirroredPoints
 
-def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = None, radiusSpread=0):
+def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = 0, radiusSpread=0):
     if (angleLimitA == None): angle = np.random.uniform() * np.pi * 2
     else:   angle = np.random.uniform(low=angleLimitA, high=angleLimitB) #* np.pi * 2
 

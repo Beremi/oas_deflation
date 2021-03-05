@@ -139,7 +139,7 @@ class Model:
             if (r[i]=='trials'):
                 self.trials = int(r[i+1])
 
-
+            self.randomizeMaterial = False
             if (r[i]=='randomizeMaterial'):
                 if (int(r[i+1])==1): self.randomizeMaterial = True
                 if (int(r[i+1])==0): self.randomizeMaterial = False
