@@ -34,7 +34,7 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
 
   std :: string this_file_path = ( resultDir / buffer ).string();
 
-  elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step);
+  elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step, false);
 
   if ( remove_previous ){
     if ( this->last_saved_file.compare("none") != 0 ){

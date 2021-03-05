@@ -1,4 +1,5 @@
 #include "element_container.h"
+#include <algorithm>
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -115,17 +116,33 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 // }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step) const {
+void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step, const bool &saveNodeIds) const {
     std :: ofstream outputfile( filepath );
     unsigned stat_id = 0;
+    unsigned num;
     if ( outputfile.is_open() ) {
-        outputfile << "#elem_id stat_id internal_variables...";
-        outputfile << "\ntime " << time_now << " " << step;
+        outputfile << "#elem_id stat_id mat_id ";
+        if ( saveNodeIds ) {
+          outputfile << "num_nodes node ids ... ";
+        }
+        outputfile << "internal_variables ...";
+        if ( time_now != 0 && step != 0 ){
+          outputfile << "\ntime " << time_now << " " << step;
+        }
         for ( auto const &elem_id : elems_to_save) {
           stat_id = 0;
           for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats()){
             // elem_id - stat_id -  mat_id - internal_variables
-            outputfile << "\nmatStat\t" << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t' << mat_stat->giveLineToSave();
+            outputfile << "\nmatStat\t" << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t';
+            if ( saveNodeIds ){
+              num = this->giveElement(elem_id)->giveNodes().size();
+              outputfile << '\t' << num;
+              for ( auto const &nod : this->giveElement(elem_id)->giveNodes() ){
+                // std::cout << "node iD = " << nodes->giveNodeId( nod ) << '\n';
+                outputfile << '\t' << nodes->giveNodeId( nod );
+              }
+            }
+            outputfile << '\t' << mat_stat->giveLineToSave();
           }
         }
         outputfile.close();
@@ -161,7 +178,7 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str ) {
 };
 
 
-void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step) {
+void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool &get_time_from_file) {
   if ( this->file_to_load_from.size() != 0 ){
     string line, param;
     unsigned elem_id, stat_id, mat_id, st;
@@ -192,21 +209,23 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
         exit(EXIT_FAILURE);
       }
     }
-    if ( initial_times.size() == 0 ){
-      std::cerr << "could not determine the starting time " << '\n';
-      std::cerr << "there is no line beginning with \'time\'" << '\n';
-      exit(EXIT_FAILURE);
-    }
-    // check if time and step in all the files with matStats
-    for ( unsigned i = 0; i < initial_times.size(); i++ ){
-      if ( fmax(initial_times[i] - initial_times[0], initial_steps[i] - initial_steps[0]) > 1e-6){
-        std::cerr << "times or steps in various files containing matStats differ" << '\n';
+    if ( get_time_from_file ){
+      if ( initial_times.size() == 0 ){
+        std::cerr << "could not determine the starting time " << '\n';
+        std::cerr << "there is no line beginning with \'time\'" << '\n';
         exit(EXIT_FAILURE);
       }
+      // check if time and step in all the files with matStats
+      for ( unsigned i = 0; i < initial_times.size(); i++ ){
+        if ( fmax(initial_times[i] - initial_times[0], initial_steps[i] - initial_steps[0]) > 1e-6){
+          std::cerr << "times or steps in various files containing matStats differ" << '\n';
+          exit(EXIT_FAILURE);
+        }
+      }
+      // and set them accordign to values from files
+      ini_step = initial_steps[0];
+      ini_time = initial_times[0];
     }
-    // and set them accordign to values from files
-    ini_step = initial_steps[0];
-    ini_time = initial_times[0];
   }
 }
 
@@ -221,9 +240,6 @@ void ElementContainer :: init() {
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
     }
-    // if ( this->file_to_load_from.compare("none") != 0 ){
-    //   this->readElemStatsFromFile();
-    // }
 }
 
 //////////////////////////////////////////////////////////
@@ -424,4 +440,51 @@ void ElementContainer :: findElementFriends() {
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->findElementFriends(this);
     }
+}
+
+
+Element* ElementContainer :: giveElementConnectingNodes(std :: vector < unsigned > &node_ids) const {
+
+  std :: sort( node_ids.begin(), node_ids.end() );
+  // std::cout << "this elem should connect nodes";
+  // for ( auto const &nid : node_ids ) {
+  //   std::cout << " " << nid;
+  // }
+  // std::cout << '\n';
+
+  std :: vector < unsigned > elem_node_ids;
+  for ( auto const &el : this->elems ){
+    for ( auto const &nod : el->giveNodes() ){
+      for ( auto const &nID : node_ids ){
+        if ( this->nodes->giveNodeId(nod) == nID ){
+          // std::cout << "this elem connects nodes";
+          for ( auto const &n : el->giveNodes() ){
+            // std::cout << " " << this->nodes->giveNodeId(n);
+            elem_node_ids.push_back( this->nodes->giveNodeId(n) );
+          }
+          // std::cout << '\n';
+          if ( elem_node_ids.size() == node_ids.size() ){    ///< for other than rbc elems
+            // std::cout << "and what about here?" << '\n';
+            std :: sort ( elem_node_ids.begin(), elem_node_ids.end() );
+            for ( unsigned i = 0; i < node_ids.size(); i++){
+              if ( elem_node_ids[ i ] != node_ids[ i ] ) {
+                break;
+              } else {
+                if ( i == node_ids.size() - 1 ){
+                  return el;
+                }
+              }
+            }
+          }
+          elem_node_ids.clear();
+        }
+      }
+    }
+  }
+  std::cerr << "did not find any element connecting nodes";
+  for ( auto const &nid : node_ids ) {
+    std::cerr << " " << nid;
+  }
+  // std::cerr << '\n';
+  return nullptr;
 }

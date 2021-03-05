@@ -11,7 +11,6 @@
 #include "geometry.h"
 #include "model.h"
 
-
 Vector calcPrincipalStress(const Matrix &stress) {
   Vector principalStress;
   principalStress.resize(stress.numCols());
@@ -108,14 +107,13 @@ private:
 
     double time_before_step; // if remesh, step will be restatrted
 
-    // true = keep forever, false = remesh if needed
-    std :: vector< bool > keepThisNodeForever;  // set on init() and set it only for particles
-
     std :: vector< Point > nodeCentersToRmesh;  // clear after remesh
-    // std :: vector< Point > centersPreviouslyRmeshed;   // clear after remesh
 
-    std :: vector< Region * > regionsNotToRemesh; // can be specified on the input, as well as by centers of already remeshed circles
-    // furthermore will be stored in memory
+    std :: vector< Region * > regionsNotToRemesh; // can be specified on the input
+    std :: vector< Region * > fineRegions;  // regions previously remeshed
+    unsigned remeshMaterialId;
+
+    std :: vector < unsigned > nodesToKeep;
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCentersToRemesh() {
@@ -132,123 +130,59 @@ private:
         }
     }
 
-    // void saveNodesToKeepPrevious() {
-    //     Node *n;
-    //     Point p;
-    //     bool to_be_exported;
-    //     // create vector of centers to remove nodes from
-    //     std :: vector< Sphere >regionsToRemove;
-    //     for ( auto const &cent : nodeCentersToRmesh ) {
-    //         regionsToRemove.push_back(Sphere(cent, this->radius2) );
-    //     }
-    //
-    //     // save nodes that are going to be kept
-    //     // maybe here can be nodes.out to distinguish between old and the new ones
-    //     std :: string node_file = "nodes.inp";
-    //     ofstream outputfile(fs :: path(this->remeshDir) / node_file);
-    //     if ( outputfile.is_open() ) {
-    //         outputfile << std :: scientific;
-    //         outputfile.precision(6);
-    //         outputfile << "#nodesToLoad";
-    //         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
-    //             n = BaseSolver :: nodes->giveNode(i);
-    //             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0) {
-    //                 to_be_exported = true;
-    //                 Particle *part = static_cast< Particle * >( n );
-    //                 p = n->givePoint();
-    //                 // check if node is in region to remesh
-    //                 for ( auto const &regRemove : regionsToRemove ) {
-    //                     if ( regRemove.isInside(p) ) {
-    //                         to_be_exported = false;
-    //                         break;
-    //                     }
-    //                 }
-    //                 // also check if it is not in region where remesh is restricted
-    //                 // TODO this should be done in better way
-    //                 for ( auto const &regKeep : regionsNotToRemesh ) {
-    //                     if ( regKeep->isInside(p) ) {
-    //                         to_be_exported = true;
-    //                         break;
-    //                     }
-    //                 }
-    //                 if ( to_be_exported ) {
-    //                     outputfile << "\nparticle\t" << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\t' << part->giveRadius();
-    //                 }
-    //             }
-    //         }
-    //         outputfile.close();
-    //     }
-    // };
-
     void saveNodesToKeep() {
-        std :: vector< unsigned > nodesToKeep;
         Node *n;
         Point p;
-        bool to_be_exported;
         // create vector of centers to remove nodes from
-        std :: vector< Sphere >regionsToRemove;
-        for ( auto const &cent : nodeCentersToRmesh ) {
-            regionsToRemove.push_back(Sphere(cent, this->radius2) );
+        std :: vector< Region* >regionsToRemove;
+        regionsToRemove.resize(this->nodeCentersToRmesh.size());
+        unsigned rr = 0;
+        for ( auto const &cent : this->nodeCentersToRmesh ) {
+            regionsToRemove[rr++] = new Sphere(cent, this->radius2);
         }
-
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
         std :: string node_file = "nodes.inp";
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
-            n = BaseSolver :: nodes->giveNode(i);
-            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
-                to_be_exported = true;
-                //Particle *part = static_cast< Particle * >( n ); //JE: This is not used anywhere else;
-                p = n->givePoint();
-                // check if node is in region to remesh
-                for ( auto const &regRemove : regionsToRemove ) {
-                    if ( regRemove.isInside(p) ) {
-                        to_be_exported = false;
-                        break;
-                    }
-                }
-                // also check if it is not in region where remesh is restricted
-                // TODO this should be done in better way
-                for ( auto const &regKeep : regionsNotToRemesh ) {
-                    if ( regKeep->isInside(p) ) {
-                        to_be_exported = true;
-                        break;
-                    }
-                }
-                if ( to_be_exported ) {
-                    nodesToKeep.push_back(i);
-                    // outputfile << "\nparticle\t" << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\t' << part->giveRadius();
-                }
+          n = BaseSolver :: nodes->giveNode(i);
+          if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
+            p = n->givePoint();
+            // check if node is in region to remesh
+            if ( isInsideRegions(regionsToRemove, p) && !isInsideRegions(this->regionsNotToRemesh, p) && !isInsideRegions(this->fineRegions, p) ) {
+              continue;
             }
+            this->nodesToKeep.push_back(i);
+          }
         }
 
         BaseSolver :: nodes->saveToFile(
           (fs :: path(this->remeshDir) / node_file).string(),
-          nodesToKeep
+          this->nodesToKeep
         );
+        for ( auto r : regionsToRemove ) {
+          delete r;
+        }
 
     };
 
     //////////////////////////////////////////////////////////////////////////////
-    // void saveNodeStatuses() {
-    //   //TODO  save this only for Particles, otherwise it will be loading and saving a lot of useless data
-    //   // NOTE - need to distinguish between structural particle and master nodes that are purely virtual
-    //   std :: string centers = "nodalStatuses.out";
-    //   ofstream outputfile( fs :: path(this->remeshDir) / centers );
-    //   if ( outputfile.is_open() ) {
-    //     outputfile << std :: scientific;
-    //     outputfile.precision(6);
-    //     outputfile << "#nodalStatuses - keepThisNodeForever or not?";
-    //     for ( auto const & ke : keepThisNodeForever ) {
-    //       outputfile << "\n" << int(ke);
-    //     }
-    //     outputfile.close();
-    //   }
-    // }
-
-    //////////////////////////////////////////////////////////////////////////////
     void saveElemStatuses() {
-        // TODO
+      std :: vector < unsigned > elems_to_save;
+      Element *el;
+      Sphere sph;
+      for ( unsigned i = 0; i < BaseSolver :: elems->giveSize(); i++){
+        el = BaseSolver :: elems->giveElement(i);
+        for ( auto const & mstat : el->giveMaterialStats() ){
+          if ( !mstat->isElastic( false ) ){ // save elems that were already damaged (in past) now=false checks damage (true checks temp_damage)
+            elems_to_save.push_back( el->giveID() );
+            break;
+          }
+        }
+      }
+      this->elemStatuses = fs :: path(this->remeshDir) / "elemStats.out";
+      BaseSolver :: elems->saveElemStatsToFile( ( this->elemStatuses ).string(),
+                                  elems_to_save
+                                 );
     }
     //////////////////////////////////////////////////////////////////////////////
     void saveRemeshData() {
@@ -257,8 +191,6 @@ private:
 
         saveNodesToKeep();
 
-        // NOTE maybe there is no need to save elems, maybe I can just save field relating elems and nodes and after remsh just get the information about which elem it was previously and copy it into some new container
-        // TODO prepare saveElemStatuses for the future anyway
         saveElemStatuses();
     }
 
@@ -290,59 +222,86 @@ private:
     }
 
     //////////////////////////////////////////////////////////////////////////////
-    // void readNodeStatuses() {
-    //   string line;
-    //   bool remeshAllowed;
-    //   ifstream inputfile(this->nodeStatuses.c_str() );
-    //   if ( inputfile.is_open() ) {
-    //     while ( getline(inputfile >> std :: ws, line) ) {
-    //       if ( line.empty() ) {
-    //           continue;
-    //       }
-    //       if ( line.at(0) == '#' ) {
-    //           continue;
-    //       }
-    //       istringstream iss(line);
-    //       iss >> remeshAllowed;
-    //       this->keepThisNodeForever.push_back(remeshAllowed);
-    //     }
-    //     inputfile.close();
-    //     cout << "Input file '" <<  this->nodeStatuses.string() << "' succesfully loaded; " << keepThisNodeForever.size() << " nodes found" << '\n';
-    //   } else {
-    //       cerr << "Error: unable to open input file '" <<  this->nodeStatuses.string() <<  "'" << endl;
-    //       exit(EXIT_FAILURE);
-    //   }
-    // }
+    unsigned giveNewNodeId(const unsigned &oldNodeId) {
+      auto res = std :: find(std :: begin(this->nodesToKeep), std :: end(this->nodesToKeep), oldNodeId);
+      if (res == this->nodesToKeep.end()) {
+        // if old id is not in vector, return given oldNodeId
+        return oldNodeId;
+      }
+      return std :: distance(std :: begin(this->nodesToKeep), res);
+    }
 
-    //////////////////////////////////////////////////////////////////////////////
+
+    void setMaterialInFineRegions() {
+      // only the elements in fine regions have nonlinear material
+      Element* el;
+      // unsigned change = 0;
+      for ( unsigned i = 0; i < BaseSolver :: elems->giveSize(); i++) {
+        // change = 0;
+        el = BaseSolver :: elems->giveElement(i);
+        if ( isInsideRegions( this->fineRegions, el ) ) {
+          el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId));
+        }
+      }
+    }
+
     void readElemStatuses() {
-        // TODO
+      string line, param;
+      unsigned elem_id, stat_id, mat_id, num, node_id;
+      vector < unsigned > node_ids;
+      Element* el;
+      std :: string node_ids_string;
+
+      ifstream inputfile( this->elemStatuses.string().c_str() );
+      if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+          if ( line.at(0) == '#' || line.empty() ) {
+            continue;
+          }
+          istringstream iss(line);
+          iss >> param;
+          if (param.compare("matStat") == 0) {
+            iss >> elem_id >> stat_id >> mat_id >> num;
+            node_ids_string = "";
+            for ( unsigned i = 0; i < num; i++ ){
+              iss >> node_id;
+              node_ids_string += "\t" + std :: to_string(node_id);
+              // map old nodes to new
+              node_ids.push_back( this->giveNewNodeId(node_id) );
+            }
+            // find element connecting these nodes
+            el = BaseSolver :: elems->giveElementConnectingNodes(node_ids);
+            if ( el ) {
+              // read material status from file
+              // std::cout << "elem found" << '\n';
+              el->giveMatStatus(stat_id)->readFromLine(iss);
+            } else {
+              // if could not find elem connecting nodes, el = nullptr
+              std :: cerr << " old node ids: " << node_ids_string << '\n';
+            }
+          }
+          node_ids.clear();
+        }
+        inputfile.close();
+      } else {
+        std::cerr << "there is no such file " << this->elemStatuses.string() << '\n';
+        exit(EXIT_FAILURE);
+      }
+
     }
 
     //////////////////////////////////////////////////////////////////////////////
     void loadRemeshData() {
-        std :: cout << "old nodes size: " << BaseSolver :: nodes->giveSize() << std :: endl;
-        std :: cout << "old elem size: " << BaseSolver :: elems->giveSize() << std :: endl;
-
         masterModel->clear();
 
-        std :: cout << "step: " << BaseSolver :: giveStepNumber() << ", time: " << BaseSolver :: giveTime() << '\n';
-
         masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false );
-        // masterModel->print_res_dir();
-
 
         // update the dof fields etc
         std :: cout << "updated model initialization ..." << '\n';
         masterModel->init(false);
 
-        std :: cout << "step: " << BaseSolver :: giveStepNumber() << ", time: " << BaseSolver :: giveTime() << '\n';
-
-
-        std :: cout << "updated nodes size: " << BaseSolver :: nodes->giveSize() << std :: endl;
-        std :: cout << "updated elem size: " << BaseSolver :: elems->giveSize() << std :: endl;
-
-        // TODO JK how to keep previous elem container just to keep statuses corresponding to not remeshed elems?
+        this->setMaterialInFineRegions();
+        this->readElemStatuses();
     }
 
 
@@ -354,31 +313,22 @@ private:
         ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
         // calcuulate principal stresses
         Node *n;
-        bool checkStress;
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
-            checkStress = true;
-            n = BaseSolver :: nodes->giveNode(i);
-            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0) {
-                for ( auto const &reg : regionsNotToRemesh ) {
-                    if ( reg->isInside(n->givePoint() ) ) {
-                        checkStress = false;
-                        break;
-                    }
-                }
-                if ( checkStress ) {
-                    if ( calcMaxPrincipalStress(nodal_stress [ i ]) > adaptThreshold ) {
-                        nodeCentersToRmesh.push_back(n->givePoint() );
-                    }
-                }
+          n = BaseSolver :: nodes->giveNode(i);
+          if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0) {
+            if ( ( !isInsideRegions(this->regionsNotToRemesh, n->givePoint() ) && !isInsideRegions(this->fineRegions, n->givePoint() ) ) ) {
+              if ( calcMaxPrincipalStress(nodal_stress [ i ]) > this->adaptThreshold ) {
+                  nodeCentersToRmesh.push_back(n->givePoint() );
+              }
             }
+          }
         }
-
         // if vector empty check returns false means not remesh
-        return !nodeCentersToRmesh.empty();
+        return !this->nodeCentersToRmesh.empty();
     }
 
     //////////////////////////////////////////////////////////////////////////////
-    bool remeshGeometry() {
+    void remeshGeometry() {
         if ( checkNodes() ) {
             std :: ostringstream stringStream;
             stringStream << "remesh_" << BaseSolver :: step;
@@ -389,26 +339,25 @@ private:
                 fs :: create_directories(GlobPaths :: BASEDIR / this->remeshDir);
             }
 
-            saveRemeshData(); // save nodes, regions to remesh and element statuses
+            this->saveRemeshData(); // save nodes, regions to remesh and element statuses
 
-            updateGeometry(); // run python preprocessor
-
-            loadRemeshData(); // load updated geometry
+            this->updateGeometry(); // run python preprocessor
 
             for ( auto const &p : nodeCentersToRmesh ) {
-                regionsNotToRemesh.push_back(new Sphere(p, this->radius) );
+              this->fineRegions.push_back(new Sphere(p, this->radius) );
             }
 
-            nodeCentersToRmesh.clear();
+            this->loadRemeshData(); // load updated geometry
+
+
+            this->nodeCentersToRmesh.clear();
+            this->nodesToKeep.clear();
 
             BaseSolver :: solve();
 
-            // std::cout << "regionsNotToRemesh.size(): " << regionsNotToRemesh.size() << '\n';
-            // std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << '\n';
-            // exit(0);
-            return true;
+            // return true;
         }
-        return false;
+        // return false;
     };
 
 
@@ -457,6 +406,9 @@ private:
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> path;
                     readRegions(path, this->regionsNotToRemesh);
+                } else if ( param.compare("remeshMaterialId") == 0 ) {
+                    // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
+                    iss >> this->remeshMaterialId;
                 }
             }
             inputfile.close();
@@ -504,18 +456,6 @@ public:
                 numParticles++;
             }
         }
-        // initially nodestatuses does not have to be specified (usually at the beginning of calculation)
-        // NOTE this was replaced with regions not to remesh!
-        // if ( fs :: exists( this->nodeStatuses ) ){
-        //   // readNodeStatuses();
-        //   if ( numParticles != keepThisNodeForever.size() ) {
-        //     std::cerr << "number of nodalStatuses = " << keepThisNodeForever.size() << " does not correspond to number of particles in the model (" << numParticles << ")" << '\n';
-        //     exit(EXIT_FAILURE);
-        //   }
-        // } else {
-        //   keepThisNodeForever.resize(numParticles);
-        // }
-
         // dimension is needed for calculation of nodal stresses (TODO calulate particle volume somewhere at the beginning)
         this->dim = BaseSolver :: elems->giveElement(0)->giveDimension();
 
@@ -561,25 +501,14 @@ public:
     };
 
 
-
     virtual void runAfterEachStep() {
-        // TODO change if to while
-        // if ( remeshGeometry() ) {
-        // BaseSolver :: time = this->time_before_step;  //
-        // BaseSolver :: step--;
-        // }
+        remeshGeometry();
 
-        while ( remeshGeometry() ) {
-            // instead of this, put circles into regions not to remesh
-            // centersPreviouslyRmeshed.insert(centersPreviouslyRmeshed.end(),
-            //                                 nodeCentersToRmesh.begin(),
-            //                                 nodeCentersToRmesh.end() );
-        }
         BaseSolver :: runAfterEachStep();
     };
 
     virtual void solve() {
-        std :: cout << "solving with " << BaseSolver :: name << '\n';
+        // std :: cout << "solving with " << BaseSolver :: name << '\n';
         BaseSolver :: solve();
     };
 };

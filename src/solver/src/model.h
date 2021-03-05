@@ -41,6 +41,7 @@ public:
     BCContainer *giveBC() { return & bconds; };
     ConstraintContainer *giveConstraints() { return & constr; };
     ExporterContainer *giveExporters() { return & exporters; };
+    MaterialContainer *giveMaterials() { return & matrs; };
     fs :: path giveResultDirectory() const {return resultDir;};
 
     unsigned giveDimension() const { return ndim; };

@@ -2,6 +2,7 @@
 #define _GEOMETRY_H
 
 #include "linear_algebra.h"
+#include "element.h"
 // TODO move all functions regarding geometrical operations etc.
 
 // intersections
@@ -21,6 +22,7 @@ public:
     virtual ~Region() {};
     virtual bool isInside(const Point &P) const = 0;
     virtual void readFromLine(istringstream &iss) = 0;
+    virtual void print() const {};
 };
 
 
@@ -37,6 +39,11 @@ public:
     virtual bool isInside(const Point &P) const = 0;
     virtual void setMainPoint(const Point &P) { this->mainPoint = P; };
     virtual void setSize(const double &size) { this->size = size; }; //todo: warning C4458: declaration of 'size' hides class member
+    virtual void print() const {
+      std::cout << "main point: ";
+      this->mainPoint.print();
+      std::cout << "size = " << this->size << '\n';
+    };
 };
 
 
@@ -90,9 +97,10 @@ public:
 
 
 
-
-
-
+bool isInsideRegions( const std :: vector< Region * > &regions, const Point &p );
+void readRegions(const std :: string &filename, std :: vector< Region * > &regions);
+bool isInsideRegions( const std :: vector< Region * > &regions, const Element *el );
+///////////////////////////////////////////////////////////////////////////////////
 
 
 bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop);
@@ -104,6 +112,5 @@ bool doIntersect(const Point &p1, const Point &q1, const Point &p2, const Point 
 bool isInPolygon(const std :: vector< Point > &polygon, const Point &p);
 
 
-void readRegions(const std :: string &filename, std :: vector< Region * > &regions);
 
 #endif

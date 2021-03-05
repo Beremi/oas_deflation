@@ -121,8 +121,8 @@ if __name__ == '__main__':
 
     rect_lims = [[0., 0.], [model.maxLim[0], model.maxLim[1]]]
 
-    model.maxLim[0] += 1e-8
-    model.maxLim[1] += 1e-8
+    # model.maxLim[0] += 1e-8
+    # model.maxLim[1] += 1e-8
 
     # print(rect_lims)
     # exit(0)

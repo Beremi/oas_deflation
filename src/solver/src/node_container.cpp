@@ -65,7 +65,7 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
 void NodeContainer :: saveToFile(const std :: string &filepath, std :: vector< unsigned > &nodes_to_save) const {
     std :: ofstream outputfile( filepath );
     if ( outputfile.is_open() ) {
-        outputfile << "#nodes saved from calculation";
+        outputfile << "#nodes saved from calculation\n";
         for ( auto const &node_id : nodes_to_save) {
           outputfile << this->giveNode(node_id)->giveLineToSave() << '\n';
         }
@@ -76,7 +76,7 @@ void NodeContainer :: saveToFile(const std :: string &filepath, std :: vector< u
 unsigned NodeContainer :: giveNodeId(const Node * node) const {
     // do not use this method for node that is not a part of this (nodeContainer)
     auto res = std :: find(std :: begin(this->nodes), std :: end(this->nodes), node);
-    if (res != this->nodes.end()) {
+    if (res == this->nodes.end()) {
       // if node is not in container, return zero (but zero can be also for the first node)
       // just to prevent errors here
       return 0;
@@ -282,10 +282,10 @@ Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
 }
 
 //////////////////////////////////////////////////////////
-Node* NodeContainer ::giveNode(unsigned const num) const { 
+Node* NodeContainer ::giveNode(unsigned const num) const {
     if (num>=nodes.size()){
         cerr << "NodeContainer Error: node " << num << " requested, but only " << nodes.size() << " nodes exist" << endl;
         exit(1);
     }
-    return nodes [ num ]; 
+    return nodes [ num ];
 }
