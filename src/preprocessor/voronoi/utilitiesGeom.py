@@ -1662,7 +1662,7 @@ def getRandomizedMaterialProperties(integrationPoint, materialType='mars'):
         initGt = 50
 
         #tady se zrandomizuji parametry materialu
-        randCoef =  np.random.uniform(low=0.9, high=1.1)
+        randCoef = getRandCoef(integrationPoint)
         myYoung = initYoung * randCoef
         myAlpha = initAlpha * randCoef
         myDensity = initDensity * randCoef
@@ -1672,6 +1672,15 @@ def getRandomizedMaterialProperties(integrationPoint, materialType='mars'):
         material =  utilitiesMech.MarsMaterial(myYoung, myAlpha, myDensity, myFt, myGt)
 
     return material
+
+def getRandCoef(integrationPoint):
+
+    randCoef = np.random.uniform(low=0.9, high=1.1)
+
+    return randCoef
+
+
+
 
 
 
