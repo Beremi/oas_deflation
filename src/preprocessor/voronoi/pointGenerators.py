@@ -586,14 +586,14 @@ def randPointInCircle(center, radius, directionDim):
         if len(center) == 3:
             point[1] = radius * np.cos(angle) * rn
             point[2] = radius * np.sin(angle) * rn
-    """
+    # """
     if (directionDim == 1):
         point[0] = radius * np.cos(angle) * rn
         point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
         point[0] = radius * np.cos(angle) * rn
         point[1] = radius * np.sin(angle) * rn
-    """
+    # """
 
     point += center
     return point[0:len(center)]
