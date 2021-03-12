@@ -508,8 +508,9 @@ public:
     };
 
     virtual void solve() {
-        // std :: cout << "solving with " << BaseSolver :: name << '\n';
-        BaseSolver :: solve();
+      // TODO JK: check nodes before solving - export fabric stress with frozen variables
+      // std :: cout << "solving with " << BaseSolver :: name << '\n';
+      BaseSolver :: solve();
     };
 };
 ////////////////////////////////////////////////////////////////

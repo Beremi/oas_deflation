@@ -586,14 +586,14 @@ def randPointInCircle(center, radius, directionDim):
         if len(center) == 3:
             point[1] = radius * np.cos(angle) * rn
             point[2] = radius * np.sin(angle) * rn
-    # """
+    """
     if (directionDim == 1):
         point[0] = radius * np.cos(angle) * rn
         point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
         point[0] = radius * np.cos(angle) * rn
         point[1] = radius * np.sin(angle) * rn
-    # """
+    """
 
     point += center
     return point[0:len(center)]
@@ -617,6 +617,40 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
 
     point += center
     return point
+
+def randPointInSphere(center, radius):
+    # works also for circle in xy plane (based on len(center))
+    point = np.zeros(len(center))
+
+    angle1 = np.random.uniform() * np.pi * 2
+    angle2 = np.random.uniform() * np.pi * 2
+    rn = np.random.uniform()
+
+    point[0] = radius * np.cos(angle1) * rn
+    point[1] = radius * np.sin(angle1) * rn
+    if len(point) > 2:
+        point[2] = radius * np.cos(angle2) * rn
+
+    point += center
+    return point
+
+def randPointBetweenSpheres(center, radius, thickness):
+    # works also both anulus in xy plane
+    point = np.zeros(len(center))
+
+    angle1 = np.random.uniform() * np.pi * 2
+    angle2 = np.random.uniform() * np.pi * 2
+
+    effRadius = (radius - thickness) + thickness *  np.random.uniform()
+
+    point[0] = effRadius * np.cos(angle1)
+    point[1] = effRadius * np.sin(angle1)
+    if len(point) > 2:
+        point[2] = effRadius * np.cos(angle2)
+
+    point += center
+    return point
+
 
 def randPointInTube(center, radius, height, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
@@ -831,11 +865,9 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     print("generating node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 distIsGood = True
                 if (tr > trials): break
-                if len(center) == 2:
-                    center = np.append(center, 0.)
 
-                coords = randPointInCircle(center,
-                                           radiusRemesh, directionDim=2)[:dim]  # so far for 2D
+                coords = randPointInSphere(center, radiusRemesh)
+
                 # check if generated point is not outside the specimen
                 if rectLims is not None:
                     if not border_block.IsInside(Point(coords[0], coords[1])):
@@ -886,14 +918,9 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 if (tr > trials): break
                 distIsGood = True
-                if len(center) == 2:
-                    center = np.append(center, 0.)
 
-                coords = randPointInAnnulus(
-                            center,
-                            radiusTransitional,
-                            thickness=(radiusTransitional-radiusRemesh),
-                            directionDim=2)[:dim]  # so far for 2D
+                coords = randPointBetweenSpheres(center, radiusTransitional,
+                            thickness=(radiusTransitional-radiusRemesh))
 
                 # check if generated point is not outside the specimen
                 if rectLims is not None:
