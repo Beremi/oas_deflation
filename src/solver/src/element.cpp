@@ -87,6 +87,8 @@ double Element :: giveIPValue(string code, unsigned ipnum) const {
         return ip_locs [ ipnum ].y;
     } else if ( code.compare("z") == 0 ) {
         return ip_locs [ ipnum ].z;
+    } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
+        return stats [ ipnum ]->giveMaterial()->giveId();
     } else {
         return stats [ ipnum ]->giveValue(code);
     }
@@ -164,6 +166,18 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
     }
     return load;
 }
+
+void Element :: changeMaterial( Material *newmat ) {
+  for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
+      delete * e;
+  }
+  this->mat = newmat;
+  for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
+      *e = this->mat->giveNewMaterialStatus(this);
+  }
+  this->initMaterialStatuses();
+}
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -1200,8 +1214,8 @@ double TrsprtBrick :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
         Jac [ 2 ] [ 2 ] += phiGrad [ 2 ] [ i ] * n.getZ();
     }
     //detrminant and inverse of 3x3 matrix
-    double JacDet = Jac [ 0 ] [ 0 ] * ( Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ]) 
-                 -  Jac [ 0 ] [ 1 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ]) 
+    double JacDet = Jac [ 0 ] [ 0 ] * ( Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ])
+                 -  Jac [ 0 ] [ 1 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ])
                  +  Jac [ 0 ] [ 2 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 1 ]);
 
     Matrix JacInv(3, 3);
@@ -1325,9 +1339,9 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
     shapeF(x, phi);
     Matrix H(ndim,DoFids.size());
     for(unsigned i=0; i<ndim; i++){
-        for(unsigned j=0; j<4; j++){ 
+        for(unsigned j=0; j<4; j++){
             H[i][ndim*j+i] = phi[j];
-        }       
+        }
     }
     return H;
 }

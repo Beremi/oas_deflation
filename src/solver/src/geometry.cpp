@@ -65,7 +65,6 @@ bool Sphere :: isInside(const Point &P) const {
     return false;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 Polygon :: Polygon(const std :: vector< Point > &V) {
     this->vertices = V;
@@ -268,4 +267,32 @@ void readRegions(const std :: string &filename, std :: vector< Region * > &regio
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
+}
+
+
+bool isInsideRegions( const std :: vector< Region * > &regions, const Point &p ) {
+  for ( auto const &reg : regions ) {
+    if ( reg->isInside(p) ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+bool isInsideRegions( const std :: vector< Region * > &regions, const Element *el ) {
+  unsigned inside = 0;
+  for ( auto const &reg : regions ) {
+    inside = 0;
+    for ( auto const &n : el->giveNodes() ) {
+      if ( reg->isInside( n->givePoint() ) ) {
+        inside++;
+      }
+    }
+    if ( inside == el->giveNodes().size() ) {
+      // return true only if all nodes of the particular elem are in one of the regions
+      return true;
+    }
+  }
+  return false;
 }

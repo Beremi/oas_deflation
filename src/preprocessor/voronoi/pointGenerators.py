@@ -74,12 +74,17 @@ except:
 def fuller2D(d, dmax):
     return (1.065*np.sqrt(d/dmax)-0.053*np.power(d/dmax,4)-0.012*np.power(d/dmax,6)-0.0045*np.power(d/dmax,8)-0.0025*np.power(d/dmax,10))
 
+def fuller3D(d, dmax):
+    return np.sqrt(d/dmax)
+
 def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
         gap = 0.1
         Volume = np.prod(maxLim)
-        d = np.flipud(np.linspace(minDiam,maxDiam,20))  #20 different diameters
-        prob = volumeRatio*fuller2D(d, maxDiam)
-        num = ((prob[:-1]-prob[1:])*Volume/(np.pi*np.square(d[:-1]/2.))+1.).astype(int)
+        d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
+        if(dim==2):            
+            freq = fuller2D(d, maxDiam)
+        elif(dim==3):
+            freq = fuller3D(d, maxDiam)
 
         #add regular boundary
         """
@@ -91,22 +96,22 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         for i in range(n0+1):
             point[0] = i*s0
             point[1] = 0
-            node_coords = np.vstack((node_coords, point));  
-            radii = np.hstack((radii, 0));          
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
             point[1] = maxLim[1]
             node_coords = np.vstack((node_coords, point));
             radii = np.hstack((radii, 0));
         for i in range(n0-1):
             point[1] = (i+1)*s1
             point[0] = 0
-            node_coords = np.vstack((node_coords, point));  
-            radii = np.hstack((radii, 0));          
-            point[0] = maxLim[0]
-            node_coords = np.vstack((node_coords, point));             
+            node_coords = np.vstack((node_coords, point));
             radii = np.hstack((radii, 0));
-    
-        print(node_coords)    
-        """        
+            point[0] = maxLim[0]
+            node_coords = np.vstack((node_coords, point));
+            radii = np.hstack((radii, 0));
+
+        print(node_coords)
+        """
 
         #option to add external nodes
         """
@@ -116,29 +121,24 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         node_coords = node_coords[:,0:-1]
         """
 
+        saturation = 0;
         iters = 0
         di = 0
-        numi= 0
-        while (d[di]>minDiam and iters<trials):
-            if numi<num[di]:
-                point = np.random.rand(dim)*(maxLim-d[di]) + d[di]/2.
-                radius = d[di]/2.
-                if len(node_coords) == 0:
-                    node_coords = np.vstack((node_coords,point));
-                    radii = np.hstack((radii, radius));
-                    numi += 1
-                    continue
-
-                dist = min(np.sum(np.square(node_coords-point),1)-np.square((1+gap)*(radii+radius)))
-                if dist>0.:
+        radius = maxDiam/2.
+        while (2*radius>minDiam and iters<trials*100):
+                point = np.random.rand(dim)*(maxLim-radius*2) + radius
+                if ( len(node_coords)==0 or min(np.sum(np.square(node_coords-point),1)-np.square((1.+gap)*(radii+radius)))>0) :
                     node_coords = np.vstack((node_coords, point));
                     radii = np.hstack((radii, radius));
                     iters = 0
-                    numi += 1
+                    if (dim==2):  saturation += np.pi*np.power(radius,2)/Volume
+                    elif (dim==3): saturation += np.pi/6*np.power(radius*2.,3)/Volume
+
+                    while ((1. - saturation / volumeRatio ) < freq[di]): di+=1;
+                    radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
                 else: iters += 1
-            else:
-                di += 1
-                numi = 0.
+
+        print("Saturation of the volume: ", saturation)
 
         """
         print(node_coords.shape, radii.shape)
@@ -201,7 +201,8 @@ def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, tr
         return node_coords, radii
 
 def generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords):
-    return True
+    raise NotImplementedError('''Not implemented in Python, only Cython version available. To use the Cython version
+          the code has to be build using: python setup.py build_ext --inplace.''')
 try:
     from point_generators_cython import generateNodesRectPeriodic_cython as generateNodesRectPeriodic
     print('Using Cython version of point generator - generateNodesRectPeriodic.')
@@ -447,6 +448,30 @@ def generateOrtogrid_variable(maxLim, minDist, node_coords, dimensions):
         node_coords.append(orthogrid[i,:])
 
 
+def generateNodesOrtoCircle2dRand(center, radius, minDist, node_coords, trials):
+    print ('Generating a 3d circle surface. Ctr [%f, %f], Rad: %f' %(center[0],center[1], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInCircle(center, radius, 0)
+            coords = np.copy(coords[0:2])
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+
 def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d circle surface. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
@@ -468,6 +493,8 @@ def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_co
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
+
+
 
 def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d annulus surface. Ctr [%f, %f, %f], Rad: %f, Thick: %f' %(center[0],center[1],center[2], radius, thickness))
@@ -545,24 +572,32 @@ def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, n
             node_coords.append(coords)
 
 def randPointInCircle(center, radius, directionDim):
+
+
     angle = np.random.uniform() * np.pi * 2
 
-    point = np.zeros(3)
+    point = np.zeros(len(center))
 
     rn = np.random.uniform()
 
     if (directionDim == 0 ):
-        point[1] = radius * np.cos(angle) * rn
-        point[2] = radius * np.sin(angle) * rn
+        if len(center) == 2:
+            point[0] = radius * np.cos(angle) * rn
+            point[1] = radius * np.sin(angle) * rn
+        if len(center) == 3:
+            point[1] = radius * np.cos(angle) * rn
+            point[2] = radius * np.sin(angle) * rn
+    """
     if (directionDim == 1):
         point[0] = radius * np.cos(angle) * rn
         point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
         point[0] = radius * np.cos(angle) * rn
         point[1] = radius * np.sin(angle) * rn
+    """
 
     point += center
-    return point
+    return point[0:len(center)]
 
 def randPointInAnnulus(center, radius, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
@@ -583,6 +618,40 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
 
     point += center
     return point
+
+def randPointInSphere(center, radius):
+    # works also for circle in xy plane (based on len(center))
+    point = np.zeros(len(center))
+
+    angle1 = np.random.uniform() * np.pi * 2
+    angle2 = np.random.uniform() * np.pi * 2
+    rn = np.random.uniform()
+
+    point[0] = radius * np.cos(angle1) * rn
+    point[1] = radius * np.sin(angle1) * rn
+    if len(point) > 2:
+        point[2] = radius * np.cos(angle2) * rn
+
+    point += center
+    return point
+
+def randPointBetweenSpheres(center, radius, thickness):
+    # works also both anulus in xy plane
+    point = np.zeros(len(center))
+
+    angle1 = np.random.uniform() * np.pi * 2
+    angle2 = np.random.uniform() * np.pi * 2
+
+    effRadius = (radius - thickness) + thickness *  np.random.uniform()
+
+    point[0] = effRadius * np.cos(angle1)
+    point[1] = effRadius * np.sin(angle1)
+    if len(point) > 2:
+        point[2] = effRadius * np.cos(angle2)
+
+    point += center
+    return point
+
 
 def randPointInTube(center, radius, height, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
@@ -608,8 +677,8 @@ def randPointInTube(center, radius, height, thickness, directionDim):
     return point
 
 
-def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = None):
-    print ('Generating a 2d circle border. Ctr [%f, %f], Rad: %f, Angle limit +-%f' %(center[0],center[1], radius, np.degrees(angleLimitA-angleLimitB)))
+def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = 0, radiusSpread = 0):
+    #print ('Generating a 2d circle border. Ctr [%s, %s], Rad: %s, Angle limit +-%s' %(center[0],center[1], radius, np.degrees(angleLimitA-angleLimitB)))
 
     mirroredPoints = []
     tr=0
@@ -618,10 +687,10 @@ def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angl
         #
         distIsGood = False
         while (distIsGood == False):
-            if (mirrorIndent != None):
+            if (mirrorIndent >0):
                 coords, mirrored_coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
             else:
-                coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
+                coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent, radiusSpread=radiusSpread)
             #
             distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords)
             #
@@ -633,29 +702,34 @@ def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angl
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
-            if (mirrorIndent != None):
+            if (mirrorIndent >0):
                 mirroredPoints.append(mirrored_coords)
 
-    if (mirrorIndent != None):
+    if (mirrorIndent >0):
         return mirroredPoints
 
-def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = None):
+def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = 0, radiusSpread=0):
     if (angleLimitA == None): angle = np.random.uniform() * np.pi * 2
     else:   angle = np.random.uniform(low=angleLimitA, high=angleLimitB) #* np.pi * 2
+
+    if mirrorIndent > 0:
+        radiusSpread = 0
 
     if (len(center) == 3):
         point = np.zeros(3)
         point += center
 
+        samplingRadius = radius + np.random.uniform(low=-radiusSpread, high = radiusSpread)
+
         if (directionDim == 0 ):
-            point[1] = radius * np.cos(angle)
-            point[2] = radius * np.sin(angle)
+            point[1] = samplingRadius * np.cos(angle)
+            point[2] = samplingRadius * np.sin(angle)
         if (directionDim == 1):
-            point[0] = radius * np.cos(angle)
-            point[2] = radius * np.sin(angle)
+            point[0] = samplingRadius * np.cos(angle)
+            point[2] = samplingRadius * np.sin(angle)
         if (directionDim == 2):
-            point[0] = radius * np.cos(angle)
-            point[1] = radius * np.sin(angle)
+            point[0] = samplingRadius * np.cos(angle)
+            point[1] = samplingRadius * np.sin(angle)
         return point
 
     if (len(center) == 2):
@@ -663,9 +737,13 @@ def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLim
         point += center
         mirroredPoint = np.zeros(2)
         mirroredPoint += center
-        point[0] += radius * np.cos(angle)
-        point[1] += radius * np.sin(angle)
-        if (mirrorIndent!=None):
+
+        samplingRadius = radius + np.random.uniform(low=-radiusSpread, high = radiusSpread)
+        #print(samplingRadius)
+        point[0] += samplingRadius * np.cos(angle)
+        point[1] += samplingRadius * np.sin(angle)
+
+        if (mirrorIndent>0):
             mirroredPoint[0] += (radius-2*mirrorIndent) * np.cos(angle)
             mirroredPoint[1] += (radius-2*mirrorIndent) * np.sin(angle)
             return point,mirroredPoint
@@ -788,11 +866,9 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     print("generating node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 distIsGood = True
                 if (tr > trials): break
-                if len(center) == 2:
-                    center = np.append(center, 0.)
 
-                coords = randPointInCircle(center,
-                                           radiusRemesh, directionDim=2)[:dim]  # so far for 2D
+                coords = randPointInSphere(center, radiusRemesh)
+
                 # check if generated point is not outside the specimen
                 if rectLims is not None:
                     if not border_block.IsInside(Point(coords[0], coords[1])):
@@ -843,14 +919,9 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 if (tr > trials): break
                 distIsGood = True
-                if len(center) == 2:
-                    center = np.append(center, 0.)
 
-                coords = randPointInAnnulus(
-                            center,
-                            radiusTransitional,
-                            thickness=(radiusTransitional-radiusRemesh),
-                            directionDim=2)[:dim]  # so far for 2D
+                coords = randPointBetweenSpheres(center, radiusTransitional,
+                            thickness=(radiusTransitional-radiusRemesh))
 
                 # check if generated point is not outside the specimen
                 if rectLims is not None:

@@ -68,10 +68,11 @@ class PowerTesselation(object):
     Examples
     --------
     Voronoi diagram for a set of point:
-    >>> points = np.array([[0.25, 0.5], [0.75, 0.5]])
-    >>> radii = np.array([.1, .1])
+    >>> points = np.array([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2],
+    ...                    [2, 0], [2, 1], [2, 2]])
+    >>> radii = np.ones(points.shape[0])
     >>> from power_tesselation import PowerTesselation
-    >>> vor = PowerTesselation(points, weights=radii)
+    >>> vor = PowerTesselation(points, weights=radii, limits='auto')
 
     Plot it:
     >>> import matplotlib.pyplot as plt
@@ -85,30 +86,33 @@ class PowerTesselation(object):
 
     The Voronoi vertices:
     >>> vor.vertices
-    array([[ 0. ,  0. ],
-           [ 0. ,  1. ],
-           [ 0.5,  0. ],
-           [ 0.5,  1. ],
-           [ 1. ,  0. ],
-           [ 1. ,  1. ]])
+    array([[0.5, 0.5],
+           [0.5, 1.5],
+           [1.5, 0.5],
+           [1.5, 1.5]])
 
     There is a single finite Voronoi region, and four finite Voronoi
     ridges:
     >>> vor.regions
-    [[], [0, 2, 3, 1], [2, 4, 5, 3]]
+    [[], [-1, 0], [-1, 1], [1, -1, 0], [3, -1, 2], [-1, 3], [-1, 2], [0, 1, 3, 2], [2, -1, 0], [3, -1, 1]]
     >>> vor.ridge_vertices
-    [[0, 2], [0, 1], [2, 3], [1, 3], [2, 4], [4, 5], [3, 5]]
+    [[-1, 0], [-1, 0], [-1, 1], [-1, 1], [0, 1], [-1, 3], [-1, 2], [2, 3], [-1, 3], [-1, 2], [1, 3], [0, 2]]
 
     The ridges are perpendicular between lines drawn between the following
     input points:
     >>> vor.ridge_points
-    array([[-3,  0],
-           [-1,  0],
-           [ 0,  1],
-           [-4,  0],
-           [-3,  1],
-           [-2,  1],
-           [-4,  1]])
+    array([[0, 3],
+           [0, 1],
+           [2, 5],
+           [2, 1],
+           [1, 4],
+           [7, 8],
+           [7, 6],
+           [7, 4],
+           [8, 5],
+           [6, 3],
+           [4, 5],
+           [4, 3]], dtype=int32)
     """
 
     def __init__(self, points, weights=None, limits='unit'):
@@ -124,14 +128,30 @@ class PowerTesselation(object):
             raise ValueError('Number of points is not eqaul to number of weights {} != {}.'.format(points.shape[0], weights.shape[0]))
         # convert points+weights to array for pydgma
         self._points_pydgma = self._get_points_pydgma()
+        self._point_mins = points.min(axis=0)
+        self._point_maxs = points.max(axis=0)
         if limits == 'auto':
             if self._ndim == 2:
-                xmin, ymin = points.min(axis=0) - 1
-                xmax, ymax = points.max(axis=0) + 1
+                xmin, ymin = self._point_mins
+                xmax, ymax = self._point_maxs
                 zmin, zmax = 0, 1
+                dx, dy = self._point_maxs - self._point_mins
+                xmin -= dx
+                ymin -= dy
+                xmax += dx
+                ymax += dy
             else:
-                xmin, ymin, zmin = points.min(axis=0) - 1 # 0, 0, 0
-                xmax, ymax, zmax = points.max(axis=0) + 1 # 1, 1, 1
+                xmin, ymin, zmin = self._point_mins
+                xmax, ymax, zmax = self._point_maxs
+                dx, dy, dz = (self._point_maxs - self._point_mins) * 1
+                xmin -= dx
+                ymin -= dy
+                zmin -= dz
+                xmax += dx
+                ymax += dy
+                zmax += dz
+                self.mins = np.array([xmin, ymin, zmin])
+                self.maxs = np.array([xmax, ymax, zmax])
         elif limits == 'unit':
             xmin, ymin, zmin = 0, 0, 0
             xmax, ymax, zmax = 1, 1, 1
@@ -146,6 +166,7 @@ class PowerTesselation(object):
         point_distances = point_distances[np.triu_indices(point_distances.shape[0], k=1)]
         if np.nanmin(point_distances) == 0:
             raise ValueError('There are identical points (distance is zero).')
+        print('distances', point_distances.min(), point_distances.max())
 
         start = time.time()
         #dx = xmax - xmin
@@ -253,9 +274,41 @@ class PowerTesselation(object):
 
         ridge_points = np.array(connection_list)
         neg = ridge_points < 0
-        ridge_points[neg] = np.max(ridge_points) - ridge_points[neg]
+        ridge_points[neg] = -1#np.max(ridge_points) - ridge_points[neg]
         self._ridge_points = ridge_points
         self._vertices = np.array(self._vertices)[:, 1:(self._ndim + 1)]
+
+        # to make scipy like
+        '''
+        print(self.mins, self.maxs)
+        mask_mins = np.any(np.isclose(self._vertices, self.mins), axis=1) # np.any(self._vertices < self._point_mins, axis=1)
+        mask_maxs = np.any(np.isclose(self._vertices, self.maxs), axis=1) # np.any(self._vertices > self._point_maxs, axis=1)
+        mask = np.logical_or(mask_mins, mask_maxs)
+        self._vertices = self._vertices[~mask]
+
+        vert_idx_filtered = np.argwhere(~mask)
+        renum_dict = {v: i for i, v in enumerate(vert_idx_filtered.flatten())}
+        for ri, r in enumerate(regions):
+            for i, rnum in enumerate(r):
+                if rnum not in vert_idx_filtered:
+                    regions[ri][i] = -1
+                else:
+                    regions[ri][i] = renum_dict[rnum]
+        self._regions = regions
+
+        for ri, r in enumerate(ridge_vertices):
+            for i, rnum in enumerate(r):
+                if rnum not in vert_idx_filtered:
+                    ridge_vertices[ri][i] = -1
+                else:
+                    ridge_vertices[ri][i] = renum_dict[rnum]
+        ridge_vertices = [i for i in ridge_vertices if ~np.all(i==-1)]
+        self._ridge_vertices = [sorted(i) if -1 in i else i for i in ridge_vertices]
+
+        self._ridge_points = ridge_points[~np.any(ridge_points == -1, axis=1)]
+        self.furthest_site = False
+        '''
+
 
     def _generate_voronoi_parts_2d(self):
         self._total_volume = 0.0
@@ -300,9 +353,40 @@ class PowerTesselation(object):
 
         ridge_points = np.array(connection_list)
         neg = ridge_points < 0
-        ridge_points[neg] = np.max(ridge_points) - ridge_points[neg]
+        ridge_points[neg] = -1 # np.max(ridge_points) - ridge_points[neg]
         self._ridge_points = ridge_points
         self._vertices = np.array(self._vertices)[:, 1:(self._ndim + 1)]
+
+        # to make scipy like
+        '''
+        mask_mins = np.any(self._vertices < self._point_mins, axis=1)
+        mask_maxs = np.any(self._vertices > self._point_maxs, axis=1)
+        mask = np.logical_or(mask_mins, mask_maxs)
+        self._vertices = self._vertices[~mask]
+
+        vert_idx_filtered = np.argwhere(~mask)
+        renum_dict = {v: i for i, v in enumerate(vert_idx_filtered.flatten())}
+        for ri, r in enumerate(regions):
+            for i, rnum in enumerate(r):
+                if rnum not in vert_idx_filtered:
+                    regions[ri][i] = -1
+                else:
+                    regions[ri][i] = renum_dict[rnum]
+        self._regions = regions
+
+        for ri, r in enumerate(ridge_vertices):
+            for i, rnum in enumerate(r):
+                if rnum not in vert_idx_filtered:
+                    ridge_vertices[ri][i] = -1
+                else:
+                    ridge_vertices[ri][i] = renum_dict[rnum]
+        ridge_vertices = [i for i in ridge_vertices if i!=[-1, -1]]
+        self._ridge_vertices = [sorted(i) if -1 in i else i for i in ridge_vertices]
+
+        self._ridge_points = ridge_points[~np.any(ridge_points == -1, axis=1)]
+        self.furthest_site = False
+        '''
+
 
     def _merge_duplicate_vertices(self):
         def replace(val, dict_):
@@ -341,6 +425,20 @@ class PowerTesselation(object):
 if __name__ == '__main__':
     #points = np.array([[0.25, 0.5], [0.75, 0.5]])
     #radii = np.array([.1, .1])
-    #vor = PowerTesselation(points, weights=radii)
-    import doctest
-    doctest.testmod()
+    points = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0], [1, 1, 0], [1,0,1], [0,1,1], [1,1,1], [0.5,0.5,0.5]])
+    # points = np.random.random((4, 3))
+    radii = np.ones(points.shape[0])*.1
+    radii[-1] = 1
+    #points = np.load('points.npy')
+    #radii = np.load('radii.npy')
+    vor = PowerTesselation(points, weights=radii, limits='auto')
+
+    print(vor.vertices)
+    print(vor.regions)
+    print(vor.ridge_vertices)
+    print(vor.ridge_points)
+    from voronoi_viewer import voronoi_plot_3d_vtk
+    voronoi_plot_3d_vtk(vor)
+
+    #import doctest
+    #doctest.testmod()

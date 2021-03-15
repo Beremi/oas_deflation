@@ -1,0 +1,14 @@
+# Type	nodeCrdX	nodeCrdY	nodeCrdZ
+AuxNode	0.0	1.0	1.0
+AuxNode	0.0	1.0	0.0
+AuxNode	0.0	0.0	0.0
+AuxNode	0.0	0.0	1.0
+AuxNode	1.0	1.0	1.0
+AuxNode	1.0	1.0	0.0
+AuxNode	1.0	0.0	0.0
+AuxNode	1.0	0.0	1.0
+AuxNode	2.0	1.0	1.0
+AuxNode	2.0	1.0	0.0
+AuxNode	2.0	0.0	0.0
+AuxNode	2.0	0.0	1.0
+

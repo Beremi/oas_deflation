@@ -21,8 +21,11 @@
 #Model 3d_notched3pb Xsize 0.525 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 1000 notchWidth 0.008 elasticZone 1
 #
 #
-# Dogbones
-#Model 2d_dogbone dogboneD 0.2 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 10000 symmetric 0 edgeMinDistCoef 0.95
+# Dogbones # pro normalni model roughDogBone 0 elasticZone 0
+# roughEdgeDogbone 0 - presne nasamplovane kruznice
+# roughEdgeDogbone 1 - prvky s obema nody v modelu 
+# roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
+#Model 2d_dogbone dogboneD 0.3 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 10000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 3 randomizeMaterial 1
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
@@ -41,7 +44,7 @@
 #
 #PERIODIC MODELS
 #Model 2d_periodicShear Xsize 0.05 Ysize 0.05 minDist 0.004 activeMechanics 1 activeTransport 1 trials 5000
-#Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMechanics 1 activeTransport 1 trials 400 powerTes 1
+#Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMechanics 1 activeTransport 1 trials 400 powerTes 0
 #
 #
 #Model 3d_RWTHShearCylinder cylinderHeight 0.04 cylinderRad 0.05 minDist 0.0007 notchRadRight 0.0245 notchRadLeft 0.0275 notchWidth 0.004 notchDepth 0.01 activeMechanics 1 trials 200 RWTHQuarter 1
@@ -52,14 +55,17 @@
 #
 Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
-#Model 3d_BiparvaTubeTransport minDist 0.007 cylinderRad 0.07 cylinderHeight 0.2 tubeThickness 0.02 activeTransport 1 trials 10000 activeMechanics 0
+Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.03 cylinderHeight 0.03 tubeThickness 0.01 activeTransport 1 activeMechanics 1 coupled 1 trials 10000 
 #
 #
 ####################################################################################
 #COUPLED MODELS AVAILABLE
-#Model 2d_coupledArtificialCrack Xsize 1.5 Ysize 0.5 minDist 0.01 notchH 0.9 activeTransport 1 activeMechanics 1 coupled 1 trials 2000
+#Model 2d_coupledArtificialCrack Xsize 0.2 Ysize 0.5 minDist 0.01 notchH 0.5 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
+#Model 3d_coupledArtificialCrack Xsize 0.02 Ysize 0.05 Zsize 0.005 minDist 0.0015 notchH 0.6 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
 #Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 1 activeMechanics 1 coupled 1 trials 1000
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0.5 loadWidth 0.01 minDist 0.007 fracZoneWidth 0.1 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.01
+#
+#Model 2d_corrosionRebar Xsize 0.06 Ysize 0.1 minDist 0.002 rebarMinDist 0.0015 rebarDiameter 0.02 rebarCount 2 rebarDepth 0.02  activeTransport 1 activeMechanics 1 coupled 1 trials 10000
 #
 #
 ####################################################################################
@@ -78,4 +84,10 @@ Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
 #Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0
 #
 # Transport material
+Material TrsprtMaterial	capacity	11.000000	permeability 22e-18 viscosity 1e-5 crack_turtuosity 0.5 density	1e3
+#Elastic material
+#Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
+#dalsi mars
+Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 21000000.0 Gt 500
+#dalsi TrsprtMaterial 
 Material TrsprtMaterial	capacity	11.000000	permeability 22e-18 viscosity 1e-5 crack_turtuosity 0.5 density	1e3

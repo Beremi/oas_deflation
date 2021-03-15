@@ -1,0 +1,11 @@
+#TXTNodalExporter translations 2 ux uy
+#TXTNodalExporter pressure 1 pressure
+#VTKElementExporter out  timeEeach 0.1 cellData 0
+#VTKRCExporter faces  timeEeach 1e-1 cellData
+#TXTGaussPointExporter restults 11 x y z normal_x normal_y normal_z strainTY strainTZ strainPLTY strainPLTZ
+ForceGauge LD fx#1 fx 1 1
+ForceGauge LD fy#1 fy 1 1
+DoFGauge LD ux#2	ux 1 1
+DoFGauge LD uy#2	uy 1 1
+#DisplacementGauge LD ux#2	ux	1.000000000000000e+00	1.000000000000000e+00	3.000000000000000e+00	1.000000000000000e+00
+#DisplacementGauge LD uy#2	uy	1.000000000000000e+00	1.000000000000000e+00	3.000000000000000e+00	1.000000000000000e+00

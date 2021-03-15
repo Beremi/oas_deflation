@@ -246,6 +246,15 @@ void MarsMaterialStatus :: readFromLine(istringstream &iss) {
   }
 }
 
+bool MarsMaterialStatus :: isElastic(const bool &now) const {
+  if ( now && this->temp_damage != 0.0 ){
+    return false;
+  } else if ( this->damage != 0.0 ){
+    return false;
+  }
+  return true;
+}
+
 
 //////////////////////////////////////////////////////////
 // CUSATIS MATERIAL

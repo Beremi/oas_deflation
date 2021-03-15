@@ -93,7 +93,29 @@ class Model:
         self.RWTHQuarter = False
         self.elasticZone = None
 
+        self.node_indices_dogbone = []
+
+
+        self.rebarMinDist = None
+        self.rebarDiameter = None
+        self.rebarCount = None
+        self.rebarDepth = None
+
+
+
         for i in range (len(r)):
+
+            if (r[i]=='rebarMinDist'):
+                self.rebarMinDist = float(r[i+1])
+            if (r[i]=='rebarDiameter'):
+                self.rebarDiameter = float(r[i+1])
+            if (r[i]=='rebarCount'):
+                self.rebarCount = int(r[i+1])
+            if (r[i]=='rebarDepth'):
+                self.rebarDepth = float(r[i+1])
+
+
+
 
             if (r[i]=='printout'):
                 if r[i+1] == 1:
@@ -116,6 +138,12 @@ class Model:
                 self.minDist = float(r[i+1])
             if (r[i]=='trials'):
                 self.trials = int(r[i+1])
+
+            self.randomizeMaterial = False
+            if (r[i]=='randomizeMaterial'):
+                if (int(r[i+1])==1): self.randomizeMaterial = True
+                if (int(r[i+1])==0): self.randomizeMaterial = False
+
 
 
             if (r[i]=='powerTes'):
@@ -142,6 +170,15 @@ class Model:
             if r[i] in keys:
                 setattr(self, r[i], bool(r[i+1]))
             """
+
+            if (r[i]=='roughDogBone'):
+                if (int(r[i+1])==1): self.roughDogBone = True
+                if (int(r[i+1])==0): self.roughDogBone = False
+            if (r[i]=='roughEdgeDogbone'):
+                self.roughEdgeDogbone = int(r[i+1])
+
+
+
             if (r[i]=='edgeMinDistCoef'):
                 self.edgeMinDistCoef = float(r[i+1])
 
@@ -256,6 +293,12 @@ class Model:
         if self.modelType == '2d_coupledArtificialCrack':
             self.run_2d_coupledArtificialCrack()
 
+        if self.modelType == '3d_coupledArtificialCrack':
+            self.run_3d_coupledArtificialCrack()
+
+        if self.modelType == '2d_corrosionRebar':
+            self.run_2d_corrosionRebar()
+
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
@@ -321,8 +364,10 @@ class Model:
             self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone )
         self.materialZones=None
+        if self.elasticZone > 0:
+            self.materialZones= utilitiesModeling.assembleMaterialZones(1/4*self.dogboneD, 2, model='dogbone', D=self.dogboneD)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
     def run_3d_dogbone(self):
@@ -381,17 +426,27 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
 
     def run_3d_BiparvaTubeTransport(self):
+        #node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii
         self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
+        (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
 
     def run_2d_coupledArtificialCrack(self):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.createCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
+    def run_3d_coupledArtificialCrack(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
 
 
     def run_3d_coupledBrazilianDisc(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
+
+    def run_2d_corrosionRebar(self):
+
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth)
+        self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
 
 
     def run_2d_coupledRVE(self):
@@ -428,7 +483,7 @@ class Model:
             self.areas,
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
-            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist)
+            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial)
 
         #if (self.printout == False): enablePrint()
         print ('done.')

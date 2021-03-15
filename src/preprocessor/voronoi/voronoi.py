@@ -136,7 +136,7 @@ def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
     if weights is not None:
         weightsOut = np.hstack([weights]*7)
         return dataOut, weightsOut
-    return dataOut    
+    return dataOut
 
 
 def mirror_dataDogBone(data, dim, D, thickness = None):
@@ -194,8 +194,7 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
     dataOut = np.asarray(dataOut)
     fig, ax = plt.subplots()
     ax.scatter(dataOut[:,0], dataOut[:,1])
-    if SHOW_PLOT:
-        plt.show()
+    plt.show()
     """
     return dataOut
 
@@ -332,8 +331,8 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
 def mirror_dataTube(data, center, radius, height, thickness, directionDim):
     data = np.asarray(data)
-    outerRad = radius + 1e-2
-    innerRad = radius - thickness - 1e-2
+    outerRad = radius * 1.01
+    innerRad = (radius - thickness)*0.99
 
     if (directionDim == 0):
         dataOut =  np.vstack((data,

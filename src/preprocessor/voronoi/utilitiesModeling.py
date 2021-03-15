@@ -108,7 +108,7 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None):
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None):
     #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
@@ -143,9 +143,9 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             matZ.append (boundA)
             boundB = np.array(  [ D+1e-8   ,  elaX] )
             matZ.append (boundB)
-            boundA1 = np.array(  [ -1e-8, 6/4*D+1e-8] )
+            boundA1 = np.array(  [ -1e-8, 6/4*D - elaX] )
             matZ.append (boundA1)
-            boundB1 = np.array(  [ D  , 6/4*D - elaX]  )
+            boundB1 = np.array(  [ D  ,  6/4*D+1e-8]  )
             matZ.append (boundB1)
             materialZones.append(matZ)
         if (dim==3):
@@ -183,6 +183,19 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
         boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8   , maxLim[2] + 1e8 ]  )
         matZ.append (boundB1)
         materialZones.append(matZ)
+
+    #centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+    if (model=='2d_corrosionRebar'):
+        for r in range(rebarCount):
+            radius = rebarDiameter/2 * 1.01
+            center = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            matZ = []
+            matZ.append('circle')
+            matZ.append(radius)
+            matZ.append(center)
+            matZ.append(rebarCount)
+            materialZones.append(matZ)
+
 
     return materialZones
 
@@ -679,13 +692,13 @@ def create2DUniaxialTension(maxLim, minDist, trials, dim, powerTes):
     return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
 
-def createCoupledArtificialCrack(maxLim, minDist, trials, notchH):
+def create2dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
     dim = 2
     print('Creating coupled artificial crack')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     slitWidth = minDist*0.8
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates = assembleCoupledArtificialCrack(maxLim, minDist, trials, slitWidth, notchH);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates = assemble2dCoupledArtificialCrack(maxLim, minDist, trials, slitWidth, notchH);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
@@ -752,6 +765,192 @@ def createCoupledArtificialCrack(maxLim, minDist, trials, notchH):
 
 
     return node_coords, mechBC_merged, transportBC_merged,  notches, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions
+
+
+
+
+
+
+def create3dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
+    dim = 3
+    print('Creating coupled artificial crack')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    slitWidth = minDist*1
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates = assemble3dCoupledArtificialCrack(maxLim, minDist, trials, slitWidth, notchH);
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    print('done.')
+
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    # if SHOW_PLOT:
+    #     plt.show()
+
+    functions = []
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, -1e-3]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+    func3 = []
+    func3.append( np.array([0,0]) )
+    func3.append( np.array([1, 1e-3]) )
+    fn3 = utilitiesNumeric.generalFunc(func3)
+    functions.append (fn3)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+
+
+    #"""
+    ### selecting vertices on the bottom surface
+    boundA = np.zeros(3)-1e-8
+    boundB = np.array([maxLim[0], 1e-8, maxLim[2]+1e-8])
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    fn1 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn1)
+    """
+    for i,k in enumerate(faces1):
+        trsBC = utilitiesMech.transportBC(k,[3,-1])
+        transportBC_merged.append(trsBC)
+
+    #"""
+    ### selecting vertices on the top surface
+    boundA = np.array([-1e-8, maxLim[1]-1e-8, -1e-8])
+    boundB = np.array([maxLim[0], maxLim[1]+1e-8, maxLim[2]+1e-8])
+    faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces2,:]
+
+    fn1 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn1)
+    """
+    for i,k in enumerate(faces2):
+        trsBC = utilitiesMech.transportBC(k,[4,-1])
+        transportBC_merged.append(trsBC)
+
+    #"""
+
+    govNodesTrspt = []
+    govNodesTrsptBC = []
+    rigidPlatesTrspt = []
+
+    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptLeftRigidPlate.setDirectNodes(faces1)
+    trsptLeftRigidPlateMechBC = np.array([3,-1])
+    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+
+    trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptRightRigidPlate.setDirectNodes(faces2)
+    trsptRightRigidPlateMechBC = np.array([4,-1])
+    rigidPlatesTrspt.append(trsptRightRigidPlate)
+    govNodesTrspt.append(np.array([ -1, -1, -1]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+
+    #return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+
+    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, volumes, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+
+
+
+
+
+
+
+def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth):
+    print('Creating corrosion rebar model...')
+    dim=2
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    sampleBorders = True
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders)
+
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    print('done.')
+
+    #fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    #plt.show()
+
+    functions = []
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 mech loading function
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #2 mech loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, -1e-3]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    govNodesTrspt = []
+    govNodesTrsptBC = []
+    rigidPlatesTrspt = []
+
+
+    ### selecting vertices on the bottom surface
+    boundA = np.zeros(2)-1e-8
+    boundB = np.array([maxLim[0], 1e-8])
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    fn1 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn1)
+
+    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptLeftRigidPlate.setDirectNodes(faces1)
+    trsptLeftRigidPlateMechBC = np.array([0,-1])
+    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+
+
+    #"""
+    ### selecting vertices on the top surface
+    boundA = np.array([-1e-8, maxLim[1]-1e-8])
+    boundB = np.array([maxLim[0], maxLim[1]+1e-8])
+    faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
+    trsptRightRigidPlate.setDirectNodes(faces2)
+    trsptRightRigidPlateMechBC = np.array([3,-1])
+    rigidPlatesTrspt.append(trsptRightRigidPlate)
+    govNodesTrspt.append(np.array([ -1, -1, -1]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+
+
+
+
+    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+
+
+
 
 
 def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, trials):
@@ -1093,24 +1292,27 @@ def assembleTwoNodeSpringTest (maxLim, idt):
 
 
 
-def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0):
+def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=False, roughEdgeDogbone = 0):
     print('Creating 2d dog bone....')
     #
-    node_coords, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef);
 
-    node_coords = np.asarray(node_coords)
+
+    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone, roughEdgeDogbone=roughEdgeDogbone);
+
+    node_coords_all = np.asarray(node_coords_all)
+
     """
     fig, ax = plt.subplots()
-    ax.scatter(node_coords[:,0], node_coords[:,1])
-    if SHOW_PLOT:
-        plt.show()
-    """
+    ax.scatter(node_coords_all[:,0], node_coords_all[:,1])
+    ax.scatter(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1])
+    plt.show()
+    #"""
 
     print('Conducting Voronoi tesselation...', end = '')
-    vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords, 2, D)
+    vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords_all, 2, D)
     print('done.')
 
-    node_coords = node_coords[0:node_count]
+    node_coords = np.copy(node_coords_all)
     areas = []
     for i in range (node_count): areas.append(0)
     areas = np.asarray(areas)
@@ -1140,7 +1342,7 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, 
     transportIC_merged = []
 
 
-    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions,  govNodes, govNodesMechBC, rigidPlates
+    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions,  govNodes, govNodesMechBC, rigidPlates, node_indices_dogbone
 
 
 def create3dDogBone(minDist, trials, D=1.0, excentricity = 20 ):
@@ -2081,11 +2283,19 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     functions = []
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
-    fn1 = utilitiesNumeric.constantFunc(1)
+
+
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-3]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    fn1 = utilitiesNumeric.constantFunc(100)
     functions.append (fn1)
 
     ### sampling of nodes
-    node_coords, mechBC_merged, mechIC_merged = assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials)
+    node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials)
     node_coords = np.asarray(node_coords)
 
     fig = plt.figure()
@@ -2107,7 +2317,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     modelVertices = utilitiesGeom.returnSelectedPtsRadial (radius-thickness-1e-3 , radius+1e-3 , vor.vertices)
     ### selecting vertices on the outer surface
 
-    outerFaceBC = np.array([1,-1])
+    outerFaceBC = np.array([2,-1])
     outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices)
     for i in range (len(outerFace)):
         trsBC = utilitiesMech.transportBC(outerFace[i], outerFaceBC)
@@ -2120,7 +2330,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     if SHOW_PLOT:
         plt.show()
 
-    innerFaceBC = np.array([0,-1])
+    innerFaceBC = np.array([-1,-1])
     innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices)
     for i in range (len(innerFace)):
         trsBC = utilitiesMech.transportBC(innerFace[i], innerFaceBC)
@@ -2136,8 +2346,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
 
 
     radii = np.zeros((len(node_coords))) + minDist
-
-    return node_coords, mechBC_merged, transportBC_merged, vor, volumes, functions, radii
+    return node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii
 
 
 
@@ -2662,7 +2871,80 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
 
 
 
-def assembleCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
+
+def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders):
+    dim = 2
+
+    node_coords = []
+
+
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+    #an indent due to mirroring of the data for voronoi tess.
+    indent = 1e-8
+    indentRP = 1e-7
+
+    node_coords.append(np.array([indent, indent]))
+
+    if sampleBorders:
+        #top
+        nodeA = np.array([indent, maxLim[1]-indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+        leftRigidPlateMechBC = np.array([-1, 2,0,   -1,-1,-1])
+        leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, maxLim[1]-indentRP, maxLim[1]+indentRP ]))
+        rigidPlates.append(leftRigidPlate)
+        govNodes.append(np.array([ maxLim[0]/2, maxLim[1]-indent ]))
+        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+        #bottom
+        nodeA = np.array([indent, indent])
+        nodeB = np.array([maxLim[0]-indent, indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+        rightRigidPlateMechBC = np.array([0, 1,0,   -1,-1,-1])
+        rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
+        rigidPlates.append(rightRigidPlate)
+        govNodes.append(np.array([ maxLim[0]/2, indent ]))
+        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+        #left
+        nodeA = np.array([indent, indent])
+        nodeB = np.array([indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+        #right
+        nodeA = np.array([maxLim[0]-indent, indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+
+    #rebar
+    for r in range (rebarCount):
+        #rebar edge
+        centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+        pointGenerators.generateNodesCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials )
+        #rebar crossection
+        pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
+
+    #rect
+    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+
+    node_coords = np.asarray(node_coords)
+    plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+    plt.show()
+
+
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates
+
+
+
+def assemble2dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
     dim = 2
     #lists for the model
     node_coords = []
@@ -2736,7 +3018,87 @@ def assembleCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
 
 
 
-def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0):
+
+
+
+def assemble3dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch):
+    dim = 3
+    #lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+    #an indent due to mirroring of the data for voronoi tess.
+    indent = 1e-8
+    notchWidth = slitWidth/2
+    #generating notch points
+
+    node_coords.append(np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch/2 , maxLim[2]/2]))
+    nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
+    nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-indent, maxLim[2]-indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials*10)
+    #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=True, equidist=True)
+
+    nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
+    nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-indent, maxLim[2]-indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials*10)
+    #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=True, equidist=True)
+
+    #node_coords.append(np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch]))
+    #node_coords.append(np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch]))
+
+
+    ##################### CONSTRAINTS AND RIGID PLATES
+    #rigid plate left slit face
+    indentRP = 1e-6
+    leftRigidPlateMechBC = np.array([1, 0,0,  0,0,0, -1,-1,-1, -1,-1,-1])#np.array([1,0,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([ maxLim[0]/2-notchWidth-indentRP, maxLim[0]/2-notchWidth+indentRP, -indentRP, maxLim[1]*notch+indentRP, -indentRP, maxLim[2]+indentRP ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2-notchWidth, indent, maxLim[2]/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+    #rigid plate right slit face
+    rightRigidPlateMechBC = np.array([2, 0,0,    0,0,0, -1,-1,-1, -1,-1,-1]) #np.array([2,0,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([ maxLim[0]/2+notchWidth-indentRP, maxLim[0]/2+notchWidth+indentRP, -indentRP, maxLim[1]*notch+indentRP,  -indentRP, maxLim[2]+indentRP ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2+notchWidth, indent, maxLim[2]/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+
+    facesMult = 1
+    ########################################## rest of  faces
+    nodeA =  np.array([indent , maxLim[1] - indent, indent])
+    nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+
+    nodeA =  np.array([indent ,  indent, indent])
+    nodeB =  np.array([maxLim[0] - indent,  indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+
+
+
+    #rect
+    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+    print('generated nodes %d' %len(node_coords))
+    return node_coords, mechBC_merged, mechInitC_merged, [], govNodes, govNodesMechBC, rigidPlates
+
+
+
+def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0, roughDogBone=False, roughEdgeDogbone=0 ):
+
+    if roughDogBone == True:
+        sampleCircularBorders = False
+    else:
+        sampleCircularBorders = True
+
     dim = 2
     #lists for the model
     node_coords = []
@@ -2749,6 +3111,11 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     indent = 1e-6
 
     oldLen = len(node_coords)
+
+    if roughDogBone == True:
+        altMinDist = 3 * minDist
+    else:
+        altMinDist = minDist
 
     if symmetric == True:
         nodeA = np.array([0.2*D+2*indent,  3/4 * D - indent -minDist/2])
@@ -2776,12 +3143,12 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     #top line of dogbone
     nodeA = np.array([indent, indent])
     nodeB = np.array([indent+D, indent])
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials, True, True)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, True)
 
     #bottom line of dogbone
     nodeA = np.array([indent,  6/4 * D - indent])
     nodeB = np.array([D-indent, 6/4 * D - indent])
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials, True, True)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, True)
 
     uniquePoints =  (len(node_coords)) - oldLen
 
@@ -2812,84 +3179,174 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
 
 
 
-
-    #sampling on circular borders
     centreA = np.array( [-0.525 * D, 3/4 * D] )
     centreB = np.array( [ 1.525 * D, 3/4 * D] )
-    radius = 0.725*D
-    angleLimitA =   -np.arcsin( 0.5*D / radius)
-    angleLimitB =   np.arcsin( 0.5*D / radius)
-    #if symmetric == True:
-    #    angleLimitB =   0
-    mirroredPointsA = pointGenerators.generateNodesCircle2dRand(centreA, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*2 )
-    angleLimitA =   np.pi-np.arcsin( 0.5*D / radius)
-    angleLimitB =   np.pi+np.arcsin( 0.5*D / radius)
-    #if symmetric == True:
-    #    angleLimitA =    np.pi
-    mirroredPointsB = pointGenerators.generateNodesCircle2dRand(centreB, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*2)
+    if roughEdgeDogbone==0:
+        #sampling on circular borders
+        radius = 0.725*D
+        angleLimitA =   -np.arcsin( 0.5*D / radius)
+        angleLimitB =   np.arcsin( 0.5*D / radius)
+        #if symmetric == True:
+        #    angleLimitB =   0
+        mirroredPointsA =  pointGenerators.generateNodesCircle2dRand(centreA, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*10 )
+        angleLimitA =   np.pi-np.arcsin( 0.5*D / radius)
+        angleLimitB =   np.pi+np.arcsin( 0.5*D / radius)
+        #if symmetric == True:
+        #    angleLimitA =    np.pi
+        mirroredPointsB =  pointGenerators.generateNodesCircle2dRand(centreB, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*10)
+    else:
+        mirroredPointsA = []
+        mirroredPointsB = []
+
+    #"random sampling along the border"
+    if roughEdgeDogbone==3:
+        radius = 0.725*D
+        radiusSpread = minDist
+        angleLimitA =   -np.arcsin( 0.5*D / radius)
+        angleLimitB =   np.arcsin( 0.5*D / radius)
+        pointGenerators.generateNodesCircle2dRand(centreA, radius+radiusSpread, minDist, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = 0, radiusSpread = radiusSpread )
+        angleLimitA =   np.pi-np.arcsin( 0.5*D / radius)
+        angleLimitB =   np.pi+np.arcsin( 0.5*D / radius)
+        pointGenerators.generateNodesCircle2dRand(centreB, radius+radiusSpread, minDist, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent =0,
+        radiusSpread = radiusSpread)
+    """
+        node_coords = np.asarray(node_coords)
+        plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+        plt.show()
+    #"""
 
 
-    #rectangle of dogbone
-    oldLen = len(node_coords)
-    maxLim = np.array([  D    ,  6/4*D ])
-    #if symmetric == True:
-    #    maxLim = np.array([  D    ,  3/4*D ])
-    pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
-    nrOfPoints =  (len(node_coords)) - oldLen
+    if roughDogBone == True:
+        #top rough rectangle
+        oldLen = len(node_coords)
+        maxLim = np.array([  D    ,  1/4*D ])
+        pointGenerators.generateNodesRect(maxLim, altMinDist, 2, trials, node_coords)
+        #bottom rough rectangle
+        oldLen = len(node_coords)
+        maxLimF = np.array([     indent,       5/4 * D,        D,        6/4 * D   ])
+        pointGenerators.generateNodesRect(maxLimF, altMinDist, 2, trials, node_coords, useLowBound=True)
+        # middle fine asssemble3dPeriodicRectanglemaxLimF = np.array([     indent,       5/4 * D,        D,        6/4 * D   ])
+        maxLimF = np.array([     indent,       1/4 * D,        D,        5/4 * D   ])
+        pointGenerators.generateNodesRect(maxLimF, minDist, 2, trials, node_coords, useLowBound=True)
+
+        nrOfPoints =  (len(node_coords)) - oldLen
+
+    else:
+        #rectangle of dogbone
+        oldLen = len(node_coords)
+        maxLim = np.array([  D    ,  6/4*D ])
+        #if symmetric == True:
+        #    maxLim = np.array([  D    ,  3/4*D ])
+        pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
+        nrOfPoints =  (len(node_coords)) - oldLen
+
+
+    node_coords_all = np.copy ( node_coords )
+    node_coords_dogbone = []
+    node_indices_dogbone = []
 
     #dumping points outside bone
+
     radius = np.linalg.norm( centreB - np.array([D, 1/4*D]))
     print('Dumping points within bordering circles...', end='')
     node_coords_out = []
-    for node in node_coords:
+    for i in range(len(node_coords_all)):
+        node = node_coords_all[i]
         distA = np.linalg.norm( node - centreA)
         distB = np.linalg.norm( node - centreB)
         if (distA > radius and distB > radius):
-            node_coords_out.append(node)
+            node_indices_dogbone.append(i)
+            node_coords_dogbone.append(node)
     print('done.')
-
-    #mirrored circles. Not to be in the model at the end
-    node_count = len(node_coords_out)
-    nc = np.asarray(node_coords_out)
-    #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    # if SHOW_PLOT:
-    #     plt.show()
+    node_coords_dogbone = np.asarray(node_coords_dogbone)
 
 
-    mirroredMiddle = []
-    mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  +minDist/2 ]))
-    mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  -minDist/2 ]))
-    mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  -minDist/2 ]))
 
-    node_coords_out = np.vstack( (node_coords_out, mirroredPointsA, mirroredPointsB, mirroredMiddle) )
 
-    nc = np.asarray(node_coords_out)
-    #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-    # if SHOW_PLOT:
-    #     plt.show()
 
-    sympoints = []
+
+    if roughEdgeDogbone == 2 or roughEdgeDogbone == 3:
+        mirrored_coords = []
+        #mirroring rough edge dogbone circular borders
+        dogboneRadius = 0.725*D
+        leftCenter = np.array( [-0.525 * D, 3/4 * D] )
+        rightCenter = np.array( [ 1.525 * D, 3/4 * D] )
+        for node in node_coords_dogbone:
+            if node[0]<D/2:
+                #left half, mirroring to left center
+                nodeRad = np.linalg.norm(leftCenter-node)
+                distFromEdge = nodeRad - dogboneRadius
+                mirroredNodeRad = nodeRad - 2*distFromEdge
+                #
+                relativeNodeCoords = node - leftCenter
+                mirroredNodeRelativeCoords = relativeNodeCoords * (mirroredNodeRad/nodeRad)
+                mirroredNodeAbsoluteCoords = mirroredNodeRelativeCoords + leftCenter
+                #
+                if (mirroredNodeAbsoluteCoords[0]>=0):
+                    mirrored_coords.append(mirroredNodeAbsoluteCoords)
+                    """
+                    print()
+                    print ('dist from edge %s' %distFromEdge)
+                    print ('mirroredNodeRad %s' %mirroredNodeRad)
+                    print ('nodeRad %s' %nodeRad)
+                    print ('dogboneRadius %s' %dogboneRadius)
+                    plt.plot(node_coords_dogbone[:,0], node_coords_dogbone[:,1], '.', color='black');
+                    plt.plot(leftCenter[0], leftCenter[1], 'o', color='black');
+                    plt.plot(mirroredNodeAbsoluteCoords[0], mirroredNodeAbsoluteCoords[1], 'o', color='red');
+                    plt.plot(node[0], node[1], 'o', color='blue');
+                    plt.show()
+                    """
+            else:
+                #right half, mirroring to left center
+                nodeRad = np.linalg.norm(rightCenter-node)
+                distFromEdge = nodeRad - dogboneRadius
+                mirroredNodeRad = nodeRad - 2*distFromEdge
+                #
+                relativeNodeCoords = rightCenter - node
+                mirroredNodeRelativeCoords = relativeNodeCoords * (mirroredNodeRad/nodeRad)
+                mirroredNodeAbsoluteCoords = rightCenter - mirroredNodeRelativeCoords
+                #
+                if (mirroredNodeAbsoluteCoords[0]<=D):
+                    mirrored_coords.append(mirroredNodeAbsoluteCoords)
+
+        mirrored_coords = np.asarray(mirrored_coords)
+        """
+        plt.plot(mirrored_coords[:,0], mirrored_coords[:,1], 'o', color='black');
+        plt.plot(node_coords_dogbone[:,0], node_coords_dogbone[:,1], 'x', color='red');
+        plt.show()
+        #"""
+        node_coords_dogbone = np.vstack((node_coords_dogbone, mirrored_coords))
+        node_coords_all = np.copy(node_coords_dogbone)
+
+        node_indices_dogbone = []
+        for i in range(len(node_coords_all)):
+            node = node_coords_all[i]
+            distA = np.linalg.norm( node - centreA)
+            distB = np.linalg.norm( node - centreB)
+            if (distA > radius and distB > radius):
+                node_indices_dogbone.append(i)
+
+
+
+
+    if sampleCircularBorders == True:
+        mirroredMiddle = []
+        mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  +minDist/2 ]))
+        mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  +minDist/2 ]))
+        mirroredMiddle.append(np.array([  0.2*D-1e-6,  3/4 * D - indent  -minDist/2 ]))
+        mirroredMiddle.append(np.array([  D*0.8+1e-6,  3/4 * D - indent  -minDist/2 ]))
+
+        node_coords_all = np.vstack( (node_coords_all, mirroredPointsA, mirroredPointsB) )
+
+
     """
-    if symmetric == True:
-        print ('Mirroring second symmetric half of dogbone...')
-        for i in range (uniquePoints, len(node_coords_out), 1):
-            newPoint = np.copy(node_coords_out[i])
-            newPoint[1] = newPoint[1] *-1 + D*6/4 + 2*indent
-            node_coords_out = np.vstack( (node_coords_out, newPoint ) )
-            sympoints.append(newPoint)
-    """
-    sympoints = np.asarray(sympoints)
+    plt.plot(node_coords_all[:,0], node_coords_all[:,1], 'o', color='green');
+    plt.plot(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1], 'x', color='red');
+    plt.show()
+    #"""
 
-    #if symmetric:
-        #plt.plot(nc[:,0], nc[:,1], 'o', color='black');
-        #plt.plot(sympoints[:,0], sympoints[:,1], 'x', color='red');
-    # if SHOW_PLOT:
-    #     plt.show()
-
-    nc = np.asarray(node_coords_out)
-
-    return node_coords_out, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates
+    node_count = len (node_coords_all)
+    return node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates
 
 
 
@@ -3003,17 +3460,16 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials, powerTes):
 
     print('assembling 2d periodic ')
     ###########generating of points in rectangle
-    
+
 
     if powerTes == False:
         pointGenerators.generateNodesRectPeriodic(maxLim, minDist, dim, trials, node_coords)
         radii = np.zeros(len(node_coords))
     else:
         #TODO: power Tesselation
-        #node_coords = np.zeros((0,dim))
-        #radii = np.zeros(0)
-        #node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.8, dim, trials, node_coords, radii)
-        pass
+        node_coords = np.zeros((0,dim))
+        radii = np.zeros(0)
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii)
 
     node_coords = np.asarray(node_coords)
     #masters = np.ones(len(node_coords)).astype(int)*(-1)
@@ -3045,7 +3501,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials, powerTes):
 
     #masters = np.hstack(( masters,XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))
     radii = np.hstack(( radii, radii[np.hstack((XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))]))
-   
+
     """
     nNds = np.asarray(nNds)
     fig = plt.figure()
@@ -3059,7 +3515,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials, powerTes):
 
 
 
-    return nNds, mechBC_merged, mechInitC_merged, radii#, masters 
+    return nNds, mechBC_merged, mechInitC_merged, radii#, masters
 
 
 
@@ -3080,13 +3536,13 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     else:
         node_coords = np.zeros((0,dim))
         radii = np.zeros(len(node_coords))
-        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist/4., minDist, 0.8, dim, trials, node_coords, radii)
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii)
 
 
     node_coords = np.asarray(node_coords)
     #masters = np.ones(len(node_coords)).astype(int)*(-1)
 
-    limit = 5*minDist
+    limit = 8*minDist
     XA = np.where(node_coords[:,0]<limit)[0]
     XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
     YA = np.where(node_coords[:,1]<limit)[0]
@@ -5215,29 +5671,51 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
     node_coords = []
     mechBC_merged = []
     mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
 
     mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
-    node_coords.append( np.array([  0,  radius-thickness/2,  0 ]))
+    node_coords.append( np.array([  indent,  radius-thickness/2,  0 ]))
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
-    mechBC_merged.append(mBC)
+    #mechBC_merged.append(mBC)
 
     ###############generating of points supported surface left face ###############
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-thickness, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-thickness, directionDim, minDist, node_coords, trials)
     pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
+
+    indentRP = 1e-6
+    leftRigidPlateMechBC = np.array([0, 0,0, 0,-1,-1,  -1,-1,-1,   -1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
+    -indentRP, indentRP,
+    -radius-indentRP, radius+indentRP,
+    -radius-indentRP, radius+indentRP, ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ 0,0,0 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
 
     nodeA = center.copy()
     nodeA[directionDim] += float(height)
 
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-thickness, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-thickness, directionDim, minDist, node_coords, trials)
     pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
 
+    rightRigidPlateMechBC = np.array([1, 0,0, -1,-1,-1,  -1,-1,-1,   -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
+    -indentRP+height, indentRP+height,
+    -radius-indentRP, radius+indentRP,
+    -radius-indentRP, radius+indentRP, ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ height ,0,0 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
 
     ###############generating of points rectangular volume ###############
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    #pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
 
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness+1e-5, height, directionDim, minDist,  node_coords, trials)
+    #pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness+1e-5, height, directionDim, minDist,  node_coords, trials)
     #######################################################################
 
     ###############generating of points rectangular volume ###############
@@ -5245,7 +5723,7 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
     #######################################################################
 
 
-    return node_coords, mechBC_merged, mechInitC_merged
+    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
 
 
 

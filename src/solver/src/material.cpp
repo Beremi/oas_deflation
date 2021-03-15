@@ -29,6 +29,14 @@ void MaterialStatus :: setEigenStrain(Vector &x) {
     eigenstrain = x;
 }
 
+bool MaterialStatus :: isElastic( const bool &now ) const {
+  if ( this->name != "basic mat. status" ){
+    std::cout << "using elastic check for base class MaterialStatus, if this is not a desire, you need to implement method \'isElastic\' for " << this->name << '\n';
+  }
+  return true;
+}
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT MATERIAL

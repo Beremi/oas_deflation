@@ -30,6 +30,9 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
 ##run voronoi, mirrored data
 def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
     vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[:,:dim]) #the last column might be present representing radii
+    #fig, ax = plt.subplots()
+    #voronoi_plot_2d(vor, ax=ax)
+    #plt.show()
     return vor
 
 ##run power, no mirroring data
