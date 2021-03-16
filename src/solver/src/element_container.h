@@ -2,6 +2,8 @@
 #define _ELEMENT_C_H
 
 #include "element.h"
+#include "element_discrete.h"
+#include "element_continuous.h"
 #include "element_polyhedral.h"
 #include "boundary_condition.h"
 #include "node_container.h"

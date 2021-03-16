@@ -5,6 +5,8 @@ set (solver_files
     data_exporter.cpp
     element_container.cpp
     element.cpp
+    element_discrete.cpp
+    element_continuous.cpp
     element_polyhedral.cpp
     geometry.cpp
     globals.cpp

@@ -1,5 +1,5 @@
 #include "material_misc.h"
-#include "element.h"
+#include "element_discrete.h"
 
 
 BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
