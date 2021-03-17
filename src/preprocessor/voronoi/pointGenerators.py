@@ -81,7 +81,7 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         gap = 0.1
         Volume = np.prod(maxLim)
         d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
-        if(dim==2):            
+        if(dim==2):
             freq = fuller2D(d, maxDiam)
         elif(dim==3):
             freq = fuller3D(d, maxDiam)
@@ -845,11 +845,15 @@ def minDistTrans(lminR, lmin, dst, rR, rT):
 def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                         centersToRemesh, centersPreviouslyRemeshed,
                         radiusRemesh, radiusTransitional,
-                        dim=2, rectLims=None):
+                        dim):
     PRINT_TEST = False
     print ( 'Generating points to update geometry' )
-    border_block = Block(Point(rectLims[0][0], rectLims[0][1]),
-                         Point(rectLims[1][0], rectLims[1][1]))
+    if dim == 2:
+        border_block = Block(Point(0., 0.),
+                             Point(maxLim[0], maxLim[1]))
+    elif dim == 3:
+        border_block = Block(Point(0., 0., 0),
+                             Point(maxLim[0], maxLim[1], maxLim[2]))
     tr = 0
     # remesh fine areas
     ci = 0
@@ -868,13 +872,14 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                 if (tr > trials): break
 
                 coords = randPointInSphere(center, radiusRemesh)
+                p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
 
                 # check if generated point is not outside the specimen
-                if rectLims is not None:
-                    if not border_block.IsInside(Point(coords[0], coords[1])):
-                        distIsGood = False
-                        tr += 1
-                        continue
+                # if rectLims is not None:
+                if not border_block.IsInside(p_coord):
+                    distIsGood = False
+                    tr += 1
+                    continue
                 # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
                                           radiusRemesh,
@@ -922,13 +927,14 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
 
                 coords = randPointBetweenSpheres(center, radiusTransitional,
                             thickness=(radiusTransitional-radiusRemesh))
+                p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
 
                 # check if generated point is not outside the specimen
-                if rectLims is not None:
-                    if not border_block.IsInside(Point(coords[0], coords[1])):
-                        distIsGood = False
-                        tr += 1
-                        continue
+                # if rectLims is not None:
+                if not border_block.IsInside(p_coord):
+                    distIsGood = False
+                    tr += 1
+                    continue
 
                 # check distances to already remeshed centers - to prevent putting nodes there centers
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,

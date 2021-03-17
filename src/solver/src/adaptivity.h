@@ -207,7 +207,10 @@ private:
                                   " " + this->prepInput + " " + this->remeshDir + " " +
                                   GlobPaths :: BASEDIR.string() + " " +
                                   std :: to_string(this->radius) + " " +
-                                  std :: to_string(this->radius2);
+                                  std :: to_string(this->radius2)
+                                  //  + " " +
+                                  // std :: to_string(this->dim)
+                                  ;
         // cout << remeshCmd << endl;
         if ( this->remesherLmin != 0 ) {
             remeshCmd = remeshCmd + " " + std :: to_string(remesherLmin);

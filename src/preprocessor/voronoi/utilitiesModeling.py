@@ -3645,10 +3645,14 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     #exact notch
     exactNotch = False
 
+    indent = 1e-7
+    notches=[]
+
     #notch heaight
     if not exactNotch:
         nHeight = maxLim[1]*notch - minDist/4
         #notch = nHeight / maxLim[1]
+
 
     if node_coords_init is None:
         node_coords.append( np.array([maxLim[0]/4, maxLim[1]/2, maxLim[2]/2]))
@@ -3657,8 +3661,6 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         #mechBC_merged.append(mBC)
 
         #an indent due to mirroring of the data for voronoi tess.
-        notches=[]
-        indent = 1e-7
         if notchWidth == -1:
             notchWidth = minDist /4
         else:
