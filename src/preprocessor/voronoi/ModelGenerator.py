@@ -826,7 +826,7 @@ if __name__ == '__main__':
     if model != None:
         for i in range (model.nr_models):
             print('\nCreating model #%d' %i)
-            model.setDirectory(len(sys.argv) > 2 and sys.argv[1] or None) # directory to genereate in can be specified in the input string (after prep_master.inp)
+            model.setDirectory(len(sys.argv) > 2 and sys.argv[2] or None) # directory to genereate in can be specified in the input string (after prep_master.inp)
             model.createModel()
             model.saveGeometry()
             model.saveRest(solver, file)
