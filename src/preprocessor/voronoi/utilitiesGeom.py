@@ -1972,44 +1972,43 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                             ridgeCoords.append(aux_nodes[int(i-len(nodes_out))][0:3])
                     lasti=i
                 ridgeCoords = np.asarray(ridgeCoords)
+                if SHOW_PLOT:
+                    fig = plt.figure()
+                    ax = Axes3D(fig)
+                    if AXIS_ASPECT_EQUAL:
+                        ax.set_aspect('equal')
+                    ax.plot3D([vertexA[0], vertexB[0]], [vertexA[1], vertexB[1]], [vertexA[2], vertexB[2]], marker='o')
+                    #ax.plot3D([anodeA[0], anodeB[0]], [anodeA[1], anodeB[1]], [anodeA[2], anodeB[2]], marker='o')
+                    ax.scatter3D(nanode[0], nanode[1], nanode[2])
+                    #ax.scatter3D(anodeA[0], anodeA[1], anodeA[2])
+                    #ax.scatter3D(anodeB[0], anodeB[1], anodeB[2])
+                    #ax.scatter3D(ridgeMidpoint[0], ridgeMidpoint[1], ridgeMidpoint[2])
+                    for r in range (len(ridgeCoords)-1):
+                        ax.plot3D([ridgeCoords[r,0], ridgeCoords[r+1,0]], [ridgeCoords[r,1], ridgeCoords[r+1,1]], [ridgeCoords[r,2], ridgeCoords[r+1,2]], marker='x')
+                    ax.plot3D([ridgeCoords[0,0], ridgeCoords[len(ridgeCoords)-1,0]], [ridgeCoords[0,1], ridgeCoords[len(ridgeCoords)-1,1]], [ridgeCoords[0,2], ridgeCoords[len(ridgeCoords)-1,2]], marker='x')
 
-                fig = plt.figure()
-                ax = Axes3D(fig)
-                if AXIS_ASPECT_EQUAL:
-                    ax.set_aspect('equal')
-                ax.plot3D([vertexA[0], vertexB[0]], [vertexA[1], vertexB[1]], [vertexA[2], vertexB[2]], marker='o')
-                #ax.plot3D([anodeA[0], anodeB[0]], [anodeA[1], anodeB[1]], [anodeA[2], anodeB[2]], marker='o')
-                ax.scatter3D(nanode[0], nanode[1], nanode[2])
-                #ax.scatter3D(anodeA[0], anodeA[1], anodeA[2])
-                #ax.scatter3D(anodeB[0], anodeB[1], anodeB[2])
-                #ax.scatter3D(ridgeMidpoint[0], ridgeMidpoint[1], ridgeMidpoint[2])
-                for r in range (len(ridgeCoords)-1):
-                    ax.plot3D([ridgeCoords[r,0], ridgeCoords[r+1,0]], [ridgeCoords[r,1], ridgeCoords[r+1,1]], [ridgeCoords[r,2], ridgeCoords[r+1,2]], marker='x')
-                ax.plot3D([ridgeCoords[0,0], ridgeCoords[len(ridgeCoords)-1,0]], [ridgeCoords[0,1], ridgeCoords[len(ridgeCoords)-1,1]], [ridgeCoords[0,2], ridgeCoords[len(ridgeCoords)-1,2]], marker='x')
+                    """
+                    ax.plot3D([0,maxLim[0]], [0,0], [0,0], color='black')
+                    ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [0,0], color='black')
+                    ax.plot3D([0,maxLim[0]], [0,0], [maxLim[2],maxLim[2]], color='black')
+                    ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [maxLim[2],maxLim[2]], color='black')
 
-                """
-                ax.plot3D([0,maxLim[0]], [0,0], [0,0], color='black')
-                ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [0,0], color='black')
-                ax.plot3D([0,maxLim[0]], [0,0], [maxLim[2],maxLim[2]], color='black')
-                ax.plot3D([0,maxLim[0]], [maxLim[1],maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+                    ax.plot3D([0,0], [0,maxLim[1]], [0,0], color='black')
+                    ax.plot3D([0,0], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+                    ax.plot3D([0,0], [0,0], [0,maxLim[2]], color='black')
+                    ax.plot3D([0,0], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
 
-                ax.plot3D([0,0], [0,maxLim[1]], [0,0], color='black')
-                ax.plot3D([0,0], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
-                ax.plot3D([0,0], [0,0], [0,maxLim[2]], color='black')
-                ax.plot3D([0,0], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
+                    ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [0,0], color='black')
+                    ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
+                    ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
+                    ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
+                    """
+                    plt.show()
 
-                ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [0,0], color='black')
-                ax.plot3D([maxLim[0],maxLim[0]], [0,maxLim[1]], [maxLim[2],maxLim[2]], color='black')
-                ax.plot3D([maxLim[0],maxLim[0]], [0,0], [0,maxLim[2]], color='black')
-                ax.plot3D([maxLim[0],maxLim[0]], [maxLim[1],maxLim[1]], [0,maxLim[2]], color='black')
-                """
-                # if SHOW_PLOT:
-                #     plt.show()
-
-                #print('new elem: %s' %elem.getString())
-                #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
-                #print(elem.connectedNodes)
-                #print()
+                    #print('new elem: %s' %elem.getString())
+                    #print('new elem: %s' %elem.getStringyString(len(nodes_out), auxNodesInitLength))
+                    #print(elem.connectedNodes)
+                    #print()
 
             if (len(elem.connectedNodes)==2):
                 print ('pruser')
@@ -2076,23 +2075,23 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             ndss.append(vo[int(element.vertexB - len(nodes_out)-len(aux_nodes)),0:3])
             ndss = np.asarray(ndss)
 
-            fig = plt.figure()
-            ax = Axes3D(fig)
-            #ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
-            ax.scatter3D(vrtcs[:,0], vrtcs[:,1], vrtcs[:,2])
-            ax.scatter3D(ndss[:,0], ndss[:,1], ndss[:,2])
-
-            newAuxNodesA =np.asarray(newAuxNodesA)
-            ax.scatter3D(newAuxNodesA[:,0], newAuxNodesA[:,1], newAuxNodesA[:,2])
-            #ax.plot(ndss[0,:], ndss[1,:])
-
-            ax.plot3D([0,0,0], [maxLim[0],0,0])
-            ax.plot3D([0,maxLim[1],0], [maxLim[0],maxLim[1],0])
-            #ax.plot(np.array([0,0,maxLim[2]]), np.array([maxLim[0],0,maxLim[2]]))
-            #ax.plot(np.array([0,maxLim[1],maxLim[2]]), np.array([maxLim[0],maxLim[1],maxLim[2]]))
-
-            ax.scatter(vrtcs[len(vrtcs)-1,0], vrtcs[len(vrtcs)-1,1], vrtcs[len(vrtcs)-1,2])
             if SHOW_PLOT:
+                fig = plt.figure()
+                ax = Axes3D(fig)
+                #ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
+                ax.scatter3D(vrtcs[:,0], vrtcs[:,1], vrtcs[:,2])
+                ax.scatter3D(ndss[:,0], ndss[:,1], ndss[:,2])
+
+                newAuxNodesA =np.asarray(newAuxNodesA)
+                ax.scatter3D(newAuxNodesA[:,0], newAuxNodesA[:,1], newAuxNodesA[:,2])
+                #ax.plot(ndss[0,:], ndss[1,:])
+
+                ax.plot3D([0,0,0], [maxLim[0],0,0])
+                ax.plot3D([0,maxLim[1],0], [maxLim[0],maxLim[1],0])
+                #ax.plot(np.array([0,0,maxLim[2]]), np.array([maxLim[0],0,maxLim[2]]))
+                #ax.plot(np.array([0,maxLim[1],maxLim[2]]), np.array([maxLim[0],maxLim[1],maxLim[2]]))
+
+                ax.scatter(vrtcs[len(vrtcs)-1,0], vrtcs[len(vrtcs)-1,1], vrtcs[len(vrtcs)-1,2])
                 plt.show()
 
 

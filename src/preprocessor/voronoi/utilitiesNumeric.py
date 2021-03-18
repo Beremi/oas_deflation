@@ -315,15 +315,15 @@ def reorderToDiagonal (node_count, node_coords, vor):
 
 
     #print('original connectivity matrix')
-    fig = plt.figure(figsize=(10, 10))
+    if SHOW_PLOT:
+        fig = plt.figure(figsize=(10, 10))
 
-    ax = fig.add_subplot(1,1,1)
-    if AXIS_ASPECT_EQUAL:
-        ax.set_aspect('equal')
-    #plt.imshow(A)
-    #plt.colorbar()
-    # if SHOW_PLOT:
-    #     plt.show()
+        ax = fig.add_subplot(1,1,1)
+        if AXIS_ASPECT_EQUAL:
+            ax.set_aspect('equal')
+            #plt.imshow(A)
+            #plt.colorbar()
+        plt.show()
 
     C = np.zeros( (node_count,node_count) )
     C = csr_matrix(A)
@@ -334,15 +334,15 @@ def reorderToDiagonal (node_count, node_coords, vor):
     #print(B)
 
 
-    #print('reordered connectivity matrix')
-    fig = plt.figure(figsize=(10, 10))
+    if SHOW_PLOT:
+        #print('reordered connectivity matrix')
+        fig = plt.figure(figsize=(10, 10))
 
-    ax = fig.add_subplot(1,1,1)
-    if AXIS_ASPECT_EQUAL:
-        ax.set_aspect('equal')
-    #plt.imshow(B)
-    #plt.colorbar()
-    # if SHOW_PLOT:
-    #     plt.show()
+        ax = fig.add_subplot(1,1,1)
+        if AXIS_ASPECT_EQUAL:
+            ax.set_aspect('equal')
+            #plt.imshow(B)
+            #plt.colorbar()
+        plt.show()
 
     return order
