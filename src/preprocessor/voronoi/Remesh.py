@@ -1,3 +1,5 @@
+import matplotlib as mpl
+mpl.use('Agg')
 import errno
 import os
 from ModelGenerator import *
@@ -101,6 +103,7 @@ if __name__ == '__main__':
     # should be already in input (specified in master prep file)
     radiusRemesh = float(sys.argv[4])
     radiusTransitional = float(sys.argv[5])
+    # dim = float(sys.argv[6])
 
     if len(sys.argv) > 6:
         minDistRemesh = float(sys.argv[6])
@@ -117,13 +120,6 @@ if __name__ == '__main__':
 
     # print(model.trials)
 
-
-
-    rect_lims = [[0., 0.], [model.maxLim[0], model.maxLim[1]]]
-
-    # model.maxLim[0] += 1e-8
-    # model.maxLim[1] += 1e-8
-
     # print(rect_lims)
     # exit(0)
 
@@ -133,7 +129,7 @@ if __name__ == '__main__':
                         centersToRemesh=ctr, centersPreviouslyRemeshed=cpr,
                         radiusRemesh=radiusRemesh,
                         radiusTransitional=radiusTransitional,
-                        dim=2, rectLims=rect_lims)
+                        dim=model.dimension)
 
     # print("--- after --------------------------------------")
     # print(len(node_coords_ini))

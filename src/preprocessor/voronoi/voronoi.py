@@ -234,10 +234,10 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
             """
             print('first')
-            fig = plt.figure()
-            ax = Axes3D(fig)
-            ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
             if SHOW_PLOT:
+                fig = plt.figure()
+                ax = Axes3D(fig)
+                ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
                 plt.show()
             """
 
@@ -252,10 +252,10 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
             """
             print('first')
-            fig = plt.figure()
-            ax = Axes3D(fig)
-            ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
             if SHOW_PLOT:
+                fig = plt.figure()
+                ax = Axes3D(fig)
+                ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
                 plt.show()
             """
 
@@ -273,10 +273,10 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
             """
             print('first')
-            fig = plt.figure()
-            ax = Axes3D(fig)
-            ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
             if SHOW_PLOT:
+                fig = plt.figure()
+                ax = Axes3D(fig)
+                ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
                 plt.show()
             """
 
@@ -320,10 +320,10 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
     """
     print('first')
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
     if SHOW_PLOT:
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
         plt.show()
     """
 
@@ -358,12 +358,12 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim):
             mirroredInside[i,1] = center[1] + (-center[1]+dataOut[i,1]) * ((2*innerRad-rad0) / rad0 )
             mirroredInside[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*innerRad-rad0) / rad0 )
     """
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
-    ax.scatter(mirroredOutside[:,0], mirroredOutside[:,1], mirroredOutside[:,2])
-    ax.scatter(mirroredInside[:,0], mirroredInside[:,1], mirroredInside[:,2])
     if SHOW_PLOT:
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
+        ax.scatter(mirroredOutside[:,0], mirroredOutside[:,1], mirroredOutside[:,2])
+        ax.scatter(mirroredInside[:,0], mirroredInside[:,1], mirroredInside[:,2])
         plt.show()
     """
     dataOut =  np.vstack((dataOut, mirroredOutside))

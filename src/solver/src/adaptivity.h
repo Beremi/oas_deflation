@@ -207,7 +207,10 @@ private:
                                   " " + this->prepInput + " " + this->remeshDir + " " +
                                   GlobPaths :: BASEDIR.string() + " " +
                                   std :: to_string(this->radius) + " " +
-                                  std :: to_string(this->radius2);
+                                  std :: to_string(this->radius2)
+                                  //  + " " +
+                                  // std :: to_string(this->dim)
+                                  ;
         // cout << remeshCmd << endl;
         if ( this->remesherLmin != 0 ) {
             remeshCmd = remeshCmd + " " + std :: to_string(remesherLmin);
@@ -332,11 +335,11 @@ private:
         if ( checkNodes() ) {
             std :: ostringstream stringStream;
             stringStream << "remesh_" << BaseSolver :: step;
-            this->remeshDir = stringStream.str();
+            this->remeshDir = GlobPaths :: BASEDIR / stringStream.str();
             // TODO do the routines to remesh
             std :: cout << "remeshDir: " << this->remeshDir << '\n';
-            if ( !fs :: exists(GlobPaths :: BASEDIR / this->remeshDir) ) {
-                fs :: create_directories(GlobPaths :: BASEDIR / this->remeshDir);
+            if ( !fs :: exists(this->remeshDir) ) {
+                fs :: create_directories(this->remeshDir);
             }
 
             this->saveRemeshData(); // save nodes, regions to remesh and element statuses
@@ -405,7 +408,7 @@ private:
                 } else if ( param.compare("regionsToSkip") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> path;
-                    readRegions(path, this->regionsNotToRemesh);
+                    readRegions((GlobPaths :: BASEDIR / path).string(), this->regionsNotToRemesh);
                 } else if ( param.compare("remeshMaterialId") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> this->remeshMaterialId;
@@ -481,7 +484,7 @@ public:
                 iss >> param;
                 if ( param.compare("Adaptivity") == 0 || param.compare("adaptivity") == 0 ) {
                     iss >> path;
-                    this->readAdaptivity(path);
+                    this->readAdaptivity((GlobPaths :: BASEDIR / path).string() );
                     bfa = true;
                 }
             }
