@@ -1,3 +1,5 @@
+import matplotlib as mpl
+mpl.use('Agg')
 import errno
 import os
 from ModelGenerator import *
