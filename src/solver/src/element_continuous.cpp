@@ -7,94 +7,24 @@
 // 2D QUADRILATERAL TRANSPORT ELEMENT
 TrsprtQuad :: TrsprtQuad() {
     ndim = 2;
+    numOfNodes = 4;
     name = "TrsprtQuad";
     vtk_cell_type = 9;
-}
-
-//////////////////////////////////////////////////////////
-void TrsprtQuad :: setIntegrationPointsAndWeights() {
-    unsigned nnodes = nodes.size();
-    ip_locs.resize(nnodes);
-    ip_weights.resize(nnodes);
-    stats.resize(nnodes);
-    double q = 1. / pow(3., 0.5);
-    ip_locs [ 0 ] = Point( -q,  -q);
-    ip_locs [ 1 ] = Point(  q,  -q);
-    ip_locs [ 2 ] = Point(  q,   q);
-    ip_locs [ 3 ] = Point( -q,   q);
-    Matrix phiGrad(ndim, 4);
-    for ( unsigned k = 0; k < nnodes; k++ ) {
-        stats [ k ] = mat->giveNewMaterialStatus(this);
-        ip_weights [ k ] = shapeFGrad(& ( ip_locs [ k ] ), phiGrad);
-    }
-};
-
-//////////////////////////////////////////////////////////
-void TrsprtQuad :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
-    unsigned num;
-    nodes.resize(4);
-    for ( unsigned k = 0; k < 4; k++ ) {
-        iss >> num;
-        nodes [ k ] = fullnodes->giveNode(num);
-    }
-    iss >> num;
-    mat = fullmatrs->giveMaterial(num);
-}
-
-//////////////////////////////////////////////////////////
-void TrsprtQuad :: shapeF(const Point *x, Vector &phi) const {
-    //x in natural coordinates
-    phi [ 0 ] = 0.25 * ( 1. - x->getX() ) * ( 1. - x->getY() );
-    phi [ 1 ] = 0.25 * ( 1. + x->getX() ) * ( 1. - x->getY() );
-    phi [ 2 ] = 0.25 * ( 1. + x->getX() ) * ( 1. + x->getY() );
-    phi [ 3 ] = 0.25 * ( 1. - x->getX() ) * ( 1. + x->getY() );
-}
-
-//////////////////////////////////////////////////////////
-double TrsprtQuad :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
-    //x in natural coordinates
-    phiGrad [ 0 ] [ 0 ] = -0.25 * ( 1. - x->getY() );
-    phiGrad [ 0 ] [ 1 ] = -phiGrad [ 0 ] [ 0 ];
-    phiGrad [ 0 ] [ 2 ] = 0.25 * ( 1. + x->getY() );
-    phiGrad [ 0 ] [ 3 ] = -phiGrad [ 0 ] [ 2 ];
-    phiGrad [ 1 ] [ 0 ] = -0.25 * ( 1. - x->getX() );
-    phiGrad [ 1 ] [ 1 ] = -0.25 * ( 1. + x->getX() );
-    phiGrad [ 1 ] [ 2 ] = -phiGrad [ 1 ] [ 1 ];
-    phiGrad [ 1 ] [ 3 ] = -phiGrad [ 1 ] [ 0 ];
-
-    //Jacobi Matrix
-    Matrix Jac(2, 2);
-    Point n;
-    for ( unsigned i = 0; i < 4; i++ ) {
-        n = nodes [ i ]->givePoint();
-        Jac [ 0 ] [ 0 ] += phiGrad [ 0 ] [ i ] * n.getX();
-        Jac [ 0 ] [ 1 ] += phiGrad [ 0 ] [ i ] * n.getY();
-        Jac [ 1 ] [ 0 ] += phiGrad [ 1 ] [ i ] * n.getX();
-        Jac [ 1 ] [ 1 ] += phiGrad [ 1 ] [ i ] * n.getY();
-    }
-    double JacDet = Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 0 ];
-    Matrix JacInv(2, 2);
-    JacInv [ 0 ] [ 0 ] = Jac [ 1 ] [ 1 ] / JacDet;
-    JacInv [ 0 ] [ 1 ] = -Jac [ 0 ] [ 1 ] / JacDet;
-    JacInv [ 1 ] [ 0 ] = -Jac [ 1 ] [ 0 ] / JacDet;
-    JacInv [ 1 ] [ 1 ] = Jac [ 0 ] [ 0 ] / JacDet;
-
-    //transorm to physical space
-    phiGrad = JacInv * phiGrad;
-    return JacDet;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
 }
 
 //////////////////////////////////////////////////////////
 Matrix TrsprtQuad :: giveBMatrix(const Point *x) const {
-    Matrix phiG(ndim, nodes.size() );
-    shapeFGrad(x, phiG);
+    Matrix phiG(ndim, numOfNodes );
+    shafunc->giveShapeFGrad(x, nodes, phiG);
     return phiG;
 }
 
 //////////////////////////////////////////////////////////
 Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
     Vector phi(DoFids.size() );
-    shapeF(x, phi);
+    shafunc->giveShapeF(x, phi);
     Matrix H(1,DoFids.size());
     for(unsigned k=0; k<DoFids.size(); k++) H[0][k] = phi[k];
     return H;
@@ -103,15 +33,12 @@ Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs){
-    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
-
-    Vector strain(pressureGradPlain.size()+1);
-    for(unsigned k=0; k<pressureGradPlain.size(); k++) {
-        strain [ k ] = pressureGradPlain [ k ];
-    }
+    Vector strain0 = Element :: giveStrain(i, DoFs);
+    Vector strain(strain0.size()+1);
+    for(unsigned i=0; i<strain0.size(); i++) strain[i] = strain0[i];
 
     //evaluate pressure at gauss point to account for nonlinearity
-    strain[pressureGradPlain.size()] = matrix_vector_multiply(giveHMatrix(&ip_locs [ i ]), DoFs)[0];
+    strain[strain0.size()] = matrix_vector_multiply(giveHMatrix(inttype->giveIPLocationPointer(i)), DoFs)[0];
 
     return strain;
 }
@@ -122,135 +49,31 @@ Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs){
 TrsprtBrick :: TrsprtBrick() {
     ndim = 3;
     name = "TrsprtBrick";
+    numOfNodes = 8;
     vtk_cell_type = 12;
-}
-
-//////////////////////////////////////////////////////////
-void TrsprtBrick :: setIntegrationPointsAndWeights() {
-    unsigned nnodes = nodes.size();
-    ip_locs.resize(nnodes);
-    ip_weights.resize(nnodes);
-    stats.resize(nnodes);
-    double q = 1. / pow(3., 0.5);
-    ip_locs [ 0 ] = Point( -q,  -q, -q);
-    ip_locs [ 1 ] = Point(  q,  -q, -q);
-    ip_locs [ 2 ] = Point(  q,   q, -q);
-    ip_locs [ 3 ] = Point( -q,   q, -q);
-    ip_locs [ 4 ] = Point( -q,  -q,  q);
-    ip_locs [ 5 ] = Point(  q,  -q,  q);
-    ip_locs [ 6 ] = Point(  q,   q,  q);
-    ip_locs [ 7 ] = Point( -q,   q,  q);
-    Matrix phiGrad(ndim, 8);
-    for ( unsigned k = 0; k < nnodes; k++ ) {
-        stats [ k ] = mat->giveNewMaterialStatus(this);
-        ip_weights [ k ] = shapeFGrad(& ( ip_locs [ k ] ), phiGrad);
-    }
-};
-
-//////////////////////////////////////////////////////////
-void TrsprtBrick :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
-    unsigned num;
-    nodes.resize(8);
-    for ( unsigned k = 0; k < 8; k++ ) {
-        iss >> num;
-        nodes [ k ] = fullnodes->giveNode(num);
-    }
-    iss >> num;
-    mat = fullmatrs->giveMaterial(num);
-}
-
-//////////////////////////////////////////////////////////
-void TrsprtBrick :: shapeF(const Point *x, Vector &phi) const {
-    //x in natural coordinates
-    phi [ 0 ] = 0.125 * ( 1. - x->getX() ) * ( 1. - x->getY() )  * ( 1. - x->getZ() );
-    phi [ 1 ] = 0.125 * ( 1. + x->getX() ) * ( 1. - x->getY() )  * ( 1. - x->getZ() );
-    phi [ 2 ] = 0.125 * ( 1. + x->getX() ) * ( 1. + x->getY() )  * ( 1. - x->getZ() );
-    phi [ 3 ] = 0.125 * ( 1. - x->getX() ) * ( 1. + x->getY() )  * ( 1. - x->getZ() );
-    phi [ 4 ] = 0.125 * ( 1. - x->getX() ) * ( 1. - x->getY() )  * ( 1. + x->getZ() );
-    phi [ 5 ] = 0.125 * ( 1. + x->getX() ) * ( 1. - x->getY() )  * ( 1. + x->getZ() );
-    phi [ 6 ] = 0.125 * ( 1. + x->getX() ) * ( 1. + x->getY() )  * ( 1. + x->getZ() );
-    phi [ 7 ] = 0.125 * ( 1. - x->getX() ) * ( 1. + x->getY() )  * ( 1. + x->getZ() );
-}
-
-//////////////////////////////////////////////////////////
-double TrsprtBrick :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
-    //x in natural coordinates
-    phiGrad [ 0 ] [ 0 ] = -0.125 * ( 1. - x->getY() )  * ( 1. - x->getZ() );
-    phiGrad [ 0 ] [ 1 ] = -phiGrad [ 0 ] [ 0 ];
-    phiGrad [ 0 ] [ 2 ] =  0.125 * ( 1. + x->getY() )  * ( 1. - x->getZ() );
-    phiGrad [ 0 ] [ 3 ] = -phiGrad [ 0 ] [ 2 ];
-    phiGrad [ 0 ] [ 4 ] = -0.125 * ( 1. - x->getY() )  * ( 1. + x->getZ() );
-    phiGrad [ 0 ] [ 5 ] = -phiGrad [ 0 ] [ 4 ];
-    phiGrad [ 0 ] [ 6 ] =  0.125 * ( 1. + x->getY() )  * ( 1. + x->getZ() );
-    phiGrad [ 0 ] [ 7 ] = -phiGrad [ 0 ] [ 6 ];
-    phiGrad [ 1 ] [ 0 ] = -0.125 * ( 1. - x->getX() )  * ( 1. - x->getZ() );
-    phiGrad [ 1 ] [ 1 ] = -0.125 * ( 1. + x->getX() )  * ( 1. - x->getZ() );
-    phiGrad [ 1 ] [ 2 ] = -phiGrad [ 1 ] [ 1 ];
-    phiGrad [ 1 ] [ 3 ] = -phiGrad [ 1 ] [ 0 ];
-    phiGrad [ 1 ] [ 4 ] = -0.125 * ( 1. - x->getX() )  * ( 1. + x->getZ() );
-    phiGrad [ 1 ] [ 5 ] = -0.125 * ( 1. + x->getX() )  * ( 1. + x->getZ() );
-    phiGrad [ 1 ] [ 6 ] = -phiGrad [ 1 ] [ 5 ];
-    phiGrad [ 1 ] [ 7 ] = -phiGrad [ 1 ] [ 4 ];
-    phiGrad [ 2 ] [ 0 ] = -0.125 * ( 1. - x->getX() )  * ( 1. - x->getY() );
-    phiGrad [ 2 ] [ 1 ] = -0.125 * ( 1. + x->getX() )  * ( 1. - x->getY() );
-    phiGrad [ 2 ] [ 2 ] = -0.125 * ( 1. + x->getX() )  * ( 1. + x->getY() );
-    phiGrad [ 2 ] [ 3 ] = -0.125 * ( 1. - x->getX() )  * ( 1. + x->getY() );
-    phiGrad [ 2 ] [ 4 ] = -phiGrad [ 2 ] [ 0 ];
-    phiGrad [ 2 ] [ 5 ] = -phiGrad [ 2 ] [ 1 ];
-    phiGrad [ 2 ] [ 6 ] = -phiGrad [ 2 ] [ 2 ];
-    phiGrad [ 2 ] [ 7 ] = -phiGrad [ 2 ] [ 3 ];
-
-
-    //Jacobi Matrix
-    Matrix Jac(3, 3);
-    Point n;
-    for ( unsigned i = 0; i < 8; i++ ) {
-        n = nodes [ i ]->givePoint();
-        Jac [ 0 ] [ 0 ] += phiGrad [ 0 ] [ i ] * n.getX();
-        Jac [ 0 ] [ 1 ] += phiGrad [ 0 ] [ i ] * n.getY();
-        Jac [ 0 ] [ 2 ] += phiGrad [ 0 ] [ i ] * n.getZ();
-        Jac [ 1 ] [ 0 ] += phiGrad [ 1 ] [ i ] * n.getX();
-        Jac [ 1 ] [ 1 ] += phiGrad [ 1 ] [ i ] * n.getY();
-        Jac [ 1 ] [ 2 ] += phiGrad [ 1 ] [ i ] * n.getZ();
-        Jac [ 2 ] [ 0 ] += phiGrad [ 2 ] [ i ] * n.getX();
-        Jac [ 2 ] [ 1 ] += phiGrad [ 2 ] [ i ] * n.getY();
-        Jac [ 2 ] [ 2 ] += phiGrad [ 2 ] [ i ] * n.getZ();
-    }
-    //detrminant and inverse of 3x3 matrix
-    double JacDet = Jac [ 0 ] [ 0 ] * ( Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ])
-                 -  Jac [ 0 ] [ 1 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ])
-                 +  Jac [ 0 ] [ 2 ] * ( Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 1 ]);
-
-    Matrix JacInv(3, 3);
-    JacInv [ 0 ] [ 0 ] =  (Jac [ 1 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 1 ] [ 2 ]) / JacDet;
-    JacInv [ 0 ] [ 1 ] = -(Jac [ 0 ] [ 1 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 1 ] * Jac [ 0 ] [ 2 ]) / JacDet;
-    JacInv [ 0 ] [ 2 ] =  (Jac [ 0 ] [ 1 ] * Jac [ 1 ] [ 2 ] - Jac [ 1 ] [ 1 ] * Jac [ 0 ] [ 2 ]) / JacDet;
-
-    JacInv [ 1 ] [ 0 ] = -(Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 2 ]) / JacDet;
-    JacInv [ 1 ] [ 1 ] =  (Jac [ 0 ] [ 0 ] * Jac [ 2 ] [ 2 ] - Jac [ 2 ] [ 0 ] * Jac [ 0 ] [ 2 ]) / JacDet;
-    JacInv [ 1 ] [ 2 ] = -(Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 2 ] - Jac [ 1 ] [ 0 ] * Jac [ 0 ] [ 2 ]) / JacDet;
-
-    JacInv [ 2 ] [ 0 ] =  (Jac [ 1 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 1 ] [ 1 ]) / JacDet;
-    JacInv [ 2 ] [ 1 ] = -(Jac [ 0 ] [ 0 ] * Jac [ 2 ] [ 1 ] - Jac [ 2 ] [ 0 ] * Jac [ 0 ] [ 1 ]) / JacDet;
-    JacInv [ 2 ] [ 2 ] =  (Jac [ 0 ] [ 0 ] * Jac [ 1 ] [ 1 ] - Jac [ 1 ] [ 0 ] * Jac [ 0 ] [ 1 ]) / JacDet;
-
-    //transorm to physical space
-    phiGrad = JacInv * phiGrad;
-    return JacDet;
+    shafunc = new Linear3DBrickShapeF();
+    inttype = new IntegrBrick8();
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
 MechanicalQuad :: MechanicalQuad() {
+    ndim = 2;
+    numOfNodes = 4;
     name = "MechanicalQuad";
+    vtk_cell_type = 9;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
 }
+
 //////////////////////////////////////////////////////////
 Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, nodes.size() );
-    shapeFGrad(x, phiG);
+    shafunc->giveShapeFGrad(x, nodes, phiG);
     Matrix B(3, DoFids.size() );
-    for ( unsigned i = 0; i < nodes.size(); i++ ) {
+
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
         B [ 0 ] [ 2 * i ]     =   B [ 2 ] [ 2 * i + 1 ] =   phiG [ 0 ] [ i ];
         B [ 1 ] [ 2 * i ]     =   B [ 0 ] [ 2 * i + 1 ] =   0.;
         B [ 1 ] [ 2 * i + 1 ]   =   B [ 2 ] [ 2 * i ]   =   phiG [ 1 ] [ i ];
@@ -261,14 +84,40 @@ Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
-    shapeF(x, phi);
+    shafunc->giveShapeF(x, phi);
     Matrix H(ndim,DoFids.size());
     for(unsigned i=0; i<ndim; i++){
-        for(unsigned j=0; j<4; j++){
+        for(unsigned j=0; j<numOfNodes; j++){
             H[i][ndim*j+i] = phi[j];
         }
     }
     return H;
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK MECHANICAL ELEMENT
+MechanicalBrick :: MechanicalBrick() {
+    ndim = 3;
+    name = "MechanicalBrick";
+    numOfNodes = 8;
+    vtk_cell_type = 12;
+    shafunc = new Linear3DBrickShapeF();
+    inttype = new IntegrBrick8();
+}
+
+//////////////////////////////////////////////////////////
+Matrix MechanicalBrick :: giveBMatrix(const Point *x) const {
+    Matrix phiG(ndim, nodes.size() );
+    shafunc->giveShapeFGrad(x, nodes, phiG);
+    Matrix B(6, DoFids.size() );
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
+        B [ 0 ] [ 3 * i ]       =   B [ 4 ] [ 3 * i + 2 ]  =   B [ 5 ] [ 3 * i + 1 ] =   phiG [ 0 ] [ i ];
+        B [ 1 ] [ 3 * i + 1 ]   =   B [ 3 ] [ 3 * i + 2 ]  =   B [ 5 ] [ 3 * i ]     =   phiG [ 1 ] [ i ];
+        B [ 2 ] [ 3 * i + 2 ]   =   B [ 3 ] [ 3 * i + 1 ]  =   B [ 4 ] [ 3 * i ]     =   phiG [ 2 ] [ i ];
+    }
+    return B;
 }
 
 //////////////////////////////////////////////////////////
@@ -277,21 +126,35 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
 CosseratQuad :: CosseratQuad() {
     ndim = 2;
     name = "CosseratQuad";
+    numOfNodes = 4;
+    vtk_cell_type = 9;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
 }
 
 
 //////////////////////////////////////////////////////////
 Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
-    Matrix phiG(ndim, nodes.size() );
-    shapeFGrad(x, phiG);
+    Matrix phiG(ndim, numOfNodes );
+    shafunc->giveShapeFGrad(x, nodes, phiG);
     Vector phi(nodes.size() );
-    shapeF(x, phi);
+    shafunc->giveShapeF(x, phi);
     Matrix B(6, DoFids.size() );
-    for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        B [ 0 ] [ 3 * i ]       =   B [ 2 ] [ 3 * i + 1 ] =   B [ 4 ] [ 3 * i + 2 ]   =   phiG [ 0 ] [ i ];
-        B [ 1 ] [ 3 * i + 1 ]   =   B [ 3 ] [ 3 * i ]   =   B [ 5 ] [ 3 * i + 2 ]   =   phiG [ 1 ] [ i ];
-        B [ 2 ] [ 3 * i + 2 ]   =   -phi [ i ];
-        B [ 3 ] [ 3 * i + 2 ]   =   phi [ i ];
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
+        //strains
+        // 00 03
+        // 02 01 
+        B [ 0 ] [ 3 * i ] = B [ 3 ] [ 3 * i + 1 ] =  phiG [ 0 ] [ i ];
+        B [ 2 ] [ 3 * i ] = B [ 1 ] [ 3 * i + 1 ] =  phiG [ 1 ] [ i ];
+        //effect of rotation = - LeviCivita * rotation
+        //  0 -1
+        //  1  0 
+        B [ 3 ] [ 3 * i + 2 ] = -phi [ i ]; 
+        B [ 2 ] [ 3 * i + 2 ] =  phi [ i ];
+        //curvatures
+        // 04 05
+        B [ 4 ] [ 3 * i + 2 ] =  phiG [ 0 ] [ i ];
+        B [ 5 ] [ 3 * i + 2] =  phiG [ 1 ] [ i ];
     }
     return B;
 }
@@ -299,31 +162,55 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
-    shapeF(x, phi);
-    return Matrix(0,0);
+    shafunc->giveShapeF(x, phi);
+    Matrix H(3, DoFids.size() ); //2 transl, 1 rot
+    for(unsigned j=0; j<numOfNodes; j++){
+        H[0][3*j] = H[1][3*j+1] = H[1][3*j+2] = phi[j];
+    }
+    return H;
 }
-/*
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK COSSERAT MECHANICAL ELEMENT
 CosseratBrick :: CosseratBrick() {
     ndim = 3;
     name = "CosseratBrick";
+    numOfNodes = 8;
+    vtk_cell_type = 12;
+    shafunc = new Linear3DBrickShapeF();
+    inttype = new IntegrBrick8();
 }
 
 
 //////////////////////////////////////////////////////////
 Matrix CosseratBrick :: giveBMatrix(const Point *x) const {
-    Matrix phiG(ndim, nodes.size() );
-    shapeFGrad(x, phiG);
+    Matrix phiG(ndim, numOfNodes );
+    shafunc->giveShapeFGrad(x, nodes, phiG);
     Vector phi(nodes.size() );
-    shapeF(x, phi);
-    Matrix B(6, DoFids.size() );
-    for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        B [ 0 ] [ 3 * i ]       =   B [ 2 ] [ 3 * i + 1 ] =   B [ 4 ] [ 3 * i + 2 ]   =   phiG [ 0 ] [ i ];
-        B [ 1 ] [ 3 * i + 1 ]   =   B [ 3 ] [ 3 * i ]   =   B [ 5 ] [ 3 * i + 2 ]   =   phiG [ 1 ] [ i ];
-        B [ 2 ] [ 3 * i + 2 ]   =   -phi [ i ];
-        B [ 3 ] [ 3 * i + 2 ]   =   phi [ i ];
+    shafunc->giveShapeF(x, phi);
+    Matrix B(18, DoFids.size() ); //9 strains, 9 curvatures
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
+        //strains
+        // 00 08 06
+        // 07 01 04
+        // 05 03 02 
+        B [ 0 ] [ 6 * i ] = B [ 8 ] [ 6 * i + 1 ] = B [ 6 ] [ 6 * i + 2 ] = phiG [ 0 ] [ i ];
+        B [ 7 ] [ 6 * i ] = B [ 1 ] [ 6 * i + 1 ] = B [ 4 ] [ 6 * i + 2 ] = phiG [ 1 ] [ i ];
+        B [ 5 ] [ 6 * i ] = B [ 3 ] [ 6 * i + 1 ] = B [ 2 ] [ 6 * i + 2 ] = phiG [ 2 ] [ i ];
+        //effect of rotation = - LeviCivita * rotations
+        //  0 -Z  Y
+        //  Z  0 -X
+        // -Y  X  0 
+        B [ 8 ] [ 6 * i + 5 ] = B [ 4 ] [ 6 * i + 3 ] = B [ 5 ] [ 6 * i + 4 ] = -phi [ i ]; 
+        B [ 6 ] [ 6 * i + 4 ] = B [ 7 ] [ 6 * i + 5 ] = B [ 3 ] [ 6 * i + 3 ] =  phi [ i ];
+        //curvatures
+        // 09 17 15
+        // 16 10 13
+        // 14 12 11 
+        B [  9 ] [ 6 * i + 3 ] = B [ 17 ] [ 6 * i + 4 ] = B [ 15 ] [ 6 * i + 5 ] = phiG [ 0 ] [ i ];
+        B [ 16 ] [ 6 * i + 3 ] = B [ 10 ] [ 6 * i + 4 ] = B [ 13 ] [ 6 * i + 5 ] = phiG [ 1 ] [ i ];
+        B [ 14 ] [ 6 * i + 3 ] = B [ 12 ] [ 6 * i + 4 ] = B [ 11 ] [ 6 * i + 5 ] = phiG [ 2 ] [ i ];
     }
     return B;
 }
@@ -331,7 +218,130 @@ Matrix CosseratBrick :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Matrix CosseratBrick :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
-    shapeF(x, phi);
-    return Matrix(0,0);
+    shafunc->giveShapeF(x, phi);
+    Matrix H(6, DoFids.size() ); //3 transl, 3 rot
+    for(unsigned v=0; v<ndim; v++){
+        for(unsigned j=0; j<numOfNodes; j++){
+            H[v][6*j+v] = H[3+v][6*j+3+v] = phi[j];
+        }
+    }
+    return H;
 }
-*/
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D QUADRILATERAL COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
+CosseratCoupledQuad :: CosseratCoupledQuad() {
+    ndim = 2;
+    name = "CosseratCoupledQuad";
+    numOfNodes = 4;
+    vtk_cell_type = 9;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
+}
+
+
+//////////////////////////////////////////////////////////
+Matrix CosseratCoupledQuad :: giveBMatrix(const Point *x) const {
+    Matrix phiG(ndim, numOfNodes );
+    shafunc->giveShapeFGrad(x, nodes, phiG);
+    Vector phi(nodes.size() );
+    shafunc->giveShapeF(x, phi);
+    Matrix B(8, DoFids.size() ); //4 strains, 2 curvatures, 2 pressure gradients
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
+        //strains
+        // 00 03
+        // 02 01 
+        B [ 0 ] [ 4 * i ] = B [ 3 ] [ 4 * i + 1 ] =  phiG [ 0 ] [ i ];
+        B [ 2 ] [ 4 * i ] = B [ 1 ] [ 4 * i + 1 ] =  phiG [ 1 ] [ i ];
+        //effect of rotation = - LeviCivita * rotation
+        //  0 -1
+        //  1  0 
+        B [ 3 ] [ 4 * i + 2 ] = -phi [ i ]; 
+        B [ 2 ] [ 4 * i + 2 ] =  phi [ i ];
+        //curvatures
+        // 04 05
+        B [ 4 ] [ 4 * i + 2 ] =  phiG [ 0 ] [ i ];
+        B [ 5 ] [ 4 * i + 2 ] =  phiG [ 1 ] [ i ];
+        //pressure gradient
+        // 06 07
+        B [ 6 ] [ 4 * i + 3 ] =  phiG [ 0 ] [ i ];
+        B [ 7 ] [ 4 * i + 3 ] =  phiG [ 1 ] [ i ];
+    }
+    return B;
+}
+
+//////////////////////////////////////////////////////////
+Matrix CosseratCoupledQuad :: giveHMatrix(const Point *x) const {
+    Vector phi(nodes.size() );
+    shafunc->giveShapeF(x, phi);
+    Matrix H(4, DoFids.size() ); //2 transl, 1 rot, 1 pressure
+    for(unsigned j=0; j<numOfNodes; j++){
+        H[0][4*j] = H[1][4*j+1] = H[2][4*j+2] = H[3][4*j+3] = phi[j];
+    }
+    return H;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
+CosseratCoupledBrick :: CosseratCoupledBrick() {
+    ndim = 3;
+    name = "CosseratCoupledBrick";
+    numOfNodes = 8;
+    vtk_cell_type = 12;
+    shafunc = new Linear3DBrickShapeF();
+    inttype = new IntegrBrick8();
+}
+
+
+//////////////////////////////////////////////////////////
+Matrix CosseratCoupledBrick :: giveBMatrix(const Point *x) const {
+    Matrix phiG(ndim, numOfNodes );
+    shafunc->giveShapeFGrad(x, nodes, phiG);
+    Vector phi(nodes.size() );
+    shafunc->giveShapeF(x, phi);
+    Matrix B(21, DoFids.size() ); //9 strains, 9 curvatures, 3 pressure gradients
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
+        //strains
+        // 00 08 06
+        // 07 01 04
+        // 05 03 02 
+        B [ 0 ] [ 7 * i ] = B [ 8 ] [ 7 * i + 1 ] = B [ 6 ] [ 7 * i + 2 ] = phiG [ 0 ] [ i ];
+        B [ 7 ] [ 7 * i ] = B [ 1 ] [ 7 * i + 1 ] = B [ 4 ] [ 7 * i + 2 ] = phiG [ 1 ] [ i ];
+        B [ 5 ] [ 7 * i ] = B [ 3 ] [ 7 * i + 1 ] = B [ 2 ] [ 7 * i + 2 ] = phiG [ 2 ] [ i ];
+        //effect of rotation = - LeviCivita * rotations
+        //  0 -Z  Y
+        //  Z  0 -X
+        // -Y  X  0 
+        B [ 8 ] [ 7 * i + 5 ] = B [ 4 ] [ 7 * i + 3 ] = B [ 5 ] [ 7 * i + 4 ] = -phi [ i ]; 
+        B [ 6 ] [ 7 * i + 4 ] = B [ 7 ] [ 7 * i + 5 ] = B [ 3 ] [ 7 * i + 3 ] =  phi [ i ];
+        //curvatures
+        // 09 17 15
+        // 16 10 13
+        // 14 12 11 
+        B [  9 ] [ 7 * i + 3 ] = B [ 17 ] [ 7 * i + 4 ] = B [ 15 ] [ 7 * i + 5 ] = phiG [ 0 ] [ i ];
+        B [ 16 ] [ 7 * i + 3 ] = B [ 10 ] [ 7 * i + 4 ] = B [ 13 ] [ 7 * i + 5 ] = phiG [ 1 ] [ i ];
+        B [ 14 ] [ 7 * i + 3 ] = B [ 12 ] [ 7 * i + 4 ] = B [ 11 ] [ 7 * i + 5 ] = phiG [ 2 ] [ i ];
+        //pressure gradient
+        // 18 19 20 
+        B [ 18 ] [ 7 * i + 6 ] = phiG [ 0 ] [ i ];
+        B [ 19 ] [ 7 * i + 6 ] = phiG [ 1 ] [ i ];
+        B [ 20 ] [ 7 * i + 6 ] = phiG [ 2 ] [ i ];
+    }
+    return B;
+}
+
+//////////////////////////////////////////////////////////
+Matrix CosseratCoupledBrick :: giveHMatrix(const Point *x) const {
+    Vector phi(nodes.size() );
+    shafunc->giveShapeF(x, phi);
+    Matrix H(7, DoFids.size() ); //3 transl, 3 rot, 1 pressure
+    for(unsigned j=0; j<numOfNodes; j++){
+        for(unsigned v=0; v<ndim; v++){
+            H[v][7*j+v] = H[3+v][7*j+3+v] = phi[j];
+        }
+        H[7][7*j+6] = phi[j]; //pressure gradient
+    }
+    return H;
+}

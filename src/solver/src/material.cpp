@@ -67,8 +67,8 @@ Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain)
 //////////////////////////////////////////////////////////
 Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
-    Matrix T(2, 2);
-    T [ 0 ] [ 0 ] = T [ 1 ] [ 1 ] = -effConductivity;
+    Matrix T(dimension, dimension);
+    for (unsigned i=0; i<dimension; i++) T [ i ] [ i ] = -effConductivity;
     return T;
 };
 

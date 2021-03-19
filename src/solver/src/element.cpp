@@ -9,6 +9,8 @@ Element :: ~Element() {
     for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
         delete * e;
     }
+    delete shafunc;
+    delete inttype;
 }
 
 // std :: string Element :: giveLineToSave(NodeContainer * nodes_all) const {
@@ -22,6 +24,30 @@ Element :: ~Element() {
 //   }
 //   return str;
 // }
+
+//////////////////////////////////////////////////////////
+void Element :: setIntegrationPointsAndWeights() {
+    shafunc->init();
+    inttype->init();
+    stats.resize(inttype->giveNumIP());
+    for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
+        stats [ k ] = mat->giveNewMaterialStatus(this);
+        inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian( inttype->giveIPLocationPointer(k), nodes));
+    }
+};
+
+
+//////////////////////////////////////////////////////////
+void Element :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+    unsigned num;
+    nodes.resize(numOfNodes);
+    for ( unsigned k = 0; k < numOfNodes; k++ ) {
+        iss >> num;
+        nodes [ k ] = fullnodes->giveNode(num);
+    }
+    iss >> num;
+    mat = fullmatrs->giveMaterial(num);
+}
 
 //////////////////////////////////////////////////////////
 void Element :: init() {
@@ -40,11 +66,13 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
+    shafunc -> init();  //shape function initialization
+    inttype -> init();  //integration initialization
     setIntegrationPointsAndWeights();
 
-    Bs.resize(ip_locs.size() );
-    for ( k = 0; k < ip_locs.size(); k++ ) {
-        Bs [ k ] = giveBMatrix(& ip_locs [ k ]);
+    Bs.resize(inttype->giveNumIP() );
+    for ( k = 0; k < inttype->giveNumIP() ; k++ ) {                
+        Bs [ k ] = giveBMatrix(inttype->giveIPLocationPointer(k));        
     }
 }
 
@@ -82,11 +110,11 @@ double Element :: giveValue(string code) const {
 //////////////////////////////////////////////////////////
 double Element :: giveIPValue(string code, unsigned ipnum) const {
     if ( code.compare("x") == 0 ) {
-        return ip_locs [ ipnum ].x;
+        return inttype->giveIPLocationPointer( ipnum) ->getX();
     } else if ( code.compare("y") == 0 ) {
-        return ip_locs [ ipnum ].y;
+        return inttype->giveIPLocationPointer( ipnum) ->getY();
     } else if ( code.compare("z") == 0 ) {
-        return ip_locs [ ipnum ].z;
+        return inttype->giveIPLocationPointer( ipnum) ->getZ();
     } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         return stats [ ipnum ]->giveMaterial()->giveId();
     } else {
@@ -99,9 +127,9 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
-    for ( unsigned i = 0; i < stats.size(); i++ ) {
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
-        K += Bs [ i ].transpose() * D * ( Bs [ i ] * ip_weights [ i ] );
+        K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight( i ) );
     }
     return K;
 }
@@ -111,13 +139,13 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
     Vector intF;
     intF.resize(DoFids.size() );
     Vector stress;
-    for ( unsigned i = 0; i < stats.size(); i++ ) {
+    for ( unsigned i = 0; i <inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
             stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs));  //frozen internal variables
         } else  {
             stress = stats [ i ]->giveStress(giveStrain(i, DoFs) ); //full evaluation of stress including change of state variables
         }
-        intF  += Bs [ i ].transpose() * (  stress * ip_weights [ i ] );
+        intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight( i ) );
     }
     return intF;
 }
@@ -128,10 +156,10 @@ Matrix Element :: giveDampingMatrix() const {
     Matrix M(nDoFs, nDoFs);
     double c;
     Matrix H;
-    for ( unsigned i = 0; i < stats.size(); i++ ) {
-        H = giveHMatrix(& ip_locs [ i ]);
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        H = giveHMatrix(inttype->giveIPLocationPointer( i ));
         c = stats [ i ]->giveDampingConstant();
-        M += matrix_multiply(H.transpose(), H) * ( ip_weights [ i ] * c );
+        M += matrix_multiply(H.transpose(), H) * ( inttype->giveIPWeight( i ) * c );
     }
     return M;
 }
@@ -142,10 +170,10 @@ Matrix Element :: giveMassMatrix() const {
     Matrix M(nDoFs, nDoFs);
     double c;
     Matrix H;
-    for ( unsigned i = 0; i < stats.size(); i++ ) {
-        H = giveHMatrix(& ip_locs [ i ]);
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        H = giveHMatrix(inttype->giveIPLocationPointer( i ));
         c = stats [ i ]->giveMassConstant();
-        M += matrix_multiply(H.transpose(), H) * ( ip_weights [ i ] * c );
+        M += matrix_multiply(H.transpose(), H) * ( inttype->giveIPWeight( i ) * c );
     }
     return M;
 }
@@ -157,16 +185,17 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
     double fvalue;
     unsigned dir = vl->giveDirection();
     Matrix H;
-    for ( unsigned i = 0; i < stats.size(); i++ ) {
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         H = giveHMatrix(& ip_locs [ i ]);
         fvalue = vl->giveValue(& ip_locs [ i ], time);
         for ( unsigned j = 0; j < nDoFs; j++ ) {
-            load [ j ] += H [ dir ] [ j ] * fvalue * ip_weights [ i ];
+            load [ j ] += H [ dir ] [ j ] * fvalue * inttype->giveIPWeight( i );
         }
     }
     return load;
 }
 
+//////////////////////////////////////////////////////////
 void Element :: changeMaterial( Material *newmat ) {
   for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
       delete * e;

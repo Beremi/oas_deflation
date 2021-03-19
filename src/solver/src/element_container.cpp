@@ -54,8 +54,24 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     MechanicalQuad *newelem = new MechanicalQuad();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("MechanicalBrick") == 0 ) {
+                    MechanicalBrick *newelem = new MechanicalBrick();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("CosseratQuad") == 0 ) {
                     CosseratQuad *newelem = new CosseratQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("CosseratBrick") == 0 ) {
+                    CosseratBrick *newelem = new CosseratBrick();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("CosseratCoupledQuad") == 0 ) {
+                    CosseratCoupledQuad *newelem = new CosseratCoupledQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("CosseratCoupledBrick") == 0 ) {
+                    CosseratCoupledBrick *newelem = new CosseratCoupledBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TranspPolygonal") == 0 ) {

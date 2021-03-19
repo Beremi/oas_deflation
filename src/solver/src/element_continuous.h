@@ -12,13 +12,10 @@ class BodyLoad; //forward declaration
 class TrsprtQuad : public TransportElement
 {
 protected:
-    virtual void setIntegrationPointsAndWeights();
+
 public:
     TrsprtQuad();
     ~TrsprtQuad() {};
-    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    virtual void shapeF(const Point *x, Vector &phi) const;
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
@@ -30,20 +27,16 @@ public:
 class TrsprtBrick : public TrsprtQuad
 {
 protected:
-    virtual void setIntegrationPointsAndWeights();
 
 public:
     TrsprtBrick();
     ~TrsprtBrick() {};
-    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    virtual void shapeF(const Point *x, Vector &phi) const;
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
-class MechanicalQuad : public TrsprtQuad
+class MechanicalQuad : public MechanicalElement
 {
 protected:
 public:
@@ -53,25 +46,19 @@ public:
     virtual Matrix giveHMatrix(const Point *x) const;
 };
 
-/*
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK MECHANICAL ELEMENT
 class MechanicalBrick : public MechanicalQuad
 {
 protected:
-    virtual void setIntegrationPointsAndWeights();
-
 public:
     MechanicalBrick();
     ~MechanicalBrick() {};
-    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    virtual void shapeF(const Point *x, Vector &phi) const;
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
 };
-*/
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -87,11 +74,11 @@ public:
     virtual Matrix giveHMatrix(const Point *x) const;
 };
 
-/*
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK COSSERAT MECHANICAL ELEMENT
-class CosseratBrick : public MechanicalQuad
+class CosseratBrick : public MechanicalBrick
 {
 protected:
 
@@ -101,5 +88,32 @@ public:
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
 };
-*/
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D QUADRILATERAL COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
+class CosseratCoupledQuad : public CosseratQuad
+{
+protected:
+
+public:
+    CosseratCoupledQuad();
+    ~CosseratCoupledQuad() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
+class CosseratCoupledBrick : public CosseratBrick
+{
+protected:
+
+public:
+    CosseratCoupledBrick();
+    ~CosseratCoupledBrick() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+};
 #endif  /* _ELEMENT_STRUCT_H */

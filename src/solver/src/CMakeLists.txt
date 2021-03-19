@@ -29,6 +29,8 @@ set (solver_files
     preprocessing_block.cpp
     function.cpp
     indirect_displ_control.cpp
+    shape_functions.cpp
+    integration.cpp
     )
 
 add_library(solver

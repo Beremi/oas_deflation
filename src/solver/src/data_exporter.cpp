@@ -160,7 +160,7 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
         outputfile.precision(precision);
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             ee = elems->giveElement(e);
-            nIP = ee->giveIPNum();
+            nIP = ee->giveNumIP();
             for ( unsigned k = 0; k < nIP; k++ ) {
                 for ( vector< string > :: const_iterator c = codes.begin(); c != codes.end(); ++c ) {
                     value = ee->giveIPValue(* c, k);
@@ -464,7 +464,7 @@ void StructuralExporter :: exportData(unsigned step, const Vector &DoFs, const V
 double StructuralExporter :: calcValue() const {
     double value = 0;
     for ( auto const &e : * elems ) {
-        for ( unsigned i = 0; i < e->giveIPNum(); i++ ) {
+        for ( unsigned i = 0; i < e->giveNumIP(); i++ ) {
             value += e->giveIPValue(codes [ 0 ], i);
         }
     }

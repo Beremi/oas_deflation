@@ -4,6 +4,8 @@
 #include "linear_algebra.h"
 #include "node_container.h"
 #include "material_container.h"
+#include "shape_functions.h"
+#include "integration.h"
 
 class ElementContainer; //forward declaration;
 class BodyLoad; //forward declaration
@@ -28,7 +30,11 @@ protected:
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
-    virtual void setIntegrationPointsAndWeights() {};
+    virtual void setIntegrationPointsAndWeights();
+
+    ShapeFunc* shafunc;
+    IntegrationType* inttype;
+    unsigned numOfNodes;
 
     unsigned vtk_cell_type = 0; //integer detrmining type of cell for VTK plotting, 
     //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
@@ -38,7 +44,7 @@ public:
     virtual ~Element();
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
-    virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) { ( void ) iss; ( void ) fullnodes; ( void ) fullmatrs; };
+    virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     // virtual std :: string giveLineToSave(NodeContainer * nodes) const;
     virtual void init();
     void initMaterialStatuses();
@@ -52,8 +58,8 @@ public:
     unsigned giveNumOutDoFs() const { return outDoFs; };
     virtual double giveValue(string code) const;
     string giveName() const { return name; }
-    size_t giveIPNum() const { return ip_locs.size(); };
-    Point giveIPLoc(unsigned k) const { return ip_locs [ k ]; };
+    size_t giveNumIP() const { return inttype->giveNumIP(); };
+    Point giveIPLoc(unsigned k) const { return inttype->giveIPLocation(k); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
     MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
     vector< Node * >giveNodes() const { return nodes; }
@@ -62,8 +68,6 @@ public:
     vector< MaterialStatus * >giveMaterialStats() const { return stats; };
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
-    virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
     virtual Matrix giveBMatrix(const Point *x) const { return Matrix(0, 0); };
     Matrix *giveBMatrix(unsigned i) { return & Bs [ i ]; };
     virtual Matrix giveHMatrix(const Point *x) const { return Matrix(0, 0); };
@@ -73,6 +77,9 @@ public:
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     unsigned giveVTKCellType() const {return vtk_cell_type;};
     virtual void changeMaterial( Material *newmat);
+
+    virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
+    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
 };
 
 
