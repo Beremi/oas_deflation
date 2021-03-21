@@ -3368,7 +3368,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         node_coords_all = np.vstack( (node_coords_all, mirroredPointsA, mirroredPointsB) )
 
 
-
+    """
     plt.plot(node_coords_all[:,0], node_coords_all[:,1], 'o', color='green');
     plt.plot(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1], 'x', color='red');
     plt.show()
