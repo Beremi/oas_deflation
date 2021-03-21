@@ -1292,12 +1292,12 @@ def assembleTwoNodeSpringTest (maxLim, idt):
 
 
 
-def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=False, roughEdgeDogbone = 0):
+def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=0, roughEdgeDogbone = 0, roughMinDistCoef=1, interLayerThickness=2):
     print('Creating 2d dog bone....')
     #
 
 
-    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone, roughEdgeDogbone=roughEdgeDogbone);
+    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone, roughEdgeDogbone=roughEdgeDogbone, roughMinDistCoef=roughMinDistCoef, interLayerThickness=interLayerThickness);
 
     node_coords_all = np.asarray(node_coords_all)
 
@@ -3092,9 +3092,9 @@ def assemble3dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch)
 
 
 
-def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0, roughDogBone=False, roughEdgeDogbone=0 ):
+def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, edgeMinDistCoef = 1.0, roughDogBone=0, roughEdgeDogbone=0, roughMinDistCoef=1, interLayerThickness=2 ):
 
-    if roughDogBone == True:
+    if roughDogBone >0 :
         sampleCircularBorders = False
     else:
         sampleCircularBorders = True
@@ -3112,8 +3112,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
 
     oldLen = len(node_coords)
 
-    if roughDogBone == True:
-        altMinDist = 3 * minDist
+    if roughDogBone > 0:
+        altMinDist = roughMinDistCoef * minDist
     else:
         altMinDist = minDist
 
@@ -3178,7 +3178,6 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
 
 
 
-
     centreA = np.array( [-0.525 * D, 3/4 * D] )
     centreB = np.array( [ 1.525 * D, 3/4 * D] )
     if roughEdgeDogbone==0:
@@ -3186,11 +3185,14 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         radius = 0.725*D
         angleLimitA =   -np.arcsin( 0.5*D / radius)
         angleLimitB =   np.arcsin( 0.5*D / radius)
+        if roughDogBone >1:
+            angleLimitA =   -np.arcsin(  2* roughDogBone * minDist / radius)
+            angleLimitB =   np.arcsin( 2* roughDogBone * minDist / radius)
         #if symmetric == True:
         #    angleLimitB =   0
         mirroredPointsA =  pointGenerators.generateNodesCircle2dRand(centreA, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*10 )
-        angleLimitA =   np.pi-np.arcsin( 0.5*D / radius)
-        angleLimitB =   np.pi+np.arcsin( 0.5*D / radius)
+        angleLimitA +=   np.pi
+        angleLimitB +=   np.pi
         #if symmetric == True:
         #    angleLimitA =    np.pi
         mirroredPointsB =  pointGenerators.generateNodesCircle2dRand(centreB, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*10)
@@ -3204,9 +3206,12 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         radiusSpread = minDist
         angleLimitA =   -np.arcsin( 0.5*D / radius)
         angleLimitB =   np.arcsin( 0.5*D / radius)
+        if roughDogBone >1:
+            angleLimitA =   -np.arcsin( 2* roughDogBone * minDist / radius)
+            angleLimitB =   np.arcsin( 2* roughDogBone * minDist / radius)
         pointGenerators.generateNodesCircle2dRand(centreA, radius+radiusSpread, minDist, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = 0, radiusSpread = radiusSpread )
-        angleLimitA =   np.pi-np.arcsin( 0.5*D / radius)
-        angleLimitB =   np.pi+np.arcsin( 0.5*D / radius)
+        angleLimitA +=   np.pi
+        angleLimitB +=   np.pi
         pointGenerators.generateNodesCircle2dRand(centreB, radius+radiusSpread, minDist, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent =0,
         radiusSpread = radiusSpread)
     """
@@ -3216,7 +3221,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     #"""
 
 
-    if roughDogBone == True:
+    if roughDogBone == 1: #hrubsi jen obdelniky prilozek
         #top rough rectangle
         oldLen = len(node_coords)
         maxLim = np.array([  D    ,  1/4*D ])
@@ -3227,6 +3232,29 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         pointGenerators.generateNodesRect(maxLimF, altMinDist, 2, trials, node_coords, useLowBound=True)
         # middle fine asssemble3dPeriodicRectanglemaxLimF = np.array([     indent,       5/4 * D,        D,        6/4 * D   ])
         maxLimF = np.array([     indent,       1/4 * D,        D,        5/4 * D   ])
+        pointGenerators.generateNodesRect(maxLimF, minDist, 2, trials, node_coords, useLowBound=True)
+
+        nrOfPoints =  (len(node_coords)) - oldLen
+    elif roughDogBone > 1: #hrubsi krome pruhu +-10xmindist od prostredka
+        #top rough rectangle
+
+        oldLen = len(node_coords)
+        maxLim = np.array([  D    ,  3/4*D  - (roughDogBone+interLayerThickness)*minDist ])
+        pointGenerators.generateNodesRect(maxLim, altMinDist, 2, trials, node_coords)
+        #bottom rough rectangle
+        oldLen = len(node_coords)
+        maxLimF = np.array([     indent,       3/4 * D+   (roughDogBone+interLayerThickness)*minDist,        D,        6/4 * D   ])
+        pointGenerators.generateNodesRect(maxLimF, altMinDist, 2, trials, node_coords, useLowBound=True)
+
+
+        maxLimF = np.array([     indent,       3/4*D  - (roughDogBone+interLayerThickness)*minDist  ,        D,        3/4*D  - (roughDogBone)*minDist ])
+        pointGenerators.generateNodesRect(maxLimF, minDist*4, 2, trials, node_coords, useLowBound=True, topMinDist = altMinDist, bottomMinDist = minDist, gradienDirection=1)
+
+        maxLimF = np.array([     indent,       3/4*D  + roughDogBone*minDist  ,        D,        3/4*D  + (roughDogBone+interLayerThickness)*minDist ])
+        pointGenerators.generateNodesRect(maxLimF, minDist*4, 2, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = altMinDist, gradienDirection=1)
+
+        # middle fine
+        maxLimF = np.array([     indent,       3/4*D  - (roughDogBone)*minDist,        D,        3/4*D  + (roughDogBone)*minDist  ])
         pointGenerators.generateNodesRect(maxLimF, minDist, 2, trials, node_coords, useLowBound=True)
 
         nrOfPoints =  (len(node_coords)) - oldLen
@@ -3339,7 +3367,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         node_coords_all = np.vstack( (node_coords_all, mirroredPointsA, mirroredPointsB) )
 
 
-    """
+
     plt.plot(node_coords_all[:,0], node_coords_all[:,1], 'o', color='green');
     plt.plot(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1], 'x', color='red');
     plt.show()
