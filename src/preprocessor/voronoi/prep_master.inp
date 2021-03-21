@@ -23,6 +23,8 @@
 #
 # Dogbones # pro normalni model roughDogBone 0 elasticZone 0
 #roughDogBone >1 : kolik je hodnota, tolikanasobek minDist jemneho modelu bude na kazdou stranu od prostredku modelu nahoru a dolu
+#roughMinDistCoef 15 udava nasobek minDist, ktery je pouzit jako hrube zrno ve zhrubenych oblastech
+#interLayerThickness 100  udava vysku dodatecne oblasti v nasobku mindist nad a pod zjemnenym prostredkem ,kde je plynuly prechod mezi jemnou zrnitosti a hrubou zrnitosti
 # roughEdgeDogbone 0 - presne nasamplovane kruznice
 # roughEdgeDogbone 1 - prvky s obema nody v modelu 
 # roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
