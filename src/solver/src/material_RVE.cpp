@@ -23,8 +23,8 @@ void RVEMaterialStatus :: init() {
     //we needed to insert volumetric average generation after applying preprocessing block, otherwise constraints from preprocessing block would not be active
     //therefore, preprocessing blocks are now called in reader instead of model initialization
 
-    //generateVolumetricAverageBC();
-    generateRandomFixedBC();    
+    //generateVolumetricAverageBC(); //not good idea because the stiffness matrix becomes full
+    generateRandomFixedBC();   
     RVE->init();
 
     stringstream appendname;
@@ -149,6 +149,8 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     temp_stress.resize(stra_size + pres_size);
     temp_stress *= 0;
 
+    vector<double> zeta(stra_size + pres_size);
+    cout << stra_size << endl;
 
     if ( active_mechanics ) {
         double volume = 0.;
@@ -162,7 +164,9 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
                 for ( unsigned v = 0; v < ndim; v++ ) {
                     for ( unsigned r = 0; r < stra_size; r++ ) {
                         temp_stress [ r ] += factor [ v ] * mechProjectors [ v ] [ num ] [ r ];
+                        if(v==0) zeta [ r ] += e->giveArea() * e->giveLength() * mechProjectors [ v ] [ num ] [ r ];
                     }
+
                 }
                 num++;
                 volume += e->giveVolume();
@@ -170,6 +174,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
         }
         for ( unsigned v = 0; v < stra_size; v++ ) {
             temp_stress [ v ] /= volume;
+            zeta [ v ] /= volume;
         }
     }
 
@@ -201,7 +206,7 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
         }
     }
 
-    /*
+    //*
     cout << "STRAIN ";
     for(unsigned v=0; v<temp_strain.size(); v++) cout << " " << temp_strain[v];
     cout << endl;
@@ -209,7 +214,11 @@ Vector DiscreteRVEMaterialStatus :: giveStress(const Vector &strain) {
     cout << "STRESS ";
     for(unsigned v=0; v<temp_strain.size(); v++) cout << " " << temp_stress[v];
     cout << endl;
-    */
+
+    cout << "ZETA ";
+    for(unsigned v=0; v<stra_size; v++) cout << " " << zeta[v];
+    cout << endl;
+    //*//
 
     return temp_stress;
 }
@@ -323,6 +332,7 @@ double DiscreteRVEMaterialStatus :: giveDampingConstant() const {
 
 //////////////////////////////////////////////////////////
 void DiscreteRVEMaterialStatus :: generateRandomFixedBC() {
+
     BCContainer *bconds = RVE->giveBC();
     FunctionContainer *funcs = RVE->giveFunctions();
     ConstraintContainer *constrs = RVE->giveConstraints();
@@ -350,7 +360,7 @@ void DiscreteRVEMaterialStatus :: generateRandomFixedBC() {
         }           
     }
 
-    //transport
+    //transport    
     active_transport = false;
     for ( unsigned j = 0; j < constrs->giveSize(); j++ ) {
         if (active_transport) break;
@@ -370,7 +380,7 @@ void DiscreteRVEMaterialStatus :: generateRandomFixedBC() {
             }   
         }           
     }
-
+    active_transport = true;
 
     //add constant function
     vector< double >x, y;

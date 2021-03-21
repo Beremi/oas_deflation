@@ -54,7 +54,7 @@ Model 2d_dogbone dogboneD 1.2 minDist 0.004 dogboneExcentricityFrac 50 activeMec
 ####################################################################################
 #TRANSPORT MODELS AVAILABLE
 #
-#Model 2d_transportPatchTest Xsize 0.2 Ysize 0.1 minDist 0.005 activeTransport 1
+Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
 #Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.03 cylinderHeight 0.03 tubeThickness 0.01 activeTransport 1 activeMechanics 1 coupled 1 trials 10000 
 #

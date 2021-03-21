@@ -74,12 +74,17 @@ except:
 def fuller2D(d, dmax):
     return (1.065*np.sqrt(d/dmax)-0.053*np.power(d/dmax,4)-0.012*np.power(d/dmax,6)-0.0045*np.power(d/dmax,8)-0.0025*np.power(d/dmax,10))
 
+def fuller3D(d, dmax):
+    return np.sqrt(d/dmax)
+
 def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
         gap = 0.1
         Volume = np.prod(maxLim)
-        d = np.flipud(np.linspace(minDiam,maxDiam,20))  #20 different diameters
-        prob = volumeRatio*fuller2D(d, maxDiam)
-        num = ((prob[:-1]-prob[1:])*Volume/(np.pi*np.square(d[:-1]/2.))+1.).astype(int)
+        d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
+        if(dim==2):
+            freq = fuller2D(d, maxDiam)
+        elif(dim==3):
+            freq = fuller3D(d, maxDiam)
 
         #add regular boundary
         """
@@ -110,34 +115,30 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
 
         #option to add external nodes
         """
+        print("LOADING EXTERNAL NODES")
         node_coords = np.loadtxt("repnodes.inp")
         radii = node_coords[:,-1]
         node_coords = node_coords[:,0:-1]
         """
 
+        saturation = 0;
         iters = 0
         di = 0
-        numi= 0
-        while (d[di]>minDiam and iters<trials):
-            if numi<num[di]:
-                point = np.random.rand(dim)*(maxLim-d[di]) + d[di]/2.
-                radius = d[di]/2.
-                if len(node_coords) == 0:
-                    node_coords = np.vstack((node_coords,point));
-                    radii = np.hstack((radii, radius));
-                    numi += 1
-                    continue
-
-                dist = min(np.sum(np.square(node_coords-point),1)-np.square((1+gap)*(radii+radius)))
-                if dist>0.:
+        radius = maxDiam/2.
+        while (2*radius>minDiam and iters<trials*100):
+                point = np.random.rand(dim)*(maxLim-radius*2) + radius
+                if ( len(node_coords)==0 or min(np.sum(np.square(node_coords-point),1)-np.square((1.+gap)*(radii+radius)))>0) :
                     node_coords = np.vstack((node_coords, point));
                     radii = np.hstack((radii, radius));
                     iters = 0
-                    numi += 1
+                    if (dim==2):  saturation += np.pi*np.power(radius,2)/Volume
+                    elif (dim==3): saturation += np.pi/6*np.power(radius*2.,3)/Volume
+
+                    while ((1. - saturation / volumeRatio ) < freq[di]): di+=1;
+                    radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
                 else: iters += 1
-            else:
-                di += 1
-                numi = 0.
+
+        print("Saturation of the volume: ", saturation)
 
         """
         print(node_coords.shape, radii.shape)
@@ -618,6 +619,40 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
     point += center
     return point
 
+def randPointInSphere(center, radius):
+    # works also for circle in xy plane (based on len(center))
+    point = np.zeros(len(center))
+
+    angle1 = np.random.uniform() * np.pi * 2
+    angle2 = np.random.uniform() * np.pi * 2
+    rn = np.random.uniform()
+
+    point[0] = radius * np.cos(angle1) * rn
+    point[1] = radius * np.sin(angle1) * rn
+    if len(point) > 2:
+        point[2] = radius * np.cos(angle2) * rn
+
+    point += center
+    return point
+
+def randPointBetweenSpheres(center, radius, thickness):
+    # works also both anulus in xy plane
+    point = np.zeros(len(center))
+
+    angle1 = np.random.uniform() * np.pi * 2
+    angle2 = np.random.uniform() * np.pi * 2
+
+    effRadius = (radius - thickness) + thickness *  np.random.uniform()
+
+    point[0] = effRadius * np.cos(angle1)
+    point[1] = effRadius * np.sin(angle1)
+    if len(point) > 2:
+        point[2] = effRadius * np.cos(angle2)
+
+    point += center
+    return point
+
+
 def randPointInTube(center, radius, height, thickness, directionDim):
     angle = np.random.uniform() * np.pi * 2
 
@@ -810,11 +845,15 @@ def minDistTrans(lminR, lmin, dst, rR, rT):
 def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                         centersToRemesh, centersPreviouslyRemeshed,
                         radiusRemesh, radiusTransitional,
-                        dim=2, rectLims=None):
+                        dim):
     PRINT_TEST = False
     print ( 'Generating points to update geometry' )
-    border_block = Block(Point(rectLims[0][0], rectLims[0][1]),
-                         Point(rectLims[1][0], rectLims[1][1]))
+    if dim == 2:
+        border_block = Block(Point(0., 0.),
+                             Point(maxLim[0], maxLim[1]))
+    elif dim == 3:
+        border_block = Block(Point(0., 0., 0),
+                             Point(maxLim[0], maxLim[1], maxLim[2]))
     tr = 0
     # remesh fine areas
     ci = 0
@@ -831,17 +870,16 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     print("generating node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 distIsGood = True
                 if (tr > trials): break
-                if len(center) == 2:
-                    center = np.append(center, 0.)
 
-                coords = randPointInCircle(center,
-                                           radiusRemesh, directionDim=2)[:dim]  # so far for 2D
+                coords = randPointInSphere(center, radiusRemesh)
+                p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
+
                 # check if generated point is not outside the specimen
-                if rectLims is not None:
-                    if not border_block.IsInside(Point(coords[0], coords[1])):
-                        distIsGood = False
-                        tr += 1
-                        continue
+                # if rectLims is not None:
+                if not border_block.IsInside(p_coord):
+                    distIsGood = False
+                    tr += 1
+                    continue
                 # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
                                           radiusRemesh,
@@ -886,21 +924,17 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                 if (tr > trials): break
                 distIsGood = True
-                if len(center) == 2:
-                    center = np.append(center, 0.)
 
-                coords = randPointInAnnulus(
-                            center,
-                            radiusTransitional,
-                            thickness=(radiusTransitional-radiusRemesh),
-                            directionDim=2)[:dim]  # so far for 2D
+                coords = randPointBetweenSpheres(center, radiusTransitional,
+                            thickness=(radiusTransitional-radiusRemesh))
+                p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
 
                 # check if generated point is not outside the specimen
-                if rectLims is not None:
-                    if not border_block.IsInside(Point(coords[0], coords[1])):
-                        distIsGood = False
-                        tr += 1
-                        continue
+                # if rectLims is not None:
+                if not border_block.IsInside(p_coord):
+                    distIsGood = False
+                    tr += 1
+                    continue
 
                 # check distances to already remeshed centers - to prevent putting nodes there centers
                 distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
