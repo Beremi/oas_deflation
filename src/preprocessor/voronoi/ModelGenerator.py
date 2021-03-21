@@ -172,10 +172,15 @@ class Model:
             """
 
             if (r[i]=='roughDogBone'):
-                if (int(r[i+1])==1): self.roughDogBone = True
-                if (int(r[i+1])==0): self.roughDogBone = False
+                self.roughDogBone = int(r[i+1])
             if (r[i]=='roughEdgeDogbone'):
                 self.roughEdgeDogbone = int(r[i+1])
+
+            if (r[i]=='roughMinDistCoef'):
+                self.roughMinDistCoef = float(r[i+1])
+
+            if (r[i]=='interLayerThickness'):
+                self.interLayerThickness = float(r[i+1])
 
 
 
@@ -364,10 +369,14 @@ class Model:
             self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness )
         self.materialZones=None
         if self.elasticZone > 0:
-            self.materialZones= utilitiesModeling.assembleMaterialZones(1/4*self.dogboneD, 2, model='dogbone', D=self.dogboneD)
+            elaHeight = 1/4*self.dogboneD
+            if self.roughDogBone >1:
+                elaHeight = 3/4*self.dogboneD - (self.roughDogBone-1)*self.minDist
+
+            self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
     def run_3d_dogbone(self):

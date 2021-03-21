@@ -18,7 +18,7 @@ def generateNodesRect_cython(double[:] maxLim,
                       int dim,
                       int trials,
                       list node_coords,
-                      bool useLowBound=False):
+                      bool useLowBound=False, float topMinDist = -1, float bottomMinDist=-1, gradienDirection = -1):
     print('Generating {:d}d block segment of size: {}'.format(dim, ' / '.join('{:f}'.format(i) for i in maxLim)))
     cdef:
         int generatedPoints = 0
@@ -34,6 +34,10 @@ def generateNodesRect_cython(double[:] maxLim,
         #uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
     for d in range(dim):
         coords.push_back(0.0)
+
+    minDistGradient = False
+    if topMinDist > 0 and bottomMinDist > 0:
+        minDistGradient = True
 
     if node_coords:
         node_coords_input_len = len(node_coords)
@@ -64,7 +68,22 @@ def generateNodesRect_cython(double[:] maxLim,
                     dx -= coords[d]
                     distInt += dx * dx
                 distInt = distInt**0.5
-                if (distInt < minDist):
+
+                currentMinDist = minDist
+                if minDistGradient == True:
+                    relativePosition = 0
+                    if useLowBound==True:
+                        lowBound = maxLim[dim:2*dim]
+                        relativePosition = (coords[gradienDirection]-lowBound[gradienDirection])/(maxLim[gradienDirection]-lowBound[gradienDirection])
+                    else:
+                        relativePosition = (coords[gradienDirection])/(maxLim[gradienDirection])
+
+                    minDistDiff = topMinDist - bottomMinDist
+
+                    currentMinDist = bottomMinDist + relativePosition * minDistDiff
+
+
+                if (distInt < currentMinDist):
                     distIsGood = False
                     tr += 1
                     break

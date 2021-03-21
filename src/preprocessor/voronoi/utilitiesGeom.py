@@ -255,7 +255,8 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     #list of vertices, list of beams
     print()
     for i in range (validRidgeIdxs.size):
-        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' + str(validRidgeIdxs.size))
+        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
+
         sys.stdout.flush()
 
 
@@ -495,7 +496,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     ########################################################################################################
     allCoplanar = True
     for i in range (validRidgeIdxs.size):
-        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' + str(validRidgeIdxs.size))
+        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
+
         sys.stdout.flush()
 
         rdge = vor.ridge_vertices[validRidgeIdxs[i]]

@@ -35,7 +35,7 @@ def randPointOnLine(dim, nodeA, nodeB):
 # generates random points no closer to each other than minDist
 # into 2d or 3d block
 # maxLim: n-d array of dimensions
-def generateNodesRect(maxLim, minDist, dim, trials, node_coords, useLowBound=False):
+def generateNodesRect(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1):
     if (dim==2):
         print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. \nAlthough attempt to use the Cython solution by Vasek!!!' %(maxLim[0], maxLim[1]) )
     if (dim==3):
