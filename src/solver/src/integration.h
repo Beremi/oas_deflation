@@ -11,20 +11,20 @@ class IntegrationType
 private:
 
 protected:
-    string name;   
+    string name;
     vector< Point >ip_locs;
     vector< double >ip_weights;
-    
+
 public:
     IntegrationType() { name = "basic integration type"; }
-    virtual ~IntegrationType(){};
-    virtual void init(){};
-    unsigned giveNumIP() const {return ip_locs.size();};
-    double giveIPWeight(unsigned i) const {return ip_weights[i];};
-    void setIPWeight(unsigned i, double w) { ip_weights[i] = w;};
-    void setIPLocation(unsigned i, Point p) { ip_locs[i] = p;};
-    Point giveIPLocation(unsigned i) const {return ip_locs[i];};
-    Point* giveIPLocationPointer(unsigned i) {return &(ip_locs[i]);};
+    virtual ~IntegrationType() {};
+    virtual void init() {};
+    unsigned giveNumIP() const { return ip_locs.size(); };
+    double giveIPWeight(unsigned i) const { return ip_weights [ i ]; };
+    void setIPWeight(unsigned i, double w) { ip_weights [ i ] = w; };
+    void setIPLocation(unsigned i, Point p) { ip_locs [ i ] = p; };
+    Point giveIPLocation(unsigned i) const { return ip_locs [ i ]; };
+    Point *giveIPLocationPointer(unsigned i) { return & ( ip_locs [ i ] ); };
 };
 
 //////////////////////////////////////////////////////////
@@ -33,9 +33,9 @@ public:
 class IntegrDiscrete1 : public IntegrationType
 {
 public:
-    IntegrDiscrete1() { name = "IntegrDiscrete1";};
-    virtual ~IntegrDiscrete1(){};
-    virtual void init();   
+    IntegrDiscrete1() { name = "IntegrDiscrete1"; };
+    virtual ~IntegrDiscrete1() {};
+    virtual void init();
 };
 
 //////////////////////////////////////////////////////////
@@ -44,9 +44,9 @@ public:
 class IntegrQuad4 : public IntegrationType
 {
 public:
-    IntegrQuad4() { name = "IntegrQuad4";};
-    virtual ~IntegrQuad4(){};
-    virtual void init();   
+    IntegrQuad4() { name = "IntegrQuad4"; };
+    virtual ~IntegrQuad4() {};
+    virtual void init();
 };
 
 
@@ -56,9 +56,9 @@ public:
 class IntegrBrick8 : public IntegrationType
 {
 public:
-    IntegrBrick8() { name = "IntegrBrick8";};
-    virtual ~IntegrBrick8(){};
-    virtual void init();   
+    IntegrBrick8() { name = "IntegrBrick8"; };
+    virtual ~IntegrBrick8() {};
+    virtual void init();
 };
 
 

@@ -280,7 +280,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             // points_id.push_back(n - *nodes->begin());
         }
         all_points_id.push_back(points_id);
-        cell_types.push_back(el->giveVTKCellType());
+        cell_types.push_back(el->giveVTKCellType() );
         offset += points_id.size();
         offsets.push_back(offset);
         for ( unsigned i = 0; i < cell_data_size; i++ ) {

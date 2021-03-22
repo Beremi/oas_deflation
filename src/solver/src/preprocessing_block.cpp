@@ -170,8 +170,8 @@ void MechanicalPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCon
     //export data
     string export_name = "PUCstrain_stress";
     vector< unsigned >n(1, initalNodeNum);
-    vector< string >gname(3*dim-3);
-    vector< string >codes(3*dim-3);
+    vector< string >gname(3 * dim - 3);
+    vector< string >codes(3 * dim - 3);
     ForceGauge *fg;
     gname [ 0 ] = "sigma_x";
     gname [ 1 ] = "sigma_y";
@@ -235,7 +235,6 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
         funcs->addFunction(newf);
     } else {  //volumetric average
-
         VolumetricAverage *va;
         vector< Node * >vm;
 
@@ -252,7 +251,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
             MechDoF *pn = new MechDoF(nDoFs);
             nodes->addNode(pn);
 
-            vector <unsigned> dirs(vm.size() );
+            vector< unsigned >dirs(vm.size() );
 
             for ( unsigned vi = 0; vi < nDoFs; vi++ ) {
                 fill(dirs.begin(), dirs.end(), vi);
@@ -411,7 +410,7 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
             masters.resize(num);
             slaves.resize(num);
             for ( unsigned i = 0; i < num; i++ ) {
-               iss >> slaves [ i ] >> masters [ i ];
+                iss >> slaves [ i ] >> masters [ i ];
             }
         } else if ( param.compare("use_half_gammas") == 0 ) {
             use_half_gammas = true;
@@ -500,7 +499,6 @@ void TransportPeriodicBC :: generateConstraints(NodeContainer *nodes, Constraint
 
 //////////////////////////////////////////////////////////
 void TransportPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterContainer *ex) {
-
     //export data
     string export_name = "PUCgrad_flux";
     vector< string >gname;
@@ -618,7 +616,6 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
         funcs->addFunction(newf);
     } else {  //volumetric average
-
         VolumetricAverage *va;
         vector< Node * >vm;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
@@ -630,7 +627,7 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
             TrsDoF *tn = new TrsDoF(1);
             nodes->addNode(tn);
 
-            vector <unsigned> dirs(vm.size() );
+            vector< unsigned >dirs(vm.size() );
             va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
             constrs->addConstraint(va);
 

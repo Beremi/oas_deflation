@@ -32,11 +32,11 @@ protected:
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
     virtual void setIntegrationPointsAndWeights();
 
-    ShapeFunc* shafunc;
-    IntegrationType* inttype;
+    ShapeFunc *shafunc;
+    IntegrationType *inttype;
     unsigned numOfNodes;
 
-    unsigned vtk_cell_type = 0; //integer detrmining type of cell for VTK plotting, 
+    unsigned vtk_cell_type = 0; //integer detrmining type of cell for VTK plotting,
     //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
 
 public:
@@ -75,8 +75,8 @@ public:
     virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
     unsigned giveDimension() const { return ndim; }
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
-    unsigned giveVTKCellType() const {return vtk_cell_type;};
-    virtual void changeMaterial( Material *newmat);
+    unsigned giveVTKCellType() const { return vtk_cell_type; };
+    virtual void changeMaterial(Material *newmat);
 
     virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };

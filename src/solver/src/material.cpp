@@ -12,7 +12,7 @@ Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
         }
         Vector activeStrain = totalStrain - eigenstrain;
         return activeStrain;
-    } else   {
+    } else {
         return totalStrain;
     }
 }
@@ -29,11 +29,11 @@ void MaterialStatus :: setEigenStrain(Vector &x) {
     eigenstrain = x;
 }
 
-bool MaterialStatus :: isElastic( const bool &now ) const {
-  if ( this->name != "basic mat. status" ){
-    std::cout << "using elastic check for base class MaterialStatus, if this is not a desire, you need to implement method \'isElastic\' for " << this->name << '\n';
-  }
-  return true;
+bool MaterialStatus :: isElastic(const bool &now) const {
+    if ( this->name != "basic mat. status" ) {
+        std :: cout << "using elastic check for base class MaterialStatus, if this is not a desire, you need to implement method \'isElastic\' for " << this->name << '\n';
+    }
+    return true;
 }
 
 
@@ -49,17 +49,21 @@ TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : Ma
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain.resize(strain.size()-1);
-    for(unsigned k=0; k<temp_strain.size(); k++) temp_strain[k] = strain[k];
-    updateEffectiveConductivity( strain[temp_strain.size()] ); //nonlinear effecto of pressure
+    temp_strain.resize(strain.size() - 1);
+    for ( unsigned k = 0; k < temp_strain.size(); k++ ) {
+        temp_strain [ k ] = strain [ k ];
+    }
+    updateEffectiveConductivity(strain [ temp_strain.size() ]); //nonlinear effecto of pressure
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
     return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
-    temp_strain.resize(strain.size()-1);
-    for(unsigned k=0; k<temp_strain.size(); k++) temp_strain[k] = strain[k];
+    temp_strain.resize(strain.size() - 1);
+    for ( unsigned k = 0; k < temp_strain.size(); k++ ) {
+        temp_strain [ k ] = strain [ k ];
+    }
     temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
     return temp_stress;
 };
@@ -68,7 +72,9 @@ Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain)
 Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
     Matrix T(dimension, dimension);
-    for (unsigned i=0; i<dimension; i++) T [ i ] [ i ] = -effConductivity;
+    for ( unsigned i = 0; i < dimension; i++ ) {
+        T [ i ] [ i ] = -effConductivity;
+    }
     return T;
 };
 
@@ -82,20 +88,21 @@ double TrsprtMaterialStatus :: giveDampingConstant() const {
 double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const {
     if ( type.compare("elastic") == 0 ) {
         TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-        return calculatePressureDependentPermeability(0.)*tmat->giveDensity()/tmat->giveViscosity();
+        return calculatePressureDependentPermeability(0.) * tmat->giveDensity() / tmat->giveViscosity();
     } else {
         return effConductivity;
     }
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pressure) const{
+double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pressure) const {
     TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    if (tmat->giveParamA()<0) return tmat->givePermeability();
-    else {
+    if ( tmat->giveParamA() < 0 ) {
+        return tmat->givePermeability();
+    } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1.+pow(pressure/tmat->giveParamA(),1./(1.-m)),-m);
-        return tmat->givePermeability() * pow(saturation,0.5)*pow(1.-pow(1.-pow(saturation,1./m),m),2.);
+        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
 
@@ -110,9 +117,9 @@ double TrsprtMaterialStatus :: giveValue(string code) const {
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtMaterialStatus :: updateEffectiveConductivity (double pressure){
+void TrsprtMaterialStatus :: updateEffectiveConductivity(double pressure) {
     TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    effConductivity = calculatePressureDependentPermeability(pressure)*tmat->giveDensity()/tmat->giveViscosity();
+    effConductivity = calculatePressureDependentPermeability(pressure) * tmat->giveDensity() / tmat->giveViscosity();
 }
 
 
@@ -171,19 +178,19 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
 //////////////////////////////////////////////////////////
 // ELASTIC TENSORIAL MECHANICAL MATERIAL
 
-Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain){
+Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain) {
     return ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(strain);
 };
 
 
 //////////////////////////////////////////////////////////
-double ElasticMechMaterialStatus :: giveMassConstant() const{
-    ElasticMechMaterial * material = static_cast<ElasticMechMaterial*>(mat);
+double ElasticMechMaterialStatus :: giveMassConstant() const {
+    ElasticMechMaterial *material = static_cast< ElasticMechMaterial * >( mat );
     return material->giveDensity();
 }
 
 //////////////////////////////////////////////////////////
-Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain){
+Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
     temp_strain = strain;
     unsigned dim = 0;
     if ( strain.size() == 1 ) {
@@ -409,7 +416,7 @@ TrsprtCoupledMaterialStatus :: TrsprtCoupledMaterialStatus(TrsprtMaterial *m, El
 double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) const {
     if ( type.compare("elastic") == 0  ) {
         TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-        return calculatePressureDependentPermeability(0.)*tmat->giveDensity()/tmat->giveViscosity();
+        return calculatePressureDependentPermeability(0.) * tmat->giveDensity() / tmat->giveViscosity();
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
         return effConductivity;
     } else {
@@ -437,7 +444,7 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
 };
 
 //////////////////////////////////////////////////////////
-Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector & fullstrain) {
+Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &fullstrain) {
     temp_strain.resize(1);
     temp_strain [ 0 ] = fullstrain [ 0 ];
     temp_stress = -effConductivity *addEigenStrain(temp_strain);

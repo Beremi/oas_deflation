@@ -19,7 +19,7 @@ private:
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const;
     void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
-    std :: vector<std :: string> file_to_load_from;
+    std :: vector< std :: string >file_to_load_from;
 
 public:
     ElementContainer() {};
@@ -27,9 +27,9 @@ public:
     void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     // void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
-    void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now=0, const unsigned &step=0, const bool &saveNodeIds=true) const;
+    void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now = 0, const unsigned &step = 0, const bool &saveNodeIds = true) const;
     void readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool &get_time_from_file = true);
-    void setFileToLoadStatsFrom(const std :: string &str );
+    void setFileToLoadStatsFrom(const std :: string &str);
     void init();
     size_t giveSize() const { return elems.size(); }
     void findElementFriends();
@@ -46,7 +46,7 @@ public:
     void integrateDampingForces(const Vector &full_v, Vector &full_f) const;
     void integrateInertiaForces(const Vector &full_a, Vector &full_f) const;
     Element *giveElement(unsigned const num) const { return elems [ num ]; }
-    Element *giveElementConnectingNodes(std :: vector < unsigned > &node_ids) const;
+    Element *giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const;
 
     vector< Element * > :: iterator begin() { return elems.begin(); }
     vector< Element * > :: iterator end() { return elems.end(); }

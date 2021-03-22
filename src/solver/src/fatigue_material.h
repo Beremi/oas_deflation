@@ -53,11 +53,11 @@ public:
     virtual double giveValue(string code) const;
     bool isDamageCoupled() const { return coup_dam; }
 protected:
-  void setDamage(const double &new_damage){
-    if ( new_damage > this->temp_damageShear){
-      this->temp_damageShear = new_damage;
+    void setDamage(const double &new_damage) {
+        if ( new_damage > this->temp_damageShear ) {
+            this->temp_damageShear = new_damage;
+        }
     }
-  }
 };
 
 
@@ -136,11 +136,11 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual double giveValue(string code) const;
 protected:
-  void setDamage(const double &new_damage){
-    if ( new_damage > this->temp_damage){
-      this->temp_damage = new_damage;
+    void setDamage(const double &new_damage) {
+        if ( new_damage > this->temp_damage ) {
+            this->temp_damage = new_damage;
+        }
     }
-  }
 };
 
 

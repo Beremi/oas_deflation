@@ -86,7 +86,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems.setFileToLoadStatsFrom( (baseDir / istr ).string() );
+                    elems.setFileToLoadStatsFrom( ( baseDir / istr ).string() );
                 }
             } else if ( istr.compare("ConstrFiles") == 0 ) {
                 // read constraint files

@@ -85,7 +85,7 @@ private:
     vector< BodyLoad * >loads;
 
 public:
-    BCContainer() { functions = nullptr;};
+    BCContainer() { functions = nullptr; };
     virtual ~BCContainer();
     void setContainers(FunctionContainer *f) { functions = f; };
     void init();

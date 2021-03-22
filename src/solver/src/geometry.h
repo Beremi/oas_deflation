@@ -40,9 +40,9 @@ public:
     virtual void setMainPoint(const Point &P) { this->mainPoint = P; };
     virtual void setSize(const double &size) { this->size = size; }; //todo: warning C4458: declaration of 'size' hides class member
     virtual void print() const {
-      std::cout << "main point: ";
-      this->mainPoint.print();
-      std::cout << "size = " << this->size << '\n';
+        std :: cout << "main point: ";
+        this->mainPoint.print();
+        std :: cout << "size = " << this->size << '\n';
     };
 };
 
@@ -97,9 +97,9 @@ public:
 
 
 
-bool isInsideRegions( const std :: vector< Region * > &regions, const Point &p );
+bool isInsideRegions(const std :: vector< Region * > &regions, const Point &p);
 void readRegions(const std :: string &filename, std :: vector< Region * > &regions);
-bool isInsideRegions( const std :: vector< Region * > &regions, const Element *el );
+bool isInsideRegions(const std :: vector< Region * > &regions, const Element *el);
 ///////////////////////////////////////////////////////////////////////////////////
 
 

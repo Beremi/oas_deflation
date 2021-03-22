@@ -39,9 +39,9 @@ public:
     void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(istringstream &iss) {
-      std::cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
+        std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
-    virtual bool isElastic(const bool &now=false) const;
+    virtual bool isElastic(const bool &now = false) const;
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
@@ -100,7 +100,7 @@ class TrsprtMaterial : public Material
 protected:
     double permeability, viscosity, capacity, density, a, m;
 public:
-    TrsprtMaterial() { name = "transport material"; a=-1.; m=0;};
+    TrsprtMaterial() { name = "transport material"; a = -1.; m = 0; };
     ~TrsprtMaterial() {};
     double giveCapacity() const { return capacity; };
     double giveDensity() const { return density; };
@@ -227,7 +227,7 @@ public:
     virtual Vector giveStress(const Vector &strain);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     double giveDensity() const;
-    virtual bool isElastic(const bool &now=false) const { return true; };
+    virtual bool isElastic(const bool &now = false) const { return true; };
 };
 
 //////////////////////////////////////////////////////////

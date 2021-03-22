@@ -33,7 +33,7 @@ public:
     virtual double giveValue(string code) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(istringstream &iss);
-    virtual bool isElastic(const bool &now=false) const;
+    virtual bool isElastic(const bool &now = false) const;
 };
 
 

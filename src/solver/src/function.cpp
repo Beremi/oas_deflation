@@ -353,12 +353,14 @@ void FunctionContainer :: readFromFile(const string filename) {
 }
 
 //////////////////////////////////////////////////////////
-Function * FunctionContainer :: giveFunction(unsigned k) {
-    if(k>=functions.size()){
+Function *FunctionContainer :: giveFunction(unsigned k) {
+    if ( k >= functions.size() ) {
         cerr << "Function Container Error: requested function number " << k << " but the container contains only " << functions.size() << " functions" << endl;
         exit(1);
+    } else   {
+        return functions [ k ];
     }
-    else return functions [ k ]; };
+};
 
 //////////////////////////////////////////////////////////
 /*

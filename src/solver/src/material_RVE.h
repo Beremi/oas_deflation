@@ -28,14 +28,14 @@ protected:
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
 
-    virtual void generateRandomFixedBC(){};
+    virtual void generateRandomFixedBC() {};
     virtual void generateVolumetricAverageBC() {};
 public:
     RVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile);
     virtual ~RVEMaterialStatus();
     virtual void init();
     virtual void update();
-    Model* giveWholeRVE(){return RVE;};
+    Model *giveWholeRVE() { return RVE; };
 };
 
 //////////////////////////////////////////////////////////
@@ -61,13 +61,13 @@ class DiscreteTransportRVEMaterial;
 class DiscreteTransportRVEMaterialStatus : public RVEMaterialStatus
 {
 protected:
-    vector<double> aux_params; //macroscopic pressure coeff
-    vector<double> orig_mater_params; //material parameters of the original model    
-    
+    vector< double >aux_params; //macroscopic pressure coeff
+    vector< double >orig_mater_params; //material parameters of the original model
+
     virtual void generateRandomFixedBC();
     virtual void generateVolumetricAverageBC();
     virtual void applyEigenStrains();
-    virtual void collectStresses(); 
+    virtual void collectStresses();
     virtual unsigned giveStrainSize(unsigned ndim) const;
 
 public:
@@ -100,8 +100,8 @@ class DiscreteMechanicalRVEMaterialStatus : public DiscreteTransportRVEMaterialS
 {
 protected:
     virtual void applyEigenStrains();
-    virtual void collectStresses(); 
-    virtual unsigned giveStrainSize(unsigned ndim) const; 
+    virtual void collectStresses();
+    virtual unsigned giveStrainSize(unsigned ndim) const;
     void calculateCentroid();
 
     Point centroid;
@@ -144,67 +144,67 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveDampingConstant() const;
-    virtual void update(); 
+    virtual void update();
 };
 
 //////////////////////////////////////////////////////////
 class DiscreteTransportRVEMaterialPrecomputed : public DiscreteTransportRVEMaterial
 {
 protected:
-    TrsprtMaterialStatus* masterStatus;
-    TrsprtMaterial* masterMaterial;
+    TrsprtMaterialStatus *masterStatus;
+    TrsprtMaterial *masterMaterial;
     Matrix conductivity; // precomputed form one integration point, then used everywhere
     double capacity;
 public:
-    DiscreteTransportRVEMaterialPrecomputed() { name = "transport RVE precomputed material"; conductivity = Matrix(0,0); };
+    DiscreteTransportRVEMaterialPrecomputed() { name = "transport RVE precomputed material"; conductivity = Matrix(0, 0); };
     virtual ~DiscreteTransportRVEMaterialPrecomputed() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e);
-    Matrix givePrecomputedConductivity() const { return conductivity;};
-    double givePrecomputedCapacity() const { return capacity;};
-    TrsprtMaterialStatus* giveMasterStatus() { return masterStatus;};
-    TrsprtMaterial* giveMasterMaterial() { return masterMaterial;};
-    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus* masterS,  TrsprtMaterial* masterM);
+    Matrix givePrecomputedConductivity() const { return conductivity; };
+    double givePrecomputedCapacity() const { return capacity; };
+    TrsprtMaterialStatus *giveMasterStatus() { return masterStatus; };
+    TrsprtMaterial *giveMasterMaterial() { return masterMaterial; };
+    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM);
 };
 
 
 
 
 /*
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// DISCRETE RVE MATERIAL FOR BOTH TRANSPORT AND MECHANICAL HOMOGENIZATION
-
-class DiscreteRVEMaterial;
-class DiscreteRVEMaterialStatus : public RVEMaterialStatus
-{
-protected:
-    virtual void generateRandomFixedBC();
-    virtual void generateVolumetricAverageBC();
-    void calculateCentroid();
-
-    Point centroid;
-    bool active_mechanics, active_transport;
-    vector< vector< Vector > >projectors;
-
-public:
-    DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile);
-    virtual ~DiscreteRVEMaterialStatus() {};
-    virtual void init();
-    virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual double giveDampingConstant() const;
-};
-
-//////////////////////////////////////////////////////////
-class DiscreteRVEMaterial : public RVEMaterial
-{
-protected:
-
-public:
-    DiscreteRVEMaterial() { name = "transport RVE material"; };
-    virtual ~DiscreteRVEMaterial() {};
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
-};
-*/
+ * //////////////////////////////////////////////////////////
+ * //////////////////////////////////////////////////////////
+ * // DISCRETE RVE MATERIAL FOR BOTH TRANSPORT AND MECHANICAL HOMOGENIZATION
+ *
+ * class DiscreteRVEMaterial;
+ * class DiscreteRVEMaterialStatus : public RVEMaterialStatus
+ * {
+ * protected:
+ *  virtual void generateRandomFixedBC();
+ *  virtual void generateVolumetricAverageBC();
+ *  void calculateCentroid();
+ *
+ *  Point centroid;
+ *  bool active_mechanics, active_transport;
+ *  vector< vector< Vector > >projectors;
+ *
+ * public:
+ *  DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile);
+ *  virtual ~DiscreteRVEMaterialStatus() {};
+ *  virtual void init();
+ *  virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
+ *  virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+ *  virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
+ *  virtual double giveDampingConstant() const;
+ * };
+ *
+ * //////////////////////////////////////////////////////////
+ * class DiscreteRVEMaterial : public RVEMaterial
+ * {
+ * protected:
+ *
+ * public:
+ *  DiscreteRVEMaterial() { name = "transport RVE material"; };
+ *  virtual ~DiscreteRVEMaterial() {};
+ *  virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+ * };
+ */
 #endif /* _MAT_RVE_H */

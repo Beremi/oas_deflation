@@ -15,12 +15,12 @@ void MaterialContainer :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Material* MaterialContainer :: giveMaterial(unsigned const mat){
-    if (mat>=matrs.size()){
+Material *MaterialContainer :: giveMaterial(unsigned const mat) {
+    if ( mat >= matrs.size() ) {
         cerr << "MaterialContainer Error: material " << mat << " requested, but only " << matrs.size() << " materials exist" << endl;
         exit(1);
     }
-    return matrs [ mat ]; 
+    return matrs [ mat ];
 }
 
 //////////////////////////////////////////////////////////

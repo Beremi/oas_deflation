@@ -48,7 +48,6 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve() {};
-
 };
 
 //////////////////////////////////////////////////////////
@@ -73,7 +72,6 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve();
-
 };
 
 //////////////////////////////////////////////////////////
@@ -168,7 +166,6 @@ public:
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
-
 };
 
 //////////////////////////////////////////////////////////

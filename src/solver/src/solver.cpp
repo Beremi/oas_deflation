@@ -5,13 +5,15 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC SOLVER CLASS
-Solver :: Solver(){
+Solver :: Solver() {
     name = "basic solver";
 }
 
 
 void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) {
-  elems = e; nodes = n; funcs = functions;
+    elems = e;
+    nodes = n;
+    funcs = functions;
 }
 
 //////////////////////////////////////////////////////////
@@ -107,7 +109,6 @@ void Solver :: runBeforeEachStep() {
 
 //////////////////////////////////////////////////////////
 void Solver :: runAfterEachStep() {
-
     r = trial_r;
     f_int_old = f_int;
     f_ext_old = f_ext;
@@ -155,7 +156,7 @@ void Solver :: init(const bool &initial) {
     r = Vector(totalDoFnum);
     trial_r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
-    f = Vector(freeDoFnum - nodes->giveNumConstrDoFs());
+    f = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     residuals = Vector(totalDoFnum);
     ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     full_ddr = Vector(totalDoFnum);
@@ -186,7 +187,7 @@ void SteadyStateLinearSolver :: init(const bool &initial) {
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: updateKeff(string matrixType){
+void SteadyStateLinearSolver :: updateKeff(string matrixType) {
     Keff = Kini;
     elems->updateStiffnessMatrix(Keff, matrixType);
 }
@@ -218,9 +219,9 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> conj_grad_precission;
             } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
                 iss >> conj_grad_relative_maxit;
-            } else if ( param.compare("init_time") == 0) {
+            } else if ( param.compare("init_time") == 0 ) {
                 iss >> this->init_time;
-            } else if ( param.compare("init_step") == 0) {
+            } else if ( param.compare("init_step") == 0 ) {
                 iss >> this->init_step;
             }
         }
@@ -241,7 +242,6 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: solve() {
-
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     updateFieldVariables();
@@ -508,7 +508,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
         }
     }
 
-    * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM)), EPS2) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT)), EPS2) );
+    * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2) );
     * displa_error = sqrt(full_ddrM / max(trial_rM, EPS2) + full_ddrT / max(trial_rT, EPS2) );
     * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2);
 }
@@ -516,7 +516,6 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
-
     double load_mult;
     bool converged = false;
     bool restarted = false;
@@ -581,10 +580,15 @@ void SteadyStateNonLinearSolver :: solve() {
 
             //compute and print errors
             evaluateErrors(& displa_error, & energy_error, & residu_error);
-            if ( it == 0 )  displa_error = 0;            //error in displacement change, only from second iteration
+            if ( it == 0 ) {
+                displa_error = 0;                        //error in displacement change, only from second iteration
+            }
             cout << setw(6) << it << setw(15) << residu_error;
-            if ( it == 0 )  cout << setw(15) << "---";
-            else cout << setw(15) << displa_error;
+            if ( it == 0 ) {
+                cout << setw(15) << "---";
+            } else {
+                cout << setw(15) << displa_error;
+            }
             cout << setw(15) << energy_error << endl;
 
             if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
@@ -737,19 +741,19 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
     nodes->giveReducedForceArray(residuals, f);
     terminated = !LinalgSymmetricSolver(C, ddr, f,  ddr, conj_grad_precission, conj_grad_relative_maxit);
     v = Vector(totalDoFnum);
-    nodes->giveFullDoFArray(ddr,v);
+    nodes->giveFullDoFArray(ddr, v);
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen){
-    elems->integrateDampingForces( v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam );
+void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
+    elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
     computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen);
     residuals -= f_dam;
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: computeForcesAtStepEnd(const bool frozen){
-    elems->integrateDampingForces(  v , f_dam );
+void TransientLinearTransportSolver :: computeForcesAtStepEnd(const bool frozen) {
+    elems->integrateDampingForces(v, f_dam);
     computeInternalExternalForces(trial_r, frozen);
     residuals -= f_dam;
 }
@@ -769,7 +773,7 @@ void TransientLinearTransportSolver :: updateKeff(string matrixType) {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: updateFieldVariables() {
     SteadyStateLinearSolver :: updateFieldVariables();
-    v = (trial_r-r) * ( 1. / ( dt * gamma ) ) + v_old * ( 1. - 1. / gamma );
+    v = ( trial_r - r ) * ( 1. / ( dt * gamma ) ) + v_old * ( 1. - 1. / gamma );
 }
 
 //////////////////////////////////////////////////////////
@@ -778,13 +782,13 @@ void TransientLinearTransportSolver :: solve() {
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: runBeforeEachStep(){
+void TransientLinearTransportSolver :: runBeforeEachStep() {
     SteadyStateLinearSolver :: runBeforeEachStep();
     v_old = v;
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: runAfterEachStep(){
+void TransientLinearTransportSolver :: runAfterEachStep() {
     SteadyStateLinearSolver :: runAfterEachStep();
 };
 
@@ -805,13 +809,13 @@ void TransientNonLinearTransportSolver :: init(const bool &initial) {
 
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearTransportSolver :: runBeforeEachStep(){
+void TransientNonLinearTransportSolver :: runBeforeEachStep() {
     SteadyStateNonLinearSolver :: runBeforeEachStep();
     v_old = v;
 }
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearTransportSolver :: runAfterEachStep(){
+void TransientNonLinearTransportSolver :: runAfterEachStep() {
     SteadyStateNonLinearSolver :: runAfterEachStep();
 };
 
@@ -839,7 +843,7 @@ void TransientLinearMechanicalSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: init(const bool &initial){
+void TransientLinearMechanicalSolver :: init(const bool &initial) {
     SteadyStateLinearSolver :: init(initial);
 
     v = Vector(totalDoFnum);
@@ -856,15 +860,14 @@ void TransientLinearMechanicalSolver :: init(const bool &initial){
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r, true); //at time 0
     nodes->giveReducedForceArray(residuals, f);
-    Vector v_red(Vector(freeDoFnum - nodes->giveNumConstrDoFs() ));
+    Vector v_red(Vector(freeDoFnum - nodes->giveNumConstrDoFs() ) );
     terminated = !LinalgSymmetricSolver(M, ddr, f - C * v_red,  ddr, conj_grad_precission, conj_grad_relative_maxit);
     a = Vector(totalDoFnum);
-    nodes->giveFullDoFArray(ddr,a);
+    nodes->giveFullDoFArray(ddr, a);
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
-
     //set up the generalized-alpha method according to Chung and Hulbert 1993
     if ( abs(rhoinfty - 0.5) > 0.5 ) {
         cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
@@ -885,41 +888,41 @@ void TransientLinearMechanicalSolver :: updateKeff(string matrixType) {
 
 //////////////////////////////////////////////////////////
 //void TransientLinearMechanicalSolver :: updateFeff() {
-    //feff = f - C * ( ( 1. + gamma * ( alpha_f - 1 ) / beta ) * v_red + dt * ( 1. - alpha_f ) * ( 1. - gamma / ( 2. * beta ) ) * a_red ) - M * ( ( alpha_m - 1. ) / ( dt * beta ) * v_red  + ( 1. + ( alpha_m - 1 ) / ( 2. * beta ) ) * a_red );
+//feff = f - C * ( ( 1. + gamma * ( alpha_f - 1 ) / beta ) * v_red + dt * ( 1. - alpha_f ) * ( 1. - gamma / ( 2. * beta ) ) * a_red ) - M * ( ( alpha_m - 1. ) / ( dt * beta ) * v_red  + ( 1. + ( alpha_m - 1 ) / ( 2. * beta ) ) * a_red );
 //}
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: updateFieldVariables() {
     SteadyStateLinearSolver :: updateFieldVariables();
-    v = (trial_r-r) * ( gamma / ( dt * beta ) ) + v_old * ( 1. - gamma / beta ) + a_old * ( dt * ( 1. - gamma / ( 2. * beta ) ) );
-    a = ( (trial_r-r) - v_old * dt - a_old * ( pow(dt, 2) * ( 1. / 2. - beta ) ) ) / ( pow(dt, 2) * beta );
+    v = ( trial_r - r ) * ( gamma / ( dt * beta ) ) + v_old * ( 1. - gamma / beta ) + a_old * ( dt * ( 1. - gamma / ( 2. * beta ) ) );
+    a = ( ( trial_r - r ) - v_old * dt - a_old * ( pow(dt, 2) * ( 1. / 2. - beta ) ) ) / ( pow(dt, 2) * beta );
 }
 
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen){
-    elems->integrateDampingForces( v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam );
-    elems->integrateInertiaForces( a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc );
+void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
+    elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
+    elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
     computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen);
     residuals -= f_dam + f_acc;
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver ::computeForcesAtStepEnd(const bool frozen){
-    elems->integrateDampingForces( v, f_dam );
+void TransientLinearMechanicalSolver :: computeForcesAtStepEnd(const bool frozen) {
+    elems->integrateDampingForces(v, f_dam);
     //elems->integrateInertiaForces( a, f_acc );
     computeInternalExternalForces(trial_r, frozen);
     residuals -= f_dam + f_acc;
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: runBeforeEachStep(){
+void TransientLinearMechanicalSolver :: runBeforeEachStep() {
     TransientLinearTransportSolver :: runBeforeEachStep();
     a_old = a;
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: runAfterEachStep(){
+void TransientLinearMechanicalSolver :: runAfterEachStep() {
     TransientLinearTransportSolver :: runAfterEachStep();
 };
 
@@ -941,13 +944,13 @@ void TransientNonLinearMechanicalSolver :: init(const bool &initial) {
 
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearMechanicalSolver :: runBeforeEachStep(){
+void TransientNonLinearMechanicalSolver :: runBeforeEachStep() {
     TransientNonLinearTransportSolver :: runBeforeEachStep();
     a_old = a;
 }
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearMechanicalSolver :: runAfterEachStep(){
+void TransientNonLinearMechanicalSolver :: runAfterEachStep() {
     TransientNonLinearTransportSolver :: runAfterEachStep();
 };
 

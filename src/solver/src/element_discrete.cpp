@@ -152,8 +152,8 @@ void RigidBodyContact :: checkNodeType() const {
 Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     //Matrix B
     Matrix B = Matrix(ndim, 6 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation ( 0 )) * ( -1. );
-    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation ( 0 ));
+    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B [ i ] [ j ] = Aa [ i ] [ j ];
@@ -175,7 +175,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         }
-        inttype->setIPLocation(0, ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2. );
+        inttype->setIPLocation(0, ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.);
         /////////////////////////////////////////////////////////
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
@@ -235,16 +235,16 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm()/2.;
+            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
         }
         centroid /= area;
-        inttype->setIPLocation(0, centroid );    
+        inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0));
+        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-6 ) {
             cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
@@ -363,7 +363,7 @@ Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
 };
 
 Vector RigidBodyContact :: giveContactStressXYZ(const Vector &DoFs) {
-    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs));
+    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs) );
 };
 
 //////////////////////////////////////////////////////////
@@ -443,8 +443,8 @@ void Truss :: checkNodeType() const {
 Matrix Truss :: giveBMatrix(const Point *x) const {
     //Matrix B
     Matrix B = Matrix(ndim, 2 * ndim);
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0)) * ( -1. );
-    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0));
+    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < ndim; j++ ) {
             B [ i ] [ j ] = Aa [ i ] [ j ];
@@ -513,7 +513,7 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
 
 
 //////////////////////////////////////////////////////////
-void Transp1D :: setIntegrationPointsAndWeights() {    
+void Transp1D :: setIntegrationPointsAndWeights() {
     stats.resize(1);
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
@@ -526,7 +526,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
             exit(1);
         }
 
-        inttype->setIPLocation(0, ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2. );
+        inttype->setIPLocation(0, ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.);
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
         t = t / area;
@@ -604,7 +604,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
             centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
         }
         centroid /= area;
-        inttype->setIPLocation(0, centroid );
+        inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
         currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
@@ -621,16 +621,20 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
         cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << endl;
-        cout << " normal v.:"; 
-        for(unsigned p=0; p<ndim; p++ ) cout << "\t" << normal.giveCoord(p);
+        cout << " normal v.:";
+        for ( unsigned p = 0; p < ndim; p++ ) {
+            cout << "\t" << normal.giveCoord(p);
+        }
         cout << endl;
-        cout << " contact v.:"; 
-        for(unsigned p=0; p<ndim; p++ ) cout << "\t" << t.giveCoord(p);
+        cout << " contact v.:";
+        for ( unsigned p = 0; p < ndim; p++ ) {
+            cout << "\t" << t.giveCoord(p);
+        }
         cout << endl;
         exit(1);
     }
 
-    inttype->setIPWeight(0, length * area );  // NOTE JK: should not this be divided by dimension? Otherwise you integrate dim-times volume that is actually there (this is what caused problems in study on unstructured grid for FDM contribution)
+    inttype->setIPWeight(0, length * area);   // NOTE JK: should not this be divided by dimension? Otherwise you integrate dim-times volume that is actually there (this is what caused problems in study on unstructured grid for FDM contribution)
     stats [ 0 ] = mat->giveNewMaterialStatus(this);
 }
 
@@ -724,7 +728,7 @@ Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
 
     Vector strain(2);
     strain [ 0 ] = pressureGradPlain [ 0 ];
-    strain [ 1 ] = (DoFs [ 0 ] + DoFs [ 1 ] ) / 2.;
+    strain [ 1 ] = ( DoFs [ 0 ] + DoFs [ 1 ] ) / 2.;
 
     return strain;
 };
@@ -774,7 +778,7 @@ void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
 double Transp1DCoupled :: giveValue(string code) const {
     if ( code.compare("numOfFriends") == 0 ) {
         return friends.size();
-    } else  {
+    } else {
         return Transp1D :: giveValue(code);
     }
 };
@@ -783,7 +787,7 @@ double Transp1DCoupled :: giveValue(string code) const {
 double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
     if ( code.compare("numOfFriends") == 0 ) {
         return friends.size();
-    } else  {
+    } else {
         return Transp1D :: giveIPValue(code, ipnum);
     }
 }
@@ -822,4 +826,3 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 
     return pressureGrad;
 };
-

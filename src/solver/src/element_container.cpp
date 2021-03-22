@@ -133,33 +133,33 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step, const bool &saveNodeIds) const {
-    std :: ofstream outputfile( filepath );
+    std :: ofstream outputfile(filepath);
     unsigned stat_id = 0;
     unsigned num;
     if ( outputfile.is_open() ) {
         outputfile << "#elem_id stat_id mat_id ";
         if ( saveNodeIds ) {
-          outputfile << "num_nodes node ids ... ";
+            outputfile << "num_nodes node ids ... ";
         }
         outputfile << "internal_variables ...";
-        if ( time_now != 0 && step != 0 ){
-          outputfile << "\ntime " << time_now << " " << step;
+        if ( time_now != 0 && step != 0 ) {
+            outputfile << "\ntime " << time_now << " " << step;
         }
-        for ( auto const &elem_id : elems_to_save) {
-          stat_id = 0;
-          for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats()){
-            // elem_id - stat_id -  mat_id - internal_variables
-            outputfile << "\nmatStat\t" << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t';
-            if ( saveNodeIds ){
-              num = this->giveElement(elem_id)->giveNodes().size();
-              outputfile << '\t' << num;
-              for ( auto const &nod : this->giveElement(elem_id)->giveNodes() ){
-                // std::cout << "node iD = " << nodes->giveNodeId( nod ) << '\n';
-                outputfile << '\t' << nodes->giveNodeId( nod );
-              }
+        for ( auto const &elem_id : elems_to_save ) {
+            stat_id = 0;
+            for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats() ) {
+                // elem_id - stat_id -  mat_id - internal_variables
+                outputfile << "\nmatStat\t" << elem_id << '\t' << stat_id++ << '\t' << mat_stat->giveMaterial()->giveId() << '\t';
+                if ( saveNodeIds ) {
+                    num = this->giveElement(elem_id)->giveNodes().size();
+                    outputfile << '\t' << num;
+                    for ( auto const &nod : this->giveElement(elem_id)->giveNodes() ) {
+                        // std::cout << "node iD = " << nodes->giveNodeId( nod ) << '\n';
+                        outputfile << '\t' << nodes->giveNodeId(nod);
+                    }
+                }
+                outputfile << '\t' << mat_stat->giveLineToSave();
             }
-            outputfile << '\t' << mat_stat->giveLineToSave();
-          }
         }
         outputfile.close();
     }
@@ -167,82 +167,82 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
 
 // these methods must be separate, because at first, I need to set time of calculation in solver
 // but at that time, mat_stats are still before init() so all the matStats vould be reset after that
-void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str ) {
-  this->file_to_load_from.push_back(str);
-  // TODO JK: make the following more universally, now it works only for LD, but the file can be named by any other name
-  if ( this->file_to_load_from.size() == 1 ){
-    // if LD file exists, it will be deleted, so rename it
-    unsigned LD_num = 0;
-    std :: string fnm = "LD";
-    // NOTE here GlobPaths :: RESULTDIR would be usefull
-    std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / (fnm + ".out") ).string();
-    std :: string fnm_fin;
-    while ( LD_num < 1000 ){
-      fnm_fin = (GlobPaths :: BASEDIR / "results" / (fnm + std :: to_string(LD_num) + ".out") ).string();
-      if ( !fs :: exists( fnm_fin ) ){
-        if ( fs :: exists( fnm_ini ) ){
-          std :: rename(fnm_ini.c_str(), fnm_fin.c_str());
-          std::cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
-          break;
-        } else {
-          std::cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
+void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
+    this->file_to_load_from.push_back(str);
+    // TODO JK: make the following more universally, now it works only for LD, but the file can be named by any other name
+    if ( this->file_to_load_from.size() == 1 ) {
+        // if LD file exists, it will be deleted, so rename it
+        unsigned LD_num = 0;
+        std :: string fnm = "LD";
+        // NOTE here GlobPaths :: RESULTDIR would be usefull
+        std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / ( fnm + ".out" ) ).string();
+        std :: string fnm_fin;
+        while ( LD_num < 1000 ) {
+            fnm_fin = ( GlobPaths :: BASEDIR / "results" / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
+            if ( !fs :: exists(fnm_fin) ) {
+                if ( fs :: exists(fnm_ini) ) {
+                    std :: rename(fnm_ini.c_str(), fnm_fin.c_str() );
+                    std :: cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
+                    break;
+                } else {
+                    std :: cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
+                }
+            }
+            LD_num++;
         }
-      }
-      LD_num++;
     }
-  }
 };
 
 
 void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool &get_time_from_file) {
-  if ( this->file_to_load_from.size() != 0 ){
-    string line, param;
-    unsigned elem_id, stat_id, mat_id, st;
-    double timo;
-    std :: vector < double > initial_times;
-    std :: vector < unsigned > initial_steps;
-    for (auto const &file_with_stats : this->file_to_load_from){
-      ifstream inputfile(file_with_stats.c_str() );
-      if ( inputfile.is_open() ) {
-        while ( getline(inputfile >> std :: ws, line) ) {
-          if ( line.at(0) == '#' || line.empty() ) {
-            continue;
-          }
-          istringstream iss(line);
-          iss >> param;
-          if ( param.compare("time") == 0 ){
-            iss >> timo >> st;
-            initial_times.push_back(timo);
-            initial_steps.push_back(st);
-          } else if (param.compare("matStat") == 0) {
-            iss >> elem_id >> stat_id >> mat_id;
-            this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
-          }
+    if ( this->file_to_load_from.size() != 0 ) {
+        string line, param;
+        unsigned elem_id, stat_id, mat_id, st;
+        double timo;
+        std :: vector< double >initial_times;
+        std :: vector< unsigned >initial_steps;
+        for ( auto const &file_with_stats : this->file_to_load_from ) {
+            ifstream inputfile(file_with_stats.c_str() );
+            if ( inputfile.is_open() ) {
+                while ( getline(inputfile >> std :: ws, line) ) {
+                    if ( line.at(0) == '#' || line.empty() ) {
+                        continue;
+                    }
+                    istringstream iss(line);
+                    iss >> param;
+                    if ( param.compare("time") == 0 ) {
+                        iss >> timo >> st;
+                        initial_times.push_back(timo);
+                        initial_steps.push_back(st);
+                    } else if ( param.compare("matStat") == 0 ) {
+                        iss >> elem_id >> stat_id >> mat_id;
+                        this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
+                    }
+                }
+                inputfile.close();
+            } else {
+                std :: cerr << "there is no such file " << file_with_stats << '\n';
+                exit(EXIT_FAILURE);
+            }
         }
-        inputfile.close();
-      } else {
-        std::cerr << "there is no such file " << file_with_stats << '\n';
-        exit(EXIT_FAILURE);
-      }
-    }
-    if ( get_time_from_file ){
-      if ( initial_times.size() == 0 ){
-        std::cerr << "could not determine the starting time " << '\n';
-        std::cerr << "there is no line beginning with \'time\'" << '\n';
-        exit(EXIT_FAILURE);
-      }
-      // check if time and step in all the files with matStats
-      for ( unsigned i = 0; i < initial_times.size(); i++ ){
-        if ( fmax(initial_times[i] - initial_times[0], initial_steps[i] - initial_steps[0]) > 1e-6){
-          std::cerr << "times or steps in various files containing matStats differ" << '\n';
-          exit(EXIT_FAILURE);
+        if ( get_time_from_file ) {
+            if ( initial_times.size() == 0 ) {
+                std :: cerr << "could not determine the starting time " << '\n';
+                std :: cerr << "there is no line beginning with \'time\'" << '\n';
+                exit(EXIT_FAILURE);
+            }
+            // check if time and step in all the files with matStats
+            for ( unsigned i = 0; i < initial_times.size(); i++ ) {
+                if ( fmax(initial_times [ i ] - initial_times [ 0 ], initial_steps [ i ] - initial_steps [ 0 ]) > 1e-6 ) {
+                    std :: cerr << "times or steps in various files containing matStats differ" << '\n';
+                    exit(EXIT_FAILURE);
+                }
+            }
+            // and set them accordign to values from files
+            ini_step = initial_steps [ 0 ];
+            ini_time = initial_times [ 0 ];
         }
-      }
-      // and set them accordign to values from files
-      ini_step = initial_steps[0];
-      ini_time = initial_times[0];
     }
-  }
 }
 
 
@@ -270,7 +270,7 @@ void ElementContainer :: updateMaterialStatuses() {
 void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const {
     map< pair< size_t, size_t >, double >indices11;
 
-    (void) diffType; //not needed, matrix size is the same
+    ( void ) diffType; //not needed, matrix size is the same
 
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
@@ -318,7 +318,6 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) con
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const {
-
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
@@ -326,10 +325,13 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     Matrix k;
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-        if      ( diffType == 0 ) k = (*e)->giveStiffnessMatrix(matrixType); //stiffness or conductivity
-        else if ( diffType == 1 ) k = (*e)->giveDampingMatrix(); //damping or capacity
-        else if ( diffType == 2 ) k = (*e)->giveMassMatrix(); //mass
-        else {
+        if      ( diffType == 0 ) {
+            k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
+        } else if ( diffType == 1 )                                                                                                            {
+            k = ( * e )->giveDampingMatrix();                    //damping or capacity
+        } else if ( diffType == 2 )                                                                                          {
+            k = ( * e )->giveMassMatrix();                    //mass
+        } else                                                                        {
             cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
             exit(1);
         }
@@ -408,7 +410,7 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const{
+void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f *= 0; //clear array
@@ -419,9 +421,11 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
         }
-        if      (diffType==1) elForces = ( * e )->giveDampingMatrix() * elDoFvalues;  //damping or conductivity
-        else if (diffType==2) elForces = ( * e )->giveMassMatrix() * elDoFvalues;  //inertia
-        else {
+        if      ( diffType == 1 ) {
+            elForces = ( * e )->giveDampingMatrix() * elDoFvalues;                    //damping or conductivity
+        } else if ( diffType == 2 )                                                                                                                       {
+            elForces = ( * e )->giveMassMatrix() * elDoFvalues;                    //inertia
+        } else                                                                                                {
             cerr << "ElementContainer Error: time derivative matrix type " << diffType << " unknown" << endl;
             exit(1);
         }
@@ -432,7 +436,7 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateDampingForces(const Vector &full_v, Vector &full_f) const{
+void ElementContainer :: integrateDampingForces(const Vector &full_v, Vector &full_f) const {
     integrateDampingOrInertiaForces(full_v, full_f, 1);
 }
 
@@ -459,48 +463,47 @@ void ElementContainer :: findElementFriends() {
 }
 
 
-Element* ElementContainer :: giveElementConnectingNodes(std :: vector < unsigned > &node_ids) const {
+Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const {
+    std :: sort(node_ids.begin(), node_ids.end() );
+    // std::cout << "this elem should connect nodes";
+    // for ( auto const &nid : node_ids ) {
+    //   std::cout << " " << nid;
+    // }
+    // std::cout << '\n';
 
-  std :: sort( node_ids.begin(), node_ids.end() );
-  // std::cout << "this elem should connect nodes";
-  // for ( auto const &nid : node_ids ) {
-  //   std::cout << " " << nid;
-  // }
-  // std::cout << '\n';
-
-  std :: vector < unsigned > elem_node_ids;
-  for ( auto const &el : this->elems ){
-    for ( auto const &nod : el->giveNodes() ){
-      for ( auto const &nID : node_ids ){
-        if ( this->nodes->giveNodeId(nod) == nID ){
-          // std::cout << "this elem connects nodes";
-          for ( auto const &n : el->giveNodes() ){
-            // std::cout << " " << this->nodes->giveNodeId(n);
-            elem_node_ids.push_back( this->nodes->giveNodeId(n) );
-          }
-          // std::cout << '\n';
-          if ( elem_node_ids.size() == node_ids.size() ){    ///< for other than rbc elems
-            // std::cout << "and what about here?" << '\n';
-            std :: sort ( elem_node_ids.begin(), elem_node_ids.end() );
-            for ( unsigned i = 0; i < node_ids.size(); i++){
-              if ( elem_node_ids[ i ] != node_ids[ i ] ) {
-                break;
-              } else {
-                if ( i == node_ids.size() - 1 ){
-                  return el;
+    std :: vector< unsigned >elem_node_ids;
+    for ( auto const &el : this->elems ) {
+        for ( auto const &nod : el->giveNodes() ) {
+            for ( auto const &nID : node_ids ) {
+                if ( this->nodes->giveNodeId(nod) == nID ) {
+                    // std::cout << "this elem connects nodes";
+                    for ( auto const &n : el->giveNodes() ) {
+                        // std::cout << " " << this->nodes->giveNodeId(n);
+                        elem_node_ids.push_back(this->nodes->giveNodeId(n) );
+                    }
+                    // std::cout << '\n';
+                    if ( elem_node_ids.size() == node_ids.size() ) { ///< for other than rbc elems
+                        // std::cout << "and what about here?" << '\n';
+                        std :: sort(elem_node_ids.begin(), elem_node_ids.end() );
+                        for ( unsigned i = 0; i < node_ids.size(); i++ ) {
+                            if ( elem_node_ids [ i ] != node_ids [ i ] ) {
+                                break;
+                            } else {
+                                if ( i == node_ids.size() - 1 ) {
+                                    return el;
+                                }
+                            }
+                        }
+                    }
+                    elem_node_ids.clear();
                 }
-              }
             }
-          }
-          elem_node_ids.clear();
         }
-      }
     }
-  }
-  std::cerr << "did not find any element connecting nodes";
-  for ( auto const &nid : node_ids ) {
-    std::cerr << " " << nid;
-  }
-  // std::cerr << '\n';
-  return nullptr;
+    std :: cerr << "did not find any element connecting nodes";
+    for ( auto const &nid : node_ids ) {
+        std :: cerr << " " << nid;
+    }
+    // std::cerr << '\n';
+    return nullptr;
 }

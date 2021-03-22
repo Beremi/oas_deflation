@@ -63,23 +63,23 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: saveToFile(const std :: string &filepath, std :: vector< unsigned > &nodes_to_save) const {
-    std :: ofstream outputfile( filepath );
+    std :: ofstream outputfile(filepath);
     if ( outputfile.is_open() ) {
         outputfile << "#nodes saved from calculation\n";
-        for ( auto const &node_id : nodes_to_save) {
-          outputfile << this->giveNode(node_id)->giveLineToSave() << '\n';
+        for ( auto const &node_id : nodes_to_save ) {
+            outputfile << this->giveNode(node_id)->giveLineToSave() << '\n';
         }
         outputfile.close();
     }
 }
 
-unsigned NodeContainer :: giveNodeId(const Node * node) const {
+unsigned NodeContainer :: giveNodeId(const Node *node) const {
     // do not use this method for node that is not a part of this (nodeContainer)
     auto res = std :: find(std :: begin(this->nodes), std :: end(this->nodes), node);
-    if (res == this->nodes.end()) {
-      // if node is not in container, return zero (but zero can be also for the first node)
-      // just to prevent errors here
-      return 0;
+    if ( res == this->nodes.end() ) {
+        // if node is not in container, return zero (but zero can be also for the first node)
+        // just to prevent errors here
+        return 0;
     }
     return std :: distance(std :: begin(this->nodes), res);
 }
@@ -127,14 +127,13 @@ void NodeContainer :: establishDoFArray() {
     vector< pair< unsigned, unsigned > >a;
     a.resize(blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
-
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
     sort(a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
-    if (a.size()>0){
+    if ( a.size() > 0 ) {
         vector< pair< unsigned, unsigned > > :: const_iterator prev = a.begin();
         for ( vector< pair< unsigned, unsigned > > :: const_iterator cur = prev + 1; cur != a.end(); ++cur ) {
             if ( prev->first == cur->first ) {
@@ -143,7 +142,7 @@ void NodeContainer :: establishDoFArray() {
             }
             prev = cur;
         }
-    }else{
+    } else  {
         cerr << "WARNING: no Dirichlet BC, the model does not prevent rigid-body motion" << endl;
     }
 
@@ -282,8 +281,8 @@ Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
 }
 
 //////////////////////////////////////////////////////////
-Node* NodeContainer ::giveNode(unsigned const num) const {
-    if (num>=nodes.size()){
+Node *NodeContainer :: giveNode(unsigned const num) const {
+    if ( num >= nodes.size() ) {
         cerr << "NodeContainer Error: node " << num << " requested, but only " << nodes.size() << " nodes exist" << endl;
         exit(1);
     }

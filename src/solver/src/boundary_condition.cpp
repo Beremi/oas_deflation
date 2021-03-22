@@ -134,7 +134,7 @@ void BodyLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
                 for ( unsigned i = 0; i < numelems; i++ ) {
                     els [ i ] = elems->giveElement(i);
                 }
-            } else  {
+            } else {
                 numelems = stoi(code);
                 els.resize(numelems);
                 for ( unsigned i = 0; i < numelems; i++ ) {
@@ -142,11 +142,11 @@ void BodyLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
                     els [ i ] = elems->giveElement(k);
                 }
             }
-        } else if ( code.compare("spatialFunction") == 0 )   {
+        } else if ( code.compare("spatialFunction") == 0 ) {
             iss >> spatialFunctionNum;
-        } else if ( code.compare("timeFunction") == 0 )   {
+        } else if ( code.compare("timeFunction") == 0 ) {
             iss >> timeFunctionNum;
-        } else if ( code.compare("direction") == 0 )   {
+        } else if ( code.compare("direction") == 0 ) {
             iss >> dir;
         }
     }

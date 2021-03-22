@@ -11,12 +11,12 @@ void DataExporter :: giveFileName(unsigned step, char *buffer) const {
 
 //////////////////////////////////////////////////////////
 /*!
-    DataExporter optional parameters.
-    Keywords:
-    - timeEach [float] - time each (TODO: better description)
-    - time_last [float] - time shift (TODO: better description)
-    - precision [float] - precision of stored values
-*/
+ *  DataExporter optional parameters.
+ *  Keywords:
+ *  - timeEach [float] - time each (TODO: better description)
+ *  - time_last [float] - time shift (TODO: better description)
+ *  - precision [float] - precision of stored values
+ */
 void DataExporter :: readFromLine(istringstream &iss) {
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -50,15 +50,15 @@ bool DataExporter :: doExportNow(const double &time) {
 //////////////////////////////////////////////////////////
 // EXPORT FROM NODES TO TXT
 /*!
-    Export from nodes to txt.
-    Parameters:
-    - filename [string] - file to store results (e.g. LD -> results/LD.out)
-    - num [int] - number of components to read
-    - codes [string] - component name (ux, uy, uz, pressure, rotx, roty, rotz) (TODO: links to component names)
-
-    These parameters can be followed by optional keywords:
-    - see DataExporter::readFromLine
-*/
+ *  Export from nodes to txt.
+ *  Parameters:
+ *  - filename [string] - file to store results (e.g. LD -> results/LD.out)
+ *  - num [int] - number of components to read
+ *  - codes [string] - component name (ux, uy, uz, pressure, rotx, roty, rotz) (TODO: links to component names)
+ *
+ *  These parameters can be followed by optional keywords:
+ *  - see DataExporter::readFromLine
+ */
 void TXTNodalExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
@@ -100,15 +100,15 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
 //////////////////////////////////////////////////////////
 // EXPORT FROM ELEMENTS TO TXT
 /*!
-    Export from elements to txt.
-    Parameters:
-    - filename [string] - file to store results (e.g. elem -> results/elem.out)
-    - num [int] - number of components to read
-    - codes [string] - component labels
-
-    These parameters can be followed by optional keywords:
-    - see DataExporter::readFromLine
-*/
+ *  Export from elements to txt.
+ *  Parameters:
+ *  - filename [string] - file to store results (e.g. elem -> results/elem.out)
+ *  - num [int] - number of components to read
+ *  - codes [string] - component labels
+ *
+ *  These parameters can be followed by optional keywords:
+ *  - see DataExporter::readFromLine
+ */
 void TXTElementExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
@@ -124,15 +124,15 @@ void TXTElementExporter :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
 /*!
-    Export from Gauss points to txt.
-    Parameters:
-    - filename [string] - file to store results (e.g. gauss -> results/gauss.out)
-    - num [int] - number of components to read
-    - codes [string] - component labels (TODO: links to possible values)
-
-    These parameters can be followed by optional keywords:
-    - see DataExporter::readFromLine
-*/
+ *  Export from Gauss points to txt.
+ *  Parameters:
+ *  - filename [string] - file to store results (e.g. gauss -> results/gauss.out)
+ *  - num [int] - number of components to read
+ *  - codes [string] - component labels (TODO: links to possible values)
+ *
+ *  These parameters can be followed by optional keywords:
+ *  - see DataExporter::readFromLine
+ */
 void TXTGaussPointExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned num;
@@ -189,17 +189,17 @@ void Gauge :: giveFileName(unsigned step, char *buffer) const {
 //////////////////////////////////////////////////////////
 // EXPORT OF FORCES
 /*!
-    Export Forces to txt.
-    Parameters:
-    - filename [string] - file to store results (e.g. LD -> results/LD.out)
-    - name - label placed in table header
-    - codes [string] - force component name (2D - fx, fy, mz) and (3D fx, fy, fz, mx, my, mz)
-    - num [int] - number of nodes to read
-    - n [int] - node numbers
-
-    These parameters can be followed by optional keywords:
-    - see DataExporter::readFromLine
-*/
+ *  Export Forces to txt.
+ *  Parameters:
+ *  - filename [string] - file to store results (e.g. LD -> results/LD.out)
+ *  - name - label placed in table header
+ *  - codes [string] - force component name (2D - fx, fy, mz) and (3D fx, fy, fz, mx, my, mz)
+ *  - num [int] - number of nodes to read
+ *  - n [int] - node numbers
+ *
+ *  These parameters can be followed by optional keywords:
+ *  - see DataExporter::readFromLine
+ */
 void ForceGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
@@ -285,21 +285,20 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
 //////////////////////////////////////////////////////////
 // EXPORT OF DEGREES OF FREEDOM
 /*!
-    Export DoF from nodes to txt.
-    Parameters:
-    - filename [string] - file to store results (e.g. LD -> results/LD.out)
-    - name - label placed in table header
-    - codes [string] - component name (2D - ux, uy, rz) and (3D ux, uy, uz, rx, ry, rz)
-    - num [int] - number of nodes to read
-    - n [int] - node numbers
-
-    These parameters can be followed by optional keywords:
-    - see DataExporter::readFromLine
-*/
+ *  Export DoF from nodes to txt.
+ *  Parameters:
+ *  - filename [string] - file to store results (e.g. LD -> results/LD.out)
+ *  - name - label placed in table header
+ *  - codes [string] - component name (2D - ux, uy, rz) and (3D ux, uy, uz, rx, ry, rz)
+ *  - num [int] - number of nodes to read
+ *  - n [int] - node numbers
+ *
+ *  These parameters can be followed by optional keywords:
+ *  - see DataExporter::readFromLine
+ */
 
 //////////////////////////////////////////////////////////
-DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {
-}
+DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {}
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
@@ -361,17 +360,17 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
 /*!
-    Export displacements (nodeB-nodeA) to txt.
-    Parameters:
-    - filename [string] - file to store results (e.g. LD -> results/LD.out)
-    - name [string] - label placed in table header
-    - codes [string] - displacement code (ux, uy, uz)
-    - coordinatesA [float] - coordinates of gauge point A (2D x y) (2D x y z)
-    - coordinatesB [float] - coordinates of gauge point B (2D x y) (2D x y z)
-
-    These parameters can be followed by optional keywords:
-    - see DataExporter::readFromLine
-*/
+ *  Export displacements (nodeB-nodeA) to txt.
+ *  Parameters:
+ *  - filename [string] - file to store results (e.g. LD -> results/LD.out)
+ *  - name [string] - label placed in table header
+ *  - codes [string] - displacement code (ux, uy, uz)
+ *  - coordinatesA [float] - coordinates of gauge point A (2D x y) (2D x y z)
+ *  - coordinatesB [float] - coordinates of gauge point B (2D x y) (2D x y z)
+ *
+ *  These parameters can be followed by optional keywords:
+ *  - see DataExporter::readFromLine
+ */
 void DisplacementGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
@@ -422,15 +421,15 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
 //////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
 /*!
-    Export displacements of the structure to txt.
-    Parameters:
-    - filename [string] - file to store results (e.g. LD -> results/LD.out)
-    - name [string]- label placed in table header
-    - codes [string] - displacement code (one of ux, uy, uz)
-
-    These parameters can be followed by optional keywords:
-    - see DataExporter::readFromLine
-*/
+ *  Export displacements of the structure to txt.
+ *  Parameters:
+ *  - filename [string] - file to store results (e.g. LD -> results/LD.out)
+ *  - name [string]- label placed in table header
+ *  - codes [string] - displacement code (one of ux, uy, uz)
+ *
+ *  These parameters can be followed by optional keywords:
+ *  - see DataExporter::readFromLine
+ */
 void StructuralExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     iss >> name;
@@ -483,18 +482,18 @@ ExporterContainer :: ~ExporterContainer() {
 //////////////////////////////////////////////////////////
 //!  Container class for Exporters.
 /*!
-  Input file keywords:
-  - %TXTNodalExporter - for other parameters see TXTNodalExporter::readFromLine
-  - %TXTElementExporter - for other parameters see TXTElementExporter::readFromLine
-  - %ForceGauge - for other parameters see ForceGauge::readFromLine
-  - %DisplacementGauge - for other parameters see DisplacementGauge::readFromLine
-  - %ValueGauge || %StructuralExporter - for other parameters see StructuralExporter::readFromLine
-  - %DoFGauge - for other parameters see DoFGauge::readFromLine
-  - %TXTGaussPointExporter - for other parameters see TXTGaussPointExporter::readFromLine
-  - %VTKElementExporter - for other parameters see VTKElementExporter::readFromLine
-  - %VTKRBExporter - for other parameters see VTKRB2DExporter::readFromLine
-  - %VTKRCExporter - for other parameters see VTKRCExporter::readFromLine
-*/
+ * Input file keywords:
+ * - %TXTNodalExporter - for other parameters see TXTNodalExporter::readFromLine
+ * - %TXTElementExporter - for other parameters see TXTElementExporter::readFromLine
+ * - %ForceGauge - for other parameters see ForceGauge::readFromLine
+ * - %DisplacementGauge - for other parameters see DisplacementGauge::readFromLine
+ * - %ValueGauge || %StructuralExporter - for other parameters see StructuralExporter::readFromLine
+ * - %DoFGauge - for other parameters see DoFGauge::readFromLine
+ * - %TXTGaussPointExporter - for other parameters see TXTGaussPointExporter::readFromLine
+ * - %VTKElementExporter - for other parameters see VTKElementExporter::readFromLine
+ * - %VTKRBExporter - for other parameters see VTKRB2DExporter::readFromLine
+ * - %VTKRCExporter - for other parameters see VTKRCExporter::readFromLine
+ */
 void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
     size_t origsize = exporters.size();
     string line, exptype;
@@ -509,7 +508,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             }
             istringstream iss(line);
             iss >> exptype;
-            if ( !(exptype.rfind("#", 0) == 0 )) {
+            if ( !( exptype.rfind("#", 0) == 0 ) ) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {
                     TXTNodalExporter *newexp = new TXTNodalExporter(n, dimension);
                     newexp->readFromLine(iss);
@@ -714,12 +713,12 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
                 Volume [ node_id ] += single_volume;
 
                 stress [ node_id ] += dyadicProduct(
-                  (
-                      rbc->giveContactStressXYZ(elDoFvalues)
-                      * rbc->giveArea()  // vyhodit
-                  )
-                  * first
-                  , rbc->giveVectorToNode(ni, 0) );  // tady může být jen poloha  IP (HonzaE článek 2020)
+                    (
+                        rbc->giveContactStressXYZ(elDoFvalues)
+                        * rbc->giveArea() // vyhodit
+                    )
+                    * first
+                    , rbc->giveVectorToNode(ni, 0) ); // tady může být jen poloha  IP (HonzaE článek 2020)
                 // TODO here is probably missing some value corresponding to internal moments
                 // for node corresponding to end of element, traction needs to be reversed
                 first = -1;
