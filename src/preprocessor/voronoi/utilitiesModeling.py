@@ -3498,7 +3498,7 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials, powerTes):
         #TODO: power Tesselation
         node_coords = np.zeros((0,dim))
         radii = np.zeros(0)
-        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii)
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=True)
 
     node_coords = np.asarray(node_coords)
     #masters = np.ones(len(node_coords)).astype(int)*(-1)
@@ -3565,7 +3565,7 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
     else:
         node_coords = np.zeros((0,dim))
         radii = np.zeros(len(node_coords))
-        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii)
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=True)
 
 
     node_coords = np.asarray(node_coords)
