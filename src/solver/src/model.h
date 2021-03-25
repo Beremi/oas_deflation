@@ -43,6 +43,7 @@ public:
     ExporterContainer *giveExporters() { return & exporters; };
     MaterialContainer *giveMaterials() { return & matrs; };
     fs :: path giveResultDirectory() const { return resultDir; };
+    PBlockContainer *givePBlockContainer() { return & pblocks; };
 
     unsigned giveDimension() const { return ndim; };
     void resetTime() { solver->setTime(0); solver->setStep(0); }

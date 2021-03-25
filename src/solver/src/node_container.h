@@ -49,7 +49,10 @@ public:
     void giveReducedForceArray(Vector &fullDoFs, Vector &fDoFs) const;
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
     void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const;
-    Node *findClosestMechanicalNode(Point A) const;
+    Node *findClosestMechanicalNode(const Point A, double *distance) const;
+    Node *findClosestAuxiliaryNode(const Point A, double *distance) const;
+    Node *findClosestTransportNode(const Point A, double *distance) const;
+    unsigned giveNodeNumber(const Node *n) const;
     void addNode(Node *n) { nodes.push_back(n); };
     vector< bool >giveMechDoFsIndicator() { return mechDoFs; }
     vector< bool >giveTranspDoFsIndicator() { return transpDoFs; }

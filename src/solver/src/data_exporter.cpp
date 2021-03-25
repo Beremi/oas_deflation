@@ -396,8 +396,9 @@ void DisplacementGauge :: init() {
     time_last = 0;
     //find closest point
     //TODO: better to use direct displacements at given points A and B
-    nodeA = nodes->findClosestMechanicalNode(pointA);
-    nodeB = nodes->findClosestMechanicalNode(pointB);
+    double dist;
+    nodeA = nodes->findClosestMechanicalNode(pointA, &dist);
+    nodeB = nodes->findClosestMechanicalNode(pointB, &dist);
 }
 
 //////////////////////////////////////////////////////////

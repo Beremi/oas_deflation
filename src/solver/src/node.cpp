@@ -93,7 +93,7 @@ TrsDoF :: TrsDoF(unsigned dimension) : TrsNode(dimension) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// MECHANICAL NODE - translational and rotational DoFs
+// PARTICLE - translational and rotational DoFs
 void Particle :: readFromLine(istringstream &iss) {
     double x, y, z;
     if ( dim == 2 ) {
@@ -126,4 +126,16 @@ std :: string Particle :: giveLineToSave() const {
     out << Node :: giveLineToSave() << "\t";
     out << std :: fixed << this->r;
     return out.str();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COUPLED PARTICLE - translational and rotational and transport DoFs
+//////////////////////////////////////////////////////////
+double CoupledParticle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
+    if ( code.compare("pressure") == 0 ) {
+        return DoFs [ firstDoF + 6 ];
+    } else {
+        return Particle :: giveDoFBasedValue(code, DoFs);
+    }
 };

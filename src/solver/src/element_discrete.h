@@ -94,6 +94,7 @@ public:
     virtual Matrix giveDampingMatrix() const;
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    vector < Node* > giveVertices() const { return vert;};
 };
 
 //////////////////////////////////////////////////////////
@@ -116,6 +117,8 @@ public:
     virtual double giveIPValue(string code, unsigned ipnum) const;
     void init();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    void addNewFriend(RigidBodyContact * f, double weight );
+    unsigned giveNumOfFriends() const {return friends.size();};
 };
 
 #endif  /* _ELEMENT_DISCRETE_H */

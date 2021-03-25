@@ -86,6 +86,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
 void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
     unsigned clength;
     Node *n;
+    double dist;
     if ( funcnum >= 0 ) {
         func = funcs->giveFunction(funcnum);
     }
@@ -103,7 +104,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
                 }
             } else if ( coords_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
-                    n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]) );
+                    n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), &dist );
                     c_DoFs [ c ] [ i ] = n->giveStartingDoF() + c_dirs [ c ] [ i ];
                 }
             } else {
