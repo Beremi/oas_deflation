@@ -35,6 +35,10 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     Particle *newnode = new Particle(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
+                } else if ( nodeType.compare("CoupledParticle") == 0 ) {
+                    CoupledParticle *newnode = new CoupledParticle(dim);
+                    newnode->readFromLine(iss);
+                    nodes.push_back(newnode);
                 } else if ( nodeType.compare("AuxNode") == 0 ) {
                     AuxNode *newnode = new AuxNode(dim);
                     newnode->readFromLine(iss);
@@ -264,10 +268,10 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vecto
 }
 
 //////////////////////////////////////////////////////////
-Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
+Node *NodeContainer :: findClosestMechanicalNode(const Point A, double *distance) const {
     Node *closest = nullptr;
     double minDist = 1e20;
-    double distance2;
+    double distance2=0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         if ( ( * n )->doesMechanics() ) {
             distance2  = ( ( * n )->givePoint() - A ).sqNorm();
@@ -277,6 +281,43 @@ Node *NodeContainer :: findClosestMechanicalNode(Point A) const {
             }
         }
     }
+    *distance = sqrt(minDist);
+    return closest;
+}
+
+//////////////////////////////////////////////////////////
+Node *NodeContainer :: findClosestAuxiliaryNode(const Point A, double *distance) const {
+    Node *closest = nullptr;
+    double minDist = 1e20;
+    double distance2=0;
+    for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+        if ( !( * n )->doesMechanics() && !( * n )->doesTransport() ) {
+            distance2  = ( ( * n )->givePoint() - A ).sqNorm();
+            if ( distance2 < minDist ) {
+                minDist = distance2;
+                closest = ( * n );
+            }
+        }
+    }
+    *distance = sqrt(minDist);
+    return closest;
+}
+
+//////////////////////////////////////////////////////////
+Node *NodeContainer :: findClosestTransportNode(const Point A, double *distance) const {
+    Node *closest = nullptr;
+    double minDist = 1e20;
+    double distance2=0;
+    for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+        if ( ( * n )->doesTransport() ) {
+            distance2  = ( ( * n )->givePoint() - A ).sqNorm();
+            if ( distance2 < minDist ) {
+                minDist = distance2;
+                closest = ( * n );
+            }
+        }
+    }
+    *distance = sqrt(minDist);
     return closest;
 }
 
@@ -287,4 +328,11 @@ Node *NodeContainer :: giveNode(unsigned const num) const {
         exit(1);
     }
     return nodes [ num ];
+}
+
+
+//////////////////////////////////////////////////////////
+unsigned NodeContainer :: giveNodeNumber(const Node* n) const {
+    auto it = std::find (nodes.begin(), nodes.end(), n);
+    return it-nodes.begin();
 }

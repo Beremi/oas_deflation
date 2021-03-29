@@ -111,6 +111,10 @@ double TrsprtMaterialStatus :: giveValue(string code) const {
     if ( code.compare("permeability") == 0 ) {
         TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
         return m->givePermeability();
+    }else if( code.compare("flux") == 0 ) {
+        return abs(temp_stress[0]);
+    }else if( code.compare("pressure_gradient") == 0 ) {
+        return abs(temp_strain[0]);
     } else {
         return MaterialStatus :: giveValue(code);
     }

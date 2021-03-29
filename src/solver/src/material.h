@@ -36,7 +36,7 @@ public:
     virtual double giveMassConstant() const { return 0; };
     virtual double giveDampingConstant() const { return 0; };
     virtual void setEigenStrain(Vector &x);
-    void setID(unsigned i) { idx = i; };
+    virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(istringstream &iss) {
         std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';

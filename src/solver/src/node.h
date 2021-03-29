@@ -146,4 +146,20 @@ public:
     virtual std :: string giveLineToSave() const;
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COUPLED PARTICLE - translational and rotational and transport DoFs
+class CoupledParticle : public Particle
+{
+private:
+    double r;  // radius in case of power tessellation
+protected:
+public:
+    CoupledParticle(unsigned dimension) : Particle(dimension) { nDoFs = 3 * ( dim - 1 ) + 1; name = "CoupledParticle";  isTransport = true;};
+    virtual ~CoupledParticle() {};
+    virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
+    bool isDoFMechanical(unsigned k) { if(k<nDoFs-1) return true; else return false; };
+    bool isDoFTransport(unsigned k)  { if(k==nDoFs-1) return true; else return false; };
+};
+
 #endif /* _NODE_H */

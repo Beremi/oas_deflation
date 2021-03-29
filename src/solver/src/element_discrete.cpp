@@ -794,6 +794,7 @@ double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
+
     if ( ndim == 2 ) {
         findFriends2D(elemcont);
     } else if ( ndim == 3 ) {
@@ -801,6 +802,12 @@ void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
     }
 
     //collect nodes from friend elements
+}
+
+//////////////////////////////////////////////////////////
+void Transp1DCoupled :: addNewFriend(RigidBodyContact * f, double weight ){
+    friends.push_back(f);
+    friendsweight.push_back(weight);
 }
 
 //////////////////////////////////////////////////////////

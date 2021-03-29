@@ -235,9 +235,9 @@ Matrix CosseratBrick :: giveHMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
-CosseratCoupledQuad :: CosseratCoupledQuad() {
+CoupledCosseratQuad :: CoupledCosseratQuad() {
     ndim = 2;
-    name = "CosseratCoupledQuad";
+    name = "CoupledCosseratQuad";
     numOfNodes = 4;
     vtk_cell_type = 9;
     shafunc = new Linear2DQuadShapeF();
@@ -246,7 +246,7 @@ CosseratCoupledQuad :: CosseratCoupledQuad() {
 
 
 //////////////////////////////////////////////////////////
-Matrix CosseratCoupledQuad :: giveBMatrix(const Point *x) const {
+Matrix CoupledCosseratQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, nodes, phiG);
     Vector phi(nodes.size() );
@@ -276,7 +276,7 @@ Matrix CosseratCoupledQuad :: giveBMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix CosseratCoupledQuad :: giveHMatrix(const Point *x) const {
+Matrix CoupledCosseratQuad :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H(4, DoFids.size() ); //2 transl, 1 rot, 1 pressure
@@ -286,12 +286,28 @@ Matrix CosseratCoupledQuad :: giveHMatrix(const Point *x) const {
     return H;
 }
 
+
+//////////////////////////////////////////////////////////
+void CoupledCosseratQuad :: init() {
+    MechanicalElement :: init();
+    
+    CoupledParticle *cp;
+    for(auto &n: nodes){
+        cp = dynamic_cast< CoupledParticle* >(n);
+        if (cp==nullptr) {
+            cerr << name << " requires nodes to be inhereted from CoupledParticle" << endl;
+            exit(1);
+        }
+    }
+
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
-CosseratCoupledBrick :: CosseratCoupledBrick() {
+CoupledCosseratBrick :: CoupledCosseratBrick() {
     ndim = 3;
-    name = "CosseratCoupledBrick";
+    name = "CoupledCosseratBrick";
     numOfNodes = 8;
     vtk_cell_type = 12;
     shafunc = new Linear3DBrickShapeF();
@@ -300,7 +316,7 @@ CosseratCoupledBrick :: CosseratCoupledBrick() {
 
 
 //////////////////////////////////////////////////////////
-Matrix CosseratCoupledBrick :: giveBMatrix(const Point *x) const {
+Matrix CoupledCosseratBrick :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, nodes, phiG);
     Vector phi(nodes.size() );
@@ -337,7 +353,7 @@ Matrix CosseratCoupledBrick :: giveBMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix CosseratCoupledBrick :: giveHMatrix(const Point *x) const {
+Matrix CoupledCosseratBrick :: giveHMatrix(const Point *x) const {
     Vector phi(nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H(7, DoFids.size() ); //3 transl, 3 rot, 1 pressure

@@ -66,12 +66,12 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     CosseratBrick *newelem = new CosseratBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("CosseratCoupledQuad") == 0 ) {
-                    CosseratCoupledQuad *newelem = new CosseratCoupledQuad();
+                } else if ( elemType.compare("CoupledCosseratQuad") == 0 ) {
+                    CoupledCosseratQuad *newelem = new CoupledCosseratQuad();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("CosseratCoupledBrick") == 0 ) {
-                    CosseratCoupledBrick *newelem = new CosseratCoupledBrick();
+                } else if ( elemType.compare("CoupledCosseratBrick") == 0 ) {
+                    CoupledCosseratBrick *newelem = new CoupledCosseratBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TranspPolygonal") == 0 ) {

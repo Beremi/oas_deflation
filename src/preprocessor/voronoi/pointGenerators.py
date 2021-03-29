@@ -77,7 +77,7 @@ def fuller2D(d, dmax):
 def fuller3D(d, dmax):
     return np.sqrt(d/dmax)
 
-def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
+def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii, allow_domain_overlap = False, periodic_distance=False):
         gap = 0.1
         Volume = np.prod(maxLim)
         d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
@@ -126,8 +126,19 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         di = 0
         radius = maxDiam/2.
         while (2*radius>minDiam and iters<trials*100):
-                point = np.random.rand(dim)*(maxLim-radius*2) + radius
-                if ( len(node_coords)==0 or min(np.sum(np.square(node_coords-point),1)-np.square((1.+gap)*(radii+radius)))>0) :
+                if (allow_domain_overlap): point = np.random.rand(dim)*maxLim
+                else: point = np.random.rand(dim)*(maxLim-radius*2) + radius
+                
+                approved = False                     
+                if ( len(node_coords)==0): approved = True
+                else:
+                    delta = np.abs(node_coords-point)
+                    if (periodic_distance):
+                        dist2 = np.sum(np.square(np.minimum(delta,maxLim-delta)),axis=1)
+                    else:
+                        dist2 = np.sum(np.square(delta),axis=1) 
+                    if (min(dist2 - np.square((1.+gap)*(radii+radius)))>0): approved = True 
+                if ( approved) :
                     node_coords = np.vstack((node_coords, point));
                     radii = np.hstack((radii, radius));
                     iters = 0

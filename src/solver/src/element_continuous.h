@@ -92,13 +92,14 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
-class CosseratCoupledQuad : public CosseratQuad
+class CoupledCosseratQuad : public CosseratQuad
 {
 protected:
 
 public:
-    CosseratCoupledQuad();
-    ~CosseratCoupledQuad() {};
+    CoupledCosseratQuad();
+    ~CoupledCosseratQuad() {};
+    virtual void init();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
 };
@@ -106,13 +107,13 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
-class CosseratCoupledBrick : public CosseratBrick
+class CoupledCosseratBrick : public CosseratBrick
 {
 protected:
 
 public:
-    CosseratCoupledBrick();
-    ~CosseratCoupledBrick() {};
+    CoupledCosseratBrick();
+    ~CoupledCosseratBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
 };

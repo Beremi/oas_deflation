@@ -68,6 +68,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     DiscreteTransportRVEMaterialPrecomputed *newmat = new DiscreteTransportRVEMaterialPrecomputed();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("DiscreteCoupledRVEMaterial") == 0 ) {
+                    DiscreteCoupledRVEMaterial *newmat = new DiscreteCoupledRVEMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("TrsprtCoupledMaterial") == 0 ) {
                     TrsprtCoupledMaterial *newmat = new TrsprtCoupledMaterial();
                     newmat->readFromLine(iss);
