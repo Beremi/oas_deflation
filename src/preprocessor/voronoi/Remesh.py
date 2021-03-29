@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # print(len(sys.argv))
     # print("-----------------------------------------------------")
 
-    if len(sys.argv) < 6:
+    if len(sys.argv) < 7:
         print("not enough information provided for Remesher")
         sys.exit(1)
 
@@ -103,10 +103,15 @@ if __name__ == '__main__':
     # should be already in input (specified in master prep file)
     radiusRemesh = float(sys.argv[4])
     radiusTransitional = float(sys.argv[5])
-    # dim = float(sys.argv[6])
+    useExistingFineNodes = bool(int(sys.argv[6]))
 
-    if len(sys.argv) > 6:
-        minDistRemesh = float(sys.argv[6])
+    if useExistingFineNodes:
+        node_coords_ini.extend(loadNodes(os.path.join(remeshDir, "nodesFine.inp"), model.dimension))
+
+    # print(node_coords_ini)
+    # exit(1)
+    if len(sys.argv) > 7:
+        minDistRemesh = float(sys.argv[7])
     else:
         minDistRemesh = model.minDist / 3.
 
@@ -129,7 +134,8 @@ if __name__ == '__main__':
                         centersToRemesh=ctr, centersPreviouslyRemeshed=cpr,
                         radiusRemesh=radiusRemesh,
                         radiusTransitional=radiusTransitional,
-                        dim=model.dimension)
+                        dim=model.dimension,
+                        useExistingFineNodes=useExistingFineNodes)
 
     # print("--- after --------------------------------------")
     # print(len(node_coords_ini))
