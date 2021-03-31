@@ -92,6 +92,7 @@ public:
     virtual double giveEffectiveConductivity(string type) const;
     virtual void updateEffectiveConductivity(double pressure);
     virtual double calculatePressureDependentPermeability(double pressure) const;
+    virtual bool isElastic(const bool &now = false) const;
 };
 
 //////////////////////////////////////////////////////////

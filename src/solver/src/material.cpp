@@ -127,6 +127,12 @@ void TrsprtMaterialStatus :: updateEffectiveConductivity(double pressure) {
 }
 
 
+bool TrsprtMaterialStatus :: isElastic(const bool &now) const {
+  // std::cout << "transport material is always elastic" << '\n';
+  return true;
+}
+
+
 //////////////////////////////////////////////////////////
 void TrsprtMaterial :: readFromLine(istringstream &iss) {
     string param;
