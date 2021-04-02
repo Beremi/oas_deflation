@@ -9,9 +9,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import utilitiesMech
 import Preprocessor as prepro
 
-
-
-
 masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
 verticesFile                = "vertices.inp"
@@ -1333,22 +1330,35 @@ def saveFunctions (master_folder,functions):
 
 
 
-def saveExporters(master_folder,activeTransport, activeMechanics):
-    print('Saving exporters...', end='')
-    sys.stdout.flush()
-    fl=open(os.path.join(master_folder,exportersFile),'w')
-    if activeMechanics:
-        fl.write('#TXTNodalExporter translations 2 ux uy\n')
-        fl.write('#TXTNodalExporter pressure 1 pressure\n')
-        if not activeTransport:
-            fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 2 damage crack_opening pointData 1 nodal_stress\n')
-        fl.write('#VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage\n')
-        fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
-    if activeTransport:
-        fl.write('TXTNodalExporter pressure 1 pressure\n')
-        fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 2 damage crack_opening pointData 1 pressure\n')
+def saveExporters(master_folder,activeTransport, activeMechanics, exporters=[]):
+    if len(exporters)==0:
+        print('Saving default exporters...', end='')
+        sys.stdout.flush()
+        fl=open(os.path.join(master_folder,exportersFile),'w')
+        if activeMechanics:
+            fl.write('#TXTNodalExporter translations 2 ux uy\n')
+            fl.write('#TXTNodalExporter pressure 1 pressure\n')
+            if not activeTransport:
+                fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 2 damage crack_opening pointData 1 nodal_stress\n')
+            fl.write('#VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage\n')
+            fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
+        if activeTransport:
+            fl.write('TXTNodalExporter pressure 1 pressure\n')
+            fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 2 damage crack_opening pointData 1 pressure\n')
 
-    fl.close()
+        fl.close()
+
+    else:
+        print('Saving exporters specified in prep_master...')
+        sys.stdout.flush()
+        fl=open(os.path.join(master_folder,exportersFile),'w')
+        for exporter in exporters:
+            print(exporter)
+            for e in exporter:
+                fl.write('%s\t'%e)
+
+            fl.write('\n')
+        fl.close()
 
     print('done.')
 

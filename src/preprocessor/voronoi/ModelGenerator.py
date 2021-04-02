@@ -497,7 +497,7 @@ class Model:
         #if (self.printout == False): enablePrint()
         print ('done.')
 
-    def saveRest(self, solver, master_file):
+    def saveRest(self, solver, master_file, exporters):
         # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
         bc_path = os.path.join(self.master_folder,
                                utilitiesGeom.mechBCFile)
@@ -515,7 +515,7 @@ class Model:
             if (self.trsprtIC_merged != None and len(self.trsprtIC_merged)>0):
                 utilitiesGeom.saveTransportIC(self.master_folder, self.trsprtIC_merged)
 
-        utilitiesGeom.saveExporters(self.master_folder, self.activeTransport, self.activeMechanics)
+        utilitiesGeom.saveExporters(self.master_folder, self.activeTransport, self.activeMechanics, exporters=exporters)
 
         if self.govNodes != None:
             if self.rigidPlates != None:
@@ -805,6 +805,7 @@ if __name__ == '__main__':
 
     model = None
     solver = None
+    exporters=[]
 
     f = open (file, 'r')
     for row in f:
@@ -819,6 +820,8 @@ if __name__ == '__main__':
             if (r[0]=='Material'):
                 if model != None:
                     model.addMaterial(row)
+            if (r[0]=='Exporter'):
+                exporters.append(r[1:])
 
     if model == None:
         print ('Missing model!! Exiting...')
@@ -838,7 +841,7 @@ if __name__ == '__main__':
             model.setDirectory(len(sys.argv) > 2 and sys.argv[2] or None) # directory to genereate in can be specified in the input string (after prep_master.inp)
             model.createModel()
             model.saveGeometry()
-            model.saveRest(solver, file)
+            model.saveRest(solver, file,exporters)
 
 
 
