@@ -856,7 +856,7 @@ def minDistTrans(lminR, lmin, dst, rR, rT):
 def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                         centersToRemesh, centersPreviouslyRemeshed,
                         radiusRemesh, radiusTransitional,
-                        dim):
+                        dim, useExistingFineNodes=False):
     PRINT_TEST = False
     print ( 'Generating points to update geometry' )
     if dim == 2:
@@ -869,51 +869,52 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     # remesh fine areas
     ci = 0
     for center in centersToRemesh:
-        tr = 0
-        # print("generating in remesh area %d - " % (ci), end=' ' )
-        # print(center)
-        ci += 1
-        while (tr<trials):
+        if not useExistingFineNodes:
             tr = 0
-            distIsGood = False
-            while (distIsGood == False):
-                if PRINT_TEST:
-                    print("generating node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
-                distIsGood = True
-                if (tr > trials): break
+            # print("generating in remesh area %d - " % (ci), end=' ' )
+            # print(center)
+            ci += 1
+            while (tr<trials):
+                tr = 0
+                distIsGood = False
+                while (distIsGood == False):
+                    if PRINT_TEST:
+                        print("generating node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
+                    distIsGood = True
+                    if (tr > trials): break
 
-                coords = randPointInSphere(center, radiusRemesh)
-                p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
+                    coords = randPointInSphere(center, radiusRemesh)
+                    p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
 
-                # check if generated point is not outside the specimen
-                # if rectLims is not None:
-                if not border_block.IsInside(p_coord):
-                    distIsGood = False
-                    tr += 1
-                    continue
-                # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
-                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
-                                          radiusRemesh,
-                                          centersPreviouslyRemeshed,
-                                          list(coords))
-                if not distIsGood:
-                    tr += 1
-                    continue
+                    # check if generated point is not outside the specimen
+                    # if rectLims is not None:
+                    if not border_block.IsInside(p_coord):
+                        distIsGood = False
+                        tr += 1
+                        continue
+                    # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
+                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                              radiusRemesh,
+                                              centersPreviouslyRemeshed,
+                                              list(coords))
+                    if not distIsGood:
+                        tr += 1
+                        continue
 
-                # check distances to other nodes
-                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
-                                             minDistRemesh,
-                                             node_coords, list(coords))
-                if not distIsGood:
-                    tr +=1
-                    continue
+                    # check distances to other nodes
+                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                                 minDistRemesh,
+                                                 node_coords, list(coords))
+                    if not distIsGood:
+                        tr +=1
+                        continue
 
-            #Adding node coords
-            if (tr < trials):
-                if PRINT_TEST:
-                    print("appending node in remesh area ---------------------", end=' ' )
-                    print(coords)
-                node_coords.append(coords)
+                #Adding node coords
+                if (tr < trials):
+                    if PRINT_TEST:
+                        print("appending node in remesh area ---------------------", end=' ' )
+                        print(coords)
+                    node_coords.append(coords)
 
         # after remesh of fine area, append this one into centers previously remeshed
         centersPreviouslyRemeshed.append(center)

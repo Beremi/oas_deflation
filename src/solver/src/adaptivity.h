@@ -93,11 +93,12 @@ private:
 
     fs :: path nodeFile; // path to initial node file - particles must be in a single file
 
+    NodeContainer *nodesFine = nullptr;
+    fs :: path pathToFineNodes;
+
     // split string:
     // http://www.martinbroadhurst.com/how-to-split-a-string-in-c.html
     fs :: path elemStatuses;
-    fs :: path nodeStatuses;
-
 
     unsigned dim;
     double adaptThreshold; // user input value of stress
@@ -164,6 +165,40 @@ private:
         }
     };
 
+    void saveNodesFine() {
+        Node *n;
+        Point p;
+        std :: vector< unsigned > nodeIdsToSave;
+        // create vector of centers to remove nodes from
+        std :: vector< Region * >regionsToRemove;
+        regionsToRemove.resize(this->nodeCentersToRmesh.size() );
+        unsigned rr = 0;
+        for ( auto const &cent : this->nodeCentersToRmesh ) {
+            regionsToRemove [ rr++ ] = new Sphere(cent, this->radius);
+        }
+        // save nodes that are going to be kept
+        // maybe here can be nodes.out to distinguish between old and the new ones
+        std :: string node_file = "nodesFine.inp";
+        for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
+            n = BaseSolver :: nodes->giveNode(i);
+            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
+                p = n->givePoint();
+                // check if node is in region to remesh
+                if ( isInsideRegions(regionsToRemove, p) && !isInsideRegions(this->regionsNotToRemesh, p) && !isInsideRegions(this->fineRegions, p) ) {
+                    nodeIdsToSave.push_back(i);
+                }
+            }
+        }
+
+        BaseSolver :: nodes->saveToFile(
+            ( fs :: path(this->remeshDir) / node_file ).string(),
+            nodeIdsToSave
+            );
+        for ( auto r : regionsToRemove ) {
+            delete r;
+        }
+    };
+
     //////////////////////////////////////////////////////////////////////////////
     void saveElemStatuses() {
         std :: vector< unsigned >elems_to_save;
@@ -185,12 +220,14 @@ private:
     }
     //////////////////////////////////////////////////////////////////////////////
     void saveRemeshData() {
-        saveCentersToRemesh();
-        // saveNodeStatuses();
+        this->saveCentersToRemesh();
 
-        saveNodesToKeep();
+        this->saveNodesToKeep();
+        if ( this->nodesFine ) {
+          this->saveNodesFine();
+        }
 
-        saveElemStatuses();
+        this->saveElemStatuses();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -207,15 +244,15 @@ private:
                                   GlobPaths :: BASEDIR.string() + " " +
                                   std :: to_string(this->radius) + " " +
                                   std :: to_string(this->radius2)
-                                  //  + " " +
-                                  // std :: to_string(this->dim)
-        ;
+                                   + " " +
+                                  std :: to_string( int( this->nodesFine != nullptr ) );
+                                  ;
         // cout << remeshCmd << endl;
         if ( this->remesherLmin != 0 ) {
             remeshCmd = remeshCmd + " " + std :: to_string(remesherLmin);
         }
 
-        // std::cout << "system return " << system ( remeshCmd.c_str() ) << '\n';
+        std::cout << "system cmd " << remeshCmd << '\n';
 
         if ( system(remeshCmd.c_str() ) != 0 ) {
             std :: cerr << "something went wrong during remesher run" << '\n';
@@ -397,9 +434,6 @@ private:
                 } else if ( param.compare("elemStatuses") == 0 ) {
                     iss >> path;
                     this->elemStatuses = GlobPaths :: BASEDIR / path;
-                } else if ( param.compare("nodeStatuses") == 0 ) {
-                    iss >> path;
-                    this->nodeStatuses = GlobPaths :: BASEDIR / path;
                 } else if ( param.compare("prepInput") == 0 ) {
                     iss >> this->prepInput;
                     bmn = true;
@@ -410,6 +444,14 @@ private:
                 } else if ( param.compare("remeshMaterialId") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> this->remeshMaterialId;
+                } else if ( param.compare("pathToFineNodes") == 0 ) {
+                    iss >> path;
+                    this->pathToFineNodes = GlobPaths :: BASEDIR / path;
+                    if ( fs :: exists( this->pathToFineNodes ) ) {
+                      this->nodesFine = new NodeContainer();
+                    } else {
+                      std::cerr << "file with specified fine geoemtry ' " << this->pathToFineNodes.string() <<"' does not exist, will use randomly generated geoemtry for refined regions" << '\n';
+                    }
                 }
             }
             inputfile.close();
@@ -459,6 +501,11 @@ public:
         }
         // dimension is needed for calculation of nodal stresses (TODO calulate particle volume somewhere at the beginning)
         this->dim = BaseSolver :: elems->giveElement(0)->giveDimension();
+
+        if ( this->nodesFine ) {
+          std::cout << "Adaptivity: loading fine geometry ..." << '\n';
+          this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim);
+        }
 
         BaseSolver :: init(initial);
     };

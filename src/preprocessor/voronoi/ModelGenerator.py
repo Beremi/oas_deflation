@@ -1,4 +1,5 @@
-
+import matplotlib as mpl
+mpl.use('Agg')
 import Preprocessor, sys, time, numpy as np, random
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -326,7 +327,7 @@ class Model:
 
     def run_2d_notched3pb(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init)
+        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self, node_coords_init=None):
@@ -452,9 +453,8 @@ class Model:
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
-    def run_2d_corrosionRebar(self):
-
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth)
+    def run_2d_corrosionRebar(self, node_coords_init=None):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
 
 
@@ -497,7 +497,7 @@ class Model:
         #if (self.printout == False): enablePrint()
         print ('done.')
 
-    def saveRest(self, solver, master_file):
+    def saveRest(self, solver, master_file, exporters):
         # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
         bc_path = os.path.join(self.master_folder,
                                utilitiesGeom.mechBCFile)
@@ -515,7 +515,7 @@ class Model:
             if (self.trsprtIC_merged != None and len(self.trsprtIC_merged)>0):
                 utilitiesGeom.saveTransportIC(self.master_folder, self.trsprtIC_merged)
 
-        utilitiesGeom.saveExporters(self.master_folder, self.activeTransport, self.activeMechanics)
+        utilitiesGeom.saveExporters(self.master_folder, self.activeTransport, self.activeMechanics, exporters=exporters)
 
         if self.govNodes != None:
             if self.rigidPlates != None:
@@ -805,6 +805,7 @@ if __name__ == '__main__':
 
     model = None
     solver = None
+    exporters=[]
 
     f = open (file, 'r')
     for row in f:
@@ -819,6 +820,8 @@ if __name__ == '__main__':
             if (r[0]=='Material'):
                 if model != None:
                     model.addMaterial(row)
+            if (r[0]=='Exporter'):
+                exporters.append(r[1:])
 
     if model == None:
         print ('Missing model!! Exiting...')
@@ -838,7 +841,7 @@ if __name__ == '__main__':
             model.setDirectory(len(sys.argv) > 2 and sys.argv[2] or None) # directory to genereate in can be specified in the input string (after prep_master.inp)
             model.createModel()
             model.saveGeometry()
-            model.saveRest(solver, file)
+            model.saveRest(solver, file,exporters)
 
 
 

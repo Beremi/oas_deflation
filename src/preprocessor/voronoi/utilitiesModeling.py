@@ -309,14 +309,17 @@ def createDiamondTestModel(width, height):
 def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,
                            loadWidth = 1, fracZoneWidth = 0.15,
                            orthogonalFracZone=False, notchWidth =-1,
-                           node_coords_init=None):
+                           node_coords_init=None,
+                           activeTransport=False,
+                           coupled = False):
     print('Creating 2d simply supported beam, uniform load.')
     #
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth=notchWidth, node_coords_init=node_coords_init);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth=notchWidth, node_coords_init=node_coords_init,  coupled=coupled);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
     print('done.')
+
 
     ########################################################################
     functions = []
@@ -333,7 +336,49 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,
     functions.append (fn1)
 
 
-    return node_coords, mechBC_merged, mechInitC_merged,  vor, areas, functions, notches, govNodes, govNodesMechBC, rigidPlates
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+
+
+    #"""
+    ### selecting vertices on the bottom surface
+    boundA = np.zeros(2)-1e-8
+    boundB = np.array([maxLim[0], 1e-8])
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    fn1 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn1)
+
+    for i,k in enumerate(faces1):
+        trsBC = utilitiesMech.transportBC(k,[2,-1])
+        transportBC_merged.append(trsBC)
+
+    #"""
+    ### selecting vertices on the top surface
+    boundA = np.array([-1e-8, maxLim[1]-1e-8])
+    boundB = np.array([maxLim[0], maxLim[1]+1e-8])
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    fn1 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn1)
+
+    for i,k in enumerate(faces1):
+        trsBC = utilitiesMech.transportBC(k,[3,-1])
+        transportBC_merged.append(trsBC)
+
+    #"""
+
+
+    #return node_coords, mechBC_merged, transportBC_merged,  notches, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions
+
+
+    return node_coords, mechBC_merged, [], vor, areas, functions, notches, govNodes,    govNodesMechBC, rigidPlates, transportBC_merged
+
+
 
 
 def create2dCantileverBending(maxLim, minDist, trials ):
@@ -870,14 +915,14 @@ def create3dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
 
 
 
-def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth):
+def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, node_coords_init=None):
     print('Creating corrosion rebar model...')
     dim=2
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init)
 
 
     print('Conducting Voronoi tesselation...', end = '')
@@ -2659,7 +2704,7 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
 
 def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
                              fracZoneWidth,  orthogonalFracZone=False,
-                             notchWidth = -1, node_coords_init=None):
+                             notchWidth = -1, node_coords_init=None, coupled=False):
     dim = 2
     #lists for the model
     if node_coords_init is None:
@@ -2796,20 +2841,20 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/1, dim, node_coords,  trials, False, False)
         #"""
         ##########################################generating of points, fracture zone
-        """
+
         maxLimF = np.array([
         maxLim[0] - indent - 0.5*maxLim[0]*(1-fracZoneWidth),
         maxLim[1] - indent,
         indent + 0.5*maxLim[0]*(1-fracZoneWidth),
         maxLim[1]*notch*0.8])
         #"""
-
+        """
         maxLimF = np.array([
-        maxLim[0]*0.5 - maxLim[1]*(1-notch)/2,
+        maxLim[0]*0.5 - maxLim[0]*(1-notch)/2,
         maxLim[1] - indent,
-        maxLim[0]*0.5 + maxLim[1]*(1-notch)/2,
+        maxLim[0]*0.5 + maxLim[0]*(1-notch)/2,
         maxLim[1]*notch])
-
+        """
 
         if not orthogonalFracZone:
             pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True)
@@ -2825,19 +2870,23 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
 
 
         ## notch faces
+
         maxLimF = np.array([
         maxLim[0]/2 - 0.5*maxLim[1]*(1-notch)*1.5,
         maxLim[1],
         maxLim[0]/2 + 0.5*maxLim[1]*(1-notch)*1.5,
         indent+maxLim[1]*notch/2])
-        pointGenerators.generateNodesRect(maxLimF, minDist*1.2, dim, trials, node_coords, useLowBound=True)
+        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True)
 
+
+        """
         maxLimF = np.array([
         maxLim[0]/2 - 0.5*maxLim[1]*(1-notch)*2.5,
         maxLim[1],
         maxLim[0]/2 + 0.5*maxLim[1]*(1-notch)*2.5,
         indent+maxLim[1]*notch/2])
         pointGenerators.generateNodesRect(maxLimF, minDist*1.5, dim, trials, node_coords, useLowBound=True)
+        """
 
         """
         maxLimF = np.array([
@@ -2865,18 +2914,27 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
 
 
         #rect
-        pointGenerators.generateNodesRect(maxLim, minDist*3, dim, trials, node_coords)
+        pointGenerators.generateNodesRect(maxLim, minDist*2, dim, trials, node_coords)
 
+
+    """
+    node_coords = np.asarray(node_coords)
+    plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+    plt.show()
+    """
 
     return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
 
 
 
 
-def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders):
+def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=None):
     dim = 2
 
-    node_coords = []
+    if node_coords_init is None:
+        node_coords = []
+    else:
+        node_coords = node_coords_init
 
 
     mechBC_merged = []
@@ -2889,56 +2947,59 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiamete
     indent = 1e-8
     indentRP = 1e-7
 
-    node_coords.append(np.array([indent, indent]))
+    if node_coords_init is None:
 
-    if sampleBorders:
-        #top
-        nodeA = np.array([indent, maxLim[1]-indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+        node_coords.append(np.array([indent, indent]))
 
-        leftRigidPlateMechBC = np.array([-1, 2,0,   -1,-1,-1])
-        leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, maxLim[1]-indentRP, maxLim[1]+indentRP ]))
-        rigidPlates.append(leftRigidPlate)
-        govNodes.append(np.array([ maxLim[0]/2, maxLim[1]-indent ]))
-        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+        if sampleBorders:
+            #top
+            nodeA = np.array([indent, maxLim[1]-indent])
+            nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+            pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
 
-        #bottom
-        nodeA = np.array([indent, indent])
-        nodeB = np.array([maxLim[0]-indent, indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+            leftRigidPlateMechBC = np.array([-1, 2,0,   -1,-1,-1])
+            leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, maxLim[1]-indentRP, maxLim[1]+indentRP ]))
+            rigidPlates.append(leftRigidPlate)
+            govNodes.append(np.array([ maxLim[0]/2, maxLim[1]-indent ]))
+            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
 
-        rightRigidPlateMechBC = np.array([0, 1,0,   -1,-1,-1])
-        rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
-        rigidPlates.append(rightRigidPlate)
-        govNodes.append(np.array([ maxLim[0]/2, indent ]))
-        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+            #bottom
+            nodeA = np.array([indent, indent])
+            nodeB = np.array([maxLim[0]-indent, indent])
+            pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
 
-        #left
-        nodeA = np.array([indent, indent])
-        nodeB = np.array([indent, maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
-        #right
-        nodeA = np.array([maxLim[0]-indent, indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+            rightRigidPlateMechBC = np.array([0, 1,0,   -1,-1,-1])
+            rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
+            rigidPlates.append(rightRigidPlate)
+            govNodes.append(np.array([ maxLim[0]/2, indent ]))
+            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+            #left
+            nodeA = np.array([indent, indent])
+            nodeB = np.array([indent, maxLim[1]-indent])
+            pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+            #right
+            nodeA = np.array([maxLim[0]-indent, indent])
+            nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+            pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
 
 
-    #rebar
-    for r in range (rebarCount):
-        #rebar edge
-        centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
-        pointGenerators.generateNodesCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials )
-        #rebar crossection
-        pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
+        #rebar
+        for r in range (rebarCount):
+            #rebar edge
+            centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            pointGenerators.generateNodesCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials )
+            #rebar crossection
+            pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
 
-    #rect
-    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+        #rect
+        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
 
 
     node_coords = np.asarray(node_coords)
-    plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
-    plt.show()
+    if SHOW_PLOT:
+        plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+        plt.show()
 
 
     return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates
@@ -3689,7 +3750,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         #mBC = utilitiesMech.mechanicalBC(dim, 0, lineBC)
         #mechBC_merged.append(mBC)
 
-        #an indent due to mirroring of the data for voronoi tess.
+
         if notchWidth == -1:
             notchWidth = minDist /4
         else:
@@ -3991,8 +4052,8 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         ##########################################generating of points, homogeneous volume
         pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
 
-    if coupled:
-        notches = []
+    #if coupled:
+    #    notches = []
     return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
 
 
