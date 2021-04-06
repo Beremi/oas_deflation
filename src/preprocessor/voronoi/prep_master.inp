@@ -67,13 +67,13 @@
 #Model 3d_coupledArtificialCrack Xsize 0.02 Ysize 0.05 Zsize 0.005 minDist 0.0015 notchH 0.6 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
 #Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 1 activeMechanics 1 coupled 1 trials 1000
 #
-Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.05 minDist 0.006 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth -1
+#Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.05 minDist 0.006 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth -1
 #
 #
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0 loadWidth 0.05 minDist 0.010 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth -1
 #
 #
-#Model 2d_corrosionRebar Xsize 0.06 Ysize 0.1 minDist 0.002 rebarMinDist 0.0015 rebarDiameter 0.02 rebarCount 2 rebarDepth 0.02  activeTransport 1 activeMechanics 1 coupled 1 trials 10000
+Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.002 rebarMinDist 0.002 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 10000
 #
 #
 ####################################################################################
