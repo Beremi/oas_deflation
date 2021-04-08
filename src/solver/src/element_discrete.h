@@ -49,6 +49,19 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// COUPLED RBSN ELEMENT
+class RigidBodyContactCoupled : public RigidBodyContact
+{
+protected:
+    vector< RigidBodyContact * >friends; //mechanical elements involved in computation
+    vector< double >friendsweight;  //weight of mechanical elements
+public:
+    RigidBodyContactCoupled(const unsigned dim);
+    ~RigidBodyContactCoupled() {};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // TRUSS ELEMENT
 class Truss : public RigidBodyContact
 {

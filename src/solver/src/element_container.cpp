@@ -30,6 +30,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     RigidBodyContact *newelem = new RigidBodyContact(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("LTCBEAMCoupled") == 0 ) {
+                    RigidBodyContactCoupled *newelem = new RigidBodyContactCoupled(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("Truss") == 0 ) {
                     Truss *newelem = new Truss(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
