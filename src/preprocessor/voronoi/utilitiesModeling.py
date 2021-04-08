@@ -656,7 +656,7 @@ def createPatchTestTransport(maxLim, minDist, trials, dim, powerTes):
     return node_coords, [], transportBC_merged, vor, areas, functions, radii
 
 
-def createCoupledCompression(maxLim, minDist, trials, dim, powerTes):    
+def createCoupledCompression(maxLim, minDist, trials, dim, powerTes):
     print('Creating coupled compression test')
     node_coords, radii, mechBC_merged, mechIC_merged  = assemblePatchTestTransport(maxLim, minDist, trials, dim);
     node_coords_list = node_coords.tolist()
@@ -704,7 +704,7 @@ def createCoupledCompression(maxLim, minDist, trials, dim, powerTes):
     ### selecting vertices and nodes on the top and bottom surface
     boundA = np.zeros(dim)-1e-7
     boundB = np.copy(maxLim)+1e-7
-    boundB[0] = 1e-7    
+    boundB[0] = 1e-7
     botVert = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     botNode = utilitiesGeom.returnSelectedPts(boundA, boundB, node_coords)
     boundA[0] += maxLim[0]
@@ -2196,7 +2196,7 @@ def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directi
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
 
 
-def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim ):
+def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, activeTransport):
 
     ########################################################################
     functions = []
@@ -2244,8 +2244,61 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
 
 
 
-    return node_coords, mechBC_merged,  vor, volumes, functions,govNodes, govNodesMechBC, rigidPlates
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
 
+    maxLim = np.array([height, 2*radius, 2*radius])
+
+    #"""
+    ### selecting vertices on the bottom surface
+    boundA = np.array([-minDist/10, -100, -100])
+    boundB = np.array([minDist/10, 100, 100])
+    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+
+
+    fn1 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn1)
+
+    ### selecting vertices on the top surface
+    boundA = np.array([maxLim[0]-minDist/10, -100, -100])
+    boundB = np.array([maxLim[0]+minDist/10, 100, 100])
+    faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces2,:]
+
+    fn1 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn1)
+
+    transportBC_merged = []
+    transportIC_merged = []
+
+    govNodesTrspt = []
+    govNodesTrsptBC = []
+    rigidPlatesTrspt = []
+
+    print(faces1)
+    print(faces2)
+
+    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptLeftRigidPlate.setDirectNodes(faces1)
+    trsptLeftRigidPlateMechBC = np.array([3,-1])
+    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+
+    trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptRightRigidPlate.setDirectNodes(faces2)
+    trsptRightRigidPlateMechBC = np.array([4,-1])
+    rigidPlatesTrspt.append(trsptRightRigidPlate)
+    govNodesTrspt.append(np.array([ height, 0, 0]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+
+
+    return node_coords, mechBC_merged,  vor, volumes, functions,  govNodes, govNodesMechBC, rigidPlates, transportBC_merged, govNodesTrspt, rigidPlatesTrspt, govNodesTrsptBC
+
+    #return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, volumes, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
 
 
 
