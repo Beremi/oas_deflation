@@ -32,7 +32,7 @@
 Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
-Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.030 activeMechanics 1 trials 50000
+Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.030 activeMechanics 1 activeTransport 1 coupled 1 trials 50000
 #
 #
 # Noguiera torsion
@@ -73,7 +73,7 @@ Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0
 #Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0 loadWidth 0.05 minDist 0.010 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth -1
 #
 #
-Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.002 rebarMinDist 0.002 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 10000
+#Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.001 rebarMinDist 0.002 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 10000
 #
 #
 ####################################################################################
