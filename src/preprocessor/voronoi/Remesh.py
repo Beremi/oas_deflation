@@ -49,18 +49,19 @@ if __name__ == '__main__':
         sys.exit(1)
 
     prep_input_file = os.path.join(sys.argv[3], sys.argv[1])
-    print(prep_input_file)
+    # print(prep_input_file)
 
     remeshDir = os.path.join(sys.argv[3], sys.argv[2])
-    print(remeshDir)
+    # print(remeshDir)
     # sys.exit()
 
     if not os.path.isfile(prep_input_file):
-        print('Missing input master file in argument! Exiting.')
+        print('No such input file: \'%s\' Exiting.' % prep_input_file)
         sys.exit()
 
     model = None
     solver = None
+    exporters=[]
 
     skipLines = ['#', ' ', '\n', '\t']
 
@@ -76,6 +77,8 @@ if __name__ == '__main__':
             if (r[0]=='Material'):
                 if model != None:
                     model.addMaterial(row)
+            if (r[0]=='Exporter'):
+                exporters.append(r[1:])
     f.close()
 
     if model == None:
@@ -162,7 +165,7 @@ if __name__ == '__main__':
             model.setDirectory(dirNam)
             model.createModel(node_coords_init=node_coords)  # TODO with existing nodes
             model.saveGeometry()
-            model.saveRest(solver, prep_input_file)
+            model.saveRest(solver, prep_input_file, exporters)
 
 
     # ax.scatter( np.array(model.node_coords)[:, 0],
