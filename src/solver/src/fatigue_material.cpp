@@ -212,7 +212,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 
                 Ynext = 0.5 * stiffT * ( slip_cur - temp_sPi ).sqNorm();
 
-                if ( comp_dam && stress [ 0 ] < 0.0 ) {
+                if ( comp_dam && stress [ 0 ] < m->giveCompressiveThreshold() ) {
                     //when under compression, do not increase shear damage (damage rate = 0)
                     omega_dot = 0.0;//increment of shear damage
                 } else {
@@ -433,6 +433,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             iss >> coup_dam;
         } else if ( param.compare("comp_damage_off") == 0 ) {
             iss >> comp_dam;
+        } else if ( param.compare("comp_threshold") == 0 ) {
+            iss >> comp_thresh;
         }
     }
     if ( !btau ) {

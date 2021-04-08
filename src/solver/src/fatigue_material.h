@@ -72,6 +72,7 @@ private:
     double mC, mT;  ///< parameters controling the pressure sensitivity (under Compression or Tension)
     bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
     bool coup_dam, comp_dam;
+    double comp_thresh = 0.0;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -94,6 +95,7 @@ public:
     bool bisectionMethOn() const { return bisecOn; }
     bool isDamageCoupled() const { return coup_dam; }
     bool isCompressiveDamageOff() const { return comp_dam; }
+    double giveCompressiveThreshold() const { return comp_thresh; }
 };
 
 //////////////////////////////////////////////////////////
