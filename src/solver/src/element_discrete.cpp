@@ -411,6 +411,14 @@ double RigidBodyContact :: giveVolume(unsigned nodenum) const {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// COUPLED RBSN ELEMENT
+RigidBodyContactCoupled :: RigidBodyContactCoupled(const unsigned dim) : RigidBodyContact(dim) {
+    name = "LTCBEAMCoupled";
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // TRUSS ELEMENT
 Matrix Truss :: giveAMatrix(Point a, Point x) const {
     ( void ) a;
@@ -631,7 +639,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
             cout << "\t" << t.giveCoord(p);
         }
         cout << endl;
-        exit(1);
+        //exit(1);
     }
 
     inttype->setIPWeight(0, length * area);   // NOTE JK: should not this be divided by dimension? Otherwise you integrate dim-times volume that is actually there (this is what caused problems in study on unstructured grid for FDM contribution)
