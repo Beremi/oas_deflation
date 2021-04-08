@@ -2961,31 +2961,45 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiamete
             nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
             pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
 
-            leftRigidPlateMechBC = np.array([-1, -1,-1,   -1,-1,-1])
-            leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, maxLim[1]-indentRP, maxLim[1]+indentRP ]))
-            rigidPlates.append(leftRigidPlate)
+            topRigidPlateMechBC = np.array([-1, -1,-1,   -1,-1,-1])
+            topRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, maxLim[1]-indentRP, maxLim[1]+indentRP ]))
+            rigidPlates.append(topRigidPlate)
             govNodes.append(np.array([ maxLim[0]/2, maxLim[1]-indent ]))
-            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
 
             #bottom
             nodeA = np.array([indent, indent])
             nodeB = np.array([maxLim[0]-indent, indent])
             pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
 
-            rightRigidPlateMechBC = np.array([0, 0,0,   -1,-1,-1])
-            rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
-            rigidPlates.append(rightRigidPlate)
-            govNodes.append(np.array([ maxLim[0]/2, indent ]))
-            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+            bottomRigidPlateMechBC = np.array([0, 0,0,   -1,-1,-1])
+            bottomRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
+            rigidPlates.append(bottomRigidPlate)
+            govNodes.append(np.array([ maxLim[0]/2, indentRP ]))
+            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, bottomRigidPlateMechBC))
 
             #left
             nodeA = np.array([indent, indent])
             nodeB = np.array([indent, maxLim[1]-indent])
             pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+            leftRigidPlateMechBC = np.array([0, -1,-1,   -1,-1,-1])
+            leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, indentRP, minDist/2, maxLim[1]-minDist/2 ]))
+            rigidPlates.append(leftRigidPlate)
+            govNodes.append(np.array([ indentRP, maxLim[1]/2 ]))
+            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -3, leftRigidPlateMechBC))
+
+
             #right
             nodeA = np.array([maxLim[0]-indent, indent])
             nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
             pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+            rightRigidPlateMechBC = np.array([0, -1,-1,   -1,-1,-1])
+            rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([maxLim[0]-indentRP, maxLim[0]+indentRP, minDist/2, maxLim[1]-minDist/2 ]))
+            rigidPlates.append(rightRigidPlate)
+            govNodes.append(np.array([ maxLim[0], maxLim[1]/2 ]))
+            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -4, rightRigidPlateMechBC))
 
 
         #rebar
@@ -3027,9 +3041,19 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiamete
             #rebar crossection
             pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
 
-        #rect
-        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
 
+        #fine top half rect
+        fineTopBounds = np.array([     indent,          maxLim[1] * 0.8,      maxLim[0],         maxLim[1]   ])
+        pointGenerators.generateNodesRect(fineTopBounds, minDist, dim, trials, node_coords, useLowBound=True)
+
+        #intermediate rect
+        interHeight = maxLim[1]  / 3
+        interBounds = np.array([     indent,      maxLim[1] *0.8 - interHeight , maxLim[0],             maxLim[1] *0.8  ])
+        pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = 5*minDist, bottomMinDist = minDist, gradienDirection=1)
+
+        #bottom rough rect
+        roughBottomBounds =  np.array([     indent,      indent,  maxLim[0],             maxLim[1] *0.8 - interHeight  ])
+        pointGenerators.generateNodesRect(roughBottomBounds, minDist*5, dim, trials, node_coords, useLowBound=True)
 
     node_coords = np.asarray(node_coords)
     if SHOW_PLOT:
