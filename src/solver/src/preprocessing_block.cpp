@@ -819,8 +819,6 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
     } else if ( direction == 2 ) {
         zm = 0;
     }
-    unsigned iii = 0;
-    std::cout << "ring ------------------------------------------ const size: " << constrs->giveSize() << '\n';
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
@@ -829,14 +827,10 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
                 if ( nod == master ) {
                     continue;
                 }
-                iii++;
                 constrs->connectSlaveMaster(nod, master, ndim, which, this->transport);
             }
         }
     }
-    std::cout << "number of nodes connected in ring: " << iii << '\n';
-    std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<const size: " << constrs->giveSize() << '\n';
-
 }
 
 
