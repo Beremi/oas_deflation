@@ -644,6 +644,24 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 
+void RigidPlate :: setDirectionToFix(istringstream &iss) {
+    bool bw = false;
+    string param;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("which") == 0 ) {
+            iss >> which;
+            // std::cout << "which" << '\n';
+            bw = true;
+            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for Particle (fix unused DoFs to zero)" << '\n';
+        }
+    }
+    if ( !bw ) {
+        this->which = "xyz";
+    }
+}
+
+
 void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     // jointDoF jD;
     ndim = d;
@@ -657,20 +675,8 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
         slave_ids.push_back(nodeid);
     }
 
-    bool bw = false;
-    string param;
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("which") == 0 ) {
-            iss >> which;
-            // std::cout << "which" << '\n';
-            bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for Particle (fix unused DoFs to zero)" << '\n';
-        }
-    }
-    if ( !bw ) {
-        which = "xyz";
-    }
+    this->setDirectionToFix(iss);
+
 }
 
 void RigidPlate :: checkMechTransport(Node *master) {
@@ -728,20 +734,7 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
         std :: cerr << "dimension " << d << " not implemented yet" << '\n';
         exit(EXIT_FAILURE);
     }
-    bool bw = false;
-    string param;
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("which") == 0 ) {
-            iss >> which;
-            // std::cout << "which" << '\n';
-            bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for Particle (fix unused DoFs to zero)" << '\n';
-        }
-    }
-    if ( !bw ) {
-        which = "xyz";
-    }
+    RigidPlate :: setDirectionToFix(iss);
 }
 
 void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
@@ -798,20 +791,8 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
         direction = 2;
     }
 
-    bool bw = false;
-    string param;
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("which") == 0 ) {
-            iss >> which;
-            // std::cout << "which" << '\n';
-            bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for Particle (fix unused DoFs to zero)" << '\n';
-        }
-    }
-    if ( !bw ) {
-        which = "xyz";
-    }
+    RigidPlate :: setDirectionToFix(iss);
+
 }
 
 void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
