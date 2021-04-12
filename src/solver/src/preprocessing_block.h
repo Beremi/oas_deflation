@@ -28,6 +28,8 @@ public:
     virtual void readFromLine(istringstream &iss, unsigned d) = 0;
 };
 
+// TODO JK: regions with separate material / elastic regions
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Mechanical Periodic Boundary Condition on prism
@@ -94,6 +96,7 @@ protected:
     unsigned master_id, ndim;
     std :: string which;  ///< which direction to fix (e.g. to leave expansion in perpendicualr direction)
     void checkMechTransport(Node *master);
+    void setDirectionToFix(istringstream &iss);
 };
 
 class CoordRigidPlate : public RigidPlate

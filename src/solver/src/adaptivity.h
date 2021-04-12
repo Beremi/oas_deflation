@@ -278,7 +278,8 @@ private:
         for ( unsigned i = 0; i < BaseSolver :: elems->giveSize(); i++ ) {
             // change = 0;
             el = BaseSolver :: elems->giveElement(i);
-            if ( isInsideRegions(this->fineRegions, el) ) {
+            if ( el->giveNode(0)->doesMechanics()  // NOTE JK: adaptivity is based on mechanical stress only
+                && isInsideRegions(this->fineRegions, el) ) {
                 el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
             }
         }

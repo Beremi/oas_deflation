@@ -92,7 +92,7 @@ class Model:
         self.notchWidth = None
         self.notchDepth = None
         self.RWTHQuarter = False
-        self.elasticZone = None
+        self.elasticZone = 0
 
         self.node_indices_dogbone = []
 
@@ -270,6 +270,11 @@ class Model:
         if self.modelType == '3d_notched3pb':
             self.run_3d_notched3pb(node_coords_init=node_coords_init)
 
+        if self.modelType == '2d_coupledCompression':
+            self.run_2d_coupledCompression()
+        if self.modelType == '3d_coupledCompression':
+            self.run_2d_coupledCompression()
+
         if self.modelType == '2d_dogbone':
             self.run_2d_dogbone()
         if self.modelType == '3d_dogbone':
@@ -389,7 +394,8 @@ class Model:
     def run_3d_torsionPress(self):
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='box', maxLim=self.maxLim)
-        (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, 0 )
+        (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates,
+        self.trsprtBC_merged, self.govNodesTrspt, self.rigidPlatesTrspt, self.govNodesTrsptBC)    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, 0 , self.activeTransport)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
         self.materialZones =  None
         if self.elasticZone >0:
@@ -431,6 +437,9 @@ class Model:
 
     def run_2d_transportPatchTest(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
+
+    def run_2d_coupledCompression(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createCoupledCompression(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
 
     def run_3d_transportPatchTest(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)

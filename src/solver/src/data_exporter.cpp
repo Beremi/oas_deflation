@@ -1,6 +1,7 @@
 #include "data_exporter.h"
 #include "vtk_exporter.h"
 #include "exporter_model.h"
+#include "geometry.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -201,15 +202,39 @@ void Gauge :: giveFileName(unsigned step, char *buffer) const {
  *  - see DataExporter::readFromLine
  */
 void ForceGauge :: readFromLine(istringstream &iss) {
-    iss >> filename;
-    iss >> name;
-    codes.resize(1);
-    iss >> codes [ 0 ];
+    iss >> this->filename;
+    iss >> this->name;
+    this->codes.resize(1);
+    iss >> this->codes [ 0 ];
     unsigned num;
-    iss >> num;
-    n.resize(num);
-    for ( unsigned i = 0; i < num; i++ ) {
-        iss >> n [ i ];
+    std :: string param;
+    iss >> param;
+    if ( param.compare("block") == 0 || param.compare("coords") == 0) {
+      std :: string param2;
+      bool mech;
+      if ( param2.compare("mech") == 0 ) {
+        mech = true;
+      } else if ( param2.compare("trsp") == 0 ) {
+        mech = false;
+      } else {
+        std::cerr << "determine type of force 'mech' or 'trsp' for ForceGauge of all nodes in block" << '\n';
+      }
+      iss >> param2;
+      Block bl;
+      bl.readFromLine(iss);
+      for ( auto const &nod : *nodes ) {
+        if ( bl.isInside( nod->givePoint() ) ) {
+          if ( (nod->doesMechanics() && mech) || (nod->doesTransport() && !mech)) {
+            this->n.push_back( nodes->giveNodeId(nod) );
+          }
+        }
+      }
+    } else {
+      num = std :: stoul(param.c_str());
+      this->n.resize(num);
+      for ( unsigned i = 0; i < num; i++ ) {
+        iss >> this->n [ i ];
+      }
     }
     DataExporter :: readFromLine(iss);
 }
