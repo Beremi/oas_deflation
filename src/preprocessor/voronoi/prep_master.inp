@@ -14,6 +14,9 @@
 #Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0.5 loadWidth 0.05 minDist 0.015 fracZoneWidth 0.1 activeMechanics 1  orthogonalFracZone 0 trials 200 notchWidth -1
 #
 #
+#3d cube
+Model 3d_cube Xsize 1.0 Ysize 1.0 Zsize 1 minDist 0.05 powerTes 0 activeMechanics 1 activeTransport 1 coupled 1 trials 1000
+#
 #RWTH Notched 3pb
 #
 # A: 0.5/0.2/0.1, B: 1.0/0.4/0.1  ///  0.525   1.050
@@ -29,10 +32,10 @@
 # roughEdgeDogbone 1 - prvky s obema nody v modelu 
 # roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
 #Model 2d_dogbone dogboneD 1.2 minDist 0.004 dogboneExcentricityFrac 50 activeMechanics 1 trials 10000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 10 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 15 interLayerThickness 100
-Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
+#Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #
 # Cusatis torsion press
-Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.030 activeMechanics 1 activeTransport 1 coupled 1 trials 50000
+#Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.030 activeMechanics 1 activeTransport 1 coupled 1 trials 50000
 #
 #
 # Noguiera torsion

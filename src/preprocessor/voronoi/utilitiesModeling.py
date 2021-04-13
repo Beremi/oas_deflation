@@ -1628,6 +1628,70 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
 
 
+def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None ):
+    print('Creating 3d cube. Power tesselation: %s' %powerTes)
+    #govNodes, rigidPlates
+    dim = 3
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init);
+    node_coords = np.asarray(node_coords)
+    """
+    if SHOW_PLOT:
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
+        ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+        plt.show()
+    """
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
+    print('done.')
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, top surface,
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-2]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    fn2 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn2)
+
+    transportBC_merged = []
+    transportIC_merged = []
+    if coupled == True:
+
+        ### selecting vertices on the bottom surface
+        botFaceBC = np.array([2,-1])
+        boundA = np.array(  [-1e-4 , -1e-5, -1e-5] )
+        boundB = np.array(  [ maxLim[0]+1e-4 , 1e-5, maxLim[2]+1e-5]  )
+        botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+        for i in range (len(botFace)):
+            trsBC = utilitiesMech.transportBC(botFace[i], botFaceBC)
+            transportBC_merged.append(trsBC)
+
+        ### selecting vertices on the top surface
+        topFaceBC = np.array([0,-1])
+        boundA = np.array(  [-1e-4 , maxLim[1]-1e-5, -1e-5] )
+        boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, maxLim[2]+1e-5]  )
+        topFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+        for i in range (len(topFace)):
+            trsBC = utilitiesMech.transportBC(topFace[i], topFaceBC)
+            transportBC_merged.append(trsBC)
+
+    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
+
+
+
+
 def create3dDam(maxLim, minDist, trials, Xtop):
     print('Creating 3d Dam....')
     #
@@ -4247,6 +4311,142 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     #    notches = []
     return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None):
+    dim = 3
+    #lists for the model
+    if node_coords_init is None:
+        node_coords = []
+    else:
+        node_coords = node_coords_init
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+
+    indent = 1e-6
+
+
+    ##################### CONSTRAINTS AND RIGID PLATES
+    #rigid plate left support
+    indentRP = indent
+    leftRigidPlateMechBC = np.array([0,-1,-1, 0,0,0,  -1,-1,-1,-1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 3,
+    np.array([ -indent,  indent,
+     -indent, maxLim[1],
+     -indent, maxLim[2]  ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ 0, maxLim[1]/2, maxLim[2]/2]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+    #rigid plate right support
+    rightRigidPlateMechBC = np.array([1,-1,-1, 0,0,0,  -1,-1,-1, -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-2, 3,np.array([
+    maxLim[0]-indent,  maxLim[0]+indent,
+     -indent, maxLim[1],
+     -indent, maxLim[2] ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0], maxLim[1]/2, maxLim[2]/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+    indent = 1e-7
+
+
+    if node_coords_init is None:
+        node_coords.append( np.array([maxLim[0]*np.random.random(), maxLim[1]*np.random.random(), maxLim[2]*np.random.random()]))
+
+        ###############generating of nodes, front bottom line ###############
+        nodeA = np.array([indent, indent, indent])
+        nodeB = np.array([maxLim[0]-indent, indent, indent])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+        ###############generating of nodes, rear bottom line ###############
+        nodeA = np.array([indent, indent,  maxLim[2]-indent])
+        nodeB = np.array([maxLim[0]-indent, indent,  maxLim[2]-indent])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+        ###############generating of nodes, front top line ###############
+        nodeA = np.array([indent, maxLim[1]-indent, indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+        ###############generating of nodes, rear top line ###############
+        nodeA = np.array([indent, maxLim[1]-indent,  maxLim[2]-indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent,  maxLim[2]-indent])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+        ############### loaded top surf ###############
+        nodeA =  np.array([indent, maxLim[1]-indent, indent])
+        nodeB =  np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+        #front surf
+        nodeA =  np.array([indent , maxLim[1] - indent, indent])
+        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+        #back surf
+        nodeA =  np.array([indent , maxLim[1] - indent, maxLim[2]-indent])
+        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+        #top surf
+        nodeA =  np.array([indent , maxLim[1] - indent, indent])
+        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+        #bot surf
+        nodeA =  np.array([indent , indent, indent])
+        nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+        #left face surf
+        nodeA =  np.array([indent , indent, indent])
+        nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+        #right face surf
+        nodeA =  np.array([maxLim[0]-indent , indent, indent])
+        nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+
+
+
+
+        ##########################################generating of points, homogeneous volume
+        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+
+        """
+        node_coords = np.asarray(node_coords)
+        if SHOW_PLOT:
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            ax.scatter(node_coords[:,0],node_coords[:,1],node_coords[:,2])
+            plt.show()
+        """
+
+
+    #if coupled:
+    #    notches = []
+    return node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates
 
 
 
