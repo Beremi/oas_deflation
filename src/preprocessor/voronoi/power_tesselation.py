@@ -162,11 +162,11 @@ class PowerTesselation(object):
             else:
                 xmin, ymin, zmin, xmax, ymax, zmax = limits
 
-        point_distances = cdist(points, points)
-        point_distances = point_distances[np.triu_indices(point_distances.shape[0], k=1)]
-        if np.nanmin(point_distances) == 0:
-            raise ValueError('There are identical points (distance is zero).')
-        print('distances', point_distances.min(), point_distances.max())
+        #point_distances = cdist(points, points)
+        #point_distances = point_distances[np.triu_indices(point_distances.shape[0], k=1)]
+        #if np.nanmin(point_distances) == 0:
+        #    raise ValueError('There are identical points (distance is zero).')
+        #print('distances', point_distances.min(), point_distances.max())
 
         start = time.time()
         #dx = xmax - xmin
