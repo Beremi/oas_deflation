@@ -526,6 +526,8 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
+    normal = normal / length;
+    if(length<1e-8) length=1e-8; //artificial increase of length in case of extremely short voronoi edge
 
     Point t;
     if ( ndim == 2 ) {
@@ -622,9 +624,6 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         }
     }
 
-
-
-    normal = normal / length;
     if ( abs(normal * t) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
         cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;

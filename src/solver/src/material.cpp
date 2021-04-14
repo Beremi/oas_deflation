@@ -109,7 +109,7 @@ double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pre
 //////////////////////////////////////////////////////////
 double TrsprtMaterialStatus :: giveValue(string code) const {
     if ( code.compare("permeability") == 0 ) {
-        TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
+        TrsprtMaterial *m = dynamic_cast< TrsprtMaterial * >( mat );
         return m->givePermeability();
     }else if( code.compare("flux") == 0 ) {
         return abs(temp_stress[0]);

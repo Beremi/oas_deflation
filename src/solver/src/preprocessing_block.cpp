@@ -176,18 +176,18 @@ void MechanicalPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCon
     gname [ 0 ] = "sigma_x";
     gname [ 1 ] = "sigma_y";
     gname [ 2 ] = "tau_xy";
-    codes [ 0 ] = "fx";
-    codes [ 1 ] = "fy";
-    codes [ 2 ] = "mz";
+    codes [ 0 ] = "0";
+    codes [ 1 ] = "1";
+    codes [ 2 ] = "2";
     if ( dim == 3 ) {
         gname [ 2 ] = "sigma_z";
         gname [ 3 ] = "tau_yz";
         gname [ 4 ] = "tau_xz";
         gname [ 5 ] = "tau_xy";
-        codes [ 2 ] = "fz";
-        codes [ 3 ] = "mx";
-        codes [ 4 ] = "my";
-        codes [ 5 ] = "mz";
+        codes [ 2 ] = "2";
+        codes [ 3 ] = "3";
+        codes [ 4 ] = "4";
+        codes [ 5 ] = "5";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
         fg = new ForceGauge(export_name, gname [ i ], codes [ i ], n, nodes, 1. / volume, dim);
@@ -510,11 +510,11 @@ void TransportPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCont
     ForceGauge *fg;
     gname [ 0 ] = "flux_x";
     gname [ 1 ] = "flux_y";
-    codes [ 0 ] = "fx";
-    codes [ 1 ] = "fy";
+    codes [ 0 ] = "0";
+    codes [ 1 ] = "1";
     if ( dim == 3 ) {
         gname [ 2 ] = "flux_z";
-        codes [ 2 ] = "fz";
+        codes [ 2 ] = "2";
     }
     for ( unsigned i = 0; i < gname.size(); i++ ) {
         fg = new ForceGauge(export_name, gname [ i ], codes [ i ], n, nodes, 1. / volume, dim);
