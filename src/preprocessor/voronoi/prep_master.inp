@@ -15,7 +15,7 @@
 #
 #
 #3d cube
-Model 3d_cube Xsize 1.0 Ysize 1.0 Zsize 1 minDist 0.05 powerTes 0 activeMechanics 1 activeTransport 1 coupled 1 trials 1000
+Model 3d_cube Xsize 1.0 Ysize 1.0 Zsize 1 minDist 0.1 powerTes 1 activeMechanics 1 activeTransport 1 coupled 1 trials 10000
 #
 #RWTH Notched 3pb
 #

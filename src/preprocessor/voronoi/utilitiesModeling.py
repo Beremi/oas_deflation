@@ -13,7 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
-
+import tkinter
 SHOW_PLOT = False
 
 def assembleMeasuringGauges(type, D=-1, maxLim = None):
@@ -4337,75 +4337,129 @@ def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords
     indent = 1e-7
 
 
+
     if node_coords_init is None:
-        node_coords.append( np.array([maxLim[0]*np.random.random(), maxLim[1]*np.random.random(), maxLim[2]*np.random.random()]))
+        if powerTes == False:
+            node_coords.append((  np.array([maxLim[0]/2, maxLim[1]/2, maxLim[2]/2])  ))
+            """
+            mechBC = np.array([-1,0,0,   -1,-1,-1,    -1,-1,-1,-1,-1,-1])
+            mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+            mechBC_merged.append(mBC)
+            """
+            
+            ###############generating of nodes, front bottom line ###############
+            nodeA = np.array([indent, indent, indent])
+            nodeB = np.array([maxLim[0]-indent, indent, indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            ###############generating of nodes, rear bottom line ###############
+            nodeA = np.array([indent, indent,  maxLim[2]-indent])
+            nodeB = np.array([maxLim[0]-indent, indent,  maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            ###############generating of nodes, front top line ###############
+            nodeA = np.array([indent, maxLim[1]-indent, indent])
+            nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            ###############generating of nodes, rear top line ###############
+            nodeA = np.array([indent, maxLim[1]-indent,  maxLim[2]-indent])
+            nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent,  maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            ############### loaded top surf ###############
+            nodeA =  np.array([indent, maxLim[1]-indent, indent])
+            nodeB =  np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
-        ###############generating of nodes, front bottom line ###############
-        nodeA = np.array([indent, indent, indent])
-        nodeB = np.array([maxLim[0]-indent, indent, indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
-        ###############generating of nodes, rear bottom line ###############
-        nodeA = np.array([indent, indent,  maxLim[2]-indent])
-        nodeB = np.array([maxLim[0]-indent, indent,  maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
-        ###############generating of nodes, front top line ###############
-        nodeA = np.array([indent, maxLim[1]-indent, indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
-        ###############generating of nodes, rear top line ###############
-        nodeA = np.array([indent, maxLim[1]-indent,  maxLim[2]-indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent,  maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
-        ############### loaded top surf ###############
-        nodeA =  np.array([indent, maxLim[1]-indent, indent])
-        nodeB =  np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+            #front surf
+            nodeA =  np.array([indent ,  indent, indent])
+            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
-        #front surf
-        nodeA =  np.array([indent , maxLim[1] - indent, indent])
-        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+            #back surf
+            nodeA =  np.array([indent , maxLim[1] - indent, maxLim[2]-indent])
+            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
-        #back surf
-        nodeA =  np.array([indent , maxLim[1] - indent, maxLim[2]-indent])
-        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+            #top surf
+            nodeA =  np.array([indent , maxLim[1] - indent, indent])
+            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
-        #top surf
-        nodeA =  np.array([indent , maxLim[1] - indent, indent])
-        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+            #bot surf
+            nodeA =  np.array([indent , indent, indent])
+            nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
-        #bot surf
-        nodeA =  np.array([indent , indent, indent])
-        nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+            #left face surf
+            nodeA =  np.array([indent , indent, indent])
+            nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
-        #left face surf
-        nodeA =  np.array([indent , indent, indent])
-        nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
-
-        #right face surf
-        nodeA =  np.array([maxLim[0]-indent , indent, indent])
-        nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+            #right face surf
+            nodeA =  np.array([maxLim[0]-indent , indent, indent])
+            nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
 
 
 
 
-        ##########################################generating of points, homogeneous volume
-        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+            ##########################################generating of points, homogeneous volume
+            pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+        if powerTes == True:
+            node_coords = np.zeros((0,dim))
+            radii = np.zeros(len(node_coords))
+
+            """
+            mechBC = np.array([-1,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
+            mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+            mechBC_merged.append(mBC)
+            """
+
+            node_coords = np.vstack((node_coords,   np.array([maxLim[0]/2, maxLim[1]/2, maxLim[2]/2])  ))
+            radii = np.hstack((radii, minDist*0.4));
 
 
-        """
+            #front surf
+            nodeA =  np.array([indent ,  indent, indent])
+            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
+            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+
+            #back surf
+            nodeA =  np.array([indent ,  indent, maxLim[2] - indent])
+            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] -indent])
+            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+
+            #top surf
+            nodeA =  np.array([indent , maxLim[1] - indent, indent])
+            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
+            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+
+            #bot surf
+            nodeA =  np.array([indent , indent, indent])
+            nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
+            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+
+            #left face surf
+            nodeA =  np.array([indent , indent, indent])
+            nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
+            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+
+            #right face surf
+            nodeA =  np.array([maxLim[0]-indent , indent, indent])
+            nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
+            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+
+            # volume
+            node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=True)
+
+
+
         node_coords = np.asarray(node_coords)
-        if SHOW_PLOT:
-            fig = plt.figure()
-            ax = Axes3D(fig)
-            ax.scatter(node_coords[:,0],node_coords[:,1],node_coords[:,2])
-            plt.show()
+        """
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.scatter(node_coords[:,0],node_coords[:,1],node_coords[:,2])
+        plt.show()
         """
 
 
