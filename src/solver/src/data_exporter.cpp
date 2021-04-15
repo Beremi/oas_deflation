@@ -218,6 +218,7 @@ void ForceGauge :: readFromLine(istringstream &iss) {
         mech = false;
       } else {
         std::cerr << "determine type of force 'mech' or 'trsp' for ForceGauge of all nodes in block" << '\n';
+        exit(EXIT_FAILURE);
       }
       iss >> param2;
       Block bl;

@@ -208,9 +208,7 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
     for ( unsigned k = 0; k < blocked.size(); k++ ) {
         r [ blockedDoFid [ k ] ] = blocked [ k ];
     }
-    if ( this->giveConstraints()->isActive() ) {
-        this->giveConstraints()->calculateDependentDoFs(r);
-    }
+        this->giveConstraints()->calculateDependentDoFs(r, time, true);
 }
 
 
@@ -223,9 +221,7 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
     }
 
     // #constr_new
-    if ( this->giveConstraints()->isActive() ) {
-        this->giveConstraints()->calculateDependentDoFs(fullDoFs);
-    }
+    this->giveConstraints()->calculateDependentDoFs(fullDoFs);
 }
 
 //////////////////////////////////////////////////////////
@@ -239,9 +235,7 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
-    if ( this->giveConstraints()->isActive() ) {
-        this->giveConstraints()->calculateMasterForces(fullf);
-    }
+    this->giveConstraints()->calculateMasterForces(fullf);
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
         if ( DoFid [ i ] < freeDoFs - constrDoFs  ) {
@@ -253,11 +247,10 @@ void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
 //////////////////////////////////////////////////////////
 void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
     // #constr_new
-    if ( this->giveConstraints()->isActive() ) {
-        this->giveConstraints()->calculateMasterForces(f_int);
-        this->giveConstraints()->calculateMasterForces(f_dam);
-        this->giveConstraints()->calculateMasterForces(f_acc);
-    }
+    this->giveConstraints()->calculateMasterForces(f_int);
+    this->giveConstraints()->calculateMasterForces(f_dam);
+    this->giveConstraints()->calculateMasterForces(f_acc);
+
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];

@@ -286,7 +286,7 @@ bool isInsideRegions(const std :: vector< Region * > &regions, const Element *el
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
             if ( reg->isInside(n->givePoint() ) ) {
-                inside++;
+                inside++;  // must be in the same region, not in two neighboring
             }
         }
         if ( inside == el->giveNodes().size() ) {

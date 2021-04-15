@@ -5,21 +5,21 @@
 #include "boundary_condition.h"
 #include <fstream>
 
-bool containsChar(const std :: string &str, char c)
-{
-    // std::cout << "str = " << str << ", char = " << c << '\n';
-    return str.find(c) != std :: string :: npos;
-}
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Joint Degree of Freedom
-JointDoF :: JointDoF(Node *s, unsigned &dir, std :: vector< Node * > &m, std :: vector< unsigned > &dirs, std :: vector< double > &mult) {
+JointDoF :: JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult) {
     slaveNode = s;
     direction = dir;
     masters = m;
     directions = dirs;
     multipliers = mult;
+    if ( fns.empty() ) {
+      this->time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
+    } else {
+      this->time_fns = fns;
+      this->additional_term = time_mult;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -53,7 +53,11 @@ unsigned JointDoF :: giveMasterDoF(unsigned k) const {
 void JointDoF :: print() {
     std :: cout << "slave DoF = " << giveSlaveDoF() << '\n';
     for ( unsigned i = 0; i < masters.size(); i++ ) {
-        std :: cout << "master DoF[ " << i << " ] = " << masters [ i ]->giveStartingDoF() + directions [ i ] << " with multiplier = " << multipliers [ i ] <<  '\n';
+        std :: cout << "master DoF[ " << i << " ] = " << masters [ i ]->giveStartingDoF() + directions [ i ] << " with multiplier = " << multipliers [ i ];
+        if ( this->time_fns[i] != nullptr ) {
+            std::cout << " and time_dep_mult = " << additional_term [ i ];
+        }
+        std::cout << '\n';
     }
 }
 
@@ -215,90 +219,6 @@ void VolumetricAverage :: init() {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Container
-void ConstraintContainer :: connectSlaveMaster(Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp) {
-    unsigned nDoFsPerNode;
-    if ( trsp ) {
-        // if master is transport, slave must be transport
-        if ( !dynamic_cast< TrsNode * >( slave ) ) {
-            return;
-        }
-        nDoFsPerNode = 1;
-    } else {
-        if ( !dynamic_cast< Particle * >( slave ) ) {
-            return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
-        }
-        nDoFsPerNode = 3 * ( ndim - 1 );
-    }
-
-
-    if ( slave->giveNumberOfDoFs() != master->giveNumberOfDoFs() ) {
-        std :: cerr << "slave and master must have the same number of DoFs, slave numDoFs = " << slave->giveNumberOfDoFs() << ", master numDoFs = " << master->giveNumberOfDoFs() << '\n';
-        exit(1);
-    }
-
-    // calculate multipliers and construct jointDof for every slaveDof
-    vector< vector< double > >tableOfMultipliers;
-    vector< Node * >masterNodes;
-    vector< double >multipliers;
-    vector< unsigned >directions;
-
-    tableOfMultipliers.resize(nDoFsPerNode); // first index (j) is for master dof
-
-    for ( auto &mul : tableOfMultipliers ) {
-        mul.resize(nDoFsPerNode); // second index (i) is for slave dof
-    }
-
-    for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
-            if ( i == j ) {
-                tableOfMultipliers [ j ] [ i ] = 1;
-            } else if ( i == 0 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getY() - master->givePoint().getY() );
-            } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
-            } else if ( i == 0 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
-            } else if ( i == 1 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getZ() - master->givePoint().getZ() );
-            } else if ( i == 2 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
-            } else if ( i == 2 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().getX() - master->givePoint().getX() );
-            } else {
-                tableOfMultipliers [ j ] [ i ] =  0;
-            }
-        }
-    }
-    // read the table and put the information to jointDoFs
-    // NOTE this could be done in the previous loop
-    for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        // for transport nodes, only ones are in tableOfMultipliers
-        if ( !trsp ) {
-            if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
-                // std::cout << "fixed in x dir" << '\n';
-            } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
-                // std::cout << "fixed in y dir" << '\n';
-            } else if ( containsChar(which, 'z') && ( i == 2 || i == 3 || i == 4 ) && ndim > 2 ) {
-                // std::cout << "fixed in z dir" << '\n';
-            } else {
-                continue;
-            }
-        }
-        for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
-            if ( tableOfMultipliers [ j ] [ i ] != 0 ) {
-                masterNodes.push_back(master);
-                multipliers.push_back(tableOfMultipliers [ j ] [ i ]);
-                directions.push_back(j);
-            }
-        }
-        JointDoF *newJD = new JointDoF(slave, i, masterNodes, directions, multipliers);
-        constraints.push_back(newJD);
-        masterNodes.clear();
-        multipliers.clear();
-        directions.clear();
-    }
-}
-
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes) {
     unsigned origsize = constraints.size();
@@ -340,23 +260,27 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 // }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
+void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds, const double &time_now) {
     //initiate volumetric averages
 
     unsigned numFreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
 
+    if ( time_now == 0.0 ) {
+        this->nodes = nodes;
+        this->bconds = bconds;
 
-    for ( auto const &jD : constraints ) {
-        jD->init();
-    }
-
-    //reorganize, move volumetric averages at the end
-    VolumetricAverage *va;
-    for ( int k = constraints.size() - 1; k >= 0; k-- ) {
-        va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
-        if ( va ) {
-            constraints.push_back(va);
-            constraints.erase(constraints.begin() + k);
+        for ( auto const &jD : constraints ) {
+            jD->init();
+        }
+        // QUESTION: JK to probably JE: this needs to be done only at the begining of calculation, right?
+        //reorganize, move volumetric averages at the end
+        VolumetricAverage *va;
+        for ( int k = constraints.size() - 1; k >= 0; k-- ) {
+            va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
+            if ( va ) {
+                constraints.push_back(va);
+                constraints.erase(constraints.begin() + k);
+            }
         }
     }
     map< pair< size_t, size_t >, double >indeces11;
@@ -396,7 +320,9 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
             j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
-                indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), jD->giveMasterMultiplier(ind) ) );
+                indeces11.insert(pair< pair< size_t, size_t >, double >
+                                (pair< size_t, size_t >(i, j),
+                                 jD->giveMasterMultiplier(ind) ) );
             }
         }
     }
@@ -412,29 +338,42 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K) {
+void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double &time_now) {
+    // if ( this->isTimeDependent() ) {
+    //   // std::cout << "transformToConstraintSpace, time = " << time_now << '\n';
+    //   this->init(this->nodes, this->bconds);
+    // }
     CoordinateIndexedSparseMatrix Kold = K;
     K = X.transpose() * Kold * X;
 }
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs) {
-    for ( auto const &jD : constraints ) {
-        fullDoFs [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
-        for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
-            fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i);
+void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double &time_now, const bool &all) {
+    // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
+    if ( this->isActive() ) {
+        // std::cout << "calculateDependentDoFs, time = " << time_now << '\n';
+        for ( auto const &jD : constraints ) {
+            fullDoFs [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
+            for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+                fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i) + (all ? jD->giveFnDepPart(i, time_now) : 0.0);
+            }
         }
     }
 }
 
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
-    for ( auto const &jD : constraints ) {
-        for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
-            fullForces [ jD->giveMasterDoF(i) ] += fullForces [ jD->giveSlaveDoF() ] * jD->giveMasterMultiplier(i);
-            // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
-            // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept
+    if ( this->isActive() ) {
+        // std::cout << "calculateMasterForces, time = " << time_now << '\n';
+        for ( auto const &jD : constraints ) {
+            for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+                fullForces [ jD->giveMasterDoF(i) ] += fullForces [ jD->giveSlaveDoF() ] * ( jD->giveMasterMultiplier(i) );
+                // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
+                // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept
+                // fullForces [ jD->giveSlaveDoF() ] = 0.0;
+            }
         }
+
     }
 }
