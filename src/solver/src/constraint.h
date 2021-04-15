@@ -21,7 +21,7 @@ protected:
     std :: vector< unsigned >directions;
     std :: vector< double >multipliers;
     std :: vector< Function * >time_fns;
-    std :: vector< double >additional_term;  // TODO JK nazvat jinak ne time dependet
+    std :: vector< double >additional_term;
 public:
     JointDoF() {};
     ~JointDoF() {};
