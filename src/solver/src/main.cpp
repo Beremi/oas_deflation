@@ -1,5 +1,6 @@
 #include "model.h"
 #include "version.h"
+#include <getopt.h>
 
 using namespace std;
 fs :: path GlobPaths :: BASEDIR;
@@ -7,28 +8,47 @@ fs :: path GlobPaths :: BASEDIR;
 Model *masterModel;
 
 int main(int argc, char **argv) {
-    if ( argc == 1 ) {
-        cerr << "Error: no input file specified, please try again with input file" << endl;
-        cerr << "Usage: DiscreteModel [path/to/master.inp]" << endl;
-        //cerr << std::setfill('=') << setw(50) << "" << endl;
-        cerr << string(80, '=') << endl;
-        cerr << version_info() << endl;
-        exit(EXIT_FAILURE);
+    int numfnd, opt;
+    int num;
+
+    num = 0;
+    numfnd = 0;
+    while ((opt = getopt(argc, argv, "j:")) != -1) {
+        switch (opt) {
+        case 'j':
+            num = atoi(optarg);
+            numfnd = 1;
+            break;
+        default: /* '?' */
+            fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
+                    argv[0]);
+            exit(EXIT_FAILURE);
+        }
     }
 
-    fs :: path input = fs :: absolute(argv [ 1 ]);
-    GlobPaths :: BASEDIR = input.parent_path();
-
-
+    if (optind >= argc) {
+        fprintf(stderr, "Expected argument after options\n");
+        fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
+                    argv[0]);
+        fprintf(stderr, "     : [-j num] has effect for Eigen conjugate gradients\n");
+        exit(EXIT_FAILURE);
+    }
 
     // OMP set 1 thread by default
     omp_set_dynamic(0);
     char *val = getenv("OMP_NUM_THREADS");
-    if ( val != nullptr ) {
-        cout << "OMP_NUM_THREADS = " << val << endl;
+    if ( num != 0 ) {
+        omp_set_num_threads(num);
+        cout << "Number of threads = " << num << endl;
+    }else if ( val != nullptr ) {
+        cout << "Number of threads = " << val << endl;
     } else {
         omp_set_num_threads(1);
+        cout << "Number of threads = 1" << endl;
     }
+
+    fs :: path input = fs :: absolute(argv [ optind ]);
+    GlobPaths :: BASEDIR = input.parent_path();
 
     //initial time
     auto start = std :: chrono :: system_clock :: now();
