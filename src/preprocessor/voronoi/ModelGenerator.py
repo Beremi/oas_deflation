@@ -297,6 +297,8 @@ class Model:
         if self.modelType == '3d_periodicShear':
             self.run_3d_periodicShear()
 
+        if self.modelType == '3d_cube':
+            self.run_3d_cube()
 
         if self.modelType == '2d_singleSpring':
             self.run_2d_singleSpring()
@@ -373,6 +375,12 @@ class Model:
             ])
             print (lim1)
             self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
+
+
+    def run_3d_cube(self, node_coords_init=None):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dCube(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
+        self.materialZones=None
+
 
     def run_2d_dogbone(self):
         (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness )

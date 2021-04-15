@@ -52,7 +52,8 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     cout.flush();
 #endif
 
-    ConjugateGradient< SparseMatrix< double >, Lower | Upper >cgK;
+    ConjugateGradient< SparseMatrix< double >, Lower | Upper >cgK; //diagonal preconditioner is default
+
     cgK.setMaxIterations(Maxit);
     cgK.setTolerance(precision);
 
