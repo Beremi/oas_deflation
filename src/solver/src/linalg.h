@@ -18,12 +18,14 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
+#include <Eigen/SparseLU>
+#include <Eigen/SparseCholesky>
 
 #include "linear_algebra.h"
 #include "globals.h"
 
 
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
+bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit, string solver_type);
 
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);

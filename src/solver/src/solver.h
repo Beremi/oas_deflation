@@ -26,6 +26,8 @@ protected:
     int step;
     unsigned init_step = 0;  ///> when starting from previously calculated results
     bool terminated;
+    string symsolver_type = "EigenConj";
+
 
 public:
     Solver();
