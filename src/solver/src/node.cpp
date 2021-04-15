@@ -145,9 +145,9 @@ double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 unsigned Particle :: giveOrderOfForceCode(string code) const {
-    if ( dim==3 && code.compare("rotx") == 0 ) return 3;
-    else if ( dim==3 && code.compare("roty") == 0 ) return 4;
-    else if (code.compare("rotz") == 0 ) {
+    if ( dim==3 && code.compare("mx") == 0 ) return 3;
+    else if ( dim==3 && code.compare("my") == 0 ) return 4;
+    else if (code.compare("mz") == 0 ) {
         if (dim==2) return 2;
         else return 5;
     }
