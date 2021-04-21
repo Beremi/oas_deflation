@@ -316,6 +316,13 @@ void RigidBodyContact :: init() {
 
     checkNodeType();
 
+    //register the elements at node
+    Particle * t;
+    for(unsigned i=0; i<2; i++){
+        t = dynamic_cast< Particle* >(nodes[i]);
+        t->attachRBCElement(this);
+    }
+
     //check that material is DisMechMat
     DisMechMaterial *p = dynamic_cast< DisMechMaterial * >( mat );
     if ( !p ) {
@@ -416,6 +423,35 @@ RigidBodyContactCoupled :: RigidBodyContactCoupled(const unsigned dim) : RigidBo
     name = "LTCBEAMCoupled";
 }
 
+//////////////////////////////////////////////////////////
+void RigidBodyContactCoupled :: addNewFriend(Transp1D * f){
+    friends.push_back(f);
+}
+
+
+//////////////////////////////////////////////////////////
+void RigidBodyContactCoupled :: collectInformationsFromNeigborhood(){
+    vector< Transp1D * > contsA, contsB;
+    TrsNode * v;
+    TrsNode * vold;
+    vold = dynamic_cast< TrsNode * >(vert.back()); 
+    if(ndim==2) vold=nullptr; //disregards first possible friend in 2D because it is found in next loop run
+
+    for(auto vv: vert){
+        v = dynamic_cast< TrsNode * >(vv); 
+        if (v && vold){
+            contsA = v->giveAttachedTrsprtElems();
+            contsB = vold->giveAttachedTrsprtElems();
+            for(Transp1D *p: contsA){
+                if(std::find(contsB.begin(), contsB.end(),p)!=contsB.end()){
+                    addNewFriend(p);
+                    continue;
+                }
+            }
+        }
+        vold = v;
+    }
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -650,6 +686,13 @@ void Transp1D :: init() {
     Element :: init(); //calling base class method;
 
     checkNodeType();
+    
+    //register the elements at node
+    TrsNode * t;
+    for(unsigned i=0; i<2; i++){
+        t = dynamic_cast< TrsNode* >(nodes[i]);
+        t->attachTrsprtElement(this);
+    }
 
     //check that material is TrsprtMaterial
     TrsprtMaterial *p = dynamic_cast< TrsprtMaterial * >( mat );
@@ -802,10 +845,19 @@ double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
 
+    //TODO: delete this function, it is solved elsewhere
+    return;
+
+
     if ( ndim == 2 ) {
         findFriends2D(elemcont);
     } else if ( ndim == 3 ) {
         findFriends3D(elemcont);
+    }
+
+    cout << "Found friends X" << endl;
+    for(unsigned p=0; p<friends.size(); p++){
+        cout << friends[p] << " " << friendsweight[p] << endl;
     }
 
     //collect nodes from friend elements
@@ -840,3 +892,30 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 
     return pressureGrad;
 };
+
+//////////////////////////////////////////////////////////
+void Transp1DCoupled :: collectInformationsFromNeigborhood(){
+    vector< RigidBodyContact * > contsA, contsB;
+    Particle * v;
+    Particle * vold;
+    double weight=0;
+    vold = dynamic_cast< Particle * >(vert.back()); 
+    if(ndim==2) vold=nullptr; //disregards first possible friend in 2D because it is found in next loop run
+
+    for(auto vv: vert){
+        v = dynamic_cast< Particle * >(vv); 
+        if (v && vold){
+            contsA = v->giveAttachedRBCs();
+            contsB = vold->giveAttachedRBCs();
+            for(RigidBodyContact *p: contsA){
+                if(std::find(contsB.begin(), contsB.end(),p)!=contsB.end()){
+                    if (ndim==2)     weight = p->giveArea();
+                    else if(ndim==3) weight = ( ip_locs[0] - ( vold->givePoint() + v->givePoint() ) / 2. ).norm();
+                    addNewFriend(p, weight );
+                    continue;
+                }
+            }
+        }
+        vold = v;
+    }
+}

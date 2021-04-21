@@ -7,8 +7,9 @@
 #include <fstream>
 
 
-class BoundaryCondition; //forward declaration, needed to have pointer here, but defined in boundary_condition.h
-
+class BoundaryCondition; //forward declaration
+class RigidBodyContact; //forward declaration
+class Transp1D; //forward declaration
 
 /**
  * \brief A more elaborate Node class description.
@@ -105,13 +106,15 @@ public:
 class TrsNode : public Node
 {
 private:
-
+    vector < Transp1D * > attachedTRSP;
 protected:
 public:
     TrsNode(unsigned dimension) { dim = dimension; nDoFs = 1; name = "TrsprtNode"; isTransport = true; };
     virtual ~TrsNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
+    void attachTrsprtElement( Transp1D * trsp );
+    vector< Transp1D * > giveAttachedTrsprtElems(){return attachedTRSP;}
 };
 
 
@@ -137,6 +140,7 @@ class Particle : public MechNode
 {
 private:
     double r;  // radius in case of power tessellation
+    vector < RigidBodyContact * > attachedRBC;
 protected:
 public:
     Particle(unsigned dimension) : MechNode(dimension) { nDoFs = 3 * ( dim - 1 ); name = "Particle"; };
@@ -148,6 +152,8 @@ public:
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
     virtual std :: string giveLineToSave() const;
+    void attachRBCElement( RigidBodyContact * rbc );
+    vector< RigidBodyContact * > giveAttachedRBCs(){return attachedRBC;}
 };
 
 //////////////////////////////////////////////////////////

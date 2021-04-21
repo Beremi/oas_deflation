@@ -31,6 +31,7 @@ set (solver_files
     indirect_displ_control.cpp
     shape_functions.cpp
     integration.cpp
+    simplex.cpp
     )
 
 add_library(solver

@@ -176,7 +176,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     if ( temp_damage < damage ) {
         temp_damage = damage;
     }
-    temp_damage = min(temp_damage, 0.999); 
+    //temp_damage = min(temp_damage, 1-1e-10); //dangerous, better switched off 
 
     //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
     temp_crackOpening = l2_norm( ( L * damage ) * strain ); //total opening

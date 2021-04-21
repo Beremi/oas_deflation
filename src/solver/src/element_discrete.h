@@ -50,14 +50,16 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
+class Transp1D; //forward declaration
 class RigidBodyContactCoupled : public RigidBodyContact
 {
 protected:
-    vector< RigidBodyContact * >friends; //mechanical elements involved in computation
-    vector< double >friendsweight;  //weight of mechanical elements
+    vector< Transp1D * >friends; //transport elements involved in computation
 public:
     RigidBodyContactCoupled(const unsigned dim);
     ~RigidBodyContactCoupled() {};
+    void addNewFriend(Transp1D * f);
+    virtual void collectInformationsFromNeigborhood();
 };
 
 //////////////////////////////////////////////////////////
@@ -132,6 +134,7 @@ public:
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     void addNewFriend(RigidBodyContact * f, double weight );
     unsigned giveNumOfFriends() const {return friends.size();};
+    virtual void collectInformationsFromNeigborhood();
 };
 
 #endif  /* _ELEMENT_DISCRETE_H */

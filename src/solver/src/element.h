@@ -80,6 +80,8 @@ public:
 
     virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
+    
+    virtual void collectInformationsFromNeigborhood(){};
 };
 
 

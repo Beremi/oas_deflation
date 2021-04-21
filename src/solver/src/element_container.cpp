@@ -169,6 +169,7 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
     }
 }
 
+//////////////////////////////////////////////////////////
 // these methods must be separate, because at first, I need to set time of calculation in solver
 // but at that time, mat_stats are still before init() so all the matStats vould be reset after that
 void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
@@ -197,7 +198,7 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
     }
 };
 
-
+//////////////////////////////////////////////////////////
 void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool &get_time_from_file) {
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
@@ -259,6 +260,11 @@ void ElementContainer :: init() {
         ( * e )->init();
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
+    }
+    
+    //update neighborhood information
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e, num++ ) {
+        ( * e )->collectInformationsFromNeigborhood();
     }
 }
 

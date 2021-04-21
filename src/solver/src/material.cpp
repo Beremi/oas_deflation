@@ -351,11 +351,8 @@ Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned d
         D [ 1 ] [ 1 ] = 4. * m->giveCosseratShearParam() * pow(m->giveCharacteristicLength(), 2);
     } else if ( dimension == 2 ) {
         if ( m->isPlaneStress() ) {
-            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = lammeL + 2. * lammeM;
-            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = lammeL;
-            D [ 2 ] [ 2 ] = D [ 3 ] [ 3 ] = lammeM + m->giveCosseratShearParam();
-            D [ 2 ] [ 3 ] = D [ 3 ] [ 2 ] = lammeM - m->giveCosseratShearParam();
-            D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = lammeM * 4. * m->giveCharacteristicLength();
+            cerr << name << " error: dimension " << dimension << ", Cosserat plane stress not implemented" << endl;
+            exit(1);
         } else {  //plane strain ACTUALLY NOT IMPLEMENTED YET
             D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = lammeL + 2. * lammeM;
             D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = lammeL;
