@@ -168,6 +168,9 @@ DiscreteModel master.inp
 \subsection OPENMP OpenMP
 Using OpenMP to use parallel Conjugate gradient in Eigen on Linux:
 \code{.sh}
+./DiscreteModel -j number_of_threads master.inp
+\endcode
+\code{.sh}
 OMP_NUM_THREADS=4 ./DiscreteModel master.inp
 \endcode
 \code
@@ -198,6 +201,35 @@ docker run a992 (first 3 characters are enough)
 
 
 
+\section VTK VTK
+- install VTK
+    - install libvtk-dev
+    - download VTK (newer version, zip/tar.gz)
+        - extract archive file
+        - build
+            \code{.sh}
+                mkdir build; cd build
+                [Windows]
+                cmake -DBUILD_SHARED_LIBS=OFF ..
+                cmake --build . --parallel 4 --config Release
+                [Linux]
+                cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
+                cmake --build . --parallel 4
+            \endcode
+- enable VTK in current build configuration
+  \code{.sh}
+    cmake -DUSE_VTK=ON .
+    OR
+    cmake-gui . [GUI]
+    OR
+    ccmake . [TUI]
+  \endcode
+- if VTK not in path/not installed (newer version) (for MXE: /opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/vtk-8.2)
+  \code{.sh}
+    cmake -DVTK_DIR:PATH=/path_to_vtk_build ../gamu
+    OR
+    cmake -DVTK_DIR:PATH=/path_to_vtk_build .
+  \endcode
 
 
 
