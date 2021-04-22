@@ -41,9 +41,16 @@ add_test(
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:DiscreteModel>
   )
 
+add_test(
+  NAME 2DPatchTestMechanics
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests/2DPatchTestMechanics
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:DiscreteModel>
+  )
+
 set_tests_properties(
   SpringMechElastic
   SpringMechElastic_3D
+  2DPatchTestMechanics
   PROPERTIES
     LABELS "tests"
     TIMEOUT 10

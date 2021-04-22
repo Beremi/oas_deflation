@@ -1,0 +1,15 @@
+# Type	nodeCrdX	nodeCrdY
+MechNode 0 0
+MechNode 0 1
+MechNode 0 2
+MechNode 0 3
+MechNode 1 0
+MechNode 1 1
+MechNode 1 2
+MechNode 1 3
+MechNode 3 0
+MechNode 2 1
+MechNode 2 2
+MechNode 3 3
+MechNode 6 0
+MechNode 6 3
