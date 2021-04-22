@@ -71,7 +71,14 @@ Recommended structure
       cmake --build . -- /M      [Visual Studio]
       make -j 4
     \endcode
-
+- enable SANITIZERS in current build configuration
+  \code{.sh}
+    cmake -DUSE_SANITIZERS=ON .
+    OR
+    cmake-gui . [GUI]
+    OR
+    ccmake . [TUI]
+  \endcode
 
 
 \subsubsection Crosscompilation Cross Compilation
