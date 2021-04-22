@@ -211,13 +211,13 @@ void ForceGauge :: readFromLine(istringstream &iss) {
     iss >> param;
     if ( param.compare("block") == 0 || param.compare("coords") == 0) {
       std :: string param2;
-      bool mech;
+      bool mech = true;
       if ( param2.compare("mech") == 0 ) {
         mech = true;
       } else if ( param2.compare("trsp") == 0 ) {
         mech = false;
       } else {
-        std::cerr << "determine type of force 'mech' or 'trsp' for ForceGauge of all nodes in block" << '\n';
+        std::cout << "type of force 'mech' or 'trsp' for ForceGauge not determined, by default, 'mech' is considered" << '\n';
       }
       iss >> param2;
       Block bl;
@@ -254,35 +254,9 @@ ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned >
 void ForceGauge :: init() {
     time_each = 0;
     time_last = 0;
-    unsigned DoFpos = 0;
-    if ( codes [ 0 ].compare("fx") == 0 ) {
-        DoFpos = 0;
-    } else if ( codes [ 0 ].compare("fy") == 0 ) {
-        DoFpos = 1;
-    } else if ( codes [ 0 ].compare("fz") == 0 && dim > 2 ) {
-        DoFpos = 2;
-    } else if ( codes [ 0 ].compare("mx") == 0 && dim > 2 ) {
-        DoFpos = 3;
-    } else if ( codes [ 0 ].compare("my") == 0 && dim > 2 ) {
-        DoFpos = 4;
-    } else if ( codes [ 0 ].compare("mz") == 0 ) {
-        DoFpos = 5;
-        if ( dim == 2 ) {
-            DoFpos = 2;
-        }
-    } else {
-        if ( dim == 3 ) {
-            cerr << "Error in ForceGauge: only 'fx', 'fy', 'fz', 'mx', 'my' or 'mz' can be exported by ForceGauge in 3D model" << endl;
-            exit(EXIT_FAILURE);
-        } else if ( dim == 2 ) {
-            cerr << "Error in ForceGauge: only 'fx', 'fy' or 'mz' can be exported by ForceGauge in 2D model" << endl;
-            exit(EXIT_FAILURE);
-        }
-    }
-
     DoFs.resize(n.size() );
-    for ( unsigned i = 0; i < n.size(); i++ ) {
-        DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + DoFpos;
+    for ( unsigned i = 0; i < n.size(); i++ ) {        
+        DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + nodes->giveNode(n [ i ])->giveOrderOfForceCode(codes[0]);
     }
 }
 

@@ -33,6 +33,17 @@ std :: string Node :: giveLineToSave() const {
 }
 
 //////////////////////////////////////////////////////////
+unsigned Node :: giveOrderOfForceCode(string code) const {
+    char* p;
+    long converted = strtol(code.c_str(), &p, 10);
+    if (not *p) return converted;
+    else{
+        cerr << name << " error: there is no force corresponding to code "<< code << endl;
+        exit(1);
+    }
+    return 0;
+}
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
 void MechDoF :: readFromLine(istringstream &iss) {
@@ -63,6 +74,15 @@ double MechNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 };
 
 //////////////////////////////////////////////////////////
+unsigned MechNode :: giveOrderOfForceCode(string code) const {    
+    if ( code.compare("fx") == 0 ) return 0;
+    else if ( code.compare("fy") == 0 ) return 1;
+    else if ( dim >2 && code.compare("fz") == 0 ) return 2;
+    else return Node::giveOrderOfForceCode(code);
+}
+
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT NODE - pressure DoF
 double TrsNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
@@ -73,6 +93,11 @@ double TrsNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
     }
 };
 
+//////////////////////////////////////////////////////////
+unsigned TrsNode :: giveOrderOfForceCode(string code) const {
+    if ( code.compare("flux") == 0 || code.compare("fx") == 0 ) return 0;
+    else return Node::giveOrderOfForceCode(code);
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -118,6 +143,16 @@ double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
     }
 };
 
+//////////////////////////////////////////////////////////
+unsigned Particle :: giveOrderOfForceCode(string code) const {
+    if ( dim==3 && code.compare("mx") == 0 ) return 3;
+    else if ( dim==3 && code.compare("my") == 0 ) return 4;
+    else if (code.compare("mz") == 0 ) {
+        if (dim==2) return 2;
+        else return 5;
+    }
+    else return MechNode::giveOrderOfForceCode(code);
+}
 
 //////////////////////////////////////////////////////////
 std :: string Particle :: giveLineToSave() const {
@@ -139,3 +174,12 @@ double CoupledParticle :: giveDoFBasedValue(string code, const Vector &DoFs) con
         return Particle :: giveDoFBasedValue(code, DoFs);
     }
 };
+
+//////////////////////////////////////////////////////////
+unsigned CoupledParticle :: giveOrderOfForceCode(string code) const {
+    if (code.compare("flux") == 0 ) {
+        if (dim==2) return 3;
+        else return 6;
+    }
+    else return Particle::giveOrderOfForceCode(code);
+}

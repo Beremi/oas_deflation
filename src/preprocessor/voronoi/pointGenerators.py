@@ -77,6 +77,85 @@ def fuller2D(d, dmax):
 def fuller3D(d, dmax):
     return np.sqrt(d/dmax)
 
+def generateParticlesOrtoSurface(nodeA, nodeB, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii, allow_domain_overlap=False):
+    gap = 0.1
+    maxLim = np.zeros((3))
+    flatDim = -1
+
+    #print (nodeA)
+    #print (nodeB)
+    for c in range (dim):
+        if (nodeA[c] == nodeB[c]):
+            maxLim[c] = 0
+            flatDim = c
+        else:
+            maxLim[c] = np.abs(nodeA[c]-nodeB[c])
+    #print(maxLim)
+    Volume = 0
+
+    maxLim = np.delete(maxLim, flatDim)
+    Volume = np.product(maxLim)
+    #print(maxLim)
+    #print (Volume)
+
+
+    d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
+    if(dim==2):
+        freq = fuller2D(d, maxDiam)
+    elif(dim==3):
+        freq = fuller3D(d, maxDiam)
+
+    saturation = 0;
+    iters = 0
+    di = 0
+    radius = maxDiam/2.
+    while (2*radius>minDiam and iters<trials):
+
+            point = np.zeros(dim)
+            for c in range (dim):
+                if (nodeA[c] == nodeB[c]):
+                    point[c] = nodeA[c]
+                else:
+                    if (allow_domain_overlap):
+                        point[c] = (nodeB[c] - nodeA[c])*np.random.uniform()  + nodeA[c]
+                    else:
+                        point[c] = (nodeB[c] - nodeA[c] - radius*2)*np.random.uniform()  + nodeA[c]
+                        #np.random.rand(dim)*(maxLim-radius*2) + radius
+
+            #if (allow_domain_overlap): point = np.random.rand(dim)*maxLim
+            #else: point = np.random.rand(dim)*(maxLim-radius*2) + radius
+
+            approved = False
+            if ( len(node_coords)==0): approved = True
+            else:
+                delta = np.abs(node_coords-point)
+
+                dist2 = np.sum(np.square(delta),axis=1)
+                if (min(dist2 - np.square((1.+gap)*(radii+radius)))>0): approved = True
+            if ( approved) :
+                node_coords = np.vstack((node_coords, point));
+                radii = np.hstack((radii, radius));
+                iters = 0
+
+                saturation += np.pi*np.power(radius,2)/Volume
+
+
+                sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
+                sys.stdout.flush()
+
+
+                while ((1. - saturation / volumeRatio ) < freq[di]):
+                     di+=1;
+                     #print (' di %d' %di)
+
+                radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
+            else: iters += 1
+
+#    print("Saturation of the volume: ", saturation)
+
+    return node_coords, radii
+
+
 def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii, allow_domain_overlap = False, periodic_distance=False):
         gap = 0.1
         Volume = np.prod(maxLim)
@@ -125,19 +204,19 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         iters = 0
         di = 0
         radius = maxDiam/2.
-        while (2*radius>minDiam and iters<trials*100):
+        while (2*radius>minDiam and iters<trials):
                 if (allow_domain_overlap): point = np.random.rand(dim)*maxLim
                 else: point = np.random.rand(dim)*(maxLim-radius*2) + radius
-                
-                approved = False                     
+
+                approved = False
                 if ( len(node_coords)==0): approved = True
                 else:
                     delta = np.abs(node_coords-point)
                     if (periodic_distance):
                         dist2 = np.sum(np.square(np.minimum(delta,maxLim-delta)),axis=1)
                     else:
-                        dist2 = np.sum(np.square(delta),axis=1) 
-                    if (min(dist2 - np.square((1.+gap)*(radii+radius)))>0): approved = True 
+                        dist2 = np.sum(np.square(delta),axis=1)
+                    if (min(dist2 - np.square((1.+gap)*(radii+radius)))>0): approved = True
                 if ( approved) :
                     node_coords = np.vstack((node_coords, point));
                     radii = np.hstack((radii, radius));
@@ -145,8 +224,15 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
                     if (dim==2):  saturation += np.pi*np.power(radius,2)/Volume
                     elif (dim==3): saturation += np.pi/6*np.power(radius*2.,3)/Volume
 
-                    while ((1. - saturation / volumeRatio ) < freq[di]): di+=1;
+                    while ((1. - saturation / volumeRatio ) < freq[di]):
+                        di+=1;
+                        #print (' di %d' %di)
                     radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
+
+                    sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
+
+                    sys.stdout.flush()
+
                 else: iters += 1
 
         print("Saturation of the volume: ", saturation)

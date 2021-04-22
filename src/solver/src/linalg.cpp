@@ -53,7 +53,6 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
 
     #if PRINT_DEBUG_TIME
         auto now = std :: chrono :: system_clock :: now();
-
         auto elapsed_seconds = now - start;
         std :: cout << "linalg solver preprocessing: " << convertTimeToString_(elapsed_seconds) << endl;
         cout.flush();
