@@ -58,7 +58,7 @@ class Model:
 
         self.node_coords = []
 
-        self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC = None
+        self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC =self.expansionRings= None
 
         self.functions = []
         self.radii = []
@@ -538,7 +538,15 @@ class Model:
             if self.rigidPlates != None:
                 if self.govNodesMechBC != None:
                     if not (self.activeTransport==True and self.coupled==False):
-                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
+
+                        if self.modelType == '2d_corrosionRebar':
+                            expansionRingsProps = []
+                            expansionRingsProps.append(self.rebarCount)
+                            expansionRingsProps.append(self.rebarDepth)
+                            expansionRingsProps.append(self.rebarDiameter)
+                            expansionRingsProps.append(self.maxLim)
+
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps)
                         self.constraint = True
 
         self.totalNodeCount += len(self.govNodes)

@@ -2154,7 +2154,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
     return newAuxNodes
 
-def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False):
+def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False, expansionRingsProps=[]):
     print('Saving rigid plates...', end='')
 
     if trspt == False:
@@ -2163,6 +2163,7 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
         file = constraintTrsptFile
 
     with open(os.path.join(master_folder,file), 'w') as f:
+        totNodeC = totalNodeCount
         headerLine = '#ConstraintType\tGovNodeIdx\tXmin\tXmax\tYmin\tYmax'
         if (dim==3):
             headerLine += '\tZmin\tZmax'
@@ -2170,7 +2171,25 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
         for i in range(len(rigidPlates)):
             rplt = rigidPlates[i]
             rplt.govNodeIdx = totalNodeCount + i
+
             f.write("%s\n" % rplt.getString() )
+
+            totNodeC += 1
+
+        if len(expansionRingsProps)>0 and dim == 2:
+            rebarCount = expansionRingsProps[0]
+            rebarDepth = expansionRingsProps[1]
+            rebarDiameter = expansionRingsProps[2]
+            maxLim = expansionRingsProps[3]
+
+            print ('rebarcount %d' %rebarCount)
+
+            for r in range (rebarCount):
+                centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+                f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
+
+
+
 
     print('done.')
 
@@ -2195,7 +2214,7 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
         fl.write('DisplacementGauge LD %s\t%s\t%e\t%e\t%e\t%e\t%e\t%e\n' %(columnName, dir, coordsA[0],coordsA[1], coordsA[2],coordsB[0],coordsB[1], coordsB[2]))
     fl.close()
 
-def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes):
+def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes, expansionRingsProps=[]):
     #saving gov nodes
     saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile)
     #saving gov nodes mech BC
@@ -2211,11 +2230,13 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
     #saving rigid plates
     for rp in rigidPlates:
         rp.getNodesAffected(nodes)
-    saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount)
+    saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, expansionRingsProps=expansionRingsProps)
 
     for rp in range (len(rigidPlates)):
         print('Nodes affected by Rigid plate #%d:' %rp)
         print(rigidPlates[rp].getNodesAffected(nodes))
+
+
 
 def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrsptBC, rigidPlatesTrspt, totalNodeCount, node_coords, vert_count, verticesIdxDict, vertIdxStart):
     print ('Saving Transport constraint...')
