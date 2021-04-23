@@ -260,7 +260,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 // }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds, const double &time_now) {
+void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds, const double time_now) {
     //initiate volumetric averages
 
     unsigned numFreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
@@ -338,7 +338,7 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds, cons
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double &time_now) {
+void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now) {
     // if ( this->isTimeDependent() ) {
     //   // std::cout << "transformToConstraintSpace, time = " << time_now << '\n';
     //   this->init(this->nodes, this->bconds);
@@ -349,7 +349,7 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double &time_now, const bool &all) {
+void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
     if ( this->isActive() ) {
         // std::cout << "calculateDependentDoFs, time = " << time_now << '\n';
