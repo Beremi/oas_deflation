@@ -179,8 +179,8 @@ private:
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
         std :: string node_file = "nodesFine.inp";
-        for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
-            n = BaseSolver :: nodes->giveNode(i);
+        for ( unsigned i = 0; i < this->nodesFine->giveSize(); i++ ) { // foreach loop does not work here
+            n = this->nodesFine->giveNode(i);
             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
                 p = n->givePoint();
                 // check if node is in region to remesh
@@ -190,7 +190,7 @@ private:
             }
         }
 
-        BaseSolver :: nodes->saveToFile(
+        this->nodesFine->saveToFile(
             ( fs :: path(this->remeshDir) / node_file ).string(),
             nodeIdsToSave
             );
@@ -319,6 +319,7 @@ private:
                         // if could not find elem connecting nodes, el = nullptr
                         std :: cerr << " old node ids: " << node_ids_string << '\n';
                     }
+                    // std::cout << "------------------------------------------------" << '\n';
                 }
                 node_ids.clear();
             }
@@ -503,7 +504,7 @@ public:
         // dimension is needed for calculation of nodal stresses (TODO calulate particle volume somewhere at the beginning)
         this->dim = BaseSolver :: elems->giveElement(0)->giveDimension();
 
-        if ( this->nodesFine ) {
+        if ( initial && this->nodesFine ) {
           std::cout << "Adaptivity: loading fine geometry ..." << '\n';
           this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim);
         }

@@ -1,0 +1,3 @@
+VTKElementExporter elems 0
+TXTGaussPointExporter IPdata 2 x y
+TXTNodalExporter nodes 2 ux uy

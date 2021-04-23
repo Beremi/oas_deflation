@@ -250,6 +250,13 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
 
         return node_coords, radii
 
+try:
+    from point_generators_cython import generateParticlesRect_cython as generateParticlesRect
+    print('Using Cython version of point generator - generateParticlesRect.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
 
 def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
         gap = 0.1
