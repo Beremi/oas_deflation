@@ -260,29 +260,26 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 // }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds, const double time_now) {
+void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
     //initiate volumetric averages
 
     unsigned numFreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
 
-    if ( time_now == 0.0 ) {
-        this->nodes = nodes;
-        this->bconds = bconds;
+    this->nodes = nodes;
+    this->bconds = bconds;
 
-        for ( auto const &jD : constraints ) {
-            jD->init();
-        }
-        // QUESTION: JK to probably JE: this needs to be done only at the begining of calculation, right?
-        //reorganize, move volumetric averages at the end
-        VolumetricAverage *va;
-        for ( int k = constraints.size() - 1; k >= 0; k-- ) {
-            va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
-            if ( va ) {
-                constraints.push_back(va);
-                constraints.erase(constraints.begin() + k);
-            }
-        }
+    for ( auto const &jD : constraints ) {
+      jD->init();
     }
+    VolumetricAverage *va;
+    for ( int k = constraints.size() - 1; k >= 0; k-- ) {
+      va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
+      if ( va ) {
+        constraints.push_back(va);
+        constraints.erase(constraints.begin() + k);
+      }
+    }
+
     map< pair< size_t, size_t >, double >indeces11;
     // map<pair<size_t, size_t>, double> indeces12;
     // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)

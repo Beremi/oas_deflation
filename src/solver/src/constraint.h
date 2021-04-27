@@ -81,7 +81,7 @@ public:
     ~ConstraintContainer() {};
     void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);
-    void init(NodeContainer *nodes, BCContainer *bconds, const double time_now=0.0); // here matrix X will be created
+    void init(NodeContainer *nodes, BCContainer *bconds); // here matrix X will be created
     void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now=0);
     void calculateDependentDoFs(Vector &fullDoFs, const double time_now=0.0, const bool all=false);
     void calculateMasterForces(Vector &fullForces);
