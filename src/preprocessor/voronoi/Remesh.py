@@ -12,24 +12,27 @@ import scipy.spatial as ss
 SHOW_PLOT = False
 
 def loadNodes(filename, dim):
-    # print("loading %s" % (filename))
+    print("loading %s" % (filename))
     if not os.path.isfile(filename):
         raise FileNotFoundError(
                 errno.ENOENT, os.strerror(errno.ENOENT), filename)
-    nodes = list()
-    node_coords = np.genfromtxt(filename, skip_header=1,
-                                usecols=( ( dim == 3 ) and (1, 2, 3) or (1, 2) )
-                                )
-    # print(node_coords)
-    # print("--------------------------------------------------")
-    # print([np.array(coor) for coor in node_coords.tolist()])
-    # sys.exit(1)
     try:
-        len(node_coords[0])
+        node_coords = np.genfromtxt(filename, skip_header=1,
+                                    usecols=( ( dim == 3 ) and (1, 2, 3) or (1, 2) )
+                                    )
+        if node_coords.size == 0:
+            return list()
+    except IOError as e:
+        print(e, end=' ... probably no entry in the file %s\n'  % (filename))
+        return list()
+
+    try:
+        len(node_coords[1])
     except Exception as e:
-        print("loading %s: " % (filename))
-        print(e, end=', probably only one entry in the file\n')
+        print(e, end=', probably only one entry in the file %s\n'  % (filename))
         return [ node_coords,  ]
+    if (len(node_coords[0]) < dim ):
+        return list()
     return [np.array(coor) for coor in node_coords.tolist()]
 
 
@@ -98,11 +101,13 @@ if __name__ == '__main__':
     # oldDir = "/home/jose/Soft/ParticleModel/TESTS/adaptivity_pokus/TPB_no_notch"
     # node_coords_old = loadNodes(os.path.join(oldDir, "nodes.inp"), model.dimension)
 
-    node_coords_ini = loadNodes(os.path.join(remeshDir, "nodes.inp"), model.dimension)
+    node_coords_ini = loadNodes(os.path.join(remeshDir, "nodes.out"), model.dimension)
 
     ctr = loadNodes(os.path.join(remeshDir, "centersToRemesh.out"), model.dimension)
+    cpr = loadNodes(os.path.join(remeshDir, "centersFine.out"), model.dimension)
     # print("--------------------------------------------------")
     # print(ctr)
+    # print(cpr)
     # print("--------------------------------------------------")
     # where to load them from?
     # should be already in input (specified in master prep file)
@@ -113,7 +118,7 @@ if __name__ == '__main__':
     if useExistingFineNodes:
         # print("loading existing fine geoemtry <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
         # print("len nodes before: %d" % (len(node_coords_ini)))
-        node_coords_ini.extend(loadNodes(os.path.join(remeshDir, "nodesFine.inp"), model.dimension))
+        node_coords_ini.extend(loadNodes(os.path.join(remeshDir, "nodesFine.out"), model.dimension))
         # print("len nodes after: %d" % (len(node_coords_ini)))
 
     # print(node_coords_ini)
@@ -130,8 +135,6 @@ if __name__ == '__main__':
     # print("--------------------------------------------------")
     # print("minDistRemesh = %lg" % minDistRemesh)
     # print("--------------------------------------------------")
-
-    cpr = list()
 
     # print(model.trials)
 

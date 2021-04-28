@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
 message(STATUS "project source directory -> ${CMAKE_SOURCE_DIR}")
 message(STATUS "project build directory -> ${CMAKE_BINARY_DIR}")
@@ -50,6 +50,16 @@ if (NOT CMAKE_BUILD_TYPE)
     set (CMAKE_BUILD_TYPE Release)
 endif ()
 
+#######################################################################
+######################## Options ######################################
+#######################################################################
+option (USE_PREPROCESSOR "Enable preprocessor" ON)
+option (USE_POSTPROCESSOR "Enable postprocessor" ON)
+option (USE_SOLVER "Enable solver" ON)
+option (USE_DOCS "Enable documentation" ON)
+option (USE_VTK "Enable VTK (for exporting binary VTU-files)" OFF)
+option (USE_SANITIZERS "Enable sanitizers" OFF)
+
 if (MSVC)
     add_definitions (-D_USE_MATH_DEFINES)
     # Build with multiple processes
@@ -79,9 +89,11 @@ if (MSVC)
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
-    #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC") # -Wextra
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall")# -Wextra -Wshadow -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC") # Wextra
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -fPIC -Wall -Wextra -Wshadow") # -Wextra -Wconversion -Wsign-conversion -ggdb
+    if (USE_SANITIZERS)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer") # 
+    endif ()
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC") #  -Wextra
 endif ()
 
 check_cxx_compiler_flag("-march=native" _march_native_works)
@@ -125,13 +137,6 @@ else()
   include_directories(${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7)
 endif()
 
-#######################################################################
-######################## Options ######################################
-#######################################################################
-option (USE_PREPROCESSOR "Enable preprocessor" ON)
-option (USE_POSTPROCESSOR "Enable postprocessor" ON)
-option (USE_SOLVER "Enable solver" ON)
-option (USE_DOCS "Enable documentation" ON)
 
 include_directories ("${PartMod_BINARY_DIR}")
 set (LIB_TYPE OBJECT)
@@ -144,19 +149,50 @@ if (USE_SOLVER)
   target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
 endif ()
 
-
 #file(GLOB SOURCE "${PartMod_SOURCE_DIR}/src/solver/src/*.h" "${PartMod_SOURCE_DIR}/src/*.cpp")
 
-#add_executable(DiscreteModel ${SOURCE})
-#add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
-#add_executable(DiscreteModel ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
+set(TARGETNAME DiscreteModel)
+#add_executable(${TARGETNAME} ${SOURCE})
+#add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
+#add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
 
-add_executable(DiscreteModel
+add_executable(${TARGETNAME}
                 ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp
                 ${PartMod_SOURCE_DIR}/src/solver/src/version.cpp
                 ${LIBS}
                 )
-#target_link_libraries (DiscreteModel libDiscreteModel Eigen3::Eigen)
+
+if (USE_VTK)
+    find_package (VTK REQUIRED NO_MODULE)
+    if (NOT VTK_FOUND)
+        message("Skipping WriteVTU: ${VTK_NOT_FOUND_MESSAGE}")
+    endif()
+    if (VTK_VERSION VERSION_LESS "8.90.0")
+        # old system
+        include(${VTK_USE_FILE})
+        set (CMAKE_LIBRARY_DIR ${VTK_DIR})
+        
+        add_definitions (-D__VTK_MODULE)
+        list (APPEND EXT_LIBS ${VTK_LIBRARIES})
+        list (APPEND MODULE_LIST "VTK")
+    else ()
+        add_definitions (-D__VTK_MODULE)
+        list (APPEND EXT_LIBS ${VTK_LIBRARIES})
+        list (APPEND MODULE_LIST "VTK")
+        # vtk_module_autoinit is needed
+        vtk_module_autoinit(
+            TARGETS ${TARGETNAME}
+            MODULES ${VTK_LIBRARIES}
+            )
+    endif ()
+endif ()
+
+# precompiled headers - no speedup?
+#target_precompile_headers(solver
+#                PUBLIC
+#                  ${PartMod_SOURCE_DIR}/src/solver/src/exprtk.hpp)
+
+#target_link_libraries (${TARGETNAME} libDiscreteModel Eigen3::Eigen)
 #find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
@@ -171,22 +207,23 @@ if (NOT TARGET Eigen3::Eigen)
   add_dependencies(solver unpack-eigen)
 endif()
 
-target_link_libraries(DiscreteModel
+target_link_libraries(${TARGETNAME}
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
+                      ${EXT_LIBS}
                       #Eigen3::Eigen
                      )
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(DiscreteModel PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(${TARGETNAME} PUBLIC OpenMP::OpenMP_CXX)
 endif()
-target_compile_options(DiscreteModel
+target_compile_options(${TARGETNAME}
   PRIVATE
     ${_CXX_FLAGS}
 )
 
 install (
   TARGETS
-    DiscreteModel
+    ${TARGETNAME}
   DESTINATION
     ${CMAKE_INSTALL_BINDIR})
 
@@ -195,11 +232,11 @@ find_package(BLAS)
 if(BLAS_FOUND)
   message(STATUS "Eigen will use some subroutines from BLAS.")
   message(STATUS "See: http://eigen.tuxfamily.org/dox-devel/TopicUsingBlasLapack.html")
-  target_compile_definitions(DiscreteModel
+  target_compile_definitions(${TARGETNAME}
     PRIVATE
       EIGEN_USE_BLAS
     )
-  target_link_libraries(DiscreteModel
+  target_link_libraries(${TARGETNAME}
     PUBLIC
       ${BLAS_LIBRARIES}
     )
@@ -213,11 +250,11 @@ find_package(LAPACKE)
 if(LAPACK_FOUND AND LAPACKE_FOUND)
   message(STATUS "Eigen will use some subroutines from LAPACK.")
   message(STATUS "See: http://eigen.tuxfamily.org/dox-devel/TopicUsingBlasLapack.html")
-  target_compile_definitions(DiscreteModel
+  target_compile_definitions(${TARGETNAME}
     PRIVATE
       EIGEN_USE_LAPACKE
     )
-  target_link_libraries(DiscreteModel
+  target_link_libraries(${TARGETNAME}
     PUBLIC
       ${LAPACK_LIBRARIES}
       ${LAPACKE_LIBRARIES}
@@ -229,7 +266,7 @@ endif()
 
 
 set_target_properties(
-  DiscreteModel
+  ${TARGETNAME}
   PROPERTIES
     COMPILE_FLAGS
       ${OpenMP_CXX_FLAGS}
@@ -243,7 +280,7 @@ set_target_properties(
 #######################################################################
 
 # needs to find the generated header file
-target_include_directories(DiscreteModel
+target_include_directories(${TARGETNAME}
   PRIVATE
     ${PartMod_BINARY_DIR}/generated
   )
@@ -268,7 +305,7 @@ add_custom_target(
 
 # version.hpp has to be generated
 # before we start building DiscreteModel
-add_dependencies(DiscreteModel get_git_hash)
+add_dependencies(${TARGETNAME} get_git_hash)
 
 #######################################################################
 ######################## Documentation ################################
@@ -346,7 +383,7 @@ set (CPACK_PACKAGE_NAME "partmod")
 set (CPACK_RESOURCE_FILE_README "${PartMod_SOURCE_DIR}/README.md")
 #set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.LGPLv2.1")
 set (CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
-set (CPACK_PACKAGE_EXECUTABLES "DiscreteModel")
+set (CPACK_PACKAGE_EXECUTABLES ${TARGETNAME})
 set (CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CMAKE_SYSTEM_PROCESSOR})
 
 ### default generators

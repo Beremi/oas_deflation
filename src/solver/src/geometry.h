@@ -22,6 +22,10 @@ public:
     virtual ~Region() {};
     virtual bool isInside(const Point &P) const = 0;
     virtual void readFromLine(istringstream &iss) = 0;
+    virtual void setMainPoint(const Point &P) = 0;
+    virtual void setSize(const double &size) = 0;
+    virtual Point giveMainPoint() const = 0;
+    virtual double giveSize() const = 0;
     virtual void print() const {};
 };
 
@@ -38,7 +42,9 @@ public:
     virtual ~RegularRegion() {};
     virtual bool isInside(const Point &P) const = 0;
     virtual void setMainPoint(const Point &P) { this->mainPoint = P; };
-    virtual void setSize(const double &size) { this->size = size; }; //todo: warning C4458: declaration of 'size' hides class member
+    virtual void setSize(const double &new_size) { this->size = new_size; };
+    virtual Point giveMainPoint() const { return this->mainPoint; };
+    virtual double giveSize() const { return this->size; };
     virtual void print() const {
         std :: cout << "main point: ";
         this->mainPoint.print();

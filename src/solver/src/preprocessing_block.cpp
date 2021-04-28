@@ -1,6 +1,17 @@
 #include "preprocessing_block.h"
 #include "geometry.h"
+// #include "misc.h"
 
+
+std :: vector < double > PointToStdVector( const Point &p, unsigned dim=3) {
+    std :: vector < double > vect;
+    vect.push_back( p.getX() );
+    vect.push_back( p.getY() );
+    if ( dim == 3 ) {
+        vect.push_back( p.getZ() );
+    }
+    return vect;
+}
 
 bool containsChar(const std :: string &str, char c)
 {
@@ -1090,6 +1101,80 @@ void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Nod
         exit(1);
     }
 
+    vector< Node * >masterNodes;
+    vector< double >multipliers;
+    vector< double >time_multipliers;
+    vector< Function *> time_fns;
+    vector< unsigned >directions;
+
+
+    Point n = (slave->givePoint() - master->givePoint());
+    double l = n.norm();
+    n.normalize();
+
+
+    std :: vector < double > n_vect = PointToStdVector(n, ndim);
+
+    unsigned slave_dir = std :: distance(n_vect.begin(),
+                                         std :: max_element(n_vect.begin(), n_vect.end()));
+
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        if ( i == slave_dir ) {
+            multipliers.push_back(1.0);
+            masterNodes.push_back(master);
+            directions.push_back( i );
+            time_multipliers.push_back( l / n_vect[ i ] );
+            time_fns.push_back( fn );
+        } else {
+            multipliers.push_back(n_vect[ i ] / n_vect[ slave_dir ]);
+            masterNodes.push_back(master);
+            directions.push_back( i );
+            time_multipliers.push_back( 0.0 );
+            time_fns.push_back( nullptr );
+
+            // multiplying self other DoFs
+            multipliers.push_back( - n_vect[ i ] / n_vect[ slave_dir ] );
+            masterNodes.push_back(slave);
+            directions.push_back( i );
+            time_multipliers.push_back( 0.0 );
+            time_fns.push_back( nullptr );
+        }
+    }
+
+    if ( !masterNodes.empty() ) {
+      JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers, time_fns, time_multipliers);
+      constrs->addConstraint(newJD);
+    }
+
+    masterNodes.clear();
+    multipliers.clear();
+    directions.clear();
+    time_multipliers.clear();
+    time_fns.clear();
+
+}
+
+void connectSlaveMasterExpansionOLD(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp, Function * fn) {
+    unsigned nDoFsPerNode;
+    if ( trsp ) {
+        // if master is transport, slave must be transport
+        if ( !dynamic_cast< TrsNode * >( slave ) ) {
+            return;
+        }
+        nDoFsPerNode = 1;
+    } else {
+        if ( !dynamic_cast< Particle * >( slave ) ) {
+            return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
+        }
+        nDoFsPerNode = 3 * ( ndim - 1 );
+    }
+
+
+    if ( slave->giveNumberOfDoFs() != master->giveNumberOfDoFs() ) {
+        std :: cerr << "slave and master must have the same number of DoFs, slave numDoFs = " << slave->giveNumberOfDoFs() << ", master numDoFs = " << master->giveNumberOfDoFs() << '\n';
+        exit(1);
+    }
+
     // calculate multipliers and construct jointDof for every slaveDof
     vector< vector< double > >tableOfMultipliers;
     vector< vector< double > >tableOfTimeDepMultipliers;
@@ -1108,10 +1193,9 @@ void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Nod
     for ( auto &mul : tableOfTimeDepMultipliers ) {
         mul = std :: vector< double > (nDoFsPerNode, 0.0); // second index (i) is for slave dof, initially zero
     }
-
     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
         for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
-            if ( i == j ) {
+            if ( i == j && i < ndim) {
                 tableOfMultipliers [ j ] [ i ] = 1;
                 if ( j == 0 ){
                   // std::cout << "push_back_X" << '\n';
@@ -1123,19 +1207,21 @@ void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Nod
                   // std::cout << "push_back_Z" << '\n';
                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
                 }
-            } else if ( i == 0 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getY() - master->givePoint().getY() );
-            } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
-            } else if ( i == 0 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
-            } else if ( i == 1 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getZ() - master->givePoint().getZ() );
-            } else if ( i == 2 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
-            } else if ( i == 2 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().getX() - master->givePoint().getX() );
-            } else {
+            }
+            // else if ( i == 0 && j == nDoFsPerNode - 1 ) {
+            //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getY() - master->givePoint().getY() );
+            // } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
+            //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
+            // } else if ( i == 0 && j == 4 ) {
+            //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
+            // } else if ( i == 1 && j == 3 ) {
+            //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getZ() - master->givePoint().getZ() );
+            // } else if ( i == 2 && j == 3 ) {
+            //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
+            // } else if ( i == 2 && j == 4 ) {
+            //     tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().getX() - master->givePoint().getX() );
+            // }
+            else {
                 tableOfMultipliers [ j ] [ i ] =  0;
             }
         }
@@ -1171,8 +1257,10 @@ void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Nod
                 }
             }
         }
-        JointDoF *newJD = new JointDoF(slave, i, masterNodes, directions, multipliers, time_fns, time_multipliers);
-        constrs->addConstraint(newJD);
+        if ( !masterNodes.empty() ) {
+            JointDoF *newJD = new JointDoF(slave, i, masterNodes, directions, multipliers, time_fns, time_multipliers);
+            constrs->addConstraint(newJD);
+        }
         masterNodes.clear();
         multipliers.clear();
         directions.clear();

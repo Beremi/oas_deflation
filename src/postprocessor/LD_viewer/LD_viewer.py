@@ -7,7 +7,7 @@ from traits.api import HasStrictTraits, Instance, File, List, Enum, Button, Str,
                         Any, Bool, DelegatesTo, Property, Float
 from traitsui.api import Item, Group, View, HSplit, NoButtons, EnumEditor, HGroup,\
                          Handler, VGroup, Tabbed, TextEditor, Label, ListEditor
-from traitsui.file_dialog  import open_file, TextInfo, FileInfo
+from traitsui.file_dialog  import open_file, TextInfo, FileInfo, save_file
 from mpl_qt_editor import MPLFigureEditor
 from matplotlib.figure import Figure
 import numpy as np
@@ -98,6 +98,8 @@ class LDCurve(HasStrictTraits):
 
     figure = Instance(Figure)
     draw_this_button = Button('Draw this one')
+    copy_to_clipboard = Button('Copy to clipboard')
+    save_to_txt = Button('Save to txt')
 
     def _draw_this_button_fired(self):
         ax = self.figure.axes[0]
@@ -111,6 +113,19 @@ class LDCurve(HasStrictTraits):
                 label='{}-{}'.format(self.ldfile.name, self.name), marker='o')
         ax.legend()
 
+    def _copy_to_clipboard_fired(self):
+        data = np.vstack((self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale)).T
+        df = pd.DataFrame({self.x_values: data[:, 0], self.y_values: data[:, 1]})
+        df.to_clipboard(excel=True, index=False)
+
+    def _save_to_txt_fired(self):
+        file_name = save_file(extensions=FileInfo(), id='savefile')
+        if file_name == '':
+            print('No filename.')
+        data = np.vstack((self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale)).T
+        df = pd.DataFrame({self.x_values: data[:, 0], self.y_values: data[:, 1]})
+        df.to_csv(file_name, sep='\t', index=False)
+
     def _name_default(self):
         return 'LD {}'.format(self.ld_num)
 
@@ -119,7 +134,10 @@ class LDCurve(HasStrictTraits):
                                Item('x_scale', show_label=False)),
                        HGroup(HItem('y_values'),
                                Item('y_scale', show_label=False)),
-                       Item('draw_this_button', show_label=False))
+                       Item('draw_this_button', show_label=False),
+                       Item('copy_to_clipboard', show_label=False),
+                       Item('save_to_txt', show_label=False),
+                       )
                 )
 
 

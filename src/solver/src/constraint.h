@@ -39,8 +39,8 @@ public:
     std :: vector< unsigned >giveMasterDirs() { return directions; };
     unsigned giveMasterDir(unsigned k) const { return directions [ k ]; };
     std :: vector< double >giveMasterMultipliers() { return multipliers; };
-    double giveMasterMultiplier(unsigned k, const double &time_now=0.0) const { return multipliers [ k ]; };
-    double giveFnDepPart(unsigned k, const double &time_now=0.0) const {
+    double giveMasterMultiplier(unsigned k, const double time_now=0.0) const { return multipliers [ k ]; };
+    double giveFnDepPart(unsigned k, const double time_now=0.0) const {
         return (time_fns[k] == nullptr) ? 0.0 : additional_term[k] * time_fns[k]->giveY(time_now);
     };
     std :: vector< Function * >giveTimeFns() { return time_fns; };
@@ -81,9 +81,9 @@ public:
     ~ConstraintContainer() {};
     void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);
-    void init(NodeContainer *nodes, BCContainer *bconds, const double &time_now=0.0); // here matrix X will be created
-    void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double &time_now=0);
-    void calculateDependentDoFs(Vector &fullDoFs, const double &time_now=0.0, const bool &all=false);
+    void init(NodeContainer *nodes, BCContainer *bconds); // here matrix X will be created
+    void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now=0);
+    void calculateDependentDoFs(Vector &fullDoFs, const double time_now=0.0, const bool all=false);
     void calculateMasterForces(Vector &fullForces);
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };

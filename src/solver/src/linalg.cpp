@@ -3,14 +3,26 @@
 using namespace std;
 using namespace Eigen;
 
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit) {
+bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit, string solver_type) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
     if ( b.size() == 0 ) {
         return true;                   // when problem is completely constrained (e.g. single facet)
     }
-    //return ConjGrad(A, x, b, x0, precision, relmaxit);
+
+    if (solver_type == "ConjGrad"){
+        bool result = ConjGrad(A, x, b, x0, precision, relmaxit);
+
+        #if PRINT_DEBUG_TIME
+            auto now = std :: chrono :: system_clock :: now();
+
+            auto elapsed_seconds = now - start;
+            std :: cout << "linalg solver preprocessing: " << convertTimeToString_(elapsed_seconds) << endl;
+            cout.flush();
+        #endif
+            return result;
+    }
 
     size_t Maxit = b.size() * relmaxit;
 
@@ -39,42 +51,63 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         cgb [ i ] = b [ i ];
     }
 
-    VectorXd cgx0(rowsize);
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        cgx0 [ i ] = x0 [ i ];
+    #if PRINT_DEBUG_TIME
+        auto now = std :: chrono :: system_clock :: now();
+        auto elapsed_seconds = now - start;
+        std :: cout << "linalg solver preprocessing: " << convertTimeToString_(elapsed_seconds) << endl;
+        cout.flush();
+    #endif
+
+    bool result = false;
+    VectorXd cgx;
+    if (solver_type == "EigenConj"){
+        VectorXd cgx0(rowsize);
+        for ( size_t i = 0; i < rowsize; i++ ) {
+            cgx0 [ i ] = x0 [ i ];
+        }
+        ConjugateGradient< SparseMatrix< double >, Lower | Upper >cgK;
+        cgK.setMaxIterations(Maxit);
+        cgK.setTolerance(precision);
+
+        cgK.compute(mat);
+
+        cgx = cgK.solveWithGuess(cgb, cgx0);
+        //VectorXd cgx = cgK.solve(cgb);
+        result = size_t (cgK.iterations()) < Maxit;
     }
+    else if (solver_type == "EigenLDLT"){
+        SimplicialLDLT<SparseMatrix<double> > simplicial_ldlt_solver;
+        cgx = simplicial_ldlt_solver.compute(mat).solve(cgb);
+        cout << "error " << (mat * cgx - cgb).lpNorm<Infinity>() <<endl;
+        result = (mat * cgx - cgb).lpNorm<Infinity>() < precision;
+    }
+    else if (solver_type == "EigenLLT"){
+        SimplicialLLT<SparseMatrix<double> > simplicial_llt_solver;
+        cgx = simplicial_llt_solver.compute(mat).solve(cgb);
+        result = (mat * cgx - cgb).lpNorm<Infinity>() < precision;
+    }
+    else if (solver_type == "EigenSparseLU"){
+        SparseLU<SparseMatrix<double>, COLAMDOrdering<int> > sparseLU_solver;
+        sparseLU_solver.analyzePattern(mat);
+        sparseLU_solver.factorize(mat);
 
-#if PRINT_DEBUG_TIME
-    auto now = std :: chrono :: system_clock :: now();
-
-    auto elapsed_seconds = now - start;
-    std :: cout << "linalg solver preprocessing: " << convertTimeToString(elapsed_seconds) << endl;
-    cout.flush();
-#endif
-
-    ConjugateGradient< SparseMatrix< double >, Lower | Upper >cgK; //diagonal preconditioner is default
-
-    cgK.setMaxIterations(Maxit);
-    cgK.setTolerance(precision);
-
-    cgK.compute(mat);
-
-    VectorXd cgx = cgK.solveWithGuess(cgb, cgx0);
-    //VectorXd cgx = cgK.solve(cgb);
-
-#if PRINT_DEBUG_TIME
-    now = std :: chrono :: system_clock :: now();
-
-    elapsed_seconds = now - start;
-    std :: cout << "linalg solver duration: " << convertTimeToString(elapsed_seconds) << " nit: " << cgK.iterations() << std :: endl;
-    cout.flush();
-#endif
+        cgx = sparseLU_solver.solve(cgb);
+        result = (mat * cgx - cgb).lpNorm<Infinity>() < precision;
+    }
 
     for ( size_t i = 0; i < rowsize; i++ ) {
         x [ i ] = cgx [ i ];
     }
 
-    bool result = size_t(cgK.iterations() ) < Maxit;
+    #if PRINT_DEBUG_TIME
+        now = std :: chrono :: system_clock :: now();
+
+        elapsed_seconds = now - start;
+        std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+        cout.flush();
+    #endif
+
+
     return result;
 }
 

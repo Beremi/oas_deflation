@@ -117,18 +117,22 @@ private:
     std :: vector< unsigned >nodesToKeep;
 
     //////////////////////////////////////////////////////////////////////////////
-    void saveCentersToRemesh() {
-        std :: string centers = "centersToRemesh.out";
-        ofstream outputfile(fs :: path(this->remeshDir) / centers);
+    void saveCenters(const std :: string &centersFName, const std :: vector < Point > &centersPoints) {
+        ofstream outputfile(fs :: path(this->remeshDir) / centersFName);
         if ( outputfile.is_open() ) {
             outputfile << std :: scientific;
             outputfile.precision(6);
             outputfile << "#nodeCentersToRemesh";
-            for ( auto const &c : nodeCentersToRmesh ) {
+            for ( auto const &c : centersPoints ) {
                 outputfile << "\ncenter\t" << c.getX() << '\t' << c.getY() << '\t' << c.getZ();
             }
             outputfile.close();
         }
+    }
+
+    void saveCenters() {
+      // overloading previous method to give it default arguments (to be able to pass them by reference)
+      saveCenters("centersToRemesh.out", this->nodeCentersToRmesh);
     }
 
     void saveNodesToKeep() {
@@ -143,7 +147,7 @@ private:
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
-        std :: string node_file = "nodes.inp";
+        std :: string node_file = "nodes.out";
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);
             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
@@ -178,7 +182,7 @@ private:
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
-        std :: string node_file = "nodesFine.inp";
+        std :: string node_file = "nodesFine.out";
         for ( unsigned i = 0; i < this->nodesFine->giveSize(); i++ ) { // foreach loop does not work here
             n = this->nodesFine->giveNode(i);
             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
@@ -220,7 +224,12 @@ private:
     }
     //////////////////////////////////////////////////////////////////////////////
     void saveRemeshData() {
-        this->saveCentersToRemesh();
+        this->saveCenters(); // save centersToRemesh
+        std :: vector < Point > fine_centers;
+        for ( auto const & reg : this->fineRegions ) {
+            fine_centers.push_back( reg->giveMainPoint() );
+        }
+        this->saveCenters("centersFine.out", fine_centers );  // save any specified vector of points
 
         this->saveNodesToKeep();
         if ( this->nodesFine ) {
@@ -363,7 +372,7 @@ private:
                 }
             }
         }
-        // if vector empty check returns false means not remesh
+        // if vector empty check returns false, it means not to remesh
         return !this->nodeCentersToRmesh.empty();
     }
 
