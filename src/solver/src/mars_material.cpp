@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////
 // CUSATIS MATERIAL STATUS
 
-MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "MARS mat. status";
     RAND_H = 1.0;
 }
@@ -14,6 +14,9 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e) : DisMechM
 double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
+    } else if ( code.compare("volumetricStrain") == 0 ) {
+        RigidBodyContact * ec =static_cast< RigidBodyContact * > (element);
+        return ec->giveVolumetricStrain();
     } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         return temp_damage;
         // } else  if ( code.compare("stressN") == 0 ) {
@@ -176,6 +179,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     if ( temp_damage < damage ) {
         temp_damage = damage;
     }
+
     //temp_damage = min(temp_damage, 1-1e-10); //dangerous, better switched off 
 
     //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
@@ -217,7 +221,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain) {
-    computeDamage(addEigenStrain(strain) );
+    computeDamage(addEigenStrain(strain));
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain);
 }
 
@@ -305,8 +309,8 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *MarsMaterial :: giveNewMaterialStatus(Element *e) {
-    MarsMaterialStatus *newStatus = new MarsMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *MarsMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    MarsMaterialStatus *newStatus = new MarsMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -325,3 +329,60 @@ void MarsMaterial :: init() {
     Lcrt = 2 * E0 * Gt / pow(ft, 2);
     Lcrs = 2 * alpha * E0 * Gs / pow(fs, 2);
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COUPLED CUSATIS MATERIAL STATUS
+//////////////////////////////////////////////////////////
+CoupledMarsMaterialStatus :: CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum):MarsMaterialStatus(m, e, ipnum){
+    name = "Coupled MARS mat. status";
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMarsMaterialStatus :: init() {
+    MarsMaterialStatus :: init();
+}
+
+//////////////////////////////////////////////////////////
+double CoupledMarsMaterialStatus :: giveValue(string code) const {
+    if ( code.compare("averagePressure") == 0 ) {
+        RigidBodyContactCoupled * ec =static_cast< RigidBodyContactCoupled * > (element);
+        return ec->giveAveragePressure();
+    } else if ( code.compare("volumetricStrainRate") == 0 ) {
+        RigidBodyContactCoupled * ec =static_cast< RigidBodyContactCoupled * > (element);
+        return ec->giveVolumetricStrainRate();
+    } else {
+        return MarsMaterialStatus :: giveValue(code);
+    }
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledMarsMaterialStatus :: giveStress(const Vector &strain) {
+    MarsMaterialStatus :: giveStress(strain);  
+
+    return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+    MarsMaterialStatus :: giveStressWithFrozenIntVars(strain);
+    return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COUPLED CUSATIS MATERIAL
+//////////////////////////////////////////////////////////
+void CoupledMarsMaterial :: init() {
+    MarsMaterial :: init();
+}
+
+//////////////////////////////////////////////////////////
+MaterialStatus *CoupledMarsMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    CoupledMarsMaterialStatus *newStatus = new CoupledMarsMaterialStatus(this, e, ipnum);
+    return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+void CoupledMarsMaterial :: readFromLine(istringstream &iss){
+}

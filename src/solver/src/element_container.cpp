@@ -472,7 +472,7 @@ void ElementContainer :: findElementFriends() {
     }
 }
 
-
+//////////////////////////////////////////////////////////
 Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const {
     std :: sort(node_ids.begin(), node_ids.end() );
     // std::cout << "this elem should connect nodes";

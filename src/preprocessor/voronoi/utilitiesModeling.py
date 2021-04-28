@@ -13,7 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
-import tkinter
+#import tkinter
 SHOW_PLOT = False
 
 def assembleMeasuringGauges(type, D=-1, maxLim = None):

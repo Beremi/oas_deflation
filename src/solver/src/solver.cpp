@@ -270,6 +270,7 @@ void SteadyStateLinearSolver :: solve() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const bool frozen) {
+    nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
     elems->integrateInternalForces(rr, f_int, frozen);
     nodes->updateExternalForcesByReactions(f_int, load, f_dam, f_acc, f_ext);     //give prescribed DoFs
     residuals = f_ext - f_int;

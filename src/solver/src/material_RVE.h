@@ -31,7 +31,7 @@ protected:
     virtual void generateRandomFixedBC() {};
     virtual void generateVolumetricAverageBC() {};
 public:
-    RVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile);
+    RVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
     virtual ~RVEMaterialStatus();
     virtual void init();
     virtual void update();
@@ -49,7 +49,7 @@ public:
     RVEMaterial() { name = "generic RVE material"; };
     virtual ~RVEMaterial() {};
     virtual void readFromLine(istringstream &iss);
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     fs :: path givePathToInputFile()const {return inputfile;};
 };
 
@@ -72,7 +72,7 @@ protected:
     virtual unsigned giveStrainSize(unsigned ndim) const;
 
 public:
-    DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile);
+    DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
     virtual ~DiscreteTransportRVEMaterialStatus() {};
     virtual void init();
     virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
@@ -90,7 +90,7 @@ protected:
 public:
     DiscreteTransportRVEMaterial() { name = "transport RVE material"; };
     virtual ~DiscreteTransportRVEMaterial() {};
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
 };
 
 //////////////////////////////////////////////////////////
@@ -110,7 +110,7 @@ protected:
     vector< vector< Vector > >projectors;
 
 public:
-    DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile);
+    DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
     virtual void init();
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
@@ -125,7 +125,7 @@ protected:
 public:
     DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; };
     virtual ~DiscreteMechanicalRVEMaterial() {};
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
 };
 
 //////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ protected:
     
     void findFriends();
 public:
-    DiscreteCoupledRVEMaterialStatus(Material *m, Element *e, fs :: path masterfileM, fs :: path masterfileT);
+    DiscreteCoupledRVEMaterialStatus(Material *m, Element *e, unsigned ipnum, fs :: path masterfileM, fs :: path masterfileT);
     virtual ~DiscreteCoupledRVEMaterialStatus();
     virtual void init();
     virtual void update();
@@ -154,7 +154,6 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual void setEigenStrain(Vector &x);
     virtual std :: string giveLineToSave() const;
-    virtual void setID(unsigned i);
 };
 
 //////////////////////////////////////////////////////////
@@ -166,7 +165,7 @@ protected:
 public:
     DiscreteCoupledRVEMaterial() { name = "coupled RVE material"; };
     virtual ~DiscreteCoupledRVEMaterial();
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void readFromLine(istringstream &iss);
     DiscreteMechanicalRVEMaterial* giveMechanicalRVEmat(){return mechRVEmat;}
     DiscreteTransportRVEMaterial* giveTransportRVEmat(){return trspRVEmat;}
@@ -184,7 +183,7 @@ protected:
     bool is_master_status;
 
 public:
-    DiscreteTransportRVEMaterialPrecomputedStatus(RVEMaterial *m, Element *e, fs :: path masterfile);
+    DiscreteTransportRVEMaterialPrecomputedStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
     virtual ~DiscreteTransportRVEMaterialPrecomputedStatus() {};
     virtual void init();
     virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
@@ -205,7 +204,7 @@ protected:
 public:
     DiscreteTransportRVEMaterialPrecomputed() { name = "transport RVE precomputed material"; conductivity = Matrix(0, 0); };
     virtual ~DiscreteTransportRVEMaterialPrecomputed() {};
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     Matrix givePrecomputedConductivity() const { return conductivity; };
     double givePrecomputedCapacity() const { return capacity; };
     TrsprtMaterialStatus *giveMasterStatus() { return masterStatus; };
@@ -234,7 +233,7 @@ public:
  *  vector< vector< Vector > >projectors;
  *
  * public:
- *  DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, fs :: path masterfile);
+ *  DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
  *  virtual ~DiscreteRVEMaterialStatus() {};
  *  virtual void init();
  *  virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
@@ -251,7 +250,7 @@ public:
  * public:
  *  DiscreteRVEMaterial() { name = "transport RVE material"; };
  *  virtual ~DiscreteRVEMaterial() {};
- *  virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+ *  virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
  * };
  */
 #endif /* _MAT_RVE_H */

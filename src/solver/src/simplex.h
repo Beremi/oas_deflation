@@ -2,18 +2,38 @@
 #define _SIMPLEX_H
 
 #include "linear_algebra.h"
-#include "node.h"
 #include <vector>
 #include <iostream>
+
+
+class Node; //forward declaration
+class Particle; //forward declaration
+class RigidBodyContact; //forward declaration
 
 class Simplex
 {
 protected:
-    vector<Particle *> nodes; ///list of nodes
+    Node * center;
+    vector< Particle *> nodes; ///list of nodes 
+    bool valid, transport; 
+    double volume, volstrain; 
+    double pressure;
+    unsigned pressureDoF;
+    vector< unsigned > DoFs; ///corresponding degrees of freedom
+    vector< double > DoFweights; ///corresponding weights
+    vector < RigidBodyContact * > elems; 
+
 public:
-    Simplex(){};
-    virtual ~Simplex() {};
-    
+    Simplex(Node * c){ center = c; valid=false; transport=false; volstrain=0;};
+    virtual ~Simplex() {};  
+    void addElement(RigidBodyContact* rbc);  
+    void init(unsigned ndim);
+    double giveVolumetricStrain() const;
+    double givePressure() const;
+    void computeVolumetricStrain(const Vector & DoFs);
+    bool isValid() const { return valid;}
+    bool hasPressure() const { return transport;}
+    vector < RigidBodyContact * > giveElements() {return elems;}
 };
 
 

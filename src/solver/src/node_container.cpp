@@ -95,6 +95,16 @@ void NodeContainer :: init() {
 }
 
 //////////////////////////////////////////////////////////
+void NodeContainer :: initSimplices() {
+    for(auto &n:nodes) n->initSimplex();
+}
+
+//////////////////////////////////////////////////////////
+void NodeContainer :: updateSimplexVolumetricStrains(const Vector & fullDoFs){
+    for(auto &n:nodes) n->updateSimplexVolumetricStrain(fullDoFs);
+}
+
+//////////////////////////////////////////////////////////
 void NodeContainer :: establishDoFArray() {
     totalDoFs = 0;
 

@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // general RVE status
-RVEMaterialStatus :: RVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile) : MaterialStatus(m, e) {
+RVEMaterialStatus :: RVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile) : MaterialStatus(m, e, ipnum) {
     name = "general RVE mat. status";
     inputfile = masterfile;
     RVE = new Model(false);
@@ -46,8 +46,8 @@ void RVEMaterialStatus :: update() {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GENERAL RVE MATERIAL
-MaterialStatus *RVEMaterial :: giveNewMaterialStatus(Element *e) {
-    RVEMaterialStatus *newstat = new RVEMaterialStatus(this, e, inputfile);
+MaterialStatus *RVEMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    RVEMaterialStatus *newstat = new RVEMaterialStatus(this, e, ipnum, inputfile);
     return newstat;
 }
 
@@ -62,7 +62,7 @@ void RVEMaterial :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 // DISCRETE TRANSPORT RVE MATERIAL
 //////////////////////////////////////////////////////////
-DiscreteTransportRVEMaterialStatus :: DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile) : RVEMaterialStatus(m, e, masterfile) {
+DiscreteTransportRVEMaterialStatus :: DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile) : RVEMaterialStatus(m, e, ipnum, masterfile) {
     name = "transport RVE mat. status";
 }
 
@@ -117,7 +117,6 @@ void DiscreteTransportRVEMaterialStatus :: collectStresses() {
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain) {
-
     temp_strain.resize(giveStrainSize(ndim) );
     for ( unsigned i = 0; i < temp_strain.size(); i++ ) {
         temp_strain [ i ] = strain [ i ];
@@ -324,8 +323,8 @@ void DiscreteTransportRVEMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 // DISCRETE TRANSPORT RVE MATERIAL
 //////////////////////////////////////////////////////////
-MaterialStatus *DiscreteTransportRVEMaterial :: giveNewMaterialStatus(Element *e) {
-    DiscreteTransportRVEMaterialStatus *newstat = new DiscreteTransportRVEMaterialStatus(this, e, inputfile);
+MaterialStatus *DiscreteTransportRVEMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DiscreteTransportRVEMaterialStatus *newstat = new DiscreteTransportRVEMaterialStatus(this, e, ipnum, inputfile);
     return newstat;
 }
 
@@ -333,7 +332,7 @@ MaterialStatus *DiscreteTransportRVEMaterial :: giveNewMaterialStatus(Element *e
 //////////////////////////////////////////////////////////
 // DISCRETE MECHANICAL RVE MATERIAL
 //////////////////////////////////////////////////////////
-DiscreteMechanicalRVEMaterialStatus :: DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, fs :: path masterfile) : DiscreteTransportRVEMaterialStatus(m, e, masterfile) {
+DiscreteMechanicalRVEMaterialStatus :: DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile) : DiscreteTransportRVEMaterialStatus(m, e, ipnum, masterfile) {
     name = "mechancial RVE mat. status";
 }
 
@@ -552,8 +551,8 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 // DISCRETE MECHANICAL RVE MATERIAL
 //////////////////////////////////////////////////////////
-MaterialStatus *DiscreteMechanicalRVEMaterial :: giveNewMaterialStatus(Element *e) {
-    DiscreteMechanicalRVEMaterialStatus *newstat = new DiscreteMechanicalRVEMaterialStatus(this, e, inputfile);
+MaterialStatus *DiscreteMechanicalRVEMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DiscreteMechanicalRVEMaterialStatus *newstat = new DiscreteMechanicalRVEMaterialStatus(this, e, ipnum, inputfile);
     return newstat;
 }
 
@@ -562,7 +561,7 @@ MaterialStatus *DiscreteMechanicalRVEMaterial :: giveNewMaterialStatus(Element *
 //////////////////////////////////////////////////////////
 // DISCRETE RVE TRANSPORT MATERIAL STATUS PRE-COMPUTED
 //////////////////////////////////////////////////////////
-DiscreteTransportRVEMaterialPrecomputedStatus :: DiscreteTransportRVEMaterialPrecomputedStatus(RVEMaterial *m, Element *e, fs :: path masterfile) : DiscreteTransportRVEMaterialStatus(m, e, masterfile) {
+DiscreteTransportRVEMaterialPrecomputedStatus :: DiscreteTransportRVEMaterialPrecomputedStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile) : DiscreteTransportRVEMaterialStatus(m, e, ipnum, masterfile) {
     name = "transport RVE precomputed mat. status";
     is_master_status = false;
     temp_nonlin = 1;
@@ -644,8 +643,8 @@ void DiscreteTransportRVEMaterialPrecomputedStatus :: update() {
 //////////////////////////////////////////////////////////
 // DISCRETE RVE TRANSPORT MATERIAL PRE-COMPUTED
 //////////////////////////////////////////////////////////
-MaterialStatus *DiscreteTransportRVEMaterialPrecomputed :: giveNewMaterialStatus(Element *e) {
-    DiscreteTransportRVEMaterialPrecomputedStatus *newstat = new DiscreteTransportRVEMaterialPrecomputedStatus(this, e, inputfile);
+MaterialStatus *DiscreteTransportRVEMaterialPrecomputed :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DiscreteTransportRVEMaterialPrecomputedStatus *newstat = new DiscreteTransportRVEMaterialPrecomputedStatus(this, e, ipnum, inputfile);
     return newstat;
 }
 
@@ -680,12 +679,12 @@ void DiscreteTransportRVEMaterialPrecomputed :: setPrecomputedConductivityAndCap
 //////////////////////////////////////////////////////////
 // DISCRETE COUPLED RVE MATERIAL STATUS
 //////////////////////////////////////////////////////////
-DiscreteCoupledRVEMaterialStatus ::  DiscreteCoupledRVEMaterialStatus(Material *m, Element *e, fs :: path masterfileM, fs :: path masterfileT): MaterialStatus(m,e){
+DiscreteCoupledRVEMaterialStatus ::  DiscreteCoupledRVEMaterialStatus(Material *m, Element *e, unsigned ipnum, fs :: path masterfileM, fs :: path masterfileT): MaterialStatus(m,e, ipnum){
     name = "coupled discrete RVE mat. status";
     DiscreteCoupledRVEMaterial* coupledm = dynamic_cast<DiscreteCoupledRVEMaterial*>(m);
     if (coupledm){
-        mechRVEstat = new DiscreteMechanicalRVEMaterialStatus(coupledm->giveMechanicalRVEmat(),e,masterfileM);
-        trspRVEstat = new DiscreteTransportRVEMaterialStatus(coupledm->giveTransportRVEmat(),e,masterfileT);
+        mechRVEstat = new DiscreteMechanicalRVEMaterialStatus(coupledm->giveMechanicalRVEmat(),e,idx,masterfileM);
+        trspRVEstat = new DiscreteTransportRVEMaterialStatus(coupledm->giveTransportRVEmat(),e,idx,masterfileT);
     }else{
         cerr << "DiscreteCoupledRVEMaterialStatus accepts only DiscreteCoupledRVEMaterial" << endl;
         exit(1);
@@ -908,13 +907,6 @@ string DiscreteCoupledRVEMaterialStatus :: giveLineToSave()const{
 }
 
 //////////////////////////////////////////////////////////
-void DiscreteCoupledRVEMaterialStatus :: setID(unsigned i){
-    MaterialStatus::setID(i);
-    mechRVEstat->setID(i);
-    trspRVEstat->setID(i);
-}
-
-//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DISCRETE COUPLED RVE MATERIAL
 //////////////////////////////////////////////////////////
@@ -926,8 +918,8 @@ DiscreteCoupledRVEMaterial :: ~DiscreteCoupledRVEMaterial(){
 }
 
 //////////////////////////////////////////////////////////
-MaterialStatus* DiscreteCoupledRVEMaterial ::giveNewMaterialStatus(Element *e){
-    DiscreteCoupledRVEMaterialStatus *newstat = new DiscreteCoupledRVEMaterialStatus(this, e, mechRVEmat->givePathToInputFile(), trspRVEmat->givePathToInputFile());
+MaterialStatus* DiscreteCoupledRVEMaterial ::giveNewMaterialStatus(Element *e, unsigned ipnum){
+    DiscreteCoupledRVEMaterialStatus *newstat = new DiscreteCoupledRVEMaterialStatus(this, e, ipnum, mechRVEmat->givePathToInputFile(), trspRVEmat->givePathToInputFile());
     return newstat;
 };
 

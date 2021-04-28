@@ -2,7 +2,7 @@
 #include "element_discrete.h"
 
 
-BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "BRITTLE mat. status";
     RAND_H = 1.0;
 }
@@ -126,8 +126,8 @@ void BrittleMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *BrittleMaterial :: giveNewMaterialStatus(Element *e) {
-    BrittleMaterialStatus *newStatus = new BrittleMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *BrittleMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    BrittleMaterialStatus *newStatus = new BrittleMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -143,7 +143,7 @@ void BrittleMaterial :: init() {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-ContactMaterialStatus :: ContactMaterialStatus(ContactMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+ContactMaterialStatus :: ContactMaterialStatus(ContactMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "CONTACT mat. status";
 }
 
@@ -197,6 +197,7 @@ Vector ContactMaterialStatus :: giveStress(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 Vector ContactMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+    (void) strain;
     return Vector(0); //TOTO: FIX
 }
 
@@ -223,8 +224,8 @@ void ContactMaterial :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-MaterialStatus *ContactMaterial :: giveNewMaterialStatus(Element *e) {
-    ContactMaterialStatus *newStatus = new ContactMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *ContactMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    ContactMaterialStatus *newStatus = new ContactMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 }
 

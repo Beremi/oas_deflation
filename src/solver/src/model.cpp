@@ -16,11 +16,11 @@ void Model :: init(const bool &initial) {     //initialization
     nodes.init();
     matrs.init();
     elems.init();
+    nodes.initSimplices();
     constr.init(& nodes, & bconds);
     elems.findElementFriends();
     exporters.init(initial);
     solver->init(initial);
-    cout << "Initialization completed" << endl;
 }
 
 //////////////////////////////////////////////////////////

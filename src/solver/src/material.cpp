@@ -1,5 +1,6 @@
 #include "material.h"
 #include "element.h"
+#include "element_discrete.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -41,7 +42,7 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 //////////////////////////////////////////////////////////
 // TRANSPORT MATERIAL
 
-TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : MaterialStatus(m, e) {
+TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "transport mat. status";
     updateEffectiveConductivity(0.);
 }
@@ -49,7 +50,7 @@ TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e) : Ma
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain) {
-    temp_strain.resize(strain.size() - 1);
+    temp_strain.resize(strain.size());
     for ( unsigned k = 0; k < temp_strain.size(); k++ ) {
         temp_strain [ k ] = strain [ k ];
     }
@@ -178,8 +179,8 @@ void TrsprtMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e) {
-    TrsprtMaterialStatus *newStatus = new TrsprtMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    TrsprtMaterialStatus *newStatus = new TrsprtMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -257,7 +258,7 @@ Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned di
 };
 
 //////////////////////////////////////////////////////////
-ElasticMechMaterialStatus :: ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e) : MaterialStatus(m, e) {
+ElasticMechMaterialStatus :: ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "tensorial mechanical mat. status";
 }
 
@@ -297,8 +298,8 @@ void ElasticMechMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *ElasticMechMaterial :: giveNewMaterialStatus(Element *e) {
-    ElasticMechMaterialStatus *newStatus = new ElasticMechMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *ElasticMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    ElasticMechMaterialStatus *newStatus = new ElasticMechMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -368,7 +369,7 @@ Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned d
 };
 
 //////////////////////////////////////////////////////////
-CosseratMechMaterialStatus :: CosseratMechMaterialStatus(CosseratMechMaterial *m, Element *e) : ElasticMechMaterialStatus(m, e) {
+CosseratMechMaterialStatus :: CosseratMechMaterialStatus(CosseratMechMaterial *m, Element *e, unsigned ipnum) : ElasticMechMaterialStatus(m, e, ipnum) {
     name = "tensorial cosserat mat. status";
 }
 
@@ -404,8 +405,8 @@ void CosseratMechMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e) {
-    CosseratMechMaterialStatus *newStatus = new CosseratMechMaterialStatus(this, e);
+MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    CosseratMechMaterialStatus *newStatus = new CosseratMechMaterialStatus(this, e, ipnum);
     return newStatus;
 };
 
@@ -415,7 +416,7 @@ MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e) {
 // COUPLED TRANSPORT MATERIAL
 //////////////////////////////////////////////////////////
 
-TrsprtCoupledMaterialStatus :: TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e) : TrsprtMaterialStatus(m, e) {
+TrsprtCoupledMaterialStatus :: TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : TrsprtMaterialStatus(m, e, ipnum) {
     name = "coupled transport mat. status";
 }
 
@@ -433,28 +434,27 @@ double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) con
 }
 
 //////////////////////////////////////////////////////////
-Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &fullstrain) {
-    //first strain term is pressure gradient, second strain face are, then it is alway crack opening and crack length coulples
+Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain) {
+    //first strain term is pressure gradient, second strain face area, then it is alway crack opening and crack length coulples
     TrsprtCoupledMaterial *tmat = static_cast< TrsprtCoupledMaterial * >( mat );
-    double crackParam = 0;
-    for ( size_t i = 3; i < fullstrain.size(); i += 2 ) {
-        crackParam += pow(fullstrain [ i ], 3) * fullstrain [ i + 1 ];
-    }
+    
+    Transp1DCoupled * tc = static_cast< Transp1DCoupled * > ( element ); 
+    double crackParam = tc->giveCrackOpeningInNeigborhood();
+    double pressure = tc->giveAveragePressure();
 
-
-    updateEffectiveConductivity(fullstrain [ 1 ]);
-    effConductivity += tmat->giveTurtuosity() / ( 12. * tmat->giveViscosity() * fullstrain [ 2 ] ) * crackParam;
+    updateEffectiveConductivity(pressure);
+    effConductivity += tmat->giveTurtuosity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
     temp_strain.resize(1);
-    temp_strain [ 0 ] = fullstrain [ 0 ];
+    temp_strain [ 0 ] = strain [ 0 ];
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
     return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
-Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &fullstrain) {
+Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
     temp_strain.resize(1);
-    temp_strain [ 0 ] = fullstrain [ 0 ];
-    temp_stress = -effConductivity *addEigenStrain(temp_strain);
+    temp_strain[0] = strain[0];
+    temp_stress = -effConductivity *addEigenStrain(strain);
     return temp_stress;
 };
 
@@ -483,8 +483,8 @@ void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *TrsprtCoupledMaterial :: giveNewMaterialStatus(Element *e) {
-    TrsprtCoupledMaterialStatus *newStatus = new TrsprtCoupledMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *TrsprtCoupledMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    TrsprtCoupledMaterialStatus *newStatus = new TrsprtCoupledMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -492,7 +492,7 @@ MaterialStatus *TrsprtCoupledMaterial :: giveNewMaterialStatus(Element *e) {
 //////////////////////////////////////////////////////////
 // DISCRETE MECHANICAL ELASTIC MATERIAL
 
-DisMechMaterialStatus :: DisMechMaterialStatus(DisMechMaterial *m, Element *e) : MaterialStatus(m, e) {
+DisMechMaterialStatus :: DisMechMaterialStatus(DisMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "discrete mechanical mat. status";
     mat = m;
 }
@@ -570,7 +570,8 @@ void DisMechMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *DisMechMaterial :: giveNewMaterialStatus(Element *e) {
-    DisMechMaterialStatus *newStatus = new DisMechMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *DisMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DisMechMaterialStatus *newStatus = new DisMechMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
+

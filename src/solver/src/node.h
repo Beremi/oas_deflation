@@ -2,10 +2,10 @@
 #define _NODE_H
 
 #include "linear_algebra.h"
+#include "simplex.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
-
 
 class BoundaryCondition; //forward declaration
 class RigidBodyContact; //forward declaration
@@ -28,9 +28,11 @@ protected:
     string name;
     bool isMechanical;
     bool isTransport;
+
+    Simplex* simplex; //simplex used to determine volumetric strain
 public:
-    Node() { name = "basic node"; isMechanical = false; isTransport = false; };
-    virtual ~Node() {};
+    Node() { name = "basic node"; isMechanical = false; isTransport = false; simplex = nullptr;};
+    virtual ~Node() { delete simplex; };
 
     /// A pure virtual member.
     /**
@@ -57,6 +59,10 @@ public:
     bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
     void subtructFromPoint(Point *p) { point -= ( * p ); };
     virtual unsigned giveOrderOfForceCode(string code) const;
+    Simplex* addElementToSimplex( RigidBodyContact * rbc );
+    void initSimplex();
+    void updateSimplexVolumetricStrain(const Vector & fullDoFs);
+    Simplex* giveSimplex(){return simplex;}
 };
 
 //////////////////////////////////////////////////////////

@@ -1,6 +1,7 @@
 #include "node.h"
 #include "boundary_condition.h"
 #include "element_discrete.h"
+#include "simplex.h" 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -44,6 +45,24 @@ unsigned Node :: giveOrderOfForceCode(string code) const {
     }
     return 0;
 }
+
+//////////////////////////////////////////////////////////
+Simplex* Node :: addElementToSimplex( RigidBodyContact * rbc ){
+    if (!simplex) simplex = new Simplex(this);
+    simplex->addElement(rbc);
+    return simplex;
+}
+
+//////////////////////////////////////////////////////////
+void Node :: initSimplex( ){
+    if (simplex) simplex->init(dim);
+}
+
+//////////////////////////////////////////////////////////
+void Node :: updateSimplexVolumetricStrain(const Vector & fullDoFs){
+    if(simplex) simplex->computeVolumetricStrain(fullDoFs);
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs

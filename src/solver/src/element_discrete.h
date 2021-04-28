@@ -2,6 +2,7 @@
 #define _ELEMENT_DISCRETE_H
 
 #include "element.h"
+#include "simplex.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -18,6 +19,9 @@ protected:
     Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;
     virtual void setIntegrationPointsAndWeights();
+
+    vector< Simplex * > simplices;
+    double volumetricStrain;
 
 public:
     RigidBodyContact(const unsigned dim);
@@ -45,6 +49,8 @@ public:
     Point giveT2() const { return t2; };
     double giveVolume(unsigned nodenum) const;
     double giveVolume() const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    double giveVolumetricStrain(){return volumetricStrain;};
 };
 
 //////////////////////////////////////////////////////////
@@ -54,12 +60,14 @@ class Transp1D; //forward declaration
 class RigidBodyContactCoupled : public RigidBodyContact
 {
 protected:
-    vector< Transp1D * >friends; //transport elements involved in computation
+    double averagePressure;
+    double volumetricStrainRate;
 public:
     RigidBodyContactCoupled(const unsigned dim);
     ~RigidBodyContactCoupled() {};
-    void addNewFriend(Transp1D * f);
-    virtual void collectInformationsFromNeigborhood();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    double giveVolumetricStrainRate(){return volumetricStrain;};
+    double giveAveragePressure(){return averagePressure;};
 };
 
 //////////////////////////////////////////////////////////
@@ -90,6 +98,7 @@ protected:
     Point normal;
     double length, area;
     bool BolanderCapacityMatrix;
+    double averagePressure;
 
     virtual void checkNodeType() const;
     virtual void setIntegrationPointsAndWeights();
@@ -110,6 +119,7 @@ public:
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     vector < Node* > giveVertices() const { return vert;};
+    double giveAveragePressure();
 };
 
 //////////////////////////////////////////////////////////
@@ -121,12 +131,11 @@ private:
     vector< RigidBodyContact * >friends; //mechanical elements involved in computation
     vector< double >friendsweight;  //weight of mechanical elements
 
-    void findFriends2D(ElementContainer *elemcont);
-    void findFriends3D(ElementContainer *elemcont);
+    double crackInNeighborhood; ///crack parameter to account for crack opening
+    void findFriendsFromSimplices();
 
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
-    void findElementFriends(ElementContainer *elemcont);
     ~Transp1DCoupled() {};
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
@@ -135,6 +144,7 @@ public:
     void addNewFriend(RigidBodyContact * f, double weight );
     unsigned giveNumOfFriends() const {return friends.size();};
     virtual void collectInformationsFromNeigborhood();
+    double giveCrackOpeningInNeigborhood();
 };
 
 #endif  /* _ELEMENT_DISCRETE_H */

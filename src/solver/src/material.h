@@ -18,7 +18,7 @@ class MaterialStatus
 private:
 
 public:
-    MaterialStatus(Material *m, Element *e) { name = "basic mat. status"; mat = m; element = e; };
+    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum;};
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
     virtual ~MaterialStatus() {};
     string whoAmI() { return name; }
@@ -36,12 +36,12 @@ public:
     virtual double giveMassConstant() const { return 0; };
     virtual double giveDampingConstant() const { return 0; };
     virtual void setEigenStrain(Vector &x);
-    virtual void setID(unsigned i) { idx = i; };
+    //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(istringstream &iss) {
         std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
-    virtual bool isElastic(const bool &now = false) const;
+    virtual bool isElastic(const bool &now = false) const;    
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
@@ -62,7 +62,7 @@ public:
     Material() { name = "basic material"; };
     virtual ~Material() {};
     virtual void readFromLine(istringstream &iss) { ( void ) iss; };
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e) { MaterialStatus *newStatus = new MaterialStatus(this, e); return newStatus; };
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum) { MaterialStatus *newStatus = new MaterialStatus(this, e, ipnum); return newStatus; };
     string whoAmI() { return name; }
     string giveName() { return name; }
     unsigned giveId() { return id; }
@@ -82,7 +82,7 @@ class TrsprtMaterialStatus : public MaterialStatus
 protected:
     double effConductivity, temp_effConductivity;
 public:
-    TrsprtMaterialStatus(TrsprtMaterial *m, Element *e);
+    TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~TrsprtMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain); //terminology from mechanics, it returns flux
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
@@ -112,7 +112,7 @@ public:
     void setPermeability(double new_p) { permeability = new_p; };
     void setParamA(double new_a) { a = new_a; };
     void readFromLine(istringstream &iss);
-    MaterialStatus *giveNewMaterialStatus(Element *e);
+    MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
 };
 
 //////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ class TrsprtCoupledMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
 public:
-    TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e);
+    TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~TrsprtCoupledMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
@@ -140,7 +140,7 @@ public:
     TrsprtCoupledMaterial() { name = "coupled transport material"; };
     ~TrsprtCoupledMaterial() {};
     void readFromLine(istringstream &iss);
-    MaterialStatus *giveNewMaterialStatus(Element *e);
+    MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveTurtuosity() { return crack_turtuosity; };
 };
 
@@ -154,7 +154,7 @@ class ElasticMechMaterialStatus : public MaterialStatus
 protected:
 
 public:
-    ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e);
+    ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~ElasticMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
@@ -173,7 +173,7 @@ public:
     ElasticMechMaterial() { name = "elastic tensorial mechanical material"; planeStress = true; };
     ~ElasticMechMaterial() {};
     virtual void readFromLine(istringstream &iss);
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveElasticModulus() const { return E; }
     double givePoissonsRatio() const { return nu; }
     double giveDensity() const { return density; };
@@ -190,7 +190,7 @@ class CosseratMechMaterialStatus : public ElasticMechMaterialStatus
 protected:
 
 public:
-    CosseratMechMaterialStatus(CosseratMechMaterial *m, Element *e);
+    CosseratMechMaterialStatus(CosseratMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~CosseratMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
@@ -207,7 +207,7 @@ public:
     CosseratMechMaterial() { name = "elastic Cosserat mechanical material"; planeStress = true; };
     ~CosseratMechMaterial() {};
     virtual void readFromLine(istringstream &iss);
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveCharacteristicLength() const { return lc; }
     double giveCosseratShearParam() const { return muc; }
 };
@@ -222,7 +222,7 @@ class DisMechMaterialStatus : public MaterialStatus
 protected:
 
 public:
-    DisMechMaterialStatus(DisMechMaterial *m, Element *e);
+    DisMechMaterialStatus(DisMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~DisMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain);
@@ -242,7 +242,7 @@ public:
     ~DisMechMaterial() {};
     double giveDensity() { return density; };
     virtual void readFromLine(istringstream &iss);
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveAlpha() const { return alpha; }
     double giveE0() const { return E0; }
 };

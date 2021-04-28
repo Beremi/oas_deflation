@@ -31,7 +31,7 @@ void Element :: setIntegrationPointsAndWeights() {
     inttype->init();
     stats.resize(inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
-        stats [ k ] = mat->giveNewMaterialStatus(this);
+        stats [ k ] = mat->giveNewMaterialStatus(this,k);
         inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k), nodes) );
     }
 };
@@ -89,7 +89,6 @@ vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
 void Element :: initMaterialStatuses() {
     unsigned num = 0;
     for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num++ ) {
-        ( * m )->setID(num);
         ( * m )->init();
     }
 }
@@ -141,9 +140,9 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
-            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs) );  //frozen internal variables
+            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs));  //frozen internal variables
         } else {
-            stress = stats [ i ]->giveStress(giveStrain(i, DoFs) ); //full evaluation of stress including change of state variables
+            stress = stats [ i ]->giveStress(giveStrain(i, DoFs)); //full evaluation of stress including change of state variables
         }
         intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
     }
@@ -197,12 +196,10 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
 
 //////////////////////////////////////////////////////////
 void Element :: changeMaterial(Material *newmat) {
-    for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
-        delete * e;
-    }
     this->mat = newmat;
-    for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
-        * e = this->mat->giveNewMaterialStatus(this);
+    for(unsigned p=0; p<stats.size(); p++){
+        delete stats[p];
+        stats[p] = this->mat->giveNewMaterialStatus(this, p);
     }
     this->initMaterialStatuses();
 }

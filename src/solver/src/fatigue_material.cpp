@@ -12,7 +12,7 @@ double get_Lambda(const double &E_b, const double &K, const double &alpha, const
 //////////////////////////////////////////////////////////
 // FATIGUE SHEAR MATERIAL STATUS
 
-FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Fatigue Shear mat. status";
 }
 
@@ -473,8 +473,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *FatigueShearMaterial :: giveNewMaterialStatus(Element *e) {
-    FatigueShearMaterialStatus *newStatus = new FatigueShearMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *FatigueShearMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    FatigueShearMaterialStatus *newStatus = new FatigueShearMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -485,7 +485,7 @@ void FatigueShearMaterial :: init() {};
 //////////////////////////////////////////////////////////
 // DAMAGE PLASTIC MATERIAL STATUS
 
-DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Damage Plastic mat. status";
 }
 
@@ -872,8 +872,8 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e) {
-    DamagePlasticMaterialStatus *newStatus = new DamagePlasticMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DamagePlasticMaterialStatus *newStatus = new DamagePlasticMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -885,7 +885,7 @@ void DamagePlasticMaterial :: init() {};
 //////////////////////////////////////////////////////////
 // normal (damagePlastic) and tangential (cumulative slip - fatigue shear) const. laws together
 
-FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e) : FatigueShearMaterialStatus(m, e), DamagePlasticMaterialStatus(m, e) {
+FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e, unsigned ipnum) : FatigueShearMaterialStatus(m, e, ipnum), DamagePlasticMaterialStatus(m, e, ipnum) {
     FatigueShearMaterialStatus :: name = "Fatigue mat. status";
     DamagePlasticMaterialStatus :: name = "Fatigue mat. status";
 }
@@ -991,8 +991,8 @@ void FatigueMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *FatigueMaterial :: giveNewMaterialStatus(Element *e) {
-    FatigueMaterialStatus *newStatus1 = new FatigueMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *FatigueMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    FatigueMaterialStatus *newStatus1 = new FatigueMaterialStatus(this, e, ipnum); //needs to be deleted manually
     FatigueShearMaterialStatus *newStatus = ( FatigueMaterialStatus * ) newStatus1;
     return newStatus;
 };
@@ -1004,7 +1004,7 @@ void FatigueMaterial :: init() {};
 // ALLICHE MATERIAL STATUS
 //////////////////////////////////////////////////////////
 
-AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Alliche mat. status";
 }
 
@@ -1239,8 +1239,8 @@ void AllicheMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *AllicheMaterial :: giveNewMaterialStatus(Element *e) {
-    AllicheMaterialStatus *newStatus = new AllicheMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *AllicheMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    AllicheMaterialStatus *newStatus = new AllicheMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -1251,7 +1251,7 @@ void AllicheMaterial :: init() {};
 //////////////////////////////////////////////////////////
 // DESMORAT MATERIAL STATUS
 //////////////////////////////////////////////////////////
-DesmoratMaterialStatus :: DesmoratMaterialStatus(DesmoratMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+DesmoratMaterialStatus :: DesmoratMaterialStatus(DesmoratMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Desmorat mat. status";
 }
 
@@ -1417,8 +1417,8 @@ void DesmoratMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *DesmoratMaterial :: giveNewMaterialStatus(Element *e) {
-    DesmoratMaterialStatus *newStatus = new DesmoratMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *DesmoratMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DesmoratMaterialStatus *newStatus = new DesmoratMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 

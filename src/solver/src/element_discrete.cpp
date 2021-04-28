@@ -307,7 +307,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
 
     inttype->setIPWeight(0, length * area);  // NOTE JK: this works for stiffness matrix, since there is actually A * L, but not for the mass matrix, where volume should be taken (divide by dim) // JE: Agreed, independent integration of mass has been included for this element
 
-    stats [ 0 ] = mat->giveNewMaterialStatus(this);
+    stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
 }
 
 //////////////////////////////////////////////////////////
@@ -321,6 +321,11 @@ void RigidBodyContact :: init() {
     for(unsigned i=0; i<2; i++){
         t = dynamic_cast< Particle* >(nodes[i]);
         t->attachRBCElement(this);
+    }
+    
+    //create simplices
+    for(auto &v: vert){
+        simplices.push_back(v->addElementToSimplex(this));
     }
 
     //check that material is DisMechMat
@@ -369,8 +374,9 @@ Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
     return this->R.transpose() * this->giveContactStrainNT(DoFs);
 };
 
+//////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStressXYZ(const Vector &DoFs) {
-    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs) );
+    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs)); //CHECK: why call giveContactStrainNT
 };
 
 //////////////////////////////////////////////////////////
@@ -417,6 +423,24 @@ double RigidBodyContact :: giveVolume(unsigned nodenum) const {
 };
 
 //////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
+
+    //extract volumetric strains from simplices
+    volumetricStrain = 0;
+    unsigned validSnum=0;
+    for(auto &s: simplices){
+        if (s->isValid()){
+            validSnum ++;
+            volumetricStrain += s->giveVolumetricStrain();
+        }        
+    }
+    if (validSnum>0) volumetricStrain /= validSnum;
+
+    return Element :: giveStrain(i, DoFs);
+};
+
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
 RigidBodyContactCoupled :: RigidBodyContactCoupled(const unsigned dim) : RigidBodyContact(dim) {
@@ -424,34 +448,22 @@ RigidBodyContactCoupled :: RigidBodyContactCoupled(const unsigned dim) : RigidBo
 }
 
 //////////////////////////////////////////////////////////
-void RigidBodyContactCoupled :: addNewFriend(Transp1D * f){
-    friends.push_back(f);
-}
+Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 
-
-//////////////////////////////////////////////////////////
-void RigidBodyContactCoupled :: collectInformationsFromNeigborhood(){
-    vector< Transp1D * > contsA, contsB;
-    TrsNode * v;
-    TrsNode * vold;
-    vold = dynamic_cast< TrsNode * >(vert.back()); 
-    if(ndim==2) vold=nullptr; //disregards first possible friend in 2D because it is found in next loop run
-
-    for(auto vv: vert){
-        v = dynamic_cast< TrsNode * >(vv); 
-        if (v && vold){
-            contsA = v->giveAttachedTrsprtElems();
-            contsB = vold->giveAttachedTrsprtElems();
-            for(Transp1D *p: contsA){
-                if(std::find(contsB.begin(), contsB.end(),p)!=contsB.end()){
-                    addNewFriend(p);
-                    continue;
-                }
-            }
-        }
-        vold = v;
+    //extract pressure from simplices
+    averagePressure = 0;
+    unsigned validSnum=0;
+    for(auto &s: simplices){
+        if (s->hasPressure()){
+            validSnum ++;
+            averagePressure += s->givePressure();
+        }        
     }
-}
+    if (validSnum>0) averagePressure /= validSnum;
+
+    return RigidBodyContact :: giveStrain(i, DoFs);
+};
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -678,7 +690,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     }
 
     inttype->setIPWeight(0, length * area);   // NOTE JK: should not this be divided by dimension? Otherwise you integrate dim-times volume that is actually there (this is what caused problems in study on unstructured grid for FDM contribution)
-    stats [ 0 ] = mat->giveNewMaterialStatus(this);
+    stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
 }
 
 //////////////////////////////////////////////////////////
@@ -774,14 +786,16 @@ double Transp1D :: giveVolume(unsigned nodenum) const {
 
 //////////////////////////////////////////////////////////
 Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
-    Vector pressureGradPlain = Element :: giveStrain(i, DoFs);
-
-    Vector strain(2);
-    strain [ 0 ] = pressureGradPlain [ 0 ];
-    strain [ 1 ] = ( DoFs [ 0 ] + DoFs [ 1 ] ) / 2.;
-
-    return strain;
+    averagePressure = ( DoFs [ 0 ] + DoFs [ 1 ] ) / 2.;
+    return Element :: giveStrain(i, DoFs);
 };
+
+
+//////////////////////////////////////////////////////////
+double Transp1D :: giveAveragePressure() {
+    return averagePressure;
+}
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -789,39 +803,6 @@ Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: init() {
     Transp1D :: init(); //calling base class method;
-}
-
-//////////////////////////////////////////////////////////
-void Transp1DCoupled :: findFriends2D(ElementContainer *elemcont) {
-    for ( unsigned k = 0; k < elemcont->giveSize(); k++ ) {
-        RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( elemcont->giveElement(k) );
-        if ( rbc ) {
-            if ( ( rbc->giveNode(0) == vert [ 0 ] && rbc->giveNode(1) == vert [ 1 ] ) || ( rbc->giveNode(0) == vert [ 1 ] && rbc->giveNode(1) == vert [ 0 ] ) ) {
-                friends.push_back(rbc);
-                friendsweight.push_back(rbc->giveArea() );
-                break; //only one friend avalilable in 2D
-            }
-        }
-    }
-}
-
-//////////////////////////////////////////////////////////
-void Transp1DCoupled :: findFriends3D(ElementContainer *elemcont) {
-    //ip point is centroid
-    Point centroid = inttype->giveIPLocation(0);
-    unsigned i = vert.size() - 1;
-    for ( unsigned j = 0; j < vert.size(); i = j, j++ ) {   //circle around the face
-        for ( unsigned k = 0; k < elemcont->giveSize(); k++ ) {
-            RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( elemcont->giveElement(k) );
-            if ( rbc ) {
-                if ( ( rbc->giveNode(0) == vert [ i ] && rbc->giveNode(1) == vert [ j ] ) || ( rbc->giveNode(0) == vert [ j ] && rbc->giveNode(1) == vert [ i ] ) ) {
-                    friends.push_back(rbc);
-                    friendsweight.push_back( ( centroid - ( vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 2. ).norm() );
-                    break; //only one friend avalilable in 3D for given pair
-                }
-            }
-        }
-    }
 }
 
 //////////////////////////////////////////////////////////
@@ -843,79 +824,62 @@ double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
 }
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: findElementFriends(ElementContainer *elemcont) {
-
-    //TODO: delete this function, it is solved elsewhere
-    return;
-
-
-    if ( ndim == 2 ) {
-        findFriends2D(elemcont);
-    } else if ( ndim == 3 ) {
-        findFriends3D(elemcont);
-    }
-
-    cout << "Found friends X" << endl;
-    for(unsigned p=0; p<friends.size(); p++){
-        cout << friends[p] << " " << friendsweight[p] << endl;
-    }
-
-    //collect nodes from friend elements
-}
-
-//////////////////////////////////////////////////////////
 void Transp1DCoupled :: addNewFriend(RigidBodyContact * f, double weight ){
     friends.push_back(f);
     friendsweight.push_back(weight);
 }
 
 //////////////////////////////////////////////////////////
+double Transp1DCoupled :: giveCrackOpeningInNeigborhood() {
+    return crackInNeighborhood;
+}
+
+//////////////////////////////////////////////////////////
 Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-    Vector pressureGradPlain = Transp1D :: giveStrain(i, DoFs);
 
-    Vector pressureGrad(2 + 2 * friends.size() );
-    pressureGrad [ 0 ] = pressureGradPlain [ 0 ];
-    pressureGrad [ 1 ] = pressureGradPlain [ 1 ];
-    pressureGrad [ 2 ] = area;
-
+    crackInNeighborhood = 0;
     double elem_crack_opening;
     size_t m = 0;
     for ( auto &f: friends ) {
         elem_crack_opening = 0;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
             elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
-        }
-        pressureGrad [ 2 * m + 3 ] += elem_crack_opening / f->giveNumIP(); //average crack opening in friend mechanical element
-        pressureGrad [ 2 * m + 4 ] = friendsweight [ m ]; //crack length in friend mechanical element
+        }      
+        crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ]; 
         m++;
-    }
-
-    return pressureGrad;
+    } 
+    return Transp1D :: giveStrain(i, DoFs);
 };
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: collectInformationsFromNeigborhood(){
-    vector< RigidBodyContact * > contsA, contsB;
-    Particle * v;
-    Particle * vold;
-    double weight=0;
-    vold = dynamic_cast< Particle * >(vert.back()); 
-    if(ndim==2) vold=nullptr; //disregards first possible friend in 2D because it is found in next loop run
+    findFriendsFromSimplices();
+}
 
-    for(auto vv: vert){
-        v = dynamic_cast< Particle * >(vv); 
-        if (v && vold){
-            contsA = v->giveAttachedRBCs();
-            contsB = vold->giveAttachedRBCs();
-            for(RigidBodyContact *p: contsA){
-                if(std::find(contsB.begin(), contsB.end(),p)!=contsB.end()){
-                    if (ndim==2)     weight = p->giveArea();
-                    else if(ndim==3) weight = ( ip_locs[0] - ( vold->givePoint() + v->givePoint() ) / 2. ).norm();
-                    addNewFriend(p, weight );
-                    continue;
-                }
-            }
+//////////////////////////////////////////////////////////
+void Transp1DCoupled :: findFriendsFromSimplices(){
+
+    unordered_set < RigidBodyContact * > allNeighbors;
+    vector< RigidBodyContact* > simplexElems;
+    Simplex* s;
+
+    //collect all possible candidates
+    for(auto &n: nodes){
+        s = n->giveSimplex();
+        if(s){
+            simplexElems = s->giveElements();
+            for(auto &k: simplexElems) allNeighbors.insert(k);
         }
-        vold = v;
+    }
+    //search
+    double weight=0;
+    vector < Node * > verts;
+    for(auto &rbc:allNeighbors){
+        verts = rbc->giveVertices();
+        if( find(verts.begin(), verts.end(),nodes[0])!=verts.end() && find(verts.begin(), verts.end(),nodes[1])!=verts.end() ){
+           if (ndim==2)     weight = rbc->giveArea();
+           else if(ndim==3) weight = ( inttype->giveIPLocation(0) - ( rbc->giveNode(0)->givePoint() + rbc->giveNode(1)->givePoint() ) / 2. ).norm();
+           addNewFriend(rbc, weight );  
+        }
     }
 }

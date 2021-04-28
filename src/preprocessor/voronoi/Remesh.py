@@ -12,6 +12,7 @@ import scipy.spatial as ss
 SHOW_PLOT = False
 
 def loadNodes(filename, dim):
+    # print("loading %s" % (filename))
     if not os.path.isfile(filename):
         raise FileNotFoundError(
                 errno.ENOENT, os.strerror(errno.ENOENT), filename)
@@ -26,7 +27,8 @@ def loadNodes(filename, dim):
     try:
         len(node_coords[0])
     except Exception as e:
-        print(e)
+        print("loading %s: " % (filename))
+        print(e, end=', probably only one entry in the file\n')
         return [ node_coords,  ]
     return [np.array(coor) for coor in node_coords.tolist()]
 
@@ -109,14 +111,19 @@ if __name__ == '__main__':
     useExistingFineNodes = bool(int(sys.argv[6]))
 
     if useExistingFineNodes:
+        # print("loading existing fine geoemtry <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+        # print("len nodes before: %d" % (len(node_coords_ini)))
         node_coords_ini.extend(loadNodes(os.path.join(remeshDir, "nodesFine.inp"), model.dimension))
+        # print("len nodes after: %d" % (len(node_coords_ini)))
 
     # print(node_coords_ini)
-    # exit(1)
     if len(sys.argv) > 7:
         minDistRemesh = float(sys.argv[7])
     else:
         minDistRemesh = model.minDist / 3.
+
+    # print("radiusRemesh %lg \nradiusTransitional %lg \nminDistRemesh %lg" % (
+    #     radiusRemesh, radiusTransitional, minDistRemesh))
 
     # print("--- before ------------------------------------")
     # print(len(node_coords_ini))
@@ -140,6 +147,7 @@ if __name__ == '__main__':
                         dim=model.dimension,
                         useExistingFineNodes=useExistingFineNodes)
 
+    # exit(1)
     # print("--- after --------------------------------------")
     # print(len(node_coords_ini))
     # print(len(node_coords))
