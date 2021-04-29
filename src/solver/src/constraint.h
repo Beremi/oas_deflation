@@ -89,8 +89,6 @@ public:
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };
     size_t giveSize() { return constraints.size(); };
     bool isActive() const { return !constraints.empty(); }
-    bool isTimeDependent() { return time_dependent; }
-    void setTimeDepenencyOn() { this->time_dependent = true; };
 
     std :: vector< JointDoF * > :: iterator begin() { return constraints.begin(); }
     std :: vector< JointDoF * > :: iterator end() { return constraints.end(); }
