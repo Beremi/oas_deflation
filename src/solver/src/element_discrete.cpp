@@ -316,13 +316,6 @@ void RigidBodyContact :: init() {
 
     checkNodeType();
 
-    //register the elements at node
-    Particle * t;
-    for(unsigned i=0; i<2; i++){
-        t = dynamic_cast< Particle* >(nodes[i]);
-        t->attachRBCElement(this);
-    }
-    
     //create simplices
     for(auto &v: vert){
         simplices.push_back(v->addElementToSimplex(this));
@@ -365,18 +358,18 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveContactStrainNT(const Vector &DoFs) const {
-    return Bs [ 0 ] * DoFs;
+Vector RigidBodyContact :: giveContactStrainNT() const {
+    return stats[0]->giveTempStrain();
 };
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveContactStrainXYZ(const Vector &DoFs) const {
-    return this->R.transpose() * this->giveContactStrainNT(DoFs);
+Vector RigidBodyContact :: giveContactStrainXYZ() const {
+    return this->R.transpose() * this->giveContactStrainNT();
 };
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveContactStressXYZ(const Vector &DoFs) {
-    return this->R.transpose() * this->giveMatStatus(0)->giveStressWithFrozenIntVars(this->giveContactStrainNT(DoFs)); //CHECK: why call giveContactStrainNT
+Vector RigidBodyContact :: giveContactStressXYZ() {
+    return this->R.transpose() * stats[0]->giveTempStress(); 
 };
 
 //////////////////////////////////////////////////////////
@@ -439,6 +432,10 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
     return Element :: giveStrain(i, DoFs);
 };
 
+//////////////////////////////////////////////////////////
+Matrix RigidBodyContact :: giveDampingMatrix() const {
+    return giveStiffnessMatrix("elastic")*1e-15;           //rough fix of zeros, here can be anything
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -540,7 +537,6 @@ Transp1D :: Transp1D(const unsigned dim) {
 //////////////////////////////////////////////////////////
 void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num, num2;
-
     iss >> num;
     nodes [ 0 ] = fullnodes->giveNode(num);
 
@@ -698,13 +694,6 @@ void Transp1D :: init() {
     Element :: init(); //calling base class method;
 
     checkNodeType();
-    
-    //register the elements at node
-    TrsNode * t;
-    for(unsigned i=0; i<2; i++){
-        t = dynamic_cast< TrsNode* >(nodes[i]);
-        t->attachTrsprtElement(this);
-    }
 
     //check that material is TrsprtMaterial
     TrsprtMaterial *p = dynamic_cast< TrsprtMaterial * >( mat );

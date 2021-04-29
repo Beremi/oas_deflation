@@ -116,7 +116,9 @@ void DiscreteTransportRVEMaterialStatus :: collectStresses() {
 }
 
 /////////////////////////////////./////////////////////////
-Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain) {
+Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    (void) timeStep;
+
     temp_strain.resize(giveStrainSize(ndim) );
     for ( unsigned i = 0; i < temp_strain.size(); i++ ) {
         temp_strain [ i ] = strain [ i ];
@@ -156,9 +158,9 @@ Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 /////////////////////////////////./////////////////////////
-Vector DiscreteTransportRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector DiscreteTransportRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     //TODO: this is WRONG, needs fix in future
-    return giveStress(strain);
+    return giveStress(strain, timeStep);
 }
 
 /////////////////////////////////./////////////////////////
@@ -568,7 +570,9 @@ DiscreteTransportRVEMaterialPrecomputedStatus :: DiscreteTransportRVEMaterialPre
 }
 
 /////////////////////////////////./////////////////////////
-Vector DiscreteTransportRVEMaterialPrecomputedStatus :: giveStress(const Vector &strain) {
+Vector DiscreteTransportRVEMaterialPrecomputedStatus :: giveStress(const Vector &strain, double timeStep) {
+    (void) timeStep;    
+
     double macro_pressure = strain [ strain.size() - 1 ];
     temp_strain.resize(giveStrainSize(ndim) );
     for ( unsigned i = 0; i < temp_strain.size(); i++ ) {
@@ -583,8 +587,8 @@ Vector DiscreteTransportRVEMaterialPrecomputedStatus :: giveStress(const Vector 
 }
 
 /////////////////////////////////./////////////////////////
-Vector DiscreteTransportRVEMaterialPrecomputedStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
-    return giveStress(strain);
+Vector DiscreteTransportRVEMaterialPrecomputedStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    return giveStress(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
@@ -616,7 +620,7 @@ void DiscreteTransportRVEMaterialPrecomputedStatus :: init() {
         Vector stress;
         for ( unsigned i = 0; i < ndim; i++ ) {
             strainDoFs [ i ] = 1.;
-            stress = DiscreteTransportRVEMaterialStatus :: giveStress(strainDoFs);
+            stress = DiscreteTransportRVEMaterialStatus :: giveStress(strainDoFs, -1);
             strainDoFs [ i ] = 0.;
             for ( unsigned j = 0; j < ndim; j++ ) {
                 stiff [ i ] [ j ] = stress [ j ];
@@ -712,7 +716,7 @@ void DiscreteCoupledRVEMaterialStatus ::  update(){
 } 
 
 //////////////////////////////////////////////////////////
-Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain){
+Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, double timeStep){
     unsigned sizeM = mechRVEstat->giveStrainSize();
     unsigned sizeT = trspRVEstat->giveStrainSize();
     temp_strain.resize(sizeM+sizeT);
@@ -727,8 +731,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain){
     }
     strainT[sizeT] = strain[sizeT+sizeM]; //macroscopic pressure
 
-    Vector stressM = mechRVEstat->giveStress(strainM);
-    Vector stressT = trspRVEstat->giveStress(strainT); 
+    Vector stressM = mechRVEstat->giveStress(strainM, timeStep);
+    Vector stressT = trspRVEstat->giveStress(strainT, timeStep); 
 
     temp_stress.resize(sizeM+sizeT);
     for(i=0; i<sizeM; i++){
@@ -741,8 +745,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain){
 }
 
 //////////////////////////////////////////////////////////
-Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain){
-    return giveStress(strain);
+Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep){
+    return giveStress(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////

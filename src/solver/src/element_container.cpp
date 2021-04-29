@@ -396,7 +396,7 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) cons
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen) {
+void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f *= 0;  // clear array
@@ -411,7 +411,7 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
             }
-            elForces = ( * e )->giveInternalForces(elDoFvalues, frozen);
+            elForces = ( * e )->giveInternalForces(elDoFvalues, frozen, timeStep);
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 full_f [ elDoFs [ i ] ] += elForces [ i ];
             }
@@ -456,13 +456,13 @@ void ElementContainer :: integrateInertiaForces(const Vector &full_a, Vector &fu
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f) {
-    integrateInternalForces(full_r, full_f, false);
+void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep) {
+    integrateInternalForces(full_r, full_f, false, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f) {
-    integrateInternalForces(full_r, full_f, true);
+void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep) {
+    integrateInternalForces(full_r, full_f, true, timeStep);
 }
 
 //////////////////////////////////////////////////////////

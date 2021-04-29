@@ -80,6 +80,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     MarsMaterial *newmat = new MarsMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("CoupledMarsMaterial") == 0 ) {
+                    CoupledMarsMaterial *newmat = new CoupledMarsMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("FatigueShearMaterial") == 0 ) {
                     FatigueShearMaterial *newmat = new FatigueShearMaterial();
                     newmat->readFromLine(iss);

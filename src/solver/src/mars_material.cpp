@@ -220,15 +220,15 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 }
 
 //////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveStress(const Vector &strain) {
+Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(addEigenStrain(strain));
-    return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain);
+    return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     temp_strain = strain;
-    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain) * ( 1. - temp_damage );
+    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );
     return temp_stress;
 }
 
@@ -356,16 +356,25 @@ double CoupledMarsMaterialStatus :: giveValue(string code) const {
     }
 }
 
-//////////////////////////////////////////////////////////
-Vector CoupledMarsMaterialStatus :: giveStress(const Vector &strain) {
-    MarsMaterialStatus :: giveStress(strain);  
 
+//////////////////////////////////////////////////////////
+void CoupledMarsMaterialStatus :: updateStressByBiotEffect(){
+    RigidBodyContactCoupled* crbc = static_cast< RigidBodyContactCoupled* > (element);
+    CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
+    temp_stress[0] -= m->giveBiotCoeff()*crbc->giveAveragePressure();
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledMarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    MarsMaterialStatus :: giveStress(strain, timeStep);  
+    updateStressByBiotEffect();
     return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
-    MarsMaterialStatus :: giveStressWithFrozenIntVars(strain);
+Vector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+    updateStressByBiotEffect();
     return temp_stress;
 }
 
@@ -385,4 +394,23 @@ MaterialStatus *CoupledMarsMaterial :: giveNewMaterialStatus(Element *e, unsigne
 
 //////////////////////////////////////////////////////////
 void CoupledMarsMaterial :: readFromLine(istringstream &iss){
+    MarsMaterial :: readFromLine(iss);
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+
+    string param;
+    bool bbiot = false;
+
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("biot_coeff") == 0 ) {
+            bbiot = true;
+            iss >> biotCoeff;
+        }
+    }
+    if ( !bbiot ) {
+        cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
 }

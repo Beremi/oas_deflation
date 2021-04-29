@@ -52,7 +52,7 @@ public:
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     vector< unsigned >giveDoFs() const { return DoFids; };
     vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };

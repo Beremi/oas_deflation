@@ -95,13 +95,13 @@ void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *e
             }
             rbc = static_cast< RigidBodyContact * >( e );
 
-            strainNT = rbc->giveContactStrainNT(elDoFvalues);
+            strainNT = rbc->giveContactStrainNT();
             for ( unsigned i = 0; i < indeces.size(); i++ ) {
                 if ( codes [ indeces [ i ] ].compare("strainXYZ") == 0 ) {
-                    vect_data = rbc->giveContactStrainXYZ(elDoFvalues);
+                    vect_data = rbc->giveContactStrainXYZ();
                     // vect_data = matrix_vector_multiply(rbc->giveRMatrix().transpose(),strainNT);
                 } else if ( codes [ indeces [ i ] ].compare("stressXYZ") == 0 ) {
-                    vect_data = rbc->giveInternalForces(elDoFvalues, false) / rbc->giveArea();
+                    vect_data = rbc->giveContactStressXYZ();;
                 } else {
                     vect_data = vect_ini;
                 }
@@ -140,7 +140,7 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
             }
             rbc = static_cast< RigidBodyContact * >( e );
-            strainNT = rbc->giveContactStrainNT(elDoFvalues);
+            strainNT = rbc->giveContactStrainNT();
             for ( unsigned i = 0; i < codes.size(); i++ ) {
                 if ( codes_positions [ i ] ) {
                     if ( codes [ i ].compare("strainN") == 0 ) {
@@ -163,7 +163,7 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
                         }
                     } else if ( codes [ i ].rfind("stress", 0) == 0 ) {
                         MaterialStatus *stats = static_cast< MaterialStatus * >( rbc->giveMaterialStats() [ 0 ] );
-                        Vector stressNT = stats->giveStress(strainNT);
+                        Vector stressNT = stats->giveTempStress();
                         if ( codes [ i ].compare("stressN") == 0 ) {
                             data = stressNT [ 0 ];
                         } else if ( codes [ i ].compare("stressT") == 0 ) {

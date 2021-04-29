@@ -28,8 +28,8 @@ public:
     virtual void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
-    virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(istringstream &iss);
@@ -69,25 +69,27 @@ class CoupledMarsMaterial;
 class CoupledMarsMaterialStatus : public MarsMaterialStatus
 {
 private:
+    void updateStressByBiotEffect();
 
 public:
     CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
     ~CoupledMarsMaterialStatus(){};
-    virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
     virtual void init();
 };
 
 class CoupledMarsMaterial: public MarsMaterial {
 private:
-
+    double biotCoeff;
 public:
     CoupledMarsMaterial() { name = "Coupled Mars material"; };
     virtual ~CoupledMarsMaterial(){};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus* giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void init();
+    double giveBiotCoeff()const{return biotCoeff;};
 };
 
 #endif /* _MARS_MATERIAL_H */

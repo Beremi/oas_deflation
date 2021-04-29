@@ -75,8 +75,8 @@ public:
     DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
     virtual ~DiscreteTransportRVEMaterialStatus() {};
     virtual void init();
-    virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveDampingConstant() const;
     virtual unsigned giveStrainSize() const {return giveStrainSize(ndim);};
@@ -148,8 +148,8 @@ public:
     virtual void init();
     virtual void update();
 
-    virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual void setEigenStrain(Vector &x);
@@ -186,8 +186,8 @@ public:
     DiscreteTransportRVEMaterialPrecomputedStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
     virtual ~DiscreteTransportRVEMaterialPrecomputedStatus() {};
     virtual void init();
-    virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveDampingConstant() const;
     virtual void update();
@@ -236,8 +236,8 @@ public:
  *  DiscreteRVEMaterialStatus(DiscreteRVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
  *  virtual ~DiscreteRVEMaterialStatus() {};
  *  virtual void init();
- *  virtual Vector giveStress(const Vector &strain);//terminology from mechanics, it returns flux
- *  virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+ *  virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
+ *  virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
  *  virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
  *  virtual double giveDampingConstant() const;
  * };

@@ -25,6 +25,8 @@ void Model :: init(const bool &initial) {     //initialization
 
 //////////////////////////////////////////////////////////
 void Model :: solve() {
+    cout << "solve" << endl; cout.flush();
+    cout << solver->isTerminated() << endl; cout.flush();
     //solution
     while ( !solver->isTerminated() ) {
         auto start_part = std :: chrono :: system_clock :: now();
@@ -37,6 +39,7 @@ void Model :: solve() {
             cout.flush();
         }
     }
+    cout << "solve" << endl; cout.flush();
 }
 
 //////////////////////////////////////////////////////////

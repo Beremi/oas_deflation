@@ -34,9 +34,9 @@ public:
     vector< Node * >giveVertices() const { return vert; };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
-    virtual Vector giveContactStrainNT(const Vector &DoFs) const;
-    virtual Vector giveContactStrainXYZ(const Vector &DoFs) const;
-    virtual Vector giveContactStressXYZ(const Vector &DoFs);
+    virtual Vector giveContactStrainNT() const;
+    virtual Vector giveContactStrainXYZ() const;
+    virtual Vector giveContactStressXYZ();
     virtual Vector transformToLocal(const Vector &DoFs) const;
     virtual Vector transformToGlobal(const Vector &DoFs) const;
 
@@ -51,6 +51,7 @@ public:
     double giveVolume() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     double giveVolumetricStrain(){return volumetricStrain;};
+    virtual Matrix giveDampingMatrix() const;
 };
 
 //////////////////////////////////////////////////////////

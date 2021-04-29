@@ -134,15 +134,15 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen) {
+Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     Vector intF;
     intF.resize(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
-            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs));  //frozen internal variables
+            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
         } else {
-            stress = stats [ i ]->giveStress(giveStrain(i, DoFs)); //full evaluation of stress including change of state variables
+            stress = stats [ i ]->giveStress(giveStrain(i, DoFs), timeStep); //full evaluation of stress including change of state variables
         }
         intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
     }

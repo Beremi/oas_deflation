@@ -714,7 +714,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 
                 stress [ node_id ] += dyadicProduct(
                     (
-                        rbc->giveContactStressXYZ(elDoFvalues)
+                        rbc->giveContactStressXYZ()
                         * rbc->giveArea() // vyhodit
                     )
                     * first
