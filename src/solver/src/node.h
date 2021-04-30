@@ -29,9 +29,9 @@ protected:
     bool isMechanical;
     bool isTransport;
 
-    Simplex* simplex; //simplex used to determine volumetric strain
+    Simplex *simplex; //simplex used to determine volumetric strain
 public:
-    Node() { name = "basic node"; isMechanical = false; isTransport = false; simplex = nullptr;};
+    Node() { name = "basic node"; isMechanical = false; isTransport = false; simplex = nullptr; };
     virtual ~Node() { delete simplex; };
 
     /// A pure virtual member.
@@ -59,10 +59,10 @@ public:
     bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
     void subtructFromPoint(Point *p) { point -= ( * p ); };
     virtual unsigned giveOrderOfForceCode(string code) const;
-    Simplex* addElementToSimplex( RigidBodyContact * rbc );
+    Simplex *addElementToSimplex(RigidBodyContact *rbc);
     void initSimplex();
-    void updateSimplexVolumetricStrain(const Vector & fullDoFs);
-    Simplex* giveSimplex(){return simplex;}
+    void updateSimplexVolumetricStrain(const Vector &fullDoFs);
+    Simplex *giveSimplex() { return simplex; }
 };
 
 //////////////////////////////////////////////////////////
@@ -166,12 +166,12 @@ private:
     double r;  // radius in case of power tessellation
 protected:
 public:
-    CoupledParticle(unsigned dimension) : Particle(dimension) { nDoFs = 3 * ( dim - 1 ) + 1; name = "CoupledParticle";  isTransport = true;};
+    CoupledParticle(unsigned dimension) : Particle(dimension) { nDoFs = 3 * ( dim - 1 ) + 1; name = "CoupledParticle";  isTransport = true; };
     virtual ~CoupledParticle() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
-    bool isDoFMechanical(unsigned k) { if(k<nDoFs-1) return true; else return false; };
-    bool isDoFTransport(unsigned k)  { if(k==nDoFs-1) return true; else return false; };
+    bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) { return true; } else { return false; } };
+    bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) { return true; } else { return false; } };
 };
 
 #endif /* _NODE_H */

@@ -18,7 +18,7 @@ class MaterialStatus
 private:
 
 public:
-    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum;};
+    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; };
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
     virtual ~MaterialStatus() {};
     string whoAmI() { return name; }
@@ -26,23 +26,23 @@ public:
     virtual void init() {};
     virtual void update();
     virtual Vector giveStress(const Vector &strain, double timeStep) { return giveStressWithFrozenIntVars(strain, timeStep); };
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep) { ( void ) strain; (void) timeStep; return Vector(0); };
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep) { ( void ) strain; ( void ) timeStep; return Vector(0); };
     virtual double giveValue(string code) const { ( void ) code; return 0; };
     virtual Vector giveTempStress() const { return temp_stress; };
     virtual Vector giveUpdatedStress() const { return updt_stress; };
     virtual Vector giveTempStrain() const { return temp_strain; };
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; (void) type; return Matrix(0, 0); };
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; ( void ) type; return Matrix(0, 0); };
     virtual double giveMassConstant() const { return 0; };
     virtual double giveDampingConstant() const { return 0; };
     virtual void setEigenStrain(Vector &x);
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(istringstream &iss) {
-        (void) iss;
+        ( void ) iss;
         std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
-    virtual bool isElastic(const bool &now = false) const;    
+    virtual bool isElastic(const bool &now = false) const;
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
@@ -124,7 +124,7 @@ class TrsprtCoupledMaterial;
 class TrsprtCoupledMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
-    double tempVolumetricStrain, volumetricStrain;    
+    double tempVolumetricStrain, volumetricStrain;
 public:
     TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~TrsprtCoupledMaterialStatus() {};
@@ -147,7 +147,7 @@ public:
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveTurtuosity() { return crack_turtuosity; };
-    double giveBiotCoeff()const{return biotCoeff;};
+    double giveBiotCoeff() const { return biotCoeff; };
 };
 
 //////////////////////////////////////////////////////////
@@ -234,7 +234,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     double giveDensity() const;
-    virtual bool isElastic(const bool &now = false) const { (void) now; return true; };
+    virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
 };
 
 //////////////////////////////////////////////////////////

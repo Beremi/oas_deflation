@@ -317,8 +317,8 @@ void RigidBodyContact :: init() {
     checkNodeType();
 
     //create simplices
-    for(auto &v: vert){
-        simplices.push_back(v->addElementToSimplex(this));
+    for ( auto &v: vert ) {
+        simplices.push_back(v->addElementToSimplex(this) );
     }
 
     //check that material is DisMechMat
@@ -359,7 +359,7 @@ Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainNT() const {
-    return stats[0]->giveTempStrain();
+    return stats [ 0 ]->giveTempStrain();
 };
 
 //////////////////////////////////////////////////////////
@@ -369,7 +369,7 @@ Vector RigidBodyContact :: giveContactStrainXYZ() const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStressXYZ() {
-    return this->R.transpose() * stats[0]->giveTempStress(); 
+    return this->R.transpose() * stats [ 0 ]->giveTempStress();
 };
 
 //////////////////////////////////////////////////////////
@@ -417,24 +417,25 @@ double RigidBodyContact :: giveVolume(unsigned nodenum) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
-
     //extract volumetric strains from simplices
     volumetricStrain = 0;
-    unsigned validSnum=0;
-    for(auto &s: simplices){
-        if (s->isValid()){
-            validSnum ++;
+    unsigned validSnum = 0;
+    for ( auto &s: simplices ) {
+        if ( s->isValid() ) {
+            validSnum++;
             volumetricStrain += s->giveVolumetricStrain();
-        }        
+        }
     }
-    if (validSnum>0) volumetricStrain /= validSnum;
+    if ( validSnum > 0 ) {
+        volumetricStrain /= validSnum;
+    }
 
     return Element :: giveStrain(i, DoFs);
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveDampingMatrix() const {
-    return giveStiffnessMatrix("elastic")*1e-15;           //rough fix of zeros, here can be anything
+    return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
 }
 
 //////////////////////////////////////////////////////////
@@ -446,17 +447,18 @@ RigidBodyContactCoupled :: RigidBodyContactCoupled(const unsigned dim) : RigidBo
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-
     //extract pressure from simplices
     averagePressure = 0;
-    unsigned validSnum=0;
-    for(auto &s: simplices){
-        if (s->hasPressure()){
-            validSnum ++;
+    unsigned validSnum = 0;
+    for ( auto &s: simplices ) {
+        if ( s->hasPressure() ) {
+            validSnum++;
             averagePressure += s->givePressure();
-        }        
+        }
     }
-    if (validSnum>0) averagePressure /= validSnum;
+    if ( validSnum > 0 ) {
+        averagePressure /= validSnum;
+    }
 
     return RigidBodyContact :: giveStrain(i, DoFs);
 };
@@ -571,8 +573,9 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-    if(length<1e-8) length=1e-8; //artificial increase of length in case of extremely short voronoi edge
-
+    if ( length < 1e-8 ) {
+        length = 1e-8;           //artificial increase of length in case of extremely short voronoi edge
+    }
     Point t;
     if ( ndim == 2 ) {
         if ( !( vert.size() == 2 ) ) {
@@ -813,7 +816,7 @@ double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
 }
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: addNewFriend(RigidBodyContact * f, double weight ){
+void Transp1DCoupled :: addNewFriend(RigidBodyContact *f, double weight) {
     friends.push_back(f);
     friendsweight.push_back(weight);
 }
@@ -825,7 +828,6 @@ double Transp1DCoupled :: giveCrackOpeningInNeigborhood() {
 
 //////////////////////////////////////////////////////////
 Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-
     crackInNeighborhood = 0;
     double elem_crack_opening;
     size_t m = 0;
@@ -833,69 +835,81 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         elem_crack_opening = 0;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
             elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
-        }      
-        crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ]; 
+        }
+        crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
         m++;
-    } 
+    }
     return Transp1D :: giveStrain(i, DoFs);
 };
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: collectInformationsFromNeigborhood(){
+void Transp1DCoupled :: collectInformationsFromNeigborhood() {
     findFriendsFromSimplices();
 }
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: findFriendsFromSimplices(){
-
-    unordered_set < RigidBodyContact * > allNeighbors;
-    vector< RigidBodyContact* > simplexElems;
-    Simplex* s;
+void Transp1DCoupled :: findFriendsFromSimplices() {
+    unordered_set< RigidBodyContact * >allNeighbors;
+    vector< RigidBodyContact * >simplexElems;
+    Simplex *s;
 
     //collect all possible candidates
-    for(auto &n: nodes){
+    for ( auto &n: nodes ) {
         s = n->giveSimplex();
-        if(s){
+        if ( s ) {
             simplexElems = s->giveElements();
-            for(auto &k: simplexElems) allNeighbors.insert(k);
+            for ( auto &k: simplexElems ) {
+                allNeighbors.insert(k);
+            }
         }
     }
     //search
-    double weight=0;
-    vector < Node * > verts;
-    for(auto &rbc:allNeighbors){
+    double weight = 0;
+    vector< Node * >verts;
+    for ( auto &rbc:allNeighbors ) {
         verts = rbc->giveVertices();
-        if( find(verts.begin(), verts.end(),nodes[0])!=verts.end() && find(verts.begin(), verts.end(),nodes[1])!=verts.end() ){
-           if (ndim==2)     weight = rbc->giveArea();
-           else if(ndim==3) weight = ( inttype->giveIPLocation(0) - ( rbc->giveNode(0)->givePoint() + rbc->giveNode(1)->givePoint() ) / 2. ).norm();
-           addNewFriend(rbc, weight );  
+        if ( find(verts.begin(), verts.end(), nodes [ 0 ]) != verts.end() && find(verts.begin(), verts.end(), nodes [ 1 ]) != verts.end() ) {
+            if ( ndim == 2 ) {
+                weight = rbc->giveArea();
+            } else if ( ndim == 3 ) {
+                weight = ( inttype->giveIPLocation(0) - ( rbc->giveNode(0)->givePoint() + rbc->giveNode(1)->givePoint() ) / 2. ).norm();
+            }
+            addNewFriend(rbc, weight);
         }
     }
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1DCoupled :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+Vector Transp1DCoupled :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     Vector intF = Element :: giveInternalForces(DoFs, frozen, timeStep);
-    
+
     //Biot effect
     double volStrain = 0;
-    Simplex *s0 = nodes[0]->giveSimplex();
-    Simplex *s1 = nodes[1]->giveSimplex();
-    if(!s0){
-        if(s1) volStrain = s1->giveVolumetricStrain();
-    } else if(!s1){
-        if(s0) volStrain = s0->giveVolumetricStrain();
+    Simplex *s0 = nodes [ 0 ]->giveSimplex();
+    Simplex *s1 = nodes [ 1 ]->giveSimplex();
+    if ( !s0 ) {
+        if ( s1 ) {
+            volStrain = s1->giveVolumetricStrain();
+        }
+    } else if ( !s1 ) {
+        if ( s0 ) {
+            volStrain = s0->giveVolumetricStrain();
+        }
     } else {
-        if( (s0->isValid() && s1->isValid()) || (!s0->isValid() && !s1->isValid()) ) volStrain = (s0->giveVolumetricStrain() + s1->giveVolumetricStrain())/2.;
-        else if (s0->isValid()) volStrain = s0->giveVolumetricStrain();
-        else volStrain = s1->giveVolumetricStrain();
-    } 
-
-    TrsprtCoupledMaterialStatus * cstat = static_cast < TrsprtCoupledMaterialStatus *> (stats[0]);
-    double volumetricBiotPart = cstat->computeBiotEffect(volStrain, timeStep);    
-    for(unsigned i=0; i<2; i++){
-        intF[i] -= volumetricBiotPart*giveVolume(i);
+        if ( ( s0->isValid() && s1->isValid() ) || ( !s0->isValid() && !s1->isValid() ) ) {
+            volStrain = ( s0->giveVolumetricStrain() + s1->giveVolumetricStrain() ) / 2.;
+        } else if ( s0->isValid() ) {
+            volStrain = s0->giveVolumetricStrain();
+        } else                                                                {
+            volStrain = s1->giveVolumetricStrain();
+        }
     }
-  
+
+    TrsprtCoupledMaterialStatus *cstat = static_cast< TrsprtCoupledMaterialStatus * >( stats [ 0 ] );
+    double volumetricBiotPart = cstat->computeBiotEffect(volStrain, timeStep);
+    for ( unsigned i = 0; i < 2; i++ ) {
+        intF [ i ] -= volumetricBiotPart * giveVolume(i);
+    }
+
     return intF;
 }

@@ -227,7 +227,6 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("symsolver_type") == 0 ) {
                 inputfile >> symsolver_type;
             }
-
         }
         inputfile.close();
     }
@@ -561,10 +560,11 @@ void SteadyStateNonLinearSolver :: solve() {
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
                 }
-                nodes->giveFullDoFArray(ddr, full_ddr);
+                //nodes->giveFullDoFArray(ddr, full_ddr);
                 nodes->giveFullDoFArray(ddf, full_ddf);
-                load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
-                ddr = ddr + load_mult * ddf;
+                //load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
+                load_mult = idc->giveMultiplierCorrection(trial_r, full_ddf, time);
+                ddr += load_mult * ddf;
                 idc_time += idc_dt * load_mult;
 
                 load *= 0;
@@ -752,7 +752,7 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt*(1-alpha_f) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -935,7 +935,7 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt*(1-alpha_f));
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 

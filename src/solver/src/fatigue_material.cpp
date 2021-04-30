@@ -108,8 +108,8 @@ double get_Lambda(const double &E_b, const double &K, const double &alpha, const
 Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
-    (void) timeStep;
-    
+    ( void ) timeStep;
+
     Vector stress(strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
@@ -260,7 +260,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
-    (void) timeStep;
+    ( void ) timeStep;
 
     Vector stress(strain.size() );
 
@@ -576,7 +576,7 @@ void DamagePlasticMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
-    (void) timeStep;
+    ( void ) timeStep;
     Vector stress(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -682,7 +682,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
 
 //////////////////////////////////////////////////////////
 Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     Vector stress(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -1105,7 +1105,7 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 Vector AllicheMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
     Vector stress(strain.size() );
@@ -1121,8 +1121,8 @@ Vector AllicheMaterialStatus :: giveStress(const Vector &strain, double timeStep
 }
 
 //////////////////////////////////////////////////////////
-Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {   
-    (void) timeStep;
+Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
     Vector stress(strain.size() );
@@ -1302,8 +1302,8 @@ Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) 
 }
 
 //////////////////////////////////////////////////////////
-Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeStep) {    
-    (void) timeStep;
+Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     Vector stress(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
@@ -1348,7 +1348,7 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeSte
 
 //////////////////////////////////////////////////////////
 Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     Vector stress(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );

@@ -73,7 +73,7 @@ private:
 
 public:
     CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
-    ~CoupledMarsMaterialStatus(){};
+    ~CoupledMarsMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
@@ -81,16 +81,17 @@ public:
     virtual void update();
 };
 
-class CoupledMarsMaterial: public MarsMaterial {
+class CoupledMarsMaterial : public MarsMaterial
+{
 private:
     double biotCoeff;
 public:
     CoupledMarsMaterial() { name = "Coupled Mars material"; };
-    virtual ~CoupledMarsMaterial(){};
+    virtual ~CoupledMarsMaterial() {};
     virtual void readFromLine(istringstream &iss);
-    virtual MaterialStatus* giveNewMaterialStatus(Element *e, unsigned ipnum);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void init();
-    double giveBiotCoeff()const{return biotCoeff;};
+    double giveBiotCoeff() const { return biotCoeff; };
 };
 
 #endif /* _MARS_MATERIAL_H */

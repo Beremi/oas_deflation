@@ -114,7 +114,7 @@ public:
 class TransientLinearTransportSolver : public SteadyStateNonLinearSolver /// solver of first order differential equation in time
 {
 protected:
-    double alpha_f, alpha_m, gamma, beta, rhoinfty;
+    double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
     Vector v, v_old;
 

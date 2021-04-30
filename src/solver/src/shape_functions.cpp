@@ -18,7 +18,7 @@ void ShapeFunc :: giveShapeFGrad(const Point *x, const Matrix &JacobiMInverse, M
 }
 
 //////////////////////////////////////////////////////////
-void ShapeFunc :: giveJacobiM(const Point *x, const vector< Node * > &nodes, const Matrix &phiGradNat, Matrix &JacobiM) const {
+void ShapeFunc :: giveJacobiM(const vector< Node * > &nodes, const Matrix &phiGradNat, Matrix &JacobiM) const {
     JacobiM *= 0;
     Point n;
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
@@ -58,11 +58,11 @@ double ShapeFunc :: giveJacobian(const Point *x, const vector< Node * > &nodes) 
 double ShapeFunc :: giveJacobian(const Matrix &JacobiM) const {
     if ( ndim == 1 ) {
         return JacobiM [ 0 ] [ 0 ];
-    } else if ( ndim == 2 )  {
+    } else if ( ndim == 2 ) {
         return JacobiM [ 0 ] [ 0 ] * JacobiM [ 1 ] [ 1 ] - JacobiM [ 0 ] [ 1 ] * JacobiM [ 1 ] [ 0 ];
-    } else if ( ndim == 3 )                                                                                                                          {
+    } else if ( ndim == 3 ) {
         return JacobiM [ 0 ] [ 0 ] * JacobiM [ 1 ] [ 1 ] * JacobiM [ 2 ] [ 2 ] - JacobiM [ 0 ] [ 0 ] * JacobiM [ 1 ] [ 2 ] * JacobiM [ 2 ] [ 1 ] + JacobiM [ 0 ] [ 1 ] * JacobiM [ 1 ] [ 2 ] * JacobiM [ 2 ] [ 0 ] - JacobiM [ 0 ] [ 1 ] * JacobiM [ 1 ] [ 0 ] * JacobiM [ 2 ] [ 2 ] + JacobiM [ 0 ] [ 2 ] * JacobiM [ 1 ] [ 0 ] * JacobiM [ 2 ] [ 1 ] - JacobiM [ 0 ] [ 2 ] * JacobiM [ 1 ] [ 1 ] * JacobiM [ 2 ] [ 0 ];
-    } else                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  {
+    } else {
         return 0;
     }
 }
@@ -109,6 +109,7 @@ void Linear1DLineShapeF :: giveShapeF(const Point *x, Vector &phi) const {
 
 //////////////////////////////////////////////////////////
 void Linear1DLineShapeF :: giveShapeFGradNatural(const Point *x, Matrix &phiGrad) const {
+    ( void ) x;
     //x in natural coordinates
     phiGrad [ 0 ] [ 0 ] = -0.5;
     phiGrad [ 0 ] [ 1 ] = 0.5;

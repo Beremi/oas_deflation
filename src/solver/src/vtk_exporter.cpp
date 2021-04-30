@@ -101,7 +101,8 @@ void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *e
                     vect_data = rbc->giveContactStrainXYZ();
                     // vect_data = matrix_vector_multiply(rbc->giveRMatrix().transpose(),strainNT);
                 } else if ( codes [ indeces [ i ] ].compare("stressXYZ") == 0 ) {
-                    vect_data = rbc->giveContactStressXYZ();;
+                    vect_data = rbc->giveContactStressXYZ();
+                    ;
                 } else {
                     vect_data = vect_ini;
                 }

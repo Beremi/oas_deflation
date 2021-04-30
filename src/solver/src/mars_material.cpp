@@ -15,7 +15,7 @@ double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
     } else if ( code.compare("volumetric_strain") == 0 ) {
-        RigidBodyContact * ec =static_cast< RigidBodyContact * > (element);
+        RigidBodyContact *ec = static_cast< RigidBodyContact * >( element );
         return ec->giveVolumetricStrain();
     } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         return temp_damage;
@@ -180,7 +180,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
         temp_damage = damage;
     }
 
-    //temp_damage = min(temp_damage, 1-1e-10); //dangerous, better switched off 
+    //temp_damage = min(temp_damage, 1-1e-10); //dangerous, better switched off
 
     //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
     temp_crackOpening = l2_norm( ( L * damage ) * strain ); //total opening
@@ -221,7 +221,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    computeDamage(addEigenStrain(strain));
+    computeDamage(addEigenStrain(strain) );
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
@@ -334,7 +334,7 @@ void MarsMaterial :: init() {
 //////////////////////////////////////////////////////////
 // COUPLED CUSATIS MATERIAL STATUS
 //////////////////////////////////////////////////////////
-CoupledMarsMaterialStatus :: CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum):MarsMaterialStatus(m, e, ipnum){
+CoupledMarsMaterialStatus :: CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum) : MarsMaterialStatus(m, e, ipnum) {
     name = "Coupled MARS mat. status";
 }
 
@@ -346,10 +346,10 @@ void CoupledMarsMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 double CoupledMarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("averagePressure") == 0 ) {
-        RigidBodyContactCoupled * ec =static_cast< RigidBodyContactCoupled * > (element);
+        RigidBodyContactCoupled *ec = static_cast< RigidBodyContactCoupled * >( element );
         return ec->giveAveragePressure();
     } else if ( code.compare("volumetricStrainRate") == 0 ) {
-        RigidBodyContactCoupled * ec =static_cast< RigidBodyContactCoupled * > (element);
+        RigidBodyContactCoupled *ec = static_cast< RigidBodyContactCoupled * >( element );
         return ec->giveVolumetricStrainRate();
     } else {
         return MarsMaterialStatus :: giveValue(code);
@@ -358,16 +358,16 @@ double CoupledMarsMaterialStatus :: giveValue(string code) const {
 
 
 //////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: updateStressByBiotEffect(double timeStep){
-    (void) timeStep;
-    RigidBodyContactCoupled* crbc = static_cast< RigidBodyContactCoupled* > (element);
+void CoupledMarsMaterialStatus :: updateStressByBiotEffect(double timeStep) {
+    ( void ) timeStep;
+    RigidBodyContactCoupled *crbc = static_cast< RigidBodyContactCoupled * >( element );
     CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
-    temp_stress[0] -= m->giveBiotCoeff()*crbc->giveAveragePressure();
+    temp_stress [ 0 ] -= m->giveBiotCoeff() * crbc->giveAveragePressure();
 }
 
 //////////////////////////////////////////////////////////
 Vector CoupledMarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    MarsMaterialStatus :: giveStress(strain, timeStep);  
+    MarsMaterialStatus :: giveStress(strain, timeStep);
     updateStressByBiotEffect(timeStep);
     return temp_stress;
 }
@@ -380,7 +380,7 @@ Vector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &st
 }
 
 //////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus ::update(){  
+void CoupledMarsMaterialStatus :: update() {
     MarsMaterialStatus :: update();
 }
 
@@ -399,7 +399,7 @@ MaterialStatus *CoupledMarsMaterial :: giveNewMaterialStatus(Element *e, unsigne
 };
 
 //////////////////////////////////////////////////////////
-void CoupledMarsMaterial :: readFromLine(istringstream &iss){
+void CoupledMarsMaterial :: readFromLine(istringstream &iss) {
     MarsMaterial :: readFromLine(iss);
 
     iss.clear(); // clear string stream

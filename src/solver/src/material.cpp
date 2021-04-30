@@ -50,8 +50,8 @@ TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsi
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    (void) timeStep;
-    temp_strain.resize(strain.size());
+    ( void ) timeStep;
+    temp_strain.resize(strain.size() );
     for ( unsigned k = 0; k < temp_strain.size(); k++ ) {
         temp_strain [ k ] = strain [ k ];
     }
@@ -62,7 +62,7 @@ Vector TrsprtMaterialStatus :: giveStress(const Vector &strain, double timeStep)
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     temp_strain.resize(strain.size() - 1);
     for ( unsigned k = 0; k < temp_strain.size(); k++ ) {
         temp_strain [ k ] = strain [ k ];
@@ -114,10 +114,10 @@ double TrsprtMaterialStatus :: giveValue(string code) const {
     if ( code.compare("permeability") == 0 ) {
         TrsprtMaterial *m = dynamic_cast< TrsprtMaterial * >( mat );
         return m->givePermeability();
-    }else if( code.compare("flux") == 0 ) {
-        return abs(temp_stress[0]);
-    }else if( code.compare("pressure_gradient") == 0 ) {
-        return abs(temp_strain[0]);
+    } else if ( code.compare("flux") == 0 )   {
+        return abs(temp_stress [ 0 ]);
+    } else if ( code.compare("pressure_gradient") == 0 )   {
+        return abs(temp_strain [ 0 ]);
     } else {
         return MaterialStatus :: giveValue(code);
     }
@@ -131,8 +131,8 @@ void TrsprtMaterialStatus :: updateEffectiveConductivity(double pressure) {
 
 
 bool TrsprtMaterialStatus :: isElastic(const bool &now) const {
-  // std::cout << "transport material is always elastic" << '\n';
-  return true;
+    // std::cout << "transport material is always elastic" << '\n';
+    return true;
 }
 
 
@@ -204,7 +204,7 @@ double ElasticMechMaterialStatus :: giveMassConstant() const {
 
 //////////////////////////////////////////////////////////
 Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     temp_strain = strain;
     unsigned dim = 0;
     if ( strain.size() == 1 ) {
@@ -316,7 +316,7 @@ Vector CosseratMechMaterialStatus ::  giveStress(const Vector &strain, double ti
 
 //////////////////////////////////////////////////////////
 Vector CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     temp_strain = strain;
     unsigned dim;
     if ( strain.size() == 2 ) {
@@ -439,11 +439,11 @@ double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) con
 
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     //first strain term is pressure gradient, second strain face area, then it is alway crack opening and crack length coulples
     TrsprtCoupledMaterial *tmat = static_cast< TrsprtCoupledMaterial * >( mat );
-    
-    Transp1DCoupled * tc = static_cast< Transp1DCoupled * > ( element ); 
+
+    Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );
     double crackParam = tc->giveCrackOpeningInNeigborhood();
     double pressure = tc->giveAveragePressure();
 
@@ -457,38 +457,39 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double ti
 
 
 //////////////////////////////////////////////////////////
-double TrsprtCoupledMaterialStatus :: computeBiotEffect(double volStrain, double timeStep){
-    if(timeStep<=0) return 0;   //steady-state
-
+double TrsprtCoupledMaterialStatus :: computeBiotEffect(double volStrain, double timeStep) {
+    if ( timeStep <= 0 ) {
+        return 0;               //steady-state
+    }
     tempVolumetricStrain = volStrain;
     TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
-    return m->giveBiotCoeff()*m->giveDensity()*3.*(tempVolumetricStrain-volumetricStrain)/timeStep; //Biot coeff times volumetric strain rate
+    return m->giveBiotCoeff() * m->giveDensity() * 3. * ( tempVolumetricStrain - volumetricStrain ) / timeStep; //Biot coeff times volumetric strain rate
 }
 
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     temp_strain.resize(1);
-    temp_strain[0] = strain[0];
+    temp_strain [ 0 ] = strain [ 0 ];
     temp_stress = -effConductivity *addEigenStrain(strain);
-    
+
     return temp_stress;
 };
 
 
 //////////////////////////////////////////////////////////
-void TrsprtCoupledMaterialStatus ::  update(){
+void TrsprtCoupledMaterialStatus ::  update() {
     TrsprtMaterialStatus :: update();
     volumetricStrain = tempVolumetricStrain;
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtCoupledMaterialStatus ::  giveValue(string code) const{
+double TrsprtCoupledMaterialStatus ::  giveValue(string code) const {
     if ( code.compare("volumetric_strain") == 0 ) {
         return volumetricStrain;
     } else {
-        return TrsprtMaterialStatus :: giveValue(code);     
-    }    
+        return TrsprtMaterialStatus :: giveValue(code);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -507,10 +508,10 @@ void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
         if ( param.compare("crack_turtuosity") == 0 ) {
             bturtuosity = true;
             iss >> crack_turtuosity;
-        } else if( param.compare("biot_coeff") == 0 ) {
+        } else if ( param.compare("biot_coeff") == 0 ) {
             bbiot = true;
             iss >> biotCoeff;
-        } 
+        }
     }
     if ( !bturtuosity ) {
         cerr << name << ": material parameter 'crack_turtuosity' was not specified" << endl;
@@ -561,7 +562,7 @@ Vector DisMechMaterialStatus ::  giveStress(const Vector &strain, double timeSte
 
 //////////////////////////////////////////////////////////
 Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     temp_strain = strain;
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
     temp_stress.resize(strain.size() );
@@ -615,4 +616,3 @@ MaterialStatus *DisMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ip
     DisMechMaterialStatus *newStatus = new DisMechMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
-

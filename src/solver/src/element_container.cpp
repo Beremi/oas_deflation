@@ -261,7 +261,7 @@ void ElementContainer :: init() {
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
     }
-    
+
     //update neighborhood information
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e, num++ ) {
         ( * e )->collectInformationsFromNeigborhood();
@@ -337,11 +337,11 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {
             k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
-        } else if ( diffType == 1 )                                                                                                            {
+        } else if ( diffType == 1 ) {
             k = ( * e )->giveDampingMatrix();                    //damping or capacity
-        } else if ( diffType == 2 )                                                                                          {
+        } else if ( diffType == 2 ) {
             k = ( * e )->giveMassMatrix();                    //mass
-        } else                                                                        {
+        } else {
             cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
             exit(1);
         }
@@ -433,9 +433,9 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
         }
         if      ( diffType == 1 ) {
             elForces = ( * e )->giveDampingMatrix() * elDoFvalues;                    //damping or conductivity
-        } else if ( diffType == 2 )                                                                                                                       {
+        } else if ( diffType == 2 ) {
             elForces = ( * e )->giveMassMatrix() * elDoFvalues;                    //inertia
-        } else                                                                                                {
+        } else {
             cerr << "ElementContainer Error: time derivative matrix type " << diffType << " unknown" << endl;
             exit(1);
         }

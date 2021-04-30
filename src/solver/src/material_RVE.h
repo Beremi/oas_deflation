@@ -50,7 +50,7 @@ public:
     virtual ~RVEMaterial() {};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    fs :: path givePathToInputFile()const {return inputfile;};
+    fs :: path givePathToInputFile() const { return inputfile; };
 };
 
 
@@ -79,7 +79,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual double giveDampingConstant() const;
-    virtual unsigned giveStrainSize() const {return giveStrainSize(ndim);};
+    virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); };
 };
 
 //////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ public:
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
     virtual void init();
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual unsigned giveStrainSize() const {return giveStrainSize(ndim);};
+    virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); };
 };
 
 //////////////////////////////////////////////////////////
@@ -135,12 +135,12 @@ public:
 class DiscreteCoupledRVEMaterial;
 class DiscreteCoupledRVEMaterialStatus : public MaterialStatus
 {
-protected:    
+protected:
     fs :: path inputfileM;
     fs :: path inputfileT;
     DiscreteMechanicalRVEMaterialStatus *mechRVEstat;
-    DiscreteTransportRVEMaterialStatus  *trspRVEstat;
-    
+    DiscreteTransportRVEMaterialStatus *trspRVEstat;
+
     void findFriends();
 public:
     DiscreteCoupledRVEMaterialStatus(Material *m, Element *e, unsigned ipnum, fs :: path masterfileM, fs :: path masterfileT);
@@ -161,14 +161,14 @@ class DiscreteCoupledRVEMaterial : public Material
 {
 protected:
     DiscreteMechanicalRVEMaterial *mechRVEmat;
-    DiscreteTransportRVEMaterial  *trspRVEmat;
+    DiscreteTransportRVEMaterial *trspRVEmat;
 public:
     DiscreteCoupledRVEMaterial() { name = "coupled RVE material"; };
     virtual ~DiscreteCoupledRVEMaterial();
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void readFromLine(istringstream &iss);
-    DiscreteMechanicalRVEMaterial* giveMechanicalRVEmat(){return mechRVEmat;}
-    DiscreteTransportRVEMaterial* giveTransportRVEmat(){return trspRVEmat;}
+    DiscreteMechanicalRVEMaterial *giveMechanicalRVEmat() { return mechRVEmat; }
+    DiscreteTransportRVEMaterial *giveTransportRVEmat() { return trspRVEmat; }
 };
 
 //////////////////////////////////////////////////////////

@@ -3,12 +3,12 @@
 // #include "misc.h"
 
 
-std :: vector < double > PointToStdVector( const Point &p, unsigned dim=3) {
-    std :: vector < double > vect;
-    vect.push_back( p.getX() );
-    vect.push_back( p.getY() );
+std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {
+    std :: vector< double >vect;
+    vect.push_back(p.getX() );
+    vect.push_back(p.getY() );
     if ( dim == 3 ) {
-        vect.push_back( p.getZ() );
+        vect.push_back(p.getZ() );
     }
     return vect;
 }
@@ -694,7 +694,6 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     }
 
     this->setDirectionToFix(iss);
-
 }
 
 void RigidPlate :: checkMechTransport(Node *master) {
@@ -786,7 +785,7 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     if ( d == 3 ) {
         iss >> z;
     } else {
-      z = 0.0;
+        z = 0.0;
     }
     this->center = Point(x, y, z);
     iss >> rI >> rO;
@@ -810,7 +809,6 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     }
 
     RigidPlate :: setDirectionToFix(iss);
-
 }
 
 void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
@@ -867,46 +865,46 @@ void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
         }
     }
     if ( !bf ) {
-        std::cerr << "Error: no function governing volumetric expansion specified" << '\n';
+        std :: cerr << "Error: no function governing volumetric expansion specified" << '\n';
     }
 }
 
 void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
-  ( void ) e;
-  ( void ) bcs;
-  ( void ) funcs;
-  ( void ) ex;
-  // jointDoF jD;
-  Node *master;
+    ( void ) e;
+    ( void ) bcs;
+    ( void ) funcs;
+    ( void ) ex;
+    // jointDoF jD;
+    Node *master;
 
-  master = nodes->giveNode(master_id);
-  // check if it is master node
-  RigidPlate :: checkMechTransport(master);
+    master = nodes->giveNode(master_id);
+    // check if it is master node
+    RigidPlate :: checkMechTransport(master);
 
-  Point node_point;
-  int xm, ym, zm;
-  xm = 1;
-  ym = 1;
-  zm = 1;
-  if ( direction == 0 ) {
-      xm = 0;
-  } else if ( direction == 1 ) {
-      ym = 0;
-  } else if ( direction == 2 ) {
-      zm = 0;
-  }
-  this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
-  for ( auto const &nod : * nodes ) {
-      node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
-      if ( isInCircle(node_point, this->center, this->r_outer) ) {
-          if ( !isInCircle(node_point, this->center, this->r_inner) ) {
-              if ( nod == master ) {
-                  continue;
-              }
-              connectSlaveMasterExpansion(constrs, nod, master, ndim, this->transport, funcs->giveFunction(this->fn_id));
-          }
-      }
-  }
+    Point node_point;
+    int xm, ym, zm;
+    xm = 1;
+    ym = 1;
+    zm = 1;
+    if ( direction == 0 ) {
+        xm = 0;
+    } else if ( direction == 1 ) {
+        ym = 0;
+    } else if ( direction == 2 ) {
+        zm = 0;
+    }
+    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    for ( auto const &nod : * nodes ) {
+        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+        if ( isInCircle(node_point, this->center, this->r_outer) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+                if ( nod == master ) {
+                    continue;
+                }
+                connectSlaveMasterExpansion(constrs, nod, master, ndim, this->transport, funcs->giveFunction(this->fn_id) );
+            }
+        }
+    }
 }
 
 
@@ -924,49 +922,49 @@ void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
         }
     }
     if ( !bf ) {
-        std::cerr << "Error: no master DoF governing volumetric expansion specified" << '\n';
+        std :: cerr << "Error: no master DoF governing volumetric expansion specified" << '\n';
     }
 }
 
 void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
-  ( void ) e;
-  ( void ) bcs;
-  ( void ) funcs;
-  ( void ) ex;
-  // jointDoF jD;
-  Node *master;
-  Node *expMaster;
+    ( void ) e;
+    ( void ) bcs;
+    ( void ) funcs;
+    ( void ) ex;
+    // jointDoF jD;
+    Node *master;
+    Node *expMaster;
 
-  master = nodes->giveNode(this->master_id);
-  RigidPlate :: checkMechTransport(master);
+    master = nodes->giveNode(this->master_id);
+    RigidPlate :: checkMechTransport(master);
 
-  expMaster = nodes->giveNode(this->expansion_master_id);
+    expMaster = nodes->giveNode(this->expansion_master_id);
 
 
-  Point node_point;
-  int xm, ym, zm;
-  xm = 1;
-  ym = 1;
-  zm = 1;
-  if ( direction == 0 ) {
-      xm = 0;
-  } else if ( direction == 1 ) {
-      ym = 0;
-  } else if ( direction == 2 ) {
-      zm = 0;
-  }
-  this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
-  for ( auto const &nod : * nodes ) {
-      node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
-      if ( isInCircle(node_point, this->center, this->r_outer) ) {
-          if ( !isInCircle(node_point, this->center, this->r_inner) ) {
-              if ( nod == master ) {
-                  continue;
-              }
-              connectSlaveMasterExpansionFLoad(constrs, nod, master, expMaster, ndim);
-          }
-      }
-  }
+    Point node_point;
+    int xm, ym, zm;
+    xm = 1;
+    ym = 1;
+    zm = 1;
+    if ( direction == 0 ) {
+        xm = 0;
+    } else if ( direction == 1 ) {
+        ym = 0;
+    } else if ( direction == 2 ) {
+        zm = 0;
+    }
+    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    for ( auto const &nod : * nodes ) {
+        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+        if ( isInCircle(node_point, this->center, this->r_outer) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+                if ( nod == master ) {
+                    continue;
+                }
+                connectSlaveMasterExpansionFLoad(constrs, nod, master, expMaster, ndim);
+            }
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -1055,7 +1053,7 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
 
 
 
-void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp) {
+void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp) {
     unsigned nDoFsPerNode;
     if ( trsp ) {
         // if master is transport, slave must be transport
@@ -1141,7 +1139,7 @@ void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *m
 
 
 
-void connectSlaveMasterExpansionFLoad(ConstraintContainer * constrs, Node *slave, Node *master, Node * expMaster, unsigned const &ndim) {
+void connectSlaveMasterExpansionFLoad(ConstraintContainer *constrs, Node *slave, Node *master, Node *expMaster, unsigned const &ndim) {
     if ( !dynamic_cast< Particle * >( slave ) ) {
         return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
     }
@@ -1155,53 +1153,53 @@ void connectSlaveMasterExpansionFLoad(ConstraintContainer * constrs, Node *slave
     vector< Node * >masterNodes;
     vector< double >multipliers;
     vector< double >time_multipliers;
-    vector< Function *> time_fns;
+    vector< Function * >time_fns;
     vector< unsigned >directions;
 
 
-    Point n = (slave->givePoint() - master->givePoint());
+    Point n = ( slave->givePoint() - master->givePoint() );
     double l = n.norm();
     n.normalize();
 
 
-    std :: vector < double > n_vect = PointToStdVector(n, ndim);
+    std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir = std :: distance(n_vect.begin(),
-                                         std :: max_element(n_vect.begin(), n_vect.end()));
+                                         std :: max_element(n_vect.begin(), n_vect.end() ) );
 
     for ( unsigned i = 0; i < ndim; i++ ) {
         if ( i == slave_dir ) {
             multipliers.push_back(1.0);
             masterNodes.push_back(master);
-            directions.push_back( i );
-            time_multipliers.push_back( 0.0 );
-            time_fns.push_back( nullptr );
+            directions.push_back(i);
+            time_multipliers.push_back(0.0);
+            time_fns.push_back(nullptr);
         } else {
-            multipliers.push_back(n_vect[ i ] / n_vect[ slave_dir ]);
+            multipliers.push_back(n_vect [ i ] / n_vect [ slave_dir ]);
             masterNodes.push_back(master);
-            directions.push_back( i );
-            time_multipliers.push_back( 0.0 );
-            time_fns.push_back( nullptr );
+            directions.push_back(i);
+            time_multipliers.push_back(0.0);
+            time_fns.push_back(nullptr);
 
             // multiplying self other DoFs
-            multipliers.push_back( - n_vect[ i ] / n_vect[ slave_dir ] );
+            multipliers.push_back(-n_vect [ i ] / n_vect [ slave_dir ]);
             masterNodes.push_back(slave);
-            directions.push_back( i );
-            time_multipliers.push_back( 0.0 );
-            time_fns.push_back( nullptr );
+            directions.push_back(i);
+            time_multipliers.push_back(0.0);
+            time_fns.push_back(nullptr);
         }
     }
 
     // adding master DoF governing the expansion
-    multipliers.push_back( l / n_vect[ slave_dir ] );
+    multipliers.push_back(l / n_vect [ slave_dir ]);
     masterNodes.push_back(expMaster);
-    directions.push_back( 0 );
-    time_multipliers.push_back( 0.0 );
-    time_fns.push_back( nullptr );
+    directions.push_back(0);
+    time_multipliers.push_back(0.0);
+    time_fns.push_back(nullptr);
 
     if ( !masterNodes.empty() ) {
-      JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers, time_fns, time_multipliers);
-      constrs->addConstraint(newJD);
+        JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers, time_fns, time_multipliers);
+        constrs->addConstraint(newJD);
     }
 
     masterNodes.clear();
@@ -1209,13 +1207,13 @@ void connectSlaveMasterExpansionFLoad(ConstraintContainer * constrs, Node *slave
     directions.clear();
     time_multipliers.clear();
     time_fns.clear();
-
 }
 
 
 
 
-void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp, Function * fn) {
+void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp, Function *fn) {
+    ( void ) trsp;
 
     if ( !dynamic_cast< Particle * >( slave ) ) {
         return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
@@ -1230,46 +1228,46 @@ void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Nod
     vector< Node * >masterNodes;
     vector< double >multipliers;
     vector< double >time_multipliers;
-    vector< Function *> time_fns;
+    vector< Function * >time_fns;
     vector< unsigned >directions;
 
 
-    Point n = (slave->givePoint() - master->givePoint());
+    Point n = ( slave->givePoint() - master->givePoint() );
     double l = n.norm();
     n.normalize();
 
 
-    std :: vector < double > n_vect = PointToStdVector(n, ndim);
+    std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir = std :: distance(n_vect.begin(),
-                                         std :: max_element(n_vect.begin(), n_vect.end()));
+                                         std :: max_element(n_vect.begin(), n_vect.end() ) );
 
     for ( unsigned i = 0; i < ndim; i++ ) {
         if ( i == slave_dir ) {
             multipliers.push_back(1.0);
             masterNodes.push_back(master);
-            directions.push_back( i );
-            time_multipliers.push_back( l / n_vect[ i ] );
-            time_fns.push_back( fn );
+            directions.push_back(i);
+            time_multipliers.push_back(l / n_vect [ i ]);
+            time_fns.push_back(fn);
         } else {
-            multipliers.push_back(n_vect[ i ] / n_vect[ slave_dir ]);
+            multipliers.push_back(n_vect [ i ] / n_vect [ slave_dir ]);
             masterNodes.push_back(master);
-            directions.push_back( i );
-            time_multipliers.push_back( 0.0 );
-            time_fns.push_back( nullptr );
+            directions.push_back(i);
+            time_multipliers.push_back(0.0);
+            time_fns.push_back(nullptr);
 
             // multiplying self other DoFs
-            multipliers.push_back( - n_vect[ i ] / n_vect[ slave_dir ] );
+            multipliers.push_back(-n_vect [ i ] / n_vect [ slave_dir ]);
             masterNodes.push_back(slave);
-            directions.push_back( i );
-            time_multipliers.push_back( 0.0 );
-            time_fns.push_back( nullptr );
+            directions.push_back(i);
+            time_multipliers.push_back(0.0);
+            time_fns.push_back(nullptr);
         }
     }
 
     if ( !masterNodes.empty() ) {
-      JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers, time_fns, time_multipliers);
-      constrs->addConstraint(newJD);
+        JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers, time_fns, time_multipliers);
+        constrs->addConstraint(newJD);
     }
 
     masterNodes.clear();
@@ -1277,7 +1275,6 @@ void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Nod
     directions.clear();
     time_multipliers.clear();
     time_fns.clear();
-
 }
 
 // void connectSlaveMasterExpansionOLD(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp, Function * fn) {

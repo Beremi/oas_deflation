@@ -57,7 +57,7 @@ public:
     vector< bool >giveMechDoFsIndicator() { return mechDoFs; }
     vector< bool >giveTranspDoFsIndicator() { return transpDoFs; }
     void initSimplices();
-    void updateSimplexVolumetricStrains(const Vector & fullDoFs);
+    void updateSimplexVolumetricStrains(const Vector &fullDoFs);
 
     size_t giveNumConstrDoFs() const { return constrDoFs; };
     ConstraintContainer *giveConstraints() const { return constr; };

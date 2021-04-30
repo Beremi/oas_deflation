@@ -20,7 +20,7 @@ protected:
     virtual void checkNodeType() const;
     virtual void setIntegrationPointsAndWeights();
 
-    vector< Simplex * > simplices;
+    vector< Simplex * >simplices;
     double volumetricStrain;
 
 public:
@@ -50,7 +50,7 @@ public:
     double giveVolume(unsigned nodenum) const;
     double giveVolume() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    double giveVolumetricStrain(){return volumetricStrain;};
+    double giveVolumetricStrain() { return volumetricStrain; };
     virtual Matrix giveDampingMatrix() const;
 };
 
@@ -67,8 +67,8 @@ public:
     RigidBodyContactCoupled(const unsigned dim);
     ~RigidBodyContactCoupled() {};
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    double giveVolumetricStrainRate(){return volumetricStrain;};
-    double giveAveragePressure(){return averagePressure;};
+    double giveVolumetricStrainRate() { return volumetricStrain; };
+    double giveAveragePressure() { return averagePressure; };
 };
 
 //////////////////////////////////////////////////////////
@@ -119,7 +119,7 @@ public:
     virtual Matrix giveDampingMatrix() const;
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    vector < Node* > giveVertices() const { return vert;};
+    vector< Node * >giveVertices() const { return vert; };
     double giveAveragePressure();
 };
 
@@ -142,8 +142,8 @@ public:
     virtual double giveIPValue(string code, unsigned ipnum) const;
     void init();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    void addNewFriend(RigidBodyContact * f, double weight );
-    unsigned giveNumOfFriends() const {return friends.size();};
+    void addNewFriend(RigidBodyContact *f, double weight);
+    unsigned giveNumOfFriends() const { return friends.size(); };
     virtual void collectInformationsFromNeigborhood();
     double giveCrackOpeningInNeigborhood();
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);

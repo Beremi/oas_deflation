@@ -13,23 +13,23 @@ int main(int argc, char **argv) {
 
     num = 0;
     numfnd = 0;
-    while ((opt = getopt(argc, argv, "j:")) != -1) {
-        switch (opt) {
+    while ( ( opt = getopt(argc, argv, "j:") ) != -1 ) {
+        switch ( opt ) {
         case 'j':
             num = atoi(optarg);
             numfnd = 1;
             break;
         default: /* '?' */
             fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
-                    argv[0]);
+                    argv [ 0 ]);
             exit(EXIT_FAILURE);
         }
     }
 
-    if (optind >= argc) {
+    if ( optind >= argc ) {
         fprintf(stderr, "Expected argument after options\n");
         fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
-                    argv[0]);
+                argv [ 0 ]);
         fprintf(stderr, "     : [-j num] has effect for Eigen conjugate gradients\n");
         exit(EXIT_FAILURE);
     }
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     if ( num != 0 ) {
         omp_set_num_threads(num);
         cout << "Number of threads = " << num << endl;
-    }else if ( val != nullptr ) {
+    } else if ( val != nullptr )  {
         cout << "Number of threads = " << val << endl;
     } else {
         omp_set_num_threads(1);

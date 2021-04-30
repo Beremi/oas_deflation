@@ -31,7 +31,7 @@ void Element :: setIntegrationPointsAndWeights() {
     inttype->init();
     stats.resize(inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
-        stats [ k ] = mat->giveNewMaterialStatus(this,k);
+        stats [ k ] = mat->giveNewMaterialStatus(this, k);
         inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k), nodes) );
     }
 };
@@ -197,9 +197,9 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
 //////////////////////////////////////////////////////////
 void Element :: changeMaterial(Material *newmat) {
     this->mat = newmat;
-    for(unsigned p=0; p<stats.size(); p++){
-        delete stats[p];
-        stats[p] = this->mat->giveNewMaterialStatus(this, p);
+    for ( unsigned p = 0; p < stats.size(); p++ ) {
+        delete stats [ p ];
+        stats [ p ] = this->mat->giveNewMaterialStatus(this, p);
     }
     this->initMaterialStatuses();
 }
