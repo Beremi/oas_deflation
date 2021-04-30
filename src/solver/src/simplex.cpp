@@ -54,18 +54,39 @@ void Simplex :: init(unsigned ndim){
             pos += ndim;            
         }        
         volume = abs(volume);
-    }    
+    }  
+}
+
+//////////////////////////////////////////////////////////
+void Simplex :: findNeighbors(){
+    //for non-valid simplices, they steal volumetric deformation from neighborhood
+    if (valid) return;
+
+    Simplex *s;
+    vector< Node * > vertices;
+    for(auto &rbc: elems){
+        vertices = rbc->giveVertices();
+        for(auto &v: vertices){
+            s = v->giveSimplex();
+            if(s->isValid()) neighbors.insert(s);
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
 void Simplex :: computeVolumetricStrain(const Vector & fullDoFs){
-    if(valid){
-        volstrain=0;
+    volstrain=0;
+    if(valid){ //valid simplex taking care of its own
         for(unsigned i=0; i<DoFs.size(); i++){
             volstrain += fullDoFs[DoFs[i]]*DoFweights[i];
         }
-        volstrain /= volume;
-    } 
+        volstrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
+    } else if (neighbors.size()>0){   //steal volumetric strain from neigborhood
+        for(auto &simn: neighbors){            
+            volstrain += simn->giveVolumetricStrain();
+        }        
+        volstrain /= neighbors.size();
+    }
 
     if(transport) pressure = fullDoFs[pressureDoF];
 }

@@ -1928,12 +1928,12 @@ namespace exprtk
                {
                   instate = true;
 
-                  const int exponent = static_cast<int>(-std::distance(curr, itr));
+                  const int exponent2 = static_cast<int>(-std::distance(curr, itr));
 
-                  if (!valid_exponent<T>(exponent, numeric::details::real_type_tag()))
+                  if (!valid_exponent<T>(exponent2, numeric::details::real_type_tag()))
                      return false;
 
-                  d += compute_pow10(tmp_d, exponent);
+                  d += compute_pow10(tmp_d, exponent2);
                }
 
                #undef parse_digit_1

@@ -872,3 +872,30 @@ void Transp1DCoupled :: findFriendsFromSimplices(){
         }
     }
 }
+
+//////////////////////////////////////////////////////////
+Vector Transp1DCoupled :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+    Vector intF = Element :: giveInternalForces(DoFs, frozen, timeStep);
+    
+    //Biot effect
+    double volStrain = 0;
+    Simplex *s0 = nodes[0]->giveSimplex();
+    Simplex *s1 = nodes[1]->giveSimplex();
+    if(!s0){
+        if(s1) volStrain = s1->giveVolumetricStrain();
+    } else if(!s1){
+        if(s0) volStrain = s0->giveVolumetricStrain();
+    } else {
+        if( (s0->isValid() && s1->isValid()) || (!s0->isValid() && !s1->isValid()) ) volStrain = (s0->giveVolumetricStrain() + s1->giveVolumetricStrain())/2.;
+        else if (s0->isValid()) volStrain = s0->giveVolumetricStrain();
+        else volStrain = s1->giveVolumetricStrain();
+    } 
+
+    TrsprtCoupledMaterialStatus * cstat = static_cast < TrsprtCoupledMaterialStatus *> (stats[0]);
+    double volumetricBiotPart = cstat->computeBiotEffect(volStrain, timeStep);    
+    for(unsigned i=0; i<2; i++){
+        intF[i] -= volumetricBiotPart*giveVolume(i);
+    }
+  
+    return intF;
+}

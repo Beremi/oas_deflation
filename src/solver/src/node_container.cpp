@@ -96,7 +96,12 @@ void NodeContainer :: init() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: initSimplices() {
-    for(auto &n:nodes) n->initSimplex();
+    for(auto &n:nodes) n->initSimplex();    
+    Simplex *s;
+    for(auto &n:nodes) {
+        s = n->giveSimplex();
+        if(s && !s->isValid()) s->findNeighbors();
+    }
 }
 
 //////////////////////////////////////////////////////////

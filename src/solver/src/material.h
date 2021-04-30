@@ -32,13 +32,14 @@ public:
     virtual Vector giveUpdatedStress() const { return updt_stress; };
     virtual Vector giveTempStrain() const { return temp_strain; };
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; return Matrix(0, 0); };
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; (void) type; return Matrix(0, 0); };
     virtual double giveMassConstant() const { return 0; };
     virtual double giveDampingConstant() const { return 0; };
     virtual void setEigenStrain(Vector &x);
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(istringstream &iss) {
+        (void) iss;
         std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
     virtual bool isElastic(const bool &now = false) const;    
@@ -123,25 +124,30 @@ class TrsprtCoupledMaterial;
 class TrsprtCoupledMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
+    double tempVolumetricStrain, volumetricStrain;    
 public:
     TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~TrsprtCoupledMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveEffectiveConductivity(string type) const;
+    virtual void update();
+    double computeBiotEffect(double volStrain, double timeStep);
+    virtual double giveValue(string code) const;
 };
 
 //////////////////////////////////////////////////////////
 class TrsprtCoupledMaterial : public TrsprtMaterial
 {
 private:
-    double crack_turtuosity;
+    double crack_turtuosity, biotCoeff;
 public:
     TrsprtCoupledMaterial() { name = "coupled transport material"; };
     ~TrsprtCoupledMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveTurtuosity() { return crack_turtuosity; };
+    double giveBiotCoeff()const{return biotCoeff;};
 };
 
 //////////////////////////////////////////////////////////
@@ -228,7 +234,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     double giveDensity() const;
-    virtual bool isElastic(const bool &now = false) const { return true; };
+    virtual bool isElastic(const bool &now = false) const { (void) now; return true; };
 };
 
 //////////////////////////////////////////////////////////

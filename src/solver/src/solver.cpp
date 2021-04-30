@@ -92,6 +92,7 @@ void Solver :: setNextStepTime() {
     double nextExtremeTime = funcs->giveTimeOfNextExtreme(time);
     // NOTE 1/4 of time step added to prevent next step extremely short
     if ( nextExtremeTime < time + 1.25 * dt ) {
+        dt = nextExtremeTime - time;
         time = nextExtremeTime;
     } else {
         time += dt;
@@ -743,9 +744,7 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r, true, -1.); //at time 0
     nodes->giveReducedForceArray(residuals, f);
-    cout << "INIT terminated" << terminated  << endl;
     terminated = !LinalgSymmetricSolver(C, ddr, f,  ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type);
-    cout << "INIT terminated" << terminated  << endl;
     v = Vector(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
 }

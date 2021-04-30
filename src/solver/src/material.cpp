@@ -455,14 +455,41 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double ti
     return temp_stress;
 };
 
+
+//////////////////////////////////////////////////////////
+double TrsprtCoupledMaterialStatus :: computeBiotEffect(double volStrain, double timeStep){
+    if(timeStep<=0) return 0;   //steady-state
+
+    tempVolumetricStrain = volStrain;
+    TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
+    return m->giveBiotCoeff()*m->giveDensity()*3.*(tempVolumetricStrain-volumetricStrain)/timeStep; //Biot coeff times volumetric strain rate
+}
+
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     (void) timeStep;
     temp_strain.resize(1);
     temp_strain[0] = strain[0];
     temp_stress = -effConductivity *addEigenStrain(strain);
+    
     return temp_stress;
 };
+
+
+//////////////////////////////////////////////////////////
+void TrsprtCoupledMaterialStatus ::  update(){
+    TrsprtMaterialStatus :: update();
+    volumetricStrain = tempVolumetricStrain;
+}
+
+//////////////////////////////////////////////////////////
+double TrsprtCoupledMaterialStatus ::  giveValue(string code) const{
+    if ( code.compare("volumetric_strain") == 0 ) {
+        return volumetricStrain;
+    } else {
+        return TrsprtMaterialStatus :: giveValue(code);     
+    }    
+}
 
 //////////////////////////////////////////////////////////
 void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
@@ -472,18 +499,25 @@ void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     string param;
-    bool bturtuosity;
-    bturtuosity = false;
+    bool bturtuosity, bbiot;
+    bturtuosity = bbiot = false;
 
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("crack_turtuosity") == 0 ) {
             bturtuosity = true;
             iss >> crack_turtuosity;
-        }
+        } else if( param.compare("biot_coeff") == 0 ) {
+            bbiot = true;
+            iss >> biotCoeff;
+        } 
     }
     if ( !bturtuosity ) {
         cerr << name << ": material parameter 'crack_turtuosity' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    if ( !bbiot ) {
+        cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
 };

@@ -68,9 +68,9 @@ public:
     vector< MaterialStatus * >giveMaterialStats() const { return stats; };
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
-    virtual Matrix giveBMatrix(const Point *x) const { return Matrix(0, 0); };
+    virtual Matrix giveBMatrix(const Point *x) const { (void) x; return Matrix(0, 0); };
     Matrix *giveBMatrix(unsigned i) { return & Bs [ i ]; };
-    virtual Matrix giveHMatrix(const Point *x) const { return Matrix(0, 0); };
+    virtual Matrix giveHMatrix(const Point *x) const { (void) x; return Matrix(0, 0); };
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
     unsigned giveDimension() const { return ndim; }

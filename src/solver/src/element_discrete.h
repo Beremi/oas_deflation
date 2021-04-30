@@ -146,6 +146,7 @@ public:
     unsigned giveNumOfFriends() const {return friends.size();};
     virtual void collectInformationsFromNeigborhood();
     double giveCrackOpeningInNeigborhood();
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
 };
 
 #endif  /* _ELEMENT_DISCRETE_H */

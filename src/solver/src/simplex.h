@@ -4,6 +4,7 @@
 #include "linear_algebra.h"
 #include <vector>
 #include <iostream>
+#include <unordered_set>
 
 
 class Node; //forward declaration
@@ -22,12 +23,14 @@ protected:
     vector< unsigned > DoFs; ///corresponding degrees of freedom
     vector< double > DoFweights; ///corresponding weights
     vector < RigidBodyContact * > elems; 
+    unordered_set < Simplex *> neighbors; //neighboring simplexes used to steal volumetric strain
 
 public:
     Simplex(Node * c){ center = c; valid=false; transport=false; volstrain=0;};
     virtual ~Simplex() {};  
     void addElement(RigidBodyContact* rbc);  
     void init(unsigned ndim);
+    void findNeighbors();
     double giveVolumetricStrain() const;
     double givePressure() const;
     void computeVolumetricStrain(const Vector & DoFs);

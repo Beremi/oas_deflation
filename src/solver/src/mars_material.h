@@ -69,7 +69,7 @@ class CoupledMarsMaterial;
 class CoupledMarsMaterialStatus : public MarsMaterialStatus
 {
 private:
-    void updateStressByBiotEffect();
+    void updateStressByBiotEffect(double timeStep);
 
 public:
     CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
@@ -78,6 +78,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
     virtual void init();
+    virtual void update();
 };
 
 class CoupledMarsMaterial: public MarsMaterial {

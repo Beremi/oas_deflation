@@ -27,6 +27,7 @@ double GeneralSpatialFunction :: giveY(const Point *xyz) {
 
 //////////////////////////////////////////////////////////
 double GeneralSpatialFunction :: giveNextEtreme(const double &t) const {
+    (void) t;
     return INFINITY;
 }
 
