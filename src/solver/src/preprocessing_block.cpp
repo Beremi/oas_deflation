@@ -1,6 +1,17 @@
 #include "preprocessing_block.h"
 #include "geometry.h"
+// #include "misc.h"
 
+
+std :: vector < double > PointToStdVector( const Point &p, unsigned dim=3) {
+    std :: vector < double > vect;
+    vect.push_back( p.getX() );
+    vect.push_back( p.getY() );
+    if ( dim == 3 ) {
+        vect.push_back( p.getZ() );
+    }
+    return vect;
+}
 
 bool containsChar(const std :: string &str, char c)
 {
@@ -868,8 +879,6 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
   // jointDoF jD;
   Node *master;
 
-  constrs->setTimeDepenencyOn();
-
   master = nodes->giveNode(master_id);
   // check if it is master node
   RigidPlate :: checkMechTransport(master);
@@ -894,11 +903,70 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
               if ( nod == master ) {
                   continue;
               }
-              connectSlaveMasterExpansion(constrs, nod, master, ndim, which, this->transport, funcs->giveFunction(this->fn_id));
+              connectSlaveMasterExpansion(constrs, nod, master, ndim, this->transport, funcs->giveFunction(this->fn_id));
           }
       }
   }
-  // exit(EXIT_FAILURE);
+}
+
+
+void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
+    RingRigidPlate :: readFromLine(iss, d);
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+    bool bf = false;
+    string param;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("expansionMaster") == 0 ) {
+            iss >> this->expansion_master_id;
+            bf = true;
+        }
+    }
+    if ( !bf ) {
+        std::cerr << "Error: no master DoF governing volumetric expansion specified" << '\n';
+    }
+}
+
+void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+  ( void ) e;
+  ( void ) bcs;
+  ( void ) funcs;
+  ( void ) ex;
+  // jointDoF jD;
+  Node *master;
+  Node *expMaster;
+
+  master = nodes->giveNode(this->master_id);
+  RigidPlate :: checkMechTransport(master);
+
+  expMaster = nodes->giveNode(this->expansion_master_id);
+
+
+  Point node_point;
+  int xm, ym, zm;
+  xm = 1;
+  ym = 1;
+  zm = 1;
+  if ( direction == 0 ) {
+      xm = 0;
+  } else if ( direction == 1 ) {
+      ym = 0;
+  } else if ( direction == 2 ) {
+      zm = 0;
+  }
+  this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+  for ( auto const &nod : * nodes ) {
+      node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+      if ( isInCircle(node_point, this->center, this->r_outer) ) {
+          if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+              if ( nod == master ) {
+                  continue;
+              }
+              connectSlaveMasterExpansionFLoad(constrs, nod, master, expMaster, ndim);
+          }
+      }
+  }
 }
 
 //////////////////////////////////////////////////////////
@@ -967,6 +1035,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     ExpansionRing *newblock = new ExpansionRing();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
+                } else if ( ftype.compare("ExpansionRingDoFLoad") == 0 ) {
+                    ExpansionRingDoFLoad *newblock = new ExpansionRingDoFLoad();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
                 } else {
                     cerr << "Error: preprocessor block '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -983,7 +1055,7 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
 
 
 
-void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp) {
+void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp) {
     unsigned nDoFsPerNode;
     if ( trsp ) {
         // if master is transport, slave must be transport
@@ -1069,19 +1141,9 @@ void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *m
 
 
 
-void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp, Function * fn) {
-    unsigned nDoFsPerNode;
-    if ( trsp ) {
-        // if master is transport, slave must be transport
-        if ( !dynamic_cast< TrsNode * >( slave ) ) {
-            return;
-        }
-        nDoFsPerNode = 1;
-    } else {
-        if ( !dynamic_cast< Particle * >( slave ) ) {
-            return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
-        }
-        nDoFsPerNode = 3 * ( ndim - 1 );
+void connectSlaveMasterExpansionFLoad(ConstraintContainer * constrs, Node *slave, Node *master, Node * expMaster, unsigned const &ndim) {
+    if ( !dynamic_cast< Particle * >( slave ) ) {
+        return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
     }
 
 
@@ -1090,93 +1152,245 @@ void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Nod
         exit(1);
     }
 
-    // calculate multipliers and construct jointDof for every slaveDof
-    vector< vector< double > >tableOfMultipliers;
-    vector< vector< double > >tableOfTimeDepMultipliers;
     vector< Node * >masterNodes;
     vector< double >multipliers;
     vector< double >time_multipliers;
     vector< Function *> time_fns;
     vector< unsigned >directions;
 
-    tableOfMultipliers.resize(nDoFsPerNode); // first index (j) is for master dof
-    tableOfTimeDepMultipliers.resize(nDoFsPerNode); // first index (j) is for master dof
 
-    for ( auto &mul : tableOfMultipliers ) {
-        mul.resize(nDoFsPerNode); // second index (i) is for slave dof
-    }
-    for ( auto &mul : tableOfTimeDepMultipliers ) {
-        mul = std :: vector< double > (nDoFsPerNode, 0.0); // second index (i) is for slave dof, initially zero
+    Point n = (slave->givePoint() - master->givePoint());
+    double l = n.norm();
+    n.normalize();
+
+
+    std :: vector < double > n_vect = PointToStdVector(n, ndim);
+
+    unsigned slave_dir = std :: distance(n_vect.begin(),
+                                         std :: max_element(n_vect.begin(), n_vect.end()));
+
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        if ( i == slave_dir ) {
+            multipliers.push_back(1.0);
+            masterNodes.push_back(master);
+            directions.push_back( i );
+            time_multipliers.push_back( 0.0 );
+            time_fns.push_back( nullptr );
+        } else {
+            multipliers.push_back(n_vect[ i ] / n_vect[ slave_dir ]);
+            masterNodes.push_back(master);
+            directions.push_back( i );
+            time_multipliers.push_back( 0.0 );
+            time_fns.push_back( nullptr );
+
+            // multiplying self other DoFs
+            multipliers.push_back( - n_vect[ i ] / n_vect[ slave_dir ] );
+            masterNodes.push_back(slave);
+            directions.push_back( i );
+            time_multipliers.push_back( 0.0 );
+            time_fns.push_back( nullptr );
+        }
     }
 
-    for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
-            if ( i == j ) {
-                tableOfMultipliers [ j ] [ i ] = 1;
-                if ( j == 0 ){
-                  // std::cout << "push_back_X" << '\n';
-                  tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
-                } else if ( j == 1 ){
-                  // std::cout << "push_back_Y" << '\n';
-                  tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
-                } else if ( j == 2 && j != nDoFsPerNode - 1){
-                  // std::cout << "push_back_Z" << '\n';
-                  tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
-                }
-            } else if ( i == 0 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getY() - master->givePoint().getY() );
-            } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
-            } else if ( i == 0 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
-            } else if ( i == 1 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getZ() - master->givePoint().getZ() );
-            } else if ( i == 2 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
-            } else if ( i == 2 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().getX() - master->givePoint().getX() );
-            } else {
-                tableOfMultipliers [ j ] [ i ] =  0;
-            }
-        }
+    // adding master DoF governing the expansion
+    multipliers.push_back( l / n_vect[ slave_dir ] );
+    masterNodes.push_back(expMaster);
+    directions.push_back( 0 );
+    time_multipliers.push_back( 0.0 );
+    time_fns.push_back( nullptr );
+
+    if ( !masterNodes.empty() ) {
+      JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers, time_fns, time_multipliers);
+      constrs->addConstraint(newJD);
     }
-    // read the table and put the information to jointDoFs
-    // NOTE this could be done in the previous loop
-    for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        // for transport nodes, only ones are in tableOfMultipliers
-        if ( !trsp ) {
-            if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
-                // std::cout << "fixed in x dir" << '\n';
-            } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
-                // std::cout << "fixed in y dir" << '\n';
-            } else if ( containsChar(which, 'z') && ( i == 2 || i == 3 || i == 4 ) && ndim > 2 ) {
-                // std::cout << "fixed in z dir" << '\n';
-            } else {
-                continue;
-            }
-        }
-        for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
-            // std::cout << "j = " << j << '\n';
-            if ( tableOfMultipliers [ j ] [ i ] != 0 || tableOfTimeDepMultipliers [ j ] [ i ] != 0 ) {
-                masterNodes.push_back(master);
-                multipliers.push_back(tableOfMultipliers [ j ] [ i ]);
-                directions.push_back(j);
-                if ( tableOfTimeDepMultipliers [ j ] [ i ] != 0 ) {
-                  // std::cout << "push_back " << '\n';
-                  time_multipliers.push_back( tableOfTimeDepMultipliers [ j ] [ i ] );
-                  time_fns.push_back( fn );
-                } else {
-                  time_multipliers.push_back( 0.0 );
-                  time_fns.push_back( nullptr );
-                }
-            }
-        }
-        JointDoF *newJD = new JointDoF(slave, i, masterNodes, directions, multipliers, time_fns, time_multipliers);
-        constrs->addConstraint(newJD);
-        masterNodes.clear();
-        multipliers.clear();
-        directions.clear();
-        time_multipliers.clear();
-        time_fns.clear();
-    }
+
+    masterNodes.clear();
+    multipliers.clear();
+    directions.clear();
+    time_multipliers.clear();
+    time_fns.clear();
+
 }
+
+
+
+
+void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp, Function * fn) {
+
+    if ( !dynamic_cast< Particle * >( slave ) ) {
+        return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
+    }
+
+
+    if ( slave->giveNumberOfDoFs() != master->giveNumberOfDoFs() ) {
+        std :: cerr << "slave and master must have the same number of DoFs, slave numDoFs = " << slave->giveNumberOfDoFs() << ", master numDoFs = " << master->giveNumberOfDoFs() << '\n';
+        exit(1);
+    }
+
+    vector< Node * >masterNodes;
+    vector< double >multipliers;
+    vector< double >time_multipliers;
+    vector< Function *> time_fns;
+    vector< unsigned >directions;
+
+
+    Point n = (slave->givePoint() - master->givePoint());
+    double l = n.norm();
+    n.normalize();
+
+
+    std :: vector < double > n_vect = PointToStdVector(n, ndim);
+
+    unsigned slave_dir = std :: distance(n_vect.begin(),
+                                         std :: max_element(n_vect.begin(), n_vect.end()));
+
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        if ( i == slave_dir ) {
+            multipliers.push_back(1.0);
+            masterNodes.push_back(master);
+            directions.push_back( i );
+            time_multipliers.push_back( l / n_vect[ i ] );
+            time_fns.push_back( fn );
+        } else {
+            multipliers.push_back(n_vect[ i ] / n_vect[ slave_dir ]);
+            masterNodes.push_back(master);
+            directions.push_back( i );
+            time_multipliers.push_back( 0.0 );
+            time_fns.push_back( nullptr );
+
+            // multiplying self other DoFs
+            multipliers.push_back( - n_vect[ i ] / n_vect[ slave_dir ] );
+            masterNodes.push_back(slave);
+            directions.push_back( i );
+            time_multipliers.push_back( 0.0 );
+            time_fns.push_back( nullptr );
+        }
+    }
+
+    if ( !masterNodes.empty() ) {
+      JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers, time_fns, time_multipliers);
+      constrs->addConstraint(newJD);
+    }
+
+    masterNodes.clear();
+    multipliers.clear();
+    directions.clear();
+    time_multipliers.clear();
+    time_fns.clear();
+
+}
+
+// void connectSlaveMasterExpansionOLD(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp, Function * fn) {
+//     unsigned nDoFsPerNode;
+//     if ( trsp ) {
+//         // if master is transport, slave must be transport
+//         if ( !dynamic_cast< TrsNode * >( slave ) ) {
+//             return;
+//         }
+//         nDoFsPerNode = 1;
+//     } else {
+//         if ( !dynamic_cast< Particle * >( slave ) ) {
+//             return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
+//         }
+//         nDoFsPerNode = 3 * ( ndim - 1 );
+//     }
+//
+//
+//     if ( slave->giveNumberOfDoFs() != master->giveNumberOfDoFs() ) {
+//         std :: cerr << "slave and master must have the same number of DoFs, slave numDoFs = " << slave->giveNumberOfDoFs() << ", master numDoFs = " << master->giveNumberOfDoFs() << '\n';
+//         exit(1);
+//     }
+//
+//     // calculate multipliers and construct jointDof for every slaveDof
+//     vector< vector< double > >tableOfMultipliers;
+//     vector< vector< double > >tableOfTimeDepMultipliers;
+//     vector< Node * >masterNodes;
+//     vector< double >multipliers;
+//     vector< double >time_multipliers;
+//     vector< Function *> time_fns;
+//     vector< unsigned >directions;
+//
+//     tableOfMultipliers.resize(nDoFsPerNode); // first index (j) is for master dof
+//     tableOfTimeDepMultipliers.resize(nDoFsPerNode); // first index (j) is for master dof
+//
+//     for ( auto &mul : tableOfMultipliers ) {
+//         mul.resize(nDoFsPerNode); // second index (i) is for slave dof
+//     }
+//     for ( auto &mul : tableOfTimeDepMultipliers ) {
+//         mul = std :: vector< double > (nDoFsPerNode, 0.0); // second index (i) is for slave dof, initially zero
+//     }
+//     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
+//         for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
+//             if ( i == j && i < ndim) {
+//                 tableOfMultipliers [ j ] [ i ] = 1;
+//                 if ( j == 0 ){
+//                   // std::cout << "push_back_X" << '\n';
+//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
+//                 } else if ( j == 1 ){
+//                   // std::cout << "push_back_Y" << '\n';
+//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
+//                 } else if ( j == 2 && j != nDoFsPerNode - 1){
+//                   // std::cout << "push_back_Z" << '\n';
+//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
+//                 }
+//             }
+//             // else if ( i == 0 && j == nDoFsPerNode - 1 ) {
+//             //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getY() - master->givePoint().getY() );
+//             // } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
+//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
+//             // } else if ( i == 0 && j == 4 ) {
+//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
+//             // } else if ( i == 1 && j == 3 ) {
+//             //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getZ() - master->givePoint().getZ() );
+//             // } else if ( i == 2 && j == 3 ) {
+//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
+//             // } else if ( i == 2 && j == 4 ) {
+//             //     tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().getX() - master->givePoint().getX() );
+//             // }
+//             else {
+//                 tableOfMultipliers [ j ] [ i ] =  0;
+//             }
+//         }
+//     }
+//     // read the table and put the information to jointDoFs
+//     // NOTE this could be done in the previous loop
+//     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
+//         // for transport nodes, only ones are in tableOfMultipliers
+//         if ( !trsp ) {
+//             if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
+//                 // std::cout << "fixed in x dir" << '\n';
+//             } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
+//                 // std::cout << "fixed in y dir" << '\n';
+//             } else if ( containsChar(which, 'z') && ( i == 2 || i == 3 || i == 4 ) && ndim > 2 ) {
+//                 // std::cout << "fixed in z dir" << '\n';
+//             } else {
+//                 continue;
+//             }
+//         }
+//         for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
+//             // std::cout << "j = " << j << '\n';
+//             if ( tableOfMultipliers [ j ] [ i ] != 0 || tableOfTimeDepMultipliers [ j ] [ i ] != 0 ) {
+//                 masterNodes.push_back(master);
+//                 multipliers.push_back(tableOfMultipliers [ j ] [ i ]);
+//                 directions.push_back(j);
+//                 if ( tableOfTimeDepMultipliers [ j ] [ i ] != 0 ) {
+//                   // std::cout << "push_back " << '\n';
+//                   time_multipliers.push_back( tableOfTimeDepMultipliers [ j ] [ i ] );
+//                   time_fns.push_back( fn );
+//                 } else {
+//                   time_multipliers.push_back( 0.0 );
+//                   time_fns.push_back( nullptr );
+//                 }
+//             }
+//         }
+//         if ( !masterNodes.empty() ) {
+//             JointDoF *newJD = new JointDoF(slave, i, masterNodes, directions, multipliers, time_fns, time_multipliers);
+//             constrs->addConstraint(newJD);
+//         }
+//         masterNodes.clear();
+//         multipliers.clear();
+//         directions.clear();
+//         time_multipliers.clear();
+//         time_fns.clear();
+//     }
+// }

@@ -13,9 +13,11 @@
 // #include "element_container.h"
 #include "data_exporter.h"
 
-void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp = false);
+void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp = false);
 
-void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool &trsp = false, Function * fn=nullptr);
+void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp = false, Function * fn=nullptr);
+
+void connectSlaveMasterExpansionFLoad(ConstraintContainer * constrs, Node *slave, Node *master, Node * expMaster, unsigned const &ndim);
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -140,6 +142,19 @@ private:
 public:
     ExpansionRing() {};
     virtual ~ExpansionRing() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+protected:
+};
+
+// rigid plate constraining nodes in holow cylindric
+class ExpansionRingDoFLoad : public RingRigidPlate
+{
+private:
+    unsigned expansion_master_id;
+public:
+    ExpansionRingDoFLoad() {};
+    virtual ~ExpansionRingDoFLoad() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
 protected:
