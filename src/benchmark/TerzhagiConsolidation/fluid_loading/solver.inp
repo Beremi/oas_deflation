@@ -1,0 +1,10 @@
+TransientNonLinearTransportSolver
+time_step	10000
+total_time	1000000
+limit_tolerance	1.000000e-01
+maxIt	25
+tolerance	1.000000e-03
+#conj_grad_precission 1e-10
+#conj_grad_relative_maxit 6
+spectral_radius 0
+
