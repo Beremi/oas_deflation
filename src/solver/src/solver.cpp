@@ -321,13 +321,18 @@ void SteadyStateNonLinearSolver :: init(const bool &initial) {
     W_int_oldT = 0;
 
     if ( idc ) {
-        idc->init(nodes, funcs);   //indirect displacement control
+        idc->init(nodes, funcs, initial);   //indirect displacement control
         ddf = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
-        idc_time = 0;
-        idc_dt = 1e-6;
-        idc_time_converged = 0;
+        if ( initial ) {
+            idc_time = 0;
+            idc_dt = 1e-6;
+            idc_time_converged = 0;
+        } else {
+            // JK: during solver initialization after geometry update, idc_time must be set to time of previously converged step
+            idc_time = idc_time_converged;
+        }
     }
 }
 
@@ -606,7 +611,8 @@ void SteadyStateNonLinearSolver :: solve() {
                     std :: cerr << "\nenergies ";
                 }
                 std :: cerr << "- exit" << '\n';
-                exit(1);
+                terminated = true;
+                return;
             }
 
             if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {

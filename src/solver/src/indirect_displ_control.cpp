@@ -83,7 +83,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
 
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
+void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool initial) {
     unsigned clength;
     Node *n;
     double dist;
@@ -96,8 +96,11 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
             cerr << "Error: Indirect displacement controll weights were not set" << endl;
             exit(1);
         }
-        if ( c_DoFs [ c ].size() < clength ) {
-            c_DoFs [ c ].resize(clength);
+        if ( c_DoFs [ c ].size() < clength || !initial) {
+            // JK: in adaptivity, number of control DoFs remain, but DoFs from updated geometry are used
+            if ( initial ) {
+              c_DoFs [ c ].resize(clength);
+            }
             if ( nodes_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
                     c_DoFs [ c ] [ i ] = nodes->giveNode(c_nodes [ c ] [ i ])->giveStartingDoF() + c_dirs [ c ] [ i ];
