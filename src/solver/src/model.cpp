@@ -101,7 +101,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                     iss >> istr;
                     bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems );
                 }
-            } else if ( istr.compare("FunctionFiles") == 0 ) {
+            } else if ( initial && istr.compare("FunctionFiles") == 0 ) {  // functions are constant during whole calculation, even in adaptive case
                 iss >> std :: skipws >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> std :: skipws >> istr;
@@ -143,7 +143,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 void Model :: clear() {
     // TODO JK: check containers for memory leaks
     // initialize new model with clear geometry, only solver remains
-    funcs = FunctionContainer();
+    // funcs = FunctionContainer();  // functions remain too
     bconds = BCContainer();
     constr = ConstraintContainer();
     nodes = NodeContainer();
