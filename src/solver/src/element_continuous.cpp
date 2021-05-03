@@ -290,16 +290,15 @@ Matrix CoupledCosseratQuad :: giveHMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 void CoupledCosseratQuad :: init() {
     MechanicalElement :: init();
-    
+
     CoupledParticle *cp;
-    for(auto &n: nodes){
-        cp = dynamic_cast< CoupledParticle* >(n);
-        if (cp==nullptr) {
+    for ( auto &n: nodes ) {
+        cp = dynamic_cast< CoupledParticle * >( n );
+        if ( cp == nullptr ) {
             cerr << name << " requires nodes to be inhereted from CoupledParticle" << endl;
             exit(1);
         }
     }
-
 }
 
 //////////////////////////////////////////////////////////

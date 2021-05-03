@@ -15,10 +15,10 @@ JointDoF :: JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * >
     directions = dirs;
     multipliers = mult;
     if ( fns.empty() ) {
-      this->time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
+        this->time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
     } else {
-      this->time_fns = fns;
-      this->additional_term = time_mult;
+        this->time_fns = fns;
+        this->additional_term = time_mult;
     }
 }
 
@@ -54,10 +54,10 @@ void JointDoF :: print() {
     std :: cout << "slave DoF = " << giveSlaveDoF() << '\n';
     for ( unsigned i = 0; i < masters.size(); i++ ) {
         std :: cout << "master DoF[ " << i << " ] = " << masters [ i ]->giveStartingDoF() + directions [ i ] << " with multiplier = " << multipliers [ i ];
-        if ( this->time_fns[i] != nullptr ) {
-            std::cout << " and time_dep_mult = " << additional_term [ i ];
+        if ( this->time_fns [ i ] != nullptr ) {
+            std :: cout << " and time_dep_mult = " << additional_term [ i ];
         }
-        std::cout << '\n';
+        std :: cout << '\n';
     }
 }
 
@@ -269,15 +269,15 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
     this->bconds = bconds;
 
     for ( auto const &jD : constraints ) {
-      jD->init();
+        jD->init();
     }
     VolumetricAverage *va;
     for ( int k = constraints.size() - 1; k >= 0; k-- ) {
-      va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
-      if ( va ) {
-        constraints.push_back(va);
-        constraints.erase(constraints.begin() + k);
-      }
+        va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
+        if ( va ) {
+            constraints.push_back(va);
+            constraints.erase(constraints.begin() + k);
+        }
     }
 
     map< pair< size_t, size_t >, double >indeces11;
@@ -318,8 +318,8 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
                 indeces11.insert(pair< pair< size_t, size_t >, double >
-                                (pair< size_t, size_t >(i, j),
-                                 jD->giveMasterMultiplier(ind) ) );
+                                     (pair< size_t, size_t >(i, j),
+                                     jD->giveMasterMultiplier(ind) ) );
             }
         }
     }
@@ -353,7 +353,7 @@ void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const doubl
         for ( auto const &jD : constraints ) {
             fullDoFs [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
             for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
-                fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i) + (all ? jD->giveFnDepPart(i, time_now) : 0.0);
+                fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i) + ( all ? jD->giveFnDepPart(i, time_now) : 0.0 );
             }
         }
     }
@@ -371,6 +371,5 @@ void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
                 // fullForces [ jD->giveSlaveDoF() ] = 0.0;
             }
         }
-
     }
 }

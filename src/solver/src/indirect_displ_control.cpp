@@ -107,7 +107,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
                 }
             } else if ( coords_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
-                    n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), &dist );
+                    n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), & dist);
                     c_DoFs [ c ] [ i ] = n->giveStartingDoF() + c_dirs [ c ] [ i ];
                 }
             } else {
@@ -119,7 +119,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_d, Vector &displ_f, double time) {
+double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
     double dd = -INFINITY;
     double df = 0;
     double m;

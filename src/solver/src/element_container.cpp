@@ -169,6 +169,7 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
     }
 }
 
+//////////////////////////////////////////////////////////
 // these methods must be separate, because at first, I need to set time of calculation in solver
 // but at that time, mat_stats are still before init() so all the matStats vould be reset after that
 void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
@@ -197,7 +198,7 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
     }
 };
 
-
+//////////////////////////////////////////////////////////
 void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool &get_time_from_file) {
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
@@ -259,6 +260,11 @@ void ElementContainer :: init() {
         ( * e )->init();
         ( * e )->initMaterialStatuses();
         max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
+    }
+
+    //update neighborhood information
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e, num++ ) {
+        ( * e )->collectInformationsFromNeigborhood();
     }
 }
 
@@ -331,11 +337,11 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {
             k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
-        } else if ( diffType == 1 )                                                                                                            {
+        } else if ( diffType == 1 ) {
             k = ( * e )->giveDampingMatrix();                    //damping or capacity
-        } else if ( diffType == 2 )                                                                                          {
+        } else if ( diffType == 2 ) {
             k = ( * e )->giveMassMatrix();                    //mass
-        } else                                                                        {
+        } else {
             cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
             exit(1);
         }
@@ -390,7 +396,7 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) cons
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen) {
+void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f *= 0;  // clear array
@@ -405,7 +411,7 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
             }
-            elForces = ( * e )->giveInternalForces(elDoFvalues, frozen);
+            elForces = ( * e )->giveInternalForces(elDoFvalues, frozen, timeStep);
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 full_f [ elDoFs [ i ] ] += elForces [ i ];
             }
@@ -427,9 +433,9 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
         }
         if      ( diffType == 1 ) {
             elForces = ( * e )->giveDampingMatrix() * elDoFvalues;                    //damping or conductivity
-        } else if ( diffType == 2 )                                                                                                                       {
+        } else if ( diffType == 2 ) {
             elForces = ( * e )->giveMassMatrix() * elDoFvalues;                    //inertia
-        } else                                                                                                {
+        } else {
             cerr << "ElementContainer Error: time derivative matrix type " << diffType << " unknown" << endl;
             exit(1);
         }
@@ -450,13 +456,13 @@ void ElementContainer :: integrateInertiaForces(const Vector &full_a, Vector &fu
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f) {
-    integrateInternalForces(full_r, full_f, false);
+void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep) {
+    integrateInternalForces(full_r, full_f, false, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f) {
-    integrateInternalForces(full_r, full_f, true);
+void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep) {
+    integrateInternalForces(full_r, full_f, true, timeStep);
 }
 
 //////////////////////////////////////////////////////////
@@ -466,7 +472,7 @@ void ElementContainer :: findElementFriends() {
     }
 }
 
-
+//////////////////////////////////////////////////////////
 Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const {
     std :: sort(node_ids.begin(), node_ids.end() );
     // std::cout << "this elem should connect nodes";

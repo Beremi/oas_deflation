@@ -12,7 +12,7 @@ double get_Lambda(const double &E_b, const double &K, const double &alpha, const
 //////////////////////////////////////////////////////////
 // FATIGUE SHEAR MATERIAL STATUS
 
-FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Fatigue Shear mat. status";
 }
 
@@ -105,9 +105,10 @@ double get_Lambda(const double &E_b, const double &K, const double &alpha, const
 
 
 //////////////////////////////////////////////////////////
-Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
+Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
+    ( void ) timeStep;
 
     Vector stress(strain.size() );
 
@@ -256,9 +257,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
+    ( void ) timeStep;
 
     Vector stress(strain.size() );
 
@@ -473,8 +475,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *FatigueShearMaterial :: giveNewMaterialStatus(Element *e) {
-    FatigueShearMaterialStatus *newStatus = new FatigueShearMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *FatigueShearMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    FatigueShearMaterialStatus *newStatus = new FatigueShearMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -485,7 +487,7 @@ void FatigueShearMaterial :: init() {};
 //////////////////////////////////////////////////////////
 // DAMAGE PLASTIC MATERIAL STATUS
 
-DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Damage Plastic mat. status";
 }
 
@@ -572,8 +574,9 @@ void DamagePlasticMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
+Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
+    ( void ) timeStep;
     Vector stress(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -678,7 +681,8 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain) {
 
 
 //////////////////////////////////////////////////////////
-Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     Vector stress(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -872,8 +876,8 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e) {
-    DamagePlasticMaterialStatus *newStatus = new DamagePlasticMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DamagePlasticMaterialStatus *newStatus = new DamagePlasticMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -885,7 +889,7 @@ void DamagePlasticMaterial :: init() {};
 //////////////////////////////////////////////////////////
 // normal (damagePlastic) and tangential (cumulative slip - fatigue shear) const. laws together
 
-FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e) : FatigueShearMaterialStatus(m, e), DamagePlasticMaterialStatus(m, e) {
+FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e, unsigned ipnum) : FatigueShearMaterialStatus(m, e, ipnum), DamagePlasticMaterialStatus(m, e, ipnum) {
     FatigueShearMaterialStatus :: name = "Fatigue mat. status";
     DamagePlasticMaterialStatus :: name = "Fatigue mat. status";
 }
@@ -918,7 +922,7 @@ void FatigueMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
+Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     Vector stress(strain.size() );
 
@@ -927,12 +931,12 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
             if ( this->coupled_damage ) {
                 DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
             }
-            stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain) [ i ];
+            stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain, timeStep) [ i ];
         } else {
             if ( this->coupled_damage ) {
                 FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
             }
-            stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain) [ i ];
+            stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain, timeStep) [ i ];
         }
     }
 
@@ -940,14 +944,14 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     Vector stress(strain.size() );
 
     for ( size_t i = 0; i < stress.size(); i++ ) {
         if ( i == 0 ) {
-            stress [ i ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain) [ i ];
+            stress [ i ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ i ];
         } else {
-            stress [ i ] = FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(strain) [ i ];
+            stress [ i ] = FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ i ];
         }
     }
 
@@ -991,8 +995,8 @@ void FatigueMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *FatigueMaterial :: giveNewMaterialStatus(Element *e) {
-    FatigueMaterialStatus *newStatus1 = new FatigueMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *FatigueMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    FatigueMaterialStatus *newStatus1 = new FatigueMaterialStatus(this, e, ipnum); //needs to be deleted manually
     FatigueShearMaterialStatus *newStatus = ( FatigueMaterialStatus * ) newStatus1;
     return newStatus;
 };
@@ -1004,7 +1008,7 @@ void FatigueMaterial :: init() {};
 // ALLICHE MATERIAL STATUS
 //////////////////////////////////////////////////////////
 
-AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Alliche mat. status";
 }
 
@@ -1100,7 +1104,8 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector AllicheMaterialStatus :: giveStress(const Vector &strain) {
+Vector AllicheMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
     Vector stress(strain.size() );
@@ -1116,7 +1121,8 @@ Vector AllicheMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain) {
+Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
     Vector stress(strain.size() );
@@ -1239,8 +1245,8 @@ void AllicheMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *AllicheMaterial :: giveNewMaterialStatus(Element *e) {
-    AllicheMaterialStatus *newStatus = new AllicheMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *AllicheMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    AllicheMaterialStatus *newStatus = new AllicheMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -1251,7 +1257,7 @@ void AllicheMaterial :: init() {};
 //////////////////////////////////////////////////////////
 // DESMORAT MATERIAL STATUS
 //////////////////////////////////////////////////////////
-DesmoratMaterialStatus :: DesmoratMaterialStatus(DesmoratMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+DesmoratMaterialStatus :: DesmoratMaterialStatus(DesmoratMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "Desmorat mat. status";
 }
 
@@ -1296,7 +1302,8 @@ Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) 
 }
 
 //////////////////////////////////////////////////////////
-Vector DesmoratMaterialStatus :: giveStress(const Vector &strain) {
+Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     Vector stress(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
@@ -1340,7 +1347,8 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     Vector stress(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
@@ -1417,8 +1425,8 @@ void DesmoratMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *DesmoratMaterial :: giveNewMaterialStatus(Element *e) {
-    DesmoratMaterialStatus *newStatus = new DesmoratMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *DesmoratMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DesmoratMaterialStatus *newStatus = new DesmoratMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 

@@ -2,6 +2,7 @@
 #define _ELEMENT_DISCRETE_H
 
 #include "element.h"
+#include "simplex.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -19,6 +20,9 @@ protected:
     virtual void checkNodeType() const;
     virtual void setIntegrationPointsAndWeights();
 
+    vector< Simplex * >simplices;
+    double volumetricStrain;
+
 public:
     RigidBodyContact(const unsigned dim);
     virtual Matrix giveAMatrix(Point a, Point x) const;
@@ -30,9 +34,9 @@ public:
     vector< Node * >giveVertices() const { return vert; };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
-    virtual Vector giveContactStrainNT(const Vector &DoFs) const;
-    virtual Vector giveContactStrainXYZ(const Vector &DoFs) const;
-    virtual Vector giveContactStressXYZ(const Vector &DoFs);
+    virtual Vector giveContactStrainNT() const;
+    virtual Vector giveContactStrainXYZ() const;
+    virtual Vector giveContactStressXYZ();
     virtual Vector transformToLocal(const Vector &DoFs) const;
     virtual Vector transformToGlobal(const Vector &DoFs) const;
 
@@ -45,19 +49,26 @@ public:
     Point giveT2() const { return t2; };
     double giveVolume(unsigned nodenum) const;
     double giveVolume() const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    double giveVolumetricStrain() { return volumetricStrain; };
+    virtual Matrix giveDampingMatrix() const;
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
+class Transp1D; //forward declaration
 class RigidBodyContactCoupled : public RigidBodyContact
 {
 protected:
-    vector< RigidBodyContact * >friends; //mechanical elements involved in computation
-    vector< double >friendsweight;  //weight of mechanical elements
+    double averagePressure;
+    double volumetricStrainRate;
 public:
     RigidBodyContactCoupled(const unsigned dim);
     ~RigidBodyContactCoupled() {};
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    double giveVolumetricStrainRate() { return volumetricStrain; };
+    double giveAveragePressure() { return averagePressure; };
 };
 
 //////////////////////////////////////////////////////////
@@ -88,6 +99,7 @@ protected:
     Point normal;
     double length, area;
     bool BolanderCapacityMatrix;
+    double averagePressure;
 
     virtual void checkNodeType() const;
     virtual void setIntegrationPointsAndWeights();
@@ -107,7 +119,8 @@ public:
     virtual Matrix giveDampingMatrix() const;
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    vector < Node* > giveVertices() const { return vert;};
+    vector< Node * >giveVertices() const { return vert; };
+    double giveAveragePressure();
 };
 
 //////////////////////////////////////////////////////////
@@ -119,19 +132,21 @@ private:
     vector< RigidBodyContact * >friends; //mechanical elements involved in computation
     vector< double >friendsweight;  //weight of mechanical elements
 
-    void findFriends2D(ElementContainer *elemcont);
-    void findFriends3D(ElementContainer *elemcont);
+    double crackInNeighborhood; ///crack parameter to account for crack opening
+    void findFriendsFromSimplices();
 
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
-    void findElementFriends(ElementContainer *elemcont);
     ~Transp1DCoupled() {};
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
     void init();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    void addNewFriend(RigidBodyContact * f, double weight );
-    unsigned giveNumOfFriends() const {return friends.size();};
+    void addNewFriend(RigidBodyContact *f, double weight);
+    unsigned giveNumOfFriends() const { return friends.size(); };
+    virtual void collectInformationsFromNeigborhood();
+    double giveCrackOpeningInNeigborhood();
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
 };
 
 #endif  /* _ELEMENT_DISCRETE_H */

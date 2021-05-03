@@ -103,7 +103,7 @@ protected:
     vector< unsigned >DoFs;
     vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *n, unsigned dimension) : Gauge(dimension) { nodes = n; multiplier = 1; };
+    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc; multiplier = 1; };
     ForceGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(istringstream &iss);
@@ -118,7 +118,7 @@ public:
 class DoFGauge : public ForceGauge
 {
 public:
-    DoFGauge(NodeContainer *n, unsigned dimension) : ForceGauge(n, dimension) {};
+    DoFGauge(NodeContainer *nc, unsigned dimension) : ForceGauge(nc, dimension) {};
     DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~DoFGauge() {};
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;

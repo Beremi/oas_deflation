@@ -1,5 +1,7 @@
 #include "node.h"
 #include "boundary_condition.h"
+#include "element_discrete.h"
+#include "simplex.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -34,15 +36,40 @@ std :: string Node :: giveLineToSave() const {
 
 //////////////////////////////////////////////////////////
 unsigned Node :: giveOrderOfForceCode(string code) const {
-    char* p;
-    long converted = strtol(code.c_str(), &p, 10);
-    if (not *p) return converted;
-    else{
-        cerr << name << " error: there is no force corresponding to code "<< code << endl;
+    char *p;
+    long converted = strtol(code.c_str(), & p, 10);
+    if ( not * p ) {
+        return converted;
+    } else {
+        cerr << name << " error: there is no force corresponding to code " << code << endl;
         exit(1);
     }
     return 0;
 }
+
+//////////////////////////////////////////////////////////
+Simplex *Node :: addElementToSimplex(RigidBodyContact *rbc) {
+    if ( !simplex ) {
+        simplex = new Simplex(this);
+    }
+    simplex->addElement(rbc);
+    return simplex;
+}
+
+//////////////////////////////////////////////////////////
+void Node :: initSimplex() {
+    if ( simplex ) {
+        simplex->init(dim);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
+    if ( simplex ) {
+        simplex->computeVolumetricStrain(fullDoFs);
+    }
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
@@ -74,11 +101,16 @@ double MechNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 };
 
 //////////////////////////////////////////////////////////
-unsigned MechNode :: giveOrderOfForceCode(string code) const {    
-    if ( code.compare("fx") == 0 ) return 0;
-    else if ( code.compare("fy") == 0 ) return 1;
-    else if ( dim >2 && code.compare("fz") == 0 ) return 2;
-    else return Node::giveOrderOfForceCode(code);
+unsigned MechNode :: giveOrderOfForceCode(string code) const {
+    if ( code.compare("fx") == 0 ) {
+        return 0;
+    } else if ( code.compare("fy") == 0 ) {
+        return 1;
+    } else if ( dim > 2 && code.compare("fz") == 0 )                                                 {
+        return 2;
+    } else                                                                                                             {
+        return Node :: giveOrderOfForceCode(code);
+    }
 }
 
 
@@ -95,8 +127,11 @@ double TrsNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 unsigned TrsNode :: giveOrderOfForceCode(string code) const {
-    if ( code.compare("flux") == 0 || code.compare("fx") == 0 ) return 0;
-    else return Node::giveOrderOfForceCode(code);
+    if ( code.compare("flux") == 0 || code.compare("fx") == 0 ) {
+        return 0;
+    } else {
+        return Node :: giveOrderOfForceCode(code);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -145,13 +180,19 @@ double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 unsigned Particle :: giveOrderOfForceCode(string code) const {
-    if ( dim==3 && code.compare("mx") == 0 ) return 3;
-    else if ( dim==3 && code.compare("my") == 0 ) return 4;
-    else if (code.compare("mz") == 0 ) {
-        if (dim==2) return 2;
-        else return 5;
+    if ( dim == 3 && code.compare("mx") == 0 ) {
+        return 3;
+    } else if ( dim == 3 && code.compare("my") == 0 ) {
+        return 4;
+    } else if ( code.compare("mz") == 0 )                                                             {
+        if ( dim == 2 ) {
+            return 2;
+        } else {
+            return 5;
+        }
+    } else   {
+        return MechNode :: giveOrderOfForceCode(code);
     }
-    else return MechNode::giveOrderOfForceCode(code);
 }
 
 //////////////////////////////////////////////////////////
@@ -177,9 +218,13 @@ double CoupledParticle :: giveDoFBasedValue(string code, const Vector &DoFs) con
 
 //////////////////////////////////////////////////////////
 unsigned CoupledParticle :: giveOrderOfForceCode(string code) const {
-    if (code.compare("flux") == 0 ) {
-        if (dim==2) return 3;
-        else return 6;
+    if ( code.compare("flux") == 0 ) {
+        if ( dim == 2 ) {
+            return 3;
+        } else {
+            return 6;
+        }
+    } else   {
+        return Particle :: giveOrderOfForceCode(code);
     }
-    else return Particle::giveOrderOfForceCode(code);
 }

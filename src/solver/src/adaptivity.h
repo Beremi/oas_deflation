@@ -117,7 +117,7 @@ private:
     std :: vector< unsigned >nodesToKeep;
 
     //////////////////////////////////////////////////////////////////////////////
-    void saveCenters(const std :: string &centersFName, const std :: vector < Point > &centersPoints) {
+    void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
         ofstream outputfile(fs :: path(this->remeshDir) / centersFName);
         if ( outputfile.is_open() ) {
             outputfile << std :: scientific;
@@ -131,8 +131,8 @@ private:
     }
 
     void saveCenters() {
-      // overloading previous method to give it default arguments (to be able to pass them by reference)
-      saveCenters("centersToRemesh.out", this->nodeCentersToRmesh);
+        // overloading previous method to give it default arguments (to be able to pass them by reference)
+        saveCenters("centersToRemesh.out", this->nodeCentersToRmesh);
     }
 
     void saveNodesToKeep() {
@@ -164,15 +164,15 @@ private:
             ( fs :: path(this->remeshDir) / node_file ).string(),
             this->nodesToKeep
             );
-        for ( auto r : regionsToRemove ) {
-            delete r;
+        for ( auto delr : regionsToRemove ) {
+            delete delr;
         }
     };
 
     void saveNodesFine() {
         Node *n;
         Point p;
-        std :: vector< unsigned > nodeIdsToSave;
+        std :: vector< unsigned >nodeIdsToSave;
         // create vector of centers to remove nodes from
         std :: vector< Region * >regionsToRemove;
         regionsToRemove.resize(this->nodeCentersToRmesh.size() );
@@ -198,8 +198,8 @@ private:
             ( fs :: path(this->remeshDir) / node_file ).string(),
             nodeIdsToSave
             );
-        for ( auto r : regionsToRemove ) {
-            delete r;
+        for ( auto delr : regionsToRemove ) {
+            delete delr;
         }
     };
 
@@ -225,15 +225,15 @@ private:
     //////////////////////////////////////////////////////////////////////////////
     void saveRemeshData() {
         this->saveCenters(); // save centersToRemesh
-        std :: vector < Point > fine_centers;
-        for ( auto const & reg : this->fineRegions ) {
-            fine_centers.push_back( reg->giveMainPoint() );
+        std :: vector< Point >fine_centers;
+        for ( auto const &reg : this->fineRegions ) {
+            fine_centers.push_back(reg->giveMainPoint() );
         }
-        this->saveCenters("centersFine.out", fine_centers );  // save any specified vector of points
+        this->saveCenters("centersFine.out", fine_centers);   // save any specified vector of points
 
         this->saveNodesToKeep();
         if ( this->nodesFine ) {
-          this->saveNodesFine();
+            this->saveNodesFine();
         }
 
         this->saveElemStatuses();
@@ -253,15 +253,15 @@ private:
                                   GlobPaths :: BASEDIR.string() + " " +
                                   std :: to_string(this->radius) + " " +
                                   std :: to_string(this->radius2)
-                                   + " " +
-                                  std :: to_string( int( this->nodesFine != nullptr ) );
-                                  ;
+                                  + " " +
+                                  std :: to_string(int( this->nodesFine != nullptr ) );
+        ;
         // cout << remeshCmd << endl;
         if ( this->remesherLmin != 0 ) {
             remeshCmd = remeshCmd + " " + std :: to_string(remesherLmin);
         }
 
-        std::cout << "system cmd " << remeshCmd << '\n';
+        std :: cout << "system cmd " << remeshCmd << '\n';
 
         if ( system(remeshCmd.c_str() ) != 0 ) {
             std :: cerr << "something went wrong during remesher run" << '\n';
@@ -287,8 +287,8 @@ private:
         for ( unsigned i = 0; i < BaseSolver :: elems->giveSize(); i++ ) {
             // change = 0;
             el = BaseSolver :: elems->giveElement(i);
-            if ( el->giveNode(0)->doesMechanics()  // NOTE JK: adaptivity is based on mechanical stress only
-                && isInsideRegions(this->fineRegions, el) ) {
+            if ( el->giveNode(0)->doesMechanics() && // NOTE JK: adaptivity is based on mechanical stress only
+                 isInsideRegions(this->fineRegions, el) ) {
                 el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
             }
         }
@@ -458,10 +458,10 @@ private:
                 } else if ( param.compare("pathToFineNodes") == 0 ) {
                     iss >> path;
                     this->pathToFineNodes = GlobPaths :: BASEDIR / path;
-                    if ( fs :: exists( this->pathToFineNodes ) ) {
-                      this->nodesFine = new NodeContainer();
+                    if ( fs :: exists(this->pathToFineNodes) ) {
+                        this->nodesFine = new NodeContainer();
                     } else {
-                      std::cerr << "file with specified fine geoemtry ' " << this->pathToFineNodes.string() <<"' does not exist, will use randomly generated geoemtry for refined regions" << '\n';
+                        std :: cerr << "file with specified fine geoemtry ' " << this->pathToFineNodes.string() << "' does not exist, will use randomly generated geoemtry for refined regions" << '\n';
                     }
                 }
             }
@@ -514,8 +514,8 @@ public:
         this->dim = BaseSolver :: elems->giveElement(0)->giveDimension();
 
         if ( initial && this->nodesFine ) {
-          std::cout << "Adaptivity: loading fine geometry ..." << '\n';
-          this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim);
+            std :: cout << "Adaptivity: loading fine geometry ..." << '\n';
+            this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim );
         }
 
         BaseSolver :: init(initial);

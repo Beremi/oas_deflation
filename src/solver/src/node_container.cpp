@@ -95,6 +95,27 @@ void NodeContainer :: init() {
 }
 
 //////////////////////////////////////////////////////////
+void NodeContainer :: initSimplices() {
+    for ( auto &n:nodes ) {
+        n->initSimplex();
+    }
+    Simplex *s;
+    for ( auto &n:nodes ) {
+        s = n->giveSimplex();
+        if ( s && !s->isValid() ) {
+            s->findNeighbors();
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
+    for ( auto &n:nodes ) {
+        n->updateSimplexVolumetricStrain(fullDoFs);
+    }
+}
+
+//////////////////////////////////////////////////////////
 void NodeContainer :: establishDoFArray() {
     totalDoFs = 0;
 
@@ -146,7 +167,7 @@ void NodeContainer :: establishDoFArray() {
             }
             prev = cur;
         }
-    } else  {
+    } else {
         cerr << "WARNING: no Dirichlet BC, the model does not prevent rigid-body motion" << endl;
     }
 
@@ -208,7 +229,7 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
     for ( unsigned k = 0; k < blocked.size(); k++ ) {
         r [ blockedDoFid [ k ] ] = blocked [ k ];
     }
-        this->giveConstraints()->calculateDependentDoFs(r, time, true);
+    this->giveConstraints()->calculateDependentDoFs(r, time, true);
 }
 
 
@@ -264,7 +285,7 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vecto
 Node *NodeContainer :: findClosestMechanicalNode(const Point A, double *distance) const {
     Node *closest = nullptr;
     double minDist = 1e20;
-    double distance2=0;
+    double distance2 = 0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         if ( ( * n )->doesMechanics() ) {
             distance2  = ( ( * n )->givePoint() - A ).sqNorm();
@@ -274,7 +295,7 @@ Node *NodeContainer :: findClosestMechanicalNode(const Point A, double *distance
             }
         }
     }
-    *distance = sqrt(minDist);
+    * distance = sqrt(minDist);
     return closest;
 }
 
@@ -282,7 +303,7 @@ Node *NodeContainer :: findClosestMechanicalNode(const Point A, double *distance
 Node *NodeContainer :: findClosestAuxiliaryNode(const Point A, double *distance) const {
     Node *closest = nullptr;
     double minDist = 1e20;
-    double distance2=0;
+    double distance2 = 0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         if ( !( * n )->doesMechanics() && !( * n )->doesTransport() ) {
             distance2  = ( ( * n )->givePoint() - A ).sqNorm();
@@ -292,7 +313,7 @@ Node *NodeContainer :: findClosestAuxiliaryNode(const Point A, double *distance)
             }
         }
     }
-    *distance = sqrt(minDist);
+    * distance = sqrt(minDist);
     return closest;
 }
 
@@ -300,7 +321,7 @@ Node *NodeContainer :: findClosestAuxiliaryNode(const Point A, double *distance)
 Node *NodeContainer :: findClosestTransportNode(const Point A, double *distance) const {
     Node *closest = nullptr;
     double minDist = 1e20;
-    double distance2=0;
+    double distance2 = 0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         if ( ( * n )->doesTransport() ) {
             distance2  = ( ( * n )->givePoint() - A ).sqNorm();
@@ -310,7 +331,7 @@ Node *NodeContainer :: findClosestTransportNode(const Point A, double *distance)
             }
         }
     }
-    *distance = sqrt(minDist);
+    * distance = sqrt(minDist);
     return closest;
 }
 
@@ -325,7 +346,7 @@ Node *NodeContainer :: giveNode(unsigned const num) const {
 
 
 //////////////////////////////////////////////////////////
-unsigned NodeContainer :: giveNodeNumber(const Node* n) const {
-    auto it = std::find (nodes.begin(), nodes.end(), n);
-    return it-nodes.begin();
+unsigned NodeContainer :: giveNodeNumber(const Node *n) const {
+    auto it = std :: find(nodes.begin(), nodes.end(), n);
+    return it - nodes.begin();
 }

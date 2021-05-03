@@ -226,7 +226,7 @@ void get_Phi(double S_s, double S_w, double X_x, double X_y, double Y_s, double 
 // Slide material status
 ////////////////////////////////////////////////////////////////////////////////
 
-Slide32MaterialStatus :: Slide32MaterialStatus(Slide32Material *m, Element *e) : DisMechMaterialStatus(m, e) {
+Slide32MaterialStatus :: Slide32MaterialStatus(Slide32Material *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "slide 3.2 mat. status";
 }
 
@@ -415,8 +415,8 @@ void Slide32MaterialStatus :: check_state_variable_ranges() {
 }
 
 
-Vector Slide32MaterialStatus :: giveStress(const Vector &strain
-                                           ) {
+Vector Slide32MaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     Vector stress(strain.size() );
 
     double s_x_n1, s_y_n1, w_n1;
@@ -635,7 +635,7 @@ void Slide32Material :: readFromLine(istringstream &iss) {
 }
 
 
-MaterialStatus *Slide32Material :: giveNewMaterialStatus(Element *e) {
-    Slide32MaterialStatus *newStatus = new Slide32MaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *Slide32Material :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    Slide32MaterialStatus *newStatus = new Slide32MaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };

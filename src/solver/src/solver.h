@@ -61,9 +61,9 @@ protected:
     CoordinateIndexedSparseMatrix Keff, Kini;
 
     virtual void updateFieldVariables();
-    virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, frozen); };
-    virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, frozen); };
-    virtual void computeInternalExternalForces(const Vector &rr, const bool frozen);
+    virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, frozen, dt); };
+    virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, frozen, dt); };
+    virtual void computeInternalExternalForces(const Vector &rr, const bool frozen, double timeStep);
     virtual void updateKeff(string matrixType);
 private:
 public:
@@ -114,7 +114,7 @@ public:
 class TransientLinearTransportSolver : public SteadyStateNonLinearSolver /// solver of first order differential equation in time
 {
 protected:
-    double alpha_f, alpha_m, gamma, beta, rhoinfty;
+    double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
     Vector v, v_old;
 
@@ -132,6 +132,7 @@ public:
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
+    virtual Solver *readFromFile(const string filename);
 };
 
 //////////////////////////////////////////////////////////

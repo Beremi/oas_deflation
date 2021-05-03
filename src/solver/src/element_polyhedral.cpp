@@ -173,7 +173,7 @@ void TranspPolygonal :: setIntegrationPointsAndWeights() {
                     derxys = ( a * ( 1 + k * r ) + b * ( 1 - k * r ) - c * ( 1 - k * r ) - d * ( 1 + k * r ) ) / 4.;
                     detJ = derxyr.x * derxys.y - derxyr.y * derxys.x;
                     ip_weights [ 4 * i + ( k + 1 ) + ( l + 1 ) / 2 ] = detJ;
-                    stats [ 4 * i + ( k + 1 ) + ( l + 1 ) / 2 ] = mat->giveNewMaterialStatus(this);
+                    stats [ 4 * i + ( k + 1 ) + ( l + 1 ) / 2 ] = mat->giveNewMaterialStatus(this, 4 * i + ( k + 1 ) + ( l + 1 ) / 2);
                 }
             }
             a = c;
@@ -194,7 +194,7 @@ void TranspPolygonal :: setIntegrationPointsAndWeights() {
             ip_locs [ 3 * i + 2 ] = b * ( 1. - 1. / 6. - 2. / 3. ) + a / 6. + centroid * 2. / 3.;
             for ( unsigned t = 0; t < 3; t++ ) {
                 ip_weights [ 3 * i + t ] = tarea / 3.;
-                stats [ 3 * i + t ] = mat->giveNewMaterialStatus(this);
+                stats [ 3 * i + t ] = mat->giveNewMaterialStatus(this, 3 * i + t);
             }
         }
     } else {
