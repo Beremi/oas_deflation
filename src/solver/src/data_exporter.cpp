@@ -212,6 +212,7 @@ void ForceGauge :: readFromLine(istringstream &iss) {
     if ( param.compare("block") == 0 || param.compare("coords") == 0 ) {
         std :: string param2;
         bool mech = true;
+        iss >> param2;
         if ( param2.compare("mech") == 0 ) {
             mech = true;
         } else if ( param2.compare("trsp") == 0 ) {
@@ -219,7 +220,6 @@ void ForceGauge :: readFromLine(istringstream &iss) {
         } else {
             std :: cout << "type of force 'mech' or 'trsp' for ForceGauge not determined, by default, 'mech' is considered" << '\n';
         }
-        iss >> param2;
         Block bl;
         bl.readFromLine(iss);
         for ( auto const &nod : * nodes ) {
