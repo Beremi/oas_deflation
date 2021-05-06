@@ -832,7 +832,7 @@ if __name__ == '__main__':
 
     f = open (file, 'r')
     for row in f:
-        if not (row[0]=='#'):
+        if row and row.strip() and not row.startswith('#'):
             r = row.split()
             #print(r)
             #
