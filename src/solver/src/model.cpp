@@ -14,7 +14,9 @@ void Model :: init(const bool &initial) {     //initialization
     //pblocks.apply(); //moved to reader
     bconds.init();
     nodes.init();
-    matrs.init();
+    if ( initial ){
+        matrs.init();
+    }
     elems.init();
     nodes.initSimplices();
     constr.init(& nodes, & bconds);
@@ -70,7 +72,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                     iss >> istr;
                     nodes.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
-            } else if ( istr.compare("MatFiles") == 0 ) {
+            } else if ( initial && istr.compare("MatFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
@@ -147,7 +149,7 @@ void Model :: clear() {
     bconds = BCContainer();
     constr = ConstraintContainer();
     nodes = NodeContainer();
-    matrs = MaterialContainer();
+    // matrs = MaterialContainer();  // materials remain too
     elems = ElementContainer();
     exporters = ExporterContainer();
     pblocks = PBlockContainer();
