@@ -45,7 +45,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
         istringstream iss(line);
         iss >> param;
         if ( param.compare("idc_nodes") == 0 ) {
-            coords_active [ nummaxunit - 1 ] = true;
+            nodes_active [ nummaxunit - 1 ] = true;
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> c_nodes [ nummaxunit - 1 ] [ j ];
             }
