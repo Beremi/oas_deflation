@@ -900,7 +900,7 @@ Vector Transp1DCoupled :: giveInternalForces(const Vector &DoFs, bool frozen, do
             volStrain = ( s0->giveVolumetricStrain() + s1->giveVolumetricStrain() ) / 2.;
         } else if ( s0->isValid() ) {
             volStrain = s0->giveVolumetricStrain();
-        } else                                                                {
+        } else  {
             volStrain = s1->giveVolumetricStrain();
         }
     }

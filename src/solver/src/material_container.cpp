@@ -1,5 +1,12 @@
 #include "material_container.h"
 
+#include "material_RVE.h"
+#include "mars_material.h"
+#include "fatigue_material.h"
+#include "material_misc.h"
+#include "material_slide_3_2.h"
+#include "material_HTC.h"
+
 //////////////////////////////////////////////////////////
 MaterialContainer :: ~MaterialContainer() {
     for ( vector< Material * > :: iterator m = matrs.begin(); m != matrs.end(); ++m ) {
@@ -62,6 +69,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteMechanicalRVEMaterial") == 0 ) {
                     DiscreteMechanicalRVEMaterial *newmat = new DiscreteMechanicalRVEMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("HTCMaterial") == 0 ) {
+                    HTCMaterial *newmat = new HTCMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteTransportRVEMaterialPrecomputed") == 0 ) {

@@ -1,4 +1,5 @@
 #include "vtk_exporter.h"
+#include "element_discrete.h"
 #include "misc.h"
 
 //////////////////////////////////////////////////////////

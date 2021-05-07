@@ -36,6 +36,7 @@ public:
     virtual void init();
     virtual void update();
     Model *giveWholeRVE() { return RVE; };
+    unsigned giveNumOfDimensions() const {return ndim;};
 };
 
 //////////////////////////////////////////////////////////
@@ -141,6 +142,8 @@ protected:
     DiscreteMechanicalRVEMaterialStatus *mechRVEstat;
     DiscreteTransportRVEMaterialStatus *trspRVEstat;
 
+    double temp_volumetricStrain, volumetricStrain, volStrainRate; 
+
     void findFriends();
 public:
     DiscreteCoupledRVEMaterialStatus(Material *m, Element *e, unsigned ipnum, fs :: path masterfileM, fs :: path masterfileT);
@@ -154,6 +157,9 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual void setEigenStrain(Vector &x);
     virtual std :: string giveLineToSave() const;
+    virtual double giveDampingConstant() const { return trspRVEstat->giveDampingConstant(); };
+    virtual double computeBiotEffect() const;
+
 };
 
 //////////////////////////////////////////////////////////
@@ -162,6 +168,9 @@ class DiscreteCoupledRVEMaterial : public Material
 protected:
     DiscreteMechanicalRVEMaterial *mechRVEmat;
     DiscreteTransportRVEMaterial *trspRVEmat;
+
+    double biotCoeff;
+
 public:
     DiscreteCoupledRVEMaterial() { name = "coupled RVE material"; };
     virtual ~DiscreteCoupledRVEMaterial();
@@ -169,6 +178,7 @@ public:
     virtual void readFromLine(istringstream &iss);
     DiscreteMechanicalRVEMaterial *giveMechanicalRVEmat() { return mechRVEmat; }
     DiscreteTransportRVEMaterial *giveTransportRVEmat() { return trspRVEmat; }
+    double giveBiotCoefficient() const {return biotCoeff;};
 };
 
 //////////////////////////////////////////////////////////
@@ -211,8 +221,6 @@ public:
     TrsprtMaterial *giveMasterMaterial() { return masterMaterial; };
     void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM);
 };
-
-
 
 
 /*

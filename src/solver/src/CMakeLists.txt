@@ -32,6 +32,7 @@ set (solver_files
     shape_functions.cpp
     integration.cpp
     simplex.cpp
+    material_HTC.cpp
     )
 
 add_library(solver

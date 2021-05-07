@@ -1,5 +1,7 @@
 #include "material_RVE.h"
 #include "model.h"
+#include "element_discrete.h"
+#include "element_continuous.h"
 
 
 //////////////////////////////////////////////////////////
@@ -710,16 +712,23 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
     trspRVEstat->init();
 
     findFriends();
+
+    volumetricStrain = 0;
 }
 
 //////////////////////////////////////////////////////////
 void DiscreteCoupledRVEMaterialStatus ::  update() {
     mechRVEstat->update();
     trspRVEstat->update();
+
+    volumetricStrain = temp_volumetricStrain; 
 }
 
 //////////////////////////////////////////////////////////
 Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
+    DiscreteCoupledRVEMaterial * dcm = static_cast< DiscreteCoupledRVEMaterial * >(mat);
+    CoupledCosseratBrick * brick =  static_cast< CoupledCosseratBrick * >(element);
+
     unsigned sizeM = mechRVEstat->giveStrainSize();
     unsigned sizeT = trspRVEstat->giveStrainSize();
     temp_strain.resize(sizeM + sizeT);
@@ -734,17 +743,39 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
     }
     strainT [ sizeT ] = strain [ sizeT + sizeM ]; //macroscopic pressure
 
+    //calculate volumetric strain
+    temp_volumetricStrain = 0;
+    unsigned ndim = mechRVEstat->giveNumOfDimensions();
+    for (unsigned v=0; v<ndim; v++) temp_volumetricStrain += strainM[v];
+    temp_volumetricStrain /= ndim;
+    if(timeStep>0) volStrainRate = (temp_volumetricStrain-volumetricStrain)/timeStep;
+    else volStrainRate = 0;
+
     Vector stressM = mechRVEstat->giveStress(strainM, timeStep);
-    Vector stressT = trspRVEstat->giveStress(strainT, timeStep);
+    double mechBiot = -brick->givePressureAtINtegrationPoint(idx)*dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
+    Vector stressT = trspRVEstat->giveStress(strainT, timeStep);    
 
     temp_stress.resize(sizeM + sizeT);
     for ( i = 0; i < sizeM; i++ ) {
         temp_stress [ i ] = stressM [ i ];
     }
+
+    for ( i = 0; i < 3; i++ ) {
+        temp_stress [ i ] += mechBiot;
+    }
+
     for ( i = 0; i < sizeT; i++ ) {
         temp_stress [ i + sizeM ] = stressT [ i ];
     }
+
     return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+double DiscreteCoupledRVEMaterialStatus :: computeBiotEffect() const{
+    DiscreteCoupledRVEMaterial * dcm = static_cast< DiscreteCoupledRVEMaterial * >(mat);
+    cout << "BOIT PARAMS" <<  dcm->giveBiotCoefficient() << " " << volStrainRate << " " << temp_volumetricStrain << endl;
+    return dcm->giveBiotCoefficient()*volStrainRate*3*1.000000e+03; //TODO: fix density
 }
 
 //////////////////////////////////////////////////////////
@@ -935,7 +966,26 @@ void DiscreteCoupledRVEMaterial :: readFromLine(istringstream &iss) {
     trspRVEmat = new DiscreteTransportRVEMaterial();
     mechRVEmat->readFromLine(iss);
     trspRVEmat->readFromLine(iss);
+
+    string param;
+    bool bbiot;
+    bbiot = false;
+
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("biot_coeff") == 0 ) {
+            bbiot = true;
+            iss >> biotCoeff;
+        }
+    }
+    if ( !bbiot ) {
+        cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }    
+
+    
 }
+
 
 
 /*

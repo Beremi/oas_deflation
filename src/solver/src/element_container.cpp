@@ -1,4 +1,7 @@
 #include "element_container.h"
+#include "element_discrete.h"
+#include "element_continuous.h"
+#include "element_polyhedral.h"
 #include <algorithm>
 
 //////////////////////////////////////////////////////////
@@ -52,6 +55,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TrsprtBrick") == 0 ) {
                     TrsprtBrick *newelem = new TrsprtBrick();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("TrsprtTemprtrCoupledBrick") == 0 ) {
+                    TrsprtTemprtrCoupledBrick *newelem = new TrsprtTemprtrCoupledBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MechanicalQuad") == 0 ) {

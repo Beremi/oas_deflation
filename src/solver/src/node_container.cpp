@@ -51,6 +51,10 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     TrsDoF *newnode = new TrsDoF(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
+                } else if ( nodeType.compare("TrsTemprtrCoupledNode") == 0 ) {
+                    TrsTemprtrCoupledNode *newnode = new TrsTemprtrCoupledNode(dim);
+                    newnode->readFromLine(iss);
+                    nodes.push_back(newnode);
                 } else {
                     cerr << "Error: node type '" <<  nodeType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);

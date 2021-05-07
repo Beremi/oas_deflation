@@ -1,7 +1,7 @@
 #include "constraint.h"
 #include "node_container.h"
 #include "element_container.h"
-#include "element_container.h"
+#include "element_discrete.h"
 #include "boundary_condition.h"
 #include <fstream>
 

@@ -136,6 +136,19 @@ unsigned TrsNode :: giveOrderOfForceCode(string code) const {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// TRANSPORT + TEMPERATURE NODE
+double TrsTemprtrCoupledNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
+    if ( code.compare("humidity") == 0 ) {
+        return DoFs [ firstDoF ];
+    } else if ( code.compare("temperature") == 0 ) {
+        return DoFs [ firstDoF+1 ];
+    } else {
+        return Node :: giveDoFBasedValue(code, DoFs);
+    }
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
 void TrsDoF :: readFromLine(istringstream &iss) {
     ( void ) iss;
