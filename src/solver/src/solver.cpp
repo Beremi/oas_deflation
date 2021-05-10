@@ -136,7 +136,10 @@ void Solver :: setTime(double t) {
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: init(const bool &initial) {
+void Solver :: init(string init_r_file, string init_v_file, const bool &initial) {
+    (void) init_r_file;
+    (void) init_v_file;
+
     elems->readMatStatsFromFile(this->init_time, this->init_step);
     if ( initial ) {
         step = init_step;
@@ -150,11 +153,11 @@ void Solver :: init(const bool &initial) {
     totalDoFnum = freeDoFnum + fixedDoFnum;
 
     load = Vector(totalDoFnum);
+    r = Vector(totalDoFnum);
     f_ext = Vector(totalDoFnum);
     f_int = Vector(totalDoFnum);
     f_dam = Vector(totalDoFnum);
     f_acc = Vector(totalDoFnum);
-    r = Vector(totalDoFnum);
     trial_r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
     f = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
@@ -178,8 +181,14 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
 SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: init(const bool &initial) {
-    Solver :: init(initial);
+void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+    Solver :: init(init_r_file, init_v_file, initial);
+
+    //initial conditions
+    if(init_r_file.compare("")!=0){
+        r = nodes->readInitialConditions( init_r_file );
+    }
+    computeInternalExternalForces(r, false, -1); //to activate initial conditions at elements
 
     elems->prepareStiffnessMatrix(Kini);
     Keff = Kini;
@@ -313,8 +322,8 @@ SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: init(const bool &initial) {
-    SteadyStateLinearSolver :: init(initial);
+void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+    SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
 
     W_ext_oldM = 0;
     W_int_oldM = 0;
@@ -734,21 +743,23 @@ void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty) {
 }
 
 //////////////////////////////////////////////////////////
-TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {}
+TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {
+}
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: init(const bool &initial) {
-    SteadyStateLinearSolver :: init(initial);
+void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+    SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
 
+    nodes->addRHS_nodalLoad(load, 0);
+    nodes->updateDirrichletBC(r, 0);
+    computeInternalExternalForces(r, true, -1.); //at time 0
+    
     v_old = Vector(totalDoFnum);
     elems->prepareDampingMatrix(C);
     elems->updateDampingMatrix(C);
     updateKeff("elastic");
 
     //compute initial presure derivative
-    nodes->addRHS_nodalLoad(load, 0);
-    nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r, true, -1.); //at time 0
     nodes->giveReducedForceArray(residuals, f);
     terminated = !LinalgSymmetricSolver(C, ddr, f,  ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type);
     v = Vector(totalDoFnum);
@@ -841,8 +852,8 @@ TransientNonLinearTransportSolver :: TransientNonLinearTransportSolver() {
 TransientNonLinearTransportSolver :: ~TransientNonLinearTransportSolver() {}
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearTransportSolver :: init(const bool &initial) {
-    TransientLinearTransportSolver :: init(initial);
+void TransientNonLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+    TransientLinearTransportSolver :: init(init_r_file, init_v_file, initial);
 }
 
 
@@ -881,10 +892,14 @@ void TransientLinearMechanicalSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: init(const bool &initial) {
-    SteadyStateLinearSolver :: init(initial);
+void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+    SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
 
-    v = Vector(totalDoFnum);
+    //initial conditions
+    if(init_v_file.compare("")!=0){
+        v = nodes->readInitialConditions( init_r_file );
+    }else v=Vector(totalDoFnum);
+
     v_old = Vector(totalDoFnum);
     a_old = Vector(totalDoFnum);
     elems->prepareDampingMatrix(C);
@@ -976,8 +991,8 @@ TransientNonLinearMechanicalSolver :: TransientNonLinearMechanicalSolver() {
 TransientNonLinearMechanicalSolver :: ~TransientNonLinearMechanicalSolver() {}
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearMechanicalSolver :: init(const bool &initial) {
-    TransientLinearMechanicalSolver :: init(initial);
+void TransientNonLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+    TransientLinearMechanicalSolver :: init(init_r_file, init_v_file, initial);
 }
 
 

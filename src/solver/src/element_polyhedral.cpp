@@ -354,7 +354,7 @@ Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
     Matrix M = TranspPolygonal :: giveDampingMatrix();
     double cap = 0;
     for ( size_t i = 0; i < ip_weights.size(); i++ ) {
-        cap += ip_weights [ i ] * stats [ i ]->giveDampingConstant();
+        cap += ip_weights [ i ] * stats [ i ]->giveDampingTensor()[0][0];
     }
     cap /= volume;
 

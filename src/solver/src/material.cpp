@@ -30,6 +30,7 @@ void MaterialStatus :: setEigenStrain(Vector &x) {
     eigenstrain = x;
 }
 
+//////////////////////////////////////////////////////////
 bool MaterialStatus :: isElastic(const bool &now) const {
     if ( this->name != "basic mat. status" ) {
         std :: cout << "using elastic check for base class MaterialStatus, if this is not a desire, you need to implement method \'isElastic\' for " << this->name << '\n';
@@ -82,9 +83,11 @@ Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimensi
 };
 
 //////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: giveDampingConstant() const {
+Matrix TrsprtMaterialStatus :: giveDampingTensor() const {
     TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-    return -m->giveCapacity() * m->giveDensity();
+    Matrix M(1,1);
+    M[0][0] = -m->giveCapacity() * m->giveDensity();
+    return M;
 }
 
 //////////////////////////////////////////////////////////

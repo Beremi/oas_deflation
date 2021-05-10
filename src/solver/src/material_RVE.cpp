@@ -294,7 +294,7 @@ Matrix DiscreteTransportRVEMaterialStatus :: giveStiffnessTensor(string type, un
 }
 
 //////////////////////////////////////////////////////////
-double DiscreteTransportRVEMaterialStatus :: giveDampingConstant() const {
+Matrix DiscreteTransportRVEMaterialStatus :: giveDampingTensor() const {
     ElementContainer *elems = RVE->giveElements();
     Transp1D *e;
     double volume = 0;
@@ -302,11 +302,13 @@ double DiscreteTransportRVEMaterialStatus :: giveDampingConstant() const {
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
         if ( e ) {
-            mass += e->giveVolume() * e->giveMatStatus(0)->giveDampingConstant();
+            mass += e->giveVolume() * e->giveMatStatus(0)->giveDampingTensor()[0][0];
             volume += e->giveVolume();
         }
     }
-    return mass / volume;
+    Matrix m(1,1);
+    m[0][0] = mass / volume;
+    return m;
 };
 
 //////////////////////////////////////////////////////////
@@ -603,9 +605,11 @@ Matrix DiscreteTransportRVEMaterialPrecomputedStatus :: giveStiffnessTensor(stri
 }
 
 //////////////////////////////////////////////////////////
-double DiscreteTransportRVEMaterialPrecomputedStatus :: giveDampingConstant() const {
+Matrix DiscreteTransportRVEMaterialPrecomputedStatus :: giveDampingTensor() const {
     DiscreteTransportRVEMaterialPrecomputed *macromaterial = static_cast< DiscreteTransportRVEMaterialPrecomputed * >( mat );
-    return macromaterial->givePrecomputedCapacity();
+    Matrix M(1,1);
+    M[0][0] = macromaterial->givePrecomputedCapacity();
+    return M;
 };
 
 //////////////////////////////////////////////////////////
@@ -631,7 +635,7 @@ void DiscreteTransportRVEMaterialPrecomputedStatus :: init() {
                 stiff [ i ] [ j ] = stress [ j ];
             }
         }
-        double c = DiscreteTransportRVEMaterialStatus :: giveDampingConstant();
+        double c = DiscreteTransportRVEMaterialStatus :: giveDampingTensor()[0][0];
 
         TrsprtMaterialStatus *status = static_cast< TrsprtMaterialStatus * >( RVE->giveElements()->giveElement(0)->giveMatStatus(0) );
         TrsprtMaterial *material = static_cast< TrsprtMaterial * >( RVE->giveElements()->giveElement(0)->giveMaterial() );

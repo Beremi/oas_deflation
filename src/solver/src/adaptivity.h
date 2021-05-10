@@ -518,7 +518,7 @@ public:
             this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim );
         }
 
-        BaseSolver :: init(initial);
+        BaseSolver :: init("","",initial);
     };
 
 

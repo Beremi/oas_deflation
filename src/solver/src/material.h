@@ -16,7 +16,7 @@ class Material;
 class MaterialStatus
 {
 private:
-
+    
 public:
     MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; };
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
@@ -33,8 +33,8 @@ public:
     virtual Vector giveTempStrain() const { return temp_strain; };
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; ( void ) type; return Matrix(0, 0); };
-    virtual double giveMassConstant() const { return 0; };
-    virtual double giveDampingConstant() const { return 0; };
+    virtual Matrix giveMassTensor() const { return Matrix(0,0); };
+    virtual Matrix giveDampingTensor() const { return Matrix(0,0); };
     virtual void setEigenStrain(Vector &x);
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
@@ -42,7 +42,10 @@ public:
         ( void ) iss;
         std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
+    virtual Vector giveInternalSource()const{return Vector(0);};
     virtual bool isElastic(const bool &now = false) const;
+    virtual void setParameterValue(string code, double value){ (void) code; (void) value;};
+
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
@@ -59,6 +62,8 @@ class Material
 {
 private:
     unsigned id;  // to be able to save element
+protected: 
+    bool produceInternalSources;
 public:
     Material() { name = "basic material"; };
     virtual ~Material() {};
@@ -68,7 +73,8 @@ public:
     string giveName() { return name; }
     unsigned giveId() { return id; }
     void setId(const unsigned &i) { this->id = i; }
-    virtual void init() {};
+    virtual void init() {produceInternalSources = false; };
+    bool isProducingInternalSources()const{ return produceInternalSources;}
 protected:
     string name;
 };
@@ -88,7 +94,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep); //terminology from mechanics, it returns flux
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual double giveDampingConstant() const;
+    virtual Matrix giveDampingTensor() const;
     virtual double giveValue(string code) const;
     virtual double giveEffectiveConductivity(string type) const;
     virtual void updateEffectiveConductivity(double pressure);

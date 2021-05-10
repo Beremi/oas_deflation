@@ -7,6 +7,8 @@ Model :: Model(bool pT) {
     bconds.setContainers(& funcs);
     elems.setContainers(& nodes, & bconds);
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
+    initialFieldFile = "";
+    initialTimeDerFieldFile = "";
 }
 
 //////////////////////////////////////////////////////////
@@ -22,7 +24,10 @@ void Model :: init(const bool &initial) {     //initialization
     constr.init(& nodes, & bconds);
     elems.findElementFriends();
     exporters.init(initial);
-    solver->init(initial);
+
+    if (initialFieldFile.compare("")!=0) initialFieldFile = ( baseDir / initialFieldFile ).string();
+    if (initialTimeDerFieldFile.compare("")!=0) initialTimeDerFieldFile = ( baseDir / initialTimeDerFieldFile ).string();
+    solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
 }
 
 //////////////////////////////////////////////////////////
@@ -127,7 +132,11 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 solver = solver->readFromFile( ( baseDir / istr ).string() );
                 // QUESTION JK: why is this here and not in the constructor? together with new Solver() ?
                 solver->setContainers(& elems, & nodes, & funcs);
-            }
+            } else if ( initial && istr.compare("initial_master_field") == 0 ){
+                iss >> initialFieldFile; 
+            } else if ( initial && istr.compare("initial_master_time_derivative_field") == 0 ){
+                iss >> initialTimeDerFieldFile;                
+            } 
         }
         inputfile.close();
         cout << "Master input file '" <<  fullPath.string() << "' succesfully loaded" << endl;

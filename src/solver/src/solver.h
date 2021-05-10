@@ -32,7 +32,7 @@ protected:
 public:
     Solver();
     virtual ~Solver() {};
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };
     void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions);
@@ -69,7 +69,7 @@ private:
 public:
     SteadyStateLinearSolver();
     virtual ~SteadyStateLinearSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -102,7 +102,7 @@ protected:
 public:
     SteadyStateNonLinearSolver();
     virtual ~SteadyStateNonLinearSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool &initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual Vector giveNodalForces() { return f_ext_old; };
     virtual void runBeforeEachStep();
@@ -128,7 +128,7 @@ protected:
 public:
     TransientLinearTransportSolver();
     virtual ~TransientLinearTransportSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool &initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -143,7 +143,7 @@ protected:
 public:
     TransientNonLinearTransportSolver();
     virtual ~TransientNonLinearTransportSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool &initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -165,7 +165,7 @@ protected:
 public:
     TransientLinearMechanicalSolver();
     virtual ~TransientLinearMechanicalSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool &initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -179,7 +179,7 @@ protected:
 public:
     TransientNonLinearMechanicalSolver();
     virtual ~TransientNonLinearMechanicalSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool &initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();

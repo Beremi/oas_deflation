@@ -53,6 +53,8 @@ public:
     fs :: path baseDir;
     fs :: path resultDir;
 
+    string initialFieldFile, initialTimeDerFieldFile; //files with initial conditions
+
 protected:
     unsigned ndim;
     bool printTime;
