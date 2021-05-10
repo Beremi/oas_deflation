@@ -995,14 +995,14 @@ def create3dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
 
 
 
-def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, node_coords_init=None):
+def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, node_coords_init=None, interfaceMinDist=-1):
     print('Creating corrosion rebar model...')
     dim=2
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init)
 
 
 
@@ -3127,7 +3127,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
 
 
 
-def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=None):
+def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=None):
     dim = 2
 
     if node_coords_init is None:
@@ -3149,7 +3149,10 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiamete
 
     if node_coords_init is None:
 
-        node_coords.append(np.array([indent, indent]))
+        node_coords.append(np.array([maxLim[0]/2, 2*indentRP]))
+        mechBC = np.array([0,0,0,-1,-1,-1])
+        mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+        mechBC_merged.append(mBC)
 
         if sampleBorders:
             """
@@ -3170,7 +3173,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiamete
             nodeB = np.array([maxLim[0]-indent, indent])
             pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*4, dim, node_coords, trials, catchCorners=False, equidist=False)
 
-            bottomRigidPlateMechBC = np.array([0, 0,0,   -1,-1,-1])
+            bottomRigidPlateMechBC = np.array([-1, 0,0,   -1,-1,-1])
             bottomRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
             rigidPlates.append(bottomRigidPlate)
             govNodes.append(np.array([ maxLim[0]/2, indentRP ]))
@@ -3203,26 +3206,61 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiamete
 
 
         #rebar
+
+        #sampling interfaces
         for r in range (rebarCount):
             #rebar edge
             centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
-            pointGenerators.generateNodesCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials )
+
+
+            pointGenerators.generateNodesCircle2dRand(centre, rebarDiameter/2, interfaceMinDist, node_coords, trials )
             #rebar crossection
-            pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
+            #pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
 
             govNodes.append(np.array( np.copy(centre) ))
 
 
-        fineRegDepth = 3*rebarDepth
+        rebarBC = np.array([2, 0, -1, -1, -1, -1, rebarCount])
+        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
+
+
+        fineRegDepth = 2*rebarDepth
+
 
         #fine top half rect
         fineTopBounds = np.array([     indent,          maxLim[1] -fineRegDepth,      maxLim[0],         maxLim[1]   ])
         pointGenerators.generateNodesRect(fineTopBounds, minDist, dim, trials, node_coords, useLowBound=True)
 
+
+        #sampling rebars
+        for r in range (rebarCount):
+            #rebar edge
+            centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+
+            #remove points from rebars
+            newNodes = []
+            for i in range (len(node_coords)):
+                if (np.linalg.norm(centre - node_coords[i]) > rebarDiameter/2*0.999):
+                    newNodes.append(node_coords[i])
+
+            node_coords = newNodes.copy()
+
+            if (rebarMinDist<0):
+                print ('rebars centre')
+                node_coords.append(centre*1e-5)
+            else:
+                #rebar crossection
+                pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
+
+
+
+
+
+
         #intermediate rect
-        interHeight = maxLim[1]  / 3
-        interBounds = np.array([     indent,      maxLim[1] -fineRegDepth - interHeight , maxLim[0],             maxLim[1] *0.8  ])
-        pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = 5*minDist, bottomMinDist = minDist, gradienDirection=1)
+        interHeight = (maxLim[1]-fineRegDepth)  / 2
+        interBounds = np.array([     indent,      maxLim[1] -fineRegDepth - interHeight , maxLim[0],              maxLim[1] -fineRegDepth])
+        pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = 6*minDist, bottomMinDist = minDist, gradienDirection=1)
 
         #bottom rough rect
         roughBottomBounds =  np.array([     indent,      indent,  maxLim[0],              maxLim[1] -fineRegDepth - interHeight ])

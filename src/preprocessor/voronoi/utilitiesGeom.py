@@ -1139,7 +1139,10 @@ def saveMechBC(master_folder,dim, nodes_mechBCmerged, govNodesBC = False):
         if (dim == 2):
             bc = np.zeros (1 + 6)
             bc[0] = nodes_mechBCmerged[i].getNodeIdx()
-            bc[1:] = nodes_mechBCmerged[i].getMechBC()
+            bc[1:7] = nodes_mechBCmerged[i].getMechBC()[0:6]
+            if (len(nodes_mechBCmerged[i].getMechBC()) ==  7):
+                bc[0] += nodes_mechBCmerged[i].getMechBC()[6]
+
         elif (dim == 3):
             bc = np.zeros (1 + 12)
             bc[0] = nodes_mechBCmerged[i].getNodeIdx()
@@ -1364,7 +1367,7 @@ def saveExporters(master_folder,activeTransport, activeMechanics, exporters=[]):
 
 
 
-def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
+def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
     print('Saving nodes: %s...' %nodetype, end='')
     sys.stdout.flush()
 
@@ -1393,6 +1396,11 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename):
     fl=open(os.path.join(master_folder,filename),'w')
     if len(nodes_out) > 0:
         np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
+
+    if virtualDoF !=0:
+        for i in range (virtualDoF):
+            fl.write('MechDoF\n')
+
     fl.close()
     print('done.')
     sys.stdout.flush()
@@ -2186,7 +2194,8 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
 
             for r in range (rebarCount):
                 centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
-                f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
+                #f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
+                f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
 
 
 
@@ -2216,7 +2225,7 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
 
 def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes, expansionRingsProps=[]):
     #saving gov nodes
-    saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile)
+    saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile, virtualDoF=1)
     #saving gov nodes mech BC
     for i in range (len(govNodesMechBC)):
         m = govNodesMechBC[i]

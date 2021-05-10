@@ -101,6 +101,7 @@ class Model:
         self.rebarDiameter = None
         self.rebarCount = None
         self.rebarDepth = None
+        self.interfaceMinDist = None
 
 
 
@@ -114,6 +115,8 @@ class Model:
                 self.rebarCount = int(r[i+1])
             if (r[i]=='rebarDepth'):
                 self.rebarDepth = float(r[i+1])
+            if (r[i]=='interfaceMinDist'):
+                self.interfaceMinDist = float(r[i+1])
 
 
 
@@ -471,9 +474,12 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
     def run_2d_corrosionRebar(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
-
+        if self.activeTransport == False:
+            self.rigidPlatesTrspt = []
+            self.govNodesTrspt=[]
+            self.govNodesTrsptBC = []
 
     def run_2d_coupledRVE(self):
         print('2d_coupledRVE')
@@ -546,8 +552,11 @@ class Model:
                             expansionRingsProps.append(self.rebarDiameter)
                             expansionRingsProps.append(self.maxLim)
 
-                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps)
-                        self.constraint = True
+                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps)
+                            self.constraint = True
+                        else:
+                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
+                            self.constraint = True
 
         self.totalNodeCount += len(self.govNodes)
 
