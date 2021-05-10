@@ -23,7 +23,7 @@ public:
     virtual void giveShapeFGradNatural(const Point *x, Matrix &phiGradNat) const { ( void ) x; ( void ) phiGradNat; }; //without Jacobi transformation, natural coordinates
     void giveShapeFGrad(const Point *x, const vector< Node * > &nodes, Matrix &phiGrad) const;
     void giveShapeFGrad(const Point *x, const Matrix &JacobiMInverse, Matrix &phiGrad) const;
-    void giveJacobiM(const Point *x, const vector< Node * > &nodes, const Matrix &phiGradNat, Matrix &JacobiM) const;
+    void giveJacobiM(const vector< Node * > &nodes, const Matrix &phiGradNat, Matrix &JacobiM) const;
     void giveJacobiM(const Point *x, const vector< Node * > &nodes, Matrix &JacobiM) const;
     void giveJacobiMInverse(const Matrix &JacobiM, Matrix &JacobiMInverse) const;
     void giveJacobiMInverse(const Point *x, const vector< Node * > &nodes, Matrix &JacobiMInverse) const;

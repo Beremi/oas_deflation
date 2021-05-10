@@ -55,12 +55,12 @@ private:
     void check_state_variable_ranges();
 
 public:
-    Slide32MaterialStatus(Slide32Material *m, Element *e);
+    Slide32MaterialStatus(Slide32Material *m, Element *e, unsigned ipnum);
     virtual ~Slide32MaterialStatus() {};
     void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
-    virtual Vector giveStress(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
 };
 
@@ -94,7 +94,7 @@ public:
     Slide32Material() { name = "Slide32 material"; };
     ~Slide32Material() {};
     void readFromLine(istringstream &iss);
-    MaterialStatus *giveNewMaterialStatus(Element *e);
+    MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
 
     double giveE_s() const { return E0 * alpha; }
     double giveGamma_s() const { return gamma_s; }

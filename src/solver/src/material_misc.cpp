@@ -2,7 +2,7 @@
 #include "element_discrete.h"
 
 
-BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "BRITTLE mat. status";
     RAND_H = 1.0;
 }
@@ -77,19 +77,20 @@ Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 }
 
 //////////////////////////////////////////////////////////
-Vector BrittleMaterialStatus :: giveStress(const Vector &strain) {
+Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(strain);
     if ( damage ) {
         Matrix stiff = giveStiffnessTensor("secant", strain.size() );
         return stiff * strain;
     } else {
-        return DisMechMaterialStatus :: giveStress(strain);
+        return DisMechMaterialStatus :: giveStress(strain, timeStep);
     }
 }
 
 
 //////////////////////////////////////////////////////////
-Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     return Vector(0); //TOTO: FIX
 }
 
@@ -126,8 +127,8 @@ void BrittleMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *BrittleMaterial :: giveNewMaterialStatus(Element *e) {
-    BrittleMaterialStatus *newStatus = new BrittleMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *BrittleMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    BrittleMaterialStatus *newStatus = new BrittleMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -143,7 +144,7 @@ void BrittleMaterial :: init() {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-ContactMaterialStatus :: ContactMaterialStatus(ContactMaterial *m, Element *e) : DisMechMaterialStatus(m, e) {
+ContactMaterialStatus :: ContactMaterialStatus(ContactMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "CONTACT mat. status";
 }
 
@@ -180,7 +181,8 @@ Matrix ContactMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 }
 
 //////////////////////////////////////////////////////////
-Vector ContactMaterialStatus :: giveStress(const Vector &strain) {
+Vector ContactMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
     temp_normal_strain = strain [ 0 ];
     Vector stress( ( double ) 0, strain.size() );
     if ( temp_normal_strain < 0 ) {
@@ -196,7 +198,9 @@ Vector ContactMaterialStatus :: giveStress(const Vector &strain) {
 
 
 //////////////////////////////////////////////////////////
-Vector ContactMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain) {
+Vector ContactMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
+    ( void ) strain;
     return Vector(0); //TOTO: FIX
 }
 
@@ -223,8 +227,8 @@ void ContactMaterial :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-MaterialStatus *ContactMaterial :: giveNewMaterialStatus(Element *e) {
-    ContactMaterialStatus *newStatus = new ContactMaterialStatus(this, e); //needs to be deleted manually
+MaterialStatus *ContactMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    ContactMaterialStatus *newStatus = new ContactMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 }
 

@@ -28,6 +28,8 @@ void ElementStatsExporter :: readFromLine(istringstream &iss) {
 
 
 void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    ( void ) DoFs;
+    ( void ) reactions;
     char buffer [ 100 ];
 
     giveFileName(step, buffer);

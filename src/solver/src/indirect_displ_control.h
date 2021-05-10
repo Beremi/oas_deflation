@@ -34,9 +34,9 @@ protected:
 public:
     IndirectDC();
     ~IndirectDC() {};
-    void init(NodeContainer *nodes, FunctionContainer *funcs);
+    void init(NodeContainer *nodes, FunctionContainer *funcs, bool initial=true);
     void readFromStream(unsigned num, ifstream &inputfile);
-    double giveMultiplierCorrection(Vector &prev_displ, Vector &displ_d, Vector &displ_f, double time);
+    double giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time);
     double giveControlValue(Vector &displ);
 };
 

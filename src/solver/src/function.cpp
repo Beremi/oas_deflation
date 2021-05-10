@@ -27,6 +27,7 @@ double GeneralSpatialFunction :: giveY(const Point *xyz) {
 
 //////////////////////////////////////////////////////////
 double GeneralSpatialFunction :: giveNextEtreme(const double &t) const {
+    ( void ) t;
     return INFINITY;
 }
 
@@ -357,7 +358,7 @@ Function *FunctionContainer :: giveFunction(unsigned k) {
     if ( k >= functions.size() ) {
         cerr << "Function Container Error: requested function number " << k << " but the container contains only " << functions.size() << " functions" << endl;
         exit(1);
-    } else   {
+    } else {
         return functions [ k ];
     }
 };

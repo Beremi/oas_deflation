@@ -1,6 +1,7 @@
 #include "element_continuous.h"
 #include "element_container.h"
 #include "boundary_condition.h"
+#include "material_RVE.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -59,6 +60,43 @@ TrsprtBrick :: TrsprtBrick() {
     inttype = new IntegrBrick8();
 }
 
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK  TRANSPORT + TEMPERATURE COUPLED ELEMENT
+TrsprtTemprtrCoupledBrick :: TrsprtTemprtrCoupledBrick() {
+    ndim = 3;
+    numOfNodes = 8;
+    name = "TrsprtTemprtrCoupledBrick";
+    vtk_cell_type = 12;
+    shafunc = new Linear3DBrickShapeF();
+    inttype = new IntegrBrick8();
+}
+
+//////////////////////////////////////////////////////////
+Matrix TrsprtTemprtrCoupledBrick :: giveBMatrix(const Point *x) const {
+    Matrix phiG(ndim, numOfNodes);
+    shafunc->giveShapeFGrad(x, nodes, phiG);
+    Matrix B(2*ndim, numOfNodes*2);
+    for(unsigned i=0; i<numOfNodes; i++){
+        for(unsigned v=0; v<ndim; v++){
+            B[v][2*i] = B[ndim+v][2*i+1] = phiG[v][i];
+        }
+    }
+    return B;
+}
+
+//////////////////////////////////////////////////////////
+Matrix TrsprtTemprtrCoupledBrick :: giveHMatrix(const Point *x) const {
+    Vector phi(DoFids.size() );
+    shafunc->giveShapeF(x, phi);
+    Matrix H(1,  numOfNodes*2 );
+    for ( unsigned k = 0; k < numOfNodes; k++ ) {
+        H [ 0 ] [ 2*k ] = H [ 0 ] [ 2*k+1 ] = phi [ k ];
+    }
+    return H;
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
@@ -97,7 +135,6 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
     }
     return H;
 }
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -290,16 +327,15 @@ Matrix CoupledCosseratQuad :: giveHMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 void CoupledCosseratQuad :: init() {
     MechanicalElement :: init();
-    
+
     CoupledParticle *cp;
-    for(auto &n: nodes){
-        cp = dynamic_cast< CoupledParticle* >(n);
-        if (cp==nullptr) {
+    for ( auto &n: nodes ) {
+        cp = dynamic_cast< CoupledParticle * >( n );
+        if ( cp == nullptr ) {
             cerr << name << " requires nodes to be inhereted from CoupledParticle" << endl;
             exit(1);
         }
     }
-
 }
 
 //////////////////////////////////////////////////////////
@@ -314,6 +350,42 @@ CoupledCosseratBrick :: CoupledCosseratBrick() {
     inttype = new IntegrBrick8();
 }
 
+//////////////////////////////////////////////////////////
+Vector CoupledCosseratBrick :: giveStrain(unsigned i, const Vector &DoFs){
+
+    Vector strain = CosseratBrick::giveStrain(i,DoFs);
+
+    //save pressure at integration point for material model
+    IPpressures.resize(numOfNodes);
+    Vector IPvalues = giveHMatrix(inttype->giveIPLocationPointer(i))*DoFs; 
+    IPpressures[i] = IPvalues[6];
+
+    //save volumetric strain at integration point for material model
+    IPvolstrains.resize(numOfNodes);
+    IPvolstrains[i] = (strain[0] + strain[1] + strain[2])/3.;
+
+    return strain;
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledCosseratBrick :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
+    Vector intF = CosseratBrick :: giveInternalForces(DoFs, frozen, timeStep);
+
+    
+    //Biot effect
+    DiscreteCoupledRVEMaterialStatus *couplm;
+    double volumetricBiotPart;
+    Matrix H;
+    for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
+        couplm = static_cast< DiscreteCoupledRVEMaterialStatus * >( stats [ k ] );
+        volumetricBiotPart = couplm->computeBiotEffect();
+        cout << volumetricBiotPart << endl;
+        H = giveHMatrix(inttype->giveIPLocationPointer(k));
+        for ( unsigned j = 0; j < 7*8; j++ ) intF[j] -= H[6][j]*volumetricBiotPart*inttype->giveIPWeight(k);
+    }
+
+    return intF;
+}
 
 //////////////////////////////////////////////////////////
 Matrix CoupledCosseratBrick :: giveBMatrix(const Point *x) const {
@@ -361,7 +433,13 @@ Matrix CoupledCosseratBrick :: giveHMatrix(const Point *x) const {
         for ( unsigned v = 0; v < ndim; v++ ) {
             H [ v ] [ 7 * j + v ] = H [ 3 + v ] [ 7 * j + 3 + v ] = phi [ j ];
         }
-        H [ 7 ] [ 7 * j + 6 ] = phi [ j ]; //pressure gradient
+        H [ 6 ] [ 7 * j + 6 ] = phi [ j ]; //pressure gradient
     }
     return H;
+}
+
+//////////////////////////////////////////////////////////
+Matrix CoupledCosseratBrick :: giveDampingMatrix() const {    
+    //return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
+    return Element :: giveDampingMatrix();
 }

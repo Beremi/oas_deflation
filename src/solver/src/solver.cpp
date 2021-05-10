@@ -92,6 +92,7 @@ void Solver :: setNextStepTime() {
     double nextExtremeTime = funcs->giveTimeOfNextExtreme(time);
     // NOTE 1/4 of time step added to prevent next step extremely short
     if ( nextExtremeTime < time + 1.25 * dt ) {
+        dt = nextExtremeTime - time;
         time = nextExtremeTime;
     } else {
         time += dt;
@@ -226,7 +227,6 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("symsolver_type") == 0 ) {
                 inputfile >> symsolver_type;
             }
-
         }
         inputfile.close();
     }
@@ -272,8 +272,9 @@ void SteadyStateLinearSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const bool frozen) {
-    elems->integrateInternalForces(rr, f_int, frozen);
+void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const bool frozen, double timeStep) {
+    nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
+    elems->integrateInternalForces(rr, f_int, frozen, timeStep);
     nodes->updateExternalForcesByReactions(f_int, load, f_dam, f_acc, f_ext);     //give prescribed DoFs
     residuals = f_ext - f_int;
 }
@@ -321,13 +322,18 @@ void SteadyStateNonLinearSolver :: init(const bool &initial) {
     W_int_oldT = 0;
 
     if ( idc ) {
-        idc->init(nodes, funcs);   //indirect displacement control
+        idc->init(nodes, funcs, initial);   //indirect displacement control
         ddf = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
-        idc_time = 0;
-        idc_dt = 1e-6;
-        idc_time_converged = 0;
+        if ( initial ) {
+            idc_time = 0;
+            idc_dt = 1e-6;
+            idc_time_converged = 0;
+        } else {
+            // JK: during solver initialization after geometry update, idc_time must be set to time of previously converged step
+            idc_time = idc_time_converged;
+        }
     }
 }
 
@@ -559,10 +565,11 @@ void SteadyStateNonLinearSolver :: solve() {
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
                 }
-                nodes->giveFullDoFArray(ddr, full_ddr);
+                //nodes->giveFullDoFArray(ddr, full_ddr);
                 nodes->giveFullDoFArray(ddf, full_ddf);
-                load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
-                ddr = ddr + load_mult * ddf;
+                //load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
+                load_mult = idc->giveMultiplierCorrection(trial_r, full_ddf, time);
+                ddr += load_mult * ddf;
                 idc_time += idc_dt * load_mult;
 
                 load *= 0;
@@ -606,7 +613,8 @@ void SteadyStateNonLinearSolver :: solve() {
                     std :: cerr << "\nenergies ";
                 }
                 std :: cerr << "- exit" << '\n';
-                exit(1);
+                terminated = true;
+                return;
             }
 
             if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {
@@ -740,7 +748,7 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
     //compute initial presure derivative
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r, true); //at time 0
+    computeInternalExternalForces(r, true, -1.); //at time 0
     nodes->giveReducedForceArray(residuals, f);
     terminated = !LinalgSymmetricSolver(C, ddr, f,  ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type);
     v = Vector(totalDoFnum);
@@ -750,14 +758,14 @@ void TransientLinearTransportSolver :: init(const bool &initial) {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen);
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
     residuals -= f_dam;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtStepEnd(const bool frozen) {
     elems->integrateDampingForces(v, f_dam);
-    computeInternalExternalForces(trial_r, frozen);
+    computeInternalExternalForces(trial_r, frozen, dt);
     residuals -= f_dam;
 }
 
@@ -793,6 +801,33 @@ void TransientLinearTransportSolver :: runBeforeEachStep() {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: runAfterEachStep() {
     SteadyStateLinearSolver :: runAfterEachStep();
+};
+
+//////////////////////////////////////////////////////////
+Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
+    SteadyStateNonLinearSolver :: readFromFile(filename);
+
+    double num;
+    string param, line;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() ) {
+                continue;
+            }
+            if ( line.at(0) == '#' ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> param;
+            if ( param.compare("spectral_radius") == 0 ) {
+                iss >> num;
+                applySpectralRadius(num);
+            }
+        }
+        inputfile.close();
+    }
+    return this;
 };
 
 //////////////////////////////////////////////////////////
@@ -861,7 +896,7 @@ void TransientLinearMechanicalSolver :: init(const bool &initial) {
     //compute initial acceleration
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r, true); //at time 0
+    computeInternalExternalForces(r, true, -1); //at time 0
     nodes->giveReducedForceArray(residuals, f);
     Vector v_red(Vector(freeDoFnum - nodes->giveNumConstrDoFs() ) );
     terminated = !LinalgSymmetricSolver(M, ddr, f - C * v_red,  ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type);
@@ -906,7 +941,7 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen);
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 
@@ -914,7 +949,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
 void TransientLinearMechanicalSolver :: computeForcesAtStepEnd(const bool frozen) {
     elems->integrateDampingForces(v, f_dam);
     //elems->integrateInertiaForces( a, f_acc );
-    computeInternalExternalForces(trial_r, frozen);
+    computeInternalExternalForces(trial_r, frozen, dt);
     residuals -= f_dam + f_acc;
 }
 

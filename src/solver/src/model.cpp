@@ -14,13 +14,15 @@ void Model :: init(const bool &initial) {     //initialization
     //pblocks.apply(); //moved to reader
     bconds.init();
     nodes.init();
-    matrs.init();
+    if ( initial ){
+        matrs.init();
+    }
     elems.init();
+    nodes.initSimplices();
     constr.init(& nodes, & bconds);
     elems.findElementFriends();
     exporters.init(initial);
     solver->init(initial);
-    cout << "Initialization completed" << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -70,7 +72,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                     iss >> istr;
                     nodes.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
-            } else if ( istr.compare("MatFiles") == 0 ) {
+            } else if ( initial && istr.compare("MatFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
@@ -101,7 +103,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                     iss >> istr;
                     bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems );
                 }
-            } else if ( istr.compare("FunctionFiles") == 0 ) {
+            } else if ( initial && istr.compare("FunctionFiles") == 0 ) {  // functions are constant during whole calculation, even in adaptive case
                 iss >> std :: skipws >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> std :: skipws >> istr;
@@ -143,11 +145,11 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 void Model :: clear() {
     // TODO JK: check containers for memory leaks
     // initialize new model with clear geometry, only solver remains
-    funcs = FunctionContainer();
+    // funcs = FunctionContainer();  // functions remain too
     bconds = BCContainer();
     constr = ConstraintContainer();
     nodes = NodeContainer();
-    matrs = MaterialContainer();
+    // matrs = MaterialContainer();  // materials remain too
     elems = ElementContainer();
     exporters = ExporterContainer();
     pblocks = PBlockContainer();

@@ -13,7 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
 from scipy.spatial import Delaunay
-import tkinter
+#import tkinter
 SHOW_PLOT = False
 
 
@@ -1686,6 +1686,92 @@ def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_i
             trsBC = utilitiesMech.transportBC(topFace[i], topFaceBC)
             transportBC_merged.append(trsBC)
 
+    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
+
+def create3dConsolidation(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None ):
+    print('Creating 3d cube. Power tesselation: %s' %powerTes)
+    #govNodes, rigidPlates
+    dim = 3
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init);
+    node_coords = np.asarray(node_coords)
+    """
+    if SHOW_PLOT:
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
+        ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+        plt.show()
+    """
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
+    print('done.')
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, top surface,
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-2]) )
+    fn1 = utilitiesNumeric.generalFunc(func1) 
+    functions.append (fn1)
+
+    fn2 = utilitiesNumeric.constantFunc(100)
+    functions.append (fn2)
+
+    fn3 = utilitiesNumeric.constantFunc(0)
+    functions.append (fn3)
+
+    transportBC_merged = []
+    transportIC_merged = []
+
+    """
+    ### selecting vertices on the bottom surface
+    botFaceBC = np.array([2,-1])
+    boundA = np.array(  [-1e-4 , -1e-5, -1e-5] )
+    boundB = np.array(  [ maxLim[0]+1e-4 , 1e-5, maxLim[2]+1e-5]  )
+    botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+    for i in range (len(botFace)):
+        trsBC = utilitiesMech.transportBC(botFace[i], botFaceBC)
+        transportBC_merged.append(trsBC)
+    """
+
+    ### selecting vertices on the right surface
+    rightFaceBC = np.array([2,-1])
+    boundA = np.array(  [maxLim[0]-1e-4 , -1e-5, -1e-5] )
+    boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, maxLim[2]+1e-5]  )
+    rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    for i in range (len(rightFace)):
+        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
+        transportBC_merged.append(trsBC)
+
+
+    #block transversal movements
+    FaceBC = np.array([-1,3,3,-1,-1,-1,-1,-1,-1,-1,-1,-1])
+    boundA = np.array(  [-1e-4 , -1e-5, -1e-5] )
+    boundB = np.array(  [ maxLim[0]+1e-4 , 1e-5, maxLim[2]+1e-5]  )
+    faceBot = utilitiesGeom.returnSelectedPts(boundA, boundB, node_coords)
+    boundA = np.array(  [-1e-4 , maxLim[1]-1e-5, -1e-5] )
+    boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, maxLim[2]+1e-5]  )
+    faceTop = utilitiesGeom.returnSelectedPts(boundA, boundB, node_coords)
+    boundA = np.array(  [-1e-4 , -1e-5, -1e-5] )
+    boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, 1e-5]  )
+    faceFro = utilitiesGeom.returnSelectedPts(boundA, boundB, node_coords)
+    boundA = np.array(  [-1e-4 , -1e-5, maxLim[2]-1e-5] )
+    boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, maxLim[2]+1e-5]  )
+    faceBac = utilitiesGeom.returnSelectedPts(boundA, boundB, node_coords)
+    face = np.hstack((faceBot,faceTop,faceFro,faceBac))
+
+    for i in range (len(face)):
+        mechBC = utilitiesMech.mechanicalBC(3, face[i], FaceBC)
+        mechBC_merged.append(mechBC)
+
+    
     return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
 
 

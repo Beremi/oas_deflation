@@ -25,8 +25,8 @@ private:
 public:
     Function() {};
     virtual ~Function() {};
-    virtual double giveY(double t) const { return 0; };
-    virtual double giveY(const Point *t) { return 0; }
+    virtual double giveY(double t) const { ( void ) t; return 0; };
+    virtual double giveY(const Point *t) { ( void ) t; return 0; }
     virtual void readFromLine(istringstream &iss) = 0;
     virtual double giveNextEtreme(const double &t) const = 0;
     virtual void setActive() { active = true; };

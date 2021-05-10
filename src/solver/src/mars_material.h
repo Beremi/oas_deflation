@@ -23,13 +23,13 @@ private:
     void computeDamage(Vector strain);
     void computeKsAnsKt();
 public:
-    MarsMaterialStatus(MarsMaterial *m, Element *e);
+    MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
     virtual ~MarsMaterialStatus() {};
-    void init();
+    virtual void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
-    virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(istringstream &iss);
@@ -45,9 +45,9 @@ private:
     double Lcrs, Lcrt;
 public:
     MarsMaterial() { name = "Mars material"; };
-    ~MarsMaterial() {};
-    void readFromLine(istringstream &iss);
-    MaterialStatus *giveNewMaterialStatus(Element *e);
+    virtual ~MarsMaterial() {};
+    virtual void readFromLine(istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
     double giveFs() { return fs; }
     double giveFc() { return fc; }
@@ -62,30 +62,36 @@ public:
 };
 
 
-/*
- * //////////////////////////////////////////////////////////
- * //COUPLED DISCRETE MECHANICAL - TRANSPORT MATERIAL
- *
- * class DisMechLinMat;
- * class DisMechLinMatStatus: public MaterialStatus {
- * private:
- *
- * public:
- *  DisMechLinMatStatus();
- *  DisMechLinMatStatus(DisMechLinMat *m);
- *  ~DisMechLinMatStatus(){};
- * };
- *
- * class DisMechLinMat: public Material {
- * private:
- *  double E0, alpha, density;
- * public:
- *  DisMechLinMat();
- *  ~DisMechLinMat(){};
- *  void readFromLine(istringstream &iss);
- *  vector<double> giveStress(vector<double> strain) const;
- *  MaterialStatus* giveNewMaterialStatus();
- * };
- */
+
+//////////////////////////////////////////////////////////
+//COUPLED MARS MATERIAL
+class CoupledMarsMaterial;
+class CoupledMarsMaterialStatus : public MarsMaterialStatus
+{
+private:
+    void updateStressByBiotEffect(double timeStep);
+
+public:
+    CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
+    ~CoupledMarsMaterialStatus() {};
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual double giveValue(string code) const;
+    virtual void init();
+    virtual void update();
+};
+
+class CoupledMarsMaterial : public MarsMaterial
+{
+private:
+    double biotCoeff;
+public:
+    CoupledMarsMaterial() { name = "Coupled Mars material"; };
+    virtual ~CoupledMarsMaterial() {};
+    virtual void readFromLine(istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    virtual void init();
+    double giveBiotCoeff() const { return biotCoeff; };
+};
 
 #endif /* _MARS_MATERIAL_H */

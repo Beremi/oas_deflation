@@ -1,10 +1,8 @@
 #ifndef _ELEMENT_C_H
 #define _ELEMENT_C_H
 
+#include "globals.h"
 #include "element.h"
-#include "element_discrete.h"
-#include "element_continuous.h"
-#include "element_polyhedral.h"
 #include "boundary_condition.h"
 #include "node_container.h"
 
@@ -40,9 +38,9 @@ public:
     void updateDampingMatrix(CoordinateIndexedSparseMatrix &C) const;
     void prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const;
     void updateMassMatrix(CoordinateIndexedSparseMatrix &M) const;
-    void integrateInternalForces(Vector &full_r, Vector &full_f);                       ///< return internal forces with temporary update of internal variables
-    void integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f); ///< return internal forces based on current state of internal variables
-    void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen);          ///< return internal forces with or without frozen internal variables
+    void integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep);                       ///< return internal forces with temporary update of internal variables
+    void integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep); ///< return internal forces based on current state of internal variables
+    void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep);          ///< return internal forces with or without frozen internal variables
     void integrateDampingForces(const Vector &full_v, Vector &full_f) const;
     void integrateInertiaForces(const Vector &full_a, Vector &full_f) const;
     Element *giveElement(unsigned const num) const { return elems [ num ]; }

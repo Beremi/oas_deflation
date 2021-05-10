@@ -22,13 +22,13 @@ protected:
 private:
     void computeDamage(const Vector &strain);
 public:
-    BrittleMaterialStatus(BrittleMaterial *m, Element *e);
+    BrittleMaterialStatus(BrittleMaterial *m, Element *e, unsigned ipnum);
     virtual ~BrittleMaterialStatus() {};
     void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
-    virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
 };
 
@@ -43,7 +43,7 @@ public:
     BrittleMaterial() { name = "Brittle material"; };
     ~BrittleMaterial() {};
     void readFromLine(istringstream &iss);
-    MaterialStatus *giveNewMaterialStatus(Element *e);
+    MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
     double giveFs() { return fs; }
 
@@ -68,8 +68,8 @@ public:
 //     void init();
 //     virtual void update();
 //     virtual Vector giveNormalShearStiffness(string type) const;
-//     virtual Vector giveStress(const Vector &strain);
-//     virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+//     virtual Vector giveStress(const Vector &strain, double timeStep);
+//     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
 //     virtual double giveValue(string code) const;
 // };
 //
@@ -102,13 +102,13 @@ class ContactMaterialStatus : public DisMechMaterialStatus
 private:
     double temp_normal_strain;
 public:
-    ContactMaterialStatus(ContactMaterial *m, Element *e);
+    ContactMaterialStatus(ContactMaterial *m, Element *e, unsigned ipnum);
     virtual ~ContactMaterialStatus() {};
     void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
-    virtual Vector giveStress(const Vector &strain);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     // virtual double giveValue(string code) const;
 };
 
@@ -122,7 +122,7 @@ public:
     ContactMaterial() { name = "Contact material"; };
     ~ContactMaterial() {};
     void readFromLine(istringstream &iss);
-    MaterialStatus *giveNewMaterialStatus(Element *e);
+    MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFrictionCoef() const { return friction_coef; };
 
     virtual void init();

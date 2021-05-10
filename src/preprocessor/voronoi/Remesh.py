@@ -68,11 +68,12 @@ if __name__ == '__main__':
     solver = None
     exporters=[]
 
-    skipLines = ['#', ' ', '\n', '\t']
+    # skipLines = ['#', ' ', '\n', '\t']
 
     f = open (prep_input_file, 'r')
     for row in f:
-        if not (row[0] in skipLines):
+        if row and row.strip() and not row.startswith('#'):
+        # if not (row[0] in skipLines):
             r = row.split()
 
             if (r[0]=='Model'):

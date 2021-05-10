@@ -13,11 +13,11 @@
 // #include "element_container.h"
 #include "data_exporter.h"
 
-void connectSlaveMasterRigid(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp = false);
+void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp = false);
 
-void connectSlaveMasterExpansion(ConstraintContainer * constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp = false, Function * fn=nullptr);
+void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp = false, Function *fn = nullptr);
 
-void connectSlaveMasterExpansionFLoad(ConstraintContainer * constrs, Node *slave, Node *master, Node * expMaster, unsigned const &ndim);
+void connectSlaveMasterExpansionFLoad(ConstraintContainer *constrs, Node *slave, Node *master, Node *expMaster, unsigned const &ndim);
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ public:
     virtual ~MechanicalPeriodicBC() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
-    vector<double> giveDimensions() const {return PUCsize;};
+    vector< double >giveDimensions() const { return PUCsize; };
 };
 
 
@@ -128,9 +128,9 @@ public:
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
 protected:
-  Point center, axis;
-  double r_inner, r_outer;
-  unsigned direction;
+    Point center, axis;
+    double r_inner, r_outer;
+    unsigned direction;
 };
 
 
@@ -179,8 +179,8 @@ public:
     void readFromFile(const string filename, unsigned dim);
     void setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex);
     void apply();
-    unsigned giveSize() const {return blocks.size();};
-    PBlock* givePBlock( unsigned i) {return blocks[i];};
+    unsigned giveSize() const { return blocks.size(); };
+    PBlock *givePBlock(unsigned i) { return blocks [ i ]; };
 protected:
 };
 

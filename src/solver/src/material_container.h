@@ -2,11 +2,6 @@
 #define _MATERIAL_C_H
 
 #include "material.h"
-#include "material_RVE.h"
-#include "mars_material.h"
-#include "fatigue_material.h"
-#include "material_misc.h"
-#include "material_slide_3_2.h"
 #include <vector>
 #include <iostream>
 #include <fstream>

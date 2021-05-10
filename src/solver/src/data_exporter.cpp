@@ -2,6 +2,7 @@
 #include "vtk_exporter.h"
 #include "exporter_model.h"
 #include "geometry.h"
+#include "element_discrete.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -209,32 +210,32 @@ void ForceGauge :: readFromLine(istringstream &iss) {
     unsigned num;
     std :: string param;
     iss >> param;
-    if ( param.compare("block") == 0 || param.compare("coords") == 0) {
-      std :: string param2;
-      bool mech = true;
-      if ( param2.compare("mech") == 0 ) {
-        mech = true;
-      } else if ( param2.compare("trsp") == 0 ) {
-        mech = false;
-      } else {
-        std::cout << "type of force 'mech' or 'trsp' for ForceGauge not determined, by default, 'mech' is considered" << '\n';
-      }
-      iss >> param2;
-      Block bl;
-      bl.readFromLine(iss);
-      for ( auto const &nod : *nodes ) {
-        if ( bl.isInside( nod->givePoint() ) ) {
-          if ( (nod->doesMechanics() && mech) || (nod->doesTransport() && !mech)) {
-            this->n.push_back( nodes->giveNodeId(nod) );
-          }
+    if ( param.compare("block") == 0 || param.compare("coords") == 0 ) {
+        std :: string param2;
+        bool mech = true;
+        iss >> param2;
+        if ( param2.compare("mech") == 0 ) {
+            mech = true;
+        } else if ( param2.compare("trsp") == 0 ) {
+            mech = false;
+        } else {
+            std :: cout << "type of force 'mech' or 'trsp' for ForceGauge not determined, by default, 'mech' is considered" << '\n';
         }
-      }
+        Block bl;
+        bl.readFromLine(iss);
+        for ( auto const &nod : * nodes ) {
+            if ( bl.isInside(nod->givePoint() ) ) {
+                if ( ( nod->doesMechanics() && mech ) || ( nod->doesTransport() && !mech ) ) {
+                    this->n.push_back(nodes->giveNodeId(nod) );
+                }
+            }
+        }
     } else {
-      num = std :: stoul(param.c_str());
-      this->n.resize(num);
-      for ( unsigned i = 0; i < num; i++ ) {
-        iss >> this->n [ i ];
-      }
+        num = std :: stoul(param.c_str() );
+        this->n.resize(num);
+        for ( unsigned i = 0; i < num; i++ ) {
+            iss >> this->n [ i ];
+        }
     }
     DataExporter :: readFromLine(iss);
 }
@@ -255,8 +256,8 @@ void ForceGauge :: init() {
     time_each = 0;
     time_last = 0;
     DoFs.resize(n.size() );
-    for ( unsigned i = 0; i < n.size(); i++ ) {        
-        DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + nodes->giveNode(n [ i ])->giveOrderOfForceCode(codes[0]);
+    for ( unsigned i = 0; i < n.size(); i++ ) {
+        DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + nodes->giveNode(n [ i ])->giveOrderOfForceCode(codes [ 0 ]);
     }
 }
 
@@ -396,8 +397,8 @@ void DisplacementGauge :: init() {
     //find closest point
     //TODO: better to use direct displacements at given points A and B
     double dist;
-    nodeA = nodes->findClosestMechanicalNode(pointA, &dist);
-    nodeB = nodes->findClosestMechanicalNode(pointB, &dist);
+    nodeA = nodes->findClosestMechanicalNode(pointA, & dist);
+    nodeB = nodes->findClosestMechanicalNode(pointB, & dist);
 }
 
 //////////////////////////////////////////////////////////
@@ -714,7 +715,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 
                 stress [ node_id ] += dyadicProduct(
                     (
-                        rbc->giveContactStressXYZ(elDoFvalues)
+                        rbc->giveContactStressXYZ()
                         * rbc->giveArea() // vyhodit
                     )
                     * first

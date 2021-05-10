@@ -45,7 +45,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
         istringstream iss(line);
         iss >> param;
         if ( param.compare("idc_nodes") == 0 ) {
-            coords_active [ nummaxunit - 1 ] = true;
+            nodes_active [ nummaxunit - 1 ] = true;
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> c_nodes [ nummaxunit - 1 ] [ j ];
             }
@@ -83,7 +83,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
 
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
+void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool initial) {
     unsigned clength;
     Node *n;
     double dist;
@@ -96,15 +96,18 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
             cerr << "Error: Indirect displacement controll weights were not set" << endl;
             exit(1);
         }
-        if ( c_DoFs [ c ].size() < clength ) {
-            c_DoFs [ c ].resize(clength);
+        if ( c_DoFs [ c ].size() < clength || !initial) {
+            // JK: in adaptivity, number of control DoFs remain, but DoFs from updated geometry are used
+            if ( initial ) {
+              c_DoFs [ c ].resize(clength);
+            }
             if ( nodes_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
                     c_DoFs [ c ] [ i ] = nodes->giveNode(c_nodes [ c ] [ i ])->giveStartingDoF() + c_dirs [ c ] [ i ];
                 }
             } else if ( coords_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
-                    n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), &dist );
+                    n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), & dist);
                     c_DoFs [ c ] [ i ] = n->giveStartingDoF() + c_dirs [ c ] [ i ];
                 }
             } else {
@@ -116,7 +119,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs) {
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_d, Vector &displ_f, double time) {
+double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
     double dd = -INFINITY;
     double df = 0;
     double m;
