@@ -172,8 +172,8 @@ Vector HTCMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, do
 //////////////////////////////////////////////////////////
 Vector HTCMaterialStatus :: giveInternalSource() const{
     Vector ints(2);
-    ints[0] = qh;
-    ints[1] = qT;
+    //ints[0] = qh;
+    //ints[1] = qT;
     return ints;
 }
 
