@@ -12,7 +12,6 @@ class BodyLoad; //forward declaration
 class TrsprtQuad : public TransportElement
 {
 protected:
-
 public:
     TrsprtQuad();
     ~TrsprtQuad() {};
@@ -46,6 +45,7 @@ public:
     ~TrsprtTemprtrCoupledBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

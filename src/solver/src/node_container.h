@@ -61,6 +61,7 @@ public:
 
     size_t giveNumConstrDoFs() const { return constrDoFs; };
     ConstraintContainer *giveConstraints() const { return constr; };
+    Vector readInitialConditions(string initfile) const;
 
     vector< Node * > :: iterator begin() { return nodes.begin(); }
     vector< Node * > :: iterator end() { return nodes.end(); }

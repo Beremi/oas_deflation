@@ -90,11 +90,24 @@ Matrix TrsprtTemprtrCoupledBrick :: giveBMatrix(const Point *x) const {
 Matrix TrsprtTemprtrCoupledBrick :: giveHMatrix(const Point *x) const {
     Vector phi(DoFids.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H(1,  numOfNodes*2 );
+    Matrix H(2,  numOfNodes*2 );
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
-        H [ 0 ] [ 2*k ] = H [ 0 ] [ 2*k+1 ] = phi [ k ];
+        H [ 0 ] [ 2*k ] = H [ 1 ] [ 2*k+1 ] = phi [ k ];
     }
     return H;
+}
+
+//////////////////////////////////////////////////////////
+Vector TrsprtTemprtrCoupledBrick :: giveStrain(unsigned i, const Vector &DoFs){
+    Vector strain = Element :: giveStrain(i, DoFs);
+    
+    Vector masters;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        masters = Hs[i]*DoFs;
+        stats [ i ]->setParameterValue("humidity", masters[0]);
+        stats [ i ]->setParameterValue("temperature", masters[1]);
+    }    
+    return strain;
 }
 
 //////////////////////////////////////////////////////////

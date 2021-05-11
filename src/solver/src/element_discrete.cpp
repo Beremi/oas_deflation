@@ -739,7 +739,7 @@ Matrix Transp1D :: giveHMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveDampingMatrix() const {
     Matrix S(2, 2);
-    double s = area * stats [ 0 ]->giveDampingConstant() * length /  ( 2. * ndim );
+    double s = area * stats [ 0 ]->giveDampingTensor()[0][0] * length /  ( 2. * ndim );
 
     S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = s; //finite volume
     if ( BolanderCapacityMatrix ) { //from Bolander's papers

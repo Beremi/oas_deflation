@@ -439,7 +439,7 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
         }
         if      ( diffType == 1 ) {
-            elForces = ( * e )->giveDampingMatrix() * elDoFvalues;                    //damping or conductivity
+            elForces = ( * e )->giveDampingMatrix() * elDoFvalues;                 //damping or conductivity
         } else if ( diffType == 2 ) {
             elForces = ( * e )->giveMassMatrix() * elDoFvalues;                    //inertia
         } else {
@@ -524,3 +524,4 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
     // std::cerr << '\n';
     return nullptr;
 }
+

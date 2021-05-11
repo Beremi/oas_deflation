@@ -79,7 +79,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual double giveDampingConstant() const;
+    virtual Matrix giveDampingTensor() const;
     virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); };
 };
 
@@ -157,7 +157,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual void setEigenStrain(Vector &x);
     virtual std :: string giveLineToSave() const;
-    virtual double giveDampingConstant() const { return trspRVEstat->giveDampingConstant(); };
+    virtual Matrix giveDampingTensor() const { return trspRVEstat->giveDampingTensor(); };
     virtual double computeBiotEffect() const;
 
 };
@@ -199,7 +199,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual double giveDampingConstant() const;
+    virtual Matrix giveDampingTensor() const;
     virtual void update();
 };
 

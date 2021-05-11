@@ -354,3 +354,29 @@ unsigned NodeContainer :: giveNodeNumber(const Node *n) const {
     auto it = std :: find(nodes.begin(), nodes.end(), n);
     return it - nodes.begin();
 }
+
+//////////////////////////////////////////////////////////
+Vector NodeContainer :: readInitialConditions(string initfile) const {
+    string line;
+    unsigned numi, startDoF;
+    double numd;
+    Vector initvalues(totalDoFs);
+    ifstream inputfile(initfile.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            istringstream iss(line);
+            iss >> numi;
+            for(unsigned v=0; v<nodes[numi]->giveNumberOfDoFs(); v++){
+                iss >> numd;
+                startDoF = nodes[numi]->giveStartingDoF();
+                initvalues[ DoFid [startDoF+v] ] = numd;
+            }                        
+        }
+        inputfile.close();
+        cout << "Input file '" <<  initfile << "' succesfully loaded" << endl;
+    } else {
+        cerr << "Error: unable to open input file '" <<  initfile <<  "'" << endl;
+        exit(EXIT_FAILURE);
+    }
+    return initvalues;
+}
