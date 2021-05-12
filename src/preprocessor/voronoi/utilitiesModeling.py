@@ -315,10 +315,10 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,
                            orthogonalFracZone=False, notchWidth =-1,
                            node_coords_init=None,
                            activeTransport=False,
-                           coupled = False):
+                           coupled = False, specifiedNodes=[]):
     print('Creating 2d simply supported beam, uniform load.')
     #
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth=notchWidth, node_coords_init=node_coords_init,  coupled=coupled);
+    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth=notchWidth, node_coords_init=node_coords_init,  coupled=coupled, specifiedNodes=specifiedNodes);
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -3010,7 +3010,7 @@ def assemblePatchTestTransport (maxLim, minDist, trials, dim):
 
 def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
                              fracZoneWidth,  orthogonalFracZone=False,
-                             notchWidth = -1, node_coords_init=None, coupled=False):
+                             notchWidth = -1, node_coords_init=None, coupled=False, specifiedNodes=[]):
     dim = 2
     #lists for the model
     if node_coords_init is None:
@@ -3032,6 +3032,12 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
     indent = 1e-8
     # the following is for remesher that works so far just for the bema WITHOUT notch
     if node_coords_init is None:
+        if (len(specifiedNodes)>0):
+            print ('appending specified nodes...')
+            for node in specifiedNodes:
+                node_coords.append((node))
+            #print (node_coords)
+
         #notchWidth = 1.5e-3 /2
         if notchWidth == -1:
             notchWidth = minDist/2
