@@ -2223,9 +2223,9 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
         fl.write('DisplacementGauge LD %s\t%s\t%e\t%e\t%e\t%e\t%e\t%e\n' %(columnName, dir, coordsA[0],coordsA[1], coordsA[2],coordsB[0],coordsB[1], coordsB[2]))
     fl.close()
 
-def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes, expansionRingsProps=[]):
+def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes, expansionRingsProps=[],virtualDoF=0):
     #saving gov nodes
-    saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile, virtualDoF=1)
+    saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile, virtualDoF=virtualDoF)
     #saving gov nodes mech BC
     for i in range (len(govNodesMechBC)):
         m = govNodesMechBC[i]
@@ -2265,29 +2265,38 @@ def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrs
 
 
     for i in range (len(govNodesTrsptBC)):
-        saveForceGauges(master_folder, dimension, govNodesTrsptBC[i].nodeIdx, moments=False, name='TrsptPLT%d'%i)
+        saveForceGauges(master_folder, dimension, govNodesTrsptBC[i].nodeIdx, moments=False, name='TrsptPLT%d'%i, transport=True)
 
 
     saveRigidPlates(master_folder, dimension, rigidPlatesTrspt, totalNodeCount, trspt=True)
 
 
-def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name=''):
-    if (name==''):
-        saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
-        saveForceGauge(master_folder, 'fy#%d'%nodeIdx, 'fy', nodeIdx )
-        if (dimension==3): saveForceGauge(master_folder, 'fz#%d'%nodeIdx, 'fz', nodeIdx )
-        if moments == True:
-            if (dimension==3): saveForceGauge(master_folder, 'mx#%d'%nodeIdx , 'mx', nodeIdx )
-            if (dimension==3): saveForceGauge(master_folder, 'my#%d'%nodeIdx, 'my', nodeIdx )
-            saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
+def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', transport = False):
+    if transport == False:
+        if (name==''):
+            saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
+            saveForceGauge(master_folder, 'fy#%d'%nodeIdx, 'fy', nodeIdx )
+            if (dimension==3): saveForceGauge(master_folder, 'fz#%d'%nodeIdx, 'fz', nodeIdx )
+            if moments == True:
+                if (dimension==3): saveForceGauge(master_folder, 'mx#%d'%nodeIdx , 'mx', nodeIdx )
+                if (dimension==3): saveForceGauge(master_folder, 'my#%d'%nodeIdx, 'my', nodeIdx )
+                saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
+        else:
+            saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
+            saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
+            if (dimension==3): saveForceGauge(master_folder, 'fz#%s'%name, 'fz', nodeIdx )
+            if moments == True:
+                if (dimension==3): saveForceGauge(master_folder, 'mx#%s'%name , 'mx', nodeIdx )
+                if (dimension==3): saveForceGauge(master_folder, 'my#%s'%name, 'my', nodeIdx )
+                saveForceGauge(master_folder, 'mz#%s'%name, 'mz', nodeIdx )
     else:
-        saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
-        saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
-        if (dimension==3): saveForceGauge(master_folder, 'fz#%s'%name, 'fz', nodeIdx )
-        if moments == True:
-            if (dimension==3): saveForceGauge(master_folder, 'mx#%s'%name , 'mx', nodeIdx )
-            if (dimension==3): saveForceGauge(master_folder, 'my#%s'%name, 'my', nodeIdx )
-            saveForceGauge(master_folder, 'mz#%s'%name, 'mz', nodeIdx )
+        if (name==''):
+            saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
+            saveForceGauge(master_folder, 'flux#%d'%nodeIdx, 'flux', nodeIdx )
+
+        else:
+            saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
+            saveForceGauge(master_folder, 'flux#%s'%name, 'flux', nodeIdx )
 
 
 

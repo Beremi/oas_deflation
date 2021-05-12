@@ -38,6 +38,8 @@ class Model:
         self.seed = -1
         self.master_folder = ''
 
+        self.specifiedNodes = []
+
         self.trials = 3e4
 
         self.powerTes = self.activeMechanics = self.activeTransport = self.coupled = False
@@ -344,7 +346,7 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init)
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
         materialZones = None
@@ -464,7 +466,7 @@ class Model:
     def run_3d_BiparvaTubeTransport(self):
         #node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii
         self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
-        (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
+        (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
 
     def run_2d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
@@ -558,7 +560,7 @@ class Model:
                             expansionRingsProps.append(self.rebarDiameter)
                             expansionRingsProps.append(self.maxLim)
 
-                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps)
+                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=1)
                             self.constraint = True
                         else:
                             utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
@@ -628,6 +630,7 @@ class Model:
             density = None
             capacity = None
             crack_turtuosity = 1.
+            biot_coeff = 0.
             #
             for i in range (len(r)):
                 if (r[i]=='capacity'):
@@ -640,12 +643,15 @@ class Model:
                     viscosity = float(r[i+1])
                 if (r[i]=='crack_turtuosity'):
                     crack_turtuosity = float(r[i+1])
+                if (r[i]=='biot_coeff'):
+                    biot_coeff = float(r[i+1])
+
             #
             if (viscosity == None or permeability == None or density == None or capacity == None):# or crack_turtuosity==None):
                 print ('!! TrsprtMaterial incomplete. Exiting. !!')
                 sys.exit()
 
-            transportMaterial = utilitiesMech.TransportMaterial(viscosity, permeability, density, capacity, crack_turtuosity, coupled=self.coupled)
+            transportMaterial = utilitiesMech.TransportMaterial(viscosity, permeability, density, capacity, crack_turtuosity, biot_coeff=biot_coeff, coupled=self.coupled)
             self.materials.append(transportMaterial)
             print('done.')
 
@@ -862,7 +868,15 @@ if __name__ == '__main__':
                     model.addMaterial(row)
             if (r[0]=='Exporter'):
                 exporters.append(r[1:])
+            if (r[0]=='SpecifiedNode'):
+                node = np.zeros (len(r)-1)
+                for c in range (len(r)-1):
+                    node[c] = float (r[1+c])
+                model.specifiedNodes.append(node)
 
+    if len(model.specifiedNodes)>0:
+        print ("Specified Nodes:")
+        print (model.specifiedNodes)
     if model == None:
         print ('Missing model!! Exiting...')
         sys.exit()

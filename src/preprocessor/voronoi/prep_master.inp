@@ -11,7 +11,7 @@
 # !! pro 3PB zadej mindist ve fracture zone (zbytek bude hrubsi) !!
 # A: 1131/200, B: 1386/300, C: 800/100
 #Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.005 minDist 0.01 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 10000 notchWidth -1
-Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0 loadWidth 0.05 minDist 0.025 fracZoneWidth 0.5 activeMechanics 1  orthogonalFracZone 0 trials 200 notchWidth -1
+#Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0 loadWidth 0.05 minDist 0.03 fracZoneWidth 0.5 activeMechanics 1  orthogonalFracZone 0 trials 200 notchWidth -1
 #
 #
 #3d cube
@@ -62,19 +62,20 @@ Model 3d_notched3pb Xsize 1.386 Ysize 0.3 Zsize 0.1 notchH 0 loadWidth 0.05 minD
 #
 #Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
-#Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.03 cylinderHeight 0.03 tubeThickness 0.01 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
+#Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.1 cylinderHeight 0.2 tubeThickness 0.05 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
 #
 #
 ####################################################################################
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 0.2 Ysize 0.5 minDist 0.01 notchH 0.5 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 #Model 3d_coupledArtificialCrack Xsize 0.02 Ysize 0.05 Zsize 0.005 minDist 0.0015 notchH 0.6 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
-#Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 1 activeMechanics 1 coupled 1 trials 1000
+#Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.002 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 #
 #Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.05 minDist 0.006 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth -1
 #
 #
-#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0 loadWidth 0.05 minDist 0.010 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth -1
+#Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0 loadWidth 0.05 minDist 0.01 fracZoneWidth 0.5 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth -1
+Model 3d_notched3pb Xsize 1.0 Ysize 0.4 Zsize 0.1 notchH 0.0 loadWidth 0.01 minDist 0.02 fracZoneWidth 0.5 activeMechanics 1  activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.0
 #
 #
 #Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.002 interfaceMinDist 0.0015 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 3000
@@ -88,6 +89,12 @@ Solver	SteadyStateNonLinearSolver	time_step	1.000000e-03	max_time_step	1.000000e
 #
 #
 ####################################################################################
+#SPECIFIED NODES
+#SpecifiedNode 0.1 0.2 0.3
+#SpecifiedNode 0.2 0.2 0.3
+#
+#
+####################################################################################
 #MATERIALS
 #
 # Mars material
@@ -97,7 +104,7 @@ Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
 #Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0
 #
 # Transport material
-Material TrsprtMaterial	capacity	11.000000	permeability 22e-18 viscosity 1e-5 crack_turtuosity 0.5 density	1e3
+Material TrsprtMaterial	capacity	0.1	density	1.00E+03	permeability	1.00E-18	viscosity	8.90E-04	crack_turtuosity	0.9 biot_coeff 0
 #Elastic material
 Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
 #dalsi mars
