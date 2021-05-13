@@ -89,7 +89,7 @@ if (MSVC)
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -fPIC -Wall -Wextra -Wconversion -Wsign-conversion -Wshadow") #  -pedantic-errorsc -ggdb
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -fPIC -Wall -Wextra  -Wshadow") # -Wsign-conversion -Wconversion  -pedantic-errorsc -ggdb
     if (USE_SANITIZERS)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer") #
     endif ()
