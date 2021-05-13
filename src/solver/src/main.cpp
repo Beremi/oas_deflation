@@ -31,6 +31,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
                 argv [ 0 ]);
         fprintf(stderr, "     : [-j num] has effect for Eigen conjugate gradients\n");
+        cerr << string(80, '=') << endl;
+        cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
 
