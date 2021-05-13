@@ -500,7 +500,7 @@ public:
     AdaptiveSolver() { BaseSolver :: name.append("-Adaptive"); };
     virtual ~AdaptiveSolver() {};
 
-    virtual void init(const bool &initial = true) {
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true) {
         unsigned numParticles = 0;
         Node *n;
         // NOTE JK this is intended for field of nodes to keep
@@ -512,6 +512,7 @@ public:
         }
         // dimension is needed for calculation of nodal stresses (TODO calulate particle volume somewhere at the beginning)
         this->dim = BaseSolver :: elems->giveElement(0)->giveDimension();
+        std::cout << "elem 0: " << BaseSolver :: elems->giveElement(0)->giveName() << '\n';
 
         if ( initial && this->nodesFine ) {
             std :: cout << "Adaptivity: loading fine geometry ..." << '\n';
