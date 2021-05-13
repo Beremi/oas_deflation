@@ -59,6 +59,7 @@ option (USE_SOLVER "Enable solver" ON)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" OFF)
 option (USE_SANITIZERS "Enable sanitizers" OFF)
+option (CHECK_CONVERSION "Enable conversion warnings" OFF)
 
 if (MSVC)
     add_definitions (-D_USE_MATH_DEFINES)
@@ -90,6 +91,9 @@ if (MSVC)
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -fPIC -Wall -Wextra  -Wshadow") # -Wsign-conversion -Wconversion  -pedantic-errorsc -ggdb
+    if (CHECK_CONVERSION)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion -Wconversion")
+    endif()
     if (USE_SANITIZERS)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer") #
     endif ()
