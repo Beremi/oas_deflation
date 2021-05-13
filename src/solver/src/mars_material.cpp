@@ -12,6 +12,7 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned i
 
 //////////////////////////////////////////////////////////
 double MarsMaterialStatus :: giveValue(string code) const {
+
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
     } else if ( code.compare("volumetric_strain") == 0 ) {
@@ -31,6 +32,21 @@ double MarsMaterialStatus :: giveValue(string code) const {
         //     return temp_strain[1];
         // } else  if ( code.compare("strainT2") == 0 ) {
         //     return temp_strain[2];
+    } else if ( code.compare("ft") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveFt();
+    } else if ( code.compare("Gt") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveGt();
+    } else if ( code.compare("fs") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveFs();
+    } else if ( code.compare("Gs") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveGs();
+    } else if ( code.compare("E0") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveE0();
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
