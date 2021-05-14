@@ -234,12 +234,12 @@ def init_parser():
                                      allow_abbrev=True)
 
     # Add the arguments
-    parser.add_argument('ld_file',
+    parser.add_argument('ld_files',
                         #metavar='file',
                         default=None,
                         type=pathlib.Path,
-                        nargs='?',
-                        help='LD file')
+                        nargs='+',
+                        help='LD files')
 
     parser.add_argument('-x',
                         type=str,
@@ -257,15 +257,20 @@ def init_parser():
 
 if __name__ == '__main__':
     args = init_parser()
-
     #LDFiles().configure_traits(filename='test.out')
     ld_viewer = LDViewer()
-    if args.ld_file:
-        ld_viewer.panel.ldfiles.add_ldfile = True
-        ld_viewer.panel.ldfiles.ldfiles[0].ld_file = args.ld_file
-        ld_viewer.panel.ldfiles.ldfiles[0].add_ldcurve = True
+    if args.ld_files:
+        for ld_idx, ld_file in enumerate(args.ld_files):
+            ld_viewer.panel.ldfiles.add_ldfile = True
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = ld_file
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].add_ldcurve = True
+            if args.x:# in ld_viewer.labels:
+                #ld_viewer.x_values = args.x
+                ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].x_values = args.x
+            if args.y:# in ld_viewer.labels:
+                #ld_viewer.y_values = args.y
+                ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].y_values = args.y
     ld_viewer.configure_traits()
-
 
     exit()
 

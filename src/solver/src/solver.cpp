@@ -136,7 +136,7 @@ void Solver :: setTime(double t) {
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: init(string init_r_file, string init_v_file, const bool &initial) {
+void Solver :: init(string init_r_file, string init_v_file, const bool initial) {
     (void) init_r_file;
     (void) init_v_file;
 
@@ -181,7 +181,7 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
 SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     Solver :: init(init_r_file, init_v_file, initial);
 
     //initial conditions
@@ -322,7 +322,7 @@ SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
 
     W_ext_oldM = 0;
@@ -747,13 +747,13 @@ TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
 
     nodes->addRHS_nodalLoad(load, 0);
     nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r, true, -1.); //at time 0
-    
+
     v_old = Vector(totalDoFnum);
     elems->prepareDampingMatrix(C);
     elems->updateDampingMatrix(C);
@@ -852,7 +852,7 @@ TransientNonLinearTransportSolver :: TransientNonLinearTransportSolver() {
 TransientNonLinearTransportSolver :: ~TransientNonLinearTransportSolver() {}
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+void TransientNonLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     TransientLinearTransportSolver :: init(init_r_file, init_v_file, initial);
 }
 
@@ -892,7 +892,7 @@ void TransientLinearMechanicalSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
 
     //initial conditions
@@ -991,7 +991,7 @@ TransientNonLinearMechanicalSolver :: TransientNonLinearMechanicalSolver() {
 TransientNonLinearMechanicalSolver :: ~TransientNonLinearMechanicalSolver() {}
 
 //////////////////////////////////////////////////////////
-void TransientNonLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool &initial) {
+void TransientNonLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     TransientLinearMechanicalSolver :: init(init_r_file, init_v_file, initial);
 }
 
