@@ -125,6 +125,24 @@ public:
     virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF IP VALUES
+class IPGauge : public Gauge
+{
+protected:
+    vector< unsigned > elems;
+    vector< unsigned > ipnums;
+    ElementContainer * elemcont;
+public:
+    IPGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    ~IPGauge() {};
+    void readFromLine(istringstream &iss);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void init();
+};
+
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

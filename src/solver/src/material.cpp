@@ -45,29 +45,21 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 
 TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "transport mat. status";
-    updateEffectiveConductivity(0.);
+    avgPressure = 0;
+    updateEffectiveConductivity();
 }
 
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
-    temp_strain.resize(strain.size() );
-    for ( unsigned k = 0; k < temp_strain.size(); k++ ) {
-        temp_strain [ k ] = strain [ k ];
-    }
-    updateEffectiveConductivity(strain [ temp_strain.size() ]); //nonlinear effecto of pressure
-    temp_stress = -effConductivity *addEigenStrain(temp_strain);
-    return temp_stress;
+    updateEffectiveConductivity(); //nonlinear effecto of pressure
+    return giveStressWithFrozenIntVars(strain, timeStep);
 };
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    temp_strain.resize(strain.size() - 1);
-    for ( unsigned k = 0; k < temp_strain.size(); k++ ) {
-        temp_strain [ k ] = strain [ k ];
-    }
+    temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
     return temp_stress;
 };
@@ -127,16 +119,23 @@ double TrsprtMaterialStatus :: giveValue(string code) const {
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtMaterialStatus :: updateEffectiveConductivity(double pressure) {
+void TrsprtMaterialStatus :: updateEffectiveConductivity() {
     TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    effConductivity = calculatePressureDependentPermeability(pressure) * tmat->giveDensity() / tmat->giveViscosity();
+    effConductivity = calculatePressureDependentPermeability(avgPressure) * tmat->giveDensity() / tmat->giveViscosity();
 }
 
-
+//////////////////////////////////////////////////////////
 bool TrsprtMaterialStatus :: isElastic(const bool &now) const {
-    // std::cout << "transport material is always elastic" << '\n';
-    return true;
+    return true; //this is not true, discuss with Pepa
 }
+
+//////////////////////////////////////////////////////////
+void TrsprtMaterialStatus :: setParameterValue(string code, double value){
+    if (code.compare("pressure")==0) {
+        avgPressure = value;
+    } else MaterialStatus :: setParameterValue(code, value);
+}
+
 
 
 //////////////////////////////////////////////////////////
@@ -442,18 +441,17 @@ double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) con
 
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
-    //first strain term is pressure gradient, second strain face area, then it is alway crack opening and crack length coulples
+
+    if(timeStep>0) volStrainRate = (tempVolumetricStrain - volumetricStrain)/timeStep;
+    else volStrainRate = 0;
+
     TrsprtCoupledMaterial *tmat = static_cast< TrsprtCoupledMaterial * >( mat );
 
     Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );
-    double crackParam = tc->giveCrackOpeningInNeigborhood();
-    double pressure = tc->giveAveragePressure();
 
-    updateEffectiveConductivity(pressure);
+    updateEffectiveConductivity();
     effConductivity += tmat->giveTurtuosity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
-    temp_strain.resize(1);
-    temp_strain [ 0 ] = strain [ 0 ];
+    temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
     return temp_stress;
 };
@@ -468,6 +466,26 @@ double TrsprtCoupledMaterialStatus :: computeBiotEffect(double volStrain, double
     TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
     return m->giveBiotCoeff() * m->giveDensity() * 3. * ( tempVolumetricStrain - volumetricStrain ) / timeStep; //Biot coeff times volumetric strain rate
 }
+
+
+//////////////////////////////////////////////////////////
+Vector TrsprtCoupledMaterialStatus :: giveInternalSource() const{ 
+    Vector ints(1);
+    TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
+    ints[0] = -m->giveBiotCoeff() * m->giveDensity() * 3. * volStrainRate; //Biot coeff times volumetric strain rate
+    return ints;
+}
+
+
+//////////////////////////////////////////////////////////
+void TrsprtCoupledMaterialStatus :: setParameterValue(string code, double value){
+    if (code.compare("volumetric_strain")==0) {
+        tempVolumetricStrain = value;
+    } else  if (code.compare("crack_opening")==0) {
+        tempVolumetricStrain = value;
+    } else TrsprtMaterialStatus :: setParameterValue(code, value);
+}
+
 
 //////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {

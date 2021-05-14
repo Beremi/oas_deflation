@@ -65,7 +65,7 @@ private:
 protected: 
     bool produceInternalSources;
 public:
-    Material() { name = "basic material"; };
+    Material() { name = "basic material"; produceInternalSources = false;};
     virtual ~Material() {};
     virtual void readFromLine(istringstream &iss) { ( void ) iss; };
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum) { MaterialStatus *newStatus = new MaterialStatus(this, e, ipnum); return newStatus; };
@@ -73,7 +73,7 @@ public:
     string giveName() { return name; }
     unsigned giveId() { return id; }
     void setId(const unsigned &i) { this->id = i; }
-    virtual void init() {produceInternalSources = false; };
+    virtual void init() { };
     bool isProducingInternalSources()const{ return produceInternalSources;}
 protected:
     string name;
@@ -88,6 +88,7 @@ class TrsprtMaterialStatus : public MaterialStatus
 {
 protected:
     double effConductivity, temp_effConductivity;
+    double avgPressure;
 public:
     TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~TrsprtMaterialStatus() {};
@@ -97,9 +98,10 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual double giveValue(string code) const;
     virtual double giveEffectiveConductivity(string type) const;
-    virtual void updateEffectiveConductivity(double pressure);
+    virtual void updateEffectiveConductivity();
     virtual double calculatePressureDependentPermeability(double pressure) const;
     virtual bool isElastic(const bool &now = false) const;
+    virtual void setParameterValue(string code, double value);
 };
 
 //////////////////////////////////////////////////////////
@@ -130,7 +132,7 @@ class TrsprtCoupledMaterial;
 class TrsprtCoupledMaterialStatus : public TrsprtMaterialStatus
 {
 protected:
-    double tempVolumetricStrain, volumetricStrain;
+    double tempVolumetricStrain, volumetricStrain, volStrainRate, crackParam;
 public:
     TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~TrsprtCoupledMaterialStatus() {};
@@ -139,7 +141,9 @@ public:
     virtual double giveEffectiveConductivity(string type) const;
     virtual void update();
     double computeBiotEffect(double volStrain, double timeStep);
+    virtual Vector giveInternalSource() const;
     virtual double giveValue(string code) const;
+    virtual void setParameterValue(string code, double value);
 };
 
 //////////////////////////////////////////////////////////
@@ -148,7 +152,7 @@ class TrsprtCoupledMaterial : public TrsprtMaterial
 private:
     double crack_turtuosity, biotCoeff;
 public:
-    TrsprtCoupledMaterial() { name = "coupled transport material"; };
+    TrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true;};
     ~TrsprtCoupledMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);

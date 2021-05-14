@@ -358,6 +358,53 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EXPORT OF IP VALUES
+void IPGauge :: readFromLine(istringstream &iss) {
+    iss >> this->filename;
+    iss >> this->name;
+    this->codes.resize(1);
+    iss >> this->codes [ 0 ];
+    unsigned num;
+    iss >> num;
+    elems.resize(num);
+    ipnums.resize(num);
+    for ( unsigned i = 0; i < num; i++ ) {
+        iss >> elems [ i ];
+        iss >> ipnums [ i ];
+    }
+    DataExporter :: readFromLine(iss);
+}
+
+//////////////////////////////////////////////////////////
+void IPGauge :: init() {
+    time_each = 0;
+    time_last = 0;
+}
+
+
+//////////////////////////////////////////////////////////
+void IPGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
+    ( void ) full_f;
+    ( void ) reactions;
+    char buffer [ 100 ];
+    double value = 0;
+    giveFileName(step, buffer);
+    ofstream outputfile;
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    if ( outputfile.good() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+        for ( unsigned i = 0; i < elems.size(); i++ ) {
+            value += elemcont->giveElement(elems[i])->giveMatStatus(ipnums[i])->giveValue(codes[0]);
+        }
+        outputfile <<  "\t" << value * multiplier;
+    }
+    outputfile.close();
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
 /*!
  *  Export displacements (nodeB-nodeA) to txt.
@@ -533,6 +580,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("DoFGauge") == 0 ) {
                     DoFGauge *newexp = new DoFGauge(n, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
+                } else if ( exptype.compare("IPGauge") == 0 ) {
+                    IPGauge *newexp = new IPGauge(e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTGaussPointExporter") == 0 ) {

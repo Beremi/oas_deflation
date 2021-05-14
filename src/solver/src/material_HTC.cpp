@@ -47,7 +47,7 @@ Matrix HTCMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const
     Matrix s(6,6);
     for(unsigned i=0; i<3; i++){
         for(unsigned j=0; j<3; j++){
-            s[i][j] = -D1*P[i][j];
+            s[i][j] = -Dh/htc->giveC()*P[i][j];
             s[i+3][j+3] = -kappa*P[i][j];
         }
     }
@@ -56,13 +56,52 @@ Matrix HTCMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const
 
 //////////////////////////////////////////////////////////
 void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
+
+    //if(timeStep>0){
+    //T = 19.85 + 273.15;
+    //h = 740.334E-03;
+    //}
+
     HTCMaterial * htc = static_cast< HTCMaterial * >(mat);
-    double psi = exp ( htc->giveEadR()/htc->giveT0() - htc->giveEadR()/T );
-    double Ac = htc->giveAc1() * ( htc->giveAc2()/htc->giveAlphacinf() + temp_alphac) * (htc->giveAlphacinf() - temp_alphac) * exp( -htc->giveEtac()*temp_alphac/htc->giveAlphacinf());  
-    double As = htc->giveAs1() * ( htc->giveAs2()/htc->giveAlphasinf() + temp_alphas) * (htc->giveAlphasinf() - temp_alphas) * exp( -htc->giveEtas()*temp_alphas/htc->giveAlphasinf());  
+    if(timeStep<0) timeStep=0;
+
     double betah = 1./( 1.+pow( htc->giveA() - htc->giveA()*h ,htc->giveB()) );
-    double alphacdot = Ac*betah*exp(-htc->giveEacR()/T);
-    double alphasdot = As*exp(-htc->giveEasR()/T); 
+    double Ac, As, alphacdot, alphasdot, old_temp_alphac, old_temp_alphas;
+
+    //central difference method
+    temp_alphac = alphac;    
+    double error = 1e9;
+    unsigned it = 0;
+    while ( error > 1e-8 && it<100){
+        old_temp_alphac = temp_alphac;
+        Ac = htc->giveAc1() * ( htc->giveAc2()/htc->giveAlphacinf() + temp_alphac) * (htc->giveAlphacinf() - temp_alphac) * exp( -htc->giveEtac()*temp_alphac/htc->giveAlphacinf());  
+        alphacdot = Ac*betah*exp(-htc->giveEacR()/T); 
+        temp_alphac = alphac +  alphacdot*timeStep;
+        error = abs(old_temp_alphac - temp_alphac);
+        it ++;
+    }
+    temp_alphac = max(min(temp_alphac,1.),0.);
+
+    //bacward Euler method
+    temp_alphas = alphas;    
+    error = 1e9;
+    it = 0;
+    while ( error > 1e-8 && it<100){
+        old_temp_alphas = temp_alphas;
+        As = htc->giveAs1() * ( htc->giveAs2()/htc->giveAlphasinf() + temp_alphas) * (htc->giveAlphasinf() - temp_alphas) * exp( -htc->giveEtas()*temp_alphas/htc->giveAlphasinf());  
+        alphasdot = As*exp(-htc->giveEasR()/T); 
+        temp_alphas = alphas +  alphasdot*timeStep;
+        error = abs(old_temp_alphas - temp_alphas);
+        it ++;
+    }
+    temp_alphas = max(min(temp_alphas,1.),0.);
+
+    //if(timeStep>0){
+    //cout << temp_alphac << " " << temp_alphas << endl;
+    //exit(1);
+    //}
+
+    double psi = exp ( htc->giveEadR()/htc->giveT0() - htc->giveEadR()/T );
     double G1 = htc->giveKcvg()*htc->giveC()*temp_alphac + htc->giveKsvg()*htc->giveS()*temp_alphas;
     double K1 = (htc->giveW0() - 0.188*temp_alphac*htc->giveC() + 0.22*temp_alphas*htc->giveS() - G1*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) ) )/ (exp( 10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) -1.);
 
@@ -91,8 +130,8 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     qT = alphacdot*htc->giveC()*htc->giveQcinf() + alphasdot*htc->giveS()*htc->giveQsinf();
     dwe_dh = G1*( 10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) * exp(-10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h) + K1*(10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac))*exp(10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h);
 
-    Dh = htc->giveD1();
-    dwe_dh = htc->giveKappa();
+    //Dh = htc->giveD1();
+    //dwe_dh = htc->giveKappa();
     /*
     ///////////////////////// NUMERICAL TEST
     cout << "Dh " << D << endl; 
@@ -125,13 +164,6 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     h -= XXXX;    
     ////////////////////////
     */
-
-    temp_alphas = alphas + alphasdot*timeStep;
-    temp_alphac = alphac + alphacdot*timeStep;
-    if(temp_alphas<0) temp_alphas = 0;
-    if(temp_alphac<0) temp_alphac = 0;
-    if(temp_alphas>1) temp_alphas = 1;
-    if(temp_alphac>1) temp_alphac = 1;
     
 }
 
@@ -155,12 +187,9 @@ Vector HTCMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, do
     HTCMaterial * htc = static_cast< HTCMaterial * > (mat);
     Matrix P = htc->givePermeabilityTensor();
 
-    Vector hstress = -Dh*matrix_vector_multiply(P,hstrain);
-    
-    Vector tstress = -htc->giveKappa()*matrix_vector_multiply(P,tstrain);
-    
+    Vector hstress = -(Dh/htc->giveC())*matrix_vector_multiply(P,hstrain);    
+    Vector tstress = -htc->giveKappa()*matrix_vector_multiply(P,tstrain);    
     temp_stress.resize(6);
-
     for(unsigned i=0; i<3; i++) {
         temp_stress[i] = hstress[i];
         temp_stress[3+i] = tstress[i];
@@ -171,9 +200,10 @@ Vector HTCMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, do
 
 //////////////////////////////////////////////////////////
 Vector HTCMaterialStatus :: giveInternalSource() const{
+    HTCMaterial * htc = static_cast< HTCMaterial * > (mat);
     Vector ints(2);
-    //ints[0] = qh;
-    //ints[1] = qT;
+    ints[0] = qh/htc->giveC();
+    ints[1] = qT;
     return ints;
 }
 
@@ -181,7 +211,7 @@ Vector HTCMaterialStatus :: giveInternalSource() const{
 Matrix HTCMaterialStatus :: giveDampingTensor() const{
     HTCMaterial * htc = static_cast< HTCMaterial * > (mat);
     Matrix S(2,2);
-    S[0][0] = -dwe_dh;
+    S[0][0] = -dwe_dh/htc->giveC();
     S[1][1] = -htc->giveRho()*htc->giveCt();
     return S;
 }
@@ -287,6 +317,6 @@ MaterialStatus *HTCMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum)
 void HTCMaterial :: init() {
     permeabilityTensor  = Matrix(3,3);
     
-    permeabilityTensor[0][0] = permeabilityTensor[1][1] = permeabilityTensor[2][2] = 1.;
+    permeabilityTensor[0][0] = permeabilityTensor[1][1] = permeabilityTensor[2][2] = 0.90020548;
 };
 

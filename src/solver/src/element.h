@@ -62,11 +62,11 @@ public:
     size_t giveNumIP() const { return inttype->giveNumIP(); };
     Point giveIPLoc(unsigned k) const { return inttype->giveIPLocation(k); };
     virtual double giveIPValue(string code, unsigned ipnum) const;
-    MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
     vector< Node * >giveNodes() const { return nodes; }
     Node *giveNode(unsigned k) const { return nodes [ k ]; }
     Material *giveMaterial() const { return mat; }
     vector< MaterialStatus * >giveMaterialStats() const { return stats; };
+    MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
     virtual Matrix giveBMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); };
@@ -79,6 +79,7 @@ public:
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     unsigned giveVTKCellType() const { return vtk_cell_type; };
     virtual void changeMaterial(Material *newmat);
+    virtual Vector integrateInternalSources();
 
     virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };

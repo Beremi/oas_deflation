@@ -61,14 +61,10 @@ class Transp1D; //forward declaration
 class RigidBodyContactCoupled : public RigidBodyContact
 {
 protected:
-    double averagePressure;
-    double volumetricStrainRate;
 public:
     RigidBodyContactCoupled(const unsigned dim);
     ~RigidBodyContactCoupled() {};
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    double giveVolumetricStrainRate() { return volumetricStrain; };
-    double giveAveragePressure() { return averagePressure; };
 };
 
 //////////////////////////////////////////////////////////
@@ -99,7 +95,6 @@ protected:
     Point normal;
     double length, area;
     bool BolanderCapacityMatrix;
-    double averagePressure;
 
     virtual void checkNodeType() const;
     virtual void setIntegrationPointsAndWeights();
@@ -118,9 +113,9 @@ public:
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveDampingMatrix() const;
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
+    virtual Vector integrateInternalSources();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     vector< Node * >giveVertices() const { return vert; };
-    double giveAveragePressure();
 };
 
 //////////////////////////////////////////////////////////
@@ -132,7 +127,6 @@ private:
     vector< RigidBodyContact * >friends; //mechanical elements involved in computation
     vector< double >friendsweight;  //weight of mechanical elements
 
-    double crackInNeighborhood; ///crack parameter to account for crack opening
     void findFriendsFromSimplices();
 
 public:
@@ -145,8 +139,6 @@ public:
     void addNewFriend(RigidBodyContact *f, double weight);
     unsigned giveNumOfFriends() const { return friends.size(); };
     virtual void collectInformationsFromNeigborhood();
-    double giveCrackOpeningInNeigborhood();
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
 };
 
 #endif  /* _ELEMENT_DISCRETE_H */

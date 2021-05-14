@@ -63,6 +63,8 @@ void MarsMaterialStatus :: init() {
         cerr << "Error " << name << ": snap back occured" << endl;
         exit(1);
     }
+
+    volumetricStrain = 0;
 }
 
 //////////////////////////////////////////////////////////
@@ -236,7 +238,14 @@ std :: string MarsMaterialStatus :: giveLineToSave() const {
     return "damage " + to_string(this->damage) + " maxEpsN " + to_string(this->maxEpsN) + " maxEpsT " + to_string(this->maxEpsT);
 }
 
+//////////////////////////////////////////////////////////
+void MarsMaterialStatus :: setParameterValue(string code, double value){
+    if (code.compare("volumetric_strain")==0) {
+        volumetricStrain = value;
+    } else DisMechMaterialStatus :: setParameterValue(code, value);
+}
 
+//////////////////////////////////////////////////////////
 void MarsMaterialStatus :: readFromLine(istringstream &iss) {
     std :: string param;
     while ( !iss.eof() ) {
@@ -251,6 +260,7 @@ void MarsMaterialStatus :: readFromLine(istringstream &iss) {
     }
 }
 
+//////////////////////////////////////////////////////////
 bool MarsMaterialStatus :: isElastic(const bool &now) const {
     if ( now && this->temp_damage != 0.0 ) {
         return false;
@@ -341,28 +351,31 @@ CoupledMarsMaterialStatus :: CoupledMarsMaterialStatus(MarsMaterial *m, Element 
 //////////////////////////////////////////////////////////
 void CoupledMarsMaterialStatus :: init() {
     MarsMaterialStatus :: init();
+    avgPressure = 0;
+}
+
+
+//////////////////////////////////////////////////////////
+void CoupledMarsMaterialStatus :: setParameterValue(string code, double value){
+    if (code.compare("pressure")==0) {
+        avgPressure = value;
+    } else MarsMaterialStatus :: setParameterValue(code, value);
 }
 
 //////////////////////////////////////////////////////////
 double CoupledMarsMaterialStatus :: giveValue(string code) const {
-    if ( code.compare("averagePressure") == 0 ) {
-        RigidBodyContactCoupled *ec = static_cast< RigidBodyContactCoupled * >( element );
-        return ec->giveAveragePressure();
-    } else if ( code.compare("volumetricStrainRate") == 0 ) {
-        RigidBodyContactCoupled *ec = static_cast< RigidBodyContactCoupled * >( element );
-        return ec->giveVolumetricStrainRate();
-    } else {
-        return MarsMaterialStatus :: giveValue(code);
-    }
+    if ( code.compare("average_pressure") == 0 ) {
+        return avgPressure;
+    } return MarsMaterialStatus :: giveValue(code);
 }
+
 
 
 //////////////////////////////////////////////////////////
 void CoupledMarsMaterialStatus :: updateStressByBiotEffect(double timeStep) {
     ( void ) timeStep;
-    RigidBodyContactCoupled *crbc = static_cast< RigidBodyContactCoupled * >( element );
     CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
-    temp_stress [ 0 ] -= m->giveBiotCoeff() * crbc->giveAveragePressure();
+    temp_stress [ 0 ] -= m->giveBiotCoeff() * avgPressure;
 }
 
 //////////////////////////////////////////////////////////

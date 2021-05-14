@@ -137,8 +137,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF;
-    intF.resize(DoFids.size() );
+    Vector intF(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -148,18 +147,28 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
         }
         intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
     }
-
-    /*
+    
+    //add internal sources
     if(mat->isProducingInternalSources()){
-        for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-            Vector ints = stats [ i ] -> giveInternalSource();   
-            
-        }
+        Vector intS = integrateInternalSources();
+        for(unsigned i=0; i<intF.size(); i++) intF[i] += intS[i];
     }
-    */
-
+    
     return intF;
 }
+
+//////////////////////////////////////////////////////////
+Vector Element :: integrateInternalSources() {
+    Vector intS(DoFids.size() );
+    Vector intmats;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        intmats = stats [ i ] -> giveInternalSource();   
+        intS += Hs[i].transpose() * (intmats *inttype->giveIPWeight(i) ) ;
+    }
+    
+    return intS;
+}
+
 
 //////////////////////////////////////////////////////////
 Matrix Element :: giveDampingMatrix() const {
