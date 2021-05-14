@@ -310,13 +310,7 @@ def createDiamondTestModel(width, height):
 
 
 
-def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,
-                           loadWidth = 1, fracZoneWidth = 0.15,
-                           orthogonalFracZone=False, notchWidth =-1,
-                           node_coords_init=None,
-                           specifiedNodes=[],
-                           activeTransport=False,
-                           coupled = False, specifiedNodes=[]):
+def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,      loadWidth = 1, fracZoneWidth = 0.15,                           orthogonalFracZone=False, notchWidth =-1,                           node_coords_init=None,                                   activeTransport=False,                           coupled = False, specifiedNodes=[]):
     print('Creating 2d simply supported beam, uniform load.')
     #
     node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth=notchWidth, node_coords_init=node_coords_init,  coupled=coupled, specifiedNodes=specifiedNodes);
