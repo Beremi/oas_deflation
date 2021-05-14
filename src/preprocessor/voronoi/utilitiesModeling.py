@@ -1127,7 +1127,7 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
     functions.append (fn2)
 
 
-    fn3 = utilitiesNumeric.constantFunc(100)
+    fn3 = utilitiesNumeric.constantFunc(1)
     functions.append (fn3)
 
 
