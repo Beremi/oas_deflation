@@ -256,7 +256,7 @@ class Model:
                 os.makedirs(self.master_folder)
         except:
             print('Please create directory %s! Code Exited.' % self.master_folder)
-            sys.exit()
+            sys.exit(1)
 
 
     def createModel(self, node_coords_init=None):
@@ -616,7 +616,7 @@ class Model:
             #
             if (young == None or alpha == None or density == None):
                 print ('!! DisMechMaterial incomplete. Exiting. !!')
-                sys.exit()
+                sys.exit(1)
 
             linElMaterial = utilitiesMech.linearElasticMaterial(young, alpha, density)
             self.materials.append(linElMaterial)
@@ -879,26 +879,25 @@ if __name__ == '__main__':
         print (model.specifiedNodes)
     if model == None:
         print ('Missing model!! Exiting...')
-        sys.exit()
+        sys.exit(1)
 
     if solver == None:
         print ('Missing solver!! Exiting...')
-        sys.exit()
+        sys.exit(1)
 
     if len(model.materials)==0:
         print ('Missing some material!! Exiting...')
-        sys.exit()
+        sys.exit(1)
 
     if model != None:
         for i in range (model.nr_models):
             print('\nCreating model #%d' %i)
+            if len(sys.argv) > 3:
+                model.userSeed = int(sys.argv[3])
             model.setDirectory(len(sys.argv) > 2 and sys.argv[2] or None) # directory to genereate in can be specified in the input string (after prep_master.inp)
             model.createModel()
             model.saveGeometry()
-            model.saveRest(solver, file,exporters)
-
-
-
+            model.saveRest(solver, file, exporters)
 
     print('\n%%%%%%%%% LATTICE PREPROCESSOR DONE %%%%%%%%%')
     #print('\n%%%%%%%%% %d NODES MODEL %%%%%%%%%' %len(model.node_coords))

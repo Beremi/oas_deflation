@@ -31,6 +31,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
                 argv [ 0 ]);
         fprintf(stderr, "     : [-j num] has effect for Eigen conjugate gradients\n");
+        cerr << string(80, '=') << endl;
+        cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -91,11 +93,12 @@ int main(int argc, char **argv) {
         std :: cout << "######### total duration: " << convertTimeToString(elapsed_seconds) << " #########" << endl;
     }
 
-    //int terminationStatus = solver->giveTerminationStatus();
+    // when run automatically, termination status needs to be distinguished
+    int terminationStatus = masterModel->giveSolver()->giveTerminationStatus();
     //std :: cout << "termination status = " << terminationStatus << '\n';
     //return terminationStatus;
 
     delete masterModel; //delete mater model class
 
-    return 0;
+    return terminationStatus;
 }

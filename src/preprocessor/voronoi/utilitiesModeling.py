@@ -314,6 +314,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,
                            loadWidth = 1, fracZoneWidth = 0.15,
                            orthogonalFracZone=False, notchWidth =-1,
                            node_coords_init=None,
+                           specifiedNodes=[],
                            activeTransport=False,
                            coupled = False, specifiedNodes=[]):
     print('Creating 2d simply supported beam, uniform load.')

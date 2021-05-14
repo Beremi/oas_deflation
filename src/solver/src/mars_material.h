@@ -49,7 +49,9 @@ public:
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
+    double giveGt() { return Gt; }
     double giveFs() { return fs; }
+    double giveGs() { return Gs; }
     double giveFc() { return fc; }
     double giveBeta() { return beta; }
     double giveMu() { return mu; }
