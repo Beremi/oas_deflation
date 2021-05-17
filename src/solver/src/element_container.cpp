@@ -335,6 +335,8 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) con
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const {
+    K = K*0; //set everything to zero
+
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
@@ -373,10 +375,7 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             }
         }
     }
-    if ( nodes->giveConstraints()->isActive() ) {
-        nodes->giveConstraints()->transformToConstraintSpace(K);
-    }
-
+    
     /*
      * for(size_t i=0; i<K.RowCount; i++){
      *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity

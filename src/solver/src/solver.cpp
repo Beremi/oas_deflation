@@ -190,16 +190,17 @@ void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, con
     }
     computeInternalExternalForces(r, false, -1); //to activate initial conditions at elements
 
-    elems->prepareStiffnessMatrix(Kini);
-    Keff = Kini;
-    elems->updateStiffnessMatrix(Keff, "elastic");
+    elems->prepareStiffnessMatrix(K);
+    elems->updateStiffnessMatrix(K, "elastic");
+    computeKeff();
 }
 
-
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: updateKeff(string matrixType) {
-    Keff = Kini;
-    elems->updateStiffnessMatrix(Keff, matrixType);
+void SteadyStateLinearSolver :: computeKeff(){
+    Keff = K;
+    if ( nodes->giveConstraints()->isActive() ) {
+        nodes->giveConstraints()->transformToConstraintSpace(Keff);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -236,6 +237,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("symsolver_type") == 0 ) {
                 inputfile >> symsolver_type;
             }
+
         }
         inputfile.close();
     }
@@ -357,6 +359,9 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     step_increase = 1.25;
     step_decrease = 0.8;
     critical_step_decrease = 0.5;
+    stiffnessMatrixUpdate = 1e3;
+    dampingMatrixUpdate = -1;
+    massMatrixUpdate = -1;
 
     string param, line;
     dtmax = dtmin = dt;
@@ -386,6 +391,15 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("tolerance") == 0 ) {
                 iss >> disErr;
                 resErr = eneErr = disErr;
+            } else if ( param.compare("stiffness_matrix_update") == 0 ) {
+                iss >> valueIN;
+                stiffnessMatrixUpdate = int(valueIN+0.5);               
+            } else if ( param.compare("mass_matrix_update") == 0 ) {
+                iss >> valueIN;
+                massMatrixUpdate = int(valueIN+0.5);    
+            } else if ( param.compare("damping_matrix_update") == 0 ) {
+                iss >> valueIN;
+                dampingMatrixUpdate = int(valueIN+0.5);   
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
@@ -470,6 +484,18 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     return this;
 };
 
+
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: updateSystemMatrices(string matrixType, unsigned iteration) {
+    if (stiffnessMatrixUpdate==0 || (stiffnessMatrixUpdate>0 && iteration%stiffnessMatrixUpdate==0)){
+        elems->updateStiffnessMatrix(K, matrixType);
+        return true;
+    }
+    else return false;
+}
+
+
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *energy_error, double *residu_error) {
     vector< bool >mechDoFs  = nodes->giveMechDoFsIndicator();   //these fields should be on input
@@ -534,6 +560,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
+
     double load_mult;
     bool converged = false;
     bool restarted = false;
@@ -553,7 +580,8 @@ void SteadyStateNonLinearSolver :: solve() {
 
         unsigned it = 0;
         while ( !converged && it < maxIt ) {
-            updateKeff("secant");
+            if (updateSystemMatrices("secant",it)) computeKeff(); //only if required
+
             nodes->giveReducedForceArray(residuals, f);
 
             if ( idc ) {      //indirect displacement control
@@ -757,7 +785,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
     v_old = Vector(totalDoFnum);
     elems->prepareDampingMatrix(C);
     elems->updateDampingMatrix(C);
-    updateKeff("elastic");
+    computeKeff();
 
     //compute initial presure derivative
     nodes->giveReducedForceArray(residuals, f);
@@ -781,9 +809,11 @@ void TransientLinearTransportSolver :: computeForcesAtStepEnd(const bool frozen)
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: updateKeff(string matrixType) {
-    SteadyStateLinearSolver :: updateKeff(matrixType);
-    Keff = C * ( ( 1. - alpha_m ) / ( dt * gamma ) ) + Keff * ( 1. - alpha_f );
+void TransientLinearTransportSolver :: computeKeff(){
+    Keff = C * ( ( 1. - alpha_m ) / ( dt * gamma ) ) + K * ( 1. - alpha_f );
+    if ( nodes->giveConstraints()->isActive() ) {
+        nodes->giveConstraints()->transformToConstraintSpace(Keff);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -842,6 +872,17 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 };
 
 //////////////////////////////////////////////////////////
+bool TransientLinearTransportSolver :: updateSystemMatrices(string matrixType, unsigned iteration) {
+    bool updated0 = SteadyStateNonLinearSolver :: updateSystemMatrices(matrixType, iteration);
+    bool updated1 = false;
+    if (dampingMatrixUpdate==0 || (dampingMatrixUpdate>0 && iteration%dampingMatrixUpdate==0)){
+        elems->updateDampingMatrix(C);
+        updated1 = true;
+    }
+    return (updated0 || updated1);
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSIENT NON-LINEAR TRANSPORT SOLVER
 TransientNonLinearTransportSolver :: TransientNonLinearTransportSolver() {
@@ -867,7 +908,6 @@ void TransientNonLinearTransportSolver :: runBeforeEachStep() {
 void TransientNonLinearTransportSolver :: runAfterEachStep() {
     SteadyStateNonLinearSolver :: runAfterEachStep();
 };
-
 
 //////////////////////////////////////////////////////////
 void TransientNonLinearTransportSolver :: solve() {
@@ -906,7 +946,7 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
     elems->updateDampingMatrix(C);
     elems->prepareMassMatrix(M);
     elems->updateMassMatrix(M);
-    updateKeff("elastic");
+    computeKeff();
 
     //compute initial acceleration
     nodes->addRHS_nodalLoad(load, 0);
@@ -934,9 +974,11 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: updateKeff(string matrixType) {
-    SteadyStateLinearSolver :: updateKeff(matrixType);
-    Keff = Keff * ( 1. - alpha_f ) + C * ( ( 1 - alpha_f ) * gamma / dt / beta ) + M * ( ( 1 - alpha_m ) / dt / dt / beta );
+void TransientLinearMechanicalSolver :: computeKeff(){
+    Keff = K * ( 1. - alpha_f ) + C * ( ( 1 - alpha_f ) * gamma / dt / beta ) + M * ( ( 1 - alpha_m ) / dt / dt / beta );
+    if ( nodes->giveConstraints()->isActive() ) {
+        nodes->giveConstraints()->transformToConstraintSpace(Keff);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -981,6 +1023,18 @@ void TransientLinearMechanicalSolver :: runAfterEachStep() {
 
 
 //////////////////////////////////////////////////////////
+bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, unsigned iteration) {
+    bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(matrixType, iteration);
+    bool updated1 = false;
+    if (massMatrixUpdate==0 || (massMatrixUpdate>0 && iteration%massMatrixUpdate==0) ){
+        elems->updateMassMatrix(M);
+        updated1 = true;
+    }
+    return (updated0 || updated1);
+}
+
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSIENT NON LINEAR MECHANICAL SOLVER
 TransientNonLinearMechanicalSolver :: TransientNonLinearMechanicalSolver() {
@@ -994,7 +1048,6 @@ TransientNonLinearMechanicalSolver :: ~TransientNonLinearMechanicalSolver() {}
 void TransientNonLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     TransientLinearMechanicalSolver :: init(init_r_file, init_v_file, initial);
 }
-
 
 //////////////////////////////////////////////////////////
 void TransientNonLinearMechanicalSolver :: runBeforeEachStep() {
