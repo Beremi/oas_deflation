@@ -3583,15 +3583,37 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
     node_coords.append( np.array([ D-0.2*D,     3/4*D-D*0.6/2 ])  )#right LC
     node_coords.append( np.array([ D-0.2*D,     3/4*D+D*0.6/2 ])  )
 
+
+
+    #top left edge of dogbone
+    nodeA = np.array([indent, indent])
+    nodeB = np.array([indent, 1/4*D])
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, False)
+
+    #top right edge of dogbone
+    nodeA = np.array([D-indent, indent])
+    nodeB = np.array([D-indent, 1/4*D])
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, False)
+
+    #bottom left edge of dogbone
+    nodeA = np.array([indent, 5/4*D])
+    nodeB = np.array([indent, 6/4*D])
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, False)
+
+    #bottom right edge of dogbone
+    nodeA = np.array([D-indent, 5/4*D])
+    nodeB = np.array([D-indent, 6/4*D])
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, False)
+
     #top line of dogbone
     nodeA = np.array([indent, indent])
     nodeB = np.array([indent+D, indent])
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, True)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, False, True)
 
     #bottom line of dogbone
     nodeA = np.array([indent,  6/4 * D - indent])
     nodeB = np.array([D-indent, 6/4 * D - indent])
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, True, True)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, altMinDist*0.9, dim, node_coords, trials, False, True)
 
     uniquePoints =  (len(node_coords)) - oldLen
 
@@ -3662,6 +3684,9 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
         plt.show()
     #"""
+
+
+
 
 
     if roughDogBone == 1: #hrubsi jen obdelniky prilozek
@@ -3810,7 +3835,7 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         node_coords_all = np.vstack( (node_coords_all, mirroredPointsA, mirroredPointsB) )
 
 
-    """
+
     plt.plot(node_coords_all[:,0], node_coords_all[:,1], 'o', color='green');
     plt.plot(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1], 'x', color='red');
     plt.show()
@@ -6337,7 +6362,7 @@ def assemble3dtubeTorsionFree(center, radius, height, thickness, minDist, trials
 
 
 def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials):
-    print ('Assembling Biparva tube...', end='')
+    print ('Assembling Biparva tube...')
     directionDim = 0
     indent = 1e-5
     dim=3
@@ -6349,10 +6374,10 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
     govNodesMechBC = []
     rigidPlates = []
 
-
-    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+    center[0] += 1e-7
+    #mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
     node_coords.append( np.array([  indent,  radius-thickness/2,  0 ]))
-    mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    #mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
     #mechBC_merged.append(mBC)
 
     ###############generating of points supported surface left face ###############
@@ -6370,6 +6395,7 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
     govNodes.append(np.array([ 0,0,0 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
 
+    center[0] -= 2e-7
     nodeA = center.copy()
     nodeA[directionDim] += float(height)
 
