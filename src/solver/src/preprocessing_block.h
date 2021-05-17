@@ -150,14 +150,23 @@ protected:
 // rigid plate constraining nodes in holow cylindric
 class ExpansionRingDoFLoad : public RingRigidPlate
 {
-private:
-    unsigned expansion_master_id;
 public:
     ExpansionRingDoFLoad() {};
     virtual ~ExpansionRingDoFLoad() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
 protected:
+  unsigned expansion_master_id;
+};
+
+// rigid plate constraining nodes in holow cylindric
+class ExpansionRingSingleDoFLoad : public ExpansionRingDoFLoad
+{
+public:
+    ExpansionRingSingleDoFLoad() {};
+    virtual ~ExpansionRingSingleDoFLoad() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
+    // virtual void readFromLine(istringstream &iss, unsigned d);
 };
 
 //////////////////////////////////////////////////////////

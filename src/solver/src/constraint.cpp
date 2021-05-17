@@ -331,6 +331,11 @@ void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
         indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
     }
     X = CoordinateIndexedSparseMatrix(indeces11, numFreeDoFs, numFreeDoFs - constraints.size() );
+
+    // // JK - left for testing:
+    // for ( auto const &cn : this->constraints ){
+    //     cn->print();
+    // }
 }
 
 

@@ -682,7 +682,7 @@ void RigidPlate :: setDirectionToFix(istringstream &iss) {
 
 void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     // jointDoF jD;
-    ndim = d;
+    this->dim = d;
     unsigned nslaves, nodeid;
     //////////////////////////////////////////////////////////
     // read the line "masterId numSlaves slaveId1, slaveId2...."
@@ -701,8 +701,8 @@ void RigidPlate :: checkMechTransport(Node *master) {
     master->setName(master->giveName().append("-virtual") );
 
     if ( dynamic_cast< MechNode * >( master ) ) {
-        if ( master->giveNumberOfDoFs() != ( 3 * ( ndim - 1 ) ) ) {
-            cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( ndim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
+        if ( master->giveNumberOfDoFs() != ( 3 * ( this->dim - 1 ) ) ) {
+            cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( this->dim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
             exit(EXIT_FAILURE);
         }
     } else if ( dynamic_cast< TrsNode * >( master ) ) {
@@ -731,12 +731,12 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer 
 
     for ( auto const &sl_id : slave_ids ) {
         slave = nodes->giveNode(sl_id);
-        connectSlaveMasterRigid(constrs, slave, master, ndim, which, this->transport);
+        connectSlaveMasterRigid(constrs, slave, master, this->dim, which, this->transport);
     }
 }
 
 void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
-    ndim = d;
+    this->dim = d;
     if ( d == 2 ) {
         double x0, x1, y0, y1;
         iss >> master_id >> x0 >> x1 >> y0 >> y1;
@@ -771,14 +771,14 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
             if ( nod == master ) {
                 continue;
             }
-            connectSlaveMasterRigid(constrs, nod, master, ndim, which, this->transport);
+            connectSlaveMasterRigid(constrs, nod, master, this->dim, which, this->transport);
         }
     }
 }
 
 
 void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
-    ndim = d;
+    this->dim = d;
     double x, y, z, rI, rO;
     string dir;
     iss >> master_id >> x >> y;
@@ -843,7 +843,7 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
                 if ( nod == master ) {
                     continue;
                 }
-                connectSlaveMasterRigid(constrs, nod, master, ndim, which, this->transport);
+                connectSlaveMasterRigid(constrs, nod, master, this->dim, which, this->transport);
             }
         }
     }
@@ -853,6 +853,10 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
 
 void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
     RingRigidPlate :: readFromLine(iss, d);
+    if ( typeid(this) != typeid(ExpansionRing) ) {
+        // do not perform following for derived classes
+        return;
+    }
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
     bool bf = false;
@@ -866,6 +870,7 @@ void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
     }
     if ( !bf ) {
         std :: cerr << "Error: no function governing volumetric expansion specified" << '\n';
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -901,7 +906,7 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
                 if ( nod == master ) {
                     continue;
                 }
-                connectSlaveMasterExpansion(constrs, nod, master, ndim, this->transport, funcs->giveFunction(this->fn_id) );
+                connectSlaveMasterExpansion(constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
             }
         }
     }
@@ -910,6 +915,10 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
 
 void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
     RingRigidPlate :: readFromLine(iss, d);
+    if ( typeid(this) != typeid(ExpansionRing) ) {
+        // do not perform following for derived classes
+        return;
+    }
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
     bool bf = false;
@@ -923,6 +932,7 @@ void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
     }
     if ( !bf ) {
         std :: cerr << "Error: no master DoF governing volumetric expansion specified" << '\n';
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -961,10 +971,124 @@ void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BC
                 if ( nod == master ) {
                     continue;
                 }
-                connectSlaveMasterExpansionFLoad(constrs, nod, master, expMaster, ndim);
+                connectSlaveMasterExpansionFLoad(constrs, nod, master, expMaster, this->dim);
             }
         }
     }
+}
+
+
+void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+    ( void ) e;
+    ( void ) bcs;
+    ( void ) funcs;
+    ( void ) ex;
+    // jointDoF jD;
+    Node *slave;
+    Node *expMaster;
+
+    expMaster = nodes->giveNode(this->master_id);
+
+    Point node_point;
+    int xm, ym, zm;
+    xm = 1;
+    ym = 1;
+    zm = 1;
+    if ( direction == 0 ) {
+        xm = 0;
+    } else if ( direction == 1 ) {
+        ym = 0;
+    } else if ( direction == 2 ) {
+        zm = 0;
+    }
+
+    // // NOTE JK this is intended for preferred choice of slave node (dof) according to max/min position in dir of user choice
+    // unsigned x_max_id, y_max_id, z_max_id, x_min_id, y_min_id, z_min_id;
+    // double x_max, y_max, z_max, x_min, y_min, z_min;
+
+    unsigned slave_dir;
+    unsigned num_nodes = 0;
+    bool slave_used = false;
+
+    double l_i;
+    Point n_i;
+
+    vector< Node * >masterNodes;
+    vector< double >multipliers;
+    vector< unsigned >directions;
+
+    std :: vector< double >n_vect;
+    double slave_dir_vect_value;
+
+    // n_vect_slave uložit dopředu
+    // dělit všechno n_vect_slave dir
+    //
+    // zjistit na lineárním výpočtu to jak má být contraint
+
+    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    for ( auto const &nod : * nodes ) {
+        if ( nod->giveName().compare("Particle") != 0){
+            continue;
+        }
+        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+        if ( isInCircle(node_point, this->center, this->r_outer) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+                // if ( nod == expMaster ) {
+                //     continue;
+                // }
+                num_nodes++;
+                // std::cout << "nod name = " << nod->giveName() << '\n';
+                n_i = ( nod->givePoint() - this->center );
+                l_i = n_i.norm();
+                n_i.normalize();
+                // std::cout << "dim = " << this->dim << '\n';
+                n_vect = PointToStdVector(n_i, this->dim);
+                if ( slave_used ) {
+                    for ( unsigned i = 0; i < this->dim; i++ ){
+                        // std::cout << "i = " << i << ", num_nodes = " << num_nodes << '\n';
+                        masterNodes.push_back(nod);
+                        directions.push_back(i);
+                        multipliers.push_back(- n_vect[ i ]);
+                    }
+                } else {
+                    // first node is taken as a slave
+                    slave = nod;
+                    if ( * std :: max_element(n_vect.begin(), n_vect.end()) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() )) ) {
+                        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+                    } else {
+                        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+                    }
+                    slave_dir_vect_value = n_vect[slave_dir];
+                    for ( unsigned i = 0; i < this->dim; i++ ) {
+                        if ( i != slave_dir ) {
+                            // multiplying self other DoFs
+                            multipliers.push_back(-n_vect [ i ]);
+                            masterNodes.push_back(slave);
+                            directions.push_back(i);
+                        }
+                    }
+                    slave_used = true;
+                }
+            }
+        }
+    }
+
+    // adding master DoF governing the expansion
+    multipliers.push_back(double(num_nodes) * this->r_outer);
+    masterNodes.push_back(expMaster);
+    directions.push_back(0);
+
+    if ( !masterNodes.empty() ) {
+        for ( unsigned j = 0; j < multipliers.size(); j++ ) {
+            multipliers[ j ] /= slave_dir_vect_value;
+        }
+        JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers);
+        constrs->addConstraint(newJD);
+    }
+
+    masterNodes.clear();
+    multipliers.clear();
+    directions.clear();
 }
 
 //////////////////////////////////////////////////////////
@@ -1035,6 +1159,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("ExpansionRingDoFLoad") == 0 ) {
                     ExpansionRingDoFLoad *newblock = new ExpansionRingDoFLoad();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("ExpansionRingSingleDoFLoad") == 0 ) {
+                    ExpansionRingSingleDoFLoad *newblock = new ExpansionRingSingleDoFLoad();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else {
@@ -1164,8 +1292,12 @@ void connectSlaveMasterExpansionFLoad(ConstraintContainer *constrs, Node *slave,
 
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
-    unsigned slave_dir = std :: distance(n_vect.begin(),
-                                         std :: max_element(n_vect.begin(), n_vect.end() ) );
+    unsigned slave_dir;
+    if ( * std :: max_element(n_vect.begin(), n_vect.end()) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() )) ) {
+        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+    } else {
+        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+    }
 
     for ( unsigned i = 0; i < ndim; i++ ) {
         if ( i == slave_dir ) {
@@ -1239,8 +1371,12 @@ void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node
 
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
-    unsigned slave_dir = std :: distance(n_vect.begin(),
-                                         std :: max_element(n_vect.begin(), n_vect.end() ) );
+    unsigned slave_dir;
+    if ( * std :: max_element(n_vect.begin(), n_vect.end()) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() )) ) {
+        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+    } else {
+        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+    }
 
     for ( unsigned i = 0; i < ndim; i++ ) {
         if ( i == slave_dir ) {
