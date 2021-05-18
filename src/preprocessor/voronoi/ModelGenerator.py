@@ -239,14 +239,14 @@ class Model:
         print('done.')
 
     def setDirectory(self, dirNam=None):
-        if dirNam is None:
-            if self.userSeed == -1:
-                self.seed = np.random.randint(1000.0)
-                np.random.seed(seed=self.seed)
-            else:
-                self.seed = self.userSeed
-                np.random.seed(seed=self.seed)
+        if self.userSeed == -1:
+            self.seed = np.random.randint(1000.0)
+            np.random.seed(seed=self.seed)
+        else:
+            self.seed = self.userSeed
+            np.random.seed(seed=self.seed)
 
+        if dirNam is None:
             self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
         else:
             self.master_folder = dirNam
