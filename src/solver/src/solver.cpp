@@ -173,7 +173,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
 // STEADY STATE LINEAR SOLVER
 SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
-    conj_grad_precission = 1e-13;
+    conj_grad_precision = 1e-13;
     conj_grad_relative_maxit = 0.85;
 }
 
@@ -181,17 +181,26 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
 SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
     Solver :: init(init_r_file, init_v_file, initial);
 
     //initial conditions
     if(init_r_file.compare("")!=0){
         r = nodes->readInitialConditions( init_r_file );
     }
+
+    nodes->addRHS_nodalLoad(load, 0);
+    nodes->updateDirrichletBC(r, 0);
     computeInternalExternalForces(r, false, -1); //to activate initial conditions at elements
 
     elems->prepareStiffnessMatrix(K);
-    elems->updateStiffnessMatrix(K, "elastic");
+    elems->updateStiffnessMatrix(K, "elastic"); 
+}
+
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 }
 
@@ -226,8 +235,8 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("total_time") == 0 ) {
                 bttime = true;
                 iss >> termination_time;
-            } else if ( param.compare("conj_grad_precission") == 0 ) {
-                iss >> conj_grad_precission;
+            } else if ( param.compare("conj_grad_precission") == 0 || param.compare("conj_grad_precision") == 0) {
+                iss >> conj_grad_precision;
             } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
                 iss >> conj_grad_relative_maxit;
             } else if ( param.compare("init_time") == 0 ) {
@@ -263,13 +272,13 @@ void SteadyStateLinearSolver :: solve() {
 
     //solve linear system
     nodes->giveReducedForceArray(residuals, f);
-    if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type) == false ) {
+    if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
         terminated = true;
         cerr << "Conjugate gradients did not converge" << endl;
         return;
     }
 
-    // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit) == false ) {
+    // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit) == false ) {
     // if (terminated == true);
     //     cerr << "Conjugate gradients did not converge" << endl;
     // }
@@ -314,6 +323,11 @@ void SteadyStateLinearSolver :: runAfterEachStep() {
 SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     name = "SteadyStateNonLinearSolver";
     idc = nullptr;
+
+    W_ext_oldM = 0;
+    W_int_oldM = 0;
+    W_ext_oldT = 0;
+    W_int_oldT = 0;
 }
 
 //////////////////////////////////////////////////////////
@@ -326,11 +340,6 @@ SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
-
-    W_ext_oldM = 0;
-    W_int_oldM = 0;
-    W_ext_oldT = 0;
-    W_int_oldT = 0;
 
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
@@ -592,12 +601,12 @@ void SteadyStateNonLinearSolver :: solve() {
                 computeForcesAtIntegrationTime(true);
                 nodes->giveReducedForceArray(residuals, f);
 
-                if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type) == false ) {
+                if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
                 }
-                if ( LinalgSymmetricSolver(Keff, ddf, f - f_last_iter, ddf, conj_grad_precission, conj_grad_relative_maxit, symsolver_type) == false ) {
+                if ( LinalgSymmetricSolver(Keff, ddf, f - f_last_iter, ddf, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
@@ -613,7 +622,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
             } else {         //direct controll
-                if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type) == false ) {
+                if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     terminated = true;
                     cerr << "Conjugate gradients did not converge" << endl;
                     return;
@@ -775,21 +784,27 @@ TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool initial) {
-    SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
-
-    nodes->addRHS_nodalLoad(load, 0);
-    nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r, true, -1.); //at time 0
+void TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial){
+    SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
 
     v_old = Vector(totalDoFnum);
     elems->prepareDampingMatrix(C);
     elems->updateDampingMatrix(C);
+
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 
     //compute initial presure derivative
     nodes->giveReducedForceArray(residuals, f);
-    terminated = !LinalgSymmetricSolver(C, ddr, f,  ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type);
+    CoordinateIndexedSparseMatrix Cred(C);
+    if ( nodes->giveConstraints()->isActive() ) {
+        nodes->giveConstraints()->transformToConstraintSpace(Cred);
+    }
+    terminated = !LinalgSymmetricSolver(Cred, ddr, f,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
     v = Vector(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
 }
@@ -929,34 +944,39 @@ void TransientLinearMechanicalSolver :: solve() {
     SteadyStateLinearSolver :: solve();
 }
 
-
-
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool initial) {
-    SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
+void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial){
 
     //initial conditions
     if(init_v_file.compare("")!=0){
         v = nodes->readInitialConditions( init_r_file );
     }else v=Vector(totalDoFnum);
-
     v_old = Vector(totalDoFnum);
     a_old = Vector(totalDoFnum);
-    elems->prepareDampingMatrix(C);
-    elems->updateDampingMatrix(C);
     elems->prepareMassMatrix(M);
     elems->updateMassMatrix(M);
+
+    TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 
     //compute initial acceleration
-    nodes->addRHS_nodalLoad(load, 0);
-    nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r, true, -1); //at time 0
     nodes->giveReducedForceArray(residuals, f);
-    Vector v_red(Vector(freeDoFnum - nodes->giveNumConstrDoFs() ) );
-    terminated = !LinalgSymmetricSolver(M, ddr, f - C * v_red,  ddr, conj_grad_precission, conj_grad_relative_maxit, symsolver_type);
+    CoordinateIndexedSparseMatrix Cred(C);
+    CoordinateIndexedSparseMatrix Mred(M);
+    if ( nodes->giveConstraints()->isActive() ) {
+        nodes->giveConstraints()->transformToConstraintSpace(Cred);
+        nodes->giveConstraints()->transformToConstraintSpace(Mred);
+    }
+    Vector v_red(freeDoFnum - nodes->giveNumConstrDoFs() );
+    nodes->giveReducedDoFArray(v, v_red);
+    terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
     a = Vector(totalDoFnum);
-    nodes->giveFullDoFArray(ddr, a);
+    nodes->giveFullDoFArray(ddr, a);   
 }
 
 //////////////////////////////////////////////////////////

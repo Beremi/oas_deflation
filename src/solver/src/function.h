@@ -57,7 +57,7 @@ protected:
 // PIECE-WISE LINEAR FUNCTION
 class PieceWiseLinearFunction : public Function
 {
-private:
+protected:
     vector< double >x;
     vector< double >y;
 public:
@@ -68,9 +68,18 @@ public:
     double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
     void setYValue(double yv, unsigned i) { y [ i ] = yv; };
-protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// PIECE-WISE LINEAR FUNCTION WITH TIME STEP CONTROLL
+class PieceWiseLinearFunctionWithExtremes : public PieceWiseLinearFunction
+{
+public:
+    PieceWiseLinearFunctionWithExtremes() {};
+    PieceWiseLinearFunctionWithExtremes(vector< double >nx, vector< double >ny):PieceWiseLinearFunction(nx,ny){};
+    virtual double giveNextEtreme(const double &t) const;
+};
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SAW TOOTH FUNCTION WITH CONSTANT MAX VALUE

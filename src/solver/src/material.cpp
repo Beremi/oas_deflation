@@ -596,6 +596,25 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 };
 
 //////////////////////////////////////////////////////////
+double DisMechMaterialStatus ::  giveValue(string code) const {
+    if ( code.compare("s_N") == 0 ) {
+        return temp_stress[0];
+    } else if ( code.compare("s_M") == 0 ) {
+        return temp_stress[1];
+    } else if ( code.compare("s_L") == 0 ) {
+        return temp_stress[2];
+    } else if ( code.compare("e_N") == 0 ) {
+        return temp_strain[0];
+    } else if ( code.compare("e_M") == 0 ) {
+        return temp_strain[1];
+    } else if ( code.compare("e_L") == 0 ) {
+        return temp_strain[2];
+    } else {
+        return MaterialStatus :: giveValue(code);
+    }
+}
+
+//////////////////////////////////////////////////////////
 void DisMechMaterial :: readFromLine(istringstream &iss) {
     string param;
 
@@ -637,3 +656,4 @@ MaterialStatus *DisMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ip
     DisMechMaterialStatus *newStatus = new DisMechMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
+

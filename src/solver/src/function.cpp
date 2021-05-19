@@ -66,6 +66,12 @@ double PieceWiseLinearFunction :: giveY(double t) const {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
+    return INFINITY;
+}
+
+//////////////////////////////////////////////////////////
+double PieceWiseLinearFunctionWithExtremes :: giveNextEtreme(const double &t) const {
+    return INFINITY;
     if ( x.size() <= 0 ) {
         return INFINITY;
     }
@@ -320,6 +326,10 @@ void FunctionContainer :: readFromFile(const string filename) {
                     functions.push_back(newf);
                 } else if ( ftype.compare("PWLFunction") == 0 ) {
                     PieceWiseLinearFunction *newf = new PieceWiseLinearFunction();
+                    newf->readFromLine(iss);
+                    functions.push_back(newf);
+                } else if ( ftype.compare("PWLFunctionWithExtremes") == 0 ) {
+                    PieceWiseLinearFunctionWithExtremes *newf = new PieceWiseLinearFunctionWithExtremes();
                     newf->readFromLine(iss);
                     functions.push_back(newf);
                 } else if ( ftype.compare("ConstSawToothFn") == 0 ) {

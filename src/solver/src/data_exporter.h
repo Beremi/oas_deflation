@@ -59,7 +59,7 @@ public:
     TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     ~TXTElementExporter() {};
     void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const { ( void ) step; ( void ) DoFs; ( void ) reactions; ( void ) resultDir; };
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
 };
 

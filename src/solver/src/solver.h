@@ -56,7 +56,7 @@ public:
 class SteadyStateLinearSolver : public Solver
 {
 protected:
-    double conj_grad_precission;
+    double conj_grad_precision;
     double conj_grad_relative_maxit;
     CoordinateIndexedSparseMatrix Keff, K;
 
@@ -65,6 +65,7 @@ protected:
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, frozen, dt); };
     virtual void computeInternalExternalForces(const Vector &rr, const bool frozen, double timeStep);
     virtual void computeKeff();
+    virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
 private:
 public:
     SteadyStateLinearSolver();
@@ -121,6 +122,7 @@ protected:
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void computeKeff();
+    virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
     virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
@@ -159,6 +161,7 @@ protected:
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void computeKeff();
+    virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
     virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);

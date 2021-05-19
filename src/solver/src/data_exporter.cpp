@@ -123,6 +123,38 @@ void TXTElementExporter :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
+void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    ( void ) DoFs;
+    ( void ) reactions;
+    char buffer [ 100 ];
+    Element *ee;
+    double value;
+    size_t nIP;
+    giveFileName(step, buffer);
+    ofstream outputfile( ( resultDir / buffer ).string() );
+
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+        for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
+            ee = elems->giveElement(e);
+            nIP = ee->giveNumIP();
+            for ( unsigned k = 0; k < nIP; k++ ) {
+                for ( vector< string > :: const_iterator c = codes.begin(); c != codes.end(); ++c ) {
+                    value = ee->giveIPValue(* c, k);
+                    outputfile << value;
+                    if ( c != codes.end() - 1 ) {
+                        outputfile << "\t";
+                    }
+                }
+                outputfile << endl;
+            }
+        }
+        outputfile.close();
+    }
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
 /*!

@@ -245,6 +245,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     double giveDensity() const;
     virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
+    virtual double giveValue(string code) const;
 };
 
 //////////////////////////////////////////////////////////

@@ -675,7 +675,7 @@ void RigidPlate :: setDirectionToFix(istringstream &iss) {
         }
     }
     if ( !bw ) {
-        this->which = "xyz";
+        this->which = "xyz"; //abc for rotations
     }
 }
 
@@ -1240,7 +1240,7 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
         // for transport nodes, only ones are in tableOfMultipliers
         if ( !trsp ) {
-            if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
+            if ( containsChar(which,'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
                 // std::cout << "fixed in x dir" << '\n';
             } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
                 // std::cout << "fixed in y dir" << '\n';

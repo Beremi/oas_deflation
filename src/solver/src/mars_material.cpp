@@ -119,7 +119,9 @@ void MarsMaterialStatus :: computeOmega0() {
     double o2 = -M_PI;
     omega0 = ( o1 + o2 ) / 2;
     double err = giveS0tension(omega0) - giveS0compression(omega0);
-    while ( fabs(err) > 1e-5 ) {
+    unsigned itmax = 1000;
+    unsigned it = 0;
+    while ( fabs(err) > 1e-5 && it<itmax) {
         if ( err * o1 < 0. ) {
             o1 = omega0;
         } else {
@@ -127,7 +129,13 @@ void MarsMaterialStatus :: computeOmega0() {
         }
         omega0 = ( o1 + o2 ) / 2.;
         err = giveS0tension(omega0) - giveS0compression(omega0);
+        it ++;
     }
+    if(it==itmax){
+        cerr << "Mars Material Error: omega0 does not converging, error " << fabs(err) << endl;
+        exit(1);
+    }
+
     if ( omega0 > 0.0 ) {
         omega0 -= 2. * M_PI;
     }
