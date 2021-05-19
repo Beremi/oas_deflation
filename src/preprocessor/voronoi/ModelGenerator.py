@@ -239,14 +239,14 @@ class Model:
         print('done.')
 
     def setDirectory(self, dirNam=None):
-        if dirNam is None:
-            if self.userSeed == -1:
-                self.seed = np.random.randint(1000.0)
-                np.random.seed(seed=self.seed)
-            else:
-                self.seed = self.userSeed
-                np.random.seed(seed=self.seed)
+        if self.userSeed == -1:
+            self.seed = np.random.randint(1000.0)
+            np.random.seed(seed=self.seed)
+        else:
+            self.seed = self.userSeed
+            np.random.seed(seed=self.seed)
 
+        if dirNam is None:
             self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
         else:
             self.master_folder = dirNam
@@ -467,7 +467,9 @@ class Model:
         #node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii
         self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
         (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
 
+        
     def run_2d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
 
