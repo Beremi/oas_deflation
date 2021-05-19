@@ -928,13 +928,27 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep
 
     for ( size_t i = 0; i < strain.size(); i++ ) {
         if ( i == 0 ) {
-            if ( this->coupled_damage ) {
-                DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
+            if ( this->coupled_damage > 0.0 ) {
+                if ( this->coupled_damage == 0.5 ) {
+                    DamagePlasticMaterialStatus :: setDamage( 1 -
+                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("damage") ) *
+                             (1 - DamagePlasticMaterialStatus :: giveValue("damage") ))
+                     );
+                } else {
+                    DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
+                }
             }
             stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain, timeStep) [ i ];
         } else {
-            if ( this->coupled_damage ) {
-                FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
+            if ( this->coupled_damage > 0.0 ) {
+                if ( this->coupled_damage == 0.5 ) {
+                    FatigueShearMaterialStatus :: setDamage( 1 -
+                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("damage") ) *
+                             (1 - DamagePlasticMaterialStatus :: giveValue("damage") ))
+                     );
+                } else {
+                    FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
+                }
             }
             stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain, timeStep) [ i ];
         }
