@@ -663,7 +663,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount
 
 
-def returnSelectedPtsRadial (innerRad , outerRad, points, axisDim=0):
+def returnSelectedPtsRadial (innerRad , outerRad, points, axisDim=0, xmin = -1, xmax = -1):
     dim = 3
     #
     selectedPointIdxs = []
@@ -673,7 +673,12 @@ def returnSelectedPtsRadial (innerRad , outerRad, points, axisDim=0):
             dist = np.sqrt(points[i,1]**2+points[i,2]**2)
 
         if (dist > innerRad and dist < outerRad):
-            selectedPointIdxs.append(i)
+            if xmin == -1 and xmax == -1:
+                selectedPointIdxs.append(i)
+            else:
+                if xmin <= points[i,0] <= xmax :
+                    selectedPointIdxs.append(i)
+
 
     return np.array(selectedPointIdxs).astype(int)
 
@@ -2195,8 +2200,8 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
             for r in range (rebarCount):
                 centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
                 #f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
-                f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
-
+                #f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
+                f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC, centre[0],centre[1], rebarDiameter*1.01 ) )
 
 
 
@@ -2234,7 +2239,11 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
 
     #saving force gauges for rigid plates
     for i in range (len(govNodesMechBC)):
-        saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='MechPLT%d'%i)
+        if i < len(govNodesMechBC)-1 :
+            saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='MechPLT%d'%i)
+        else:
+            saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='MechPLT%d'%i, virtualDoF=virtualDoF)
+
 
     #saving rigid plates
     for rp in rigidPlates:
@@ -2271,7 +2280,7 @@ def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrs
     saveRigidPlates(master_folder, dimension, rigidPlatesTrspt, totalNodeCount, trspt=True)
 
 
-def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', transport = False):
+def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', transport = False, virtualDoF=-1):
     if transport == False:
         if (name==''):
             saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
@@ -2288,7 +2297,8 @@ def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', tr
             if moments == True:
                 if (dimension==3): saveForceGauge(master_folder, 'mx#%s'%name , 'mx', nodeIdx )
                 if (dimension==3): saveForceGauge(master_folder, 'my#%s'%name, 'my', nodeIdx )
-                saveForceGauge(master_folder, 'mz#%s'%name, 'mz', nodeIdx )
+                if not (virtualDoF>0):
+                    saveForceGauge(master_folder, 'mz#%s'%name, 'mz', nodeIdx )
     else:
         if (name==''):
             saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )

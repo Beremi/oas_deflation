@@ -1564,7 +1564,7 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 
 
 
-def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1, coupled=False, node_coords_init=None, specifiedNodes=[] ):
+def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1, activeMechanics = True, activeTransport=False, coupled=False, node_coords_init=None, specifiedNodes=[] ):
     print('Creating 3d simply supported beam, uniform load.')
     #govNodes, rigidPlates
     node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes);
@@ -2627,11 +2627,12 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, trials)
     node_coords = np.asarray(node_coords)
 
-    if SHOW_PLOT:
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-        plt.show()
+    print (len(node_coords))
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
 
     print('Conducting Voronoi tesselation...', end='')
     directionDim = 0
@@ -2654,7 +2655,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
     ### selecting vertices on the outer surface
 
     outerFaceBC = np.array([2,-1])
-    outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices)
+    outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices, xmin = 1e-5, xmax = height - 1e-5)
     trsptOuterRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
     trsptOuterRigidPlate.setDirectNodes(outerFace)
     rigidPlatesTrspt.append(trsptOuterRigidPlate)
@@ -2672,12 +2673,36 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
         plt.show()
 
     govNodesTrspt.append(np.array([ -1, -1, -1]))
-    innerFaceBC = np.array([-1,-1])
-    innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices)
+    innerFaceBC = np.array([0,-1])
+    innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices,xmin = 1e-5, xmax = height - 1e-5)
     trsptInnerRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
     trsptInnerRigidPlate.setDirectNodes(innerFace)
     rigidPlatesTrspt.append(trsptInnerRigidPlate)
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], innerFaceBC))
+
+
+    govNodesTrspt.append(np.array([ 1, -1, -1]))
+    topFaceBC = np.array([-1,0])
+    boundA = np.array(  [-1e-5 , -radius*10, -radius*10] )
+    boundB = np.array(  [ 1e-5 , radius*10, radius*10] )
+    topFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    print(topFace)
+    trsptTopRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptTopRigidPlate.setDirectNodes(topFace)
+    rigidPlatesTrspt.append(trsptTopRigidPlate)
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], topFaceBC))
+
+    govNodesTrspt.append(np.array([ 2, -1, -1]))
+    boundA = np.array(  [height-1e-5 , -radius*10, -radius*10] )
+    boundB = np.array(  [height+1e-5  , radius*10, radius*10] )
+    botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    print(botFace)
+    trsptBotRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptBotRigidPlate.setDirectNodes(botFace)
+    rigidPlatesTrspt.append(trsptBotRigidPlate)
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], topFaceBC))
+
+
 
     #for i in range (len(innerFace)):
     #    trsBC = utilitiesMech.transportBC(innerFace[i], innerFaceBC)
@@ -3031,7 +3056,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
             print ('appending specified nodes...')
             for node in specifiedNodes:
                 node_coords.append((node))
-            #print (node_coords)
+            print (node_coords)
 
         #notchWidth = 1.5e-3 /2
         if notchWidth == -1:
@@ -3128,10 +3153,10 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*2, dim, node_coords,  trials, False, False)
         nodeA =  np.array([indent  ,  indent])
         nodeB =  np.array([maxLim[0]/2-notchWidth ,  indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*2, dim, node_coords,  trials, False, True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*2, dim, node_coords,  trials, False, False)
         nodeA =  np.array([maxLim[0]-indent  ,  indent])
         nodeB =  np.array([maxLim[0]/2+notchWidth ,  indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*2, dim, node_coords,  trials, False, True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*2, dim, node_coords,  trials, False, False)
         nodeA =  np.array([indent, indent])
         nodeB =  np.array([indent, maxLim[1] - indent])
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*2, dim, node_coords,  trials, False, False)
@@ -3325,10 +3350,10 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             #rebar crossection
             #pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)
 
-            govNodes.append(np.array( np.copy(centre) ))
+            #govNodes.append(np.array( np.copy(centre) ))
 
 
-        rebarBC = np.array([2, 0, -1, -1, -1, -1, rebarCount])
+        rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 
@@ -3354,7 +3379,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             node_coords = newNodes.copy()
 
             if (rebarMinDist<0):
-                print ('rebars centre')
+                #print ('rebars centre')
                 node_coords.append(centre*1e-5)
             else:
                 #rebar crossection
@@ -6419,7 +6444,7 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
     #######################################################################
 
     ###############generating of points rectangular volume ###############
-    pointGenerators.generateNodesOrtoTube3dRand(center, radius-1e-5, height, thickness, directionDim, minDist,  node_coords, trials)
+    pointGenerators.generateNodesOrtoTube3dRand(np.zeros((3)), radius-1e-5, height, thickness, directionDim, minDist,  node_coords, trials)
     #######################################################################
 
 
