@@ -39,16 +39,16 @@ void HTCMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 Matrix HTCMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    (void) type;
     HTCMaterial * htc = static_cast< HTCMaterial * > (mat);
     Matrix P = htc->givePermeabilityTensor();
     double kappa = htc->giveKappa();
-    double D1 = htc->giveD1();
 
-    Matrix s(6,6);
-    for(unsigned i=0; i<3; i++){
-        for(unsigned j=0; j<3; j++){
+    Matrix s(2*dim,2*dim);
+    for(unsigned i=0; i<dim; i++){
+        for(unsigned j=0; j<dim; j++){
             s[i][j] = -Dh*P[i][j];
-            s[i+3][j+3] = -kappa*P[i][j];
+            s[i+dim][j+dim] = -kappa*P[i][j];
         }
     }
     return s;    
@@ -103,8 +103,8 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
 
     double G1mult = 1. - 1./exp(10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h);
     double K1mult = exp(10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h) -1.;
-    double we = G1*G1mult + K1*K1mult;
-    double wn = htc->giveKappac() * midalphac * htc->giveC();
+    //double we = G1*G1mult + K1*K1mult;
+    //double wn = htc->giveKappac() * midalphac * htc->giveC();
 
     double dG1_dac = htc->giveKcvg()*htc->giveC();
     double dG1_das = htc->giveKsvg()*htc->giveS();
@@ -160,7 +160,6 @@ Vector HTCMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, do
 
 //////////////////////////////////////////////////////////
 Vector HTCMaterialStatus :: giveInternalSource() const{
-    HTCMaterial * htc = static_cast< HTCMaterial * > (mat);
     Vector ints(2);
     ints[0] = -qh;
     ints[1] = qT;
@@ -196,7 +195,6 @@ void HTCMaterialStatus :: setParameterValue(string code, double value){
 //////////////////////////////////////////////////////////
 void HTCMaterial :: readFromLine(istringstream &iss) {
     string param;
-    double num;
     
     while ( !iss.eof() ) {
         iss >> param;

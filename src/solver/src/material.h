@@ -126,16 +126,41 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// TRANSPORT MATERIAL WITH COUPLING TERMS
+// DISCRETE TRANSPORT MATERIAL
 
-class TrsprtCoupledMaterial;
-class TrsprtCoupledMaterialStatus : public TrsprtMaterialStatus
+class DiscreteTrsprtMaterial;
+class DiscreteTrsprtMaterialStatus : public TrsprtMaterialStatus
+{
+protected:
+public:
+    DiscreteTrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
+    virtual ~DiscreteTrsprtMaterialStatus() {};
+    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
+};
+
+//////////////////////////////////////////////////////////
+class DiscreteTrsprtMaterial : public TrsprtMaterial
+{
+protected:
+
+public:
+    DiscreteTrsprtMaterial() { name = "discrete transport material";};
+    ~DiscreteTrsprtMaterial() {};
+    MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DISCRETE TRANSPORT MATERIAL WITH COUPLING TERMS
+
+class DiscreteTrsprtCoupledMaterial;
+class DiscreteTrsprtCoupledMaterialStatus : public DiscreteTrsprtMaterialStatus
 {
 protected:
     double tempVolumetricStrain, volumetricStrain, volStrainRate, crackParam;
 public:
-    TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
-    virtual ~TrsprtCoupledMaterialStatus() {};
+    DiscreteTrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
+    virtual ~DiscreteTrsprtCoupledMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveEffectiveConductivity(string type) const;
@@ -146,13 +171,13 @@ public:
 };
 
 //////////////////////////////////////////////////////////
-class TrsprtCoupledMaterial : public TrsprtMaterial
+class DiscreteTrsprtCoupledMaterial : public DiscreteTrsprtMaterial
 {
 private:
     double crack_turtuosity, biotCoeff;
 public:
-    TrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true;};
-    ~TrsprtCoupledMaterial() {};
+    DiscreteTrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true;};
+    ~DiscreteTrsprtCoupledMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveTurtuosity() { return crack_turtuosity; };

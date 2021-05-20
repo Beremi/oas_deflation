@@ -150,6 +150,7 @@ void RigidBodyContact :: checkNodeType() const {
 //////////////////////////////////////////////////////////
 
 Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
+    ( void ) x;
     //Matrix B
     Matrix B = Matrix(ndim, 6 * ( ndim - 1 ) );
     Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
@@ -331,6 +332,7 @@ void RigidBodyContact :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
+    ( void ) x;
     return Matrix(12, 12);
 }
 
@@ -384,6 +386,7 @@ Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
+    ( void ) ip_id;
     Point distance = inttype->giveIPLocation(0) - nodes [ node_i ]->givePoint();
     Vector dst( ( double ) 0, ndim );
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -499,7 +502,8 @@ void Truss :: checkNodeType() const {
 
 //////////////////////////////////////////////////////////
 Matrix Truss :: giveBMatrix(const Point *x) const {
-    //Matrix B
+    ( void ) x;
+    //Matrix B    
     Matrix B = Matrix(ndim, 2 * ndim);
     Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
     Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
@@ -514,6 +518,7 @@ Matrix Truss :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix Truss :: giveHMatrix(const Point *x) const {
+    ( void ) x;
     return Matrix(0, 0);
 }
 //////////////////////////////////////////////////////////

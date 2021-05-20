@@ -16,8 +16,7 @@ double MarsMaterialStatus :: giveValue(string code) const {
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
     } else if ( code.compare("volumetric_strain") == 0 ) {
-        RigidBodyContact *ec = static_cast< RigidBodyContact * >( element );
-        return ec->giveVolumetricStrain();
+        return volumetricStrain;
     } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         return temp_damage;
         // } else  if ( code.compare("stressN") == 0 ) {

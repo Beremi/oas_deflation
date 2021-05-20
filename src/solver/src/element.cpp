@@ -128,7 +128,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
-    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {    
         D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight(i) );
     }

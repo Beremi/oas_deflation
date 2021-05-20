@@ -764,6 +764,7 @@ void ExporterContainer :: appendToAllNames(string app) {
 void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim) {
     // Vector stressXYZ, stress_zero;
     // stress_zero = Vector((double)0, dim);
+    ( void ) reactions; 
 
     unsigned node_id, ni;
     double first;
@@ -822,11 +823,13 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 }
 
 
-void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {    
     // if NodeTypes.empty() then save all nodes
     // TODO finish this, now (for adaptivity) just save path to file with particles
+    ( void ) nodes; ( void ) NodeTypes; ( void ) resultDir;
 }
 
 void saveElems(const ElementContainer &elems, const std :: vector< std :: string > &ElemTypes, fs :: path resultDir) {
     // if ElemTypes.empty() then save all elems
+    ( void ) elems; ( void ) ElemTypes; ( void ) resultDir;
 }

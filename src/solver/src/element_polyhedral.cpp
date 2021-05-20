@@ -308,7 +308,7 @@ void TranspVirtPolygonal :: init() {
     Matrix H(ndim + 1, ndim + 1);
     Vector m(ndim + 1);
     m [ 0 ] = 1;
-    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
+    for ( i = 0; i < ip_weights.size(); i++ ) {
         for ( v = 0; v < ndim; v++ ) {
             m [ v + 1 ] = ( ip_locs [ i ].giveCoord(v) - centroid.giveCoord(v) ) / radius;
         }

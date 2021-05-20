@@ -474,6 +474,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
     char buffer [ 100 ];
     // Point P;
     // Element *ee;
+    (void) reactions;
 
     vector< Point >all_vertices_twice; // because the vertices are needed twice (on each side of the contact)
     vector< Point >vertices_displ; // displaceemnt of the contact

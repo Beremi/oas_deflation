@@ -38,8 +38,8 @@ Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
 Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector strain0 = Element :: giveStrain(i, DoFs);
     Vector strain(strain0.size() + 1);
-    for ( unsigned i = 0; i < strain0.size(); i++ ) {
-        strain [ i ] = strain0 [ i ];
+    for ( unsigned j = 0; j < strain0.size(); j++ ) {
+        strain [ j ] = strain0 [ j ];
     }
 
     //evaluate pressure at gauss point to account for nonlinearity
@@ -102,10 +102,10 @@ Vector TrsprtTemprtrCoupledBrick :: giveStrain(unsigned i, const Vector &DoFs){
     Vector strain = Element :: giveStrain(i, DoFs);
     
     Vector masters;
-    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+    for ( unsigned j = 0; j < inttype->giveNumIP(); j++ ) {
         masters = Hs[i]*DoFs;
-        stats [ i ]->setParameterValue("humidity", masters[0]);
-        stats [ i ]->setParameterValue("temperature", masters[1]);
+        stats [ j ]->setParameterValue("humidity", masters[0]);
+        stats [ j ]->setParameterValue("temperature", masters[1]);
     }    
     return strain;
 }

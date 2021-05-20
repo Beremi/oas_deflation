@@ -21,7 +21,6 @@ protected:
     virtual void setIntegrationPointsAndWeights();
 
     vector< Simplex * >simplices;
-    double volumetricStrain;
 
 public:
     RigidBodyContact(const unsigned dim);
@@ -50,7 +49,6 @@ public:
     double giveVolume(unsigned nodenum) const;
     double giveVolume() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    double giveVolumetricStrain() { return volumetricStrain; };
     virtual Matrix giveDampingMatrix() const;
 };
 

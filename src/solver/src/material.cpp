@@ -32,6 +32,7 @@ void MaterialStatus :: setEigenStrain(Vector &x) {
 
 //////////////////////////////////////////////////////////
 bool MaterialStatus :: isElastic(const bool &now) const {
+    (void) now;
     if ( this->name != "basic mat. status" ) {
         std :: cout << "using elastic check for base class MaterialStatus, if this is not a desire, you need to implement method \'isElastic\' for " << this->name << '\n';
     }
@@ -126,6 +127,7 @@ void TrsprtMaterialStatus :: updateEffectiveConductivity() {
 
 //////////////////////////////////////////////////////////
 bool TrsprtMaterialStatus :: isElastic(const bool &now) const {
+    (void) now;
     return true; //this is not true, discuss with Pepa
 }
 
@@ -188,6 +190,27 @@ MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned ipn
     return newStatus;
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DISCRETE TRANSPORT MATERIAL
+
+DiscreteTrsprtMaterialStatus :: DiscreteTrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum):TrsprtMaterialStatus(m, e, ipnum) {
+    name = "transport mat. status";
+}
+
+//////////////////////////////////////////////////////////
+Matrix DiscreteTrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+    ( void ) type; ( void ) dimension;
+    Matrix T(1, 1); //discrete material, only one direction in any dimension
+    T [ 0 ] [ 0 ] = -effConductivity;
+    return T;
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *DiscreteTrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DiscreteTrsprtMaterialStatus *newStatus = new DiscreteTrsprtMaterialStatus(this, e, ipnum); //needs to be deleted manually
+    return newStatus;
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -422,30 +445,30 @@ MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e, unsign
 // COUPLED TRANSPORT MATERIAL
 //////////////////////////////////////////////////////////
 
-TrsprtCoupledMaterialStatus :: TrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : TrsprtMaterialStatus(m, e, ipnum) {
-    name = "coupled transport mat. status";
+DiscreteTrsprtCoupledMaterialStatus :: DiscreteTrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : DiscreteTrsprtMaterialStatus(m, e, ipnum) {
+    name = "discrete coupled transport mat. status";
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) const {
+double DiscreteTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) const {
     if ( type.compare("elastic") == 0  ) {
         TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
         return calculatePressureDependentPermeability(0.) * tmat->giveDensity() / tmat->giveViscosity();
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
         return effConductivity;
     } else {
-        cerr << "Error: TrsprtCoupledMaterialStatus does not provide '" << type << "' stiffness";
+        cerr << "Error: DiscreteTrsprtCoupledMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
 }
 
 //////////////////////////////////////////////////////////
-Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
     if(timeStep>0) volStrainRate = (tempVolumetricStrain - volumetricStrain)/timeStep;
     else volStrainRate = 0;
 
-    TrsprtCoupledMaterial *tmat = static_cast< TrsprtCoupledMaterial * >( mat );
+    DiscreteTrsprtCoupledMaterial *tmat = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
 
     Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );
 
@@ -458,16 +481,16 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double ti
 
 
 //////////////////////////////////////////////////////////
-Vector TrsprtCoupledMaterialStatus :: giveInternalSource() const{ 
+Vector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const{ 
     Vector ints(1);
-    TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
+    DiscreteTrsprtCoupledMaterial *m = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
     ints[0] = -m->giveBiotCoeff() * m->giveDensity() * 3. * volStrainRate; //Biot coeff times volumetric strain rate
     return ints;
 }
 
 
 //////////////////////////////////////////////////////////
-void TrsprtCoupledMaterialStatus :: setParameterValue(string code, double value){
+void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, double value){
     if (code.compare("volumetric_strain")==0) {
         tempVolumetricStrain = value;
     } else  if (code.compare("crack_opening")==0) {
@@ -477,7 +500,7 @@ void TrsprtCoupledMaterialStatus :: setParameterValue(string code, double value)
 
 
 //////////////////////////////////////////////////////////
-Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+Vector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain.resize(1);
     temp_strain [ 0 ] = strain [ 0 ];
@@ -488,13 +511,13 @@ Vector TrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &
 
 
 //////////////////////////////////////////////////////////
-void TrsprtCoupledMaterialStatus ::  update() {
+void DiscreteTrsprtCoupledMaterialStatus ::  update() {
     TrsprtMaterialStatus :: update();
     volumetricStrain = tempVolumetricStrain;
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtCoupledMaterialStatus ::  giveValue(string code) const {
+double DiscreteTrsprtCoupledMaterialStatus ::  giveValue(string code) const {
     if ( code.compare("volumetric_strain") == 0 ) {
         return volumetricStrain;
     } else {
@@ -503,7 +526,7 @@ double TrsprtCoupledMaterialStatus ::  giveValue(string code) const {
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
+void DiscreteTrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
     TrsprtMaterial :: readFromLine(iss);
 
     iss.clear(); // clear string stream
@@ -534,8 +557,8 @@ void TrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *TrsprtCoupledMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    TrsprtCoupledMaterialStatus *newStatus = new TrsprtCoupledMaterialStatus(this, e, ipnum); //needs to be deleted manually
+MaterialStatus *DiscreteTrsprtCoupledMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    DiscreteTrsprtCoupledMaterialStatus *newStatus = new DiscreteTrsprtCoupledMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
@@ -550,6 +573,7 @@ DisMechMaterialStatus :: DisMechMaterialStatus(DisMechMaterial *m, Element *e, u
 
 //////////////////////////////////////////////////////////
 Matrix DisMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+    ( void ) type;
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
     Matrix D(dimension, dimension);
     D [ 0 ] [ 0 ] = m->giveE0();

@@ -182,9 +182,9 @@ void VolumetricAverage :: init() {
     double factor = m [ slaveid ];
     cout << slaveid << " " << factor << m.size() << endl;
     double fullVolume = 0;
-    for ( auto &s: m ) {
-        fullVolume += s;
-        s /= -factor;
+    for ( auto &ss: m ) {
+        fullVolume += ss;
+        ss /= -factor;
     }
     cout << "volumetric Average: check of volume " << fullVolume << endl;
     m [ slaveid ] = fullVolume / factor;
@@ -220,7 +220,8 @@ void VolumetricAverage :: init() {
 //////////////////////////////////////////////////////////
 // Container
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes) {
+void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodecont) {
+    (void) ndim;
     unsigned origsize = constraints.size();
     string line, ConstrType;
     ifstream inputfile(filename.c_str() );
@@ -237,7 +238,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
             if ( !ConstrType.rfind("#", 0) == 0 ) {
                 if ( ConstrType.compare("jointDoF") == 0 ) {
                     JointDoF *newJD = new JointDoF();
-                    newJD->readFromLine(iss, nodes);
+                    newJD->readFromLine(iss, nodecont);
                     constraints.push_back(newJD);
                 } else {
                     cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << endl;
@@ -260,13 +261,13 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 // }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: init(NodeContainer *nodes, BCContainer *bconds) {
+void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
     //initiate volumetric averages
 
-    unsigned numFreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    unsigned numFreeDoFs = nodecont->giveTotalNumDoFs() - bccont->giveNumBlockedDoFs();
 
-    this->nodes = nodes;
-    this->bconds = bconds;
+    nodes = nodecont;
+    bconds = bccont;
 
     for ( auto const &jD : constraints ) {
         jD->init();
@@ -345,6 +346,7 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
     //   // std::cout << "transformToConstraintSpace, time = " << time_now << '\n';
     //   this->init(this->nodes, this->bconds);
     // }
+    ( void ) time_now;
     CoordinateIndexedSparseMatrix Kold = K;
     K = X.transpose() * Kold * X;
 }

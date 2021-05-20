@@ -63,6 +63,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     TrsprtMaterial *newmat = new TrsprtMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("DiscreteTrsprtMaterial") == 0 ) {
+                    DiscreteTrsprtMaterial *newmat = new DiscreteTrsprtMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteTransportRVEMaterial") == 0 ) {
                     DiscreteTransportRVEMaterial *newmat = new DiscreteTransportRVEMaterial();
                     newmat->readFromLine(iss);
@@ -83,8 +87,8 @@ void MaterialContainer :: readFromFile(const string filename) {
                     DiscreteCoupledRVEMaterial *newmat = new DiscreteCoupledRVEMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
-                } else if ( matType.compare("TrsprtCoupledMaterial") == 0 ) {
-                    TrsprtCoupledMaterial *newmat = new TrsprtCoupledMaterial();
+                } else if ( matType.compare("DiscreteTrsprtCoupledMaterial") == 0 ) {
+                    DiscreteTrsprtCoupledMaterial *newmat = new DiscreteTrsprtCoupledMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("MarsMaterial") == 0 ) {
