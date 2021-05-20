@@ -9,11 +9,14 @@
 #include <typeinfo>
 
 //parser for mathematic expressions
+
+#ifdef __EXPRTK_MODULE
 #include "exprtk.hpp"
 
 typedef exprtk :: symbol_table< double >symbol_table_t;
 typedef exprtk :: expression< double >expression_t;
 typedef exprtk :: parser< double >parser_t;
+#endif
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -34,23 +37,26 @@ public:
 protected:
 };
 
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// GENERAL SPATIAL FUNCTION
-class GeneralSpatialFunction : public Function
-{
-private:
-    string expression_string;
-    double x, y, z;
-    expression_t expression;
-public:
-    GeneralSpatialFunction() {};
-    virtual ~GeneralSpatialFunction() {};
-    void readFromLine(istringstream &iss);
-    double giveY(const Point *xyz);
-    virtual double giveNextEtreme(const double &t) const;
-protected:
-};
+
+#ifdef __EXPRTK_MODULE
+    //////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////
+    // GENERAL SPATIAL FUNCTION
+    class GeneralSpatialFunction : public Function
+    {
+    private:
+        string expression_string;
+        double x, y, z;
+        expression_t expression;
+    public:
+        GeneralSpatialFunction() {};
+        virtual ~GeneralSpatialFunction() {};
+        void readFromLine(istringstream &iss);
+        double giveY(const Point *xyz);
+        virtual double giveNextEtreme(const double &t) const;
+    protected:
+    };
+#endif
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

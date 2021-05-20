@@ -58,6 +58,7 @@ option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" OFF)
+option (USE_EXPRTK "Enable EXPRTK" ON)
 option (USE_SANITIZERS "Enable sanitizers" OFF)
 option (CHECK_CONVERSION "Enable conversion warnings" OFF)
 
@@ -190,6 +191,10 @@ if (USE_VTK)
             MODULES ${VTK_LIBRARIES}
             )
     endif ()
+endif ()
+
+if (USE_EXPRTK)
+    add_definitions (-D__EXPRTK_MODULE)
 endif ()
 
 # precompiled headers - no speedup?
