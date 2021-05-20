@@ -450,7 +450,7 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double ti
     Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );
 
     updateEffectiveConductivity();
-    effConductivity += tmat->giveTurtuosity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
+    effConductivity += tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
     temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
     return temp_stress;

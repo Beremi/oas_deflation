@@ -894,7 +894,7 @@ void Transp1DCoupled :: findFriendsFromSimplices() {
         verts = rbc->giveVertices();
         if ( find(verts.begin(), verts.end(), nodes [ 0 ]) != verts.end() && find(verts.begin(), verts.end(), nodes [ 1 ]) != verts.end() ) {
             if ( ndim == 2 ) {
-                weight = rbc->giveArea();
+                weight = 1;//rbc->giveArea();
             } else if ( ndim == 3 ) {
                 weight = ( inttype->giveIPLocation(0) - ( rbc->giveNode(0)->givePoint() + rbc->giveNode(1)->givePoint() ) / 2. ).norm();
             }
