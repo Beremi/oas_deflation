@@ -458,17 +458,6 @@ Vector TrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double ti
 
 
 //////////////////////////////////////////////////////////
-double TrsprtCoupledMaterialStatus :: computeBiotEffect(double volStrain, double timeStep) {
-    if ( timeStep <= 0 ) {
-        return 0;               //steady-state
-    }
-    tempVolumetricStrain = volStrain;
-    TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );
-    return m->giveBiotCoeff() * m->giveDensity() * 3. * ( tempVolumetricStrain - volumetricStrain ) / timeStep; //Biot coeff times volumetric strain rate
-}
-
-
-//////////////////////////////////////////////////////////
 Vector TrsprtCoupledMaterialStatus :: giveInternalSource() const{ 
     Vector ints(1);
     TrsprtCoupledMaterial *m = static_cast< TrsprtCoupledMaterial * >( mat );

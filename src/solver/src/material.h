@@ -140,7 +140,6 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveEffectiveConductivity(string type) const;
     virtual void update();
-    double computeBiotEffect(double volStrain, double timeStep);
     virtual Vector giveInternalSource() const;
     virtual double giveValue(string code) const;
     virtual void setParameterValue(string code, double value);
