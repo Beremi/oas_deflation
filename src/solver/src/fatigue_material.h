@@ -23,7 +23,7 @@ private:
     Point stressT, temp_stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
-    double damage_set_from_the_outside = 0.0;
+    double damageShear_set_from_the_outside = 0.0;
 
     double prev_damageShear, prev_zIso;
     Point prev_sPi, prev_alphaKin, prev_stressT, prev_slip;
@@ -57,8 +57,8 @@ public:
     double isDamageCoupled() const { return coup_dam; }
 protected:
     void setDamage(const double &new_damage) {
-        if ( new_damage > this->damage_set_from_the_outside ) {
-            this->damage_set_from_the_outside = new_damage;
+        if ( new_damage > this->damageShear_set_from_the_outside ) {
+            this->damageShear_set_from_the_outside = new_damage;
         }
     }
 };
@@ -120,7 +120,7 @@ private:
     double temp_epsN, temp_damage, temp_epsNP, temp_alphaN, temp_zN, temp_rN; ///<temporary variables
     double temp_stressN, stressN;
 
-    double damage_set_from_the_outside = 0.0;
+    double damageNormal_set_from_the_outside = 0.0;
 
     double strain_displ_multiplier;
 
@@ -145,8 +145,8 @@ public:
     virtual double giveValue(string code) const;
 protected:
     void setDamage(const double &new_damage) {
-        if ( new_damage > this->damage_set_from_the_outside ) {
-            this->damage_set_from_the_outside = new_damage;
+        if ( new_damage > this->damageNormal_set_from_the_outside ) {
+            this->damageNormal_set_from_the_outside = new_damage;
         }
     }
 };

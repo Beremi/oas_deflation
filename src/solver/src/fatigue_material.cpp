@@ -229,7 +229,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                 temp_alphaKin += sgn1 * dLambda;
             }
 
-            temp_damageShear = (temp_damageShear > damage_set_from_the_outside) ? temp_damageShear : damage_set_from_the_outside;
+            temp_damageShear = (temp_damageShear > damageShear_set_from_the_outside) ? temp_damageShear : damageShear_set_from_the_outside;
 
             temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - temp_damageShear ) * stiffT;
             prev_slip_cur = slip_cur;
@@ -676,7 +676,9 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
             temp_epsNP = epsNP + dLambda * sgn1;
         }
     }
-    temp_damage = (temp_damage > damage_set_from_the_outside) ? temp_damage : damage_set_from_the_outside;
+
+    temp_damage = (temp_damage > damageNormal_set_from_the_outside) ? temp_damage : damageNormal_set_from_the_outside;
+
     if ( this->symmetric ) {
         stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(strain [ 0 ]);
         temp_epsN *= sgn(strain [ 0 ]);
@@ -982,10 +984,6 @@ Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
 
 //////////////////////////////////////////////////////////
 void FatigueMaterialStatus :: update() {
-    if ( this->coupled_damage ) {
-        DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
-        FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
-    }
     FatigueShearMaterialStatus :: update();
     DamagePlasticMaterialStatus :: update();
 }
