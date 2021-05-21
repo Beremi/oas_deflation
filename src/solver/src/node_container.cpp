@@ -81,6 +81,7 @@ void NodeContainer :: saveToFile(const std :: string &filepath, std :: vector< u
     }
 }
 
+//////////////////////////////////////////////////////////
 unsigned NodeContainer :: giveNodeId(const Node *node) const {
     // do not use this method for node that is not a part of this (nodeContainer)
     auto res = std :: find(std :: begin(this->nodes), std :: end(this->nodes), node);
@@ -91,7 +92,6 @@ unsigned NodeContainer :: giveNodeId(const Node *node) const {
     }
     return std :: distance(std :: begin(this->nodes), res);
 }
-
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: init() {
@@ -369,7 +369,7 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
             for(unsigned v=0; v<nodes[numi]->giveNumberOfDoFs(); v++){
                 iss >> numd;
                 startDoF = nodes[numi]->giveStartingDoF();
-                initvalues[ DoFid [startDoF+v] ] = numd;
+                initvalues[ startDoF+v ] = numd;
             }                        
         }
         inputfile.close();

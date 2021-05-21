@@ -560,7 +560,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
             W_kinT += 0.; //TODO: correct kinetic energy
         }
     }
-
+    //cout << "Energy Error " <<  energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2) << " " << energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2) << endl;
     * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2) );
     * displa_error = sqrt(full_ddrM / max(trial_rM, EPS2) + full_ddrT / max(trial_rT, EPS2) );
     * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2);
@@ -804,7 +804,11 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
     }
-    terminated = !LinalgSymmetricSolver(Cred, ddr, f,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
+    if ( LinalgSymmetricSolver(Cred, ddr, f,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
+        terminated = true;
+        cerr << "Conjugate gradients did not converge" << endl;
+        exit(1);
+    }
     v = Vector(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
 }

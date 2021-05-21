@@ -493,8 +493,8 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const{
 void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, double value){
     if (code.compare("volumetric_strain")==0) {
         tempVolumetricStrain = value;
-    } else  if (code.compare("crack_opening")==0) {
-        tempVolumetricStrain = value;
+    } else  if (code.compare("crack_opening")==0) {        
+        crackParam = value;
     } else TrsprtMaterialStatus :: setParameterValue(code, value);
 }
 
