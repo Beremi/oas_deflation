@@ -11,6 +11,8 @@
 #include "geometry.h"
 #include "model.h"
 
+#define PRINT_TEST false
+
 Vector calcPrincipalStress(const Matrix &stress) {
     Vector principalStress;
     principalStress.resize(stress.numCols() );
@@ -224,6 +226,7 @@ private:
     }
     //////////////////////////////////////////////////////////////////////////////
     void saveRemeshData() {
+        if (PRINT_TEST) std::cout << "adaptivity remesh II d - saveRemeshData" << '\n';
         this->saveCenters(); // save centersToRemesh
         std :: vector< Point >fine_centers;
         for ( auto const &reg : this->fineRegions ) {
@@ -241,6 +244,7 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void updateGeometry() {
+        if (PRINT_TEST) std::cout << "adaptivity remesh II e - updateGeoemtry" << '\n';
         if ( system(NULL) ) {
             std :: cout << "preparing to run preprocessor to remesh geometry" << '\n';
             ;
@@ -281,14 +285,16 @@ private:
 
 
     void setMaterialInFineRegions() {
+
         // only the elements in fine regions have nonlinear material
         Element *el;
-        // unsigned change = 0;
+        unsigned change = 0;
         for ( unsigned i = 0; i < BaseSolver :: elems->giveSize(); i++ ) {
             // change = 0;
             el = BaseSolver :: elems->giveElement(i);
             if ( el->giveNode(0)->doesMechanics() && // NOTE JK: adaptivity is based on mechanical stress only
                  isInsideRegions(this->fineRegions, el) ) {
+                if (PRINT_TEST) std::cout << "adaptivity remesh II g - setMaterialInFineRegions " << change++ << ", " << el->giveName() << '\n';
                 el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
             }
         }
@@ -341,6 +347,7 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void loadRemeshData() {
+        if (PRINT_TEST) std::cout << "adaptivity remesh II f - loadRemeshData" << '\n';
         masterModel->clear();
 
         masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false );
@@ -356,6 +363,7 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     bool checkNodes() {
+        if (PRINT_TEST) std::cout << "adaptivity check nodes II b" << '\n';
         std :: vector< Matrix >nodal_stress;
         nodal_stress.resize(BaseSolver :: nodes->giveSize(), Matrix(this->dim, this->dim) );
         // calculate nodal stresses
@@ -378,7 +386,9 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void remeshGeometry() {
+        if (PRINT_TEST) std::cout << "adaptivity remesh II a" << '\n';
         if ( checkNodes() ) {
+            if (PRINT_TEST) std::cout << "adaptivity remesh II c" << '\n';
             std :: ostringstream stringStream;
             stringStream << "remesh_" << BaseSolver :: step;
             this->remeshDir = GlobPaths :: BASEDIR / stringStream.str();
@@ -402,7 +412,9 @@ private:
             this->nodeCentersToRmesh.clear();
             this->nodesToKeep.clear();
 
+            if (PRINT_TEST) std::cout << "-------------------->>>>>>>>>>> solve after remesh" << '\n';
             BaseSolver :: solve();
+            std::cout << "soulution done" << '\n';
 
             // return true;
         }
@@ -512,7 +524,7 @@ public:
         }
         // dimension is needed for calculation of nodal stresses (TODO calulate particle volume somewhere at the beginning)
         this->dim = BaseSolver :: elems->giveElement(0)->giveDimension();
-        std::cout << "elem 0: " << BaseSolver :: elems->giveElement(0)->giveName() << '\n';
+        // std::cout << "elem 0: " << BaseSolver :: elems->giveElement(0)->giveName() << '\n';
 
         if ( initial && this->nodesFine ) {
             std :: cout << "Adaptivity: loading fine geometry ..." << '\n';
@@ -556,18 +568,21 @@ public:
 
 
     virtual void runBeforeEachStep() {
+        if (PRINT_TEST) std::cout << "adaptivity before each step I" << '\n';
         this->time_before_step = BaseSolver :: time;
         BaseSolver :: runBeforeEachStep();
     };
 
 
     virtual void runAfterEachStep() {
+        if (PRINT_TEST) std::cout << "adaptivity after each step II" << '\n';
         remeshGeometry();
 
         BaseSolver :: runAfterEachStep();
     };
 
     virtual void solve() {
+        if (PRINT_TEST) std::cout << "adaptivity solving each step II" << '\n';
         // TODO JK: check nodes before solving - export fabric stress with frozen variables
         // std :: cout << "solving with " << BaseSolver :: name << '\n';
         BaseSolver :: solve();

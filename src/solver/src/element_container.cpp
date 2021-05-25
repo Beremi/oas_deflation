@@ -142,6 +142,17 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 //     }
 // }
 
+unsigned ElementContainer :: giveElemId(const Element *elem) const {
+    // do not use this method for node that is not a part of this (nodeContainer)
+    auto res = std :: find(std :: begin(this->elems), std :: end(this->elems), elem);
+    if ( res == this->elems.end() ) {
+        // if node is not in container, return zero (but zero can be also for the first node)
+        // just to prevent errors here
+        return 0;
+    }
+    return std :: distance(std :: begin(this->elems), res);
+}
+
 //////////////////////////////////////////////////////////
 void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step, const bool &saveNodeIds) const {
     std :: ofstream outputfile(filepath);
