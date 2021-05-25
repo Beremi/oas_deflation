@@ -391,7 +391,7 @@ private:
             if (PRINT_TEST) std::cout << "adaptivity remesh II c" << '\n';
             std :: ostringstream stringStream;
             stringStream << "remesh_" << BaseSolver :: step;
-            this->remeshDir = GlobPaths :: BASEDIR / stringStream.str();
+            this->remeshDir = (GlobPaths :: BASEDIR / stringStream.str()).string();
             // TODO do the routines to remesh
             std :: cout << "remeshDir: " << this->remeshDir << '\n';
             if ( !fs :: exists(this->remeshDir) ) {
