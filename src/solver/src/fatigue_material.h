@@ -57,7 +57,7 @@ public:
     double isDamageCoupled() const { return coup_dam; }
 protected:
     void setDamage(const double &new_damage) {
-        if ( new_damage > this->damageShear_set_from_the_outside ) {
+        if ( new_damage > this->damageShear ) {
             this->damageShear_set_from_the_outside = new_damage;
         }
     }
@@ -145,7 +145,7 @@ public:
     virtual double giveValue(string code) const;
 protected:
     void setDamage(const double &new_damage) {
-        if ( new_damage > this->damageNormal_set_from_the_outside ) {
+        if ( new_damage > this->damage ) {
             this->damageNormal_set_from_the_outside = new_damage;
         }
     }
