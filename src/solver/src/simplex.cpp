@@ -60,7 +60,7 @@ void Simplex :: init(unsigned ndim) {
         volume = abs(volume);
 
         averageSide /= 4;
-        if(volume<0.05 * sqrt(2)/12.*pow(averageSide,3) or volume<1e-25) valid = false; //cancel simplexes that are in wrong shape, by comparing to 5% of volume of regular Tet
+        if(volume<0.05 * sqrt(2)/12.*pow(averageSide,3) || volume<1e-25) valid = false; //cancel simplexes that are in wrong shape, by comparing to 5% of volume of regular Tet
     }
    
 }
