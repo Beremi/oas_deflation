@@ -244,7 +244,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("init_step") == 0 ) {
                 iss >> this->init_step;
             } else if ( param.compare("symsolver_type") == 0 ) {
-                inputfile >> symsolver_type;
+                iss >> symsolver_type;
             }
 
         }
