@@ -128,15 +128,18 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 }
             } else if ( initial && istr.compare("Solver") == 0 ) {
                 iss >> istr;
-                solver = new Solver();
-                solver = solver->readFromFile( ( baseDir / istr ).string() );
+                //solver = new Solver;
+                //Solver* ptr = solver;
+                //solver = solver->readFromFile(( baseDir / istr ).string() );
+                //delete ptr;
+                solver = Solver().readFromFile(( baseDir / istr ).string() );
                 // QUESTION JK: why is this here and not in the constructor? together with new Solver() ?
                 solver->setContainers(& elems, & nodes, & funcs);
             } else if ( initial && istr.compare("initial_master_field") == 0 ){
-                iss >> initialFieldFile; 
+                iss >> initialFieldFile;
             } else if ( initial && istr.compare("initial_master_time_derivative_field") == 0 ){
-                iss >> initialTimeDerFieldFile;                
-            } 
+                iss >> initialTimeDerFieldFile;
+            }
         }
         inputfile.close();
         cout << "Master input file '" <<  fullPath.string() << "' succesfully loaded" << endl;

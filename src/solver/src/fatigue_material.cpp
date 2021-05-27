@@ -935,30 +935,31 @@ void FatigueMaterialStatus :: init() {
 Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     Vector stress(strain.size() );
+    double omega_shear, omega_norm, omega_upd;
 
     for ( size_t i = 0; i < strain.size(); i++ ) {
-        if ( i == 0 ) {
-            if ( abs(this->coupled_damage) > 0.0 ) {
-                if ( abs(this->coupled_damage) == 0.5 ) {
-                    DamagePlasticMaterialStatus :: setDamage( 1 -
-                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("temp_damage") ) *
-                             (1 - DamagePlasticMaterialStatus :: giveValue("temp_damage") ))
-                     );
-                } else {
-                    DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("temp_damage") );
+        omega_norm  = DamagePlasticMaterialStatus :: giveValue("temp_damage");
+        omega_shear = FatigueShearMaterialStatus :: giveValue("temp_damage");
+        if ( i == 0 ) { // NORMAL  direction
+            if ( (abs(this->coupled_damage) > 0.0) && (omega_norm<omega_shear)) {//influence my normal damage only if it is less than shear damage
+                if ( abs(this->coupled_damage) == 0.7 ) { //mild coupling via geometric average of "health" (1-omega)
+                    omega_upd = 1 - sqrt((1 - omega_shear ) * (1 - omega_norm ));
+                }else if(abs(this->coupled_damage) == 0.5){//mild coupling via arithmetic average of damages
+                    omega_upd = 0.5*( omega_shear + omega_norm);
+                }else {//hard coupling (take shear damage if bigger than normal damage)
+                    omega_upd = omega_shear;
                 }
+                DamagePlasticMaterialStatus :: setDamage(omega_upd);
+                //cout<<"-->"<<omega_upd<<"i.e."<<DamagePlasticMaterialStatus :: giveValue("temp_damage")<<endl;
             }
             stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain, timeStep) [ i ];
-        } else {
-            if ( this->coupled_damage > 0.0 ) {
-                if ( this->coupled_damage == 0.5 ) {
-                    FatigueShearMaterialStatus :: setDamage( 1 -
-                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("temp_damage") ) *
-                             (1 - DamagePlasticMaterialStatus :: giveValue("temp_damage") ))
-                     );
-                } else {
-                    FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("temp_damage") );
-                }
+        } else { // SHEAR direction
+            if ( (this->coupled_damage > 0.0)  && (omega_shear<omega_norm)) {//influence my shear damage only if it is less than normal damage and coupling _is_positive_ (bidirectional)
+                if     ( this->coupled_damage == 0.7 ){omega_upd = 1 - sqrt((1 - omega_shear) * (1 - omega_norm ));}//mild coupling via geometric average of health
+                else if( this->coupled_damage == 0.5 ){omega_upd = 0.5*( omega_shear + omega_norm);}//mild coupling via arithmetic average of damages
+                else {omega_upd = omega_norm;}
+                FatigueShearMaterialStatus :: setDamage( omega_upd );
+                //cout<<"-->"<<omega_upd<<"i.e."<<FatigueShearMaterialStatus :: giveValue("temp_damage")<<endl;
             }
             stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain, timeStep) [ i ];
         }
