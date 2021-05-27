@@ -71,8 +71,10 @@ void Element :: init() {
     setIntegrationPointsAndWeights();
 
     Bs.resize(inttype->giveNumIP() );
+    Hs.resize(inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
         Bs [ k ] = giveBMatrix(inttype->giveIPLocationPointer(k) );
+        Hs [ k ] = giveHMatrix(inttype->giveIPLocationPointer(k) );
     }
 }
 
@@ -126,7 +128,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
     Matrix K(nDoFs, nDoFs);
     Matrix D(0, 0);
-    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {    
         D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight(i) );
     }
@@ -135,8 +137,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF;
-    intF.resize(DoFids.size() );
+    Vector intF(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -146,19 +147,37 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
         }
         intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
     }
+    
+    //add internal sources
+    if(mat->isProducingInternalSources()){
+        Vector intS = integrateInternalSources();
+        for(unsigned i=0; i<intF.size(); i++) intF[i] += intS[i];
+    }
+    
     return intF;
 }
+
+//////////////////////////////////////////////////////////
+Vector Element :: integrateInternalSources() {
+    Vector intS(DoFids.size() );
+    Vector intmats;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        intmats = stats [ i ] -> giveInternalSource();   
+        intS += Hs[i].transpose() * (intmats *inttype->giveIPWeight(i) ) ;
+    }
+    
+    return intS;
+}
+
 
 //////////////////////////////////////////////////////////
 Matrix Element :: giveDampingMatrix() const {
     unsigned nDoFs = DoFids.size();
     Matrix M(nDoFs, nDoFs);
-    double c;
-    Matrix H;
+    Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        H = giveHMatrix(inttype->giveIPLocationPointer(i) );
-        c = stats [ i ]->giveDampingConstant();
-        M += matrix_multiply(H.transpose(), H) * ( inttype->giveIPWeight(i) * c );
+        c = stats [ i ]->giveDampingTensor();
+        M += Hs[i].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs[i];
     }
     return M;
 }
@@ -167,12 +186,10 @@ Matrix Element :: giveDampingMatrix() const {
 Matrix Element :: giveMassMatrix() const {
     unsigned nDoFs = DoFids.size();
     Matrix M(nDoFs, nDoFs);
-    double c;
-    Matrix H;
+    Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        H = giveHMatrix(inttype->giveIPLocationPointer(i) );
-        c = stats [ i ]->giveMassConstant();
-        M += matrix_multiply(H.transpose(), H) * ( inttype->giveIPWeight(i) * c );
+        c = stats [ i ]->giveMassTensor();
+        M += Hs[i].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs[i];
     }
     return M;
 }
@@ -183,12 +200,10 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
     vector< double >load(nDoFs);
     double fvalue;
     unsigned dir = vl->giveDirection();
-    Matrix H;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        H = giveHMatrix(& ip_locs [ i ]);
         fvalue = vl->giveValue(& ip_locs [ i ], time);
         for ( unsigned j = 0; j < nDoFs; j++ ) {
-            load [ j ] += H [ dir ] [ j ] *fvalue *inttype->giveIPWeight(i);
+            load [ j ] += Hs[i] [ dir ] [ j ] *fvalue *inttype->giveIPWeight(i);
         }
     }
     return load;

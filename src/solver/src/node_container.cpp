@@ -51,6 +51,10 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     TrsDoF *newnode = new TrsDoF(dim);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
+                } else if ( nodeType.compare("TrsTemprtrCoupledNode") == 0 ) {
+                    TrsTemprtrCoupledNode *newnode = new TrsTemprtrCoupledNode(dim);
+                    newnode->readFromLine(iss);
+                    nodes.push_back(newnode);
                 } else {
                     cerr << "Error: node type '" <<  nodeType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -77,6 +81,7 @@ void NodeContainer :: saveToFile(const std :: string &filepath, std :: vector< u
     }
 }
 
+//////////////////////////////////////////////////////////
 unsigned NodeContainer :: giveNodeId(const Node *node) const {
     // do not use this method for node that is not a part of this (nodeContainer)
     auto res = std :: find(std :: begin(this->nodes), std :: end(this->nodes), node);
@@ -87,7 +92,6 @@ unsigned NodeContainer :: giveNodeId(const Node *node) const {
     }
     return std :: distance(std :: begin(this->nodes), res);
 }
-
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: init() {
@@ -349,4 +353,30 @@ Node *NodeContainer :: giveNode(unsigned const num) const {
 unsigned NodeContainer :: giveNodeNumber(const Node *n) const {
     auto it = std :: find(nodes.begin(), nodes.end(), n);
     return it - nodes.begin();
+}
+
+//////////////////////////////////////////////////////////
+Vector NodeContainer :: readInitialConditions(string initfile) const {
+    string line;
+    unsigned numi, startDoF;
+    double numd;
+    Vector initvalues(totalDoFs);
+    ifstream inputfile(initfile.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            istringstream iss(line);
+            iss >> numi;
+            for(unsigned v=0; v<nodes[numi]->giveNumberOfDoFs(); v++){
+                iss >> numd;
+                startDoF = nodes[numi]->giveStartingDoF();
+                initvalues[ startDoF+v ] = numd;
+            }                        
+        }
+        inputfile.close();
+        cout << "Input file '" <<  initfile << "' succesfully loaded" << endl;
+    } else {
+        cerr << "Error: unable to open input file '" <<  initfile <<  "'" << endl;
+        exit(EXIT_FAILURE);
+    }
+    return initvalues;
 }

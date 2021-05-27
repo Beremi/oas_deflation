@@ -12,7 +12,6 @@ class BodyLoad; //forward declaration
 class TrsprtQuad : public TransportElement
 {
 protected:
-
 public:
     TrsprtQuad();
     ~TrsprtQuad() {};
@@ -33,6 +32,21 @@ public:
     ~TrsprtBrick() {};
 };
 
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK TRANSPORT + TEMPERATURE  ELEMENT
+class TrsprtTemprtrCoupledBrick : public TrsprtBrick
+{
+protected:
+
+public:
+    TrsprtTemprtrCoupledBrick();
+    ~TrsprtTemprtrCoupledBrick() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+};
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
@@ -110,11 +124,17 @@ public:
 class CoupledCosseratBrick : public CosseratBrick
 {
 protected:
+    vector<double> IPpressures;
+    vector<double> IPvolstrains;
 
 public:
     CoupledCosseratBrick();
     ~CoupledCosseratBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveDampingMatrix() const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    double givePressureAtINtegrationPoint(unsigned i) const { return IPpressures[i];};
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
 };
 #endif  /* _ELEMENT_STRUCT_H */

@@ -9,11 +9,14 @@
 #include <typeinfo>
 
 //parser for mathematic expressions
+
+#ifdef __EXPRTK_MODULE
 #include "exprtk.hpp"
 
 typedef exprtk :: symbol_table< double >symbol_table_t;
 typedef exprtk :: expression< double >expression_t;
 typedef exprtk :: parser< double >parser_t;
+#endif
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -34,30 +37,33 @@ public:
 protected:
 };
 
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// GENERAL SPATIAL FUNCTION
-class GeneralSpatialFunction : public Function
-{
-private:
-    string expression_string;
-    double x, y, z;
-    expression_t expression;
-public:
-    GeneralSpatialFunction() {};
-    virtual ~GeneralSpatialFunction() {};
-    void readFromLine(istringstream &iss);
-    double giveY(const Point *xyz);
-    virtual double giveNextEtreme(const double &t) const;
-protected:
-};
+
+#ifdef __EXPRTK_MODULE
+    //////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////
+    // GENERAL SPATIAL FUNCTION
+    class GeneralSpatialFunction : public Function
+    {
+    private:
+        string expression_string;
+        double x, y, z;
+        expression_t expression;
+    public:
+        GeneralSpatialFunction() {};
+        virtual ~GeneralSpatialFunction() {};
+        void readFromLine(istringstream &iss);
+        double giveY(const Point *xyz);
+        virtual double giveNextEtreme(const double &t) const;
+    protected:
+    };
+#endif
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // PIECE-WISE LINEAR FUNCTION
 class PieceWiseLinearFunction : public Function
 {
-private:
+protected:
     vector< double >x;
     vector< double >y;
 public:
@@ -68,9 +74,18 @@ public:
     double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
     void setYValue(double yv, unsigned i) { y [ i ] = yv; };
-protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// PIECE-WISE LINEAR FUNCTION WITH TIME STEP CONTROLL
+class PieceWiseLinearFunctionWithExtremes : public PieceWiseLinearFunction
+{
+public:
+    PieceWiseLinearFunctionWithExtremes() {};
+    PieceWiseLinearFunctionWithExtremes(vector< double >nx, vector< double >ny):PieceWiseLinearFunction(nx,ny){};
+    virtual double giveNextEtreme(const double &t) const;
+};
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SAW TOOTH FUNCTION WITH CONSTANT MAX VALUE

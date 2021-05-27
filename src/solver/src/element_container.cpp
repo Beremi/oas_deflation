@@ -1,4 +1,7 @@
 #include "element_container.h"
+#include "element_discrete.h"
+#include "element_continuous.h"
+#include "element_polyhedral.h"
 #include <algorithm>
 
 //////////////////////////////////////////////////////////
@@ -52,6 +55,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TrsprtBrick") == 0 ) {
                     TrsprtBrick *newelem = new TrsprtBrick();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("TrsprtTemprtrCoupledBrick") == 0 ) {
+                    TrsprtTemprtrCoupledBrick *newelem = new TrsprtTemprtrCoupledBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MechanicalQuad") == 0 ) {
@@ -134,6 +141,17 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
 //         outputfile.close();
 //     }
 // }
+
+unsigned ElementContainer :: giveElemId(const Element *elem) const {
+    // do not use this method for node that is not a part of this (nodeContainer)
+    auto res = std :: find(std :: begin(this->elems), std :: end(this->elems), elem);
+    if ( res == this->elems.end() ) {
+        // if node is not in container, return zero (but zero can be also for the first node)
+        // just to prevent errors here
+        return 0;
+    }
+    return std :: distance(std :: begin(this->elems), res);
+}
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step, const bool &saveNodeIds) const {
@@ -328,6 +346,8 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) con
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const {
+    K = K*0; //set everything to zero
+
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
@@ -366,10 +386,7 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             }
         }
     }
-    if ( nodes->giveConstraints()->isActive() ) {
-        nodes->giveConstraints()->transformToConstraintSpace(K);
-    }
-
+    
     /*
      * for(size_t i=0; i<K.RowCount; i++){
      *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
@@ -432,7 +449,7 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
         }
         if      ( diffType == 1 ) {
-            elForces = ( * e )->giveDampingMatrix() * elDoFvalues;                    //damping or conductivity
+            elForces = ( * e )->giveDampingMatrix() * elDoFvalues;                 //damping or conductivity
         } else if ( diffType == 2 ) {
             elForces = ( * e )->giveMassMatrix() * elDoFvalues;                    //inertia
         } else {
@@ -517,3 +534,4 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
     // std::cerr << '\n';
     return nullptr;
 }
+

@@ -32,7 +32,7 @@ protected:
 public:
     Solver();
     virtual ~Solver() {};
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };
     void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions);
@@ -56,20 +56,21 @@ public:
 class SteadyStateLinearSolver : public Solver
 {
 protected:
-    double conj_grad_precission;
+    double conj_grad_precision;
     double conj_grad_relative_maxit;
-    CoordinateIndexedSparseMatrix Keff, Kini;
+    CoordinateIndexedSparseMatrix Keff, K;
 
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, frozen, dt); };
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, frozen, dt); };
     virtual void computeInternalExternalForces(const Vector &rr, const bool frozen, double timeStep);
-    virtual void updateKeff(string matrixType);
+    virtual void computeKeff();
+    virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
 private:
 public:
     SteadyStateLinearSolver();
     virtual ~SteadyStateLinearSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -95,14 +96,15 @@ protected:
     IndirectDC *idc;        //indirect displacement control
     Vector ddf, full_ddf, f_last_iter;
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
-
+    int stiffnessMatrixUpdate, dampingMatrixUpdate, massMatrixUpdate; //update matrices every X iteration
     void printAllVectors();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
+    virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
 
 public:
     SteadyStateNonLinearSolver();
     virtual ~SteadyStateNonLinearSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const string filename);
     virtual Vector giveNodalForces() { return f_ext_old; };
     virtual void runBeforeEachStep();
@@ -119,8 +121,9 @@ protected:
     Vector v, v_old;
 
     virtual void applySpectralRadius(double rhoinfty);
-    virtual void updateKeff(string matrixType);
-    //virtual void updateFeff();
+    virtual void computeKeff();
+    virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
+    virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
@@ -128,7 +131,7 @@ protected:
 public:
     TransientLinearTransportSolver();
     virtual ~TransientLinearTransportSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -143,7 +146,7 @@ protected:
 public:
     TransientNonLinearTransportSolver();
     virtual ~TransientNonLinearTransportSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -157,15 +160,16 @@ protected:
     Vector a, a_old;
 
     virtual void applySpectralRadius(double rhoinfty);
-    virtual void updateKeff(string matrixType);
-    //virtual void updateFeff();
+    virtual void computeKeff();
+    virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
+    virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
 public:
     TransientLinearMechanicalSolver();
     virtual ~TransientLinearMechanicalSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
@@ -179,7 +183,7 @@ protected:
 public:
     TransientNonLinearMechanicalSolver();
     virtual ~TransientNonLinearMechanicalSolver();     //destructor
-    virtual void init(const bool &initial = true);
+    virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();

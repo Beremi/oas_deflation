@@ -2,6 +2,7 @@
 #include "vtk_exporter.h"
 #include "exporter_model.h"
 #include "geometry.h"
+#include "element_discrete.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -122,6 +123,38 @@ void TXTElementExporter :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
+void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    ( void ) DoFs;
+    ( void ) reactions;
+    char buffer [ 100 ];
+    Element *ee;
+    double value;
+    size_t nIP;
+    giveFileName(step, buffer);
+    ofstream outputfile( ( resultDir / buffer ).string() );
+
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+        for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
+            ee = elems->giveElement(e);
+            nIP = ee->giveNumIP();
+            for ( unsigned k = 0; k < nIP; k++ ) {
+                for ( vector< string > :: const_iterator c = codes.begin(); c != codes.end(); ++c ) {
+                    value = ee->giveIPValue(* c, k);
+                    outputfile << value;
+                    if ( c != codes.end() - 1 ) {
+                        outputfile << "\t";
+                    }
+                }
+                outputfile << endl;
+            }
+        }
+        outputfile.close();
+    }
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
 /*!
@@ -212,6 +245,7 @@ void ForceGauge :: readFromLine(istringstream &iss) {
     if ( param.compare("block") == 0 || param.compare("coords") == 0 ) {
         std :: string param2;
         bool mech = true;
+        iss >> param2;
         if ( param2.compare("mech") == 0 ) {
             mech = true;
         } else if ( param2.compare("trsp") == 0 ) {
@@ -219,7 +253,6 @@ void ForceGauge :: readFromLine(istringstream &iss) {
         } else {
             std :: cout << "type of force 'mech' or 'trsp' for ForceGauge not determined, by default, 'mech' is considered" << '\n';
         }
-        iss >> param2;
         Block bl;
         bl.readFromLine(iss);
         for ( auto const &nod : * nodes ) {
@@ -354,6 +387,53 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
     }
     outputfile.close();
 }
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF IP VALUES
+void IPGauge :: readFromLine(istringstream &iss) {
+    iss >> this->filename;
+    iss >> this->name;
+    this->codes.resize(1);
+    iss >> this->codes [ 0 ];
+    unsigned num;
+    iss >> num;
+    elems.resize(num);
+    ipnums.resize(num);
+    for ( unsigned i = 0; i < num; i++ ) {
+        iss >> elems [ i ];
+        iss >> ipnums [ i ];
+    }
+    DataExporter :: readFromLine(iss);
+}
+
+//////////////////////////////////////////////////////////
+void IPGauge :: init() {
+    time_each = 0;
+    time_last = 0;
+}
+
+
+//////////////////////////////////////////////////////////
+void IPGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
+    ( void ) full_f;
+    ( void ) reactions;
+    char buffer [ 100 ];
+    double value = 0;
+    giveFileName(step, buffer);
+    ofstream outputfile;
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    if ( outputfile.good() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+        for ( unsigned i = 0; i < elems.size(); i++ ) {
+            value += elemcont->giveElement(elems[i])->giveMatStatus(ipnums[i])->giveValue(codes[0]);
+        }
+        outputfile <<  "\t" << value * multiplier;
+    }
+    outputfile.close();
+}
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -534,6 +614,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     DoFGauge *newexp = new DoFGauge(n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("IPGauge") == 0 ) {
+                    IPGauge *newexp = new IPGauge(e, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTGaussPointExporter") == 0 ) {
                     TXTGaussPointExporter *newexp = new TXTGaussPointExporter(e, dimension);
                     newexp->readFromLine(iss);
@@ -680,6 +764,7 @@ void ExporterContainer :: appendToAllNames(string app) {
 void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim) {
     // Vector stressXYZ, stress_zero;
     // stress_zero = Vector((double)0, dim);
+    ( void ) reactions; 
 
     unsigned node_id, ni;
     double first;
@@ -738,11 +823,13 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 }
 
 
-void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {    
     // if NodeTypes.empty() then save all nodes
     // TODO finish this, now (for adaptivity) just save path to file with particles
+    ( void ) nodes; ( void ) NodeTypes; ( void ) resultDir;
 }
 
 void saveElems(const ElementContainer &elems, const std :: vector< std :: string > &ElemTypes, fs :: path resultDir) {
     // if ElemTypes.empty() then save all elems
+    ( void ) elems; ( void ) ElemTypes; ( void ) resultDir;
 }

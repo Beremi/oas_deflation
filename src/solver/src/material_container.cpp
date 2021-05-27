@@ -1,5 +1,12 @@
 #include "material_container.h"
 
+#include "material_RVE.h"
+#include "mars_material.h"
+#include "fatigue_material.h"
+#include "material_misc.h"
+#include "material_slide_3_2.h"
+#include "material_HTC.h"
+
 //////////////////////////////////////////////////////////
 MaterialContainer :: ~MaterialContainer() {
     for ( vector< Material * > :: iterator m = matrs.begin(); m != matrs.end(); ++m ) {
@@ -56,12 +63,20 @@ void MaterialContainer :: readFromFile(const string filename) {
                     TrsprtMaterial *newmat = new TrsprtMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("DiscreteTrsprtMaterial") == 0 ) {
+                    DiscreteTrsprtMaterial *newmat = new DiscreteTrsprtMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteTransportRVEMaterial") == 0 ) {
                     DiscreteTransportRVEMaterial *newmat = new DiscreteTransportRVEMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteMechanicalRVEMaterial") == 0 ) {
                     DiscreteMechanicalRVEMaterial *newmat = new DiscreteMechanicalRVEMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("HTCMaterial") == 0 ) {
+                    HTCMaterial *newmat = new HTCMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteTransportRVEMaterialPrecomputed") == 0 ) {
@@ -72,8 +87,8 @@ void MaterialContainer :: readFromFile(const string filename) {
                     DiscreteCoupledRVEMaterial *newmat = new DiscreteCoupledRVEMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
-                } else if ( matType.compare("TrsprtCoupledMaterial") == 0 ) {
-                    TrsprtCoupledMaterial *newmat = new TrsprtCoupledMaterial();
+                } else if ( matType.compare("DiscreteTrsprtCoupledMaterial") == 0 ) {
+                    DiscreteTrsprtCoupledMaterial *newmat = new DiscreteTrsprtCoupledMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("MarsMaterial") == 0 ) {

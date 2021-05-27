@@ -1,6 +1,5 @@
 #include "model.h"
 #include "version.h"
-#include <getopt.h>
 
 using namespace std;
 fs :: path GlobPaths :: BASEDIR;
@@ -8,31 +7,33 @@ fs :: path GlobPaths :: BASEDIR;
 Model *masterModel;
 
 int main(int argc, char **argv) {
-    int numfnd, opt;
-    int num;
+    vector<string> args(argv + 1, argv + argc);
+    int num = 0;
+    string master_filename;
 
-    num = 0;
-    numfnd = 0;
-    while ( ( opt = getopt(argc, argv, "j:") ) != -1 ) {
-        switch ( opt ) {
-        case 'j':
-            num = atoi(optarg);
-            numfnd = 1;
-            break;
-        default: /* '?' */
-            fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
-                    argv [ 0 ]);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    if ( optind >= argc ) {
+    if ( argc == 1 ) {
         fprintf(stderr, "Expected argument after options\n");
         fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
                 argv [ 0 ]);
         fprintf(stderr, "     : [-j num] has effect for Eigen conjugate gradients\n");
+        cerr << string(80, '=') << endl;
+        cerr << version_info() << endl;
         exit(EXIT_FAILURE);
     }
+
+    for (size_t i = 0; i != args.size(); ++i) {
+        if (args[i] == "-h" || args[i] == "--help") {
+            fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n", argv [ 0 ]);
+            return 0;
+        } else if (args[i] == "-j") {
+            if (i+1 < args.size()) num = atoi((args[i+1]).c_str());
+            else {
+                fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n", argv [ 0 ]);
+                exit(EXIT_FAILURE);
+            };
+        }
+    }
+    master_filename = args.back();
 
     // OMP set 1 thread by default
     omp_set_dynamic(0);
@@ -47,7 +48,11 @@ int main(int argc, char **argv) {
         cout << "Number of threads = 1" << endl;
     }
 
-    fs :: path input = fs :: absolute(argv [ optind ]);
+    fs :: path input = fs :: absolute(master_filename);
+    if (!fs :: exists(input)){
+        fprintf(stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str());
+        exit(EXIT_FAILURE);
+    }
     GlobPaths :: BASEDIR = input.parent_path();
 
     //initial time
@@ -91,11 +96,12 @@ int main(int argc, char **argv) {
         std :: cout << "######### total duration: " << convertTimeToString(elapsed_seconds) << " #########" << endl;
     }
 
-    //int terminationStatus = solver->giveTerminationStatus();
+    // when run automatically, termination status needs to be distinguished
+    int terminationStatus = masterModel->giveSolver()->giveTerminationStatus();
     //std :: cout << "termination status = " << terminationStatus << '\n';
     //return terminationStatus;
 
     delete masterModel; //delete mater model class
 
-    return 0;
+    return terminationStatus;
 }

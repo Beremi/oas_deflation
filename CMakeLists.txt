@@ -58,7 +58,9 @@ option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" OFF)
+option (USE_EXPRTK "Enable EXPRTK" ON)
 option (USE_SANITIZERS "Enable sanitizers" OFF)
+option (CHECK_CONVERSION "Enable conversion warnings" OFF)
 
 if (MSVC)
     add_definitions (-D_USE_MATH_DEFINES)
@@ -89,9 +91,12 @@ if (MSVC)
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -fPIC -Wall -Wextra -Wshadow") # -Wextra -Wconversion -Wsign-conversion -ggdb
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -fPIC -Wall -Wextra  -Wshadow") # -Wsign-conversion -Wconversion  -pedantic-errorsc -ggdb
+    if (CHECK_CONVERSION)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion -Wconversion")
+    endif()
     if (USE_SANITIZERS)
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer") # 
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector-strong -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer") #
     endif ()
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC") #  -Wextra
 endif ()
@@ -114,6 +119,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 #set (CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O2 -pg")
+set(TARGETNAME DiscreteModel)
 
 # detect
 find_package(PythonInterp REQUIRED)
@@ -134,9 +140,10 @@ else()
   COMMENT
     "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7"
   )
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7)
+  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7)
 endif()
 
+include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
 
 include_directories ("${PartMod_BINARY_DIR}")
 set (LIB_TYPE OBJECT)
@@ -151,7 +158,6 @@ endif ()
 
 #file(GLOB SOURCE "${PartMod_SOURCE_DIR}/src/solver/src/*.h" "${PartMod_SOURCE_DIR}/src/*.cpp")
 
-set(TARGETNAME DiscreteModel)
 #add_executable(${TARGETNAME} ${SOURCE})
 #add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
@@ -171,7 +177,7 @@ if (USE_VTK)
         # old system
         include(${VTK_USE_FILE})
         set (CMAKE_LIBRARY_DIR ${VTK_DIR})
-        
+
         add_definitions (-D__VTK_MODULE)
         list (APPEND EXT_LIBS ${VTK_LIBRARIES})
         list (APPEND MODULE_LIST "VTK")
@@ -185,6 +191,10 @@ if (USE_VTK)
             MODULES ${VTK_LIBRARIES}
             )
     endif ()
+endif ()
+
+if (USE_EXPRTK)
+    add_definitions (-D__EXPRTK_MODULE)
 endif ()
 
 # precompiled headers - no speedup?

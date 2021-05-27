@@ -296,17 +296,18 @@ class FatigueMaterial:
 ##################################################
 #### Transport material ####
 class TransportMaterial:
-    def __init__ (self, viscosity, permeability, density, capacity, crack_turtuosity, coupled=False):
+    def __init__ (self, viscosity, permeability, density, capacity, crack_turtuosity, biot_coeff=0, coupled=False):
         self.viscosity = viscosity
         self.permeability = permeability
         self.density = density
         self.capacity = capacity
         self.crack_turtuosity = crack_turtuosity
         self.coupled = coupled
+        self.biot_coeff = biot_coeff
 
     def getString (self):
         if self.coupled:
-            line = 'TrsprtCoupledMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity)
+            line = 'TrsprtCoupledMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity) +   '\t' +        'biot_coeff\t%e'%(self.biot_coeff)
         else:
             line = 'TrsprtMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity)
 

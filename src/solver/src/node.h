@@ -122,6 +122,21 @@ public:
 };
 
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSPORT + TEMPERATURE NODE
+class TrsTemprtrCoupledNode : public TrsNode
+{
+private:
+
+protected:
+public:
+    TrsTemprtrCoupledNode(unsigned dimension): TrsNode(dimension) {nDoFs = 2; name = "TrsTemprtrCoupledNode"; isTransport = true; };
+    virtual ~TrsTemprtrCoupledNode() {};
+    virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
+};
+
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

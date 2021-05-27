@@ -16,6 +16,7 @@ private:
     double Kt, Ks, L, nt;
     double RAND_H;
     double temp_crackOpening;
+    double volumetricStrain;
 
     double giveS0tension(double omega) const;
     double giveS0compression(double omega) const;
@@ -34,6 +35,7 @@ public:
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
+    virtual void setParameterValue(string code, double value);
 };
 
 
@@ -43,13 +45,16 @@ private:
     double ft, Gt;
     double fs, Gs, fc, Kc, beta, mu, nc;
     double Lcrs, Lcrt;
+    double damage_residuum = 0.0;
 public:
     MarsMaterial() { name = "Mars material"; };
     virtual ~MarsMaterial() {};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
+    double giveGt() { return Gt; }
     double giveFs() { return fs; }
+    double giveGs() { return Gs; }
     double giveFc() { return fc; }
     double giveBeta() { return beta; }
     double giveMu() { return mu; }
@@ -57,6 +62,7 @@ public:
     double giveLcrs() { return Lcrs; }
     double giveLcrt() { return Lcrt; }
     double giveKc() { return Kc; }
+    double giveMaxDamage() { return 1.0 - damage_residuum; }
 
     virtual void init();
 };
@@ -70,6 +76,7 @@ class CoupledMarsMaterialStatus : public MarsMaterialStatus
 {
 private:
     void updateStressByBiotEffect(double timeStep);
+    double avgPressure;
 
 public:
     CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
@@ -79,6 +86,7 @@ public:
     virtual double giveValue(string code) const;
     virtual void init();
     virtual void update();
+    virtual void setParameterValue(string code, double value);
 };
 
 class CoupledMarsMaterial : public MarsMaterial

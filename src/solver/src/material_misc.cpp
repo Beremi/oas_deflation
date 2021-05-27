@@ -90,7 +90,7 @@ Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep
 
 //////////////////////////////////////////////////////////
 Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
+    ( void ) timeStep; (void) strain;
     return Vector(0); //TOTO: FIX
 }
 

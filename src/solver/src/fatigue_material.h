@@ -23,6 +23,8 @@ private:
     Point stressT, temp_stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
+    double damageShear_set_from_the_outside = 0.0;
+
     double prev_damageShear, prev_zIso;
     Point prev_sPi, prev_alphaKin, prev_stressT, prev_slip;
 
@@ -41,7 +43,8 @@ private:
 
     void print() const;
 
-    bool coup_dam, comp_dam;
+    double coup_dam;
+    bool comp_dam;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e, unsigned ipnum);
     virtual ~FatigueShearMaterialStatus() {};
@@ -51,11 +54,11 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
-    bool isDamageCoupled() const { return coup_dam; }
+    double isDamageCoupled() const { return coup_dam; }
 protected:
     void setDamage(const double &new_damage) {
-        if ( new_damage > this->temp_damageShear ) {
-            this->temp_damageShear = new_damage;
+        if ( new_damage > this->damageShear ) {
+            this->damageShear_set_from_the_outside = new_damage;
         }
     }
 };
@@ -71,7 +74,8 @@ private:
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
     double mC, mT;  ///< parameters controling the pressure sensitivity (under Compression or Tension)
     bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
-    bool coup_dam, comp_dam;
+    double coup_dam;
+    bool comp_dam;
     double comp_thresh = 0.0;
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
@@ -93,7 +97,7 @@ public:
     bool analyticalLambda() const { return analytical_lambda; }
     bool newIterativeApproachOn() const { return newIterOn; }
     bool bisectionMethOn() const { return bisecOn; }
-    bool isDamageCoupled() const { return coup_dam; }
+    double isDamageCoupled() const { return coup_dam; }
     bool isCompressiveDamageOff() const { return comp_dam; }
     double giveCompressiveThreshold() const { return comp_thresh; }
 };
@@ -115,6 +119,8 @@ private:
 
     double temp_epsN, temp_damage, temp_epsNP, temp_alphaN, temp_zN, temp_rN; ///<temporary variables
     double temp_stressN, stressN;
+
+    double damageNormal_set_from_the_outside = 0.0;
 
     double strain_displ_multiplier;
 
@@ -139,8 +145,8 @@ public:
     virtual double giveValue(string code) const;
 protected:
     void setDamage(const double &new_damage) {
-        if ( new_damage > this->temp_damage ) {
-            this->temp_damage = new_damage;
+        if ( new_damage > this->damage ) {
+            this->damageNormal_set_from_the_outside = new_damage;
         }
     }
 };
@@ -188,7 +194,7 @@ class FatigueMaterial;
 class FatigueMaterialStatus : public FatigueShearMaterialStatus, public DamagePlasticMaterialStatus
 {
 private:
-    bool coupled_damage;
+    double coupled_damage;
 public:
     FatigueMaterialStatus(FatigueMaterial *m, Element *e, unsigned ipnum);
     virtual ~FatigueMaterialStatus() {};

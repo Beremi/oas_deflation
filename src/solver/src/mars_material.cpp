@@ -12,11 +12,11 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned i
 
 //////////////////////////////////////////////////////////
 double MarsMaterialStatus :: giveValue(string code) const {
+
     if ( code.compare("tempCrackOpening") == 0 ) {
         return temp_crackOpening;
     } else if ( code.compare("volumetric_strain") == 0 ) {
-        RigidBodyContact *ec = static_cast< RigidBodyContact * >( element );
-        return ec->giveVolumetricStrain();
+        return volumetricStrain;
     } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         return temp_damage;
         // } else  if ( code.compare("stressN") == 0 ) {
@@ -31,6 +31,21 @@ double MarsMaterialStatus :: giveValue(string code) const {
         //     return temp_strain[1];
         // } else  if ( code.compare("strainT2") == 0 ) {
         //     return temp_strain[2];
+    } else if ( code.compare("ft") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveFt();
+    } else if ( code.compare("Gt") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveGt();
+    } else if ( code.compare("fs") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveFs();
+    } else if ( code.compare("Gs") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveGs();
+    } else if ( code.compare("E0") == 0 ) {
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        return m->giveE0();
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -63,6 +78,8 @@ void MarsMaterialStatus :: init() {
         cerr << "Error " << name << ": snap back occured" << endl;
         exit(1);
     }
+
+    volumetricStrain = 0;
 }
 
 //////////////////////////////////////////////////////////
@@ -101,7 +118,9 @@ void MarsMaterialStatus :: computeOmega0() {
     double o2 = -M_PI;
     omega0 = ( o1 + o2 ) / 2;
     double err = giveS0tension(omega0) - giveS0compression(omega0);
-    while ( fabs(err) > 1e-5 ) {
+    unsigned itmax = 1000;
+    unsigned it = 0;
+    while ( fabs(err) > 1e-5 && it<itmax) {
         if ( err * o1 < 0. ) {
             o1 = omega0;
         } else {
@@ -109,7 +128,13 @@ void MarsMaterialStatus :: computeOmega0() {
         }
         omega0 = ( o1 + o2 ) / 2.;
         err = giveS0tension(omega0) - giveS0compression(omega0);
+        it ++;
     }
+    if(it==itmax){
+        cerr << "Mars Material Error: omega0 does not converging, error " << fabs(err) << endl;
+        exit(1);
+    }
+
     if ( omega0 > 0.0 ) {
         omega0 -= 2. * M_PI;
     }
@@ -180,7 +205,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
         temp_damage = damage;
     }
 
-    //temp_damage = min(temp_damage, 1-1e-10); //dangerous, better switched off
+    temp_damage = min(temp_damage, m->giveMaxDamage()); //dangerous, better switched off
 
     //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
     temp_crackOpening = l2_norm( ( L * damage ) * strain ); //total opening
@@ -236,7 +261,14 @@ std :: string MarsMaterialStatus :: giveLineToSave() const {
     return "damage " + to_string(this->damage) + " maxEpsN " + to_string(this->maxEpsN) + " maxEpsT " + to_string(this->maxEpsT);
 }
 
+//////////////////////////////////////////////////////////
+void MarsMaterialStatus :: setParameterValue(string code, double value){
+    if (code.compare("volumetric_strain")==0) {
+        volumetricStrain = value;
+    } else DisMechMaterialStatus :: setParameterValue(code, value);
+}
 
+//////////////////////////////////////////////////////////
 void MarsMaterialStatus :: readFromLine(istringstream &iss) {
     std :: string param;
     while ( !iss.eof() ) {
@@ -251,6 +283,7 @@ void MarsMaterialStatus :: readFromLine(istringstream &iss) {
     }
 }
 
+//////////////////////////////////////////////////////////
 bool MarsMaterialStatus :: isElastic(const bool &now) const {
     if ( now && this->temp_damage != 0.0 ) {
         return false;
@@ -294,6 +327,8 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
             iss >> fc;
         } else if ( param.compare("Kc") == 0 ) {
             iss >> Kc;
+        } else if ( param.compare("damage_residuum") == 0 ) {
+            iss >> damage_residuum;
         }
     }
     if ( !bft ) {
@@ -341,28 +376,31 @@ CoupledMarsMaterialStatus :: CoupledMarsMaterialStatus(MarsMaterial *m, Element 
 //////////////////////////////////////////////////////////
 void CoupledMarsMaterialStatus :: init() {
     MarsMaterialStatus :: init();
+    avgPressure = 0;
+}
+
+
+//////////////////////////////////////////////////////////
+void CoupledMarsMaterialStatus :: setParameterValue(string code, double value){
+    if (code.compare("pressure")==0) {
+        avgPressure = value;
+    } else MarsMaterialStatus :: setParameterValue(code, value);
 }
 
 //////////////////////////////////////////////////////////
 double CoupledMarsMaterialStatus :: giveValue(string code) const {
-    if ( code.compare("averagePressure") == 0 ) {
-        RigidBodyContactCoupled *ec = static_cast< RigidBodyContactCoupled * >( element );
-        return ec->giveAveragePressure();
-    } else if ( code.compare("volumetricStrainRate") == 0 ) {
-        RigidBodyContactCoupled *ec = static_cast< RigidBodyContactCoupled * >( element );
-        return ec->giveVolumetricStrainRate();
-    } else {
-        return MarsMaterialStatus :: giveValue(code);
-    }
+    if ( code.compare("average_pressure") == 0 ) {
+        return avgPressure;
+    } return MarsMaterialStatus :: giveValue(code);
 }
+
 
 
 //////////////////////////////////////////////////////////
 void CoupledMarsMaterialStatus :: updateStressByBiotEffect(double timeStep) {
     ( void ) timeStep;
-    RigidBodyContactCoupled *crbc = static_cast< RigidBodyContactCoupled * >( element );
     CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
-    temp_stress [ 0 ] -= m->giveBiotCoeff() * crbc->giveAveragePressure();
+    temp_stress [ 0 ] -= m->giveBiotCoeff() * avgPressure;
 }
 
 //////////////////////////////////////////////////////////
