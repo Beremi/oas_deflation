@@ -24,6 +24,7 @@ private:
     double temp_damageShear, temp_zIso; ///<temporary variables
 
     double damageShear_set_from_the_outside = 0.0;
+    double current_damageShear;
 
     double prev_damageShear, prev_zIso;
     Point prev_sPi, prev_alphaKin, prev_stressT, prev_slip;
@@ -121,6 +122,7 @@ private:
     double temp_stressN, stressN;
 
     double damageNormal_set_from_the_outside = 0.0;
+    double current_damageNormal;
 
     double strain_displ_multiplier;
 

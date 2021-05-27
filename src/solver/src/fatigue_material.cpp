@@ -229,9 +229,9 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                 temp_alphaKin += sgn1 * dLambda;
             }
 
-            temp_damageShear = (temp_damageShear > damageShear_set_from_the_outside) ? temp_damageShear : damageShear_set_from_the_outside;
+            current_damageShear = (temp_damageShear > damageShear_set_from_the_outside) ? temp_damageShear : damageShear_set_from_the_outside;
 
-            temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - temp_damageShear ) * stiffT;
+            temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - current_damageShear ) * stiffT;
             prev_slip_cur = slip_cur;
             prev_sPi_cur = temp_sPi;
         }
@@ -677,13 +677,13 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
         }
     }
 
-    temp_damage = (temp_damage > damageNormal_set_from_the_outside) ? temp_damage : damageNormal_set_from_the_outside;
+    current_damageNormal = (temp_damage > damageNormal_set_from_the_outside) ? temp_damage : damageNormal_set_from_the_outside;
 
     if ( this->symmetric ) {
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(strain [ 0 ]);
+        stress [ 0 ] = ( 1 - Heaviside * current_damageNormal ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(strain [ 0 ]);
         temp_epsN *= sgn(strain [ 0 ]);
     } else {
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP );
+        stress [ 0 ] = ( 1 - Heaviside * current_damageNormal ) * stiffN * ( temp_epsN - temp_epsNP );
     }
     temp_stressN = stress [ 0 ];
     return stress;
