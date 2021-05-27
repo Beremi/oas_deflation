@@ -122,9 +122,10 @@ if __name__ == '__main__':
         node_coords_ini.extend(loadNodes(os.path.join(remeshDir, "nodesFine.out"), model.dimension))
         # print("len nodes after: %d" % (len(node_coords_ini)))
 
+    remesherSeed = int(sys.argv[7])
     # print(node_coords_ini)
-    if len(sys.argv) > 7:
-        minDistRemesh = float(sys.argv[7])
+    if len(sys.argv) > 8:
+        minDistRemesh = float(sys.argv[8])
     else:
         minDistRemesh = model.minDist / 3.
 
@@ -149,7 +150,8 @@ if __name__ == '__main__':
                         radiusRemesh=radiusRemesh,
                         radiusTransitional=radiusTransitional,
                         dim=model.dimension,
-                        useExistingFineNodes=useExistingFineNodes)
+                        useExistingFineNodes=useExistingFineNodes,
+                        remesherSeed=remesherSeed)
 
     # exit(1)
     # print("--- after --------------------------------------")
