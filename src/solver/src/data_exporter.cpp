@@ -94,20 +94,15 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+        unsigned i = 0;
+        for ( unsigned n = 0; n < nodes->giveSize(); n++, i++ ) {
             nn = nodes->giveNode(n);
             for ( vector< string > :: const_iterator c = codes.begin(); c != codes.end(); ++c ) {
                 if ( c->compare(nds) == 0 ) {
-                    vector< double >data;
-                    for ( auto const &s : nodal_stress ) {
-                        data = MatrixToStdVectForParaview(s, dim);
-
-                        for ( auto const &d : data ) {
-                            outputfile << d << '\t';
-                        }
+                    for ( auto const &d : MatrixToStdVectForParaview(nodal_stress[i], dim) ) {
+                        outputfile << d << '\t';
                     }
-                }
-                else {
+                } else {
                     value = nn->giveDoFBasedValue(* c, DoFs);
                     outputfile << value;
                     if ( c != codes.end() - 1 ) {
