@@ -187,6 +187,8 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
     //initial conditions
     if(init_r_file.compare("")!=0){
         r = nodes->readInitialConditions( init_r_file );
+        computeInternalExternalForces(r, false, -1); //to activate initial conditions at elements
+        elems->updateMaterialStatuses();  
     }
 
     nodes->addRHS_nodalLoad(load, 0);
