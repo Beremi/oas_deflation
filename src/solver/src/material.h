@@ -165,6 +165,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveEffectiveConductivity(string type) const;
     virtual void update();
+    virtual void init() { volumetricStrain = 0; };
     virtual Vector giveInternalSource() const;
     virtual double giveValue(string code) const;
     virtual void setParameterValue(string code, double value);

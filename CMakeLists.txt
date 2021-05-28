@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 
 message(STATUS "project source directory -> ${CMAKE_SOURCE_DIR}")
 message(STATUS "project build directory -> ${CMAKE_BINARY_DIR}")

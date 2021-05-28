@@ -40,8 +40,9 @@ class TXTNodalExporter : public DataExporter
 {
 private:
     NodeContainer *nodes;
+    ElementContainer *elems;
 public:
-    TXTNodalExporter(NodeContainer *n, unsigned dimension) : DataExporter(dimension) { nodes = n; };
+    TXTNodalExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : DataExporter(dimension) { nodes = n; elems = e;};
     ~TXTNodalExporter() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;

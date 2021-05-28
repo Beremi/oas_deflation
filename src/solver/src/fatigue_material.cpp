@@ -20,6 +20,8 @@ FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m
 double FatigueShearMaterialStatus :: giveValue(string code) const {
     if ( ( code.compare("damage") == 0 ) ||  ( code.compare("damageT") == 0 ) ) {
         return damageShear;
+    } else if ( ( code.compare("temp_damage") == 0 ) ||  ( code.compare("temp_damageT") == 0 ) ) {
+        return temp_damageShear;
     } else if ( ( code.compare("crack_sliding") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
         return slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
@@ -226,7 +228,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                 temp_zIso += dLambda;
                 temp_alphaKin += sgn1 * dLambda;
             }
-            temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - temp_damageShear ) * stiffT;
+
+            current_damageShear = (temp_damageShear > damageShear_set_from_the_outside) ? temp_damageShear : damageShear_set_from_the_outside;
+
+            temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - current_damageShear ) * stiffT;
             prev_slip_cur = slip_cur;
             prev_sPi_cur = temp_sPi;
         }
@@ -312,7 +317,7 @@ void FatigueShearMaterialStatus :: update() {
 
     work_tot += dot(temp_slip - slip, ( temp_stressT + stressT ) * 0.5);
 
-    damageShear = temp_damageShear;
+    damageShear = fmax(temp_damageShear, current_damageShear);
     sPi = temp_sPi;
     alphaKin = temp_alphaKin;
     zIso = temp_zIso;
@@ -384,7 +389,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     newIterOn = false;
     bisecOn = false;
 
-    this->coup_dam = false;
+    this->coup_dam = 0.0;
     this->comp_dam = false;
 
     iss.clear(); // clear string stream
@@ -495,6 +500,8 @@ DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial
 double DamagePlasticMaterialStatus :: giveValue(string code) const {
     if ( ( code.compare("damage") == 0 ) || ( code.compare("damageN") == 0 ) ) {
         return damage;
+    } else if ( ( code.compare("temp_damage") == 0 ) || ( code.compare("temp_damageN") == 0 ) ) {
+        return temp_damage;
     } else if ( ( code.compare("crack_opening") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
         return epsN * damage * rbc->giveLength();
@@ -669,11 +676,14 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
             temp_epsNP = epsNP + dLambda * sgn1;
         }
     }
+
+    current_damageNormal = (temp_damage > damageNormal_set_from_the_outside) ? temp_damage : damageNormal_set_from_the_outside;
+
     if ( this->symmetric ) {
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(strain [ 0 ]);
+        stress [ 0 ] = ( 1 - Heaviside * current_damageNormal ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(strain [ 0 ]);
         temp_epsN *= sgn(strain [ 0 ]);
     } else {
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP );
+        stress [ 0 ] = ( 1 - Heaviside * current_damageNormal ) * stiffN * ( temp_epsN - temp_epsNP );
     }
     temp_stressN = stress [ 0 ];
     return stress;
@@ -715,7 +725,7 @@ void DamagePlasticMaterialStatus :: update() {
     prev_stressN = stressN;
     prev_epsN = epsN;
 
-    damage = temp_damage;
+    damage = fmax(temp_damage, current_damageNormal);
     epsN = temp_epsN;
     epsNP = temp_epsNP;
     alphaN = temp_alphaN;
@@ -925,30 +935,31 @@ void FatigueMaterialStatus :: init() {
 Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     Vector stress(strain.size() );
+    double omega_shear, omega_norm, omega_upd;
 
     for ( size_t i = 0; i < strain.size(); i++ ) {
-        if ( i == 0 ) {
-            if ( this->coupled_damage > 0.0 ) {
-                if ( this->coupled_damage == 0.5 ) {
-                    DamagePlasticMaterialStatus :: setDamage( 1 -
-                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("damage") ) *
-                             (1 - DamagePlasticMaterialStatus :: giveValue("damage") ))
-                     );
-                } else {
-                    DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
+        omega_norm  = DamagePlasticMaterialStatus :: giveValue("temp_damage");
+        omega_shear = FatigueShearMaterialStatus :: giveValue("temp_damage");
+        if ( i == 0 ) { // NORMAL  direction
+            if ( (abs(this->coupled_damage) > 0.0) && (omega_norm<omega_shear)) {//influence my normal damage only if it is less than shear damage
+                if ( abs(this->coupled_damage) == 0.7 ) { //mild coupling via geometric average of "health" (1-omega)
+                    omega_upd = 1 - sqrt((1 - omega_shear ) * (1 - omega_norm ));
+                }else if(abs(this->coupled_damage) == 0.5){//mild coupling via arithmetic average of damages
+                    omega_upd = 0.5*( omega_shear + omega_norm);
+                }else {//hard coupling (take shear damage if bigger than normal damage)
+                    omega_upd = omega_shear;
                 }
+                DamagePlasticMaterialStatus :: setDamage(omega_upd);
+                //cout<<"-->"<<omega_upd<<"i.e."<<DamagePlasticMaterialStatus :: giveValue("temp_damage")<<endl;
             }
             stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain, timeStep) [ i ];
-        } else {
-            if ( this->coupled_damage > 0.0 ) {
-                if ( this->coupled_damage == 0.5 ) {
-                    FatigueShearMaterialStatus :: setDamage( 1 -
-                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("damage") ) *
-                             (1 - DamagePlasticMaterialStatus :: giveValue("damage") ))
-                     );
-                } else {
-                    FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
-                }
+        } else { // SHEAR direction
+            if ( (this->coupled_damage > 0.0)  && (omega_shear<omega_norm)) {//influence my shear damage only if it is less than normal damage and coupling _is_positive_ (bidirectional)
+                if     ( this->coupled_damage == 0.7 ){omega_upd = 1 - sqrt((1 - omega_shear) * (1 - omega_norm ));}//mild coupling via geometric average of health
+                else if( this->coupled_damage == 0.5 ){omega_upd = 0.5*( omega_shear + omega_norm);}//mild coupling via arithmetic average of damages
+                else {omega_upd = omega_norm;}
+                FatigueShearMaterialStatus :: setDamage( omega_upd );
+                //cout<<"-->"<<omega_upd<<"i.e."<<FatigueShearMaterialStatus :: giveValue("temp_damage")<<endl;
             }
             stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain, timeStep) [ i ];
         }
@@ -974,10 +985,6 @@ Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
 
 //////////////////////////////////////////////////////////
 void FatigueMaterialStatus :: update() {
-    if ( this->coupled_damage ) {
-        DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
-        FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
-    }
     FatigueShearMaterialStatus :: update();
     DamagePlasticMaterialStatus :: update();
 }

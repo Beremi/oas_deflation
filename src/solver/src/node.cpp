@@ -38,7 +38,7 @@ std :: string Node :: giveLineToSave() const {
 unsigned Node :: giveOrderOfForceCode(string code) const {
     char *p;
     long converted = strtol(code.c_str(), & p, 10);
-    if ( not * p ) {
+    if ( !* p ) {
         return converted;
     } else {
         cerr << name << " error: there is no force corresponding to code " << code << endl;

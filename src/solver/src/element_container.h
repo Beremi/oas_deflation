@@ -45,6 +45,7 @@ public:
     void integrateInertiaForces(const Vector &full_a, Vector &full_f) const;
     Element *giveElement(unsigned const num) const { return elems [ num ]; }
     Element *giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const;
+    unsigned giveElemId(const Element *elem) const;
 
     vector< Element * > :: iterator begin() { return elems.begin(); }
     vector< Element * > :: iterator end() { return elems.end(); }

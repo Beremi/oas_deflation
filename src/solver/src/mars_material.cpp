@@ -205,7 +205,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
         temp_damage = damage;
     }
 
-    //temp_damage = min(temp_damage, 1-1e-10); //dangerous, better switched off
+    temp_damage = min(temp_damage, m->giveMaxDamage()); //dangerous, better switched off
 
     //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
     temp_crackOpening = l2_norm( ( L * damage ) * strain ); //total opening
@@ -327,6 +327,8 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
             iss >> fc;
         } else if ( param.compare("Kc") == 0 ) {
             iss >> Kc;
+        } else if ( param.compare("damage_residuum") == 0 ) {
+            iss >> damage_residuum;
         }
     }
     if ( !bft ) {

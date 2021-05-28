@@ -23,6 +23,9 @@ private:
     Point stressT, temp_stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
+    double damageShear_set_from_the_outside = 0.0;
+    double current_damageShear;
+
     double prev_damageShear, prev_zIso;
     Point prev_sPi, prev_alphaKin, prev_stressT, prev_slip;
 
@@ -41,7 +44,8 @@ private:
 
     void print() const;
 
-    bool coup_dam, comp_dam;
+    double coup_dam;
+    bool comp_dam;
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e, unsigned ipnum);
     virtual ~FatigueShearMaterialStatus() {};
@@ -51,11 +55,11 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
-    bool isDamageCoupled() const { return coup_dam; }
+    double isDamageCoupled() const { return coup_dam; }
 protected:
     void setDamage(const double &new_damage) {
         if ( new_damage > this->temp_damageShear ) {
-            this->temp_damageShear = new_damage;
+            this->damageShear_set_from_the_outside = new_damage;
         }
     }
 };
@@ -71,7 +75,7 @@ private:
     double c, r;  // parameters controling the damage acumullation, c >= 1.0
     double mC, mT;  ///< parameters controling the pressure sensitivity (under Compression or Tension)
     bool use_slip, check_retturn_mapping, analytical_lambda, newIterOn, bisecOn;
-    double coup_dam; 
+    double coup_dam;
     bool comp_dam;
     double comp_thresh = 0.0;
 public:
@@ -117,6 +121,9 @@ private:
     double temp_epsN, temp_damage, temp_epsNP, temp_alphaN, temp_zN, temp_rN; ///<temporary variables
     double temp_stressN, stressN;
 
+    double damageNormal_set_from_the_outside = 0.0;
+    double current_damageNormal;
+
     double strain_displ_multiplier;
 
     double prev_damage, prev_zN, prev_epsNP, prev_alphaN, prev_stressN, prev_epsN;
@@ -141,7 +148,7 @@ public:
 protected:
     void setDamage(const double &new_damage) {
         if ( new_damage > this->temp_damage ) {
-            this->temp_damage = new_damage;
+            this->damageNormal_set_from_the_outside = new_damage;
         }
     }
 };
