@@ -317,7 +317,7 @@ void FatigueShearMaterialStatus :: update() {
 
     work_tot += dot(temp_slip - slip, ( temp_stressT + stressT ) * 0.5);
 
-    damageShear = temp_damageShear;
+    damageShear = fmax(temp_damageShear, current_damageShear);
     sPi = temp_sPi;
     alphaKin = temp_alphaKin;
     zIso = temp_zIso;
@@ -725,7 +725,7 @@ void DamagePlasticMaterialStatus :: update() {
     prev_stressN = stressN;
     prev_epsN = epsN;
 
-    damage = temp_damage;
+    damage = fmax(temp_damage, current_damageNormal);
     epsN = temp_epsN;
     epsNP = temp_epsNP;
     alphaN = temp_alphaN;
