@@ -80,16 +80,39 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     double value;
     giveFileName(step, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
+
+    // first export nodal_stress if wanted
+    string nds = "nodal_stress";
+    vector < Matrix > nodal_stress;
+    if (std :: find(codes.begin(), codes.end(), nds) != codes.end() ) {
+        // reserve space only if nodal stresses should be exported
+        nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim) );
+        // export nodal stresses:
+        ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, this->nodes, this->elems, this->dim);
+    }
+
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             nn = nodes->giveNode(n);
             for ( vector< string > :: const_iterator c = codes.begin(); c != codes.end(); ++c ) {
-                value = nn->giveDoFBasedValue(* c, DoFs);
-                outputfile << value;
-                if ( c != codes.end() - 1 ) {
-                    outputfile << "\t";
+                if ( c->compare(nds) == 0 ) {
+                    vector< double >data;
+                    for ( auto const &s : nodal_stress ) {
+                        data = MatrixToStdVectForParaview(s, dim);
+
+                        for ( auto const &d : data ) {
+                            outputfile << d << '\t';
+                        }
+                    }
+                }
+                else {
+                    value = nn->giveDoFBasedValue(* c, DoFs);
+                    outputfile << value;
+                    if ( c != codes.end() - 1 ) {
+                        outputfile << "\t";
+                    }
                 }
             }
             outputfile << endl;
@@ -590,7 +613,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             iss >> exptype;
             if ( !( exptype.rfind("#", 0) == 0 ) ) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {
-                    TXTNodalExporter *newexp = new TXTNodalExporter(n, dimension);
+                    TXTNodalExporter *newexp = new TXTNodalExporter(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTElementExporter") == 0 ) {
@@ -764,7 +787,7 @@ void ExporterContainer :: appendToAllNames(string app) {
 void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim) {
     // Vector stressXYZ, stress_zero;
     // stress_zero = Vector((double)0, dim);
-    ( void ) reactions; 
+    ( void ) reactions;
 
     unsigned node_id, ni;
     double first;
@@ -823,7 +846,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
 }
 
 
-void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {    
+void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir) {
     // if NodeTypes.empty() then save all nodes
     // TODO finish this, now (for adaptivity) just save path to file with particles
     ( void ) nodes; ( void ) NodeTypes; ( void ) resultDir;
