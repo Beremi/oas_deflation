@@ -194,7 +194,9 @@ if (USE_VTK)
 endif ()
 
 if (USE_EXPRTK)
+    message("-- Adding Exprtk")
     add_definitions (-D__EXPRTK_MODULE)
+    target_compile_definitions (solver PUBLIC -D__EXPRTK_MODULE)
 endif ()
 
 # precompiled headers - no speedup?
