@@ -24,7 +24,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         return result;
     }
 
-    size_t Maxit = b.size() * relmaxit;
+    size_t Maxit = fmax(b.size() * relmaxit, 1);
 
     auto rowsize = A.row_size.size();
     Eigen :: SparseMatrix< double, RowMajor >mat(rowsize, rowsize);
