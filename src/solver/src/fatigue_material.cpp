@@ -301,6 +301,8 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
         }
     }
 
+    this->temp_stress = stress;
+    this->temp_strain = strain;
     return stress;
 }
 
@@ -710,6 +712,8 @@ Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &
             stress [ i ] = stiffT * ( strain [ i ] );
         }
     }
+    this->temp_stress = stress;
+    this->temp_strain = strain;
     return stress;
 }
 
@@ -979,7 +983,10 @@ Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
             stress [ i ] = FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ i ];
         }
     }
-
+    DamagePlasticMaterialStatus :: temp_stress = stress;
+    DamagePlasticMaterialStatus :: temp_strain = strain;
+    FatigueShearMaterialStatus :: temp_stress = stress;
+    FatigueShearMaterialStatus :: temp_strain = strain;
     return stress;
 }
 
@@ -1152,7 +1159,8 @@ Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     for ( unsigned i = 1; i < strain.size(); i++ ) {
         stress [ i ] = ( 1 - temp_damage.getY() ) * m->giveE0() * m->giveAlpha() * strain [ i ];
     }
-
+    this->temp_stress = stress;
+    this->temp_strain = strain;
     return stress;
 }
 
@@ -1377,10 +1385,12 @@ Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strai
 
     stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
     stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.getY();
-    if ( strain.size() > 1 ) {
+    if ( strain.size() > 2 ) {
         stress [ 2 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.getZ();
     }
-    return Vector(0); //TOTO: FIX
+    this->temp_stress = stress;
+    this->temp_strain = strain;
+    return stress; //TOTO: FIX
 }
 
 //////////////////////////////////////////////////////////
