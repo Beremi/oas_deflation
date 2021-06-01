@@ -1322,7 +1322,7 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     size_t nit = 0;
     size_t Maxit;
     double eps = precision;
-    Maxit = b.size() * relmaxit;
+    Maxit = fmax(b.size() * relmaxit, 1);
 
     double bnorm = l2_norm(b);
 
