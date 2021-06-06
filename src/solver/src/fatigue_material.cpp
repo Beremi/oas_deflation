@@ -948,6 +948,11 @@ Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
     for ( size_t i = 1; i < stress.size(); i++ )
             stress [ i ] = FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ i ];
 
+    DamagePlasticMaterialStatus::temp_stress = stress;
+    DamagePlasticMaterialStatus::temp_strain = strain;
+    FatigueShearMaterialStatus::temp_stress = stress;
+    FatigueShearMaterialStatus::temp_strain = strain;
+
     return stress;
 }
 
