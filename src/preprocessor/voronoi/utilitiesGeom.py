@@ -158,7 +158,7 @@ try:
     from point_generators_cython import checkMutDistancesLoops_cython as checkMutDistancesLoops
     print('Using Cython version of point generator - checkMutDistancesLoops.')
 except:
-    print('''Using Python version of generator. To use the Cython version the
+    print('''Using Python version of generator - checkMutDistancesLoops. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
@@ -172,7 +172,7 @@ try:
     from point_generators_cython import checkMutDistancesLoopsPeriodic_cython as checkMutDistancesLoopsPeriodic
     print('Using Cython version of point generator - checkMutDistancesLoopsPeriodic.')
 except:
-    print('''Using Python version of generator. To use the Cython version the
+    print('''Using Python version of generator - checkMutDistancesLoopsPeriodic. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
@@ -251,6 +251,8 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     ####################################################
     #list of vertices, list of beams
     print()
+    start = time.time()
+    vertices_out_set = set()
     for i in range (validRidgeIdxs.size):
         sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
 
@@ -266,9 +268,8 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         vertB = vor.ridge_vertices[validRidgeIdxs[i]][1]
 
         # copying of coordinates of vertices A and B
-        for d in range (dim):
-            vrtxA [d] = vor.vertices[vertA][d]
-            vrtxB [d] = vor.vertices[vertB][d]
+        vrtxA [:dim] = vor.vertices[vertA]
+        vrtxB [:dim] = vor.vertices[vertB]
 
         #copying of original indices of vertices A and B
         vrtxA[dim] = vertA
@@ -280,22 +281,30 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         #duplicity check
         addVrtxA = True
         addVrtxB = True
-        for j in range (len(vertices_out)):
-            if (vertices_out[j][0] ==  vor.vertices[vertA][0] and vertices_out[j][1] ==  vor.vertices[vertA][1]):
-                addVrtxA = False
-            if (vertices_out[j][0] ==  vor.vertices[vertB][0] and vertices_out[j][1] ==  vor.vertices[vertB][1]):
-                addVrtxB = False
+
+        ## SLOWER ALTERNATIVE
+        #vertices_out_arr = np.array(vertices_out)
+        #if vertices_out_arr.shape[0] > 0:
+        #    vertices_out_arr = vertices_out_arr[:, :dim]
+        #    cond = np.all(vertices_out_arr == vor.vertices[vertA], axis=1)
+        #    addVrtxA = ~np.any(cond)
+        #    cond = np.all(vertices_out_arr == vor.vertices[vertB], axis=1)
+        #    addVrtxB = ~np.any(cond)
+        addVrtxA = tuple(vor.vertices[vertA].tolist()) not in vertices_out_set
+        addVrtxB = tuple(vor.vertices[vertB].tolist()) not in vertices_out_set
 
         #adding the vertices into the list of vertices if new
         if (addVrtxA == True):
             verticesIdxDict.update( { vertA : len(vertices_out)  } )
             vrtxA [dim] = len(vertices_out)
             vertices_out.append(vrtxA)
+            vertices_out_set.add(tuple(vrtxA.tolist()))
 
         if (addVrtxB == True):
             verticesIdxDict.update( { vertB : len(vertices_out)  } )
             vrtxB [dim] = len(vertices_out)
             vertices_out.append(vrtxB)
+            vertices_out_set.add(tuple(vrtxB.tolist()))
 
         #ridges
         ########################################################
@@ -353,12 +362,13 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         #adding the ridge into the list of ridges
         ridges_out.append(rdg)
     #
+    print(' - time:', time.time()-start)
     v_count = len (vertices_out)
     vertIdxStart = node_count + len(aux_nodes)
 
-    for i in range (len(ridges_out)):
-        ridges_out[i][3] += vertIdxStart
-        ridges_out[i][4] += vertIdxStart
+    ridges_out = np.array(ridges_out)
+    ridges_out[:, 3] += vertIdxStart
+    ridges_out[:, 4] += vertIdxStart
 
     print('done.')
     sys.stdout.flush()

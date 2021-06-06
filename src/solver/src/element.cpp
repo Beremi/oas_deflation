@@ -201,7 +201,7 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
     double fvalue;
     unsigned dir = vl->giveDirection();
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        fvalue = vl->giveValue(& ip_locs [ i ], time);
+        fvalue = vl->giveValue( inttype->giveIPLocationPointer(i), time);
         for ( unsigned j = 0; j < nDoFs; j++ ) {
             load [ j ] += Hs[i] [ dir ] [ j ] *fvalue *inttype->giveIPWeight(i);
         }
