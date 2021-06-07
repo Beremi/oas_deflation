@@ -5,7 +5,7 @@ class Point(object):
 
     x = 0.
     y = 0.
-    z = 0.
+    z = None
 
     def __init__(self, x, y, z=None):
         super(Point, self).__init__()

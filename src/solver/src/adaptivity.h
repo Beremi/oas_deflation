@@ -362,6 +362,7 @@ private:
 
         this->setMaterialInFineRegions();
         this->readElemStatuses();
+        BaseSolver :: elems->updateStiffnessMatrix(BaseSolver :: K, "secant");
     }
 
 
@@ -417,6 +418,15 @@ private:
             this->nodesToKeep.clear();
 
             if (PRINT_TEST) std::cout << "-------------------->>>>>>>>>>> solve after remesh" << '\n';
+
+            BaseSolver :: dt = BaseSolver :: time - this->time_before_step;
+            BaseSolver :: step --;
+            BaseSolver :: time = this->time_before_step;
+            BaseSolver :: runBeforeEachStep();
+
+            // BaseSolver :: load *= 0.0;
+            // BaseSolver :: ddr *= 0.0;
+
             BaseSolver :: solve();
             if (PRINT_TEST) std::cout << "solution after remesh  done" << '\n';
 
