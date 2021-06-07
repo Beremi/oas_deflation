@@ -13,6 +13,7 @@ private:
     vector< Element * >elems;
     NodeContainer *nodes;
     BCContainer *bconds;
+    MaterialContainer *materials;
     unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const;
@@ -26,7 +27,7 @@ public:
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     // void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
     void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now = 0, const unsigned &step = 0, const bool &saveNodeIds = true) const;
-    void readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool &get_time_from_file = true);
+    void readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool get_time_from_file = true);
     void setFileToLoadStatsFrom(const std :: string &str);
     void init();
     size_t giveSize() const { return elems.size(); }
