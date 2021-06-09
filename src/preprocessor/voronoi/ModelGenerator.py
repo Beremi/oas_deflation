@@ -469,7 +469,7 @@ class Model:
         (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
 
-        
+
     def run_2d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
 
@@ -490,6 +490,15 @@ class Model:
             self.rigidPlatesTrspt = []
             self.govNodesTrspt=[]
             self.govNodesTrsptBC = []
+
+        expansionRingsProps = []
+        expansionRingsProps.append(self.rebarCount)
+        expansionRingsProps.append(self.rebarDepth)
+        expansionRingsProps.append(self.rebarDiameter)
+        expansionRingsProps.append(self.maxLim)
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_corrosionRebar', expansionRingsProps=expansionRingsProps)
+
 
     def run_2d_coupledRVE(self):
         print('2d_coupledRVE')

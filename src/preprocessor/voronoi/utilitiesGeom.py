@@ -2201,7 +2201,7 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
                 centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
                 #f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
                 #f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
-                f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC, centre[0],centre[1], rebarDiameter*1.01 ) )
+                f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC, centre[0],centre[1], rebarDiameter/2*1.01 ) )
 
 
 
