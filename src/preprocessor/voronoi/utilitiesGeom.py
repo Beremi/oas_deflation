@@ -282,6 +282,13 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         addVrtxA = True
         addVrtxB = True
 
+        # OLD - SLOW
+        #for j in range (len(vertices_out)):
+        #    if (vertices_out[j][0] ==  vor.vertices[vertA][0] and vertices_out[j][1] ==  vor.vertices[vertA][1]):
+        #        addVrtxA = False
+        #    if (vertices_out[j][0] ==  vor.vertices[vertB][0] and vertices_out[j][1] ==  vor.vertices[vertB][1]):
+        #        addVrtxB = False
+
         ## SLOWER ALTERNATIVE
         #vertices_out_arr = np.array(vertices_out)
         #if vertices_out_arr.shape[0] > 0:
@@ -298,13 +305,13 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
             verticesIdxDict.update( { vertA : len(vertices_out)  } )
             vrtxA [dim] = len(vertices_out)
             vertices_out.append(vrtxA)
-            vertices_out_set.add(tuple(vrtxA.tolist()))
+            vertices_out_set.add(tuple(vor.vertices[vertA].tolist()))
 
         if (addVrtxB == True):
             verticesIdxDict.update( { vertB : len(vertices_out)  } )
             vrtxB [dim] = len(vertices_out)
             vertices_out.append(vrtxB)
-            vertices_out_set.add(tuple(vrtxB.tolist()))
+            vertices_out_set.add(tuple(vor.vertices[vertB].tolist()))
 
         #ridges
         ########################################################
@@ -363,6 +370,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         ridges_out.append(rdg)
     #
     print(' - time:', time.time()-start)
+    print('XXX', len(vertices_out), len(vertices_out_set))
     v_count = len (vertices_out)
     vertIdxStart = node_count + len(aux_nodes)
 
