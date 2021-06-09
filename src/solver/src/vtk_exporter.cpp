@@ -54,7 +54,7 @@ bool isAddonCellScalarData(const string &var) {
                                           "crack_opening", "crack_sliding",
                                           "stressN", "stressT",
                                           "stressTY", "stressTZ"
-                                          "stressT2", "stressT2"
+                                          "stressT1", "stressT2"
                                           // "strainXYZ", "stressXYZ"
     };
 

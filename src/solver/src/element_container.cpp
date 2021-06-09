@@ -15,6 +15,7 @@ ElementContainer :: ~ElementContainer() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
+    this->materials = matrs;
     size_t origsize = elems.size();
     string line, elemType;
     ifstream inputfile(filename.c_str() );
@@ -181,6 +182,7 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
                     }
                 }
                 outputfile << '\t' << mat_stat->giveLineToSave();
+                outputfile << '\t' << this->giveElement(elem_id)->giveName();  // JK not necessary, but for quick check usefull
             }
         }
         outputfile.close();
@@ -217,7 +219,7 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
 };
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool &get_time_from_file) {
+void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool get_time_from_file) {
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
         unsigned elem_id, stat_id, mat_id, st;
@@ -239,6 +241,9 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                         initial_steps.push_back(st);
                     } else if ( param.compare("matStat") == 0 ) {
                         iss >> elem_id >> stat_id >> mat_id;
+                        // std::cout << "line: " << line << '\n';
+                        // std::cout << "elem name: " << this->giveElement(elem_id)->giveName() << '\n';
+                        this->giveElement(elem_id)->changeMaterial(this->materials->giveMaterial(mat_id));
                         this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
                     }
                 }
@@ -386,7 +391,7 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             }
         }
     }
-    
+
     /*
      * for(size_t i=0; i<K.RowCount; i++){
      *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
@@ -534,4 +539,3 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
     // std::cerr << '\n';
     return nullptr;
 }
-

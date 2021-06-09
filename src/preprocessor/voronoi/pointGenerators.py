@@ -67,7 +67,7 @@ try:
     from point_generators_cython import generateNodesRect_cython as generateNodesRect
     print('Using Cython version of point generator - generateNodesRect.')
 except:
-    print('''Using Python version of generator - generateNodesRect. To use the Cython version the
+    print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
@@ -254,7 +254,7 @@ try:
     from point_generators_cython import generateParticlesRect_cython as generateParticlesRect
     print('Using Cython version of point generator - generateParticlesRect.')
 except:
-    print('''Using Python version of generator - generateParticlesRect. To use the Cython version the
+    print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
@@ -311,7 +311,7 @@ try:
     from point_generators_cython import generateNodesRectPeriodic_cython as generateNodesRectPeriodic
     print('Using Cython version of point generator - generateNodesRectPeriodic.')
 except:
-    print('''Using Python version of generator - generateNodesRectPeriodic. To use the Cython version the
+    print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 #generates random points onto a set 3d line. No closer than minDst
@@ -648,7 +648,7 @@ try:
     from point_generators_cython import generateNodesOrtoTube3dRand_cython as generateNodesOrtoTube3dRand
     print('Using Cython version of point generator - generateNodesOrtoTube3dRand.')
 except:
-    print('''Using Python version of generator - generateNodesOrtoTube3dRand. To use the Cython version the
+    print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
@@ -882,7 +882,7 @@ try:
     from point_generators_cython import generateNodesOrtoCilinder3dRand_cython as generateNodesOrtoCilinder3dRand
     print('Using Cython version of point generator - generateNodesOrtoCilinder3dRand.')
 except:
-    print('''Using Python version of generator - generateNodesOrtoCilinder3dRand. To use the Cython version the
+    print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
@@ -923,7 +923,7 @@ try:
     from point_generators_cython import generateNodesOrtoCylinderSurf3dRand_cython as generateNodesOrtoCilinderSurf3dRand
     print('Using Cython version of point generator - generateNodesOrtoCilinderSurf3dRand.')
 except:
-    print('''Using Python version of generator - generateNodesOrtoCilinderSurf3dRand. To use the Cython version the
+    print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
