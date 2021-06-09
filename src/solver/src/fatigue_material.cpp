@@ -122,7 +122,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
     double sensititvity_param = ( ( stress [ 0 ] < 0.0 ) ? m->giveMC() : m->giveMT() );
 
-    //kill element when excessive tension occur
+    //kill shear element when excessive tension occur
     if ( m->giveTauBar() - sensititvity_param * stress [ 0 ] <= 0 ) {
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
@@ -133,24 +133,15 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     }
 
     double f_trial;
-    double x = 0;
-    double y = 0;
-    double z = 0;
     Point sgn1;
     double dLambda;
     double omega_dot;//rate of shear damage (to be multiplied by lambda and added to current damageShear)
     omega_dot = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
 
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
-        if ( i == 1 ) {
-            y = strain [ i ];
-        } else if ( i == 2 ) {
-            z = strain [ i ];
-        } else {
-            std :: cerr << "should never get here, exit" << '\n';
-            exit(1);
-        }
-    }
+    //load strains from one or two shear directions, ignore normal strain "strain[0]"
+    double x = 0;
+    double y = strain[1];
+    double z = (strain.size() == 3) ? strain[2] : 0; // 3D problem has also generally nonzero second component of shear strain
 
     temp_slip = Point(x, y, z) * strain_slip_multiplier;
     // std::cout << "strain_slip_multiplier = " << strain_slip_multiplier << '\n';
@@ -159,10 +150,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
         // sub-stepping process - long step is cutted in a certain number of substeps
         int num_per_elastic_part = 10;
         double deltaS_full = ( temp_slip - slip ).norm();
-        double elastic_part = 1e6;
+        double elastic_part = 1e6;//TODO co to je?? Problem jednotek? Proc se rozdeleni slipu pocita s touto konstantou a ne na zaklade max elast strainu?
         // double elastic_part = m->giveTauBar();
         // double deltaS_part = 1e-6;
-        double deltaS_part = strain_slip_multiplier * ( elastic_part / m->giveE0() ) / num_per_elastic_part;
+        double deltaS_part = strain_slip_multiplier * ( elastic_part / m->giveE0() ) / num_per_elastic_part;//why 1e6/E0 and not tau_bar/E0 ??
         unsigned divide_by = 1;
         Point slip_increment;
         Point slip_cur = slip;
@@ -176,7 +167,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
         temp_zIso = zIso;
 
         if ( deltaS_full > deltaS_part ) {
-            divide_by = ( deltaS_full / ( deltaS_part ) ) + 1;
+            divide_by = ( deltaS_full /  deltaS_part ) + 1;
             // std::cout << "step divided into " << divide_by << " substeps " << '\n';
         }
         slip_increment = ( temp_slip - slip ) / divide_by;
@@ -189,7 +180,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
             }
 
             //compute trials
-            tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiffT;
+            tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiffT;//are the inelastic strains always positive irrespective the direction of shearing?
 
             f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - (
                                                                                                                          sensititvity_param * stress [ 0 ] ) );
@@ -222,15 +213,12 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                     //increment of shear damage as the derivative of phi wrt thermodyn force
                     omega_dot = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
                 }
-                temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) ); //limited by <0 1)
+                temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) ); //limited by <0,1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
                 temp_zIso += dLambda;
                 temp_alphaKin += sgn1 * dLambda;
             }
-
-            temp_damageShear = (temp_damageShear > damageShear_set_from_the_outside) ? temp_damageShear : damageShear_set_from_the_outside;
-
             temp_stressT = ( slip_cur - temp_sPi ) * ( 1 - temp_damageShear ) * stiffT;
             prev_slip_cur = slip_cur;
             prev_sPi_cur = temp_sPi;
@@ -247,16 +235,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
     // tau trial units are MPa * m in case of slip in absolute values (displacement instead of strain)
 
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
-        if ( i == 1 ) {
-            stress [ i ] = temp_stressT.getY();
-        } else if ( i == 2 ) {
-            stress [ i ] = temp_stressT.getZ();
-        } else {
-            std :: cerr << "should never get here, exit" << '\n';
-            exit(1);
-        }
-    }
+
+    //finally prepare the shear stresses to respond
+    stress[1] = temp_stressT.getY();
+    if (strain.size() == 3) { stress[2] = temp_stressT.getZ(); }//3D problem has two shear stresses
 
     return stress;
 }
@@ -301,6 +283,8 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
         }
     }
 
+    this->temp_stress = stress;
+    this->temp_strain = strain;
     return stress;
 }
 
@@ -390,7 +374,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     bisecOn = false;
 
     this->coup_dam = 0.0;
-    this->comp_dam = false;
+    this->comp_dam = false; //when false, shear damage can grow under compression
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -642,6 +626,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
             }
         }
 
+        //normal dir
         stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - epsNP );
         // apply damage also in shear direction
         for ( unsigned i = 1; i < strain.size(); i++ ) {
@@ -676,9 +661,6 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
             temp_epsNP = epsNP + dLambda * sgn1;
         }
     }
-
-    temp_damage = (temp_damage > damageNormal_set_from_the_outside) ? temp_damage : damageNormal_set_from_the_outside;
-
     if ( this->symmetric ) {
         stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(strain [ 0 ]);
         temp_epsN *= sgn(strain [ 0 ]);
@@ -710,6 +692,8 @@ Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &
             stress [ i ] = stiffT * ( strain [ i ] );
         }
     }
+    this->temp_stress = stress;
+    this->temp_strain = strain;
     return stress;
 }
 
@@ -937,28 +921,14 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep
     Vector stress(strain.size() );
 
     for ( size_t i = 0; i < strain.size(); i++ ) {
-        if ( i == 0 ) {
-            if ( abs(this->coupled_damage) > 0.0 ) {
-                if ( abs(this->coupled_damage) == 0.5 ) {
-                    DamagePlasticMaterialStatus :: setDamage( 1 -
-                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("temp_damage") ) *
-                             (1 - DamagePlasticMaterialStatus :: giveValue("temp_damage") ))
-                     );
-                } else {
-                    DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("temp_damage") );
-                }
+        if ( i == 0 ) {//normal direction (damage plastic material)
+            if ( fabs( this->coupled_damage ) > 0 ) {
+                DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
             }
             stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain, timeStep) [ i ];
-        } else {
-            if ( this->coupled_damage > 0.0 ) {
-                if ( this->coupled_damage == 0.5 ) {
-                    FatigueShearMaterialStatus :: setDamage( 1 -
-                        sqrt((1 - FatigueShearMaterialStatus :: giveValue("temp_damage") ) *
-                             (1 - DamagePlasticMaterialStatus :: giveValue("temp_damage") ))
-                     );
-                } else {
-                    FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("temp_damage") );
-                }
+        } else {//shear directions (FatigueShearMaterial)
+            if ( this->coupled_damage > 0 ) {
+                FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
             }
             stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain, timeStep) [ i ];
         }
@@ -971,19 +941,29 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep
 Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     Vector stress(strain.size() );
 
-    for ( size_t i = 0; i < stress.size(); i++ ) {
-        if ( i == 0 ) {
-            stress [ i ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ i ];
-        } else {
+    //Normal stress
+    stress [ 0 ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ 0 ];
+
+    //Shear stresses (one or two components in 2D or 3D)
+    for ( size_t i = 1; i < stress.size(); i++ )
             stress [ i ] = FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ i ];
-        }
-    }
+
+    DamagePlasticMaterialStatus::temp_stress = stress;
+    DamagePlasticMaterialStatus::temp_strain = strain;
+    FatigueShearMaterialStatus::temp_stress = stress;
+    FatigueShearMaterialStatus::temp_strain = strain;
 
     return stress;
 }
 
 //////////////////////////////////////////////////////////
 void FatigueMaterialStatus :: update() {
+    if ( fabs(this->coupled_damage) > 0 ) {
+        DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
+        if(this->coupled_damage > 0 ){
+            FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
+        }
+    }
     FatigueShearMaterialStatus :: update();
     DamagePlasticMaterialStatus :: update();
 }
@@ -1151,7 +1131,8 @@ Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     for ( unsigned i = 1; i < strain.size(); i++ ) {
         stress [ i ] = ( 1 - temp_damage.getY() ) * m->giveE0() * m->giveAlpha() * strain [ i ];
     }
-
+    this->temp_stress = stress;
+    this->temp_strain = strain;
     return stress;
 }
 
@@ -1376,10 +1357,12 @@ Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strai
 
     stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
     stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.getY();
-    if ( strain.size() > 1 ) {
+    if ( strain.size() > 2 ) {
         stress [ 2 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.getZ();
     }
-    return Vector(0); //TOTO: FIX
+    this->temp_stress = stress;
+    this->temp_strain = strain;
+    return stress; //TOTO: FIX
 }
 
 //////////////////////////////////////////////////////////

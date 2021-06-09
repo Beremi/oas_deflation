@@ -9,7 +9,6 @@
 #include <typeinfo>
 
 //parser for mathematic expressions
-
 #ifdef __EXPRTK_MODULE
 #include "exprtk.hpp"
 

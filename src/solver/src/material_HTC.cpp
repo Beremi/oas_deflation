@@ -26,7 +26,6 @@ void HTCMaterialStatus :: init() {
     HTCMaterial * htc = static_cast< HTCMaterial * > (mat);
     alphac = temp_alphac = htc->giveInitAlphac();
     alphas = temp_alphas = htc->giveInitAlphas();
-    updateMaterialParameters(-1);
 }
 
 //////////////////////////////////////////////////////////
@@ -63,7 +62,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     double betah = 1./( 1.+pow( htc->giveA() - htc->giveA()*h ,htc->giveB()) );
     double Ac, As, alphacdot, alphasdot, old_temp_alphac, old_temp_alphas;
 
-    //central difference method
+    //backward Euler method
     temp_alphac = alphac;    
     double midalphac;
     double error = 1e9;
@@ -77,10 +76,9 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
         error = abs(old_temp_alphac - temp_alphac);
         it ++;
     }
-    temp_alphac = max(min(temp_alphac,1.),0.);
-    midalphac = temp_alphac; //use value a the end of the time step
+    temp_alphac = max(min(temp_alphac,1.),0.);    
 
-    //central difference method
+    //backward Euler method
     temp_alphas = alphas;    
     error = 1e9;
     it = 0;
@@ -88,34 +86,34 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     while ( error > 1e-12 && it<100){
         old_temp_alphas = temp_alphas;
         midalphas = (temp_alphas+alphas)/2.;
-        As = htc->giveAs1() * ( htc->giveAs2()/htc->giveAlphasinf() + midalphas) * (htc->giveAlphasinf() - midalphas) * exp( -htc->giveEtas()*midalphas/htc->giveAlphasinf());  
+        if (htc->giveAlphasinf()>1e-15) As = htc->giveAs1() * ( htc->giveAs2()/htc->giveAlphasinf() + midalphas) * (htc->giveAlphasinf() - midalphas) * exp( -htc->giveEtas()*midalphas/htc->giveAlphasinf());  
+        else As = 0;
         alphasdot = As*exp(-htc->giveEasR()/T); 
         temp_alphas = alphas +  alphasdot*timeStep;
         error = abs(old_temp_alphas - temp_alphas);
         it ++;
     }
     temp_alphas = max(min(temp_alphas,1.),0.);
-    midalphas = temp_alphas; //use value a the end of the time step
-
+    
     double psi = exp ( htc->giveEadR()/htc->giveT0() - htc->giveEadR()/T );
-    double G1 = htc->giveKcvg()*htc->giveC()*midalphac + htc->giveKsvg()*htc->giveS()*midalphas;
-    double K1 = (htc->giveW0() - 0.188*midalphac*htc->giveC() + 0.22*midalphas*htc->giveS() - G1*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) ) )/ (exp( 10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) -1.);
+    double G1 = htc->giveKcvg()*htc->giveC()*temp_alphac + htc->giveKsvg()*htc->giveS()*temp_alphas;
+    double K1 = (htc->giveW0() - 0.188*temp_alphac*htc->giveC() + 0.22*temp_alphas*htc->giveS() - G1*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) ) )/ (exp( 10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) -1.);
 
-    double G1mult = 1. - 1./exp(10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h);
-    double K1mult = exp(10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h) -1.;
+    double G1mult = 1. - 1./exp(10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h);
+    double K1mult = exp(10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h) -1.;
     //double we = G1*G1mult + K1*K1mult;
-    //double wn = htc->giveKappac() * midalphac * htc->giveC();
+    //double wn = htc->giveKappac() * temp_alphac * htc->giveC();
 
     double dG1_dac = htc->giveKcvg()*htc->giveC();
     double dG1_das = htc->giveKsvg()*htc->giveS();
     double dK1_dac = (
-        (exp( 10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) -1.) * (-0.188*htc->giveC() - dG1_dac*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) )  - G1*(-10*exp(-10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) ) )
-        -(-10.*exp( 10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) -1.) * (htc->giveW0() - 0.188*midalphac*htc->giveC() + 0.22*midalphas*htc->giveS() - G1*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) ) )
+        (exp( 10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) -1.) * (-0.188*htc->giveC() - dG1_dac*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) )  - G1*(-10*exp(-10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) ) )
+        -(-10.*exp( 10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) -1.) * (htc->giveW0() - 0.188*temp_alphac*htc->giveC() + 0.22*temp_alphas*htc->giveS() - G1*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) ) )
         )
-        / pow(exp( 10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) -1.,2);
-    double dK1_das = (0.22*htc->giveS()  - dG1_das*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) ))/ (exp( 10*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) -1.);
-    double dG1mult_dac = -10.* h *exp(-10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h);
-    double dK1mult_dac = -10.* h *exp(10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h);
+        / pow(exp( 10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) -1.,2);
+    double dK1_das = (0.22*htc->giveS()  - dG1_das*(1.-exp(-10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) ))/ (exp( 10*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) -1.);
+    double dG1mult_dac = -10.* h *exp(-10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h);
+    double dK1mult_dac = -10.* h *exp(10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h);
 
     double dwe_dac = dG1_dac * G1mult + dK1_dac * K1mult + G1 * dG1mult_dac + K1 * dK1mult_dac;
     double dwe_das = dG1_das * G1mult + dK1_das * K1mult;
@@ -124,7 +122,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     Dh = psi*htc->giveD1()/ (1.+(htc->giveD1()/htc->giveD0()-1.)*pow(1.-h,htc->giveN()));
     qh = dwe_dac* alphacdot + dwe_das * alphasdot + dwn_dac*alphacdot;
     qT = alphacdot*htc->giveC()*htc->giveQcinf() + alphasdot*htc->giveS()*htc->giveQsinf();
-    dwe_dh = G1*( 10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)) * exp(-10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h) + K1*(10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac))*exp(10.*(htc->giveG1()*htc->giveAlphacinf()-midalphac)*h);   
+    dwe_dh = G1*( 10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)) * exp(-10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h) + K1*(10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac))*exp(10.*(htc->giveG1()*htc->giveAlphacinf()-temp_alphac)*h);   
 }
 
 //////////////////////////////////////////////////////////

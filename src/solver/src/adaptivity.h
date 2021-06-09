@@ -117,6 +117,7 @@ private:
     unsigned remeshMaterialId;
 
     std :: vector< unsigned >nodesToKeep;
+    unsigned remesherSeed = 1;
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
@@ -260,10 +261,13 @@ private:
                                   + " " +
                                   std :: to_string(int( this->nodesFine != nullptr ) );
         ;
+        remeshCmd = remeshCmd + " " + std :: to_string(this->remesherSeed);
         // cout << remeshCmd << endl;
         if ( this->remesherLmin != 0 ) {
-            remeshCmd = remeshCmd + " " + std :: to_string(remesherLmin);
+            remeshCmd = remeshCmd + " " + std :: to_string(this->remesherLmin);
         }
+
+
 
         std :: cout << "system cmd " << remeshCmd << '\n';
 
@@ -358,6 +362,7 @@ private:
 
         this->setMaterialInFineRegions();
         this->readElemStatuses();
+        BaseSolver :: elems->updateStiffnessMatrix(BaseSolver :: K, "secant");
     }
 
 
@@ -413,8 +418,17 @@ private:
             this->nodesToKeep.clear();
 
             if (PRINT_TEST) std::cout << "-------------------->>>>>>>>>>> solve after remesh" << '\n';
+
+            BaseSolver :: dt = BaseSolver :: time - this->time_before_step;
+            BaseSolver :: step --;
+            BaseSolver :: time = this->time_before_step;
+            BaseSolver :: runBeforeEachStep();
+
+            // BaseSolver :: load *= 0.0;
+            // BaseSolver :: ddr *= 0.0;
+
             BaseSolver :: solve();
-            std::cout << "soulution done" << '\n';
+            if (PRINT_TEST) std::cout << "solution after remesh  done" << '\n';
 
             // return true;
         }
@@ -460,6 +474,8 @@ private:
                 } else if ( param.compare("prepInput") == 0 ) {
                     iss >> this->prepInput;
                     bmn = true;
+                } else if ( param.compare("remesherSeed") == 0 ) {
+                    iss >> this->remesherSeed;
                 } else if ( param.compare("regionsToSkip") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> path;

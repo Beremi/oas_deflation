@@ -949,8 +949,9 @@ def minDistTrans(lminR, lmin, dst, rR, rT):
 def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                         centersToRemesh, centersPreviouslyRemeshed,
                         radiusRemesh, radiusTransitional,
-                        dim, useExistingFineNodes=False):
-    np.random.seed(seed=1)  # same seed for remesher all the time to be able to replicate the adaptive remesh (test version 26.5.2021)
+                        dim, useExistingFineNodes=False,
+                        remesherSeed=1):
+    np.random.seed(seed=remesherSeed)  # same seed for remesher all the time to be able to replicate the adaptive remesh (test version 26.5.2021)
     PRINT_TEST = False
     print ( 'Generating points to update geometry' )
     if dim == 2:

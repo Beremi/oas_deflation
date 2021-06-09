@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
 
 message(STATUS "project source directory -> ${CMAKE_SOURCE_DIR}")
 message(STATUS "project build directory -> ${CMAKE_BINARY_DIR}")
@@ -194,7 +194,9 @@ if (USE_VTK)
 endif ()
 
 if (USE_EXPRTK)
+    message("-- Adding Exprtk")
     add_definitions (-D__EXPRTK_MODULE)
+    target_compile_definitions (solver PUBLIC -D__EXPRTK_MODULE)
 endif ()
 
 # precompiled headers - no speedup?
