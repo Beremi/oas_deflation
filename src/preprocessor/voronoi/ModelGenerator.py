@@ -469,7 +469,7 @@ class Model:
         (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
 
-        
+
     def run_2d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
 
@@ -591,7 +591,8 @@ class Model:
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
         # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
-        dst_file = os.path.join(self.master_folder,master_file)
+        # get only the filename from master file string https://docs.python.org/3/library/os.path.html#os.path.basename
+        dst_file = os.path.join(self.master_folder, os.path.basename(master_file))
         if not os.path.isfile(dst_file):
             print ('Copying prep_master used...', end='')
             copyfile(master_file, dst_file)
