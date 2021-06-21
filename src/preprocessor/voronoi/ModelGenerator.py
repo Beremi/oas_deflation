@@ -17,6 +17,8 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import utilitiesGeom, utilitiesMech, utilitiesModeling, utilitiesNumeric, voronoi
 from utilitiesGeom import mechBCFile
+from pathlib import Path
+import shutil
 
 # Disable
 def blockPrint():
@@ -85,6 +87,8 @@ class Model:
 
         self.masters = []
 
+        self.defaultFilesFolder = None
+
         #RWTH cylinderRad
         #cylinderHeight 0.1 cylinderRad 0.1 minDist 0.02 notchRadLeft 0.08 notchRadRight 0.05 notchWidth 0.01
         self.notchRadLeft = None
@@ -120,7 +124,8 @@ class Model:
             if (r[i]=='interfaceMinDist'):
                 self.interfaceMinDist = float(r[i+1])
 
-
+            if (r[i]=='defaultFilesFolder'):
+                self.defaultFilesFolder = str(r[i+1])
 
 
             if (r[i]=='printout'):
@@ -247,7 +252,7 @@ class Model:
             np.random.seed(seed=self.seed)
 
         if dirNam is None:
-            self.master_folder = 'power_%.4f_%02d' % (self.minDist, self.seed)
+            self.master_folder = '%s_minDist%.4f_seed%02d' % (self.modelType,self.minDist, self.seed)
         else:
             self.master_folder = dirNam
 
@@ -604,6 +609,12 @@ class Model:
         if not os.path.isfile(dst_file):
             print ('Copying prep_master used...', end='')
             copyfile(master_file, dst_file)
+
+        if self.defaultFilesFolder != None:
+            files=os.listdir(self.defaultFilesFolder )
+            for fname in files:
+                 shutil.copy2(os.path.join(self.defaultFilesFolder ,fname), self.master_folder)
+
 
         print ('done.')
 

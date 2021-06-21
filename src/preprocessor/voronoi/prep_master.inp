@@ -31,7 +31,7 @@
 # roughEdgeDogbone 0 - presne nasamplovane kruznice
 # roughEdgeDogbone 1 - prvky s obema nody v modelu
 # roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-#Model 2d_dogbone dogboneD 1.2 minDist 0.005 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 10 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 10 interLayerThickness 100
+Model 2d_dogbone dogboneD 0.8 minDist 0.005 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 35 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 10 interLayerThickness 50 nr_models 20 defaultFilesFolder dogboneDefault
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 #
@@ -69,7 +69,7 @@
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 0.2 Ysize 0.5 minDist 0.01 notchH 0.5 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 #Model 3d_coupledArtificialCrack Xsize 0.02 Ysize 0.05 Zsize 0.005 minDist 0.0015 notchH 0.6 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
-Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 0 activeMechanics 1 coupled 0 trials 20000
+#Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 0 activeMechanics 1 coupled 0 trials 20000
 #
 #Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.05 minDist 0.006 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth -1
 #

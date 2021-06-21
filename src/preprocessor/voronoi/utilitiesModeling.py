@@ -1493,6 +1493,60 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, 
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions,  govNodes, govNodesMechBC, rigidPlates, node_indices_dogbone
 
 
+
+def create2dDogBoneStrip(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=0, roughEdgeDogbone = 0, roughMinDistCoef=1, interLayerThickness=2):
+    print('Creating 2d dog bone strip....')
+    #
+
+
+    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone, roughEdgeDogbone=roughEdgeDogbone, roughMinDistCoef=roughMinDistCoef, interLayerThickness=interLayerThickness);
+
+    node_coords_all = np.asarray(node_coords_all)
+
+    """
+    fig, ax = plt.subplots()
+    ax.scatter(node_coords_all[:,0], node_coords_all[:,1])
+    ax.scatter(node_coords_all[node_indices_dogbone,0], node_coords_all[node_indices_dogbone,1])
+    plt.show()
+    #"""
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords_all, 2, D)
+    print('done.')
+
+    node_coords = np.copy(node_coords_all)
+    areas = []
+    for i in range (node_count): areas.append(0)
+    areas = np.asarray(areas)
+
+
+    # if SHOW_PLOT:
+    #     fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
+    #     plt.show()
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, -1e-3]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
+    functions.append (fn1)
+
+    ########################################################################
+    ### indirect setting of transportBCs by spatial selection of vertices
+    transportBC_merged = []
+    transportIC_merged = []
+
+
+    return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions,  govNodes, govNodesMechBC, rigidPlates, node_indices_dogbone
+
+
 def create3dDogBone(minDist, trials, D=1.0, excentricity = 20 ):
     print('Creating 3sd dog bone....')
     #
@@ -3904,6 +3958,10 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
 
     node_count = len (node_coords_all)
     return node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates
+
+
+
+
 
 
 
