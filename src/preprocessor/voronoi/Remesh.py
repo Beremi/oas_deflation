@@ -8,6 +8,7 @@ from pointGenerators import generateNodesRemesh
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.spatial as ss
+import utilitiesGeom
 
 SHOW_PLOT = False
 
@@ -85,6 +86,11 @@ if __name__ == '__main__':
                     model.addMaterial(row)
             if (r[0]=='Exporter'):
                 exporters.append(r[1:])
+            if (r[0]=='SpecifiedNode'):
+                node = np.zeros (len(r)-1)
+                for c in range (len(r)-1):
+                    node[c] = float (r[1+c])
+                model.specifiedNodes.append(node)
     f.close()
 
     if model == None:
@@ -142,6 +148,30 @@ if __name__ == '__main__':
 
     # print(rect_lims)
     # exit(0)
+
+    # add specified nodes if in regions to remesh
+    for node in model.specifiedNodes:
+        # print("reading specified node")
+        # distance is True if point is outside
+        # is outside regions already remeshed?
+        if utilitiesGeom.checkMutDistancesLoops(model.dimension,
+                                                    radiusRemesh, cpr,
+                                                    list(node)):
+            # print("is not in already remeshed")
+            # is inside regions to remeshed?
+            if not utilitiesGeom.checkMutDistancesLoops(model.dimension,
+                                                    radiusTransitional,
+                                                    ctr, list(node)):
+                # if using existing fine nodes, append only is in transitional area
+                if not useExistingFineNodes or utilitiesGeom.checkMutDistancesLoops(model.dimension,
+                                                        radiusRemesh,
+                                                        ctr, list(node)):
+                    # print("is in regions to remesh")
+                    node_coords_ini.append(node)
+                    print("appending specified node")
+                    print(node)
+    # empty specified nodes, since they are already appended if necessary
+    model.specifiedNodes = []
 
     node_coords = generateNodesRemesh(node_coords_ini.copy(),
                         trials=model.trials, maxLim=model.maxLim,

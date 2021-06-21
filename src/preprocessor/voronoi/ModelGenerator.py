@@ -605,7 +605,8 @@ class Model:
         limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
 
         # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
-        dst_file = os.path.join(self.master_folder,master_file)
+        # get only the filename from master file string https://docs.python.org/3/library/os.path.html#os.path.basename
+        dst_file = os.path.join(self.master_folder, os.path.basename(master_file))
         if not os.path.isfile(dst_file):
             print ('Copying prep_master used...', end='')
             copyfile(master_file, dst_file)
