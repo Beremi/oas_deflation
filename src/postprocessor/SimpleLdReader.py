@@ -10,7 +10,7 @@ def printAvaiableData(file):
         if header[0]=='#':
             print('%d: %s' %(i,header.split('\t')[i]))
         else:
-            print('No header. Follow your instinct. \nIf there are two columns, use ids 0 and 1.')
+            print('No header. If there are two columns, use ids 0 and 1.')
     return header
 
 if __name__ == '__main__':
