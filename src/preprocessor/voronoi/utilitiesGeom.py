@@ -370,7 +370,6 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         ridges_out.append(rdg)
     #
     print(' - time:', time.time()-start)
-    print('XXX', len(vertices_out), len(vertices_out_set))
     v_count = len (vertices_out)
     vertIdxStart = node_count + len(aux_nodes)
 
