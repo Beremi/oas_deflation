@@ -65,7 +65,14 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         for ( size_t i = 0; i < rowsize; i++ ) {
             cgx0 [ i ] = x0 [ i ];
         }
+
+
+        //JacobiSVD<MatrixXd> svd(cgb);
+        //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
+        //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl; 
+
         ConjugateGradient< SparseMatrix< double >, Lower | Upper >cgK;
+        //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
         cgK.setMaxIterations(Maxit);
         cgK.setTolerance(precision);
 
