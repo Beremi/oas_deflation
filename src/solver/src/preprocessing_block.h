@@ -67,6 +67,30 @@ public:
     vector< double >giveDimensions() const { return PUCsize; };
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Mechanical Periodic Boundary Condition on prism with Voigt's constraint
+class MechanicalPeriodicBCwithVoigtConstraint : public MechanicalPeriodicBC
+{
+protected:
+    virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+    virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
+public:
+    MechanicalPeriodicBCwithVoigtConstraint() { name = "MechanicalPeriodicBCwithVoigtConstraint"; };
+    virtual ~MechanicalPeriodicBCwithVoigtConstraint() {};
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Mechanical Periodic Boundary Condition on prism with Elastic constraint
+class MechanicalPeriodicBCwithElasticConstraint : public MechanicalPeriodicBC
+{
+protected:
+public:
+    MechanicalPeriodicBCwithElasticConstraint() { name = "MechanicalPeriodicBCwithElasticConstraint"; };
+    virtual ~MechanicalPeriodicBCwithElasticConstraint() {};
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

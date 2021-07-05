@@ -347,8 +347,14 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
     //   this->init(this->nodes, this->bconds);
     // }
     ( void ) time_now;
-    CoordinateIndexedSparseMatrix Kold = K;
-    K = X.transpose() * Kold * X;
+    if(X.ColumnCount>0) {
+        CoordinateIndexedSparseMatrix Knew;    
+        Knew = X.transpose() * K * X;
+        K = Knew;
+    } else {
+        map< pair< size_t, size_t >, double >indices11;   
+        K=CoordinateIndexedSparseMatrix(indices11,0,0);
+    }
 }
 
 

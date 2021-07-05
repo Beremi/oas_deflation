@@ -825,51 +825,53 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t
     RowCount = RowCountI;
     ColumnCount = ColumnCountI;
 
-    vector< double >temp_array;
-    vector< unsigned >temp_column_index;
-    vector< unsigned >temp_row_size;
-    map< pair< size_t, size_t >, double > :: const_iterator previous =
-        source.begin();
-    size_t r_s = 0;
-    unsigned k = previous->first.first;
-    // add initail rows
-    while ( k > 0 ) {
-        temp_row_size.push_back(r_s);
-        k--;
-    }
-    for ( map< pair< size_t, size_t >, double > :: const_iterator ij =
-              source.begin(); ij != source.end(); ++ij ) {
-        if ( ij->first.first == previous->first.first ) {
-            r_s++;
-        } else {
+        if(source.size()>0){
+        vector< double >temp_array;
+        vector< unsigned >temp_column_index;
+        vector< unsigned >temp_row_size;
+        map< pair< size_t, size_t >, double > :: const_iterator previous =
+            source.begin();
+        size_t r_s = 0;
+        unsigned k = previous->first.first;
+        // add initail rows
+        while ( k > 0 ) {
             temp_row_size.push_back(r_s);
-            k = ij->first.first - previous->first.first;
-            while ( k > 1 ) {
-                temp_row_size.push_back(0);
-                k--;
-            }
-            r_s = 1;
+            k--;
         }
-        previous = ij;
-        temp_array.push_back(ij->second);
-        temp_column_index.push_back(ij->first.second);
-    }
-    temp_row_size.push_back(r_s);
+        for ( map< pair< size_t, size_t >, double > :: const_iterator ij =
+                  source.begin(); ij != source.end(); ++ij ) {
+            if ( ij->first.first == previous->first.first ) {
+                r_s++;
+            } else {
+                temp_row_size.push_back(r_s);
+                k = ij->first.first - previous->first.first;
+                while ( k > 1 ) {
+                    temp_row_size.push_back(0);
+                    k--;
+                }
+                r_s = 1;
+            }
+            previous = ij;
+            temp_array.push_back(ij->second);
+            temp_column_index.push_back(ij->first.second);
+        }
+        temp_row_size.push_back(r_s);
 
-    column_index.resize(temp_column_index.size() );
-    copy(temp_column_index.begin(), temp_column_index.end(),
-         & column_index [ 0 ]);
+        column_index.resize(temp_column_index.size() );
+        copy(temp_column_index.begin(), temp_column_index.end(),
+             & column_index [ 0 ]);
 
-    array.resize(temp_array.size() );
-    copy(temp_array.begin(), temp_array.end(), & array [ 0 ]);
+        array.resize(temp_array.size() );
+        copy(temp_array.begin(), temp_array.end(), & array [ 0 ]);
 
-    row_size.resize(RowCountI);
-    copy(temp_row_size.begin(), temp_row_size.end(), & row_size [ 0 ]);
+        row_size.resize(RowCountI);
+        copy(temp_row_size.begin(), temp_row_size.end(), & row_size [ 0 ]);
 
-    accumulated_row_size.resize(row_size.size() );
-    accumulated_row_size [ 0 ] = 0;
-    for ( size_t i = 1; i < accumulated_row_size.size(); i++ ) {
-        accumulated_row_size [ i ] += accumulated_row_size [ i - 1 ] + row_size [ i - 1 ];
+        accumulated_row_size.resize(row_size.size() );
+        accumulated_row_size [ 0 ] = 0;
+        for ( size_t i = 1; i < accumulated_row_size.size(); i++ ) {
+            accumulated_row_size [ i ] += accumulated_row_size [ i - 1 ] + row_size [ i - 1 ];
+        }
     }
 }
 
