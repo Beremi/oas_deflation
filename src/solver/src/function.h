@@ -190,6 +190,7 @@ public:
     size_t giveSize() const { return functions.size(); };
     void addFunction(Function *f) { functions.push_back(f); };
     Function *giveFunction(unsigned k);
+    void removeFunction(unsigned i);
 protected:
 };
 

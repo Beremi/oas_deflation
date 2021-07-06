@@ -79,6 +79,13 @@ void Point :: set(const Point *p) {
     z = p->z;
 }
 
+Point& Point :: operator=(const Point &A){
+    x = A.x;
+    y = A.y;
+    z = A.z;
+    return *this;
+}
+
 bool Point :: operator==(const Point &p) const {
     double delta = POINT_TOLERANCE;
     Point a(p);

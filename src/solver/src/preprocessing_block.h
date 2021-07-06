@@ -90,6 +90,7 @@ protected:
 public:
     MechanicalPeriodicBCwithElasticConstraint() { name = "MechanicalPeriodicBCwithElasticConstraint"; };
     virtual ~MechanicalPeriodicBCwithElasticConstraint() {};
+    void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
 };
 
 //////////////////////////////////////////////////////////

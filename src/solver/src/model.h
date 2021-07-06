@@ -37,6 +37,7 @@ public:
     ElementContainer *giveElements() { return & elems; };
     NodeContainer *giveNodes() { return & nodes; };
     Solver *giveSolver() { return solver; };
+    void setSolver(Solver *s) { solver = s; };
     FunctionContainer *giveFunctions() { return & funcs; };
     BCContainer *giveBC() { return & bconds; };
     ConstraintContainer *giveConstraints() { return & constr; };

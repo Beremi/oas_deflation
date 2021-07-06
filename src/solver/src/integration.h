@@ -22,7 +22,7 @@ public:
     unsigned giveNumIP() const { return ip_locs.size(); };
     double giveIPWeight(unsigned i) const { return ip_weights [ i ]; };
     void setIPWeight(unsigned i, double w) { ip_weights [ i ] = w; };
-    void setIPLocation(unsigned i, Point p) { ip_locs [ i ] = p; };
+    void setIPLocation(unsigned i, Point p) { ip_locs [ i ].set(p); };
     Point giveIPLocation(unsigned i) const { return ip_locs [ i ]; };
     Point *giveIPLocationPointer(unsigned i) { return & ( ip_locs [ i ] ); };
 };

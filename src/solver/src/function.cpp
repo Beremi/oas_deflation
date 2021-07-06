@@ -398,3 +398,12 @@ double FunctionContainer :: giveTimeOfNextExtreme(const double &t) const {
     }
     return nextExtreme;
 }
+
+//////////////////////////////////////////////////////////
+void FunctionContainer :: removeFunction(unsigned i){
+    if (i>functions.size()-1){
+        cerr << "FunctionContainer Error: requester function number " << i << " out of " << functions.size() << endl; 
+        exit(1);
+    }
+    functions.erase (functions.begin()+i);    
+}

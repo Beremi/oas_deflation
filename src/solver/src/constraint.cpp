@@ -386,3 +386,13 @@ void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
         }
     }
 }
+
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: removeConstraint(unsigned i){
+    if (i>constraints.size()-1){
+        cerr << "ConstraintContainer Error: requester constraint number " << i << " out of " << constraints.size() << endl; 
+        exit(1);
+    }
+    constraints.erase (constraints.begin()+i);    
+}

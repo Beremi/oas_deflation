@@ -45,7 +45,7 @@ public:
 
     Point givePoint() const { return point; };
     Point *givePointPointer() { return & point; };
-    void setPoint(const Point &P) { point = P; };
+    void setPoint(const Point &P) { point.set(P); };
     void setNumberOfDoFs(const int num) { nDoFs = num; };
     unsigned giveNumberOfDoFs() const { return nDoFs; };
     void setStartingDoF(unsigned num) { firstDoF = num; };

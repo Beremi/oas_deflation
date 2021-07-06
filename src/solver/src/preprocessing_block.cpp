@@ -1,5 +1,6 @@
 #include "preprocessing_block.h"
 #include "geometry.h"
+#include "model.h"
 // #include "misc.h"
 
 
@@ -626,6 +627,129 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
             bcs->addBoundaryCondition(bc);            
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Mechanical Periodic BC with Elastic constraint
+//////////////////////////////////////////////////////////
+void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+    ( void ) e;
+    volume = 1;
+    for ( auto const a : PUCsize ) {
+        volume *= a;
+    }
+
+    unsigned const_num = constrs->giveSize();
+    unsigned funcs_num = funcs->giveSize();
+    unsigned bcs_num = bcs->giveSize();
+    unsigned ex_num = ex->giveSize();
+
+    //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
+    generateNewDoFs(nodes);
+
+    //apply contraints, connect periodic images
+    generateConstraints(nodes, constrs);
+
+    //boundary conditions
+    generateRigidBodyBC(nodes, e, bcs, constrs, funcs);
+
+    //new functions
+    unsigned cfunc = funcs->giveSize()-1;
+    unsigned lfunc = funcs->giveSize();
+    vector< double >x, y;
+    x.resize(2); x[0] = 0; x[1] = 1;
+    y.resize(2); y[0] = 0; y[1] = 1;
+    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+    funcs->addFunction(newf);    
+
+    //set prescribed strain and stress
+    vector< double >bcmults;
+    BoundaryCondition *bc;
+    vector< int >dBC, nBC;
+    unsigned n = nodes->giveNode(initalNodeNum)->giveNumberOfDoFs();
+    dBC.resize(n, cfunc);
+    nBC.resize(n, -1);
+    bcmults.resize(n, 1);
+    bc = new BoundaryCondition(nodes->giveNode(initalNodeNum), dBC, nBC, bcmults);
+    bcs->addBoundaryCondition(bc);
+
+    //compute elastic solutions
+    cout << "*** computing elastic solution on the periodic model" << endl;
+    Solver *oldSolver = masterModel->giveSolver();
+    double dt = 1.;
+    SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
+    linS->setContainers(masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions());
+    linS->setTimeStep(dt);  
+    masterModel->setSolver(linS);  
+    vector<Vector> elastSol(n);
+    for(unsigned i=0; i<n; i++){
+        dBC[i] = lfunc;
+        bc->replaceDirichBC(dBC);
+        masterModel->init();
+        linS->runBeforeEachStep();
+        linS->solve();
+        elastSol[i] = linS->giveTrialDoFValues();
+        dBC[i] = cfunc;
+    }
+
+    //remove added BC
+    for (int p=int(bcs->giveSize())-1; p>=int(bcs_num); p--) {bcs->removeBoundaryCondition(p);}
+    bcs->addBoundaryCondition(bc); // add last BC on strain tensor
+    //remove added constraints (this removes the master-slave constraint) 
+    for (int p=int(constrs->giveSize())-1; p>=int(const_num); p--) constrs->removeConstraint(p);
+    //remove added functions
+    for (int p=int(funcs->giveSize())-1; p>=int(funcs_num); p--) funcs->removeFunction(p);
+
+    //set true BC
+    for ( unsigned i = 0; i < n; i++ ) {
+        if ( strainFunc [ i ] >= 0 ) {
+            dBC [ i ] = strainFunc [ i ];
+        } else dBC[i] = -1; 
+        if ( stressFunc [ i ] >= 0 ) {
+            bcmults [ i ] = volume;
+            nBC [ i ] = stressFunc [ i ];
+        } else nBC[i] = -1;
+        if ( strainFunc [ i ] >= 0 && stressFunc [ i ] >= 0 ) {
+            cerr << "Error in Periodic boundary condition: cannot prescribe both stress and strain for the same direction" << endl;
+        }
+        bc->replaceDirichBC(dBC);
+        bc->replaceNeumannBC(dBC);
+    }
+
+    //create new constraints
+    JointDoF *jd;
+    vector< Node * >vm(n);
+    vector< unsigned >dirs(n);
+    vector< double >mults(n);
+    for(unsigned dir=0; dir<n; dir++){
+        vm  [ dir ] = nodes->giveNode(initalNodeNum);
+        dirs[ dir ] = dir;
+    }
+
+    Node *s = nullptr;
+    unsigned DoFnum = 0;
+    unsigned nodeDoFs;
+    for (unsigned nn=0; nn<nodes->giveSize(); nn++){
+        s = nodes->giveNode(nn);
+        nodeDoFs = s->giveNumberOfDoFs();
+        if ( s->doesMechanics() && ( dynamic_cast< MechDoF * >( s ) == nullptr ) ) {
+            for (unsigned dir=0; dir<nodeDoFs; dir++){
+                for (unsigned k=0; k<n; k++) mults [ k ] = elastSol[k][DoFnum+dir];
+                jd = new JointDoF(s, dir, vm, dirs, mults);
+                constrs->addConstraint(jd);
+            }
+        }
+        DoFnum += nodeDoFs;
+    }
+    
+    masterModel->setSolver(oldSolver);    
+    cout << "*** reseting solver and leaving preprocessing block" << endl;
+
+    //export data
+    generateExporters(nodes, ex);
+
+    cout << "Applied periodic boundary conditions: " << nodes->giveSize() - initalNodeNum << " new DoFs (nodes " << initalNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
 }
 
 

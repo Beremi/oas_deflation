@@ -1,6 +1,7 @@
 #include "solver.h"
 #include "adaptivity.h"
-#define EPS2 1e-12
+#define EPS2displ 1e-20
+#define EPS2press 1e-12
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -562,10 +563,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
             W_kinT += 0.; //TODO: correct kinetic energy
         }
     }
-    //cout << "Energy Error " <<  energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2) << " " << energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2) << endl;
-    * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2) );
-    * displa_error = sqrt(full_ddrM / max(trial_rM, EPS2) + full_ddrT / max(trial_rT, EPS2) );
-    * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2);
+    * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
+    * displa_error = sqrt(full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
+    * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
 }
 
 

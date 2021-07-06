@@ -42,6 +42,7 @@ public:
     void set(double x, double y, double z);
     void set(const Point &p);
     void set(const Point *p);
+    Point& operator=(const Point &A);
 
     bool operator==(const Point &p) const;
     bool operator!=(const Point &p) const;

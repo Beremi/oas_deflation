@@ -39,12 +39,14 @@ public:
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     Vector giveDoFValues() const { return r; }
+    Vector giveTrialDoFValues() const { return trial_r; }
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
     void setTime(double t);
     void setStep(unsigned t) { step = t; };
+    void setTimeStep(double timeStep) { dt = timeStep; };
     void setInitialTimeAndStep(double t, unsigned s) { this->init_time = t; this->init_step = s; }
     virtual void setNextStepTime();
     virtual void runBeforeEachStep();
