@@ -181,7 +181,7 @@ public:
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
 protected:
-  unsigned expansion_master_id;
+    unsigned expansion_master_id;
 };
 
 // rigid plate constraining nodes in holow cylindric

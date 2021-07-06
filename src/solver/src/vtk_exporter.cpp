@@ -34,7 +34,7 @@ void VTKExporter :: readFromLine(istringstream &iss) {
             }
         }
     }
-    codes.resize(cell_data.size() + point_data.size() );
+    codes.resize( cell_data.size() + point_data.size() );
     num = 0;
     for ( auto const &cel : cell_data ) {
         codes [ num++ ] = cel;
@@ -90,7 +90,7 @@ void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *e
         // NOTE do not use this for transport elements
         if ( e->giveName().compare("LTCBEAM") == 0 ) {
             elDoFs = e->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.resize( elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
             }
@@ -137,7 +137,7 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
         // NOTE do not use this for transport elements
         if ( e->giveName().compare("LTCBEAM") == 0 ) {
             elDoFs = e->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.resize( elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
             }
@@ -278,11 +278,11 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     for ( auto const &el : * elems ) {
         for ( auto const &n : el->giveNodes() ) {
             auto res = std :: find(begin(* nodes), end(* nodes), n);
-            points_id.push_back(std :: distance(begin(* nodes), res) ); //todo warning C4244: 'argument': conversion from '__int64' to '_Ty', possible loss of data
+            points_id.push_back( std :: distance(begin(* nodes), res) ); //todo warning C4244: 'argument': conversion from '__int64' to '_Ty', possible loss of data
             // points_id.push_back(n - *nodes->begin());
         }
         all_points_id.push_back(points_id);
-        cell_types.push_back(el->giveVTKCellType() );
+        cell_types.push_back( el->giveVTKCellType() );
         offset += points_id.size();
         offsets.push_back(offset);
         for ( unsigned i = 0; i < cell_data_size; i++ ) {
@@ -296,21 +296,21 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
                 matI = 0;
                 while ( true ) {
                     if ( matI >= materials.size() ) {
-                        materials.push_back(el->giveMaterial()->giveName() );
+                        materials.push_back( el->giveMaterial()->giveName() );
                         break;
-                    } else if ( materials.size() > 0 && materials [ matI ].compare(el->giveMaterial()->giveName() ) == 0 ) {
+                    } else if ( materials.size() > 0 && materials [ matI ].compare( el->giveMaterial()->giveName() ) == 0 ) {
                         break;
                     }
                     matI++;
                 }
                 cell_data [ i ].push_back(matI);
             } else {
-                cell_data [ i ].push_back(el->giveIPValue(codes [ i ], 0) ); // so far for single IP point
+                cell_data [ i ].push_back( el->giveIPValue(codes [ i ], 0) ); // so far for single IP point
             }
         }
         points_id.clear();
     }
-    cell_vect_data.resize(vector_data_code_indeces.size() );
+    cell_vect_data.resize( vector_data_code_indeces.size() );
 
     if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
         // TODO toto je nutný udělat jinak, teď, když jsou tady i jiný sady (vektorový data), není to prostě buď jedno nebo druhý
@@ -323,7 +323,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     }
     if ( export_nodal_stress ) {
         // reserve space only if nodal stresses should be exported
-        nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim) );
+        nodal_stress.resize( nodes->giveSize(), Matrix(this->dim, this->dim) );
         // export nodal stresses:
         ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
     }
@@ -352,7 +352,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
                             );
 
             for ( unsigned i = cell_data_size; i < codes.size(); i++ ) {
-                point_data [ i - cell_data_size ].push_back(n->giveDoFBasedValue(codes [ i ], DoFs) );
+                point_data [ i - cell_data_size ].push_back( n->giveDoFBasedValue(codes [ i ], DoFs) );
             }
         }
         // for (unsigned n; n < nodes->giveSize(); n++) {
@@ -452,7 +452,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 //////////////////////////////////////////////////////////
 // function tahat calculates displacement of any point of rigid body from its rotations and
 Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node *v, const Node *a, const Vector &DoFs, const unsigned &dim) {
-    Matrix A = rbc.giveAMatrix(a->givePoint(), v->givePoint() );
+    Matrix A = rbc.giveAMatrix( a->givePoint(), v->givePoint() );
 
     unsigned DofsPerNode = ( dim - 1 ) * 3;
     Matrix U(DofsPerNode, 1);
@@ -474,7 +474,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
     char buffer [ 100 ];
     // Point P;
     // Element *ee;
-    (void) reactions;
+    ( void ) reactions;
 
     vector< Point >all_vertices_twice; // because the vertices are needed twice (on each side of the contact)
     vector< Point >vertices_displ; // displaceemnt of the contact
@@ -492,17 +492,17 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
             // Particle *part = static_cast< Particle * >( n );
             auto nod_id_ptr = std :: find(begin(* nodes), end(* nodes), n);
             for ( auto const &v : rbc->giveVertices() ) {
-                all_vertices_twice.push_back(v->givePoint() );
+                all_vertices_twice.push_back( v->givePoint() );
                 points_id.push_back(nodes->giveSize() + all_vertices_twice.size() - 1);
-                vertices_displ.push_back(calculateVertexDisplacement(* rbc, v, n, DoFs, this->dim) );
+                vertices_displ.push_back( calculateVertexDisplacement(* rbc, v, n, DoFs, this->dim) );
             }
-            points_id.push_back(std :: distance(begin(* nodes), nod_id_ptr) );
-            node_id.push_back(std :: distance(begin(* nodes), nod_id_ptr) );
+            points_id.push_back( std :: distance(begin(* nodes), nod_id_ptr) );
+            node_id.push_back( std :: distance(begin(* nodes), nod_id_ptr) );
             all_points_id.push_back(points_id);
             cell_types.push_back(points_id.size() * 2 - 1); // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
             offset += points_id.size();
             offsets.push_back(offset);
-            damage.push_back(el->giveValue("damage") );
+            damage.push_back( el->giveValue("damage") );
             points_id.clear();
         }
     }
@@ -524,10 +524,10 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
         outputfile << "<Points>" << '\n';
         outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
         for ( auto const &n : * nodes ) {
-            displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
-                                  n->giveDoFBasedValue("uy", DoFs),
-                                  dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
-                                  ) ); // for 2D this DOF stays for rotation
+            displ.push_back( Point(n->giveDoFBasedValue("ux", DoFs),
+                                   n->giveDoFBasedValue("uy", DoFs),
+                                   dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
+                                   ) ); // for 2D this DOF stays for rotation
             outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t" << n->givePoint().getZ() << '\n';
         }
         for ( auto const &p : all_vertices_twice ) {
@@ -646,9 +646,9 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             auto nod_id_ptr = std :: find(begin(* nodes), end(* nodes), n);
             node_id_i = std :: distance(begin(* nodes), nod_id_ptr);// todo warning C4244: '=': conversion from '__int64' to 'unsigned int', possible loss of data
             for ( auto const &v : rbc->giveVertices() ) {
-                all_vertices_twice.push_back(v->givePoint() );
+                all_vertices_twice.push_back( v->givePoint() );
                 points_id.push_back(nodes->giveSize() + all_vertices_twice.size() - 1); //tofo warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
-                vertices_displ.push_back(calculateVertexDisplacement(* rbc, v, n, DoFs, this->dim) );
+                vertices_displ.push_back( calculateVertexDisplacement(* rbc, v, n, DoFs, this->dim) );
                 if ( export_nodal_stress ) {
                     vertex_correponding_node_id.push_back(node_id_i);
                 }
@@ -656,7 +656,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             // points_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
             node_id.push_back(node_id_i);
             all_points_id.push_back(points_id);
-            cell_types.push_back( ( points_id.size() > 2 ) ? 7 : points_id.size() * 2 - 1 );
+            cell_types.push_back( ( points_id.size() > 2 ) ? 7 : points_id.size() * 2 - 1);
             // cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
             offset += points_id.size();
             offsets.push_back(offset);
@@ -668,13 +668,13 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                     vector_data_code_indeces.push_back(i);
                     continue;
                 } else {
-                    cell_data [ i ].push_back(el->giveIPValue(codes [ i ], 0) ); // so far for single IP point
+                    cell_data [ i ].push_back( el->giveIPValue(codes [ i ], 0) ); // so far for single IP point
                 }
             }
             points_id.clear();
         }
     }
-    cell_vect_data.resize(vector_data_code_indeces.size() );
+    cell_vect_data.resize( vector_data_code_indeces.size() );
 
     if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
         return i == true;
@@ -686,7 +686,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     }
     if ( export_nodal_stress ) {
         // reserve space only if nodal stresses should be exported
-        nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim) );
+        nodal_stress.resize( nodes->giveSize(), Matrix(this->dim, this->dim) );
         // export nodal stresses:
         ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
     }
@@ -714,9 +714,9 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         outputfile << "<Points>" << '\n';
         outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
         for ( auto const &n : * nodes ) {
-            displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
-                                  n->giveDoFBasedValue("uy", DoFs),
-                                  0) ); // for 2D this DOF stays for rotation
+            displ.push_back( Point(n->giveDoFBasedValue("ux", DoFs),
+                                   n->giveDoFBasedValue("uy", DoFs),
+                                   0) ); // for 2D this DOF stays for rotation
             outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t" << n->givePoint().getZ() << '\n';
         }
         for ( auto const &p : all_vertices_twice ) {

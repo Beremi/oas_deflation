@@ -16,7 +16,7 @@ Point triNormal3D(const Point *a, const Point *b, const Point *c) { //points
 
 //////////////////////////////////////////////////////////
 double triArea3D(const Point *a, const Point *b, const Point *c) { //points
-    return abs(0.5 * pow(pow( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ), 2 ) + pow( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ), 2 ) + pow( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ), 2 ), 0.5) );
+    return abs( 0.5 * pow(pow( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ), 2) + pow( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ), 2) + pow( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ), 2), 0.5) );
 }
 
 //////////////////////////////////////////////////////////
@@ -63,11 +63,11 @@ void TranspPolygonal :: sort2D() {
     angles.resize(nnodes);
     for ( unsigned i = 0; i < nnodes; i++ ) {
         angles [ i ].second = i;
-        angles [ i ].first = atan2(nodes [ i ]->givePoint().getY() - cpoint.getY(), nodes [ i ]->givePoint().getX() - cpoint.getX() );
+        angles [ i ].first = atan2( nodes [ i ]->givePoint().getY() - cpoint.getY(), nodes [ i ]->givePoint().getX() - cpoint.getX() );
     }
 
     //sort to have counterclockwise direction
-    sort(angles.begin(), angles.end() );
+    sort( angles.begin(), angles.end() );
     vector< Node * >newnodes;
     newnodes.resize(nnodes);
     for ( unsigned i = 0; i < nnodes; i++ ) {
@@ -107,7 +107,7 @@ void TranspPolygonal :: WachspressShapeF(const Point *x, Vector &phi) const {
     Vector h(nnodes);
     Point oldNormal = normals [ nnodes - 1 ];
     for ( unsigned i = 0; i < nnodes; i++ ) {
-        h [ i ] = abs(dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - * x, normals [ i ]) );
+        h [ i ] = abs( dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - * x, normals [ i ]) );
         phi [ i ] = abs(oldNormal.x * normals [ i ].y - oldNormal.y * normals [ i ].x);
         oldNormal = normals [ i ];
     }
@@ -129,7 +129,7 @@ double TranspPolygonal :: WachspressShapeFGrad(const Point *x, Matrix &phiGrad) 
 
     Vector h(nnodes);
     for ( unsigned i = 0; i < nnodes; i++ ) {
-        h [ i ] = abs(dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - * x, normals [ i ]) );
+        h [ i ] = abs( dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - * x, normals [ i ]) );
     }
     unsigned oldi = nnodes - 1;
     Vector phiR(2);
@@ -227,7 +227,7 @@ void TranspPolygonal :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix TranspPolygonal :: giveBMatrix(const Point *x) const {
-    Matrix B(ndim, nodes.size() );
+    Matrix B( ndim, nodes.size() );
     shapeFGrad(x, B);
     return B;
 }
@@ -354,7 +354,7 @@ Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
     Matrix M = TranspPolygonal :: giveDampingMatrix();
     double cap = 0;
     for ( size_t i = 0; i < ip_weights.size(); i++ ) {
-        cap += ip_weights [ i ] * stats [ i ]->giveDampingTensor()[0][0];
+        cap += ip_weights [ i ] * stats [ i ]->giveDampingTensor() [ 0 ] [ 0 ];
     }
     cap /= volume;
 
@@ -392,17 +392,17 @@ TranspCondensedPolygonal :: TranspCondensedPolygonal(const unsigned dim) : Trans
 //////////////////////////////////////////////////////////
 void TranspCondensedPolygonal :: fullShapeF(const Point *x, Vector &phi) const {
     unsigned face = findFaceNumber(* x);
-    double tarea = triArea2D(centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
-    phi [ faces [ face ] [ 1 ] ] = triArea2D(* x, centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint() ) / tarea;
+    double tarea = triArea2D( centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
+    phi [ faces [ face ] [ 1 ] ] = triArea2D( * x, centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint() ) / tarea;
     phi [ faces [ face ] [ 0 ] ] = triArea2D(* x, nodes [ faces [ face ] [ 1 ] ]->givePoint(), centroid) / tarea;
-    phi [ nnodes ] = triArea2D(* x, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() ) / tarea;
+    phi [ nnodes ] = triArea2D( * x, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() ) / tarea;
 }
 
 //////////////////////////////////////////////////////////
 double TranspCondensedPolygonal :: fullShapeFGrad(const Point *x, Matrix &phiGrad) const {
     unsigned face = findFaceNumber(* x);
     phiGrad *= 0.;
-    double tarea = triArea2D(centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
+    double tarea = triArea2D( centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
     phiGrad [ 0 ] [ faces [ face ] [ 1 ] ] = 0.5 * ( centroid.getY() - nodes [ faces [ face ] [ 0 ] ]->givePoint().getY() ) / tarea;
     phiGrad [ 1 ] [ faces [ face ] [ 1 ] ] = 0.5 * ( nodes [ faces [ face ] [ 0 ] ]->givePoint().getX() - centroid.getX() ) / tarea;
     phiGrad [ 0 ] [ faces [ face ] [ 0 ] ] = 0.5 * ( nodes [ faces [ face ] [ 1 ] ]->givePoint().getY() - centroid.getY() ) / tarea;
@@ -414,7 +414,7 @@ double TranspCondensedPolygonal :: fullShapeFGrad(const Point *x, Matrix &phiGra
 
 //////////////////////////////////////////////////////////
 unsigned TranspCondensedPolygonal :: findFaceNumber(Point x) const {
-    double alpha = atan2(x.getY() - centroid.getY(), x.getX() - centroid.getX() );
+    double alpha = atan2( x.getY() - centroid.getY(), x.getX() - centroid.getX() );
     double a, b;
     unsigned face;
     for ( face = 0; face < nnodes; face++ ) {
@@ -459,7 +459,7 @@ void TranspCondensedPolygonal :: init() {
     sort2D();
     angles.resize(nnodes);
     for ( unsigned i = 0; i < nnodes; i++ ) {
-        angles [ i ] = atan2(nodes [ i ]->givePoint().getY() - centroid.getY(), nodes [ i ]->givePoint().getX() - centroid.getX() );
+        angles [ i ] = atan2( nodes [ i ]->givePoint().getY() - centroid.getY(), nodes [ i ]->givePoint().getX() - centroid.getX() );
     }
 
     TranspPolygonal :: init(); //calling base class method;

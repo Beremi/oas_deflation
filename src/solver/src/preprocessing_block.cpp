@@ -6,10 +6,10 @@
 
 std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {
     std :: vector< double >vect;
-    vect.push_back(p.getX() );
-    vect.push_back(p.getY() );
+    vect.push_back( p.getX() );
+    vect.push_back( p.getY() );
     if ( dim == 3 ) {
-        vect.push_back(p.getZ() );
+        vect.push_back( p.getZ() );
     }
     return vect;
 }
@@ -28,7 +28,7 @@ void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
     initalNodeNum = nodes->giveSize();
-    mn = new MechDoF(3 * ( dim - 1 ) );
+    mn = new MechDoF( 3 * ( dim - 1 ) );
     nodes->addNode(mn);
 }
 
@@ -242,7 +242,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() ); //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize( m->giveNumberOfDoFs(), funcs->giveSize() ); //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -259,7 +259,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
 
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             if ( nodes->giveNode(n)->doesMechanics() && ( dynamic_cast< MechDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-                vm.push_back(nodes->giveNode(n) );
+                vm.push_back( nodes->giveNode(n) );
             }
         }
         if ( vm.size() > 0 ) {
@@ -270,7 +270,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
             MechDoF *pn = new MechDoF(nDoFs);
             nodes->addNode(pn);
 
-            vector< unsigned >dirs(vm.size() );
+            vector< unsigned >dirs( vm.size() );
 
             for ( unsigned vi = 0; vi < nDoFs; vi++ ) {
                 fill(dirs.begin(), dirs.end(), vi);
@@ -472,10 +472,9 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
     vector< double >mults;
     Node *s = nullptr;
     Point diff;
-    for (unsigned n=0; n<nodes->giveSize(); n++){
+    for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
         s = nodes->giveNode(n);
         if ( s->doesMechanics() && ( dynamic_cast< MechDoF * >( s ) == nullptr ) ) {
-
             //connect translations
             diff = s->givePoint();
 
@@ -590,6 +589,9 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
 
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
+    ( void ) elems;
+    ( void ) constrs;
+
     //all rotations are zero
 
     //add constant function
@@ -601,30 +603,33 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
 
     Node *node;
     vector< int >dBC, nBC;
-    if (dim==2){
+    if ( dim == 2 ) {
         dBC.resize(3);
         nBC.resize(3);
-        for(unsigned i=0; i<3; i++){
-            dBC[i] = -1;
-            nBC[i] = -1;
+        for ( unsigned i = 0; i < 3; i++ ) {
+            dBC [ i ] = -1;
+            nBC [ i ] = -1;
         }
-        dBC[2] = funcs->giveSize()-1; //rotation
-    }else if(dim==3){
+        dBC [ 2 ] = funcs->giveSize() - 1; //rotation
+    } else if ( dim == 3 )       {
         dBC.resize(6);
         nBC.resize(6);
-        for(unsigned i=0; i<6; i++){
-            if (i<3) dBC[i] = -1;
-            else dBC[i] = funcs->giveSize()-1; //rotations
-            nBC[i] = -1;
+        for ( unsigned i = 0; i < 6; i++ ) {
+            if ( i < 3 ) {
+                dBC [ i ] = -1;
+            } else {
+                dBC [ i ] = funcs->giveSize() - 1; //rotations
+            }
+            nBC [ i ] = -1;
         }
     }
 
     BoundaryCondition *bc;
-    for (unsigned n=0; n<nodes->giveSize(); n++){
+    for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
         node = nodes->giveNode(n);
-        if (dynamic_cast< Particle * >( node ) != nullptr ){
-            bc = new BoundaryCondition(node, dBC, nBC);            
-            bcs->addBoundaryCondition(bc);            
+        if ( dynamic_cast< Particle * >( node ) != nullptr ) {
+            bc = new BoundaryCondition(node, dBC, nBC);
+            bcs->addBoundaryCondition(bc);
         }
     }
 }
@@ -655,13 +660,17 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     generateRigidBodyBC(nodes, e, bcs, constrs, funcs);
 
     //new functions
-    unsigned cfunc = funcs->giveSize()-1;
+    unsigned cfunc = funcs->giveSize() - 1;
     unsigned lfunc = funcs->giveSize();
     vector< double >x, y;
-    x.resize(2); x[0] = 0; x[1] = 1;
-    y.resize(2); y[0] = 0; y[1] = 1;
+    x.resize(2);
+    x [ 0 ] = 0;
+    x [ 1 ] = 1;
+    y.resize(2);
+    y [ 0 ] = 0;
+    y [ 1 ] = 1;
     PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
-    funcs->addFunction(newf);    
+    funcs->addFunction(newf);
 
     //set prescribed strain and stress
     vector< double >bcmults;
@@ -679,37 +688,47 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     Solver *oldSolver = masterModel->giveSolver();
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
-    linS->setContainers(masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions());
-    linS->setTimeStep(dt);  
-    masterModel->setSolver(linS);  
-    vector<Vector> elastSol(n);
-    for(unsigned i=0; i<n; i++){
-        dBC[i] = lfunc;
+    linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions() );
+    linS->setTimeStep(dt);
+    masterModel->setSolver(linS);
+    vector< Vector >elastSol(n);
+    for ( unsigned i = 0; i < n; i++ ) {
+        dBC [ i ] = lfunc;
         bc->replaceDirichBC(dBC);
         masterModel->init();
         linS->runBeforeEachStep();
         linS->solve();
-        elastSol[i] = linS->giveTrialDoFValues();
-        dBC[i] = cfunc;
+        elastSol [ i ] = linS->giveTrialDoFValues();
+        dBC [ i ] = cfunc;
     }
 
     //remove added BC
-    for (int p=int(bcs->giveSize())-1; p>=int(bcs_num); p--) {bcs->removeBoundaryCondition(p);}
+    for ( int p = int( bcs->giveSize() ) - 1; p >= int( bcs_num ); p-- ) {
+        bcs->removeBoundaryCondition(p);
+    }
     bcs->addBoundaryCondition(bc); // add last BC on strain tensor
-    //remove added constraints (this removes the master-slave constraint) 
-    for (int p=int(constrs->giveSize())-1; p>=int(const_num); p--) constrs->removeConstraint(p);
+    //remove added constraints (this removes the master-slave constraint)
+    for ( int p = int( constrs->giveSize() ) - 1; p >= int( const_num ); p-- ) {
+        constrs->removeConstraint(p);
+    }
     //remove added functions
-    for (int p=int(funcs->giveSize())-1; p>=int(funcs_num); p--) funcs->removeFunction(p);
+    for ( int p = int( funcs->giveSize() ) - 1; p >= int( funcs_num ); p-- ) {
+        funcs->removeFunction(p);
+    }
 
     //set true BC
     for ( unsigned i = 0; i < n; i++ ) {
         if ( strainFunc [ i ] >= 0 ) {
             dBC [ i ] = strainFunc [ i ];
-        } else dBC[i] = -1; 
+        } else {
+            dBC [ i ] = -1;
+        }
         if ( stressFunc [ i ] >= 0 ) {
             bcmults [ i ] = volume;
             nBC [ i ] = stressFunc [ i ];
-        } else nBC[i] = -1;
+        } else {
+            nBC [ i ] = -1;
+        }
         if ( strainFunc [ i ] >= 0 && stressFunc [ i ] >= 0 ) {
             cerr << "Error in Periodic boundary condition: cannot prescribe both stress and strain for the same direction" << endl;
         }
@@ -722,28 +741,30 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     vector< Node * >vm(n);
     vector< unsigned >dirs(n);
     vector< double >mults(n);
-    for(unsigned dir=0; dir<n; dir++){
+    for ( unsigned dir = 0; dir < n; dir++ ) {
         vm  [ dir ] = nodes->giveNode(initalNodeNum);
-        dirs[ dir ] = dir;
+        dirs [ dir ] = dir;
     }
 
     Node *s = nullptr;
     unsigned DoFnum = 0;
     unsigned nodeDoFs;
-    for (unsigned nn=0; nn<nodes->giveSize(); nn++){
+    for ( unsigned nn = 0; nn < nodes->giveSize(); nn++ ) {
         s = nodes->giveNode(nn);
         nodeDoFs = s->giveNumberOfDoFs();
         if ( s->doesMechanics() && ( dynamic_cast< MechDoF * >( s ) == nullptr ) ) {
-            for (unsigned dir=0; dir<nodeDoFs; dir++){
-                for (unsigned k=0; k<n; k++) mults [ k ] = elastSol[k][DoFnum+dir];
+            for ( unsigned dir = 0; dir < nodeDoFs; dir++ ) {
+                for ( unsigned k = 0; k < n; k++ ) {
+                    mults [ k ] = elastSol [ k ] [ DoFnum + dir ];
+                }
                 jd = new JointDoF(s, dir, vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
         }
         DoFnum += nodeDoFs;
     }
-    
-    masterModel->setSolver(oldSolver);    
+
+    masterModel->setSolver(oldSolver);
     cout << "*** reseting solver and leaving preprocessing block" << endl;
 
     //export data
@@ -915,7 +936,7 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() ); //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize( m->giveNumberOfDoFs(), funcs->giveSize() ); //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -931,14 +952,14 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         vector< Node * >vm;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-                vm.push_back(nodes->giveNode(n) );
+                vm.push_back( nodes->giveNode(n) );
             }
         }
         if ( vm.size() > 0 ) {
             TrsDoF *tn = new TrsDoF(1);
             nodes->addNode(tn);
 
-            vector< unsigned >dirs(vm.size() );
+            vector< unsigned >dirs( vm.size() );
             va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
             constrs->addConstraint(va);
 
@@ -991,7 +1012,7 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
 
 void RigidPlate :: checkMechTransport(Node *master) {
     // in case of rigid plate, master is a virtual virtual node and not a physical particle or
-    master->setName(master->giveName().append("-virtual") );
+    master->setName( master->giveName().append("-virtual") );
 
     if ( dynamic_cast< MechNode * >( master ) ) {
         if ( master->giveNumberOfDoFs() != ( 3 * ( this->dim - 1 ) ) ) {
@@ -1146,7 +1167,7 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
 
 void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
     RingRigidPlate :: readFromLine(iss, d);
-    if ( typeid(this) != typeid(ExpansionRing) ) {
+    if ( typeid( this ) != typeid( ExpansionRing ) ) {
         // do not perform following for derived classes
         return;
     }
@@ -1199,7 +1220,7 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
                 if ( nod == master ) {
                     continue;
                 }
-                connectSlaveMasterExpansion(constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
+                connectSlaveMasterExpansion( constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
             }
         }
     }
@@ -1208,7 +1229,7 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
 
 void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
     RingRigidPlate :: readFromLine(iss, d);
-    if ( typeid(this) != typeid(ExpansionRing) ) {
+    if ( typeid( this ) != typeid( ExpansionRing ) ) {
         // do not perform following for derived classes
         return;
     }
@@ -1304,6 +1325,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     bool slave_used = false;
 
     double l_i;
+    ( void ) l_i;           //It is used later but compiler still says it is not. Void is used to prevent warning.
     Point n_i;
 
     vector< Node * >masterNodes;
@@ -1311,7 +1333,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     vector< unsigned >directions;
 
     std :: vector< double >n_vect;
-    double slave_dir_vect_value;
+    double slave_dir_vect_value = 0;
 
     // n_vect_slave uložit dopředu
     // dělit všechno n_vect_slave dir
@@ -1320,7 +1342,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
 
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
-        if ( nod->giveName().compare("Particle") != 0){
+        if ( nod->giveName().compare("Particle") != 0 ) {
             continue;
         }
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
@@ -1337,21 +1359,21 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
                 // std::cout << "dim = " << this->dim << '\n';
                 n_vect = PointToStdVector(n_i, this->dim);
                 if ( slave_used ) {
-                    for ( unsigned i = 0; i < this->dim; i++ ){
+                    for ( unsigned i = 0; i < this->dim; i++ ) {
                         // std::cout << "i = " << i << ", num_nodes = " << num_nodes << '\n';
                         masterNodes.push_back(nod);
                         directions.push_back(i);
-                        multipliers.push_back(- n_vect[ i ]);
+                        multipliers.push_back(-n_vect [ i ]);
                     }
                 } else {
                     // first node is taken as a slave
                     slave = nod;
-                    if ( * std :: max_element(n_vect.begin(), n_vect.end()) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() )) ) {
-                        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+                    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
+                        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
                     } else {
-                        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+                        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
                     }
-                    slave_dir_vect_value = n_vect[slave_dir];
+                    slave_dir_vect_value = n_vect [ slave_dir ];
                     for ( unsigned i = 0; i < this->dim; i++ ) {
                         if ( i != slave_dir ) {
                             // multiplying self other DoFs
@@ -1367,13 +1389,13 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     }
 
     // adding master DoF governing the expansion
-    multipliers.push_back(double(num_nodes) * this->r_outer);
+    multipliers.push_back(double( num_nodes ) * this->r_outer);
     masterNodes.push_back(expMaster);
     directions.push_back(0);
 
     if ( !masterNodes.empty() ) {
         for ( unsigned j = 0; j < multipliers.size(); j++ ) {
-            multipliers[ j ] /= slave_dir_vect_value;
+            multipliers [ j ] /= slave_dir_vect_value;
         }
         JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers);
         constrs->addConstraint(newJD);
@@ -1414,7 +1436,7 @@ void PBlockContainer :: apply() {
 void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
     unsigned origsize = blocks.size(); //todo: warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of dat
     string line, ftype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -1541,7 +1563,7 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
         // for transport nodes, only ones are in tableOfMultipliers
         if ( !trsp ) {
-            if ( containsChar(which,'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
+            if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
                 // std::cout << "fixed in x dir" << '\n';
             } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
                 // std::cout << "fixed in y dir" << '\n';
@@ -1594,10 +1616,10 @@ void connectSlaveMasterExpansionFLoad(ConstraintContainer *constrs, Node *slave,
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir;
-    if ( * std :: max_element(n_vect.begin(), n_vect.end()) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() )) ) {
-        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
+        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
     } else {
-        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
     }
 
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -1673,10 +1695,10 @@ void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir;
-    if ( * std :: max_element(n_vect.begin(), n_vect.end()) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() )) ) {
-        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
+        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
     } else {
-        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
     }
 
     for ( unsigned i = 0; i < ndim; i++ ) {

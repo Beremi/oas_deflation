@@ -20,7 +20,7 @@ RVEMaterialStatus :: ~RVEMaterialStatus() {
 
 //////////////////////////////////////////////////////////
 void RVEMaterialStatus :: init() {
-    RVE->readFromFile(inputfile.string() );
+    RVE->readFromFile( inputfile.string() );
     //here the structre of model initialization should be coppied
     //we needed to insert volumetric average generation after applying preprocessing block, otherwise constraints from preprocessing block would not be active
     //therefore, preprocessing blocks are now called in reader instead of model initialization
@@ -31,7 +31,7 @@ void RVEMaterialStatus :: init() {
 
     stringstream appendname;
     appendname << "_" << std :: setfill('0') << std :: setw(4) << element->giveID() << "_" << std :: setw(2) << idx;
-    RVE->giveExporters()->appendToAllNames(appendname.str() );
+    RVE->giveExporters()->appendToAllNames( appendname.str() );
 
     ndim = RVE->giveDimension();
 }
@@ -41,7 +41,7 @@ void RVEMaterialStatus :: update() {
     Solver *solver = RVE->giveSolver();
     Solver *masterSolver = masterModel->giveSolver();
     solver->runAfterEachStep();   //update material statuses
-    RVE->giveExporters()->exportData(masterSolver->giveStepNumber(), masterSolver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), masterSolver->isTerminated() );
+    RVE->giveExporters()->exportData( masterSolver->giveStepNumber(), masterSolver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), masterSolver->isTerminated() );
 }
 
 //////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ void DiscreteTransportRVEMaterialStatus :: applyEigenStrains() {
         s = static_cast< TrsprtMaterialStatus * >( e->giveMatStatus(0) );
         m = static_cast< TrsprtMaterial * >( s->giveMaterial() );
         m->setPermeability(orig_mater_params [ 2 * i ]); //set back original permeability
-        m->setPermeability(s->calculatePressureDependentPermeability(aux_params [ 0 ]) ); //calculating pressure depedent conductivity
+        m->setPermeability( s->calculatePressureDependentPermeability(aux_params [ 0 ]) ); //calculating pressure depedent conductivity
         m->setParamA(-1.); //switch of linearity
         normal = e->giveNormal();
         for ( unsigned v = 0; v < ndim; v++ ) {
@@ -120,13 +120,13 @@ void DiscreteTransportRVEMaterialStatus :: collectStresses() {
 Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
 
-    temp_strain.resize(giveStrainSize(ndim) );
+    temp_strain.resize( giveStrainSize(ndim) );
     for ( unsigned i = 0; i < temp_strain.size(); i++ ) {
         temp_strain [ i ] = strain [ i ];
     }
     temp_strain = addEigenStrain(temp_strain); //macroscopic eigenstrain
 
-    aux_params.resize(strain.size() );
+    aux_params.resize( strain.size() );
     for ( unsigned i = temp_strain.size(); i < strain.size(); i++ ) {
         aux_params [ i - temp_strain.size() ] = strain [ i ];
     }
@@ -141,7 +141,7 @@ Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain, do
 
 
     //collect results
-    temp_stress.resize(temp_strain.size() );
+    temp_stress.resize( temp_strain.size() );
     temp_stress *= 0;
     collectStresses();
 
@@ -194,7 +194,7 @@ void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
             if ( dynamic_cast< MechDoF * >( masternode ) == nullptr && dynamic_cast< TrsDoF * >( masternode ) == nullptr ) {
                 BoundaryCondition *bc;
                 vector< int >dBC, nBC;
-                dBC.resize(masternode->giveNumberOfDoFs(), funcs->giveSize() ); //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+                dBC.resize( masternode->giveNumberOfDoFs(), funcs->giveSize() ); //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
                 nBC.resize(masternode->giveNumberOfDoFs(), -1);
                 bc = new BoundaryCondition(masternode, dBC, nBC);
                 bconds->addBoundaryCondition(bc);
@@ -223,8 +223,6 @@ void DiscreteTransportRVEMaterialStatus :: generateVolumetricAverageBC() {
     ElementContainer *elems = RVE->giveElements();
     ConstraintContainer *constrs = RVE->giveConstraints();
 
-    unsigned ndim = RVE->giveDimension();
-
     VolumetricAverage *va;
     unsigned funsize = RVE->giveFunctions()->giveSize();
     vector< double >x, y;
@@ -238,7 +236,7 @@ void DiscreteTransportRVEMaterialStatus :: generateVolumetricAverageBC() {
 
     for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
         if ( nodes->giveNode(n)->doesMechanics() && ( dynamic_cast< MechDoF * >( nodes->giveNode(n) ) == nullptr && dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-            vm.push_back(nodes->giveNode(n) );
+            vm.push_back( nodes->giveNode(n) );
         }
     }
     if ( vm.size() > 0 ) {
@@ -249,7 +247,7 @@ void DiscreteTransportRVEMaterialStatus :: generateVolumetricAverageBC() {
         MechDoF *pn = new MechDoF(nDoFs);   //?? for transport
         nodes->addNode(pn);
 
-        dirs.resize(vm.size() );
+        dirs.resize( vm.size() );
 
         for ( unsigned vi = 0; vi < nDoFs; vi++ ) {
             fill(dirs.begin(), dirs.end(), vi);
@@ -268,6 +266,8 @@ void DiscreteTransportRVEMaterialStatus :: generateVolumetricAverageBC() {
 
 //////////////////////////////////////////////////////////
 Matrix DiscreteTransportRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+    ( void ) type;
+
     unsigned strain_size = giveStrainSize(dimension);
     Matrix Keff(strain_size, strain_size);
 
@@ -302,12 +302,12 @@ Matrix DiscreteTransportRVEMaterialStatus :: giveDampingTensor() const {
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = dynamic_cast< Transp1D * >( elems->giveElement(i) );
         if ( e ) {
-            mass += e->giveVolume() * e->giveMatStatus(0)->giveDampingTensor()[0][0];
+            mass += e->giveVolume() * e->giveMatStatus(0)->giveDampingTensor() [ 0 ] [ 0 ];
             volume += e->giveVolume();
         }
     }
-    Matrix m(1,1);
-    m[0][0] = mass / volume;
+    Matrix m(1, 1);
+    m [ 0 ] [ 0 ] = mass / volume;
     return m;
 };
 
@@ -365,7 +365,7 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
 
 /////////////////////////////////./////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
-    vector< double >zeta(temp_strain.size() );
+    vector< double >zeta( temp_strain.size() );
     Vector zeta2(9);
 
     ElementContainer *elems = RVE->giveElements();
@@ -428,21 +428,21 @@ void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
 
 
 /////////////////////////////////./////////////////////////
-unsigned DiscreteMechanicalRVEMaterialStatus :: giveStrainSize(unsigned ndim) const {
-    unsigned strain_size = ndim * ndim;
-    strain_size += ( ndim == 3 ) ? ndim * ndim : ndim; //in 2D only vector
+unsigned DiscreteMechanicalRVEMaterialStatus :: giveStrainSize(unsigned rdim) const {
+    unsigned strain_size = rdim * rdim;
+    strain_size += ( rdim == 3 ) ? rdim * rdim : rdim; //in 2D only vector
     return strain_size;
 }
 
 //////////////////////////////////////////////////////////
-Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned ndim) const {
-    unsigned strain_size = giveStrainSize(ndim);
+Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensor(string type, unsigned rdim) const {
+    unsigned strain_size = giveStrainSize(rdim);
     Matrix Keff(strain_size, strain_size);
 
     ElementContainer *elems = RVE->giveElements();
     double volume = 0;
     Point normal;
-    Vector n(ndim);
+    Vector n(rdim);
 
     RigidBodyContact *e;
     volume = 0;
@@ -450,8 +450,8 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensor(string type, u
     unsigned num = 0;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-        stiff  = e->giveMatStatus(0)->giveStiffnessTensor(type, ndim);
-        for ( unsigned v = 0; v < ndim; v++ ) {
+        stiff  = e->giveMatStatus(0)->giveStiffnessTensor(type, rdim);
+        for ( unsigned v = 0; v < rdim; v++ ) {
             Keff += dyadicProduct(projectors [ v ] [ num ], projectors [ v ] [ num ]) * e->giveLength() * e->giveArea() * stiff [ v ] [ v ];
         }
         num++;
@@ -581,7 +581,7 @@ Vector DiscreteTransportRVEMaterialPrecomputedStatus :: giveStress(const Vector 
     ( void ) timeStep;
 
     double macro_pressure = strain [ strain.size() - 1 ];
-    temp_strain.resize(giveStrainSize(ndim) );
+    temp_strain.resize( giveStrainSize(ndim) );
     for ( unsigned i = 0; i < temp_strain.size(); i++ ) {
         temp_strain [ i ] = strain [ i ];
     }
@@ -599,7 +599,9 @@ Vector DiscreteTransportRVEMaterialPrecomputedStatus :: giveStressWithFrozenIntV
 }
 
 //////////////////////////////////////////////////////////
-Matrix DiscreteTransportRVEMaterialPrecomputedStatus :: giveStiffnessTensor(string type, unsigned ndim) const {
+Matrix DiscreteTransportRVEMaterialPrecomputedStatus :: giveStiffnessTensor(string type, unsigned rdim) const {
+    ( void ) rdim;
+    ( void ) type;
     DiscreteTransportRVEMaterialPrecomputed *macromaterial = static_cast< DiscreteTransportRVEMaterialPrecomputed * >( mat );
     return macromaterial->givePrecomputedConductivity() * temp_nonlin;
 }
@@ -607,8 +609,8 @@ Matrix DiscreteTransportRVEMaterialPrecomputedStatus :: giveStiffnessTensor(stri
 //////////////////////////////////////////////////////////
 Matrix DiscreteTransportRVEMaterialPrecomputedStatus :: giveDampingTensor() const {
     DiscreteTransportRVEMaterialPrecomputed *macromaterial = static_cast< DiscreteTransportRVEMaterialPrecomputed * >( mat );
-    Matrix M(1,1);
-    M[0][0] = macromaterial->givePrecomputedCapacity();
+    Matrix M(1, 1);
+    M [ 0 ] [ 0 ] = macromaterial->givePrecomputedCapacity();
     return M;
 };
 
@@ -623,7 +625,7 @@ void DiscreteTransportRVEMaterialPrecomputedStatus :: init() {
         //TODO: if this is needed, one should call it only once and distribute the result among all identical RVEs
         cout << "Precomputing pressure fields on RVE" << endl;
 
-        unsigned ndim = RVE->giveDimension();
+        ndim = RVE->giveDimension();
         stiff = Matrix(ndim, ndim);
         Vector strainDoFs(ndim + 1);
         Vector stress;
@@ -635,7 +637,7 @@ void DiscreteTransportRVEMaterialPrecomputedStatus :: init() {
                 stiff [ i ] [ j ] = stress [ j ];
             }
         }
-        double c = DiscreteTransportRVEMaterialStatus :: giveDampingTensor()[0][0];
+        double c = DiscreteTransportRVEMaterialStatus :: giveDampingTensor() [ 0 ] [ 0 ];
 
         TrsprtMaterialStatus *status = static_cast< TrsprtMaterialStatus * >( RVE->giveElements()->giveElement(0)->giveMatStatus(0) );
         TrsprtMaterial *material = static_cast< TrsprtMaterial * >( RVE->giveElements()->giveElement(0)->giveMaterial() );
@@ -698,7 +700,7 @@ DiscreteCoupledRVEMaterialStatus ::  DiscreteCoupledRVEMaterialStatus(Material *
     if ( coupledm ) {
         mechRVEstat = new DiscreteMechanicalRVEMaterialStatus(coupledm->giveMechanicalRVEmat(), e, idx, masterfileM);
         trspRVEstat = new DiscreteTransportRVEMaterialStatus(coupledm->giveTransportRVEmat(), e, idx, masterfileT);
-    } else  {
+    } else {
         cerr << "DiscreteCoupledRVEMaterialStatus accepts only DiscreteCoupledRVEMaterial" << endl;
         exit(1);
     }
@@ -725,13 +727,13 @@ void DiscreteCoupledRVEMaterialStatus ::  update() {
     mechRVEstat->update();
     trspRVEstat->update();
 
-    volumetricStrain = temp_volumetricStrain; 
+    volumetricStrain = temp_volumetricStrain;
 }
 
 //////////////////////////////////////////////////////////
 Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
-    DiscreteCoupledRVEMaterial * dcm = static_cast< DiscreteCoupledRVEMaterial * >(mat);
-    CoupledCosseratBrick * brick =  static_cast< CoupledCosseratBrick * >(element);
+    DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
+    CoupledCosseratBrick *brick =  static_cast< CoupledCosseratBrick * >( element );
 
     unsigned sizeM = mechRVEstat->giveStrainSize();
     unsigned sizeT = trspRVEstat->giveStrainSize();
@@ -750,14 +752,19 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
     //calculate volumetric strain
     temp_volumetricStrain = 0;
     unsigned ndim = mechRVEstat->giveNumOfDimensions();
-    for (unsigned v=0; v<ndim; v++) temp_volumetricStrain += strainM[v];
+    for ( unsigned v = 0; v < ndim; v++ ) {
+        temp_volumetricStrain += strainM [ v ];
+    }
     temp_volumetricStrain /= ndim;
-    if(timeStep>0) volStrainRate = (temp_volumetricStrain-volumetricStrain)/timeStep;
-    else volStrainRate = 0;
+    if ( timeStep > 0 ) {
+        volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / timeStep;
+    } else {
+        volStrainRate = 0;
+    }
 
     Vector stressM = mechRVEstat->giveStress(strainM, timeStep);
-    double mechBiot = -brick->givePressureAtINtegrationPoint(idx)*dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
-    Vector stressT = trspRVEstat->giveStress(strainT, timeStep);    
+    double mechBiot = -brick->givePressureAtINtegrationPoint(idx) * dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
+    Vector stressT = trspRVEstat->giveStress(strainT, timeStep);
 
     temp_stress.resize(sizeM + sizeT);
     for ( i = 0; i < sizeM; i++ ) {
@@ -776,10 +783,10 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
 }
 
 //////////////////////////////////////////////////////////
-double DiscreteCoupledRVEMaterialStatus :: computeBiotEffect() const{
-    DiscreteCoupledRVEMaterial * dcm = static_cast< DiscreteCoupledRVEMaterial * >(mat);
+double DiscreteCoupledRVEMaterialStatus :: computeBiotEffect() const {
+    DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
     cout << "BOIT PARAMS" <<  dcm->giveBiotCoefficient() << " " << volStrainRate << " " << temp_volumetricStrain << endl;
-    return dcm->giveBiotCoefficient()*volStrainRate*3*1.000000e+03; //TODO: fix density
+    return dcm->giveBiotCoefficient() * volStrainRate * 3 * 1.000000e+03; //TODO: fix density
 }
 
 //////////////////////////////////////////////////////////
@@ -789,6 +796,7 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Ve
 
 //////////////////////////////////////////////////////////
 double DiscreteCoupledRVEMaterialStatus ::  giveValue(string code) {
+    ( void ) code;
     return 0;
 }
 
@@ -833,7 +841,7 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
     }
 
     //attach mech elems to node numbers
-    vector< vector< RigidBodyContact * > >attachedRBC(nodesM->giveSize() );
+    vector< vector< RigidBodyContact * > >attachedRBC( nodesM->giveSize() );
     RigidBodyContact *rbc;
     Point insideP;
     Node *foundN;
@@ -849,14 +857,14 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
                 if ( coord < 0. ) {
                     insideP.setCoord(v, coord + RVEsize [ v ]);
                     is_inside = false;
-                } else if ( coord > RVEsize [ v ] )           {
+                } else if ( coord > RVEsize [ v ] ) {
                     insideP.setCoord(v, coord - RVEsize [ v ]);
                     is_inside = false;
                 }
             }
             if ( is_inside ) {
-                attachedRBC [ nodesM->giveNodeNumber(rbc->giveNode(p) ) ].push_back(rbc);
-            } else  {
+                attachedRBC [ nodesM->giveNodeNumber( rbc->giveNode(p) ) ].push_back(rbc);
+            } else {
                 foundN = nodesM->findClosestMechanicalNode(insideP, & dist);
                 if ( dist > 1e-10 ) {
                     cerr << "DiscreteCoupledRVEMaterialStatus Error: searching for periodic image of mechanical node failed, distance to closest point is " << dist << endl;
@@ -877,7 +885,7 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
     for ( unsigned k = 0; k < elemsT->giveSize(); k++ ) {
         trsp = static_cast< Transp1DCoupled * >( elemsT->giveElement(k) );
         vertices = trsp->giveVertices();
-        vnums.resize(vertices.size() );
+        vnums.resize( vertices.size() );
         for ( unsigned p = 0; p < vertices.size(); p++ ) {
             is_inside = true;
             insideP = vertices [ p ]->givePoint();
@@ -886,14 +894,14 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
                 if ( coord < 0. ) {
                     insideP.setCoord(v, coord + RVEsize [ v ]);
                     is_inside = false;
-                } else if ( coord > RVEsize [ v ] )           {
+                } else if ( coord > RVEsize [ v ] ) {
                     insideP.setCoord(v, coord - RVEsize [ v ]);
                     is_inside = false;
                 }
             }
             if ( is_inside ) {
                 vnums [ p ] = nodesT->giveNodeNumber(vertices [ p ]);
-            } else  {
+            } else {
                 foundN = nodesT->findClosestAuxiliaryNode(insideP, & dist);
                 if ( dist > 1e-10 ) {
                     cerr << "DiscreteCoupledRVEMaterialStatus Error: searching for periodic image of transport node failed, distance to closest point is " << dist << endl;
@@ -960,7 +968,7 @@ DiscreteCoupledRVEMaterial :: ~DiscreteCoupledRVEMaterial() {
 
 //////////////////////////////////////////////////////////
 MaterialStatus *DiscreteCoupledRVEMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    DiscreteCoupledRVEMaterialStatus *newstat = new DiscreteCoupledRVEMaterialStatus(this, e, ipnum, mechRVEmat->givePathToInputFile(), trspRVEmat->givePathToInputFile() );
+    DiscreteCoupledRVEMaterialStatus *newstat = new DiscreteCoupledRVEMaterialStatus( this, e, ipnum, mechRVEmat->givePathToInputFile(), trspRVEmat->givePathToInputFile() );
     return newstat;
 };
 
@@ -985,9 +993,7 @@ void DiscreteCoupledRVEMaterial :: readFromLine(istringstream &iss) {
     if ( !bbiot ) {
         cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
         exit(EXIT_FAILURE);
-    }    
-
-    
+    }
 }
 
 

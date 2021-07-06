@@ -11,7 +11,7 @@ NodeContainer :: ~NodeContainer() {
 void NodeContainer :: readFromFile(const string filename, const int dim) {
     size_t origsize = nodes.size();
     string line, nodeType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -133,7 +133,7 @@ void NodeContainer :: establishDoFArray() {
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
     loadedDoFs = BC->giveArrayOfLoadedDoFs();
     bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
-    blockedDoFid.resize(blocked.size() );
+    blockedDoFid.resize( blocked.size() );
     freeDoFs = totalDoFs - blocked.size();
 
 
@@ -143,23 +143,23 @@ void NodeContainer :: establishDoFArray() {
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-    cstr.resize(constr->giveSize() );
+    cstr.resize( constr->giveSize() );
     for ( unsigned j = 0; j < constr->giveSize(); j++ ) {
         cstr [ j ].first = constr->giveConstraint(j)->giveSlaveDoF();
         cstr [ j ].second = j;
     }
-    sort(cstr.begin(), cstr.end() );
+    sort( cstr.begin(), cstr.end() );
 
     /////////////////////////////////////////////////////////////////
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
-    a.resize(blocked.size() );
+    a.resize( blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
-    sort(a.begin(), a.end() );
+    sort( a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
     if ( a.size() > 0 ) {
@@ -204,9 +204,9 @@ void NodeContainer :: establishDoFArray() {
     unsigned ndofs;
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         ndofs = ( * n )->giveNumberOfDoFs();
-        for ( unsigned k = 0; k < ndofs; k++, i++ ) { //todo:  warning C4456: declaration of 'k' hides previous local declaration
-            mechDoFs [ i ]   = ( * n )->isDoFMechanical(k);
-            transpDoFs [ i ] = ( * n )->isDoFTransport(k);
+        for ( unsigned q = 0; q < ndofs; q++, i++ ) { //todo:  warning C4456: declaration of 'k' hides previous local declaration
+            mechDoFs [ i ]   = ( * n )->isDoFMechanical(q);
+            transpDoFs [ i ] = ( * n )->isDoFTransport(q);
         }
     }
 
@@ -361,16 +361,16 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
     unsigned numi, startDoF;
     double numd;
     Vector initvalues(totalDoFs);
-    ifstream inputfile(initfile.c_str() );
+    ifstream inputfile( initfile.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             istringstream iss(line);
             iss >> numi;
-            for(unsigned v=0; v<nodes[numi]->giveNumberOfDoFs(); v++){
+            for ( unsigned v = 0; v < nodes [ numi ]->giveNumberOfDoFs(); v++ ) {
                 iss >> numd;
-                startDoF = nodes[numi]->giveStartingDoF();
-                initvalues[ startDoF+v ] = numd;
-            }                        
+                startDoF = nodes [ numi ]->giveStartingDoF();
+                initvalues [ startDoF + v ] = numd;
+            }
         }
         inputfile.close();
         cout << "Input file '" <<  initfile << "' succesfully loaded" << endl;

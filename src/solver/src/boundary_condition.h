@@ -34,8 +34,8 @@ public:
     BoundaryCondition(Node *n, vector< int > &dBC, vector< int > &nBC, vector< double > &m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m; };
     BoundaryCondition(Node *n, vector< int > &dBC, vector< int > &nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.); };
     ~BoundaryCondition() {};
-    void replaceDirichBC(vector< int > &newdBC) {dirichBC = newdBC;}; 
-    void replaceNeumannBC(vector< int > &newnBC) {neumannBC = newnBC;}; 
+    void replaceDirichBC(vector< int > &newdBC) { dirichBC = newdBC; };
+    void replaceNeumannBC(vector< int > &newnBC) { neumannBC = newnBC; };
     void readFromLine(istringstream &iss, NodeContainer *nodes);
     void init(FunctionContainer *funcs);
     unsigned giveNumberOfBlockedDoFs() const { return blockedDoFNum; };

@@ -132,9 +132,9 @@ public:
 class IPGauge : public Gauge
 {
 protected:
-    vector< unsigned > elems;
-    vector< unsigned > ipnums;
-    ElementContainer * elemcont;
+    vector< unsigned >elems;
+    vector< unsigned >ipnums;
+    ElementContainer *elemcont;
 public:
     IPGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
     ~IPGauge() {};

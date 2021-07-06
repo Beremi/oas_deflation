@@ -80,7 +80,7 @@ Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(strain);
     if ( damage ) {
-        Matrix stiff = giveStiffnessTensor("secant", strain.size() );
+        Matrix stiff = giveStiffnessTensor( "secant", strain.size() );
         return stiff * strain;
     } else {
         return DisMechMaterialStatus :: giveStress(strain, timeStep);
@@ -90,7 +90,8 @@ Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep
 
 //////////////////////////////////////////////////////////
 Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep; (void) strain;
+    ( void ) timeStep;
+    ( void ) strain;
     return Vector(0); //TOTO: FIX
 }
 

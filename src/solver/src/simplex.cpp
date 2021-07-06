@@ -34,8 +34,8 @@ void Simplex :: init(unsigned ndim) {
         valid = true;
 
         //calculate DoF array
-        DoFs.resize(ndim * nodes.size() );
-        DoFweights.resize(ndim * nodes.size() );
+        DoFs.resize( ndim * nodes.size() );
+        DoFweights.resize( ndim * nodes.size() );
         unsigned initDoF;
         unsigned pos = 0;
         Point volumeChangeWeights;
@@ -46,8 +46,8 @@ void Simplex :: init(unsigned ndim) {
             j = ( i + 1 ) % ( ndim + 1 );
             k = ( i + 2 ) % ( ndim + 1 );
             l = ( i + 3 ) % ( ndim + 1 );
-            averageSide += (nodes [ j ]->givePoint() - nodes [ l ]->givePoint()).norm();
-            volumeChangeWeights = cross(nodes [ j ]->givePoint() - nodes [ l ]->givePoint(), nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+            averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
+            volumeChangeWeights = cross( nodes [ j ]->givePoint() - nodes [ l ]->givePoint(), nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
             volume = dot(nodes [ i ]->givePoint() - nodes [ l ]->givePoint(), volumeChangeWeights);
             sign = volume / abs(volume);
             initDoF = nodes [ i ]->giveStartingDoF();
@@ -60,9 +60,10 @@ void Simplex :: init(unsigned ndim) {
         volume = abs(volume);
 
         averageSide /= 4;
-        if(volume<0.05 * sqrt(2)/12.*pow(averageSide,3) || volume<1e-25) valid = false; //cancel simplexes that are in wrong shape, by comparing to 5% of volume of regular Tet
+        if ( volume < 0.05 * sqrt(2) / 12. * pow(averageSide, 3) || volume < 1e-25 ) {
+            valid = false;                                                              //cancel simplexes that are in wrong shape, by comparing to 5% of volume of regular Tet
+        }
     }
-   
 }
 
 //////////////////////////////////////////////////////////
@@ -88,7 +89,7 @@ void Simplex :: findNeighbors() {
 //////////////////////////////////////////////////////////
 void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
     volstrain = 0;
-    if ( valid) { //valid simplex taking care of its own
+    if ( valid ) { //valid simplex taking care of its own
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
             volstrain += fullDoFs [ DoFs [ i ] ] * DoFweights [ i ];
         }
@@ -98,7 +99,9 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
             volstrain += simn->giveVolumetricStrain();
         }
         volstrain /= neighbors.size();
-    } else volstrain = 0;
+    } else {
+        volstrain = 0;
+    }
 
     if ( transport ) {
         pressure = fullDoFs [ pressureDoF ];

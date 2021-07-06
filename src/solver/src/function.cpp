@@ -1,36 +1,36 @@
 #include "function.h"
 
 #ifdef __EXPRTK_MODULE
-    //////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////
-    // GENERAL SPATIAL FUNCTION
-    void GeneralSpatialFunction :: readFromLine(istringstream &iss) {
-        iss >> expression_string;
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// GENERAL SPATIAL FUNCTION
+void GeneralSpatialFunction :: readFromLine(istringstream &iss) {
+    iss >> expression_string;
 
-        symbol_table_t symbols;
-        parser_t parser;
-        symbols.add_variable("x", x);
-        symbols.add_variable("y", y);
-        symbols.add_variable("z", z);
-        symbols.add_constants();
-        expression.register_symbol_table(symbols);
-        parser.compile(expression_string, expression);
-    }
+    symbol_table_t symbols;
+    parser_t parser;
+    symbols.add_variable("x", x);
+    symbols.add_variable("y", y);
+    symbols.add_variable("z", z);
+    symbols.add_constants();
+    expression.register_symbol_table(symbols);
+    parser.compile(expression_string, expression);
+}
 
-    //////////////////////////////////////////////////////////
-    double GeneralSpatialFunction :: giveY(const Point *xyz) {
-        x = xyz->getX();
-        y = xyz->getY();
-        z = xyz->getZ();
+//////////////////////////////////////////////////////////
+double GeneralSpatialFunction :: giveY(const Point *xyz) {
+    x = xyz->getX();
+    y = xyz->getY();
+    z = xyz->getZ();
 
-        return expression.value();
-    }
+    return expression.value();
+}
 
-    //////////////////////////////////////////////////////////
-    double GeneralSpatialFunction :: giveNextEtreme(const double &t) const {
-        ( void ) t;
-        return INFINITY;
-    }
+//////////////////////////////////////////////////////////
+double GeneralSpatialFunction :: giveNextEtreme(const double &t) const {
+    ( void ) t;
+    return INFINITY;
+}
 #endif
 
 //////////////////////////////////////////////////////////
@@ -68,12 +68,14 @@ double PieceWiseLinearFunction :: giveY(double t) const {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
+    ( void ) t;
     return INFINITY;
 }
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunctionWithExtremes :: giveNextEtreme(const double &t) const {
     return INFINITY;
+
     if ( x.size() <= 0 ) {
         return INFINITY;
     }
@@ -164,7 +166,7 @@ double ConstSawToothFunction :: giveY(double t) const {
         return multip * t * lower / ( abs(time_shift) );
     } else {
         return ( ( upper - lower ) - ( ( ( upper - lower ) / ( 0.5 * period ) ) *
-                                       abs(fmod( ( t + time_shift ), period ) - 0.5 * period) ) +
+                                       abs(fmod( ( t + time_shift ), period) - 0.5 * period) ) +
                  lower ) * multip;
     }
 }
@@ -310,7 +312,7 @@ FunctionContainer :: ~FunctionContainer() {
 void FunctionContainer :: readFromFile(const string filename) {
     size_t origsize = functions.size();
     string line, ftype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -323,14 +325,14 @@ void FunctionContainer :: readFromFile(const string filename) {
             iss >> ftype;
             if ( !ftype.rfind("#", 0) == 0 ) {
                 if ( ftype.compare("GeneralSpatialFunction") == 0 ) {
-                    #ifdef __EXPRTK_MODULE
-                        GeneralSpatialFunction *newf = new GeneralSpatialFunction();
-                        newf->readFromLine(iss);
-                        functions.push_back(newf);
-                    #else
-                        cout << "This binary was not build with EXPRTK module." << endl;
-                        exit(EXIT_FAILURE);
-                    #endif
+#ifdef __EXPRTK_MODULE
+                    GeneralSpatialFunction *newf = new GeneralSpatialFunction();
+                    newf->readFromLine(iss);
+                    functions.push_back(newf);
+#else
+                    cout << "This binary was not build with EXPRTK module." << endl;
+                    exit(EXIT_FAILURE);
+#endif
                 } else if ( ftype.compare("PWLFunction") == 0 ) {
                     PieceWiseLinearFunction *newf = new PieceWiseLinearFunction();
                     newf->readFromLine(iss);
@@ -355,7 +357,7 @@ void FunctionContainer :: readFromFile(const string filename) {
                     VaryingSawToothFunction *newf = new VaryingSawToothFunction();
                     newf->readFromLine(iss);
                     // it is necessary to specify which of two parent classes will the tree go throug
-                    functions.push_back( ( ConstSawToothFunction * ) newf );
+                    functions.push_back( ( ConstSawToothFunction * ) newf);
                 } else {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -400,10 +402,10 @@ double FunctionContainer :: giveTimeOfNextExtreme(const double &t) const {
 }
 
 //////////////////////////////////////////////////////////
-void FunctionContainer :: removeFunction(unsigned i){
-    if (i>functions.size()-1){
-        cerr << "FunctionContainer Error: requester function number " << i << " out of " << functions.size() << endl; 
+void FunctionContainer :: removeFunction(unsigned i) {
+    if ( i > functions.size() - 1 ) {
+        cerr << "FunctionContainer Error: requester function number " << i << " out of " << functions.size() << endl;
         exit(1);
     }
-    functions.erase (functions.begin()+i);    
+    functions.erase(functions.begin() + i);
 }

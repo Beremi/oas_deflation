@@ -15,7 +15,7 @@
 
 Vector calcPrincipalStress(const Matrix &stress) {
     Vector principalStress;
-    principalStress.resize(stress.numCols() );
+    principalStress.resize( stress.numCols() );
     if ( principalStress.size() == 2 ) {
         // 2d case
         principalStress [ 0 ] = 0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ) +
@@ -52,16 +52,16 @@ Vector calcPrincipalStress(const Matrix &stress) {
         if ( Q >= 0 ) {
             theta = 0;
         } else {
-            if ( R / sqrt(-pow(Q, 3) ) > 1.0 ) {
+            if ( R / sqrt( -pow(Q, 3) ) > 1.0 ) {
                 theta = acos(1.0);
             } else {
-                theta = acos(R / sqrt(-pow(Q, 3) ) );
+                theta = acos( R / sqrt( -pow(Q, 3) ) );
             }
         }
         // calculate eigen values
         principalStress [ 0 ] = 2 * sqrt(-Q) * cos(theta / 3) + I1 / 3;
-        principalStress [ 1 ] = 2 * sqrt(-Q) * cos( ( theta + 2 * M_PI ) / 3 ) + I1 / 3;
-        principalStress [ 2 ] = 2 * sqrt(-Q) * cos( ( theta + 4 * M_PI ) / 3 ) + I1 / 3;
+        principalStress [ 1 ] = 2 * sqrt(-Q) * cos( ( theta + 2 * M_PI ) / 3) + I1 / 3;
+        principalStress [ 2 ] = 2 * sqrt(-Q) * cos( ( theta + 4 * M_PI ) / 3) + I1 / 3;
         // stress.print();
         // std::cout << "principalStress ( " << principalStress[0] << ", " << principalStress[1] << ", " << principalStress[2] << " ), Q = " << Q << ", R = " << R << ", theta = " << theta << ", acos argument = " << R / sqrt( - pow(Q, 3) ) << '\n';
     }
@@ -143,7 +143,7 @@ private:
         Point p;
         // create vector of centers to remove nodes from
         std :: vector< Region * >regionsToRemove;
-        regionsToRemove.resize(this->nodeCentersToRmesh.size() );
+        regionsToRemove.resize( this->nodeCentersToRmesh.size() );
         unsigned rr = 0;
         for ( auto const &cent : this->nodeCentersToRmesh ) {
             regionsToRemove [ rr++ ] = new Sphere(cent, this->radius2);
@@ -178,7 +178,7 @@ private:
         std :: vector< unsigned >nodeIdsToSave;
         // create vector of centers to remove nodes from
         std :: vector< Region * >regionsToRemove;
-        regionsToRemove.resize(this->nodeCentersToRmesh.size() );
+        regionsToRemove.resize( this->nodeCentersToRmesh.size() );
         unsigned rr = 0;
         for ( auto const &cent : this->nodeCentersToRmesh ) {
             regionsToRemove [ rr++ ] = new Sphere(cent, this->radius);
@@ -215,7 +215,7 @@ private:
             el = BaseSolver :: elems->giveElement(i);
             for ( auto const &mstat : el->giveMaterialStats() ) {
                 if ( !mstat->isElastic(false) ) { // save elems that were already damaged (in past) now=false checks damage (true checks temp_damage)
-                    elems_to_save.push_back(el->giveID() );
+                    elems_to_save.push_back( el->giveID() );
                     break;
                 }
             }
@@ -227,11 +227,11 @@ private:
     }
     //////////////////////////////////////////////////////////////////////////////
     void saveRemeshData() {
-        if (PRINT_TEST) std::cout << "adaptivity remesh II d - saveRemeshData" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II d - saveRemeshData" << '\n'; }
         this->saveCenters(); // save centersToRemesh
         std :: vector< Point >fine_centers;
         for ( auto const &reg : this->fineRegions ) {
-            fine_centers.push_back(reg->giveMainPoint() );
+            fine_centers.push_back( reg->giveMainPoint() );
         }
         this->saveCenters("centersFine.out", fine_centers);   // save any specified vector of points
 
@@ -245,7 +245,7 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void updateGeometry() {
-        if (PRINT_TEST) std::cout << "adaptivity remesh II e - updateGeoemtry" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II e - updateGeoemtry" << '\n'; }
         if ( system(NULL) ) {
             std :: cout << "preparing to run preprocessor to remesh geometry" << '\n';
             ;
@@ -259,7 +259,7 @@ private:
                                   std :: to_string(this->radius) + " " +
                                   std :: to_string(this->radius2)
                                   + " " +
-                                  std :: to_string(int( this->nodesFine != nullptr ) );
+                                  std :: to_string( int( this->nodesFine != nullptr ) );
         ;
         remeshCmd = remeshCmd + " " + std :: to_string(this->remesherSeed);
         // cout << remeshCmd << endl;
@@ -271,7 +271,7 @@ private:
 
         std :: cout << "system cmd " << remeshCmd << '\n';
 
-        if ( system(remeshCmd.c_str() ) != 0 ) {
+        if ( system( remeshCmd.c_str() ) != 0 ) {
             std :: cerr << "something went wrong during remesher run" << '\n';
             exit(EXIT_FAILURE);
         }
@@ -289,7 +289,6 @@ private:
 
 
     void setMaterialInFineRegions() {
-
         // only the elements in fine regions have nonlinear material
         Element *el;
         unsigned change = 0;
@@ -298,8 +297,8 @@ private:
             el = BaseSolver :: elems->giveElement(i);
             if ( el->giveNode(0)->doesMechanics() && // NOTE JK: adaptivity is based on mechanical stress only
                  isInsideRegions(this->fineRegions, el) ) {
-                if (PRINT_TEST) std::cout << "adaptivity remesh II g - setMaterialInFineRegions " << change++ << ", " << el->giveName() << '\n';
-                el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
+                if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II g - setMaterialInFineRegions " << change++ << ", " << el->giveName() << '\n'; }
+                el->changeMaterial( masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
             }
         }
     }
@@ -311,7 +310,7 @@ private:
         Element *el;
         std :: string node_ids_string;
 
-        ifstream inputfile(this->elemStatuses.string().c_str() );
+        ifstream inputfile( this->elemStatuses.string().c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.at(0) == '#' || line.empty() ) {
@@ -326,7 +325,7 @@ private:
                         iss >> node_id;
                         node_ids_string += "\t" + std :: to_string(node_id);
                         // map old nodes to new
-                        node_ids.push_back(this->giveNewNodeId(node_id) );
+                        node_ids.push_back( this->giveNewNodeId(node_id) );
                     }
                     // find element connecting these nodes
                     el = BaseSolver :: elems->giveElementConnectingNodes(node_ids);
@@ -351,10 +350,10 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void loadRemeshData() {
-        if (PRINT_TEST) std::cout << "adaptivity remesh II f - loadRemeshData" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II f - loadRemeshData" << '\n'; }
         masterModel->clear();
 
-        masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false );
+        masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false);
 
         // update the dof fields etc
         std :: cout << "updated model initialization ..." << '\n';
@@ -368,9 +367,9 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     bool checkNodes() {
-        if (PRINT_TEST) std::cout << "adaptivity check nodes II b" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity check nodes II b" << '\n'; }
         std :: vector< Matrix >nodal_stress;
-        nodal_stress.resize(BaseSolver :: nodes->giveSize(), Matrix(this->dim, this->dim) );
+        nodal_stress.resize( BaseSolver :: nodes->giveSize(), Matrix(this->dim, this->dim) );
         // calculate nodal stresses
         ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
         // calcuulate principal stresses
@@ -378,9 +377,9 @@ private:
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);
             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
-                if ( ( !isInsideRegions(this->regionsNotToRemesh, n->givePoint() ) && !isInsideRegions(this->fineRegions, n->givePoint() ) ) ) {
+                if ( ( !isInsideRegions( this->regionsNotToRemesh, n->givePoint() ) && !isInsideRegions( this->fineRegions, n->givePoint() ) ) ) {
                     if ( calcMaxPrincipalStress(nodal_stress [ i ]) > this->adaptThreshold ) {
-                        nodeCentersToRmesh.push_back(n->givePoint() );
+                        nodeCentersToRmesh.push_back( n->givePoint() );
                     }
                 }
             }
@@ -391,12 +390,12 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void remeshGeometry() {
-        if (PRINT_TEST) std::cout << "adaptivity remesh II a" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II a" << '\n'; }
         if ( checkNodes() ) {
-            if (PRINT_TEST) std::cout << "adaptivity remesh II c" << '\n';
+            if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II c" << '\n'; }
             std :: ostringstream stringStream;
             stringStream << "remesh_" << BaseSolver :: step;
-            this->remeshDir = (GlobPaths :: BASEDIR / stringStream.str()).string();
+            this->remeshDir = ( GlobPaths :: BASEDIR / stringStream.str() ).string();
             // TODO do the routines to remesh
             std :: cout << "remeshDir: " << this->remeshDir << '\n';
             if ( !fs :: exists(this->remeshDir) ) {
@@ -408,7 +407,7 @@ private:
             this->updateGeometry(); // run python preprocessor
 
             for ( auto const &p : nodeCentersToRmesh ) {
-                this->fineRegions.push_back(new Sphere(p, this->radius) );
+                this->fineRegions.push_back( new Sphere(p, this->radius) );
             }
 
             this->loadRemeshData(); // load updated geometry
@@ -417,10 +416,10 @@ private:
             this->nodeCentersToRmesh.clear();
             this->nodesToKeep.clear();
 
-            if (PRINT_TEST) std::cout << "-------------------->>>>>>>>>>> solve after remesh" << '\n';
+            if ( PRINT_TEST ) { std :: cout << "-------------------->>>>>>>>>>> solve after remesh" << '\n'; }
 
             BaseSolver :: dt = BaseSolver :: time - this->time_before_step;
-            BaseSolver :: step --;
+            BaseSolver :: step--;
             BaseSolver :: time = this->time_before_step;
             BaseSolver :: runBeforeEachStep();
 
@@ -428,7 +427,7 @@ private:
             // BaseSolver :: ddr *= 0.0;
 
             BaseSolver :: solve();
-            if (PRINT_TEST) std::cout << "solution after remesh  done" << '\n';
+            if ( PRINT_TEST ) { std :: cout << "solution after remesh  done" << '\n'; }
 
             // return true;
         }
@@ -441,7 +440,7 @@ private:
         string param, path, line;
         bool bat, br, br2, bptp, bmn, brl;
         bat = br = br2 = bptp = bmn = brl = false;
-        ifstream inputfile(filename.c_str() );
+        ifstream inputfile( filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() ) {
@@ -479,7 +478,7 @@ private:
                 } else if ( param.compare("regionsToSkip") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> path;
-                    readRegions( ( GlobPaths :: BASEDIR / path ).string(), this->regionsNotToRemesh );
+                    readRegions( ( GlobPaths :: BASEDIR / path ).string(), this->regionsNotToRemesh);
                 } else if ( param.compare("remeshMaterialId") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> this->remeshMaterialId;
@@ -544,7 +543,7 @@ public:
 
         if ( initial && this->nodesFine ) {
             std :: cout << "Adaptivity: loading fine geometry ..." << '\n';
-            this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim );
+            this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim);
         }
 
         BaseSolver :: init(init_r_file, init_v_file, initial);
@@ -556,7 +555,7 @@ public:
 
         string param, path, line;
         bool bfa = false;
-        ifstream inputfile(filename.c_str() );
+        ifstream inputfile( filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() ) {
@@ -584,21 +583,21 @@ public:
 
 
     virtual void runBeforeEachStep() {
-        if (PRINT_TEST) std::cout << "adaptivity before each step I" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity before each step I" << '\n'; }
         this->time_before_step = BaseSolver :: time;
         BaseSolver :: runBeforeEachStep();
     };
 
 
     virtual void runAfterEachStep() {
-        if (PRINT_TEST) std::cout << "adaptivity after each step II" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity after each step II" << '\n'; }
         remeshGeometry();
 
         BaseSolver :: runAfterEachStep();
     };
 
     virtual void solve() {
-        if (PRINT_TEST) std::cout << "adaptivity solving each step II" << '\n';
+        if ( PRINT_TEST ) { std :: cout << "adaptivity solving each step II" << '\n'; }
         // TODO JK: check nodes before solving - export fabric stress with frozen variables
         // std :: cout << "solving with " << BaseSolver :: name << '\n';
         BaseSolver :: solve();
