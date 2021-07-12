@@ -261,6 +261,11 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 // }
 
 //////////////////////////////////////////////////////////
+ConstraintContainer :: ~ConstraintContainer() {
+    for ( auto &c: constraints ) delete c;
+}
+
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
     //initiate volumetric averages
 
@@ -394,5 +399,10 @@ void ConstraintContainer :: removeConstraint(unsigned i) {
         cerr << "ConstraintContainer Error: requester constraint number " << i << " out of " << constraints.size() << endl;
         exit(1);
     }
+    delete constraints[i];
+    constraints[i] = nullptr;
     constraints.erase(constraints.begin() + i);
 }
+
+
+

@@ -706,7 +706,6 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     for ( int p = int( bcs->giveSize() ) - 1; p >= int( bcs_num ); p-- ) {
         bcs->removeBoundaryCondition(p);
     }
-    bcs->addBoundaryCondition(bc); // add last BC on strain tensor
     //remove added constraints (this removes the master-slave constraint)
     for ( int p = int( constrs->giveSize() ) - 1; p >= int( const_num ); p-- ) {
         constrs->removeConstraint(p);
@@ -732,9 +731,9 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         if ( strainFunc [ i ] >= 0 && stressFunc [ i ] >= 0 ) {
             cerr << "Error in Periodic boundary condition: cannot prescribe both stress and strain for the same direction" << endl;
         }
-        bc->replaceDirichBC(dBC);
-        bc->replaceNeumannBC(dBC);
     }
+    bc = new BoundaryCondition(nodes->giveNode(initalNodeNum), dBC, nBC, bcmults);
+    bcs->addBoundaryCondition(bc);
 
     //create new constraints
     JointDoF *jd;

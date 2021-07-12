@@ -24,7 +24,7 @@ protected:
     std :: vector< double >additional_term;
 public:
     JointDoF() {};
-    ~JointDoF() {};
+    virtual ~JointDoF() {};
     JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
     void readFromLine(istringstream &iss, NodeContainer *nodes);
     void print();
@@ -61,7 +61,7 @@ protected:
     unsigned masterdir;
 public:
     VolumetricAverage(vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc);
-    ~VolumetricAverage() {};
+    virtual ~VolumetricAverage() {};
     void init();
 };
 
@@ -78,7 +78,7 @@ private:
 
 public:
     ConstraintContainer() {};
-    ~ConstraintContainer() {};
+    ~ConstraintContainer();
     void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);
     void init(NodeContainer *nodes, BCContainer *bconds); // here matrix X will be created

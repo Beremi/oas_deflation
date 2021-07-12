@@ -326,5 +326,7 @@ void BCContainer :: removeBoundaryCondition(unsigned i) {
         cerr << "BCContainer Error: requester BC number " << i << " out of " << BC.size() << endl;
         exit(1);
     }
-    BC.erase(BC.begin() + i);
+    delete BC[i];
+    BC[i] = nullptr;
+    BC.erase(BC.begin() + i);   
 }

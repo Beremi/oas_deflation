@@ -407,5 +407,7 @@ void FunctionContainer :: removeFunction(unsigned i) {
         cerr << "FunctionContainer Error: requester function number " << i << " out of " << functions.size() << endl;
         exit(1);
     }
+    delete functions[i];
+    functions[i] = nullptr;
     functions.erase(functions.begin() + i);
 }
