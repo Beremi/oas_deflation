@@ -1388,7 +1388,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     }
 
     // adding master DoF governing the expansion
-    multipliers.push_back(double( num_nodes ) * this->r_outer);
+    multipliers.push_back(double( num_nodes ) * this->r_outer / 2. );
     masterNodes.push_back(expMaster);
     directions.push_back(0);
 
