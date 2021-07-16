@@ -493,7 +493,9 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     #print('ridge points')
     #adding ridges with at least one node in sample
-    validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
+    #validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
+    cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
+    validRidgeIdxs = np.where(cond)[0]
 
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
