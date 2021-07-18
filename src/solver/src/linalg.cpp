@@ -37,13 +37,13 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         for ( size_t c = 0; c < A.row_size [ i ]; c++ ) {
             //cout<<i << "--" <<  col[c]<<endl;
             //mat.insert(i, A.xx[idx]) = data[idx];
-            tripletList.push_back(T(i, A.column_index [ idx ], A.array [ idx ]) );
+            tripletList.push_back( T(i, A.column_index [ idx ], A.array [ idx ]) );
             idx++;
         }
         ;
     }
     ;
-    mat.setFromTriplets(tripletList.begin(), tripletList.end() );
+    mat.setFromTriplets( tripletList.begin(), tripletList.end() );
     mat.makeCompressed();
 
     VectorXd cgb(rowsize);
@@ -65,7 +65,14 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         for ( size_t i = 0; i < rowsize; i++ ) {
             cgx0 [ i ] = x0 [ i ];
         }
+
+
+        //JacobiSVD<MatrixXd> svd(cgb);
+        //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
+        //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
+
         ConjugateGradient< SparseMatrix< double >, Lower | Upper >cgK;
+        //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
         cgK.setMaxIterations(Maxit);
         cgK.setTolerance(precision);
 
@@ -73,17 +80,17 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
 
         cgx = cgK.solveWithGuess(cgb, cgx0);
         //VectorXd cgx = cgK.solve(cgb);
-        result = size_t(cgK.iterations() ) < Maxit;
-    } else if ( solver_type == "EigenLDLT" )     {
+        result = size_t( cgK.iterations() ) < Maxit;
+    } else if ( solver_type == "EigenLDLT" ) {
         SimplicialLDLT< SparseMatrix< double > >simplicial_ldlt_solver;
         cgx = simplicial_ldlt_solver.compute(mat).solve(cgb);
         cout << "error " << ( mat * cgx - cgb ).lpNorm< Infinity >() << endl;
         result = ( mat * cgx - cgb ).lpNorm< Infinity >() < precision;
-    } else if ( solver_type == "EigenLLT" )     {
+    } else if ( solver_type == "EigenLLT" ) {
         SimplicialLLT< SparseMatrix< double > >simplicial_llt_solver;
         cgx = simplicial_llt_solver.compute(mat).solve(cgb);
         result = ( mat * cgx - cgb ).lpNorm< Infinity >() < precision;
-    } else if ( solver_type == "EigenSparseLU" )     {
+    } else if ( solver_type == "EigenSparseLU" ) {
         SparseLU< SparseMatrix< double >, COLAMDOrdering< int > >sparseLU_solver;
         sparseLU_solver.analyzePattern(mat);
         sparseLU_solver.factorize(mat);
@@ -129,13 +136,13 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
         for ( size_t c = 0; c < A.row_size [ i ]; c++ ) {
             //cout<<i << "--" <<  col[c]<<endl;
             //mat.insert(i, A.xx[idx]) = data[idx];
-            tripletList.push_back(T(i, A.column_index [ idx ], A.array [ idx ]) );
+            tripletList.push_back( T(i, A.column_index [ idx ], A.array [ idx ]) );
             idx++;
         }
         ;
     }
     ;
-    mat.setFromTriplets(tripletList.begin(), tripletList.end() );
+    mat.setFromTriplets( tripletList.begin(), tripletList.end() );
     mat.makeCompressed();
 
     VectorXd cgb(rowsize);
@@ -177,6 +184,6 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
     for ( size_t i = 0; i < rowsize; i++ ) {
         x [ i ] = cgx [ i ];
     }
-    bool result = size_t(bicg.iterations() ) < Maxit;
+    bool result = size_t( bicg.iterations() ) < Maxit;
     return result;
 }

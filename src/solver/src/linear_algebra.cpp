@@ -79,6 +79,13 @@ void Point :: set(const Point *p) {
     z = p->z;
 }
 
+Point &Point :: operator=(const Point &A) {
+    x = A.x;
+    y = A.y;
+    z = A.z;
+    return * this;
+}
+
 bool Point :: operator==(const Point &p) const {
     double delta = POINT_TOLERANCE;
     Point a(p);
@@ -217,12 +224,12 @@ void Point :: print() const {
 }
 
 Point cross(const Point p, const Point q) {
-    Point r( ( p.y *q.z - p.z *q.y ), ( p.z *q.x - p.x *q.z ), ( p.x *q.y - p.y *q.x ) );
+    Point r( ( p.y * q.z - p.z * q.y ), ( p.z * q.x - p.x * q.z ), ( p.x * q.y - p.y * q.x ) );
     return r;
 }
 
 double dot(const Point &p, const Point &q) {
-    double r(p.x *q.x + p.y *q.y + p.z *q.z);
+    double r(p.x * q.x + p.y * q.y + p.z * q.z);
     return r;
 }
 
@@ -253,7 +260,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = dot(AB, cross(AC, AD) );
+    double coplanarityError = dot( AB, cross(AC, AD) );
     return coplanarityError;
 }
 
@@ -358,9 +365,9 @@ Matrix &Matrix :: operator=(const MtM &m) {
 }
 
 Matrix &Matrix :: operator*=(const Matrix &m) {
-    assert(m.numRows() == this->numCols() );
+    assert( m.numRows() == this->numCols() );
 
-    Matrix ret = matrix_multiply( ( * this ), m );
+    Matrix ret = matrix_multiply( ( * this ), m);
 
     ( * v ) = ret.array();
     r = ret.numRows();
@@ -370,15 +377,15 @@ Matrix &Matrix :: operator*=(const Matrix &m) {
 }
 
 Matrix &Matrix :: operator+=(const Matrix &m) {
-    assert(m.numRows() == this->numRows() );
-    assert(m.numCols() == this->numCols() );
+    assert( m.numRows() == this->numRows() );
+    assert( m.numCols() == this->numCols() );
     ( * v ) += ( m.array() );
     return * this;
 }
 
 Matrix Matrix :: operator+(const Matrix &m) const {
-    assert(m.numRows() == this->numRows() );
-    assert(m.numCols() == this->numCols() );
+    assert( m.numRows() == this->numRows() );
+    assert( m.numCols() == this->numCols() );
     Matrix ret(* this);
     ret += m;
     ;
@@ -391,15 +398,15 @@ Matrix &Matrix :: operator+=(const double x) {
 }
 
 Matrix &Matrix :: operator-=(const Matrix &m) {
-    assert(m.numRows() == this->numRows() );
-    assert(m.numCols() == this->numCols() );
+    assert( m.numRows() == this->numRows() );
+    assert( m.numCols() == this->numCols() );
     ( * v ) -= ( m.array() );
     return * this;
 }
 
 Matrix Matrix :: operator-(const Matrix &m) const {
-    assert(m.numRows() == this->numRows() );
-    assert(m.numCols() == this->numCols() );
+    assert( m.numRows() == this->numRows() );
+    assert( m.numCols() == this->numCols() );
     Matrix ret(* this);
     ret -= m;
     ;
@@ -434,13 +441,13 @@ bool Matrix :: operator!=(const Matrix &m) {
     return false;
 }
 
-Matrix :: Matrix(const Matrix &m) : r(m.numRows() ), c(m.numCols() ) {
-    v = new Vector(m.array() );
+Matrix :: Matrix(const Matrix &m) : r( m.numRows() ), c( m.numCols() ) {
+    v = new Vector( m.array() );
 }
 
 Matrix &Matrix :: operator=(const Matrix &m) {
     delete v;
-    v = new Vector(m.array() );
+    v = new Vector( m.array() );
     r = m.numRows();
     c = m.numCols();
     return * this;
@@ -825,51 +832,53 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t
     RowCount = RowCountI;
     ColumnCount = ColumnCountI;
 
-    vector< double >temp_array;
-    vector< unsigned >temp_column_index;
-    vector< unsigned >temp_row_size;
-    map< pair< size_t, size_t >, double > :: const_iterator previous =
-        source.begin();
-    size_t r_s = 0;
-    unsigned k = previous->first.first;
-    // add initail rows
-    while ( k > 0 ) {
-        temp_row_size.push_back(r_s);
-        k--;
-    }
-    for ( map< pair< size_t, size_t >, double > :: const_iterator ij =
-              source.begin(); ij != source.end(); ++ij ) {
-        if ( ij->first.first == previous->first.first ) {
-            r_s++;
-        } else {
+    if ( source.size() > 0 ) {
+        vector< double >temp_array;
+        vector< unsigned >temp_column_index;
+        vector< unsigned >temp_row_size;
+        map< pair< size_t, size_t >, double > :: const_iterator previous =
+            source.begin();
+        size_t r_s = 0;
+        unsigned k = previous->first.first;
+        // add initail rows
+        while ( k > 0 ) {
             temp_row_size.push_back(r_s);
-            k = ij->first.first - previous->first.first;
-            while ( k > 1 ) {
-                temp_row_size.push_back(0);
-                k--;
-            }
-            r_s = 1;
+            k--;
         }
-        previous = ij;
-        temp_array.push_back(ij->second);
-        temp_column_index.push_back(ij->first.second);
-    }
-    temp_row_size.push_back(r_s);
+        for ( map< pair< size_t, size_t >, double > :: const_iterator ij =
+                  source.begin(); ij != source.end(); ++ij ) {
+            if ( ij->first.first == previous->first.first ) {
+                r_s++;
+            } else {
+                temp_row_size.push_back(r_s);
+                k = ij->first.first - previous->first.first;
+                while ( k > 1 ) {
+                    temp_row_size.push_back(0);
+                    k--;
+                }
+                r_s = 1;
+            }
+            previous = ij;
+            temp_array.push_back(ij->second);
+            temp_column_index.push_back(ij->first.second);
+        }
+        temp_row_size.push_back(r_s);
 
-    column_index.resize(temp_column_index.size() );
-    copy(temp_column_index.begin(), temp_column_index.end(),
-         & column_index [ 0 ]);
+        column_index.resize( temp_column_index.size() );
+        copy(temp_column_index.begin(), temp_column_index.end(),
+             & column_index [ 0 ]);
 
-    array.resize(temp_array.size() );
-    copy(temp_array.begin(), temp_array.end(), & array [ 0 ]);
+        array.resize( temp_array.size() );
+        copy(temp_array.begin(), temp_array.end(), & array [ 0 ]);
 
-    row_size.resize(RowCountI);
-    copy(temp_row_size.begin(), temp_row_size.end(), & row_size [ 0 ]);
+        row_size.resize(RowCountI);
+        copy(temp_row_size.begin(), temp_row_size.end(), & row_size [ 0 ]);
 
-    accumulated_row_size.resize(row_size.size() );
-    accumulated_row_size [ 0 ] = 0;
-    for ( size_t i = 1; i < accumulated_row_size.size(); i++ ) {
-        accumulated_row_size [ i ] += accumulated_row_size [ i - 1 ] + row_size [ i - 1 ];
+        accumulated_row_size.resize( row_size.size() );
+        accumulated_row_size [ 0 ] = 0;
+        for ( size_t i = 1; i < accumulated_row_size.size(); i++ ) {
+            accumulated_row_size [ i ] += accumulated_row_size [ i - 1 ] + row_size [ i - 1 ];
+        }
     }
 }
 
@@ -931,10 +940,10 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t
         }
     }
 
-    array.resize(temp_array.size() );
+    array.resize( temp_array.size() );
     copy(temp_array.begin(), temp_array.end(), & array [ 0 ]);
 
-    column_index.resize(temp_column_index.size() );
+    column_index.resize( temp_column_index.size() );
     copy(temp_column_index.begin(), temp_column_index.end(), & column_index [ 0 ]);
 
     RowCount = RowCountI;
@@ -942,10 +951,10 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t
 }
 
 CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(const CoordinateIndexedSparseMatrix &source) {
-    this->column_index.resize(source.column_index.size() );
-    this->array.resize(source.array.size() );
-    this->row_size.resize(source.row_size.size() );
-    this->accumulated_row_size.resize(source.accumulated_row_size.size() );
+    this->column_index.resize( source.column_index.size() );
+    this->array.resize( source.array.size() );
+    this->row_size.resize( source.row_size.size() );
+    this->accumulated_row_size.resize( source.accumulated_row_size.size() );
 
     this->array = source.array;
     this->column_index = source.column_index;
@@ -956,7 +965,7 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(const CoordinateI
     this->ColumnCount = source.ColumnCount;
 }
 
-CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(const valarray< unsigned > &rs, const valarray< unsigned > &ci, unsigned RowCountI, unsigned ColumnCountI) : array(0., ci.size() ), column_index(ci), row_size(rs), accumulated_row_size(rs.size() ) {
+CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(const valarray< unsigned > &rs, const valarray< unsigned > &ci, unsigned RowCountI, unsigned ColumnCountI) : array( 0., ci.size() ), column_index(ci), row_size(rs), accumulated_row_size( rs.size() ) {
     //  accumulated_row_size[1] = row_size[0] ;
     for ( size_t i = 1; i < accumulated_row_size.size(); i++ ) {
         accumulated_row_size [ i ] += accumulated_row_size [ i - 1 ] + row_size [ i - 1 ];
@@ -971,7 +980,7 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix() {}
 CoordinateIndexedSparseMatrix :: ~CoordinateIndexedSparseMatrix() {}
 
 double CoordinateIndexedSparseMatrix :: froebeniusNorm() const {
-    return sqrt(inner_product(& array [ 0 ], & array [ array.size() ], & array [ 0 ], ( double ) ( 0 ) ) );
+    return sqrt( inner_product( & array [ 0 ], & array [ array.size() ], & array [ 0 ], ( double ) ( 0 ) ) );
 }
 
 double CoordinateIndexedSparseMatrix :: infinityNorm() const {
@@ -1083,7 +1092,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator*(const d
 }
 
 Vector CoordinateIndexedSparseMatrix :: inverseDiagonal() const {
-    Vector ret(0., min(RowCount, ColumnCount) );
+    Vector ret( 0., min(RowCount, ColumnCount) );
 
     for ( size_t i = 0; i < min(RowCount, ColumnCount); i++ ) {
         //      double v = (*this)[i][i] ;
@@ -1099,7 +1108,7 @@ Vector CoordinateIndexedSparseMatrix :: inverseDiagonal() const {
 }
 
 Vector CoordinateIndexedSparseMatrix :: inverseDiagonalSquared() const {
-    Vector ret(0., min(RowCount, ColumnCount) );
+    Vector ret( 0., min(RowCount, ColumnCount) );
 
     for ( size_t i = 0; i < min(RowCount, ColumnCount); i++ ) {
         ret [ i ] = 1. / ( ( * this ) [ i ] * ( * this ) [ i ] );
@@ -1111,7 +1120,7 @@ Vector CoordinateIndexedSparseMatrix :: inverseDiagonalSquared() const {
 }
 
 Vector CoordinateIndexedSparseMatrix :: diagonal() const {
-    Vector ret(0., min(RowCount, ColumnCount) );
+    Vector ret( 0., min(RowCount, ColumnCount) );
 
     for ( size_t i = 0; i < min(RowCount, ColumnCount); i++ ) {
         ret [ i ] = ( * this ) [ i ] [ i ];
@@ -1122,10 +1131,10 @@ Vector CoordinateIndexedSparseMatrix :: diagonal() const {
 }
 
 CoordinateIndexedSparseMatrix &CoordinateIndexedSparseMatrix :: operator=(const CoordinateIndexedSparseMatrix &S) {
-    this->column_index.resize(S.column_index.size() );
-    this->array.resize(S.array.size() );
-    this->row_size.resize(S.row_size.size() );
-    this->accumulated_row_size.resize(S.accumulated_row_size.size() );
+    this->column_index.resize( S.column_index.size() );
+    this->array.resize( S.array.size() );
+    this->row_size.resize( S.row_size.size() );
+    this->accumulated_row_size.resize( S.accumulated_row_size.size() );
 
     this->column_index = S.column_index;
     this->array = S.array;
@@ -1187,7 +1196,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator*(const C
             }
         }
         for ( unsigned i = 1; i < sum.size(); i++ ) {
-            indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(rowA, sum_column [ i ]), sum [ i ]) );
+            indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(rowA, sum_column [ i ]), sum [ i ]) );
         }
     }
 
@@ -1214,7 +1223,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
             ari++;
         }
         row = ari;
-        indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), 0.) );
+        indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), 0.) );
     }
     ari = 0;
     for ( size_t i = 0; i < B->array.size(); i++ ) {
@@ -1223,7 +1232,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const C
             ari++;
         }
         row = ari;
-        indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), 0.) );
+        indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), 0.) );
     }
 
     CoordinateIndexedSparseMatrix AplusB(indeces, this->RowCount, this->ColumnCount);
@@ -1261,7 +1270,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: transpose() const
             ari++;
         }
         row = ari;
-        indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(col, row), array [ i ]) );
+        indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(col, row), array [ i ]) );
     }
     return CoordinateIndexedSparseMatrix(indeces, this->ColumnCount, this->RowCount);
 }
@@ -1282,10 +1291,10 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendColumn(cons
             ari++;
         }
         row = ari;
-        indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), A->array [ i ]) );
+        indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), A->array [ i ]) );
     }
     for ( unsigned i = 0; i < this->RowCount; i++ ) {
-        indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(this->ColumnCount, i), c [ i ]) );
+        indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(this->ColumnCount, i), c [ i ]) );
     }
 
 
@@ -1308,10 +1317,10 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const V
             ari++;
         }
         row = ari;
-        indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), A->array [ i ]) );
+        indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(row, col), A->array [ i ]) );
     }
     for ( size_t i = 0; i < this->ColumnCount; i++ ) {
-        indeces.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, this->RowCount), c [ i ]) );
+        indeces.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, this->RowCount), c [ i ]) );
     }
 
 
@@ -1338,7 +1347,7 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     }
 
     //Inverse Diagonal Preconditioner
-    Vector preconditioner(A.inverseDiagonal() );
+    Vector preconditioner( A.inverseDiagonal() );
 
     Vector r = b - A * x;
     double err = l2_norm(r) / bnorm;
@@ -1354,8 +1363,8 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b
     Vector p = z;
     Vector q = A * p;
 
-    double last_rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
-    double alpha = last_rho / std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
+    double last_rho = std :: inner_product( & r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
+    double alpha = last_rho / std :: inner_product( & q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
     // double rho_0 = last_rho; // unused
 
     x += p * alpha;
@@ -1431,7 +1440,7 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
     double bnorm = l2_norm(b);
 
     //Inverse Diagonal Preconditioner
-    Vector preconditioner(A.inverseDiagonal() );
+    Vector preconditioner( A.inverseDiagonal() );
 
     Vector r = b - A * x;
     double err = l2_norm(r) / bnorm;
@@ -1443,8 +1452,8 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
     Vector p = z;
     Vector q = A * p;
 
-    double last_rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
-    double alpha = last_rho / std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
+    double last_rho = std :: inner_product( & r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
+    double alpha = last_rho / std :: inner_product( & q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
     // double rho_0 = last_rho; // unused
 
     x += p * alpha;
@@ -1479,7 +1488,7 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
 
 
 Matrix dyadicProduct(const Vector &a, const Vector &b) {
-    Matrix X(a.size(), b.size() );
+    Matrix X( a.size(), b.size() );
     for ( unsigned i = 0; i < a.size(); i++ ) {
         for ( unsigned j = 0; j < b.size(); j++ ) {
             X [ i ] [ j ] = a [ i ] * b [ j ];
@@ -1489,5 +1498,5 @@ Matrix dyadicProduct(const Vector &a, const Vector &b) {
 }
 
 double l2_norm(Vector x) {
-    return pow(inner_product(& x [ 0 ], & x [ x.size() ], & x [ 0 ], ( double ) ( 0 ) ), 0.5);
+    return pow(inner_product( & x [ 0 ], & x [ x.size() ], & x [ 0 ], ( double ) ( 0 ) ), 0.5);
 }

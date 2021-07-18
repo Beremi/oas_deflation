@@ -42,6 +42,7 @@ public:
     void set(double x, double y, double z);
     void set(const Point &p);
     void set(const Point *p);
+    Point &operator=(const Point &A);
 
     bool operator==(const Point &p) const;
     bool operator!=(const Point &p) const;
@@ -263,19 +264,19 @@ public:
     }
 
     Slice_iter< double >column(size_t i) {
-        return Slice_iter< double >(v, slice(i, r, c) );
+        return Slice_iter< double >( v, slice(i, r, c) );
     }
 
     Cslice_iter< double >column(size_t i) const {
-        return Cslice_iter< double >(v, slice(i, r, c) );
+        return Cslice_iter< double >( v, slice(i, r, c) );
     }
 
     Slice_iter< double >row(size_t i) {
-        return Slice_iter< double >(v, slice(i * c, c, 1) );
+        return Slice_iter< double >( v, slice(i * c, c, 1) );
     }
 
     Cslice_iter< double >row(size_t i) const {
-        return Cslice_iter< double >(v, slice(i * c, c, 1) );
+        return Cslice_iter< double >( v, slice(i * c, c, 1) );
     }
 
     Matrix transpose() const;
@@ -360,40 +361,40 @@ inline MtM operator*(const Matrix &mm, const Matrix &mmm) {
 };
 
 inline const Matrix matrix_multiply(const Matrix &m0, const Matrix &m1) {
-    assert(m0.numCols() == m1.numRows() );
+    assert( m0.numCols() == m1.numRows() );
 
-    Matrix ret(m0.numRows(), m1.numCols() );
+    Matrix ret( m0.numRows(), m1.numCols() );
 
     for ( size_t i = 0; i < m0.numRows(); i++ ) {
         for ( size_t j = 0; j < m1.numCols(); j++ ) {
             const Cslice_iter< double > &ri = m0.row(i);
             const Cslice_iter< double > &cj = m1.column(j);
-            ret [ i ] [ j ] = inner_product(& ri [ 0 ], & ri [ m0.numCols() ], cj, ( double ) ( 0 ) );
+            ret [ i ] [ j ] = inner_product( & ri [ 0 ], & ri [ m0.numCols() ], cj, ( double ) ( 0 ) );
         }
     }
     return ret;
 }
 
 inline const Vector matrix_vector_multiply(const Matrix &m, const Vector &v) {
-    assert(m.numCols() == v.size() );
+    assert( m.numCols() == v.size() );
 
-    Vector ret(m.numRows() );
+    Vector ret( m.numRows() );
 
     for ( size_t i = 0; i < m.numRows(); i++ ) {
         const Cslice_iter< double > &ri = m.row(i);
-        ret [ i ] = inner_product(& ri [ 0 ], & ri [ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
+        ret [ i ] = inner_product( & ri [ 0 ], & ri [ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
     }
     return ret;
 }
 
 inline const Vector operator*(const Vector &v, const Matrix &m) {
-    assert(m.numRows() == v.size() );
+    assert( m.numRows() == v.size() );
 
-    Vector ret(v.size() );
+    Vector ret( v.size() );
 
     for ( size_t i = 0; i < m.numCols(); i++ ) {
         const Cslice_iter< double > &ri = m.column(i);
-        ret [ i ] = inner_product(& ri [ 0 ], & ri [ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
+        ret [ i ] = inner_product( & ri [ 0 ], & ri [ m.numCols() ], & v [ 0 ], ( double ) ( 0 ) );
     }
     return ret;
 }
@@ -438,9 +439,9 @@ public:
 
     inline double operator[](const size_t i) const
     {
-        const unsigned *i_index_pointer = find(& idx [ start ], & idx [ min(start + length, idx.size() ) ], i);
+        const unsigned *i_index_pointer = find(& idx [ start ], & idx [ min( start + length, idx.size() ) ], i);
         unsigned offset = i_index_pointer - & idx [ start ]; //todo: warning C4244: 'initializing': conversion from '__int64' to 'unsigned int', possible loss of data
-        if ( i_index_pointer != & idx [ min(start + length, idx.size() ) ] ) {
+        if ( i_index_pointer != & idx [ min( start + length, idx.size() ) ] ) {
             return ( val [ start + offset ] );
         }
 

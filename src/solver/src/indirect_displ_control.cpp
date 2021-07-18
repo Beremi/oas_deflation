@@ -96,10 +96,10 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
             cerr << "Error: Indirect displacement controll weights were not set" << endl;
             exit(1);
         }
-        if ( c_DoFs [ c ].size() < clength || !initial) {
+        if ( c_DoFs [ c ].size() < clength || !initial ) {
             // JK: in adaptivity, number of control DoFs remain, but DoFs from updated geometry are used
             if ( initial ) {
-              c_DoFs [ c ].resize(clength);
+                c_DoFs [ c ].resize(clength);
             }
             if ( nodes_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
@@ -120,24 +120,24 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
 
 //////////////////////////////////////////////////////////
 double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
-    double dd = -INFINITY;
-    double df = 0;
-    double m;
+    double lambdaABS = INFINITY;
+    double df, dd;
+    double pdispl = givePrescribedDisplacement(time);
+    double lambda = 0;
     for ( unsigned c = 0; c < nummaxunit; c++ ) {
-        m = 0;
+        dd = 0;
+        df = 0;
         for ( unsigned i = 0; i < c_weights [ c ].size(); i++ ) {
-            m += ( prev_displ [ c_DoFs [ c ] [ i ] ] ) * c_weights [ c ] [ i ];
+            dd += ( prev_displ [ c_DoFs [ c ] [ i ] ] ) * c_weights [ c ] [ i ];
+            df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
         }
-        if ( m > dd ) {
-            dd = m;
-            df = 0;
-            for ( unsigned i = 0; i < c_weights [ c ].size(); i++ ) {
-                df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
-            }
+        if ( abs( ( pdispl - dd ) / df ) < lambdaABS ) {
+            lambda = ( pdispl - dd ) / df;
+            lambdaABS = abs(lambda);
         }
     }
 
-    return ( givePrescribedDisplacement(time) - dd ) / df;
+    return lambda;
 }
 
 //////////////////////////////////////////////////////////

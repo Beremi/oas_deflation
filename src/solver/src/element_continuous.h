@@ -124,8 +124,8 @@ public:
 class CoupledCosseratBrick : public CosseratBrick
 {
 protected:
-    vector<double> IPpressures;
-    vector<double> IPvolstrains;
+    vector< double >IPpressures;
+    vector< double >IPvolstrains;
 
 public:
     CoupledCosseratBrick();
@@ -134,7 +134,7 @@ public:
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveDampingMatrix() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    double givePressureAtINtegrationPoint(unsigned i) const { return IPpressures[i];};
+    double givePressureAtINtegrationPoint(unsigned i) const { return IPpressures [ i ]; };
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
 };
 #endif  /* _ELEMENT_STRUCT_H */

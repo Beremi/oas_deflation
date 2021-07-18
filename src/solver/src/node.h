@@ -45,7 +45,7 @@ public:
 
     Point givePoint() const { return point; };
     Point *givePointPointer() { return & point; };
-    void setPoint(const Point &P) { point = P; };
+    void setPoint(const Point &P) { point.set(P); };
     void setNumberOfDoFs(const int num) { nDoFs = num; };
     unsigned giveNumberOfDoFs() const { return nDoFs; };
     void setStartingDoF(unsigned num) { firstDoF = num; };
@@ -131,7 +131,7 @@ private:
 
 protected:
 public:
-    TrsTemprtrCoupledNode(unsigned dimension): TrsNode(dimension) {nDoFs = 2; name = "TrsTemprtrCoupledNode"; isTransport = true; };
+    TrsTemprtrCoupledNode(unsigned dimension) : TrsNode(dimension) { nDoFs = 2; name = "TrsTemprtrCoupledNode"; isTransport = true; };
     virtual ~TrsTemprtrCoupledNode() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
 };

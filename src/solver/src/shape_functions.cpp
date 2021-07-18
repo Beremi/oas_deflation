@@ -33,7 +33,7 @@ void ShapeFunc :: giveJacobiM(const vector< Node * > &nodes, const Matrix &phiGr
 
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveJacobiM(const Point *x, const vector< Node * > &nodes, Matrix &JacobiM) const {
-    Matrix phiGradNat(ndim, nodes.size() );
+    Matrix phiGradNat( ndim, nodes.size() );
     giveShapeFGradNatural(x, phiGradNat);
     JacobiM *= 0;
     Point n;

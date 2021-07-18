@@ -16,7 +16,7 @@ class Material;
 class MaterialStatus
 {
 private:
-    
+
 public:
     MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; };
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
@@ -33,8 +33,8 @@ public:
     virtual Vector giveTempStrain() const { return temp_strain; };
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const { ( void ) dimension; ( void ) type; return Matrix(0, 0); };
-    virtual Matrix giveMassTensor() const { return Matrix(0,0); };
-    virtual Matrix giveDampingTensor() const { return Matrix(0,0); };
+    virtual Matrix giveMassTensor() const { return Matrix(0, 0); };
+    virtual Matrix giveDampingTensor() const { return Matrix(0, 0); };
     virtual void setEigenStrain(Vector &x);
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
@@ -42,9 +42,9 @@ public:
         ( void ) iss;
         std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
-    virtual Vector giveInternalSource()const{return Vector(0);};
+    virtual Vector giveInternalSource()const { return Vector(0); };
     virtual bool isElastic(const bool &now = false) const;
-    virtual void setParameterValue(string code, double value){ (void) code; (void) value;};
+    virtual void setParameterValue(string code, double value) { ( void ) code; ( void ) value; };
 
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
@@ -62,10 +62,10 @@ class Material
 {
 private:
     unsigned id;  // to be able to save element
-protected: 
+protected:
     bool produceInternalSources;
 public:
-    Material() { name = "basic material"; produceInternalSources = false;};
+    Material() { name = "basic material"; produceInternalSources = false; };
     virtual ~Material() {};
     virtual void readFromLine(istringstream &iss) { ( void ) iss; };
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum) { MaterialStatus *newStatus = new MaterialStatus(this, e, ipnum); return newStatus; };
@@ -74,7 +74,7 @@ public:
     unsigned giveId() { return id; }
     void setId(const unsigned &i) { this->id = i; }
     virtual void init() { };
-    bool isProducingInternalSources()const{ return produceInternalSources;}
+    bool isProducingInternalSources()const { return produceInternalSources; }
 protected:
     string name;
 };
@@ -144,7 +144,7 @@ class DiscreteTrsprtMaterial : public TrsprtMaterial
 protected:
 
 public:
-    DiscreteTrsprtMaterial() { name = "discrete transport material";};
+    DiscreteTrsprtMaterial() { name = "discrete transport material"; };
     ~DiscreteTrsprtMaterial() {};
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
 };
@@ -177,7 +177,7 @@ class DiscreteTrsprtCoupledMaterial : public DiscreteTrsprtMaterial
 private:
     double crack_turtuosity, biotCoeff;
 public:
-    DiscreteTrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true;};
+    DiscreteTrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true; };
     ~DiscreteTrsprtCoupledMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);

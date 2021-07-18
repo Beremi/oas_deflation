@@ -7,7 +7,7 @@ fs :: path GlobPaths :: BASEDIR;
 Model *masterModel;
 
 int main(int argc, char **argv) {
-    vector<string> args(argv + 1, argv + argc);
+    vector< string >args(argv + 1, argv + argc);
     int num = 0;
     string master_filename;
 
@@ -21,13 +21,14 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    for (size_t i = 0; i != args.size(); ++i) {
-        if (args[i] == "-h" || args[i] == "--help") {
+    for ( size_t i = 0; i != args.size(); ++i ) {
+        if ( args [ i ] == "-h" || args [ i ] == "--help" ) {
             fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n", argv [ 0 ]);
             return 0;
-        } else if (args[i] == "-j") {
-            if (i+1 < args.size()) num = atoi((args[i+1]).c_str());
-            else {
+        } else if ( args [ i ] == "-j" ) {
+            if ( i + 1 < args.size() ) {
+                num = atoi( ( args [ i + 1 ] ).c_str() );
+            } else {
                 fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n", argv [ 0 ]);
                 exit(EXIT_FAILURE);
             };
@@ -41,7 +42,7 @@ int main(int argc, char **argv) {
     if ( num != 0 ) {
         omp_set_num_threads(num);
         cout << "Number of threads = " << num << endl;
-    } else if ( val != nullptr )  {
+    } else if ( val != nullptr ) {
         cout << "Number of threads = " << val << endl;
     } else {
         omp_set_num_threads(1);
@@ -49,8 +50,8 @@ int main(int argc, char **argv) {
     }
 
     fs :: path input = fs :: absolute(master_filename);
-    if (!fs :: exists(input)){
-        fprintf(stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str());
+    if ( !fs :: exists(input) ) {
+        fprintf( stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str() );
         exit(EXIT_FAILURE);
     }
     GlobPaths :: BASEDIR = input.parent_path();
@@ -67,7 +68,7 @@ int main(int argc, char **argv) {
 
 
     masterModel = new Model(PRINT_TIME);
-    masterModel->readFromFile(input.string() );
+    masterModel->readFromFile( input.string() );
 
     // check if exists or create directory for results
     if ( !fs :: exists(masterModel->resultDir) ) {

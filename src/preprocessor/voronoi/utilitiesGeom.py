@@ -181,7 +181,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
         if (periodicModel == 0):
             vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial)
         if (periodicModel == 1):
-            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeMechanics, activeTransport, minDist, mZ=mZ)
+            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ)
     if (dim == 3):
         if (periodicModel == 0):
             vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, randomizeMaterial=randomizeMaterial)
@@ -370,7 +370,6 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         ridges_out.append(rdg)
     #
     print(' - time:', time.time()-start)
-    print('XXX', len(vertices_out), len(vertices_out_set))
     v_count = len (vertices_out)
     vertIdxStart = node_count + len(aux_nodes)
 
@@ -494,7 +493,9 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     #print('ridge points')
     #adding ridges with at least one node in sample
-    validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
+    #validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
+    cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
+    validRidgeIdxs = np.where(cond)[0]
 
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)

@@ -106,9 +106,9 @@ unsigned MechNode :: giveOrderOfForceCode(string code) const {
         return 0;
     } else if ( code.compare("fy") == 0 ) {
         return 1;
-    } else if ( dim > 2 && code.compare("fz") == 0 )                                                 {
+    } else if ( dim > 2 && code.compare("fz") == 0 ) {
         return 2;
-    } else                                                                                                             {
+    } else {
         return Node :: giveOrderOfForceCode(code);
     }
 }
@@ -141,7 +141,7 @@ double TrsTemprtrCoupledNode :: giveDoFBasedValue(string code, const Vector &DoF
     if ( code.compare("humidity") == 0 ) {
         return DoFs [ firstDoF ];
     } else if ( code.compare("temperature") == 0 ) {
-        return DoFs [ firstDoF+1 ];
+        return DoFs [ firstDoF + 1 ];
     } else {
         return Node :: giveDoFBasedValue(code, DoFs);
     }
@@ -197,13 +197,13 @@ unsigned Particle :: giveOrderOfForceCode(string code) const {
         return 3;
     } else if ( dim == 3 && code.compare("my") == 0 ) {
         return 4;
-    } else if ( code.compare("mz") == 0 )                                                             {
+    } else if ( code.compare("mz") == 0 ) {
         if ( dim == 2 ) {
             return 2;
         } else {
             return 5;
         }
-    } else   {
+    } else {
         return MechNode :: giveOrderOfForceCode(code);
     }
 }
@@ -237,7 +237,7 @@ unsigned CoupledParticle :: giveOrderOfForceCode(string code) const {
         } else {
             return 6;
         }
-    } else   {
+    } else {
         return Particle :: giveOrderOfForceCode(code);
     }
 }

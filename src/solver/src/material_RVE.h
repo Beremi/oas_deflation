@@ -36,7 +36,7 @@ public:
     virtual void init();
     virtual void update();
     Model *giveWholeRVE() { return RVE; };
-    unsigned giveNumOfDimensions() const {return ndim;};
+    unsigned giveNumOfDimensions() const { return ndim; };
 };
 
 //////////////////////////////////////////////////////////
@@ -70,7 +70,7 @@ protected:
     virtual void generateVolumetricAverageBC();
     virtual void applyEigenStrains();
     virtual void collectStresses();
-    virtual unsigned giveStrainSize(unsigned ndim) const;
+    virtual unsigned giveStrainSize(unsigned rdim) const;
 
 public:
     DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
@@ -105,7 +105,7 @@ protected:
     virtual void applyEigenStrains();
     virtual void collectStresses();
     void calculateCentroid();
-    virtual unsigned giveStrainSize(unsigned ndim) const;
+    virtual unsigned giveStrainSize(unsigned rdim) const;
 
     Point centroid;
     vector< vector< Vector > >projectors;
@@ -142,7 +142,7 @@ protected:
     DiscreteMechanicalRVEMaterialStatus *mechRVEstat;
     DiscreteTransportRVEMaterialStatus *trspRVEstat;
 
-    double temp_volumetricStrain, volumetricStrain, volStrainRate; 
+    double temp_volumetricStrain, volumetricStrain, volStrainRate;
 
     void findFriends();
 public:
@@ -159,7 +159,6 @@ public:
     virtual std :: string giveLineToSave() const;
     virtual Matrix giveDampingTensor() const { return trspRVEstat->giveDampingTensor(); };
     virtual double computeBiotEffect() const;
-
 };
 
 //////////////////////////////////////////////////////////
@@ -178,7 +177,7 @@ public:
     virtual void readFromLine(istringstream &iss);
     DiscreteMechanicalRVEMaterial *giveMechanicalRVEmat() { return mechRVEmat; }
     DiscreteTransportRVEMaterial *giveTransportRVEmat() { return trspRVEmat; }
-    double giveBiotCoefficient() const {return biotCoeff;};
+    double giveBiotCoefficient() const { return biotCoeff; };
 };
 
 //////////////////////////////////////////////////////////
