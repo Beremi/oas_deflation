@@ -109,9 +109,12 @@ class LDCurve(HasStrictTraits):
     def _draw_this(self, ax):
         #if self.clear_axis:
         #   ax.cla()
+        self.draw_line(ax)
+        ax.legend()
+
+    def draw_line(self, ax):
         ax.plot(self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale,
                 label='{}-{}'.format(self.ldfile.name, self.name), marker='o')
-        ax.legend()
 
     def _copy_to_clipboard_fired(self):
         data = np.vstack((self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale)).T
@@ -181,13 +184,18 @@ class ControlPanel(HasStrictTraits):
         self.figure.canvas.draw()
 
     def _draw_button_fired(self):
+        ax = self.figure.axes[0]
         for lds in self.ldfiles.ldfiles:
             for ld in lds.ld_curves:
-                ld.draw_this_button = True
+                ld.draw_line(ax)
+        ax.legend()
+        self.figure.canvas.draw()
+        print('redrawn all')
 
     def _reload_button_fired(self):
         for lds in self.ldfiles.ldfiles:
             lds.reload_button = True
+        print('reloaded all')
 
     view = View((Item('@ldfiles', show_label=False),
                     HGroup(
@@ -234,7 +242,7 @@ def init_parser():
                                      allow_abbrev=True)
 
     # Add the arguments
-    parser.add_argument('ld_files',
+    parser.add_argument('-ld_files',
                         #metavar='file',
                         default=None,
                         type=pathlib.Path,

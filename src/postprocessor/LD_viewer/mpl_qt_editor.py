@@ -16,9 +16,9 @@ from pyface.qt import QtGui, QtCore
 import matplotlib as mpl
 #mpl.use('Qt4Agg')
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
 from traits.api import Any, Instance
 from traitsui.qt4.editor import Editor
