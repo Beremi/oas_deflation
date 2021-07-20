@@ -245,7 +245,7 @@ class Model:
 
     def setDirectory(self, dirNam=None):
         if self.userSeed == -1:
-            self.seed = np.random.randint(1000.0)
+            self.seed = np.random.randint(100000.0)
             np.random.seed(seed=self.seed)
         else:
             self.seed = self.userSeed
@@ -406,7 +406,10 @@ class Model:
             if self.roughDogBone >1:
                 elaHeight = 3/4*self.dogboneD - (self.roughDogBone-1)*self.minDist
 
-            self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
+            if self.symmetric:
+                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
+            else:
+                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
     def run_3d_dogbone(self):

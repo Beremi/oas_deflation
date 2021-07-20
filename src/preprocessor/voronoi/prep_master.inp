@@ -31,7 +31,12 @@
 # roughEdgeDogbone 0 - presne nasamplovane kruznice
 # roughEdgeDogbone 1 - prvky s obema nody v modelu
 # roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-Model 2d_dogbone dogboneD 0.8 minDist 0.005 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 35 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 10 interLayerThickness 50 nr_models 20 defaultFilesFolder dogboneDefault
+#Model 2d_dogbone dogboneD 0.5 minDist 0.004 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 15 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 20 nr_models 50 defaultFilesFolder dogboneDefault
+#0.125
+#Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 1 nr_models 100 defaultFilesFolder dogboneDefault
+#C
+Model 2d_dogbone dogboneD 0.2 minDist 0.004 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 1 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 6 interLayerThickness 30 nr_models 1 defaultFilesFolder dogboneDefault
+#
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 #
@@ -81,7 +86,7 @@ Model 2d_dogbone dogboneD 0.8 minDist 0.005 dogboneExcentricityFrac 50 activeMec
 #SpecifiedNode 0.3 1e-6
 #SpecifiedNode 0.7 1e-6
 #
-#Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0015  interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 50000
+#Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0015  interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 10000
 #Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.0015 interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 0 activeMechanics 1 coupled 0 trials 20000
 #
 #
@@ -119,4 +124,4 @@ Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
 #
 #
 #EXPORTERS
-Exporter VTKElementExporter elems saveEvery 0.001 cellData 2 damage crack_opening pointData 1 pressure
+Exporter VTKElementExporter elems saveEvery 0.002 cellData 2 damage crack_opening pointData 2 nodal_stress pressure

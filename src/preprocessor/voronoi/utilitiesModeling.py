@@ -185,6 +185,21 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             matZ.append (boundB1)
             materialZones.append(matZ)
 
+    if (model=='dogboneStrip'):
+        if (dim==2):
+            boundA = np.array(  [ -1e-8    , -1e-8  ] )
+            matZ.append (boundA)
+            boundB = np.array(  [ D+1e-8   ,  3/4 * D + 1e-4  ] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ -1e-8, 6/4*D - 3/4 * D - 1e-4 ] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ D  ,  6/4*D+1e-8]  )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+
+
+    # 3/4 * D - indent -minDist/2]
+
     if (model =='3pb3d'):
         boundA = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
         matZ.append (boundA)
@@ -3418,6 +3433,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
         #sampling interfaces
         for r in range (rebarCount):
+            print ('Interface #%d' %r)
             #rebar edge
             centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
 
@@ -3766,8 +3782,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         angleLimitA =   -np.arcsin( 0.5*D / radius)
         angleLimitB =   np.arcsin( 0.5*D / radius)
         if roughDogBone >1:
-            angleLimitA =   -np.arcsin(  2* roughDogBone * minDist / radius)
-            angleLimitB =   np.arcsin( 2* roughDogBone * minDist / radius)
+            angleLimitA =   -np.arcsin(  roughDogBone * minDist / radius)
+            angleLimitB =   np.arcsin(  roughDogBone * minDist / radius)
         #if symmetric == True:
         #    angleLimitB =   0
         mirroredPointsA =  pointGenerators.generateNodesCircle2dRand(centreA, radius+indent, minDist*edgeMinDistCoef, node_coords, trials, angleLimitA=angleLimitA, angleLimitB=angleLimitB, mirrorIndent = indent*10 )
@@ -3820,7 +3836,6 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=False, ed
         nrOfPoints =  (len(node_coords)) - oldLen
     elif roughDogBone > 1: #hrubsi krome pruhu +-10xmindist od prostredka
         #top rough rectangle
-
         oldLen = len(node_coords)
         maxLim = np.array([  D    ,  3/4*D  - (roughDogBone+interLayerThickness)*minDist ])
         pointGenerators.generateNodesRect(maxLim, altMinDist, 2, trials, node_coords)
