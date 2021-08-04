@@ -90,14 +90,14 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     TranspPolygonal *newelem = new TranspPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("TranspVirtPolygonal") == 0 ) {
+                /*} else if ( elemType.compare("TranspVirtPolygonal") == 0 ) {
                     TranspVirtPolygonal *newelem = new TranspVirtPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TranspCondensedPolygonal") == 0 ) {
                     TranspCondensedPolygonal *newelem = new TranspCondensedPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);/*
+                    elems.push_back(newelem);*//*
                                               * } else if ( elemType.compare("PolyhedralFace") == 0 ) {
                                               * PolyhedralFace *newelem = new PolyhedralFace(ndim);
                                               * newelem->readFromLine(iss, nodes, matrs);
@@ -370,10 +370,10 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
             exit(1);
         }
-        elDoFs = ( * e )->giveDoFs();
+        elDoFs = ( * e )->giveDoFs();        
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            DoFi = nodes->giveDoFid(elDoFs [ i ]);
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
-                DoFi = nodes->giveDoFid(elDoFs [ i ]);
                 DoFj = nodes->giveDoFid(elDoFs [ j ]);
 
                 //diagonal

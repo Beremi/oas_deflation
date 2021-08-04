@@ -2,6 +2,27 @@
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// INTEGRATION POINTS - MASTER CLASS
+//////////////////////////////////////////////////////////
+void IntegrationType :: init(){
+    cerr << "IntegrationType Error: you are using incorrect initialization function" << endl;
+    exit(1);
+}
+
+//////////////////////////////////////////////////////////
+void IntegrationType :: init(const vector< Node* > & nodes){
+    (void) nodes;
+    IntegrationType :: init();
+}
+
+//////////////////////////////////////////////////////////
+void IntegrationType :: init(const vector< Node* > & nodes, const vector< vector< unsigned > > & faces, Point *centroid){
+    (void) nodes; (void) faces; (void) centroid;
+    IntegrationType :: init();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // SINGLE POINT INTEGRATION FOR DISCRETE MODELS
 //////////////////////////////////////////////////////////
 void IntegrDiscrete1 :: init() {
@@ -48,3 +69,93 @@ void IntegrBrick8 :: init() {
         ip_weights [ i ] = 1.;
     }
 }
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// THREE POINT INTEGRATION IN TRIANGLE
+// 
+//////////////////////////////////////////////////////////
+void IntegrTri3 :: init() {
+    ip_locs.resize(3);
+    double s = 1./6.;
+    ip_locs [ 0 ] = Point(  s, s, 0.);
+    ip_locs [ 1 ] = Point(4*s, s, 0.);
+    ip_locs [ 2 ] = Point(s, 4*s, 0);
+    ip_weights.resize(3);
+    for ( unsigned i = 0; i < 3; i++ ) {
+        ip_weights [ i ] = 1./6.;
+    }
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// INTEGRATION IN POLYGON
+void IntegrPolygon :: init(const vector< Node* > & nodes, const vector< vector< unsigned > > & faces, Point *centroid) {
+    //based on isoparametric elements
+    unsigned nnodes = nodes.size();
+   
+    if ( ip_type.compare("tri") == 0 ) {
+        IntegrTri3 localINT; //integration type
+        localINT.init();
+        Linear2DQuadShapeF localSF; //shape functions
+        unsigned nIP = localINT.giveNumIP();
+        Vector phi(nIP);
+        ip_locs.resize(nIP * nnodes);
+        ip_weights.resize(nIP * nnodes);
+        Point a, b, c;
+        c = (*centroid);
+        vector< Point* > pp(nIP);   
+
+        for ( unsigned i = 0; i < nnodes; i++ ) {
+            a = nodes [ faces [ i ] [ 0 ] ]->givePoint();
+            b = nodes [ faces [ i ] [ 1 ] ]->givePoint();
+            pp[0] = &a; pp[1] = &b; pp[2] = &c;
+            localSF.init(pp);
+
+            for(unsigned r=0; r<nIP; r++){
+                localSF.giveShapeF(localINT.giveIPLocationPointer(r), phi);
+                ip_locs[4*i+r] = Point(0,0,0);
+                for (unsigned s=0; s<nIP; s++) {
+                    ip_locs[4*i+r] += (*pp[s])*phi[s];
+                }
+                ip_weights[4*i+r] = localINT.giveIPWeight(r) * localSF.giveJacobian(localINT.giveIPLocationPointer(r));           
+            }         
+        }
+    } else if ( ip_type.compare("quad") == 0 ) {
+        IntegrQuad4 localINT; //integration type
+        localINT.init();
+        Linear2DQuadShapeF localSF; //shape functions
+        unsigned nIP = localINT.giveNumIP();
+
+        Vector phi(nIP);
+        ip_locs.resize(nIP * nnodes);
+        ip_weights.resize(nIP * nnodes);
+        Point a = ( nodes [ faces [ nnodes - 1 ] [ 0 ] ]->givePoint() + nodes [ faces [ nnodes - 1 ] [ 1 ] ]->givePoint() ) / 2;
+        Point b, c, d;
+        d = (*centroid);
+        vector< Point* > pp(nIP);   
+
+        for ( unsigned i = 0; i < nnodes; i++ ) {
+            c = ( nodes [ faces [ i ] [ 0 ] ]->givePoint() + nodes [ faces [ i ] [ 1 ] ]->givePoint() ) / 2;
+            b = nodes [ i ]->givePoint();
+            pp[0] = &a; pp[1] = &b; pp[2] = &c; pp[3] = &d; 
+            localSF.init(pp);
+
+            for(unsigned r=0; r<nIP; r++){
+                localSF.giveShapeF(localINT.giveIPLocationPointer(r), phi);
+                ip_locs[4*i+r] = Point(0,0,0);
+                for (unsigned s=0; s<nIP; s++) {
+                    ip_locs[4*i+r] += (*pp[s])*phi[s];
+                }
+                ip_weights[4*i+r] = localINT.giveIPWeight(r) * localSF.giveJacobian(localINT.giveIPLocationPointer(r));           
+            }         
+            a = c;
+        }
+    } else {
+        cerr << "Error in " << name << ": ip_type '" << ip_type << "' not implemented" << endl;
+        exit(1);
+    }    
+}
+

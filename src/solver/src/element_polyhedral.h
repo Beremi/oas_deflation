@@ -13,28 +13,21 @@ class TranspPolygonal : public TransportElement
 protected:
     double volume;
     Point centroid;
-    unsigned nnodes;
-    unsigned nfaces;
-    vector< vector< unsigned > >faces;
-    vector< Point >normals;
-    vector< double >surfaces;
     string ip_type;
 
-    void sort2D();
-    void WachspressShapeF(const Point *x, Vector &phi) const;
-    double WachspressShapeFGrad(const Point *x, Matrix &phiGrad) const;
+    virtual void initIntegration();
+
 public:
     TranspPolygonal(const unsigned dim);
     ~TranspPolygonal() {};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
-    virtual void shapeF(const Point *x, Vector &phi) const { WachspressShapeF(x, phi); };
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { return WachspressShapeFGrad(x, phiGrad); };
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual void setIntegrationPointsAndWeights();
 };
 
+/*
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 class TranspVirtPolygonal : public TranspPolygonal
@@ -70,6 +63,7 @@ public:
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
     virtual void init();
 };
+*/
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
