@@ -280,6 +280,14 @@ void SteadyStateLinearSolver :: solve() {
         return;
     }
 
+    /*
+    cout << "----- K ----" << endl;
+    K.print();
+    cout << "----- d ----" << endl;
+    for(auto p:ddr ) cout << p<< endl;
+    cout << "----- f ----" << endl;
+    for(auto p:f ) cout << p<< endl; 
+    */
     // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit) == false ) {
     // if (terminated == true);
     //     cerr << "Conjugate gradients did not converge" << endl;

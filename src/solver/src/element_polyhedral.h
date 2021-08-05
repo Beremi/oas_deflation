@@ -27,7 +27,7 @@ public:
     virtual void setIntegrationPointsAndWeights();
 };
 
-/*
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 class TranspVirtPolygonal : public TranspPolygonal
@@ -37,11 +37,12 @@ protected:
 public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
-    virtual void init();
+    virtual void setIntegrationPointsAndWeights();
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen);
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
 };
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -61,10 +62,10 @@ public:
     ~TranspCondensedPolygonal() {};
     virtual void shapeF(const Point *x, Vector &phi) const;
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
-    virtual void init();
+    virtual void setIntegrationPointsAndWeights();
 };
-*/
 
+/*
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT POLYGONAL ELEMENT CONSTRUCTED BY STATIC CONDENSATION OF ISOPARAMETRIC TRIANGLES
