@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
-MimeType=text/inp;
+MimeType=text/plain;
 Actions=ld_view;
 X-KDE-Submenu=Tools
 X-KDE-StartupNotify=false
