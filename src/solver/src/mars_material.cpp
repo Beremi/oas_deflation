@@ -204,7 +204,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
         temp_damage = damage;
     }
 
-    temp_damage = min( temp_damage, m->giveMaxDamage() ); //dangerous, better switched off
+    //temp_damage = min( temp_damage, m->giveMaxDamage() ); //dangerous, better switched off
 
     //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
     temp_crackOpening = l2_norm( ( L * damage ) * strain);  //total opening
@@ -232,7 +232,9 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
-        return stiff * ( 1 - temp_damage );
+        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        double dam = min( temp_damage, m->giveMaxDamage() );
+        return stiff * ( 1 - dam );
     } else if ( type.compare("unloading") == 0 ) {
         return stiff * ( 1 - temp_damage );
     } else if ( type.compare("tangent") == 0 ) {
