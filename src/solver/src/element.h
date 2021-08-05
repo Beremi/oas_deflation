@@ -24,14 +24,15 @@ protected:
     vector< Node * >nodes;
     string name;
     Material *mat;
-    vector< Point >ip_locs;
-    vector< double >ip_weights;
+    //vector< Point >ip_locs;
+    //vector< double >ip_weights;
     vector< Matrix >Bs;     //stored B matrices
     vector< Matrix >Hs;     //stored H matrices
     vector< MaterialStatus * >stats;
     vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
     virtual void setIntegrationPointsAndWeights();
+    virtual void initIntegration();
 
     ShapeFunc *shafunc;
     IntegrationType *inttype;

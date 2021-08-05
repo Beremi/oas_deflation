@@ -18,7 +18,7 @@ TrsprtQuad :: TrsprtQuad() {
 //////////////////////////////////////////////////////////
 Matrix TrsprtQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     return phiG;
 }
 
@@ -76,7 +76,7 @@ TrsprtTemprtrCoupledBrick :: TrsprtTemprtrCoupledBrick() {
 //////////////////////////////////////////////////////////
 Matrix TrsprtTemprtrCoupledBrick :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     Matrix B(2 * ndim, numOfNodes *2);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         for ( unsigned v = 0; v < ndim; v++ ) {
@@ -125,7 +125,7 @@ MechanicalQuad :: MechanicalQuad() {
 //////////////////////////////////////////////////////////
 Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG( ndim, nodes.size() );
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     Matrix B( 3, DoFids.size() );
 
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
@@ -164,7 +164,7 @@ MechanicalBrick :: MechanicalBrick() {
 //////////////////////////////////////////////////////////
 Matrix MechanicalBrick :: giveBMatrix(const Point *x) const {
     Matrix phiG( ndim, nodes.size() );
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     Matrix B( 6, DoFids.size() );
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         B [ 0 ] [ 3 * i ]       =   B [ 4 ] [ 3 * i + 2 ]  =   B [ 5 ] [ 3 * i + 1 ] =   phiG [ 0 ] [ i ];
@@ -190,7 +190,7 @@ CosseratQuad :: CosseratQuad() {
 //////////////////////////////////////////////////////////
 Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     Vector phi( nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix B( 6, DoFids.size() );
@@ -240,7 +240,7 @@ CosseratBrick :: CosseratBrick() {
 //////////////////////////////////////////////////////////
 Matrix CosseratBrick :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     Vector phi( nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix B( 18, DoFids.size() ); //9 strains, 9 curvatures
@@ -298,7 +298,7 @@ CoupledCosseratQuad :: CoupledCosseratQuad() {
 //////////////////////////////////////////////////////////
 Matrix CoupledCosseratQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     Vector phi( nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix B( 8, DoFids.size() ); //4 strains, 2 curvatures, 2 pressure gradients
@@ -404,7 +404,7 @@ Vector CoupledCosseratBrick :: giveInternalForces(const Vector &DoFs, bool froze
 //////////////////////////////////////////////////////////
 Matrix CoupledCosseratBrick :: giveBMatrix(const Point *x) const {
     Matrix phiG(ndim, numOfNodes);
-    shafunc->giveShapeFGrad(x, nodes, phiG);
+    shafunc->giveShapeFGrad(x, phiG);
     Vector phi( nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix B( 21, DoFids.size() ); //9 strains, 9 curvatures, 3 pressure gradients

@@ -26,13 +26,17 @@ Element :: ~Element() {
 // }
 
 //////////////////////////////////////////////////////////
+void Element :: initIntegration() {
+    shafunc -> init();
+    inttype -> init();
+};
+
+//////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {
-    shafunc->init();
-    inttype->init();
     stats.resize( inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
-        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k), nodes) );
+        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k)) );
     }
 };
 
@@ -55,6 +59,10 @@ void Element :: init() {
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         totalDoFs += ( * n )->giveNumberOfDoFs();
     }
+
+    initIntegration();
+    setIntegrationPointsAndWeights();
+
     DoFids.resize(totalDoFs);
     unsigned i = 0;
     unsigned k;
@@ -66,9 +74,7 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
-    shafunc->init();    //shape function initialization
-    inttype->init();    //integration initialization
-    setIntegrationPointsAndWeights();
+
 
     Bs.resize( inttype->giveNumIP() );
     Hs.resize( inttype->giveNumIP() );
