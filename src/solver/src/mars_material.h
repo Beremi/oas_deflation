@@ -46,6 +46,7 @@ private:
     double fs, Gs, fc, Kc, beta, mu, nc;
     double Lcrs, Lcrt;
     double damage_residuum = 0.0;
+    double stress_residuum_fraction = 0.0;
 public:
     MarsMaterial() { name = "Mars material"; };
     virtual ~MarsMaterial() {};
@@ -63,6 +64,7 @@ public:
     double giveLcrt() { return Lcrt; }
     double giveKc() { return Kc; }
     double giveMaxDamage() { return 1.0 - damage_residuum; }
+    double giveStressResiduum() { return ft * stress_residuum_fraction; }
 
     virtual void init();
 };

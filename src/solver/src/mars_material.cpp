@@ -233,8 +233,35 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        double dam = min( temp_damage, m->giveMaxDamage() );
-        return stiff * ( 1 - dam );
+        if ( m->giveMaxDamage() < 1.0 ) {
+            double dam = min( temp_damage, m->giveMaxDamage() );
+            return stiff * ( 1 - dam );
+        } else if ( m->giveStressResiduum() > 0.0 ) {
+            // TODO finish this JK
+            // QUESTION is this performed before update?
+            if ( temp_damage > damage ) { // if damage increases, apply residuum
+                double sN, sT;
+                sN = temp_stress[0];
+                sT = 0.0;
+                for ( unsigned i = 1; i < temp_stress.size(); i++ ) {
+                    sT += temp_stress[i];
+                }
+                if ( sqrt( pow(sN, 2) + pow(sT, 2) / m->giveAlpha() ) < m->giveStressResiduum() ) {
+                    double epsN, epsT;
+                    epsN = temp_strain[0];
+                    epsT = 0.0;
+                    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+                        epsT += temp_strain[i];
+                    }
+                    double epsEQ = sqrt( pow(epsN, 2) + pow(epsT, 2) * m->giveAlpha() );
+                    return stiff * ( 1 - m->giveStressResiduum() / ( m->giveE0() * epsEQ ) );
+                }
+            } else {
+                return stiff * ( 1 - temp_damage );
+            }
+        } else {
+            return stiff * ( 1 - temp_damage );
+        }
     } else if ( type.compare("unloading") == 0 ) {
         return stiff * ( 1 - temp_damage );
     } else if ( type.compare("tangent") == 0 ) {
@@ -332,6 +359,8 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
             iss >> Kc;
         } else if ( param.compare("damage_residuum") == 0 ) {
             iss >> damage_residuum;
+        } else if ( param.compare("stress_residuum_fraction") == 0 ) {
+            iss >> stress_residuum_fraction;
         }
     }
     if ( !bft ) {
