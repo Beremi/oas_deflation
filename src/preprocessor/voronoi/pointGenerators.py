@@ -725,33 +725,45 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
 
 def randPointInSphere(center, radius):
     # works also for circle in xy plane (based on len(center))
-    point = np.zeros(len(center))
+        point = np.zeros(len(center))
 
     angle1 = np.random.uniform() * np.pi * 2
-    angle2 = np.random.uniform() * np.pi * 2
     rn = np.random.uniform()
+    # print(rn, rn < 0.2 and "lower than <<<<<<<<<<<<<<<<<<<<<<" or "" )
 
-    point[0] = radius * np.cos(angle1) * rn
-    point[1] = radius * np.sin(angle1) * rn
     if len(point) > 2:
+        # 3D case
+        angle2 = np.random.uniform() * np.pi
+        point[0] = radius * np.cos(angle1) * np.sin(angle2) * rn
+        point[1] = radius * np.sin(angle1) * np.sin(angle2) * rn
         point[2] = radius * np.cos(angle2) * rn
+
+    else:
+        point[0] = radius * np.cos(angle1) * rn
+        point[1] = radius * np.sin(angle1) * rn
 
     point += center
     return point
+
 
 def randPointBetweenSpheres(center, radius, thickness):
     # works also both anulus in xy plane
     point = np.zeros(len(center))
 
     angle1 = np.random.uniform() * np.pi * 2
-    angle2 = np.random.uniform() * np.pi * 2
 
     effRadius = (radius - thickness) + thickness *  np.random.uniform()
 
-    point[0] = effRadius * np.cos(angle1)
-    point[1] = effRadius * np.sin(angle1)
     if len(point) > 2:
+        # 3D case
+        angle2 = np.random.uniform() * np.pi
+        point[0] = effRadius * np.cos(angle1) * np.sin(angle2)
+        point[1] = effRadius * np.sin(angle1) * np.sin(angle2)
         point[2] = effRadius * np.cos(angle2)
+
+    else:
+        point[0] = effRadius * np.cos(angle1)
+        point[1] = effRadius * np.sin(angle1)
 
     point += center
     return point
