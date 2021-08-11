@@ -725,7 +725,7 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
 
 def randPointInSphere(center, radius):
     # works also for circle in xy plane (based on len(center))
-        point = np.zeros(len(center))
+    point = np.zeros(len(center))
 
     angle1 = np.random.uniform() * np.pi * 2
     rn = np.random.uniform()
