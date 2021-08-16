@@ -1185,9 +1185,12 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
         node_coords.append(np.copy(nodeA))
         node_coords.append(np.copy(nodeB))
 
+
     if (not equidist):
+        node_coords.append( randPointOnLine(dim, nodeA, nodeB) )
         tr=0
         while (tr<trials):
+            #print(tr)
             tr = 0;
             distIsGood = False
             while (distIsGood == False):

@@ -20,6 +20,7 @@ from utilitiesGeom import mechBCFile
 from pathlib import Path
 import shutil
 
+
 # Disable
 def blockPrint():
     sys.stdout = open(os.devnull, 'w')
@@ -70,7 +71,7 @@ class Model:
         self.notches = []
         self.materialZones= []
         self.measuringGauges = []
-        self.symmetric = False
+        self.symmetric = 0
 
         self.vor = None
         self.areas = None
@@ -237,7 +238,7 @@ class Model:
             if (r[i]=='Xtopsize'):
                 self.Xtopsize = float(r[i+1])
             if (r[i]=='symmetric'):
-                if (int(r[i+1])==1): self.symmetric = True
+                self.symmetric =  int(r[i+1])
 
 
 
@@ -287,6 +288,8 @@ class Model:
 
         if self.modelType == '2d_dogbone':
             self.run_2d_dogbone()
+        if self.modelType == '2d_dogboneStrip':
+            self.run_2d_dogboneStrip()
         if self.modelType == '3d_dogbone':
             self.run_3d_dogbone()
 
@@ -328,6 +331,9 @@ class Model:
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
+        if self.modelType == '2d_coupledPress':
+            self.run_2d_coupledPress()
+
         if self.modelType =='3d_coupledBrazilianDisc':
             self.run_3d_coupledBrazilianDisc()
 
@@ -351,6 +357,13 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self, node_coords_init=None):
+        #width of the supports, nemenit, je i v assemble3DSSBeamBending !!!!
+        supportWidth = self.maxLim[0] / 20
+        # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
+        #na kazdou stranu se prida pulka podpory
+        self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
+
+
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
@@ -411,6 +424,13 @@ class Model:
             else:
                 self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
+
+
+    def run_2d_dogboneStrip(self):
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBoneStrip(self.minDist, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, randomStrip=self.roughDogBone)
+        self.materialZones=None
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2dStrip', D=self.dogboneD)
 
     def run_3d_dogbone(self):
         self.maxLim = np.array([self.dogboneD, 6/4*self.dogboneD, 0.1])
@@ -480,6 +500,11 @@ class Model:
 
     def run_2d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
+
+    def run_2d_coupledPress(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCoupledPress(self.maxLim, self.minDist, self.trials)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('coupledPress2d', maxLim=self.maxLim)
+
 
     def run_3d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
