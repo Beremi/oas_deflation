@@ -90,15 +90,15 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     TranspPolygonal *newelem = new TranspPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                /*} else if ( elemType.compare("TranspVirtPolygonal") == 0 ) {
+                } else if ( elemType.compare("TranspVirtPolygonal") == 0 ) {
                     TranspVirtPolygonal *newelem = new TranspVirtPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TranspCondensedPolygonal") == 0 ) {
                     TranspCondensedPolygonal *newelem = new TranspCondensedPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
-                    elems.push_back(newelem);*//*
-                                              * } else if ( elemType.compare("PolyhedralFace") == 0 ) {
+                    elems.push_back(newelem);
+                /*} else if ( elemType.compare("PolyhedralFace") == 0 ) {
                                               * PolyhedralFace *newelem = new PolyhedralFace(ndim);
                                               * newelem->readFromLine(iss, nodes, matrs);
                                               * elems.push_back(newelem);*/

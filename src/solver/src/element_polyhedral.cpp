@@ -163,7 +163,7 @@ Matrix TranspPolygonal :: giveHMatrix(const Point *x) const {
     return H;
 }
 
-/*
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT VIRTUAL POLYGONAL ELEMENT
@@ -173,13 +173,30 @@ TranspVirtPolygonal :: TranspVirtPolygonal(const unsigned dim) : TranspPolygonal
 }
 
 //////////////////////////////////////////////////////////
-void TranspVirtPolygonal :: init() {
-    TranspPolygonal :: init(); //calling base class method;
+void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
+    TranspPolygonal :: setIntegrationPointsAndWeights(); //calling base class method;
+
+    vector< Point >normals;
+    vector< double >surfaces;
+    normals.resize(numOfNodes);
+    surfaces.resize(numOfNodes);
+    Point diff;
+    unsigned i, j, v;
+    //face X must start at node X and end at node X+1
+    for ( i = 0; i < numOfNodes; i++ ) {
+        if ( i == numOfNodes - 1 ) {
+            j = 0;
+        } else {
+            j = i + 1;
+        }
+        diff = nodes [ j ]->givePoint() - nodes [ i ]->givePoint();
+        surfaces [ i ] = diff.norm();
+        normals [ i ] = Point(diff.y / surfaces [ i ], -diff.x / surfaces [ i ], 0);
+    }
 
     double radius = pow(volume / M_PI, 0.5);
     Matrix D(numOfNodes, ndim + 1);
     Point x;
-    unsigned i, j, v;
     for ( i = 0; i < numOfNodes; i++ ) {
         D [ i ] [ 0 ] = 1.;
         x = nodes [ i ]->givePoint();
@@ -228,11 +245,11 @@ void TranspVirtPolygonal :: init() {
     Matrix H(ndim + 1, ndim + 1);
     Vector m(ndim + 1);
     m [ 0 ] = 1;
-    for ( i = 0; i < ip_weights.size(); i++ ) {
+    for ( i = 0; i < inttype->giveNumIP(); i++ ) {
         for ( v = 0; v < ndim; v++ ) {
-            m [ v + 1 ] = ( ip_locs [ i ].giveCoord(v) - centroid.giveCoord(v) ) / radius;
+            m [ v + 1 ] = ( inttype->giveIPLocation(i).giveCoord(v) - centroid.giveCoord(v) ) / radius;
         }
-        H += dyadicProduct(m, m * ip_weights [ i ]);
+        H += dyadicProduct(m, m * inttype->giveIPWeight(i));
     }
 
     double Hdet = H [ 0 ] [ 0 ] * H [ 1 ] [ 1 ] * H [ 2 ] [ 2 ] + H [ 0 ] [ 2 ] * H [ 1 ] [ 0 ] * H [ 2 ] [ 1 ] + H [ 2 ] [ 0 ] * H [ 0 ] [ 1 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 0 ] * H [ 2 ] [ 1 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 1 ] * H [ 1 ] [ 0 ] * H [ 2 ] [ 2 ] - H [ 0 ] [ 2 ] * H [ 1 ] [ 1 ] * H [ 2 ] [ 0 ];
@@ -261,8 +278,8 @@ void TranspVirtPolygonal :: init() {
 Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
     Matrix C = TranspPolygonal :: giveStiffnessMatrix(matrixType);
     double cond = 0;
-    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
-        cond += ip_weights [ i ] * stats [ i ]->giveStiffnessTensor("elastic", ndim) [ 0 ] [ 0 ];
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        cond += inttype->giveIPWeight(i) * stats [ i ]->giveStiffnessTensor("elastic", ndim) [ 0 ] [ 0 ];
     }
     cond /= volume;
 
@@ -273,11 +290,11 @@ Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
 Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
     Matrix M = TranspPolygonal :: giveDampingMatrix();
     double cap = 0;
-    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
-        cap += ip_weights [ i ] * stats [ i ]->giveDampingTensor() [ 0 ] [ 0 ];
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        cap += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor() [ 0 ] [ 0 ];
     }
     cap /= volume;
-/*
+
     /*
      * cout << "------------" << endl;
      * M.print();
@@ -290,16 +307,17 @@ Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
      * exit(1);
      * return M;
      */
-/*
+
     return ( W1 + matrix_multiply(W2.transpose(), W2) * volume ) * cap;
 }
 
 //////////////////////////////////////////////////////////
-Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen) {
-    ( void ) frozen;
+Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
+    ( void ) frozen; (void) timeStep;
     //return Element::giveInternalForces(DoFs, frozen); //incorrect integration
     return giveStiffnessMatrix("elastic") * DoFs;  //using VEM integration, only elastic material!
 }
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -312,15 +330,20 @@ TranspCondensedPolygonal :: TranspCondensedPolygonal(const unsigned dim) : Trans
 
 //////////////////////////////////////////////////////////
 void TranspCondensedPolygonal :: fullShapeF(const Point *x, Vector &phi) const {
+    return;
+    /*
     unsigned face = findFaceNumber(* x);
     double tarea = triArea2D( centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
     phi [ faces [ face ] [ 1 ] ] = triArea2D( * x, centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint() ) / tarea;
     phi [ faces [ face ] [ 0 ] ] = triArea2D(* x, nodes [ faces [ face ] [ 1 ] ]->givePoint(), centroid) / tarea;
     phi [ numOfNodes ] = triArea2D( * x, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() ) / tarea;
+    */
 }
 
 //////////////////////////////////////////////////////////
 double TranspCondensedPolygonal :: fullShapeFGrad(const Point *x, Matrix &phiGrad) const {
+    return 0;
+    /*
     unsigned face = findFaceNumber(* x);
     phiGrad *= 0.;
     double tarea = triArea2D( centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
@@ -331,10 +354,13 @@ double TranspCondensedPolygonal :: fullShapeFGrad(const Point *x, Matrix &phiGra
     phiGrad [ 0 ] [ numOfNodes ]               = 0.5 * ( nodes [ faces [ face ] [ 0 ] ]->givePoint().getY() - nodes [ faces [ face ] [ 1 ] ]->givePoint().getY() ) / tarea;
     phiGrad [ 1 ] [ numOfNodes ]               = 0.5 * ( nodes [ faces [ face ] [ 1 ] ]->givePoint().getX() - nodes [ faces [ face ] [ 0 ] ]->givePoint().getX() ) / tarea;
     return 1.;
+    */
 }
 
 //////////////////////////////////////////////////////////
 unsigned TranspCondensedPolygonal :: findFaceNumber(Point x) const {
+    return 0;
+    /*
     double alpha = atan2( x.getY() - centroid.getY(), x.getX() - centroid.getX() );
     double a, b;
     unsigned face;
@@ -350,19 +376,25 @@ unsigned TranspCondensedPolygonal :: findFaceNumber(Point x) const {
     }
     cerr << "Error in TranspCondensedPolygonal: findFaceNumber should never go here" << endl;
     exit(1);
+    */
 }
 
 //////////////////////////////////////////////////////////
 void TranspCondensedPolygonal :: shapeF(const Point *x, Vector &phi) const {
+    return;
+    /*
     Vector full(numOfNodes + 1);
     fullShapeF(x, full);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         phi [ i ] = full [ i ] + full [ numOfNodes ] * red2full [ i ];
     }
+    */
 }
 
 //////////////////////////////////////////////////////////
 double TranspCondensedPolygonal :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
+    return 0;
+    /*
     Matrix full(ndim, numOfNodes + 1);
     fullShapeFGrad(x, full);
     for ( unsigned d = 0; d < ndim; d++ ) {
@@ -371,31 +403,20 @@ double TranspCondensedPolygonal :: shapeFGrad(const Point *x, Matrix &phiGrad) c
         }
     }
     return 1.;
+    */
 }
 
 //////////////////////////////////////////////////////////
-void TranspCondensedPolygonal :: init() {
+void TranspCondensedPolygonal :: setIntegrationPointsAndWeights() {
+    TranspPolygonal :: setIntegrationPointsAndWeights(); //calling base class method;
     red2full.resize(numOfNodes);
-
-    cout << "QQQQQQQQ" << endl; cout.flush();     
-    sort2D();
-    cout << "AAAAAAAA" << endl; cout.flush(); 
-    //angles.resize(numOfNodes);
-    cout << "AAAAAAAA" << endl; cout.flush(); 
-    for ( unsigned i = 0; i < numOfNodes; i++ ) {
-    //    angles [ i ] = atan2( nodes [ i ]->givePoint().getY() - centroid.getY(), nodes [ i ]->givePoint().getX() - centroid.getX() );
-    }
-
-    cout << "AAAAAAAA" << endl; cout.flush(); 
-    TranspPolygonal :: init(); //calling base class method;
-    cout << "CCCCCC" << endl; cout.flush();
 
     //build transformation matrix allowing to calculate inner degree of freedom
     Matrix FullK(numOfNodes + 1, numOfNodes + 1);
     Matrix phiGrad(ndim, numOfNodes + 1);
-    for ( size_t i = 0; i < ip_weights.size(); i++ ) {
-        fullShapeFGrad(& ip_locs [ i ], phiGrad);
-        FullK += matrix_multiply(phiGrad.transpose(), phiGrad) * ip_weights [ i ];
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        fullShapeFGrad( inttype->giveIPLocationPointer(i), phiGrad);
+        FullK += matrix_multiply(phiGrad.transpose(), phiGrad) * inttype->giveIPWeight(i);
     }
 
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
@@ -403,11 +424,11 @@ void TranspCondensedPolygonal :: init() {
     }
 
     //update of B matrices requested, because the previous calculation didn't have correct shape functions
-    for ( unsigned k = 0; k < ip_locs.size(); k++ ) {
-        Bs [ k ] = giveBMatrix(& ip_locs [ k ]);
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        Bs [ i ] = giveBMatrix( inttype->giveIPLocationPointer(i) );
     }
 }
-*/
+
 
 /*
  * //////////////////////////////////////////////////////////
