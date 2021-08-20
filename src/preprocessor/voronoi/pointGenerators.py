@@ -346,7 +346,7 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
 
     else:
         #print('Equid')
-        mD = minDist * 1.6
+        mD = minDist #* 1.6
         length = np.linalg.norm(nodeA - nodeB)
         nodeNr = int (length / mD)
         indnt = (length-(nodeNr-1)*mD) / 2
@@ -551,9 +551,10 @@ def generateOrtogrid_variable(maxLim, minDist, node_coords, dimensions):
 
         node_coords.append(orthogrid[i,:])
 
-
-def generateNodesOrtoCircle2dRand(center, radius, minDist, node_coords, trials):
+# if equidistAng = True
+def generateNodesOrtoCircle2dRand(center, radius, minDist, node_coords, trials, equiAngNodes=0):
     print ('Generating a 3d circle surface. Ctr [%f, %f], Rad: %f' %(center[0],center[1], radius))
+
 
     tr=0
     while (tr<trials):
@@ -574,6 +575,10 @@ def generateNodesOrtoCircle2dRand(center, radius, minDist, node_coords, trials):
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
+
+
+
+
 
 
 def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_coords, trials):
@@ -598,6 +603,40 @@ def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_co
         if (tr < trials):
             node_coords.append(coords)
 
+
+
+
+def generateNodesOrtoAnnulus2dRand(center, radius, thickness,  minDist, node_coords, trials, minD=-1, maxD=-1):
+    print ('Generating a 2d annulus surface. Ctr [%f, %f], Rad: %f, Thick: %f' %(center[0],center[1],radius, thickness))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInAnnulus(np.array([center[0],center[1],0]), radius, thickness,2)
+            #
+            #relativePosition = (coords[gradienDirection]-lowBound[gradienDirection])/(maxLim[gradienDirection]-lowBound[gradienDirection])
+            if minD>0 and maxD>0:
+                pointRadius = np.linalg.norm(coords[0:2]-center)
+                relativePosition = (pointRadius - (radius-thickness))/ thickness
+
+                minDistDiff = maxD - minD
+                currentMinDist = minD + relativePosition * minDistDiff
+
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(2, currentMinDist, node_coords, coords[0:2])
+            else:
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords[0:2])
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords[0:2])
 
 
 def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials):
@@ -793,36 +832,61 @@ def randPointInTube(center, radius, height, thickness, directionDim):
     return point
 
 
-def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = 0, radiusSpread = 0):
+def generateNodesCircle2dRand(center, radius, minDist, node_coords, trials, angleLimitA=None, angleLimitB = None, mirrorIndent = 0, radiusSpread = 0, equiAngNodes=0):
     #print ('Generating a 2d circle border. Ctr [%s, %s], Rad: %s, Angle limit +-%s' %(center[0],center[1], radius, np.degrees(angleLimitA-angleLimitB)))
 
-    mirroredPoints = []
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
-        distIsGood = False
-        while (distIsGood == False):
-            if (mirrorIndent >0):
-                coords, mirrored_coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
-            else:
-                coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent, radiusSpread=radiusSpread)
+    if equiAngNodes <=0:
+        mirroredPoints = []
+        tr=0
+        while (tr<trials):
+            tr = 0;
             #
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords)
-            #
-            if (distIsGood == False):
-                tr += 1
+            distIsGood = False
+            while (distIsGood == False):
+                if (mirrorIndent >0):
+                    coords, mirrored_coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent)
+                else:
+                    coords = randPointOnCircle(center, radius, 2, angleLimitA = angleLimitA, angleLimitB = angleLimitB,mirrorIndent = mirrorIndent, radiusSpread=radiusSpread)
+                #
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(2, minDist, node_coords, coords)
+                #
+                if (distIsGood == False):
+                    tr += 1
+                if (tr > trials): break
             if (tr > trials): break
-        if (tr > trials): break
-        #
-        #Adding node coords
-        if (tr < trials):
-            node_coords.append(coords)
-            if (mirrorIndent >0):
-                mirroredPoints.append(mirrored_coords)
+            #
+            #Adding node coords
+            if (tr < trials):
+                node_coords.append(coords)
+                if (mirrorIndent >0):
+                    mirroredPoints.append(mirrored_coords)
 
-    if (mirrorIndent >0):
-        return mirroredPoints
+        if (mirrorIndent >0):
+            return mirroredPoints
+    else:
+        #
+        nodeNr = equiAngNodes
+        #indntAng = (2*np.pi-(nodeNr-1)*mD) / 2
+        stepAng =  2*np.pi / nodeNr
+
+        for i in range (nodeNr):
+            #print (i)
+            coords = np.zeros(2)
+            coords[0] = radius * np.cos(stepAng*i)
+            coords[1] = radius * np.sin(stepAng*i)
+            coords += center
+            node_coords.append(coords)
+
+        """
+        mD = minDist
+        length = np.linalg.norm(nodeA - nodeB)
+        nodeNr = int (length / mD)
+        indnt = (length-(nodeNr-1)*mD) / 2
+
+        coords = np.zeros(2)
+        coords[0] = (nodeB[0] - nodeA[0])*indnt/length +(nodeB[0] - nodeA[0])*mD/length*i  + nodeA[0]
+        coords[1] = (nodeB[1] - nodeA[1])*indnt/length +(nodeB[1] - nodeA[1])*mD/length*i  + nodeA[1]
+        """
 
 def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLimitB = None ,mirrorIndent = 0, radiusSpread=0):
     if (angleLimitA == None): angle = np.random.uniform() * np.pi * 2

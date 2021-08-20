@@ -198,6 +198,8 @@ class Model:
 
             if (r[i]=='edgeMinDistCoef'):
                 self.edgeMinDistCoef = float(r[i+1])
+            if (r[i]=='elasticHeightCoef'):
+                self.elasticHeightCoef = float(r[i+1])
 
 
             if (r[i]=='cylinderRad'):
@@ -290,6 +292,9 @@ class Model:
             self.run_2d_dogbone()
         if self.modelType == '2d_dogboneStrip':
             self.run_2d_dogboneStrip()
+        if self.modelType == '2d_dogboneBand':
+            self.run_2d_dogboneBand()
+
         if self.modelType == '3d_dogbone':
             self.run_3d_dogbone()
 
@@ -432,6 +437,24 @@ class Model:
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2dStrip', D=self.dogboneD)
 
+
+
+    def run_2d_dogboneBand(self):
+
+
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBoneBand(self.maxLim, self.minDist, roughMinDistCoef=self.roughMinDistCoef, elasticHeightCoef=self.elasticHeightCoef)
+
+        elasticHeight = self.maxLim[1] *  self.elasticHeightCoef / (2* self.elasticHeightCoef + 1)
+        dmgHeight =  self.maxLim[1] * 1 / (2* self.elasticHeightCoef + 1)
+        width =  self.maxLim[0]
+        self.materialZones= utilitiesModeling.assembleMaterialZones(0, 2, model='dogboneBand', maxLim=np.array([elasticHeight, dmgHeight, width]) )
+
+
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2dBand', maxLim= self.maxLim)
+
+
+
     def run_3d_dogbone(self):
         self.maxLim = np.array([self.dogboneD, 6/4*self.dogboneD, 0.1])
         #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='dogbone',  D=self.dogboneD, thickness=0.1)
@@ -517,7 +540,7 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
     def run_2d_corrosionRebar(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
@@ -942,6 +965,12 @@ if __name__ == '__main__':
 
     if model != None:
         for i in range (model.nr_models):
+
+            if (model.modelType=='2d_dogboneBand') and i==0:
+                model.maxLim [0]= float(model.maxLim [0]*model.minDist)
+                model.maxLim [1]= float(model.maxLim [1]*model.minDist*(2*model.elasticHeightCoef+1))
+
+
             print('\nCreating model #%d' %i)
             if len(sys.argv) > 3:
                 model.userSeed = int(sys.argv[3])
