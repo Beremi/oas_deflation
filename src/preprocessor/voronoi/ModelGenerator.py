@@ -242,7 +242,9 @@ class Model:
             if (r[i]=='symmetric'):
                 self.symmetric =  int(r[i+1])
 
-
+            if (r[i]=='adaptivityReady'):
+                if (int(r[i+1])==1): self.adaptivityReady = True
+                if (int(r[i+1])==0): self.adaptivityReady = False
 
         print('done.')
 
@@ -540,7 +542,7 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
     def run_2d_corrosionRebar(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []

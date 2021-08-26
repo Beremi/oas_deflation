@@ -21,7 +21,7 @@
 #
 # A: 0.5/0.2/0.1, B: 1.0/0.4/0.1  ///  0.525   1.050
 #Model 2d_notched3pb Xsize 0.525 Ysize 0.2 notchH 0.16667 loadWidth 0.005 minDist 0.008 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 100000 notchWidth 0.008
-#Model 3d_notched3pb Xsize 0.50 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 3000 notchWidth 0.008 elasticZone 1 
+#Model 3d_notched3pb Xsize 1 Ysize 0.4 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 5000 notchWidth 0.008 elasticZone 1 
 #
 #
 # Dogbones # pro normalni model roughDogBone 0 elasticZone 0
@@ -96,8 +96,8 @@
 #SpecifiedNode 0.3 1e-6
 #SpecifiedNode 0.7 1e-6
 #
-#Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.001  interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 4000 roughMinDistCoef 3
-Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.001 interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 0 activeMechanics 1 coupled 0 trials 4000 roughMinDistCoef 3
+Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.002  interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 7000 roughMinDistCoef 4 adaptivityReady 0
+#Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.001 interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 0 activeMechanics 1 coupled 0 trials 4000 roughMinDistCoef 3
 #
 #
 ####################################################################################
