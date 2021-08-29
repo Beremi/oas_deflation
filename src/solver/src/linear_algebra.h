@@ -534,4 +534,11 @@ double l2_norm(Vector x);
 bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0);
 bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
 bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A);
+
+
+double triArea2D(const Point *a, const Point *b, const Point *c);
+Point triNormal3D(const Point *a, const Point *b, const Point *c);
+double triArea3D(const Point *a, const Point *b, const Point *c);
+double tetVolume3D(const Point *a, const Point *b, const Point *c, const Point *d);
+
 #endif

@@ -2,6 +2,7 @@
 #define _SHAPE_F_H
 
 #include "node_container.h"
+class IntegrationType; //forward declaration
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -69,12 +70,42 @@ public:
 // 2D LINEAR SHAPE FUNCTIONS IN TRIANGLE
 class Linear2DTriShapeF : public ShapeFunc
 {
+double area;
 public:
-    Linear2DTriShapeF() { name = "2D linear shape functions for Triangle"; ndim = 2;  is_natural = true;};
+    Linear2DTriShapeF() { name = "2D linear shape functions for Triangle"; ndim = 2;  is_natural = false;};
     virtual ~Linear2DTriShapeF() {};
+    virtual void init( vector< Node * > &nodes );
+    virtual void init( vector< Point * > &points );
     virtual void giveShapeF(const Point *x, Vector &phi) const;
-    //virtual void giveShapeFGradNatural(const Point *x, Matrix &phiGradNat) const;
+    virtual void giveShapeFGrad(const Point *x, Matrix &phiGrad) const;
+    double giveArea()const {return area;};
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D LINEAR TRIANGULAR BASED SHAPE FUNCTIONS IN POLYGON
+class Linear2DPolygonShapeF : public ShapeFunc
+{
+protected: 
+    Point centroid;
+    vector< vector< unsigned > >faces;
+    vector< double > angles;
+    vector< Linear2DTriShapeF > triangles;
+    IntegrationType *inttype;
+    Vector red2full;
+
+    virtual void giveFullShapeF(const Point *x, Vector &phi) const;
+    virtual void giveFullShapeFGrad(const Point *x, Matrix &phiGrad) const;
+public:
+    Linear2DPolygonShapeF() { name = "2D linear shape functions for Polygon"; ndim = 2;  is_natural = false;};
+    virtual ~Linear2DPolygonShapeF() {};
+    virtual void init( vector< Node * > &nodes );
+    virtual void giveShapeF(const Point *x, Vector &phi) const;
+    virtual void giveShapeFGrad(const Point *x, Matrix &phiGrad) const;
+    void setFacesCentroidAndIntegration(vector< vector< unsigned > > & f, Point c, IntegrationType *it);
+    unsigned findFaceNumber(const Point *x) const;
+};
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
