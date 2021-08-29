@@ -244,17 +244,20 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
                 sN = temp_stress[0];
                 sT = 0.0;
                 for ( unsigned i = 1; i < temp_stress.size(); i++ ) {
-                    sT += temp_stress[i];
+                    sT += pow(temp_stress[i], 2);
                 }
-                if ( sqrt( pow(sN, 2) + pow(sT, 2) / m->giveAlpha() ) < m->giveStressResiduum() ) {
+                double strs = sqrt( pow(sN, 2) + (sT / m->giveAlpha()) );
+                if ( strs  < m->giveStressResiduum() ) {
                     double epsN, epsT;
                     epsN = temp_strain[0];
                     epsT = 0.0;
                     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
-                        epsT += temp_strain[i];
+                        epsT += pow( temp_strain[i], 2 );
                     }
-                    double epsEQ = sqrt( pow(epsN, 2) + pow(epsT, 2) * m->giveAlpha() );
+                    double epsEQ = sqrt( pow(epsN, 2) + epsT * m->giveAlpha() );
                     return stiff * ( 1 - m->giveStressResiduum() / ( m->giveE0() * epsEQ ) );
+                } else {
+                    return stiff * ( 1 - temp_damage );
                 }
             } else {
                 return stiff * ( 1 - temp_damage );

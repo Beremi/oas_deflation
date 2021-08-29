@@ -21,7 +21,7 @@
 #
 # A: 0.5/0.2/0.1, B: 1.0/0.4/0.1  ///  0.525   1.050
 #Model 2d_notched3pb Xsize 0.525 Ysize 0.2 notchH 0.16667 loadWidth 0.005 minDist 0.008 fracZoneWidth 0.08 activeMechanics 1 orthogonalFracZone 0 trials 100000 notchWidth 0.008
-#Model 3d_notched3pb Xsize 0.525 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 1000 notchWidth 0.008 elasticZone 1
+#Model 3d_notched3pb Xsize 1 Ysize 0.4 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 5000 notchWidth 0.008 elasticZone 1 
 #
 #
 # Dogbones # pro normalni model roughDogBone 0 elasticZone 0
@@ -31,7 +31,21 @@
 # roughEdgeDogbone 0 - presne nasamplovane kruznice
 # roughEdgeDogbone 1 - prvky s obema nody v modelu
 # roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-Model 2d_dogbone dogboneD 0.8 minDist 0.005 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 35 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 10 interLayerThickness 50 nr_models 20 defaultFilesFolder dogboneDefault
+#Model 2d_dogbone dogboneD 0.5 minDist 0.004 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 15 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 20 nr_models 50 defaultFilesFolder dogboneDefault
+#0.125
+#Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 1 nr_models 100 defaultFilesFolder dogboneDefault
+#C
+#Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 3000 symmetric 1 edgeMinDistCoef 0.7 roughDogBone 10 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 8 interLayerThickness 60 nr_models 200 defaultFilesFolder dogboneDefault
+#
+#DOGBONE STRIP
+# roughDogBone 0 - ekvidist grid, catch corners
+# roughDogBone 1 - random, catch corners
+# roughDogBone 2 - random 
+#Model 2d_dogboneStrip dogboneD 0.4 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 nr_models 400 roughDogBone 1 defaultFilesFolder dogboneDefaultStrip
+#
+#DOGBONE BAND
+#Model 2d_dogboneBand minDist 0.001 Xsize 60 Ysize 10 activeMechanics 1  roughMinDistCoef 2 elasticHeightCoef 2 nr_models 100 defaultFilesFolder dogboneDefaultBand
+#
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
 #Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 #
@@ -62,7 +76,7 @@ Model 2d_dogbone dogboneD 0.8 minDist 0.005 dogboneExcentricityFrac 50 activeMec
 #
 #Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 #Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
-#Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.05 cylinderHeight 0.2 tubeThickness 0.025 activeTransport 1 activeMechanics 1 coupled 1 trials 3000
+#Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.05 cylinderHeight 0.2 tubeThickness 0.025 activeTransport 1 activeMechanics 1 coupled 1 trials 5000
 #
 #
 ####################################################################################
@@ -70,6 +84,7 @@ Model 2d_dogbone dogboneD 0.8 minDist 0.005 dogboneExcentricityFrac 50 activeMec
 #Model 2d_coupledArtificialCrack Xsize 0.2 Ysize 0.5 minDist 0.01 notchH 0.5 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 #Model 3d_coupledArtificialCrack Xsize 0.02 Ysize 0.05 Zsize 0.005 minDist 0.0015 notchH 0.6 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
 #Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 0 activeMechanics 1 coupled 0 trials 20000
+#Model 2d_coupledPress Xsize 0.025 Ysize 0.2 minDist 0.0008 trials 10000 activeTransport 1 activeMechanics 1 coupled 1 
 #
 #Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.05 minDist 0.006 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth -1
 #
@@ -81,8 +96,8 @@ Model 2d_dogbone dogboneD 0.8 minDist 0.005 dogboneExcentricityFrac 50 activeMec
 #SpecifiedNode 0.3 1e-6
 #SpecifiedNode 0.7 1e-6
 #
-#Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0015  interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 50000
-#Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.0015 interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 0 activeMechanics 1 coupled 0 trials 20000
+Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.002  interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 7000 roughMinDistCoef 4 adaptivityReady 0
+#Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.001 interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 0 activeMechanics 1 coupled 0 trials 4000 roughMinDistCoef 3
 #
 #
 ####################################################################################
@@ -107,7 +122,7 @@ Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
 #Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0
 #
 # Transport material
-Material TrsprtMaterial	capacity	0.1	density	1.00E+03	permeability	1.00E-18	viscosity	8.90E-04	crack_turtuosity	0.9 biot_coeff 0
+Material TrsprtMaterial	capacity	0.001	density	1.00E+03	permeability	1.00E-18	viscosity	8.90E-04	crack_turtuosity	0.9 biot_coeff 0
 #Elastic material
 Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
 #dalsi mars
@@ -119,4 +134,4 @@ Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
 #
 #
 #EXPORTERS
-Exporter VTKElementExporter elems saveEvery 0.001 cellData 2 damage crack_opening pointData 1 pressure
+Exporter VTKElementExporter elems saveEvery 0.001 cellData 2 damage crack_opening pointData 2 nodal_stress pressure
