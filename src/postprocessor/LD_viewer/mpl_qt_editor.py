@@ -27,37 +27,64 @@ from traitsui.api import Handler
 
 class _MPLFigureEditor(Editor):
 
-   scrollable  = True
+    scrollable = True
 
-   def init(self, parent):
-       self.control = self._create_canvas(parent)
-       self.set_tooltip()
+    def init(self, parent):
+        self.control = self._create_canvas(parent)
+        self.object.on_trait_change(self.update_editor, 'data_changed')
+        self.value.canvas.mpl_connect('key_press_event', self._key_press_callback)
+        self.set_tooltip()
 
-   def update_editor(self):
-       pass
+    def update_editor(self):
+        figure = self.value
+        figure.canvas.draw()
 
-   def _create_canvas(self, parent):
-       """ Create the MPL canvas. """
-       # matplotlib commands to create a canvas
-       frame = QtGui.QWidget()
-       mpl_canvas = FigureCanvas(self.value)
-       mpl_canvas.setParent(frame)
-       mpl_toolbar = NavigationToolbar2QT(mpl_canvas,frame)
+    def _create_canvas(self, parent):
+        """ Create the MPL canvas. """
+        # matplotlib commands to create a canvas
+        frame = QtGui.QWidget()
+        mpl_canvas = FigureCanvas(self.value)
+        mpl_canvas.setParent(frame)
+        mpl_toolbar = NavigationToolbar2QT(mpl_canvas, frame)
 
-       vbox = QtGui.QVBoxLayout()
-       vbox.addWidget(mpl_canvas)
-       vbox.addWidget(mpl_toolbar)
-       frame.setLayout(vbox)
+        mpl_canvas.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        mpl_canvas.setFocus()
 
-       return frame
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(mpl_canvas)
+        vbox.addWidget(mpl_toolbar)
+        frame.setLayout(vbox)
+
+        return frame
+
+    def _key_press_callback(self, event):
+        'whenever a key is pressed'
+        figure = self.value
+        if not event.inaxes:
+            return
+        if event.key == 'l':
+            if figure.axes[0].get_xscale() == 'log':
+                figure.axes[0].set_xscale('linear')
+                figure.canvas.draw()
+            else:
+                figure.axes[0].set_xscale('log')
+                figure.canvas.draw()
+
+        if event.key == 'k':
+            if figure.axes[0].get_yscale() == 'log':
+                figure.axes[0].set_yscale('linear')
+                figure.canvas.draw()
+            else:
+                figure.axes[0].set_yscale('log')
+                figure.canvas.draw()
 
 class MPLFigureEditor(BasicEditorFactory):
 
-   klass = _MPLFigureEditor
+    klass = _MPLFigureEditor
 
 class MPLInitHandler(Handler):
     """Handler calls mpl_setup() to initialize mpl events"""
-    
+
     def init(self, info):
         """This method gets called after the controls have all been
         created but before they are displayed.
@@ -70,7 +97,7 @@ if __name__ == "__main__":
     from traits.api import HasTraits
     from traitsui.api import View, Item
     from numpy import sin, cos, linspace, pi
-    from matplotlib.widgets import  RectangleSelector
+    from matplotlib.widgets import RectangleSelector
 
     class Test(HasTraits):
 
@@ -90,7 +117,7 @@ if __name__ == "__main__":
         def mpl_setup(self):
             def onselect(eclick, erelease):
                 print("eclick: {}, erelease: {}".format(eclick,erelease))
-               
+
             self.rs = RectangleSelector(self.axes, onselect,
                                         drawtype='box',useblit=True)
 
