@@ -74,8 +74,6 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
-
-
     Bs.resize( inttype->giveNumIP() );
     Hs.resize( inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {

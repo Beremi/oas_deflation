@@ -20,6 +20,7 @@ from utilitiesGeom import mechBCFile
 from pathlib import Path
 import shutil
 
+
 # Disable
 def blockPrint():
     sys.stdout = open(os.devnull, 'w')
@@ -70,7 +71,7 @@ class Model:
         self.notches = []
         self.materialZones= []
         self.measuringGauges = []
-        self.symmetric = False
+        self.symmetric = 0
 
         self.vor = None
         self.areas = None
@@ -197,6 +198,8 @@ class Model:
 
             if (r[i]=='edgeMinDistCoef'):
                 self.edgeMinDistCoef = float(r[i+1])
+            if (r[i]=='elasticHeightCoef'):
+                self.elasticHeightCoef = float(r[i+1])
 
 
             if (r[i]=='cylinderRad'):
@@ -237,15 +240,17 @@ class Model:
             if (r[i]=='Xtopsize'):
                 self.Xtopsize = float(r[i+1])
             if (r[i]=='symmetric'):
-                if (int(r[i+1])==1): self.symmetric = True
+                self.symmetric =  int(r[i+1])
 
-
+            if (r[i]=='adaptivityReady'):
+                if (int(r[i+1])==1): self.adaptivityReady = True
+                if (int(r[i+1])==0): self.adaptivityReady = False
 
         print('done.')
 
     def setDirectory(self, dirNam=None):
         if self.userSeed == -1:
-            self.seed = np.random.randint(1000.0)
+            self.seed = np.random.randint(100000.0)
             np.random.seed(seed=self.seed)
         else:
             self.seed = self.userSeed
@@ -287,6 +292,11 @@ class Model:
 
         if self.modelType == '2d_dogbone':
             self.run_2d_dogbone()
+        if self.modelType == '2d_dogboneStrip':
+            self.run_2d_dogboneStrip()
+        if self.modelType == '2d_dogboneBand':
+            self.run_2d_dogboneBand()
+
         if self.modelType == '3d_dogbone':
             self.run_3d_dogbone()
 
@@ -328,6 +338,9 @@ class Model:
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
+        if self.modelType == '2d_coupledPress':
+            self.run_2d_coupledPress()
+
         if self.modelType =='3d_coupledBrazilianDisc':
             self.run_3d_coupledBrazilianDisc()
 
@@ -351,6 +364,13 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self, node_coords_init=None):
+        #width of the supports, nemenit, je i v assemble3DSSBeamBending !!!!
+        supportWidth = self.maxLim[0] / 20
+        # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
+        #na kazdou stranu se prida pulka podpory
+        self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
+
+
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
@@ -406,8 +426,36 @@ class Model:
             if self.roughDogBone >1:
                 elaHeight = 3/4*self.dogboneD - (self.roughDogBone-1)*self.minDist
 
-            self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
+            if self.symmetric:
+                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
+            else:
+                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
+
+
+    def run_2d_dogboneStrip(self):
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBoneStrip(self.minDist, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, randomStrip=self.roughDogBone)
+        self.materialZones=None
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2dStrip', D=self.dogboneD)
+
+
+
+    def run_2d_dogboneBand(self):
+
+
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates)   = utilitiesModeling.create2dDogBoneBand(self.maxLim, self.minDist, roughMinDistCoef=self.roughMinDistCoef, elasticHeightCoef=self.elasticHeightCoef)
+
+        elasticHeight = self.maxLim[1] *  self.elasticHeightCoef / (2* self.elasticHeightCoef + 1)
+        dmgHeight =  self.maxLim[1] * 1 / (2* self.elasticHeightCoef + 1)
+        width =  self.maxLim[0]
+        self.materialZones= utilitiesModeling.assembleMaterialZones(0, 2, model='dogboneBand', maxLim=np.array([elasticHeight, dmgHeight, width]) )
+
+
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2dBand', maxLim= self.maxLim)
+
+
 
     def run_3d_dogbone(self):
         self.maxLim = np.array([self.dogboneD, 6/4*self.dogboneD, 0.1])
@@ -478,6 +526,11 @@ class Model:
     def run_2d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
 
+    def run_2d_coupledPress(self):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCoupledPress(self.maxLim, self.minDist, self.trials)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('coupledPress2d', maxLim=self.maxLim)
+
+
     def run_3d_coupledArtificialCrack(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dCoupledArtificialCrack(self.maxLim, self.minDist, self.trials, self.notchH)
 
@@ -489,7 +542,7 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
     def run_2d_corrosionRebar(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
@@ -914,6 +967,12 @@ if __name__ == '__main__':
 
     if model != None:
         for i in range (model.nr_models):
+
+            if (model.modelType=='2d_dogboneBand') and i==0:
+                model.maxLim [0]= float(model.maxLim [0]*model.minDist)
+                model.maxLim [1]= float(model.maxLim [1]*model.minDist*(2*model.elasticHeightCoef+1))
+
+
             print('\nCreating model #%d' %i)
             if len(sys.argv) > 3:
                 model.userSeed = int(sys.argv[3])

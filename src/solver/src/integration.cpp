@@ -99,28 +99,27 @@ void IntegrPolygon :: init(const vector< Node* > & nodes, const vector< vector< 
     if ( ip_type.compare("tri") == 0 ) {
         IntegrTri3 localINT; //integration type
         localINT.init();
-        Linear2DQuadShapeF localSF; //shape functions
+        Linear2DTriShapeF localSF; //shape functions
         unsigned nIP = localINT.giveNumIP();
         Vector phi(nIP);
         ip_locs.resize(nIP * nnodes);
         ip_weights.resize(nIP * nnodes);
         Point a, b, c;
-        c = (*centroid);
-        vector< Point* > pp(nIP);   
-
+        a = Point(0,0,0);
+        b = Point(1,0,0);
+        c = Point(0,1,0);
+        vector< Point* > pp(nIP); 
+        pp[0] = &a;
+        pp[1] = &b;
+        pp[2] = &c;      
+        localSF.init(pp);
+        double area;
         for ( unsigned i = 0; i < nnodes; i++ ) {
-            a = nodes [ faces [ i ] [ 0 ] ]->givePoint();
-            b = nodes [ faces [ i ] [ 1 ] ]->givePoint();
-            pp[0] = &a; pp[1] = &b; pp[2] = &c;
-            localSF.init(pp);
-
-            for(unsigned r=0; r<nIP; r++){
+             area = triArea3D(nodes [ faces [ i ] [ 0 ] ]->givePointPointer(), nodes [ faces [ i ] [ 1 ] ]->givePointPointer(), centroid);
+             for(unsigned r=0; r<nIP; r++){
                 localSF.giveShapeF(localINT.giveIPLocationPointer(r), phi);
-                ip_locs[4*i+r] = Point(0,0,0);
-                for (unsigned s=0; s<nIP; s++) {
-                    ip_locs[4*i+r] += (*pp[s])*phi[s];
-                }
-                ip_weights[4*i+r] = localINT.giveIPWeight(r) * localSF.giveJacobian(localINT.giveIPLocationPointer(r));           
+                ip_locs[3*i+r] = nodes [ faces [ i ] [ 0 ] ]->givePoint() * phi[0] + nodes [ faces [ i ] [ 1 ] ]->givePoint() * phi[1] + (*centroid)*phi[2];
+                ip_weights[3*i+r] = localINT.giveIPWeight(r) * area * 2.;           
             }         
         }
     } else if ( ip_type.compare("quad") == 0 ) {
