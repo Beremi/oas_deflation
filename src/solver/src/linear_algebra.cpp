@@ -1500,3 +1500,34 @@ Matrix dyadicProduct(const Vector &a, const Vector &b) {
 double l2_norm(Vector x) {
     return pow(inner_product( & x [ 0 ], & x [ x.size() ], & x [ 0 ], ( double ) ( 0 ) ), 0.5);
 }
+
+
+
+
+
+
+//////////////////////////////////////////////////////////
+double triArea2D(const Point *a, const Point *b, const Point *c) { //points in counter clockwise direction
+    return 0.5 * ( a -> getX() * ( b -> getY() - c -> getY() ) + b -> getX() * ( c -> getY() - a -> getY() ) + c -> getX() * ( a -> getY() - b -> getY() ) );
+}
+
+//////////////////////////////////////////////////////////
+Point triNormal3D(const Point *a, const Point *b, const Point *c) { //points
+    Point normal = Point(0, 0, 0);
+    normal.setX( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ) );
+    normal.setY( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ) );
+    normal.setZ( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ) );
+    return normal / normal.norm();
+}
+
+//////////////////////////////////////////////////////////
+double triArea3D(const Point *a, const Point *b, const Point *c) { //points
+    return abs( 0.5 * pow(pow( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ), 2) + pow( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ), 2) + pow( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ), 2), 0.5) );
+}
+
+//////////////////////////////////////////////////////////
+double tetVolume3D(const Point *a, const Point *b, const Point *c, const Point *d) {
+    return ( ( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ) ) * ( d->getX() - a->getX() ) + ( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ) ) * ( d->getY() - a->getY() ) + ( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ) ) * ( d->getZ() - a->getZ() ) ) / 6.;
+}
+
+

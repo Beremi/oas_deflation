@@ -14,7 +14,11 @@ protected:
     double volume;
     Point centroid;
     string ip_type;
+    vector < vector < unsigned > > faces;
+    vector < Point > normals;
+    vector < double > surfaces;
 
+    void prepareGeometry();
     virtual void initIntegration();
 
 public:
@@ -51,18 +55,11 @@ public:
 class TranspCondensedPolygonal : public TranspPolygonal
 {
 private:
-    Vector red2full;
-    vector< double >angles;
-    void fullShapeF(const Point *x, Vector &phi) const;
-    double fullShapeFGrad(const Point *x, Matrix &phiGrad) const;
-
     unsigned findFaceNumber(Point x) const;
 public:
     TranspCondensedPolygonal(const unsigned dim);
     ~TranspCondensedPolygonal() {};
-    virtual void shapeF(const Point *x, Vector &phi) const;
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const;
-    virtual void setIntegrationPointsAndWeights();
+    virtual void initIntegration();
 };
 
 /*

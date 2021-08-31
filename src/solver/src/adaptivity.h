@@ -34,18 +34,26 @@ Vector calcPrincipalStress(const Matrix &stress) {
         double Q, R, theta;
         // calculate invariants
         I1 = stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] + stress [ 2 ] [ 2 ];
-        I2 = stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] +
-             stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] +
-             stress [ 0 ] [ 0 ] * stress [ 2 ] [ 2 ] +
-             stress [ 0 ] [ 1 ] * stress [ 1 ] [ 0 ] + // for symetric matrix = stress12^2
-             stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ] +
-             stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ];
+        I2 = (stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] -
+              stress [ 0 ] [ 1 ] * stress [ 1 ] [ 0 ]) +
+             (stress [ 0 ] [ 0 ] * stress [ 2 ] [ 2 ] -
+              stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ]) +
+             (stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] -
+              stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ]);
+
         I3 = stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] +
-             stress [ 0 ] [ 0 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ] +
-             stress [ 1 ] [ 1 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] +
-             stress [ 2 ] [ 2 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] +
-             stress [ 0 ] [ 1 ] * stress [ 1 ] [ 2 ] * stress [ 0 ] [ 2 ] +
-             stress [ 1 ] [ 0 ] * stress [ 2 ] [ 1 ] * stress [ 2 ] [ 0 ]; // last two could be done once and multiplied by 2
+             stress [ 0 ] [ 1 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 0 ] +
+             stress [ 1 ] [ 0 ] * stress [ 2 ] [ 1 ] * stress [ 0 ] [ 2 ] -
+             stress [ 2 ] [ 0 ] * stress [ 1 ] [ 1 ] * stress [ 0 ] [ 2 ] -
+             stress [ 1 ] [ 0 ] * stress [ 0 ] [ 1 ] * stress [ 2 ] [ 2 ] -
+             stress [ 0 ] [ 0 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ];
+        // another possible calculation of I3:
+        // I3 = stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] -
+        //      stress [ 0 ] [ 0 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ] -
+        //      stress [ 1 ] [ 1 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] -
+        //      stress [ 2 ] [ 2 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] +
+        //      stress [ 0 ] [ 1 ] * stress [ 1 ] [ 2 ] * stress [ 0 ] [ 2 ] +
+        //      stress [ 1 ] [ 0 ] * stress [ 2 ] [ 1 ] * stress [ 2 ] [ 0 ]; // last two could be done once and multiplied by 2
         // calculate intermediate quantities
         Q = ( 3 * I2 - pow(I1, 2) ) / 9;
         R = ( 2 * pow(I1, 3) - 9 * I1 * I2 + 27 * I3 ) / 54;

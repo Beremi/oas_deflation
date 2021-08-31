@@ -1,30 +1,6 @@
 #include "element_polyhedral.h"
 
 //////////////////////////////////////////////////////////
-double triArea2D(const Point a, const Point b, const Point c) { //points in counter clockwise direction
-    return 0.5 * ( a.getX() * ( b.getY() - c.getY() ) + b.getX() * ( c.getY() - a.getY() ) + c.getX() * ( a.getY() - b.getY() ) );
-}
-
-//////////////////////////////////////////////////////////
-Point triNormal3D(const Point *a, const Point *b, const Point *c) { //points
-    Point normal = Point(0, 0, 0);
-    normal.setX( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ) );
-    normal.setY( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ) );
-    normal.setZ( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ) );
-    return normal / normal.norm();
-}
-
-//////////////////////////////////////////////////////////
-double triArea3D(const Point *a, const Point *b, const Point *c) { //points
-    return abs( 0.5 * pow(pow( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ), 2) + pow( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ), 2) + pow( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ), 2), 0.5) );
-}
-
-//////////////////////////////////////////////////////////
-double tetVolume3D(const Point *a, const Point *b, const Point *c, const Point *d) {
-    return ( ( ( b->getY() - a->getY() ) * ( c->getZ() - a->getZ() ) - ( b->getZ() - a->getZ() ) * ( c->getY() - a->getY() ) ) * ( d->getX() - a->getX() ) + ( ( b->getZ() - a->getZ() ) * ( c->getX() - a->getX() ) - ( b->getX() - a->getX() ) * ( c->getZ() - a->getZ() ) ) * ( d->getY() - a->getY() ) + ( ( b->getX() - a->getX() ) * ( c->getY() - a->getY() ) - ( b->getY() - a->getY() ) * ( c->getX() - a->getX() ) ) * ( d->getZ() - a->getZ() ) ) / 6.;
-}
-
-//////////////////////////////////////////////////////////
 // 2 D
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -54,22 +30,13 @@ void TranspPolygonal :: readFromLine(istringstream &iss, NodeContainer *fullnode
 }
 
 //////////////////////////////////////////////////////////
-void TranspPolygonal :: initIntegration(){
-    //void, done in setIntegrationPointsAndWeights
-}
-
-//////////////////////////////////////////////////////////
-void TranspPolygonal :: setIntegrationPointsAndWeights() {
+void TranspPolygonal :: prepareGeometry(){
     //estimate centroid
     Point cpoint;
     for ( const auto n: nodes ) {
         cpoint += n->givePoint();
     }
     cpoint /= numOfNodes;
-
-    vector< vector< unsigned > >faces;
-    vector< Point >normals;
-    vector< double >surfaces;
 
     //compute angles
     vector< pair< double, unsigned > >angles;
@@ -108,16 +75,27 @@ void TranspPolygonal :: setIntegrationPointsAndWeights() {
         diff = nodes [ faces [ i ] [ 1 ] ]->givePoint() - nodes [ faces [ i ] [ 0 ] ]->givePoint();
         surfaces [ i ] = diff.norm();
         normals [ i ] = Point(diff.y / surfaces [ i ], -diff.x / surfaces [ i ], 0);
-        triVolume = triArea2D(nodes [ faces [ i ] [ 0 ] ]->givePoint(), nodes [ faces [ i ] [ 1 ] ]->givePoint(), cpoint);
+        triVolume = triArea2D(nodes [ faces [ i ] [ 0 ] ]->givePointPointer(), nodes [ faces [ i ] [ 1 ] ]->givePointPointer(), &cpoint);
         centroid += ( nodes [ faces [ i ] [ 0 ] ]->givePoint() + nodes [ faces [ i ] [ 1 ] ]->givePoint() + cpoint ) * triVolume;
         volume += triVolume;
     }
     centroid /= volume * 3.; 
-    
+}
+
+//////////////////////////////////////////////////////////
+void TranspPolygonal :: initIntegration(){
+
+    prepareGeometry();
+
     Wachspress2DShapeF* wsf = static_cast < Wachspress2DShapeF* > (shafunc); 
     wsf -> setFacesAndNormals(faces, normals);  
     inttype -> init(nodes, faces, &centroid);
     shafunc -> init(nodes);
+}
+
+
+//////////////////////////////////////////////////////////
+void TranspPolygonal :: setIntegrationPointsAndWeights() {
 
     stats.resize( inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
@@ -326,107 +304,21 @@ Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen
 TranspCondensedPolygonal :: TranspCondensedPolygonal(const unsigned dim) : TranspPolygonal(dim) {
     name = "TranspCondensedPolygonal";
     ip_type = "tri";
+    delete shafunc;
+    delete inttype;
+    shafunc = new Linear2DPolygonShapeF();
+    inttype = new IntegrPolygon(ip_type);
 }
 
 //////////////////////////////////////////////////////////
-void TranspCondensedPolygonal :: fullShapeF(const Point *x, Vector &phi) const {
-    return;
-    /*
-    unsigned face = findFaceNumber(* x);
-    double tarea = triArea2D( centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
-    phi [ faces [ face ] [ 1 ] ] = triArea2D( * x, centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint() ) / tarea;
-    phi [ faces [ face ] [ 0 ] ] = triArea2D(* x, nodes [ faces [ face ] [ 1 ] ]->givePoint(), centroid) / tarea;
-    phi [ numOfNodes ] = triArea2D( * x, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() ) / tarea;
-    */
-}
+void TranspCondensedPolygonal :: initIntegration(){
 
-//////////////////////////////////////////////////////////
-double TranspCondensedPolygonal :: fullShapeFGrad(const Point *x, Matrix &phiGrad) const {
-    return 0;
-    /*
-    unsigned face = findFaceNumber(* x);
-    phiGrad *= 0.;
-    double tarea = triArea2D( centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
-    phiGrad [ 0 ] [ faces [ face ] [ 1 ] ] = 0.5 * ( centroid.getY() - nodes [ faces [ face ] [ 0 ] ]->givePoint().getY() ) / tarea;
-    phiGrad [ 1 ] [ faces [ face ] [ 1 ] ] = 0.5 * ( nodes [ faces [ face ] [ 0 ] ]->givePoint().getX() - centroid.getX() ) / tarea;
-    phiGrad [ 0 ] [ faces [ face ] [ 0 ] ] = 0.5 * ( nodes [ faces [ face ] [ 1 ] ]->givePoint().getY() - centroid.getY() ) / tarea;
-    phiGrad [ 1 ] [ faces [ face ] [ 0 ] ] = 0.5 * ( centroid.getX() - nodes [ faces [ face ] [ 1 ] ]->givePoint().getX() ) / tarea;
-    phiGrad [ 0 ] [ numOfNodes ]               = 0.5 * ( nodes [ faces [ face ] [ 0 ] ]->givePoint().getY() - nodes [ faces [ face ] [ 1 ] ]->givePoint().getY() ) / tarea;
-    phiGrad [ 1 ] [ numOfNodes ]               = 0.5 * ( nodes [ faces [ face ] [ 1 ] ]->givePoint().getX() - nodes [ faces [ face ] [ 0 ] ]->givePoint().getX() ) / tarea;
-    return 1.;
-    */
-}
+    prepareGeometry();
 
-//////////////////////////////////////////////////////////
-unsigned TranspCondensedPolygonal :: findFaceNumber(Point x) const {
-    return 0;
-    /*
-    double alpha = atan2( x.getY() - centroid.getY(), x.getX() - centroid.getX() );
-    double a, b;
-    unsigned face;
-    for ( face = 0; face < numOfNodes; face++ ) {
-        a = angles [ faces [ face ] [ 0 ] ];
-        b = angles [ faces [ face ] [ 1 ] ];
-        if ( a < b && a < alpha && b > alpha ) {
-            return face;
-        }
-        if ( a > b && ( a < alpha || b > alpha ) ) {
-            return face;
-        }
-    }
-    cerr << "Error in TranspCondensedPolygonal: findFaceNumber should never go here" << endl;
-    exit(1);
-    */
-}
-
-//////////////////////////////////////////////////////////
-void TranspCondensedPolygonal :: shapeF(const Point *x, Vector &phi) const {
-    return;
-    /*
-    Vector full(numOfNodes + 1);
-    fullShapeF(x, full);
-    for ( unsigned i = 0; i < numOfNodes; i++ ) {
-        phi [ i ] = full [ i ] + full [ numOfNodes ] * red2full [ i ];
-    }
-    */
-}
-
-//////////////////////////////////////////////////////////
-double TranspCondensedPolygonal :: shapeFGrad(const Point *x, Matrix &phiGrad) const {
-    return 0;
-    /*
-    Matrix full(ndim, numOfNodes + 1);
-    fullShapeFGrad(x, full);
-    for ( unsigned d = 0; d < ndim; d++ ) {
-        for ( unsigned i = 0; i < numOfNodes; i++ ) {
-            phiGrad [ d ] [ i ] = full [ d ] [ i ] + full [ d ] [ numOfNodes ] * red2full [ i ];
-        }
-    }
-    return 1.;
-    */
-}
-
-//////////////////////////////////////////////////////////
-void TranspCondensedPolygonal :: setIntegrationPointsAndWeights() {
-    TranspPolygonal :: setIntegrationPointsAndWeights(); //calling base class method;
-    red2full.resize(numOfNodes);
-
-    //build transformation matrix allowing to calculate inner degree of freedom
-    Matrix FullK(numOfNodes + 1, numOfNodes + 1);
-    Matrix phiGrad(ndim, numOfNodes + 1);
-    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        fullShapeFGrad( inttype->giveIPLocationPointer(i), phiGrad);
-        FullK += matrix_multiply(phiGrad.transpose(), phiGrad) * inttype->giveIPWeight(i);
-    }
-
-    for ( unsigned i = 0; i < numOfNodes; i++ ) {
-        red2full [ i ] = -FullK [ i ] [ numOfNodes ] / FullK [ numOfNodes ] [ numOfNodes ];
-    }
-
-    //update of B matrices requested, because the previous calculation didn't have correct shape functions
-    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        Bs [ i ] = giveBMatrix( inttype->giveIPLocationPointer(i) );
-    }
+    Linear2DPolygonShapeF* lds = static_cast < Linear2DPolygonShapeF* > (shafunc); 
+    inttype -> init(nodes, faces, &centroid);
+    lds -> setFacesCentroidAndIntegration(faces, centroid, inttype); 
+    shafunc -> init(nodes);
 }
 
 
