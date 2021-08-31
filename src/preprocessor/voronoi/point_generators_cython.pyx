@@ -19,7 +19,7 @@ def generateNodesRect_cython(double[:] maxLim,
                       int dim,
                       int trials,
                       list node_coords,
-                      bool useLowBound=False, float topMinDist = -1, float bottomMinDist=-1, int gradienDirection = -1):
+                      bool useLowBound=False, float topMinDist = -1, float bottomMinDist=-1, int gradienDirection = -1,                        int minDistCenter=-1):
     print('Generating {:d}d block segment of size: {}'.format(dim, ' / '.join('{:f}'.format(i) for i in maxLim)))
     cdef:
         int generatedPoints = 0
@@ -31,10 +31,12 @@ def generateNodesRect_cython(double[:] maxLim,
         vector[double] node_coords_temp
         double[:] topBound, lowBound
         bint distIsGood
+        vector[double]  mdC
         #mt19937_64 gen = mt19937_64()
         #uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
     for d in range(dim):
         coords.push_back(0.0)
+        mdC.push_back(0.0)
 
     minDistGradient = False
     if topMinDist > 0 and bottomMinDist > 0:
@@ -73,16 +75,69 @@ def generateNodesRect_cython(double[:] maxLim,
                 currentMinDist = minDist
                 if minDistGradient == True:
                     relativePosition = 0
-                    if useLowBound==True:
-                        lowBound = maxLim[dim:2*dim]
-                        relativePosition = (coords[gradienDirection]-lowBound[gradienDirection])/(maxLim[gradienDirection]-lowBound[gradienDirection])
-                    else:
-                        relativePosition = (coords[gradienDirection])/(maxLim[gradienDirection])
+                    if minDistCenter==-1:
+                        if useLowBound==True:
+                            lowBound = maxLim[dim:2*dim]
+                            relativePosition = (coords[gradienDirection]-lowBound[gradienDirection])/(maxLim[gradienDirection]-lowBound[gradienDirection])
+                        else:
+                            relativePosition = (coords[gradienDirection])/(maxLim[gradienDirection])
 
-                    minDistDiff = topMinDist - bottomMinDist
+                        minDistDiff = topMinDist - bottomMinDist
 
-                    currentMinDist = bottomMinDist + relativePosition * minDistDiff
+                        currentMinDist = bottomMinDist + relativePosition * minDistDiff
 
+                    #minDistCenter 1 - top left
+                    #minDistCenter 2 - top right
+                    #minDistCenter 3 - bot left
+                    #minDistCenter 4 - bot right
+                    if minDistCenter>0:
+                        if minDistCenter == 1 :
+                            if useLowBound:
+                                mdC[0] = min(min(0, maxLim[0]), maxLim[3])
+                                mdC[1] = max(max(0, maxLim[1]), maxLim[4])
+                            else:
+                                mdC[0] = min(0, maxLim[0])
+                                mdC[1] = max(0, maxLim[1])
+                        if minDistCenter == 2 :
+                            if useLowBound:
+                                mdC[0] = max(max(0, maxLim[0]), maxLim[3])
+                                mdC[1] = max(max(0, maxLim[1]), maxLim[4])
+                            else:
+                                mdC[0] = max(0, maxLim[0])
+                                mdC[1] = max(0, maxLim[1])
+                        if minDistCenter == 3 :
+                            if useLowBound:
+                                mdC[0] = min(min(0, maxLim[0]), maxLim[3])
+                                mdC[1] = min(min(0, maxLim[1]), maxLim[4])
+                            else:
+                                mdC[0] = min(0, maxLim[0])
+                                mdC[1] = min(0, maxLim[1])
+                        if minDistCenter == 4 :
+                            if useLowBound:
+                                mdC[0] = max(max(0, maxLim[0]), maxLim[3])
+                                mdC[1] = min(min(0, maxLim[1]), maxLim[4])
+                            else:
+                                mdC[0] = max(0, maxLim[0])
+                                mdC[1] = min(0, maxLim[1])
+
+                          #  print('MDC 0 %f' %mdC[0])
+                          #  print('MDC 1 %f' %mdC[1])
+
+
+
+
+
+                        relativePosition = 0
+                        for d in range (2):
+                            relativePosition += (mdC[d]-coords[d])*(mdC[d]-coords[d])
+
+                        if not useLowBound:
+                            relativePosition = sqrt(relativePosition) / maxLim[0]
+                        else:
+                            relativePosition = sqrt(relativePosition) / abs(maxLim[0]-maxLim[3])
+
+                        minDistDiff = topMinDist - bottomMinDist
+                        currentMinDist = bottomMinDist + relativePosition * minDistDiff
 
                 if (distInt < currentMinDist):
                     distIsGood = False

@@ -1463,7 +1463,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
                 if (mZ[0][0]=='circle'):
                     inRebar = False
                     for rebar in range (mZ[0][3]):
-                        if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2]) < mZ[rebar][1] ):
+                        if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2]) < mZ[rebar][1] ) and (np.linalg.norm(nodeB[0:2]-mZ[rebar][2]) < mZ[rebar][1] ):
                             inRebar = True
                     if inRebar:
                         mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
