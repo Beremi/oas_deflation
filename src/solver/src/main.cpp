@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 
     fs :: path input = fs :: absolute(master_filename);
     if ( !fs :: exists(input) ) {
-        fprintf( stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str() );
+        fprintf(stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str() );
         exit(EXIT_FAILURE);
     }
     GlobPaths :: BASEDIR = input.parent_path();
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
 
     masterModel = new Model(PRINT_TIME);
-    masterModel->readFromFile( input.string() );
+    masterModel->readFromFile(input.string() );
 
     // check if exists or create directory for results
     if ( !fs :: exists(masterModel->resultDir) ) {

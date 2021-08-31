@@ -27,16 +27,16 @@ Element :: ~Element() {
 
 //////////////////////////////////////////////////////////
 void Element :: initIntegration() {
-    shafunc -> init();
-    inttype -> init();
+    shafunc->init();
+    inttype->init();
 };
 
 //////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {
-    stats.resize( inttype->giveNumIP() );
+    stats.resize(inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
-        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k)) );
+        inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian( inttype->giveIPLocationPointer(k) ) );
     }
 };
 
@@ -74,17 +74,17 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
-    Bs.resize( inttype->giveNumIP() );
-    Hs.resize( inttype->giveNumIP() );
+    Bs.resize(inttype->giveNumIP() );
+    Hs.resize(inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        Bs [ k ] = giveBMatrix( inttype->giveIPLocationPointer(k) );
-        Hs [ k ] = giveHMatrix( inttype->giveIPLocationPointer(k) );
+        Bs [ k ] = giveBMatrix(inttype->giveIPLocationPointer(k) );
+        Hs [ k ] = giveHMatrix(inttype->giveIPLocationPointer(k) );
     }
 }
 
 //////////////////////////////////////////////////////////
 vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
-    vector< unsigned >DoFinDir( nodes.size() );
+    vector< unsigned >DoFinDir(nodes.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
     }
@@ -141,7 +141,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF( DoFids.size() );
+    Vector intF(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -165,7 +165,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
 
 //////////////////////////////////////////////////////////
 Vector Element :: integrateInternalSources() {
-    Vector intS( DoFids.size() );
+    Vector intS(DoFids.size() );
     Vector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         intmats = stats [ i ]->giveInternalSource();

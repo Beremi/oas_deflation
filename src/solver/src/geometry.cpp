@@ -134,8 +134,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius) {
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.getX() <= max( p.getX(), r.getX() ) && q.getX() >= min( p.getX(), r.getX() ) &&
-         q.getY() <= max( p.getY(), r.getY() ) && q.getY() >= min( p.getY(), r.getY() ) ) {
+    if ( q.getX() <= max(p.getX(), r.getX() ) && q.getX() >= min(p.getX(), r.getX() ) &&
+         q.getY() <= max(p.getY(), r.getY() ) && q.getY() >= min(p.getY(), r.getY() ) ) {
         return true;
     }
     return false;
@@ -235,7 +235,7 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 void readRegions(const std :: string &filename, std :: vector< Region * > &regions) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -285,7 +285,7 @@ bool isInsideRegions(const std :: vector< Region * > &regions, const Element *el
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside( n->givePoint() ) ) {
+            if ( reg->isInside(n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }

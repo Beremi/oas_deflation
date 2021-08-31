@@ -5,17 +5,17 @@
 //////////////////////////////////////////////////////////
 // SHAPE FUNCTIONS - MASTER CLASS
 //////////////////////////////////////////////////////////
-void ShapeFunc :: init( vector< Node * > &nodes ){
-    points.resize(nodes.size());
-    unsigned k=0;
-    for (auto &n: nodes){
-        points[k] = n->givePointPointer();
+void ShapeFunc :: init(vector< Node * > &nodes) {
+    points.resize( nodes.size() );
+    unsigned k = 0;
+    for ( auto &n: nodes ) {
+        points [ k ] = n->givePointPointer();
         k++;
     }
 }
 
 //////////////////////////////////////////////////////////
-void ShapeFunc :: init( vector< Point * > pp ){
+void ShapeFunc :: init(vector< Point * >pp) {
     points = pp;
 }
 
@@ -38,7 +38,7 @@ void ShapeFunc :: giveJacobiM(const Matrix &phiGradNat, Matrix &JacobiM) const {
     JacobiM *= 0;
     Point *n;
     for ( unsigned i = 0; i < points.size(); i++ ) {
-        n = points[i];
+        n = points [ i ];
         for ( unsigned v1 = 0; v1 < ndim; v1++ ) {
             for ( unsigned v2 = 0; v2 < ndim; v2++ ) {
                 JacobiM [ v1 ] [ v2 ] += phiGradNat [ v1 ] [ i ] * n->giveCoord(v2);
@@ -49,12 +49,12 @@ void ShapeFunc :: giveJacobiM(const Matrix &phiGradNat, Matrix &JacobiM) const {
 
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveJacobiM(const Point *x, Matrix &JacobiM) const {
-    Matrix phiGradNat( ndim, points.size() );
+    Matrix phiGradNat(ndim, points.size() );
     giveShapeFGradNatural(x, phiGradNat);
     JacobiM *= 0;
     Point *n;
     for ( unsigned i = 0; i < points.size(); i++ ) {
-        n = points[i];
+        n = points [ i ];
         for ( unsigned v1 = 0; v1 < ndim; v1++ ) {
             for ( unsigned v2 = 0; v2 < ndim; v2++ ) {
                 JacobiM [ v1 ] [ v2 ] += phiGradNat [ v1 ] [ i ] * n->giveCoord(v2);
@@ -205,38 +205,38 @@ void Linear3DBrickShapeF :: giveShapeFGradNatural(const Point *x, Matrix &phiGra
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 2D TRIANGLE LINEAR 
+// 2D TRIANGLE LINEAR
 //////////////////////////////////////////////////////////
-void Linear2DTriShapeF :: init( vector< Node * > &nodes ){
+void Linear2DTriShapeF :: init(vector< Node * > &nodes) {
     ShapeFunc :: init(nodes);
-    area = triArea2D( points[0], points[1], points[2] );
+    area = triArea2D(points [ 0 ], points [ 1 ], points [ 2 ]);
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 2D TRIANGLE LINEAR 
+// 2D TRIANGLE LINEAR
 //////////////////////////////////////////////////////////
-void Linear2DTriShapeF :: init( vector< Point * > &p ){
+void Linear2DTriShapeF :: init(vector< Point * > &p) {
     ShapeFunc :: init(p);
-    area = triArea2D( points[0], points[1], points[2] );
+    area = triArea2D(points [ 0 ], points [ 1 ], points [ 2 ]);
 }
 
 //////////////////////////////////////////////////////////
 void Linear2DTriShapeF :: giveShapeF(const Point *x, Vector &phi) const {
-    phi [ 0 ] = triArea2D( x, points[1], points[2] ) / area;
-    phi [ 1 ] = triArea2D( x, points[2], points[0] ) / area;
-    phi [ 2 ] = triArea2D( x, points[0], points[1] ) / area;
+    phi [ 0 ] = triArea2D(x, points [ 1 ], points [ 2 ]) / area;
+    phi [ 1 ] = triArea2D(x, points [ 2 ], points [ 0 ]) / area;
+    phi [ 2 ] = triArea2D(x, points [ 0 ], points [ 1 ]) / area;
 };
 
 //////////////////////////////////////////////////////////
 void Linear2DTriShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) const {
-    (void) x;
-    phiGrad [ 0 ] [ 0 ] = 0.5 * ( points[ 1 ] -> getY() - points [ 2 ] -> getY() ) / area;
-    phiGrad [ 1 ] [ 0 ] = 0.5 * ( points[ 2 ] -> getX() - points [ 1 ] -> getX() ) / area;
-    phiGrad [ 0 ] [ 1 ] = 0.5 * ( points[ 2 ] -> getY() - points [ 0 ] -> getY() ) / area;
-    phiGrad [ 1 ] [ 1 ] = 0.5 * ( points[ 0 ] -> getX() - points [ 2 ] -> getX() ) / area;
-    phiGrad [ 0 ] [ 2 ] = 0.5 * ( points[ 0 ] -> getY() - points [ 1 ] -> getY() ) / area;
-    phiGrad [ 1 ] [ 2 ] = 0.5 * ( points[ 1 ] -> getX() - points [ 0 ] -> getX() ) / area;
+    ( void ) x;
+    phiGrad [ 0 ] [ 0 ] = 0.5 * ( points [ 1 ]->getY() - points [ 2 ]->getY() ) / area;
+    phiGrad [ 1 ] [ 0 ] = 0.5 * ( points [ 2 ]->getX() - points [ 1 ]->getX() ) / area;
+    phiGrad [ 0 ] [ 1 ] = 0.5 * ( points [ 2 ]->getY() - points [ 0 ]->getY() ) / area;
+    phiGrad [ 1 ] [ 1 ] = 0.5 * ( points [ 0 ]->getX() - points [ 2 ]->getX() ) / area;
+    phiGrad [ 0 ] [ 2 ] = 0.5 * ( points [ 0 ]->getY() - points [ 1 ]->getY() ) / area;
+    phiGrad [ 1 ] [ 2 ] = 0.5 * ( points [ 1 ]->getX() - points [ 0 ]->getX() ) / area;
 };
 
 
@@ -244,29 +244,29 @@ void Linear2DTriShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) const 
 //////////////////////////////////////////////////////////
 // 2D LINEAR TRIANGULAR BASED SHAPE FUNCTIONS IN POLYGON
 //////////////////////////////////////////////////////////
-void Linear2DPolygonShapeF :: init( vector< Node * > &nodes ){
+void Linear2DPolygonShapeF :: init(vector< Node * > &nodes) {
     ShapeFunc :: init(nodes);
 
     unsigned n = points.size();
-    angles.resize(points.size());
+    angles.resize( points.size() );
     for ( unsigned i = 0; i < points.size(); i++ ) {
-        angles [ i ] = atan2( points [ i ] -> getY() - centroid.getY(), points [ i ] -> getX() - centroid.getX() );
+        angles [ i ] = atan2(points [ i ]->getY() - centroid.getY(), points [ i ]->getX() - centroid.getX() );
     }
-    triangles.resize(faces.size());
-    vector < Point * > trinodes;
+    triangles.resize( faces.size() );
+    vector< Point * >trinodes;
     trinodes.resize(3);
-    trinodes [2] = &centroid;
+    trinodes [ 2 ] = & centroid;
     for ( unsigned i = 0; i < faces.size(); i++ ) {
-        trinodes [ 0 ] = points[faces[i][0]];
-        trinodes [ 1 ] = points[faces[i][1]];
-        triangles[i].init(trinodes);
+        trinodes [ 0 ] = points [ faces [ i ] [ 0 ] ];
+        trinodes [ 1 ] = points [ faces [ i ] [ 1 ] ];
+        triangles [ i ].init(trinodes);
     }
 
 
     Matrix FullK(n + 1, n + 1);
     Matrix phiFullGrad(2, n + 1);
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        giveFullShapeFGrad( inttype->giveIPLocationPointer(i), phiFullGrad );
+        giveFullShapeFGrad(inttype->giveIPLocationPointer(i), phiFullGrad);
         FullK += matrix_multiply(phiFullGrad.transpose(), phiFullGrad) * inttype->giveIPWeight(i);
     }
 
@@ -279,7 +279,7 @@ void Linear2DPolygonShapeF :: init( vector< Node * > &nodes ){
 
 //////////////////////////////////////////////////////////
 unsigned Linear2DPolygonShapeF :: findFaceNumber(const Point *x) const {
-    double alpha = atan2( x->getY() - centroid.getY(), x->getX() - centroid.getX() );
+    double alpha = atan2(x->getY() - centroid.getY(), x->getX() - centroid.getX() );
     double a, b;
     unsigned face;
     for ( face = 0; face < faces.size(); face++ ) {
@@ -297,62 +297,62 @@ unsigned Linear2DPolygonShapeF :: findFaceNumber(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-void Linear2DPolygonShapeF :: setFacesCentroidAndIntegration(vector< vector< unsigned > > & f, Point c, IntegrationType *it){
-    faces = f; 
+void Linear2DPolygonShapeF :: setFacesCentroidAndIntegration(vector< vector< unsigned > > &f, Point c, IntegrationType *it) {
+    faces = f;
     centroid = c;
     inttype = it;
 }
 
 //////////////////////////////////////////////////////////
-void Linear2DPolygonShapeF :: giveFullShapeF(const Point *x, Vector &phi) const{
+void Linear2DPolygonShapeF :: giveFullShapeF(const Point *x, Vector &phi) const {
     unsigned t = findFaceNumber(x);
     Vector triphi(3);
-    triangles[t].giveShapeF(x, triphi);
+    triangles [ t ].giveShapeF(x, triphi);
     phi *= 0;
-    phi[faces[t][0]]  = triphi[0];
-    phi[faces[t][1]]  = triphi[1];
-    phi[faces.size()] = triphi[2]; //centroid
+    phi [ faces [ t ] [ 0 ] ]  = triphi [ 0 ];
+    phi [ faces [ t ] [ 1 ] ]  = triphi [ 1 ];
+    phi [ faces.size() ] = triphi [ 2 ]; //centroid
 }
 
 //////////////////////////////////////////////////////////
-void Linear2DPolygonShapeF :: giveFullShapeFGrad(const Point *x, Matrix &phiGrad) const{
+void Linear2DPolygonShapeF :: giveFullShapeFGrad(const Point *x, Matrix &phiGrad) const {
     unsigned t = findFaceNumber(x);
-    Matrix triphiGrad(2,3);
-    triangles[t].giveShapeFGrad(x, triphiGrad);
+    Matrix triphiGrad(2, 3);
+    triangles [ t ].giveShapeFGrad(x, triphiGrad);
     phiGrad *= 0;
-    for (unsigned i=0; i<2; i++){
-        phiGrad[i][faces[t][0]]  = triphiGrad[i][0];
-        phiGrad[i][faces[t][1]]  = triphiGrad[i][1];
-        phiGrad[i][faces.size()] = triphiGrad[i][2]; //centroid
+    for ( unsigned i = 0; i < 2; i++ ) {
+        phiGrad [ i ] [ faces [ t ] [ 0 ] ]  = triphiGrad [ i ] [ 0 ];
+        phiGrad [ i ] [ faces [ t ] [ 1 ] ]  = triphiGrad [ i ] [ 1 ];
+        phiGrad [ i ] [ faces.size() ] = triphiGrad [ i ] [ 2 ]; //centroid
     }
 };
 
 
 //////////////////////////////////////////////////////////
-void Linear2DPolygonShapeF :: giveShapeF(const Point *x, Vector &phi) const{
+void Linear2DPolygonShapeF :: giveShapeF(const Point *x, Vector &phi) const {
     unsigned t = findFaceNumber(x);
     Vector triphi(3);
-    triangles[t].giveShapeF(x, triphi);
+    triangles [ t ].giveShapeF(x, triphi);
     phi *= 0;
-    phi[faces[t][0]]  = triphi[0];
-    phi[faces[t][1]]  = triphi[1];
-    for (unsigned r=0; r<red2full.size(); r++){
-        phi[r] += triphi[2] * red2full [ r ];
+    phi [ faces [ t ] [ 0 ] ]  = triphi [ 0 ];
+    phi [ faces [ t ] [ 1 ] ]  = triphi [ 1 ];
+    for ( unsigned r = 0; r < red2full.size(); r++ ) {
+        phi [ r ] += triphi [ 2 ] * red2full [ r ];
     }
 }
 
 //////////////////////////////////////////////////////////
-void Linear2DPolygonShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) const{
+void Linear2DPolygonShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) const {
     unsigned t = findFaceNumber(x);
-    Matrix triphiGrad(2,3);
-    triangles[t].giveShapeFGrad(x, triphiGrad);
+    Matrix triphiGrad(2, 3);
+    triangles [ t ].giveShapeFGrad(x, triphiGrad);
     phiGrad *= 0;
-    for (unsigned i=0; i<2; i++){
-        phiGrad[i][faces[t][0]]  = triphiGrad[i][0];
-        phiGrad[i][faces[t][1]]  = triphiGrad[i][1];
+    for ( unsigned i = 0; i < 2; i++ ) {
+        phiGrad [ i ] [ faces [ t ] [ 0 ] ]  = triphiGrad [ i ] [ 0 ];
+        phiGrad [ i ] [ faces [ t ] [ 1 ] ]  = triphiGrad [ i ] [ 1 ];
 
-        for (unsigned r=0; r<red2full.size(); r++){
-            phiGrad[i][r] += triphiGrad[i][2] * red2full [ r ];
+        for ( unsigned r = 0; r < red2full.size(); r++ ) {
+            phiGrad [ i ] [ r ] += triphiGrad [ i ] [ 2 ] * red2full [ r ];
         }
     }
 };
@@ -361,14 +361,14 @@ void Linear2DPolygonShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) co
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 2D WACHSPRESS 
+// 2D WACHSPRESS
 //////////////////////////////////////////////////////////
 void Wachspress2DShapeF :: giveShapeF(const Point *x, Vector &phi) const {
     unsigned numOfNodes = points.size();
     Vector h(numOfNodes);
     Point oldNormal = normals [ numOfNodes - 1 ];
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
-        h [ i ] = abs( dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
+        h [ i ] = abs(dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
         phi [ i ] = abs(oldNormal.x * normals [ i ].y - oldNormal.y * normals [ i ].x);
         oldNormal = normals [ i ];
     }
@@ -391,7 +391,7 @@ void Wachspress2DShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) const
 
     Vector h(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
-        h [ i ] = abs( dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
+        h [ i ] = abs(dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
     }
     unsigned oldi = numOfNodes - 1;
     Vector phiR(2);

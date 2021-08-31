@@ -30,7 +30,7 @@ void TranspPolygonal :: readFromLine(istringstream &iss, NodeContainer *fullnode
 }
 
 //////////////////////////////////////////////////////////
-void TranspPolygonal :: prepareGeometry(){
+void TranspPolygonal :: prepareGeometry() {
     //estimate centroid
     Point cpoint;
     for ( const auto n: nodes ) {
@@ -43,11 +43,11 @@ void TranspPolygonal :: prepareGeometry(){
     angles.resize(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         angles [ i ].second = i;
-        angles [ i ].first = atan2( nodes [ i ]->givePoint().getY() - cpoint.getY(), nodes [ i ]->givePoint().getX() - cpoint.getX() );
+        angles [ i ].first = atan2(nodes [ i ]->givePoint().getY() - cpoint.getY(), nodes [ i ]->givePoint().getX() - cpoint.getX() );
     }
 
     //sort to have counterclockwise direction
-    sort( angles.begin(), angles.end() );
+    sort(angles.begin(), angles.end() );
     vector< Node * >newnodes;
     newnodes.resize(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
@@ -75,29 +75,27 @@ void TranspPolygonal :: prepareGeometry(){
         diff = nodes [ faces [ i ] [ 1 ] ]->givePoint() - nodes [ faces [ i ] [ 0 ] ]->givePoint();
         surfaces [ i ] = diff.norm();
         normals [ i ] = Point(diff.y / surfaces [ i ], -diff.x / surfaces [ i ], 0);
-        triVolume = triArea2D(nodes [ faces [ i ] [ 0 ] ]->givePointPointer(), nodes [ faces [ i ] [ 1 ] ]->givePointPointer(), &cpoint);
+        triVolume = triArea2D(nodes [ faces [ i ] [ 0 ] ]->givePointPointer(), nodes [ faces [ i ] [ 1 ] ]->givePointPointer(), & cpoint);
         centroid += ( nodes [ faces [ i ] [ 0 ] ]->givePoint() + nodes [ faces [ i ] [ 1 ] ]->givePoint() + cpoint ) * triVolume;
         volume += triVolume;
     }
-    centroid /= volume * 3.; 
+    centroid /= volume * 3.;
 }
 
 //////////////////////////////////////////////////////////
-void TranspPolygonal :: initIntegration(){
-
+void TranspPolygonal :: initIntegration() {
     prepareGeometry();
 
-    Wachspress2DShapeF* wsf = static_cast < Wachspress2DShapeF* > (shafunc); 
-    wsf -> setFacesAndNormals(faces, normals);  
-    inttype -> init(nodes, faces, &centroid);
-    shafunc -> init(nodes);
+    Wachspress2DShapeF *wsf = static_cast< Wachspress2DShapeF * >( shafunc );
+    wsf->setFacesAndNormals(faces, normals);
+    inttype->init(nodes, faces, & centroid);
+    shafunc->init(nodes);
 }
 
 
 //////////////////////////////////////////////////////////
 void TranspPolygonal :: setIntegrationPointsAndWeights() {
-
-    stats.resize( inttype->giveNumIP() );
+    stats.resize(inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
     }
@@ -125,15 +123,15 @@ void TranspPolygonal :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix TranspPolygonal :: giveBMatrix(const Point *x) const {
-    Matrix B( ndim, nodes.size() );
-    shafunc -> giveShapeFGrad(x, B);
+    Matrix B(ndim, nodes.size() );
+    shafunc->giveShapeFGrad(x, B);
     return B;
 }
 
 //////////////////////////////////////////////////////////
 Matrix TranspPolygonal :: giveHMatrix(const Point *x) const {
     Vector X(numOfNodes);
-    shafunc -> giveShapeF(x, X);
+    shafunc->giveShapeF(x, X);
     Matrix H(1, numOfNodes);
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
         H [ 0 ] [ k ] = X [ k ];
@@ -154,8 +152,6 @@ TranspVirtPolygonal :: TranspVirtPolygonal(const unsigned dim) : TranspPolygonal
 void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     TranspPolygonal :: setIntegrationPointsAndWeights(); //calling base class method;
 
-    vector< Point >normals;
-    vector< double >surfaces;
     normals.resize(numOfNodes);
     surfaces.resize(numOfNodes);
     Point diff;
@@ -227,7 +223,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
         for ( v = 0; v < ndim; v++ ) {
             m [ v + 1 ] = ( inttype->giveIPLocation(i).giveCoord(v) - centroid.giveCoord(v) ) / radius;
         }
-        H += dyadicProduct(m, m * inttype->giveIPWeight(i));
+        H += dyadicProduct( m, m * inttype->giveIPWeight(i) );
     }
 
     double Hdet = H [ 0 ] [ 0 ] * H [ 1 ] [ 1 ] * H [ 2 ] [ 2 ] + H [ 0 ] [ 2 ] * H [ 1 ] [ 0 ] * H [ 2 ] [ 1 ] + H [ 2 ] [ 0 ] * H [ 0 ] [ 1 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 0 ] * H [ 2 ] [ 1 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 1 ] * H [ 1 ] [ 0 ] * H [ 2 ] [ 2 ] - H [ 0 ] [ 2 ] * H [ 1 ] [ 1 ] * H [ 2 ] [ 0 ];
@@ -291,7 +287,8 @@ Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
 
 //////////////////////////////////////////////////////////
 Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    ( void ) frozen; (void) timeStep;
+    ( void ) frozen;
+    ( void ) timeStep;
     //return Element::giveInternalForces(DoFs, frozen); //incorrect integration
     return giveStiffnessMatrix("elastic") * DoFs;  //using VEM integration, only elastic material!
 }
@@ -311,14 +308,13 @@ TranspCondensedPolygonal :: TranspCondensedPolygonal(const unsigned dim) : Trans
 }
 
 //////////////////////////////////////////////////////////
-void TranspCondensedPolygonal :: initIntegration(){
-
+void TranspCondensedPolygonal :: initIntegration() {
     prepareGeometry();
 
-    Linear2DPolygonShapeF* lds = static_cast < Linear2DPolygonShapeF* > (shafunc); 
-    inttype -> init(nodes, faces, &centroid);
-    lds -> setFacesCentroidAndIntegration(faces, centroid, inttype); 
-    shafunc -> init(nodes);
+    Linear2DPolygonShapeF *lds = static_cast< Linear2DPolygonShapeF * >( shafunc );
+    inttype->init(nodes, faces, & centroid);
+    lds->setFacesCentroidAndIntegration(faces, centroid, inttype);
+    shafunc->init(nodes);
 }
 
 
