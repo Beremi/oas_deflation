@@ -661,7 +661,7 @@ def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minD
         if (tr < trials):
             node_coords.append(coords)
 
-def generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim, minDist, node_coords, trials):
+def generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim, minDist, node_coords, trials, minD=-1, maxD=-1):
     print ('Generating a 3d tube. Ctr [%f, %f, %f], Rad: %f, Thick: %f' %(center[0],center[1],center[2], radius, thickness))
 
     tr=0
@@ -671,8 +671,18 @@ def generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim,
         distIsGood = False
         while (distIsGood == False):
             coords = randPointInTube(center, radius, height, thickness, directionDim)
-            #
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+
+            if minD>0 and maxD>0:
+                pointRadius = np.linalg.norm(coords[0:3]-center)
+                relativePosition = (pointRadius - (radius-thickness))/ thickness
+
+                minDistDiff = maxD - minD
+                currentMinDist = minD + relativePosition * minDistDiff
+
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(3, currentMinDist, node_coords, coords[0:3])
+            else:
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords[0:3])
+
             #
             if (distIsGood == False):
                 tr += 1

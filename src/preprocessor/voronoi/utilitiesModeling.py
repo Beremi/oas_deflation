@@ -253,7 +253,7 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
         boundB1 = np.array(  [ limits1[3]    ,  limits1[4],  limits1[5]  ] )
         matZ1.append(boundA1)
         matZ1.append(boundB1)
-        materialZones.append(matZ1)
+        #materialZones.append(matZ1)
 
     if (model=='3dcylinder'):
         boundA = np.array(  [ -1e-8   -maxLim[0]          , -1e-8    -maxLim[1]         , -1e8 -maxLim[2]] )
@@ -270,7 +270,7 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
     #centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
     if (model=='2d_corrosionRebar'):
         for r in range(rebarCount):
-            radius = rebarDiameter/2 * 1.01
+            radius = rebarDiameter/2 + 0.0002
             center = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
             matZ = []
             matZ.append('circle')
@@ -5045,28 +5045,34 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
         ###
         maxLimF = np.array([
-        maxLim[0]/4,
+        maxLim[0]/2-maxLim[0]/5,
         indent,#* notch,
         indent,
-        indent + 0.5*maxLim[0]*(1-fracZoneWidth*2),
+        0.5*maxLim[0]*(1-fracZoneWidth*2),
         maxLim[1] -indent,#* notch,
         maxLim[2] - indent
         ])
         print(maxLimF)
-        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist/2, topMinDist = minDist, gradienDirection=0)
+        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist/2, topMinDist = minDist*2, gradienDirection=0)
 
+        """
+        #right rect
+        interHeight = (maxLim[1]-fineRegDepth)  / 2
+        bounds = np.array([     centre[0]+rebarDiameter,          centre[1],      centre[0]+rebarDiameter/2*4,       maxLim[1]-indent     ])
+        pointGenerators.generateNodesRect(bounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*roughMinDistCoef/2, gradienDirection=0)
+        """
 
         ###
         maxLimF = np.array([
+        maxLim[0]/2+maxLim[0]/5,
+        maxLim[1] -indent,#* notch,
+        maxLim[2] - indent,
         maxLim[0] - indent - 0.5*maxLim[0]*(1-fracZoneWidth*2),
         indent,#* notch,
-        indent,
-        maxLim[0]/4*3,
-        maxLim[1] -indent,#* notch,
-        maxLim[2] - indent
+        indent
         ])
         print(maxLimF)
-        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist, topMinDist = minDist/2, gradienDirection=0)
+        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist/2, topMinDist = minDist*2, gradienDirection=0)
 
 
         ###############generating of nodes, front bottom line ###############
@@ -5091,32 +5097,32 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         #front surf
         nodeA =  np.array([indent , maxLim[1] - indent, indent])
         nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*2, dim, node_coords, trials)
 
         #back surf
         nodeA =  np.array([indent , maxLim[1] - indent, maxLim[2]-indent])
         nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*2, dim, node_coords, trials)
 
         #top surf
         nodeA =  np.array([indent , maxLim[1] - indent, indent])
         nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*2, dim, node_coords, trials)
 
         #bot surf
         nodeA =  np.array([indent , indent, indent])
         nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*2, dim, node_coords, trials)
 
         #left face surf
         nodeA =  np.array([indent , indent, indent])
         nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*2, dim, node_coords, trials)
 
         #right face surf
         nodeA =  np.array([maxLim[0]-indent , indent, indent])
         nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*2, dim, node_coords, trials)
 
 
         """
@@ -5139,22 +5145,28 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
         ##########################################generating of points, left support
         maxLimF = np.array([
-        supportWidth*2,
-        supportWidth*2,
+        supportWidth*3,
+        supportWidth*3,
         maxLim[2]-indent,
         indent,
         indent,
         indent])
-        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True)
+        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True,
+        topMinDist=minDist*2.5, bottomMinDist=minDist/2, minDistCenter=3)
+
+
+
+
         ##########################################generating of points, right support
         maxLimF = np.array([
         maxLim[0],
-        supportWidth*2,
+        supportWidth*3,
         maxLim[2]-indent,
-        maxLim[0]-supportWidth*2,
+        maxLim[0]-supportWidth*3,
         indent,
         indent])
-        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True)
+        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True,
+        topMinDist=minDist*2.5, bottomMinDist=minDist/2, minDistCenter=4)
 
         nodeA =  np.array([0.5*maxLim[0], maxLim[1]-indent, indent])
         nodeB =  np.array([0.5*maxLim[0], maxLim[1]-indent, maxLim[2]-indent])
@@ -5165,7 +5177,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
         ##########################################generating of points, homogeneous volume
-        pointGenerators.generateNodesRect(maxLim, minDist*1.5, dim, trials, node_coords)
+        pointGenerators.generateNodesRect(maxLim, minDist*2.5, dim, trials, node_coords)
 
     #if coupled:
     #    notches = []

@@ -659,10 +659,12 @@ class Model:
 
         # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
         # get only the filename from master file string https://docs.python.org/3/library/os.path.html#os.path.basename
+        """
         dst_file = os.path.join(self.master_folder, os.path.basename(master_file))
         if not os.path.isfile(dst_file):
             print ('Copying prep_master used...', end='')
             copyfile(master_file, dst_file)
+        """
 
         if self.defaultFilesFolder != None:
             files=os.listdir(self.defaultFilesFolder )
@@ -973,10 +975,17 @@ if __name__ == '__main__':
                 model.maxLim [1]= float(model.maxLim [1]*model.minDist*(2*model.elasticHeightCoef+1))
 
 
+
             print('\nCreating model #%d' %i)
             if len(sys.argv) > 3:
                 model.userSeed = int(sys.argv[3])
             model.setDirectory(len(sys.argv) > 2 and sys.argv[2] or None) # directory to genereate in can be specified in the input string (after prep_master.inp)
+            dst_file = os.path.join(model.master_folder, os.path.basename(file))
+            #print ('prep_master used... %s' %dst_file, end='')
+            if not os.path.isfile(dst_file):
+                print ('Copying prep_master used... %s' %dst_file)
+                copyfile(file, dst_file)
+
             model.createModel()
             model.saveGeometry()
             model.saveRest(solver, file, exporters)
