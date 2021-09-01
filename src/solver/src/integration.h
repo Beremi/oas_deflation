@@ -26,8 +26,8 @@ public:
     Point giveIPLocation(unsigned i) const { return ip_locs [ i ]; };
     Point *giveIPLocationPointer(unsigned i) { return & ( ip_locs [ i ] ); };
     virtual void init();
-    virtual void init(const vector< Node* > & nodes);
-    virtual void init(const vector< Node* > & nodes, const vector< vector< unsigned > > & faces, Point *centroid);
+    virtual void init(const vector< Node * > &nodes);
+    virtual void init(const vector< Node * > &nodes, const vector< vector< unsigned > > &faces, Point *centroid);
 };
 
 //////////////////////////////////////////////////////////
@@ -72,9 +72,9 @@ class IntegrPolygon : public IntegrationType
 {
     string ip_type;
 public:
-    IntegrPolygon(string type) { name = "IntegrPolygon"; ip_type=type;};
+    IntegrPolygon(string type) { name = "IntegrPolygon"; ip_type = type; };
     virtual ~IntegrPolygon() {};
-    virtual void init(const vector< Node* > & nodes, const vector< vector< unsigned > > & faces, Point *centroid);
+    virtual void init(const vector< Node * > &nodes, const vector< vector< unsigned > > &faces, Point *centroid);
 };
 
 

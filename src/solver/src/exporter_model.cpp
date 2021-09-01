@@ -40,7 +40,7 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
 
     if ( remove_previous ) {
         if ( this->last_saved_file.compare("none") != 0 ) {
-            if ( std :: remove( last_saved_file.c_str() ) == 0 ) {
+            if ( std :: remove(last_saved_file.c_str() ) == 0 ) {
                 std :: cout << "element statuses saved to file " << this_file_path << '\n';
             } else {
                 std :: cerr << "previous file with elem statuses not removed" << '\n';

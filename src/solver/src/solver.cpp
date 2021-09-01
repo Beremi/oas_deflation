@@ -20,7 +20,7 @@ void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionCont
 //////////////////////////////////////////////////////////
 Solver *Solver :: readFromFile(const string filename) {
     string param, paramA, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -161,9 +161,9 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     f_acc = Vector(totalDoFnum);
     trial_r = Vector(totalDoFnum);
     pbc = Vector(fixedDoFnum);
-    f = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     residuals = Vector(totalDoFnum);
-    ddr = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+    ddr = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
     full_ddr = Vector(totalDoFnum);
     f_int_old = Vector(totalDoFnum);
     f_ext_old = Vector(totalDoFnum);
@@ -220,7 +220,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -281,13 +281,13 @@ void SteadyStateLinearSolver :: solve() {
     }
 
     /*
-    cout << "----- K ----" << endl;
-    K.print();
-    cout << "----- d ----" << endl;
-    for(auto p:ddr ) cout << p<< endl;
-    cout << "----- f ----" << endl;
-    for(auto p:f ) cout << p<< endl; 
-    */
+     * cout << "----- K ----" << endl;
+     * K.print();
+     * cout << "----- d ----" << endl;
+     * for(auto p:ddr ) cout << p<< endl;
+     * cout << "----- f ----" << endl;
+     * for(auto p:f ) cout << p<< endl;
+     */
     // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit) == false ) {
     // if (terminated == true);
     //     cerr << "Conjugate gradients did not converge" << endl;
@@ -353,9 +353,9 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
 
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
-        ddf = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+        ddf = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         full_ddf = Vector(totalDoFnum);
-        f_last_iter = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+        f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         if ( initial ) {
             idc_time = 0;
             idc_dt = 1e-6;
@@ -390,7 +390,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     bool bsh = false;
     unsigned helpuint;
     double valueIN;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -510,7 +510,7 @@ bool SteadyStateNonLinearSolver :: updateSystemMatrices(string matrixType, unsig
     if ( stiffnessMatrixUpdate == 0 || ( stiffnessMatrixUpdate > 0 && iteration % stiffnessMatrixUpdate == 0 ) ) {
         elems->updateStiffnessMatrix(K, matrixType);
         return true;
-    } else   {
+    } else {
         return false;
     }
 }
@@ -553,8 +553,8 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
             full_ddrM += pow(full_ddr [ i ], 2);
             trial_rM += pow(trial_r [ i ], 2);
             energyM += abs(residuals [ i ] * full_ddr [ i ]);
-            W_intM += abs( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_extM += abs( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_intM += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_extM += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
             W_kinM += 0.; //TODO: correct kinetic energy
         }
         if ( transpDoFs [ i ] ) {
@@ -566,13 +566,13 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
             full_ddrT += pow(full_ddr [ i ], 2);
             trial_rT += pow(trial_r [ i ], 2);
             energyT += abs(residuals [ i ] * full_ddr [ i ]);
-            W_intT += abs( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_extT += abs( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_intT += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_extT += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
             W_kinT += 0.; //TODO: correct kinetic energy
         }
     }
-    * residu_error = sqrt( residualM / max(max( max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max( max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
-    * displa_error = sqrt( full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
+    * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
+    * displa_error = sqrt(full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
     * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
 }
 
@@ -824,7 +824,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -877,7 +877,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 
     double num;
     string param, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -961,7 +961,7 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
     //initial conditions
     if ( init_v_file.compare("") != 0 ) {
         v = nodes->readInitialConditions(init_r_file);
-    } else  {
+    } else {
         v = Vector(totalDoFnum);
     }
     v_old = Vector(totalDoFnum);
@@ -985,7 +985,7 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
         nodes->giveConstraints()->transformToConstraintSpace(Mred);
     }
-    Vector v_red( freeDoFnum - nodes->giveNumConstrDoFs() );
+    Vector v_red(freeDoFnum - nodes->giveNumConstrDoFs() );
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
     a = Vector(totalDoFnum);
@@ -1031,7 +1031,7 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 

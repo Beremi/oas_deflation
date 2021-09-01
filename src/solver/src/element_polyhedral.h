@@ -14,9 +14,9 @@ protected:
     double volume;
     Point centroid;
     string ip_type;
-    vector < vector < unsigned > > faces;
-    vector < Point > normals;
-    vector < double > surfaces;
+    vector< vector< unsigned > >faces;
+    vector< Point >normals;
+    vector< double >surfaces;
 
     void prepareGeometry();
     virtual void initIntegration();
@@ -62,7 +62,6 @@ public:
     virtual void initIntegration();
 };
 
-/*
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT POLYGONAL ELEMENT CONSTRUCTED BY STATIC CONDENSATION OF ISOPARAMETRIC TRIANGLES
@@ -79,9 +78,8 @@ public:
  *  void init();
  *  double giveValue(string code) const {return 0;};
  * };
- */
-
-/*
+ *
+ *
  * //////////////////////////////////////////////////////////
  * //////////////////////////////////////////////////////////
  * class TranspPolyhedral : public TranspPolygonal
@@ -107,9 +105,7 @@ public:
  *  virtual Matrix giveSteadyStateMatrix(string matrixType) const { return giveConductivityMatrix(matrixType); };
  *  virtual Vector giveInternalForces(const Vector &DoFs, bool frozen) const;
  * };
- */
-
-/*
+ *
  * class TranspVirtPolyhedral : public TranspPolyhedral
  * {
  * private:
