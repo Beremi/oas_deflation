@@ -1238,24 +1238,25 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     rigidPlatesTrspt = []
 
 
+
     ### selecting vertices on the bottom surface
     boundA = np.zeros(2)-1e-8
     boundB = np.array([maxLim[0], 1e-8])
     faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     vert = vor.vertices[faces1,:]
 
-    fn1 = utilitiesNumeric.constantFunc(100)
-    functions.append (fn1)
+    #fn1 = utilitiesNumeric.constantFunc(0)
+    #functions.append (fn1)
 
     trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
     trsptLeftRigidPlate.setDirectNodes(faces1)
     trsptLeftRigidPlateMechBC = np.array([0,-1])
     rigidPlatesTrspt.append(trsptLeftRigidPlate)
-    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    govNodesTrspt.append(np.array([ 0, 0]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
 
 
-    #"""
+    """
     ### selecting vertices on the top surface
     boundA = np.array([-1e-8, maxLim[1]-1e-8])
     boundB = np.array([maxLim[0], maxLim[1]+1e-8])
@@ -1266,9 +1267,38 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     trsptRightRigidPlate.setDirectNodes(faces2)
     trsptRightRigidPlateMechBC = np.array([3,-1])
     rigidPlatesTrspt.append(trsptRightRigidPlate)
-    govNodesTrspt.append(np.array([ -1, -1, -1]))
+    govNodesTrspt.append(np.array([ -1, -1]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+    """
 
+    funcTrsprt = []
+    funcTrsprt.append( np.array([0,0]) )
+    funcTrsprt.append( np.array([1, 100]) )
+    fnTrsprt = utilitiesNumeric.generalFunc(funcTrsprt)
+    functions.append (fnTrsprt)
+    ### selecting vertices on rebar interfaces
+    clipRadius = rebarDiameter/2 + minDist/3
+    for r in range (rebarCount):
+        interfaceVertices = []
+        for i in range (len(vor.vertices)):
+            if (rebarCount==1):
+                #puvodni poloha rebars polovina od kraje
+                center = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            else:
+                #poloha rebars presne jak je ve clanku
+                center = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth  ])
+
+            vertex = vor.vertices[i]
+            if (np.linalg.norm(vertex-center) < clipRadius):
+                interfaceVertices.append(i)
+
+        #print(interfaceVertices)
+        trsptRebarRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 4, None, directIdcs = True)
+        trsptRebarRigidPlate.setDirectNodes(interfaceVertices.copy())
+        trsptRebarRigidPlateMechBC = np.array([3,-1])
+        rigidPlatesTrspt.append(trsptRebarRigidPlate)
+        govNodesTrspt.append(center-1e-4)
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRebarRigidPlateMechBC))
 
 
 

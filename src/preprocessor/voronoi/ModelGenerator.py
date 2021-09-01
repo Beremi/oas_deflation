@@ -624,31 +624,35 @@ class Model:
 
         utilitiesGeom.saveExporters(self.master_folder, self.activeTransport, self.activeMechanics, exporters=exporters)
 
+
+
         if self.govNodes != None:
             if self.rigidPlates != None:
                 if self.govNodesMechBC != None:
-                    if not (self.activeTransport==True and self.coupled==False):
+                    #if not (self.activeTransport==True and self.coupled==False):
 
-                        if self.modelType == '2d_corrosionRebar':
-                            expansionRingsProps = []
-                            expansionRingsProps.append(self.rebarCount)
-                            expansionRingsProps.append(self.rebarDepth)
-                            expansionRingsProps.append(self.rebarDiameter)
-                            expansionRingsProps.append(self.maxLim)
+                    if self.modelType == '2d_corrosionRebar':
+                        expansionRingsProps = []
+                        expansionRingsProps.append(self.rebarCount)
+                        expansionRingsProps.append(self.rebarDepth)
+                        expansionRingsProps.append(self.rebarDiameter)
+                        expansionRingsProps.append(self.maxLim)
 
-                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount)
-                            self.constraint = True
-                        else:
-                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
-                            self.constraint = True
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount)
+                        self.constraint = True
+                    else:
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
+                        self.constraint = True
 
         self.totalNodeCount += len(self.govNodes)
-
+        if self.modelType == '2d_corrosionRebar':
+            self.totalNodeCount += self.rebarCount
 
         #saving transport rigid plates
         if self.govNodesTrspt != None:
             if self.rigidPlatesTrspt != None:
                 if self.govNodesTrsptBC != None:
+
                     utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart)
                     self.constraintTrspt = True
 
