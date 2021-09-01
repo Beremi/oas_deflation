@@ -1194,7 +1194,8 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
 
     print('Conducting Voronoi tesselation...', end = '')
-    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoiRebars (node_coords, dim, maxLim, rebarDiameter, rebarDepth, rebarCount)
     print('done.')
 
     # if SHOW_PLOT:
@@ -3746,8 +3747,8 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             node_coords = newNodes.copy()
 
             if (rebarMinDist<0):
-                #print ('rebars centre')
-                node_coords.append(centre*1e-5)
+                print ('rebars centre')
+            #    node_coords.append(centre*1e-5)
             else:
                 #rebar crossection
                 pointGenerators.generateNodesOrtoCircle2dRand(centre, rebarDiameter/2, rebarMinDist, node_coords, trials)

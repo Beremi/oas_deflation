@@ -114,6 +114,67 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
         return dataOut, weightsOut
     return dataOut
 
+
+
+
+
+def mirror_data_rebars(data, dim, sizes, rebarDiameter, rebarDepth, rebarCount):
+    '''Mirror data 2D and 3D'''
+    if (dim == 2):
+        dataOut= np.vstack((
+        data,
+        np.array([0,0]) + data * np.array([-1,1]),
+        np.array([sizes[0]*2,0]) + data * np.array([-1,1]),
+        np.array([0,sizes[1]*2]) + data * np.array([1,-1]),
+        np.array([0,0]) + data * np.array([1,-1])
+        ))
+
+    for node in dataOut:
+        for r in range (rebarCount):
+            center = np.array([ (sizes[0]/rebarCount)*(r+0.5), sizes[1]-rebarDepth  ])
+            dist = np.linalg.norm(node-center)
+
+            if (dist < (rebarDiameter/2+0.001)  ):
+                #print()
+                #print('node dist %f' %dist)
+                rad0 = dist
+                mirroredNode = np.zeros((2))
+                mirroredNode[0] = center[0] + (-center[0]+node[0]) * ((2*(rebarDiameter-1e-6)/2-rad0) / rad0 )
+                mirroredNode[1] = center[1] + (-center[1]+node[1]) * ((2*(rebarDiameter-1e-6)/2-rad0) / rad0 )
+
+                #print('mirrored  dist %f' % np.linalg.norm(mirroredNode-center))
+                dataOut= np.vstack((dataOut,   mirroredNode     ))
+    """
+    if (dim == 3):
+        dataOut =  np.vstack((data,
+            np.array([0,0,0]) + data * np.array([-1,1,1]),
+            np.array([ sizes[0]*2 ,0,0]) + data * np.array([-1,1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,sizes[1]*2,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,1,-1]),
+            np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
+        ))
+    """
+
+    dataOut = np.asarray(dataOut)
+    fig, ax = plt.subplots()
+    ax.scatter(dataOut[:,0], dataOut[:,1])
+    plt.show()
+
+
+    #dataOut += shifts
+    """
+    if weights is not None:
+        if dim == 2:
+            weightsOut = np.hstack([weights]*5)
+        else:
+            weightsOut = np.hstack([weights]*7)
+        return dataOut, weightsOut
+    """
+    return dataOut
+
+
+
 def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
     '''Mirror data 3D'''
     if (dim == 3):
@@ -455,6 +516,9 @@ def voronoi_2d(vor, sizes, shifts=0):
         print('Area errror', np.sum(areas))
 
     return new_regions, np.asarray(new_vertices), polygons, np.asarray(areas), np.asarray(centroids), np.asarray(points)
+
+
+
 
 def voronoi_2d_dogBone(vor, sizes):
 
