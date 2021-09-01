@@ -2280,6 +2280,7 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
 
 def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrsptBC, rigidPlatesTrspt, totalNodeCount, node_coords, vert_count, verticesIdxDict, vertIdxStart):
     print ('Saving Transport constraint...')
+    print(govNodesTrspt)
     saveNodes (master_folder,govNodesTrspt, "TrsprtNode", dimension, govNodesTrsptFile)
 
     for i in range (len(govNodesTrsptBC)):
