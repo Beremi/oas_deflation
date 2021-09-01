@@ -339,7 +339,7 @@ class Model:
             self.run_3d_coupledArtificialCrack()
 
         if self.modelType == '2d_corrosionRebar':
-            self.run_2d_corrosionRebar()
+            self.run_2d_corrosionRebar(node_coords_init=node_coords_init)
 
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
