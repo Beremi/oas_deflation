@@ -2220,7 +2220,7 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
                 centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
                 #f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
                 #f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
-                f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC, centre[0],centre[1], rebarDiameter/2*1.01 ) )
+                f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
 
 
 
@@ -2258,10 +2258,13 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
 
     #saving force gauges for rigid plates
     for i in range (len(govNodesMechBC)):
-        if i < len(govNodesMechBC)-1 :
+        if virtualDoF == 0:
             saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='MechPLT%d'%i)
         else:
-            saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='MechPLT%d'%i, virtualDoF=virtualDoF)
+            if i < len(govNodesMechBC)-virtualDoF :
+                saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='MechPLT%d'%i)
+            else:
+                saveForceGauges(master_folder, dim, govNodesMechBC[i].nodeIdx, name='VirtualDOF%d'%i, virtualDoF=virtualDoF)
 
 
     #saving rigid plates

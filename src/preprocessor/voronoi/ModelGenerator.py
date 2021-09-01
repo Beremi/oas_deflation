@@ -636,7 +636,7 @@ class Model:
                             expansionRingsProps.append(self.rebarDiameter)
                             expansionRingsProps.append(self.maxLim)
 
-                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=1)
+                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount)
                             self.constraint = True
                         else:
                             utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)

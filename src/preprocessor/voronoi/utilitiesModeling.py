@@ -3710,9 +3710,8 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             #govNodes.append(np.array( np.copy(centre) ))
 
 
-        rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
-        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
-
+            rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
+            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
         fineRegDepth *= maxLim[1]
 
