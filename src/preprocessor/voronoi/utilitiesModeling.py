@@ -69,7 +69,12 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None, expansionRingsProps=[]):
         maxLim = expansionRingsProps[3]
 
         for i in range (rebarCount):
-            centre = np.array([ (maxLim[0]/rebarCount)*(i+0.5), maxLim[1]-rebarDepth  ])
+            if (rebarCount==1):
+                #puvodni poloha rebars polovina od kraje
+                centre = np.array([ (maxLim[0]/rebarCount)*(i+0.5), maxLim[1]-rebarDepth  ])
+            else:
+                #poloha rebars presne jak je ve clanku
+                centre = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*i), maxLim[1]-rebarDepth  ])
 
             coordsA = np.array([ centre[0]-0.005, maxLim[1] ])
             coordsB = np.array([ centre[0]+0.005, maxLim[1] ])
@@ -271,7 +276,12 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
     if (model=='2d_corrosionRebar'):
         for r in range(rebarCount):
             radius = rebarDiameter/2 + 0.0002
-            center = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            if (rebarCount==1):
+                #puvodni poloha rebars polovina od kraje
+                center = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            else:
+                #poloha rebars presne jak je ve clanku
+                center = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth  ])
             matZ = []
             matZ.append('circle')
             matZ.append(radius)
@@ -3657,7 +3667,13 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
         for r in range (rebarCount):
             print ('Interface #%d' %r)
             #rebar edge
-            centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            if (rebarCount==1):
+                #puvodni poloha rebars polovina od kraje
+                centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            else:
+                #poloha rebars presne jak je ve clanku
+                centre = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth  ])
+            print(centre)
 
             """
             coordsA = np.array([ centre[0]-rebarDiameter/2, maxLim[1]-indent ])
@@ -3714,7 +3730,12 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
         #sampling rebars
         for r in range (rebarCount):
             #rebar edge
-            centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            if (rebarCount==1):
+                #puvodni poloha rebars polovina od kraje
+                centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+            else:
+                #poloha rebars presne jak je ve clanku
+                centre = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth  ])
 
             #fine surf above rebar
             nodeA = np.array([centre[0]-rebarDiameter, maxLim[1]-indent ])
@@ -3777,7 +3798,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
         interBounds = np.array([     indent,      maxLim[1] -fineRegDepth - interHeight , maxLim[0],              maxLim[1] -fineRegDepth])
         #interBounds = np.array([     indent,     indent, maxLim[0],              maxLim[1] -fineRegDepth])
         if adaptivityReady:
-            pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughMinDistCoef, bottomMinDist = minDist*roughMinDistCoef, gradienDirection=1)
+            pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughMinDistCoef, bottomMinDist = minDist*roughMinDistCoefs, gradienDirection=1)
         else:
             pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughMinDistCoef, bottomMinDist = minDist, gradienDirection=1)
 

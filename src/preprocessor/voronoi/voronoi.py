@@ -131,7 +131,12 @@ def mirror_data_rebars(data, dim, sizes, rebarDiameter, rebarDepth, rebarCount):
 
     for node in dataOut:
         for r in range (rebarCount):
-            center = np.array([ (sizes[0]/rebarCount)*(r+0.5), sizes[1]-rebarDepth  ])
+            if (rebarCount==1):
+                #puvodni poloha rebars polovina od kraje
+                center = np.array([ (sizes[0]/rebarCount)*(r+0.5), sizes[1]-rebarDepth  ])
+            else:
+                #poloha rebars presne jak je ve clanku
+                center = np.array([ (0.058 + (sizes[0]-0.116)/(rebarCount-1)*r), sizes[1]-rebarDepth  ])
             dist = np.linalg.norm(node-center)
 
             if (dist < (rebarDiameter/2+0.001)  ):
