@@ -3595,18 +3595,20 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
     indent = 1e-8
     indentRP = 1e-7
 
+
     if node_coords_init is None:
-
         node_coords.append(np.array([indent, 2*indentRP]))
-        mechBC = np.array([0,0,-1,-1,-1,-1])
-        mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
-        mechBC_merged.append(mBC)
+    mechBC = np.array([0,0,-1,-1,-1,-1])
+    mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    mechBC_merged.append(mBC)
 
+    if node_coords_init is None:
         node_coords.append(np.array([maxLim[0]-indent, 2*indentRP]))
-        mechBC = np.array([-1,0,-1,-1,-1,-1])
-        mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
-        mechBC_merged.append(mBC)
+    mechBC = np.array([-1,0,-1,-1,-1,-1])
+    mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
+    mechBC_merged.append(mBC)
 
+    if node_coords_init is None:
         if sampleBorders:
 
             #top
@@ -3661,10 +3663,11 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             """
 
 
-        #rebar
+    #rebar
 
-        #sampling interfaces
-        for r in range (rebarCount):
+    #sampling interfaces
+    for r in range (rebarCount):
+        if node_coords_init is None:
             print ('Interface #%d' %r)
             #rebar edge
             if (rebarCount==1):
@@ -3710,12 +3713,12 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             #govNodes.append(np.array( np.copy(centre) ))
 
 
-            rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
-            govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
+        rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
+        govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
+
+    if node_coords_init is None:
 
         fineRegDepth *= maxLim[1]
-
-
 
         #top half rect
         fineTopBounds = np.array([     indent,          maxLim[1] -fineRegDepth,      maxLim[0],         maxLim[1]   ])
