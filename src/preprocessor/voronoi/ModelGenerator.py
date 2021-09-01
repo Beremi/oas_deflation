@@ -124,6 +124,12 @@ class Model:
                 self.rebarDepth = float(r[i+1])
             if (r[i]=='interfaceMinDist'):
                 self.interfaceMinDist = float(r[i+1])
+            if (r[i]=='fineRingThickness'):
+                self.fineRingThickness = float(r[i+1])
+            if (r[i]=='fineRegDepth'):
+                self.fineRegDepth = float(r[i+1])
+            if (r[i]=='gradientRegDepth'):
+                self.gradientRegDepth = float(r[i+1])
 
             if (r[i]=='defaultFilesFolder'):
                 self.defaultFilesFolder = str(r[i+1])
@@ -542,7 +548,8 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
     def run_2d_corrosionRebar(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady,
+        fineRingThickness=self.fineRingThickness, fineRegDepth=self.fineRegDepth, gradientRegDepth=self.gradientRegDepth)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []

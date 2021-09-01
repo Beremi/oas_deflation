@@ -1180,7 +1180,7 @@ def create3dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
 
 
 
-def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, node_coords_init=None, interfaceMinDist=-1, roughMinDistCoef=1, adaptivityReady=False):
+def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter, rebarCount, rebarDepth, node_coords_init=None, interfaceMinDist=-1, roughMinDistCoef=1, adaptivityReady=False, fineRingThickness=1, fineRegDepth=0.5, gradientRegDepth=0.2):
     print('Creating corrosion rebar model...')
     dim=2
     print(roughMinDistCoef)
@@ -1188,7 +1188,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init, roughMinDistCoef=roughMinDistCoef, adaptivityReady=adaptivityReady)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init, roughMinDistCoef=roughMinDistCoef, adaptivityReady=adaptivityReady, fineRingThickness=fineRingThickness, fineRegDepth=fineRegDepth, gradientRegDepth=gradientRegDepth)
 
 
 
@@ -3563,7 +3563,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
 
 
 
-def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=None, roughMinDistCoef=1, adaptivityReady=False):
+def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=None, roughMinDistCoef=1, adaptivityReady=False, fineRingThickness=1, fineRegDepth=0.5, gradientRegDepth=0.2):
     dim = 2
 
     print (roughMinDistCoef)
@@ -3587,9 +3587,14 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
     if node_coords_init is None:
 
-        node_coords.append(np.array([maxLim[0]/2, 2*indentRP]))
-        mechBC = np.array([0,0,0,-1,-1,-1])
+        node_coords.append(np.array([indent, 2*indentRP]))
+        mechBC = np.array([0,0,-1,-1,-1,-1])
         mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+        mechBC_merged.append(mBC)
+
+        node_coords.append(np.array([maxLim[0]-indent, 2*indentRP]))
+        mechBC = np.array([-1,0,-1,-1,-1,-1])
+        mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
         mechBC_merged.append(mBC)
 
         if sampleBorders:
@@ -3597,7 +3602,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             #top
             nodeA = np.array([indent, maxLim[1]-indent])
             nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-            #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughMinDistCoef*0.7, dim, node_coords, trials*2, catchCorners=True, equidist=False)
+            pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughMinDistCoef*0.7, dim, node_coords, trials*2, catchCorners=True, equidist=False)
             """
             topRigidPlateMechBC = np.array([-1, -1,-1,   -1,-1,-1])
             topRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, maxLim[1]-indentRP, maxLim[1]+indentRP ]))
@@ -3611,11 +3616,14 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             nodeB = np.array([maxLim[0]-indent, indent])
             pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughMinDistCoef*2*0.8, dim, node_coords, trials, catchCorners=False, equidist=False)
 
+            """
             bottomRigidPlateMechBC = np.array([-1, 0,0,   -1,-1,-1])
             bottomRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, maxLim[0]+indentRP, -indentRP, indentRP ]))
             rigidPlates.append(bottomRigidPlate)
             govNodes.append(np.array([ maxLim[0]/2, indentRP ]))
             govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, bottomRigidPlateMechBC))
+            """
+
 
             """
             #left
@@ -3690,13 +3698,15 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 
-        fineRegDepth = 2*rebarDepth
+        fineRegDepth *= maxLim[1]
+
 
 
         #top half rect
         fineTopBounds = np.array([     indent,          maxLim[1] -fineRegDepth,      maxLim[0],         maxLim[1]   ])
+
         if adaptivityReady:
-            pointGenerators.generateNodesRect(fineTopBounds, minDist*roughMinDistCoef/1.5, dim, trials, node_coords, useLowBound=True)
+            pointGenerators.generateNodesRect(fineTopBounds, minDist*roughMinDistCoef, dim, trials, node_coords, useLowBound=True)
         else:
             pointGenerators.generateNodesRect(fineTopBounds, minDist, dim, trials, node_coords, useLowBound=True)
         #pointGenerators.generateNodesRect(maxLim, minDist*roughMinDistCoef, dim, trials, node_coords, useLowBound=True)
@@ -3712,14 +3722,17 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
 
             if adaptivityReady:
+
+
                 #sampling fine annulus around rebar
-                pointGenerators.generateNodesOrtoAnnulus2dRand(centre, (rebarDiameter/2)*2, (rebarDiameter/2)*2,  minDist, node_coords, trials)
+                #pointGenerators.generateNodesOrtoAnnulus2dRand(centre, (rebarDiameter/2)*(fineRingThickness+1), (rebarDiameter/2)*(fineRingThickness),  minDist, node_coords, trials)
                 #sampling gradient annulus around rebar
-                pointGenerators.generateNodesOrtoAnnulus2dRand(centre, (rebarDiameter/2)*3.5, (rebarDiameter/2)*1.5,  minDist, node_coords, trials, minD=minDist, maxD=minDist*roughMinDistCoef/2)
+                pointGenerators.generateNodesOrtoAnnulus2dRand(centre,  (rebarDiameter/2)*(fineRingThickness+1), (rebarDiameter/2)*(fineRingThickness),  minDist, node_coords, trials, minD=minDist, maxD=minDist*roughMinDistCoef)
 
             #bounds = np.array([     centre[0]-rebarDiameter*2,          centre[1],      centre[0]+rebarDiameter*2,       maxLim[1]-indent     ])
             #pointGenerators.generateNodesRect(bounds, minDist*roughMinDistCoef/2, dim, trials, node_coords, useLowBound=True)
 
+            """
             if adaptivityReady:
                 #left rect
                 interHeight = (maxLim[1]-fineRegDepth)  / 2
@@ -3734,7 +3747,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
                 bounds = np.array([     centre[0]-rebarDiameter,          centre[1],      centre[0]+rebarDiameter,       maxLim[1]-indent     ])
                 pointGenerators.generateNodesRect(bounds, minDist, dim, trials, node_coords, useLowBound=True)
-
+            """
 
 
 
@@ -3760,18 +3773,19 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
 
         #intermediate rect
-        interHeight = (maxLim[1]-fineRegDepth)  / 2
-        #interBounds = np.array([     indent,      maxLim[1] -fineRegDepth - interHeight , maxLim[0],              maxLim[1] -fineRegDepth])
-        interBounds = np.array([     indent,     indent, maxLim[0],              maxLim[1] -fineRegDepth])
+        interHeight = maxLim[1] * gradientRegDepth
+        interBounds = np.array([     indent,      maxLim[1] -fineRegDepth - interHeight , maxLim[0],              maxLim[1] -fineRegDepth])
+        #interBounds = np.array([     indent,     indent, maxLim[0],              maxLim[1] -fineRegDepth])
         if adaptivityReady:
-            pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughMinDistCoef*2, bottomMinDist = minDist*roughMinDistCoef/1.5, gradienDirection=1)
+            pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughMinDistCoef, bottomMinDist = minDist*roughMinDistCoef, gradienDirection=1)
         else:
             pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughMinDistCoef, bottomMinDist = minDist, gradienDirection=1)
-        """
+
+
         #bottom rough rect
         roughBottomBounds =  np.array([     indent,      indent,  maxLim[0],              maxLim[1] -fineRegDepth - interHeight ])
-        pointGenerators.generateNodesRect(roughBottomBounds, minDist*roughMinDistCoef*3, dim, trials, node_coords, useLowBound=True)
-        """
+        pointGenerators.generateNodesRect(roughBottomBounds, minDist*roughMinDistCoef, dim, trials, node_coords, useLowBound=True)
+
 
 
 
