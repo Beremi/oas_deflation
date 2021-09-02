@@ -222,10 +222,12 @@ private:
         Sphere sph;
         for ( unsigned i = 0; i < BaseSolver :: elems->giveSize(); i++ ) {
             el = BaseSolver :: elems->giveElement(i);
-            for ( auto const &mstat : el->giveMaterialStats() ) {
-                if ( !mstat->isElastic(false) ) { // save elems that were already damaged (in past) now=false checks damage (true checks temp_damage)
-                    elems_to_save.push_back( el->giveID() );
-                    break;
+            if ( isInsideRegions( this->fineRegions, el ) ) {
+                for ( auto const &mstat : el->giveMaterialStats() ) {
+                    if ( !mstat->isElastic(false) ) { // save elems that were already damaged (in past) now=false checks damage (true checks temp_damage)
+                        elems_to_save.push_back( el->giveID() );
+                        break;
+                    }
                 }
             }
         }
@@ -388,7 +390,12 @@ private:
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);
             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
-                if ( ( !isInsideRegions( this->regionsNotToRemesh, n->givePoint() ) && !isInsideRegions( this->fineRegions, n->givePoint() ) ) ) {
+                if ( (
+                    // JK check point from regions not to remesh, only do not remesh nodes inside of it, that't why the following line commented
+                    // !isInsideRegions( this->regionsNotToRemesh, n->givePoint() ) &&
+                    !isInsideRegions( this->fineRegions, n->givePoint() )
+                     )
+                ) {
                     if ( calcMaxPrincipalStress(nodal_stress [ i ]) > this->adaptThreshold ) {
                         nodeCentersToRmesh.push_back( n->givePoint() );
                     }
