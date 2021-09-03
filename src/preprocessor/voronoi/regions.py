@@ -34,14 +34,17 @@ def distance(a, b):
         dist += (a.z - b.z)**2
     return dist ** 0.5
 
+class Region(object):
+    pass
 
-class Block(object):
+
+class Block(Region):
     """docstring for Block."""
     lB = Point(0., 0.)  # left Bottom point
     tR = Point(0., 0.)  # topRight point
 
     def __init__(self, a, b):
-        super(Block, self).__init__()
+        super(Region, self).__init__()
         self.lB = a
         self.tR = b
 
@@ -67,14 +70,17 @@ class Block(object):
                         return True
             # print("is Outside")
         return False
+    def print(self):
+        print("lB = (%lg, %lg, %lg)" % (self.lB.x, self.lB.y, self.lB.z))
+        print("tR = (%lg, %lg, %lg)" % (self.tR.x, self.tR.y, self.tR.z))
 
-class Sphere(object):
+class Sphere(Region):
     """docstring for Sphere."""
     mid = Point(0., 0.)
     radius = 0.
 
     def __init__(self, a, r):
-        super(Block, self).__init__()
+        super(Region, self).__init__()
         self.mid = a
         self.radius = r
 
@@ -87,3 +93,6 @@ class Sphere(object):
         if distance(p, self.mid) < self.radius:
             return True
         return False
+
+    def print(self):
+        print("mid = (%lg, %lg, %lg), radius = %lg" % (self.mid.x, self.mid.y, self.mid.z, self.radius))

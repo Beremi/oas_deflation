@@ -27,6 +27,16 @@ def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
         volumes = voronoi.voronoi_3d(vor, maxLim);
         return vor, volumes
 
+# run voronoi, rebars 2d
+def runMirroredVoronoiRebars (data, dim, sizes, rebarDiameter, rebarDepth, rebarCount):
+    vor = Voronoi(voronoi.mirror_data_rebars(data, 2, sizes, rebarDiameter, rebarDepth, rebarCount)) #the last column might be present representing radii
+
+    if (dim == 2):
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, sizes)
+        return vor, regions, vertices, polygons, areas, centroids, points
+
+
+
 ##run voronoi, mirrored data
 def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
     vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[:,:dim]) #the last column might be present representing radii

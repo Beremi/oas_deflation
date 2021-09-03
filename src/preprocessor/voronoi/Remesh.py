@@ -5,6 +5,7 @@ import os
 from ModelGenerator import *
 # from regions import *
 from pointGenerators import generateNodesRemesh
+from regions import *
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.spatial as ss
@@ -37,9 +38,32 @@ def loadNodes(filename, dim):
     return [np.array(coor) for coor in node_coords.tolist()]
 
 
-def loadRegionsToKeep(region_file):
+def loadRegionsToSkip(region_file):
+    rtSkip = list()
+    if os.path.isfile(region_file):
+        with open(region_file) as file:
+            lines = file.readlines()
 
-    return
+            for line in lines:
+                if line[0] == "#":
+                    continue
+                # print(line)
+                ln = line.split()
+                if line.startswith("block"):
+                    obj = Block(Point(float(ln[1]), float(ln[2]), float(ln[3])),
+                                Point(float(ln[4]), float(ln[5]), float(ln[6]))
+                                )
+
+                elif line.startswith("sphere"):
+                    obj = Sphere(Point(float(ln[1]), float(ln[2]), float(ln[3])),
+                                 float(ln[4])
+                                 )
+                else:
+                    continue
+                rtSkip.append(obj)
+    else:
+        print("no such file: %s" % region_file)
+    return rtSkip
 
 
 if __name__ == '__main__':
@@ -50,7 +74,7 @@ if __name__ == '__main__':
     # print(len(sys.argv))
     # print("-----------------------------------------------------")
 
-    if len(sys.argv) < 7:
+    if len(sys.argv) < 9:
         print("not enough information provided for Remesher")
         sys.exit(1)
 
@@ -130,8 +154,11 @@ if __name__ == '__main__':
 
     remesherSeed = int(sys.argv[7])
     # print(node_coords_ini)
-    if len(sys.argv) > 8:
-        minDistRemesh = float(sys.argv[8])
+
+    rtSkip = loadRegionsToSkip(str(sys.argv[8]))
+
+    if len(sys.argv) > 9:
+        minDistRemesh = float(sys.argv[9])
     else:
         minDistRemesh = model.minDist / 3.
 
@@ -177,6 +204,7 @@ if __name__ == '__main__':
                         trials=model.trials, maxLim=model.maxLim,
                         minDistRemesh=minDistRemesh, minDist=model.minDist,
                         centersToRemesh=ctr, centersPreviouslyRemeshed=cpr,
+                        regionsToSkip=rtSkip,
                         radiusRemesh=radiusRemesh,
                         radiusTransitional=radiusTransitional,
                         dim=model.dimension,

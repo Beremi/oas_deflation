@@ -124,6 +124,12 @@ class Model:
                 self.rebarDepth = float(r[i+1])
             if (r[i]=='interfaceMinDist'):
                 self.interfaceMinDist = float(r[i+1])
+            if (r[i]=='fineRingThickness'):
+                self.fineRingThickness = float(r[i+1])
+            if (r[i]=='fineRegDepth'):
+                self.fineRegDepth = float(r[i+1])
+            if (r[i]=='gradientRegDepth'):
+                self.gradientRegDepth = float(r[i+1])
 
             if (r[i]=='defaultFilesFolder'):
                 self.defaultFilesFolder = str(r[i+1])
@@ -333,7 +339,7 @@ class Model:
             self.run_3d_coupledArtificialCrack()
 
         if self.modelType == '2d_corrosionRebar':
-            self.run_2d_corrosionRebar()
+            self.run_2d_corrosionRebar(node_coords_init=node_coords_init)
 
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
@@ -542,7 +548,8 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
     def run_2d_corrosionRebar(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady,
+        fineRingThickness=self.fineRingThickness, fineRegDepth=self.fineRegDepth, gradientRegDepth=self.gradientRegDepth)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
@@ -617,31 +624,35 @@ class Model:
 
         utilitiesGeom.saveExporters(self.master_folder, self.activeTransport, self.activeMechanics, exporters=exporters)
 
+
+
         if self.govNodes != None:
             if self.rigidPlates != None:
                 if self.govNodesMechBC != None:
-                    if not (self.activeTransport==True and self.coupled==False):
+                    #if not (self.activeTransport==True and self.coupled==False):
 
-                        if self.modelType == '2d_corrosionRebar':
-                            expansionRingsProps = []
-                            expansionRingsProps.append(self.rebarCount)
-                            expansionRingsProps.append(self.rebarDepth)
-                            expansionRingsProps.append(self.rebarDiameter)
-                            expansionRingsProps.append(self.maxLim)
+                    if self.modelType == '2d_corrosionRebar':
+                        expansionRingsProps = []
+                        expansionRingsProps.append(self.rebarCount)
+                        expansionRingsProps.append(self.rebarDepth)
+                        expansionRingsProps.append(self.rebarDiameter)
+                        expansionRingsProps.append(self.maxLim)
 
-                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=1)
-                            self.constraint = True
-                        else:
-                            utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
-                            self.constraint = True
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount)
+                        self.constraint = True
+                    else:
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
+                        self.constraint = True
 
         self.totalNodeCount += len(self.govNodes)
-
+        if self.modelType == '2d_corrosionRebar':
+            self.totalNodeCount += self.rebarCount
 
         #saving transport rigid plates
         if self.govNodesTrspt != None:
             if self.rigidPlatesTrspt != None:
                 if self.govNodesTrsptBC != None:
+
                     utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart)
                     self.constraintTrspt = True
 

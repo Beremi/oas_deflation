@@ -1033,7 +1033,7 @@ def minDistTrans(lminR, lmin, dst, rR, rT):
 
 
 def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
-                        centersToRemesh, centersPreviouslyRemeshed,
+                        centersToRemesh, centersPreviouslyRemeshed, regionsToSkip,
                         radiusRemesh, radiusTransitional,
                         dim, useExistingFineNodes=False,
                         remesherSeed=1):
@@ -1090,6 +1090,15 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                         tr +=1
                         continue
 
+                    # check if is not in regions to remesh
+                    for reg in regionsToSkip:
+                        if reg.IsInside(p_coord):
+                            distIsGood = False
+                            break
+                    if not distIsGood:
+                        tr += 1
+                        continue
+
                 #Adding node coords
                 if (tr < trials):
                     if PRINT_TEST:
@@ -1104,7 +1113,8 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     # remesh the transitional areas - same centers, just different radius and only outer ring
     ci = 0
     tr = 0
-    for center in centersToRemesh:
+    # for center in centersToRemesh:
+    for center in centersPreviouslyRemeshed:
         # if PRINT_TEST:
         #     print("generating in transitional area %d" % ci, end='\r' )
         tr = 0
@@ -1160,6 +1170,14 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     tr += 1
                     continue
 
+                # check if is not in regions to remesh
+                for reg in regionsToSkip:
+                    if reg.IsInside(p_coord):
+                        distIsGood = False
+                        break
+                if not distIsGood:
+                    tr += 1
+                    continue
 
             #Adding node coords
             if (tr < trials):
@@ -1169,7 +1187,6 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                 node_coords.append(coords)
 
     return node_coords
-
 
 try:
     from point_generators_cython import generateNodesRemesh_cython as generateNodesRemesh
