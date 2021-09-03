@@ -24,7 +24,7 @@ protected:
     Model *RVE;
     unsigned ndim;
     fs :: path inputfile;
-
+    
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
 
@@ -47,7 +47,7 @@ protected:
 
 
 public:
-    RVEMaterial() { name = "generic RVE material"; };
+    RVEMaterial() { name = "generic RVE material";};
     virtual ~RVEMaterial() {};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -66,11 +66,18 @@ protected:
     vector< double >aux_params; //macroscopic pressure coeff
     vector< double >orig_mater_params; //material parameters of the original model
 
+    double temp_nonlin;
+    bool is_master_status;
+    bool is_precomputed;
+
     virtual void generateRandomFixedBC();
     virtual void generateVolumetricAverageBC();
     virtual void applyEigenStrains();
     virtual void collectStresses();
     virtual unsigned giveStrainSize(unsigned rdim) const;
+    virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
+    virtual Matrix giveStiffnessTensorPrecomputed(string type, unsigned dimension) const;
+    virtual Matrix giveDampingTensorPrecomputed() const;
 
 public:
     DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
@@ -80,18 +87,31 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual Matrix giveDampingTensor() const;
-    virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); };
+    virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); }; 
+    virtual void update();   
+    void setFromPrecomputedToFullModel();
 };
 
 //////////////////////////////////////////////////////////
 class DiscreteTransportRVEMaterial : public RVEMaterial
 {
 protected:
+    TrsprtMaterialStatus *masterStatus;
+    TrsprtMaterial *masterMaterial;
+    Matrix conductivity; // precomputed form one integration point, then used everywhere
+    double capacity;
+    unsigned ndim;
 
 public:
-    DiscreteTransportRVEMaterial() { name = "transport RVE material"; };
+    DiscreteTransportRVEMaterial() { name = "transport RVE material";  conductivity = Matrix(0, 0); };
     virtual ~DiscreteTransportRVEMaterial() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    Matrix givePrecomputedConductivity() const { return conductivity; };
+    double givePrecomputedCapacity() const { return capacity; };
+    TrsprtMaterialStatus *giveMasterStatus() { return masterStatus; };
+    TrsprtMaterial *giveMasterMaterial() { return masterMaterial; };
+    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM, unsigned dimension); 
+    unsigned giveDimension(){return ndim;}; 
 };
 
 //////////////////////////////////////////////////////////
@@ -201,26 +221,6 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual void update();
 };
-
-//////////////////////////////////////////////////////////
-class DiscreteTransportRVEMaterialPrecomputed : public DiscreteTransportRVEMaterial
-{
-protected:
-    TrsprtMaterialStatus *masterStatus;
-    TrsprtMaterial *masterMaterial;
-    Matrix conductivity; // precomputed form one integration point, then used everywhere
-    double capacity;
-public:
-    DiscreteTransportRVEMaterialPrecomputed() { name = "transport RVE precomputed material"; conductivity = Matrix(0, 0); };
-    virtual ~DiscreteTransportRVEMaterialPrecomputed() {};
-    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    Matrix givePrecomputedConductivity() const { return conductivity; };
-    double givePrecomputedCapacity() const { return capacity; };
-    TrsprtMaterialStatus *giveMasterStatus() { return masterStatus; };
-    TrsprtMaterial *giveMasterMaterial() { return masterMaterial; };
-    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM);
-};
-
 
 /*
  * //////////////////////////////////////////////////////////

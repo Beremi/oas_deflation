@@ -27,7 +27,7 @@ Element :: ~Element() {
 
 //////////////////////////////////////////////////////////
 void Element :: initIntegration() {
-    shafunc->init();
+    shafunc->init(nodes);
     inttype->init();
 };
 
@@ -219,7 +219,7 @@ vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
 void Element :: changeMaterial(Material *newmat) {
     this->mat = newmat;
     for ( unsigned p = 0; p < stats.size(); p++ ) {
-        delete stats [ p ];
+        if (stats [ p ] != nullptr) delete stats [ p ];
         stats [ p ] = this->mat->giveNewMaterialStatus(this, p);
     }
     this->initMaterialStatuses();

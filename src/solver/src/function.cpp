@@ -304,7 +304,7 @@ double SinusFunction :: giveNextEtreme(const double &t) const {
 // CONTAINER FOR FUNCTIONS
 FunctionContainer :: ~FunctionContainer() {
     for ( vector< Function * > :: iterator f = functions.begin(); f != functions.end(); ++f ) {
-        delete * f;
+        if (*f!=nullptr) delete * f;
     }
 }
 

@@ -9,7 +9,7 @@
 // ELEMENT CONATINER
 ElementContainer :: ~ElementContainer() {
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-        delete * e;
+        if( *e != nullptr) delete * e;
     }
 }
 

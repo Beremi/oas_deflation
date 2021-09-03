@@ -26,7 +26,7 @@ class Model
 {
 public:
     Model(bool pT);
-    ~Model() { delete solver; };
+    ~Model();
     // JK: different read for reloading the geometry (e.g. after adaptive remesh)
     void readFromFile(const string filename, const bool &initial = true);
     void init(const bool &initial = true);

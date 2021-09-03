@@ -1410,7 +1410,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
 // CONTAINER FOR PBLOCKS
 PBlockContainer :: ~PBlockContainer() {
     for ( vector< PBlock * > :: iterator f = blocks.begin(); f != blocks.end(); ++f ) {
-        delete * f;
+        if (*f != nullptr) delete * f;
     }
 }
 

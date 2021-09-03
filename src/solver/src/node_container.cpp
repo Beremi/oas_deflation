@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////
 NodeContainer :: ~NodeContainer() {
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
-        delete * n;
+        if (*n != nullptr) delete * n;
     }
 }
 

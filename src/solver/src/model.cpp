@@ -1,6 +1,11 @@
 #include "model.h"
 
 //////////////////////////////////////////////////////////
+Model :: ~Model() {
+    if(solver != nullptr ) delete solver; 
+};
+
+//////////////////////////////////////////////////////////
 Model :: Model(bool pT) {
     printTime = pT;
     nodes.setContainers(& bconds, & constr);
@@ -9,6 +14,7 @@ Model :: Model(bool pT) {
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
+    solver = nullptr;
 }
 
 //////////////////////////////////////////////////////////

@@ -32,7 +32,7 @@ protected:
     Simplex *simplex; //simplex used to determine volumetric strain
 public:
     Node() { name = "basic node"; isMechanical = false; isTransport = false; simplex = nullptr; };
-    virtual ~Node() { delete simplex; };
+    virtual ~Node() { if (simplex!=nullptr) delete simplex; };
 
     /// A pure virtual member.
     /**
