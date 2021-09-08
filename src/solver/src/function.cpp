@@ -74,8 +74,6 @@ double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunctionWithExtremes :: giveNextEtreme(const double &t) const {
-    return INFINITY;
-
     if ( x.size() <= 0 ) {
         return INFINITY;
     }
