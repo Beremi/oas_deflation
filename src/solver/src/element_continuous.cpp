@@ -36,14 +36,11 @@ Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs) {
-    Vector strain0 = Element :: giveStrain(i, DoFs);
-    Vector strain(strain0.size() + 1);
-    for ( unsigned j = 0; j < strain0.size(); j++ ) {
-        strain [ j ] = strain0 [ j ];
-    }
+    Vector strain = Element :: giveStrain(i, DoFs);
 
-    //evaluate pressure at gauss point to account for nonlinearity
-    strain [ strain0.size() ] = matrix_vector_multiply(giveHMatrix(inttype->giveIPLocationPointer(i) ), DoFs) [ 0 ];
+    //pressure at integration point for material model
+    Vector pf = Hs[i]*DoFs;
+    stats [ i ]->setParameterValue("pressure", pf [ 0 ] );
 
     return strain;
 }
@@ -367,14 +364,11 @@ CoupledCosseratBrick :: CoupledCosseratBrick() {
 Vector CoupledCosseratBrick :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector strain = CosseratBrick :: giveStrain(i, DoFs);
 
-    //save pressure at integration point for material model
-    IPpressures.resize(numOfNodes);
-    Vector IPvalues = giveHMatrix(inttype->giveIPLocationPointer(i) ) * DoFs;
-    IPpressures [ i ] = IPvalues [ 6 ];
-
-    //save volumetric strain at integration point for material model
-    IPvolstrains.resize(numOfNodes);
-    IPvolstrains [ i ] = ( strain [ 0 ] + strain [ 1 ] + strain [ 2 ] ) / 3.;
+    //pressure at integration point for material model
+    Vector pf = Hs[i]*DoFs;
+    stats [ i ]->setParameterValue("pressure", pf [ 6 ] );
+    //volumetric strain at integration point for material model
+    stats [ i ]->setParameterValue("volumetricStrain", ( strain [ 0 ] + strain [ 1 ] + strain [ 2 ] ) / 3.);
 
     return strain;
 }
@@ -391,7 +385,6 @@ Vector CoupledCosseratBrick :: giveInternalForces(const Vector &DoFs, bool froze
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         couplm = static_cast< DiscreteCoupledRVEMaterialStatus * >( stats [ k ] );
         volumetricBiotPart = couplm->computeBiotEffect();
-        cout << volumetricBiotPart << endl;
         H = giveHMatrix(inttype->giveIPLocationPointer(k) );
         for ( unsigned j = 0; j < 7 * 8; j++ ) {
             intF [ j ] -= H [ 6 ] [ j ] *volumetricBiotPart *inttype->giveIPWeight(k);

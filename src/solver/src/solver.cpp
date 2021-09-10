@@ -276,7 +276,7 @@ void SteadyStateLinearSolver :: solve() {
     nodes->giveReducedForceArray(residuals, f);
     if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
         terminated = true;
-        cerr << "Conjugate gradients did not converge" << endl;
+        cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
         return;
     }
 
@@ -814,7 +814,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
     }
     if ( LinalgSymmetricSolver(Cred, ddr, f,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
         terminated = true;
-        cerr << "Conjugate gradients did not converge" << endl;
+        cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
         exit(1);
     }
     v = Vector(totalDoFnum);
