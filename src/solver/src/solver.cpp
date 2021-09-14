@@ -105,6 +105,7 @@ void Solver :: runBeforeEachStep() {
     step += 1;
     setNextStepTime();
 
+    load_old = load; //copy old load to be used in generalized alpha method
     load *= 0;  //clear nodal load
     ddr *= 0; //clear step contribution;
 }
@@ -185,17 +186,15 @@ SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
 void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
     Solver :: init(init_r_file, init_v_file, initial);
 
+    //nodes->addRHS_nodalLoad(load, 0); //to correctly account for abrupt initial change of BC
+    //nodes->updateDirrichletBC(r, 0); //to correctly account for abrupt initial change of BC
+
     //initial conditions
     if ( init_r_file.compare("") != 0 ) {
         r = nodes->readInitialConditions(init_r_file);
-        computeInternalExternalForces(r, false, -1); //to activate initial conditions at elements
+        computeInternalExternalForces(r, load, false, -1); //to activate initial conditions at elements
         elems->updateMaterialStatuses();
     }
-
-    nodes->addRHS_nodalLoad(load, 0);
-    nodes->updateDirrichletBC(r, 0);
-    computeInternalExternalForces(r, false, -1); //to activate initial conditions at elements
-
     elems->prepareStiffnessMatrix(K);
     elems->updateStiffnessMatrix(K, "elastic");
 }
@@ -294,18 +293,15 @@ void SteadyStateLinearSolver :: solve() {
     // }
 
     updateFieldVariables(); //calculate master fields at the step end
-
-    //Here it is better to use the former one. For steady state analysis, it does not matter. For transient, it gives smoother results.
-    computeForcesAtIntegrationTime(true);
-    //computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+    computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 }
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const bool frozen, double timeStep) {
+void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep) {
     nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
     elems->integrateInternalForces(rr, f_int, frozen, timeStep);
-    nodes->updateExternalForcesByReactions(f_int, load, f_dam, f_acc, f_ext);     //give prescribed DoFs
+    nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext);     //give prescribed DoFs
     residuals = f_ext - f_int;
 }
 
@@ -712,8 +708,7 @@ void SteadyStateNonLinearSolver :: solve() {
         }
     }
 
-    //Possible to use, but result looks smoother without it
-    //if(!terminated)  computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+    computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 }
 
 //////////////////////////////////////////////////////////
@@ -824,14 +819,14 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * (1.-alpha_f) );
     residuals -= f_dam;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtStepEnd(const bool frozen) {
     elems->integrateDampingForces(v, f_dam);
-    computeInternalExternalForces(trial_r, frozen, dt);
+    computeInternalExternalForces(trial_r, load, frozen, dt);
     residuals -= f_dam;
 }
 
@@ -1031,7 +1026,7 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), frozen, dt * ( 1 - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * (1.-alpha_f) );
     residuals -= f_dam + f_acc;
 }
 
@@ -1039,7 +1034,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
 void TransientLinearMechanicalSolver :: computeForcesAtStepEnd(const bool frozen) {
     elems->integrateDampingForces(v, f_dam);
     //elems->integrateInertiaForces( a, f_acc );
-    computeInternalExternalForces(trial_r, frozen, dt);
+    computeInternalExternalForces(trial_r, load, frozen, dt);
     residuals -= f_dam + f_acc;
 }
 

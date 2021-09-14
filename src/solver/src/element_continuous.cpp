@@ -385,9 +385,8 @@ Vector CoupledCosseratBrick :: giveInternalForces(const Vector &DoFs, bool froze
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         couplm = static_cast< DiscreteCoupledRVEMaterialStatus * >( stats [ k ] );
         volumetricBiotPart = couplm->computeBiotEffect();
-        H = giveHMatrix(inttype->giveIPLocationPointer(k) );
-        for ( unsigned j = 0; j < 7 * 8; j++ ) {
-            intF [ j ] -= H [ 6 ] [ j ] *volumetricBiotPart *inttype->giveIPWeight(k);
+        for ( unsigned j = 0; j < 8; j++ ) {
+            intF [ 7*j+6 ] -= Hs [ k ] [ 6 ] [ 7*j+6 ] *volumetricBiotPart *inttype->giveIPWeight(k);            
         }
     }
 

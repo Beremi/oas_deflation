@@ -55,8 +55,8 @@ public:
     bool doesMechanics() const { return isMechanical; };
     bool doesTransport() const { return isTransport; };
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const { ( void ) code; ( void ) DoFs; return 0; };
-    bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
-    bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
+    virtual bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
+    virtual bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
     void subtructFromPoint(Point *p) { point -= ( * p ); };
     virtual unsigned giveOrderOfForceCode(string code) const;
     Simplex *addElementToSimplex(RigidBodyContact *rbc);
@@ -185,8 +185,8 @@ public:
     virtual ~CoupledParticle() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
-    bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) { return true; } else { return false; } };
-    bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) { return true; } else { return false; } };
+    virtual bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) return true;  else  return false;  };
+    virtual bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) return true;  else  return false; };
 };
 
 #endif /* _NODE_H */

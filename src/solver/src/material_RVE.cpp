@@ -309,7 +309,6 @@ Matrix DiscreteTransportRVEMaterialStatus :: giveStiffnessTensor(string type, un
         volume += e->giveVolume();
     }
     Keff /= volume;
-
     return Keff;
 }
 
@@ -357,6 +356,7 @@ void DiscreteTransportRVEMaterialStatus :: setFromPrecomputedToFullModel(){
     is_precomputed = false;
     if (is_master_status) return; //this was the master status already initialized
 
+    cout << "*** initialization of transport RVE ***" << endl;
     RVEMaterialStatus :: init();
 
     ElementContainer *elems = RVE->giveElements();
@@ -378,6 +378,9 @@ void DiscreteTransportRVEMaterialStatus :: init() {
     if ( stiff.size() == 0 ) {
         DiscreteTransportRVEMaterialStatus::setFromPrecomputedToFullModel();
         is_master_status = true;
+
+    
+        /*
         //TODO: if this is needed, one should call it only once and distribute the result among all identical RVEs
         cout << "Precomputing primary fields for transport RVE" << endl;
         ndim = RVE->giveDimension();
@@ -392,11 +395,11 @@ void DiscreteTransportRVEMaterialStatus :: init() {
                 stiff [ i ] [ j ] = stress [ j ];
             }
         }
-
+        */
         Matrix c = DiscreteTransportRVEMaterialStatus :: giveDampingTensor();
 
         TrsprtMaterialStatus *status = static_cast< TrsprtMaterialStatus * >( RVE->giveElements()->giveElement(0)->giveMatStatus(0) );TrsprtMaterial *material = static_cast< TrsprtMaterial * >( RVE->giveElements()->giveElement(0)->giveMaterial() );
-        macromaterial->setPrecomputedConductivityAndCapacityAndMasterMaterial(stiff, c[0][0], status,material, ndim);
+        macromaterial->setPrecomputedConductivityAndCapacityAndMasterMaterial(giveStiffnessTensor("elastic", ndim), c[0][0], status,material, ndim);
 
         is_precomputed = true; //set back to precomputed to use it
     }else{
@@ -716,7 +719,7 @@ void DiscreteMechanicalRVEMaterialStatus :: setFromPrecomputedToFullModel(){
 
     is_precomputed = false;
     if (is_master_status) return; //this was the master status already initialized
-
+    cout << "*** initialization of mechanical RVE ***" << endl;
     RVEMaterialStatus :: init();
 }
 
@@ -729,7 +732,6 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
         DiscreteMechanicalRVEMaterialStatus::setFromPrecomputedToFullModel();
         is_master_status = true;
         ndim = RVE->giveDimension();
-        cout << "Precomputing primary fields for mechanical RVE" << endl;
         Point centroid = calculateCentroid();
         vector< vector< Vector > > projectors = calculateProjectors(centroid);
         macromaterial->setCentroidProjectorsAndDimensions(centroid, projectors, ndim);
@@ -862,8 +864,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
     strainT [ sizeT ] = strain [ sizeT + sizeM ]; //macroscopic pressure
 
     if ( timeStep > 0 ) {
-        volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / timeStep;
-        pressureRate =  ( temp_pressure - pressure ) / timeStep;
+        volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / (timeStep);
+        pressureRate =  ( temp_pressure - pressure ) / (timeStep);
     } else {
         volStrainRate = 0;
         pressureRate = 0;
@@ -893,7 +895,6 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
 //////////////////////////////////////////////////////////
 double DiscreteCoupledRVEMaterialStatus :: computeBiotEffect() const {
     DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
-    //cout << "BIOT PARAMS " <<  dcm->giveBiotCoefficient() << " " << volStrainRate << " " << temp_volumetricStrain << endl;
     return dcm->giveBiotCoefficient() * volStrainRate * 3 * 1.000000e+03; //TODO: fix density
 }
 
