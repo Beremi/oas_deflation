@@ -2219,7 +2219,7 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
             for r in range (rebarCount):
                 if (rebarCount==1):
                     #puvodni poloha rebars polovina od kraje
-                    centre = np.array([ (maxLim[0]/rebarCount)*(i+0.5), maxLim[1]-rebarDepth  ])
+                    centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
                 else:
                     #poloha rebars presne jak je ve clanku
                     centre = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth  ])
