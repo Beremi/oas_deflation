@@ -199,6 +199,7 @@ public:
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
     void init(const bool &initial = true);
+    void clear();
     void setResultDirectory(fs :: path directory) { resultDir = directory; }
     fs :: path giveDirectoryPath() { return resultDir; }
     void appendToAllNames(string app);

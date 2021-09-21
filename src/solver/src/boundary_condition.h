@@ -91,6 +91,7 @@ public:
     virtual ~BCContainer();
     void setContainers(FunctionContainer *f) { functions = f; };
     void init();
+    void clear();
     void readFromFile(const string filename, NodeContainer *nodes, ElementContainer *elements);
     vector< unsigned >giveArrayOfBlockedDoFs() const { return dirichDoFs; };
     vector< unsigned >giveArrayOfLoadedDoFs() const { return neumannDoFs; };
