@@ -7,6 +7,8 @@ from pydmga.container import Container
 from pydmga.diagram import Diagram
 import numpy as np
 from scipy.spatial.distance import cdist
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class TimeFilter(logging.Filter):
 
@@ -40,8 +42,10 @@ class PowerTesselation(object):
         Coordinates of points to construct a convex hull from
     weights : ndarray of floats, shape (npoints), optional
         Weights of points to construct power diagram. Default: None
-    maxLim: ndarray of floats, shape (npoints), optional
+    limits: ndarray of floats, shape (npoints), optional
         Dimensions of box - (dx, dy [, dz])
+    check_distances: bool
+        check zero distances in points. Can consume a lot of memory 
     Attributes
     ----------
     points : ndarray of double, shape (npoints, ndim)
@@ -115,10 +119,11 @@ class PowerTesselation(object):
            [4, 3]], dtype=int32)
     """
 
-    def __init__(self, points, weights=None, limits='unit'):
+    def __init__(self, points, weights=None, limits='unit', check_distances=False):
         self._points = np.asarray(points, dtype=np.float64)
         self._npoints, self._ndim = points.shape
         print ('len weiights %d' %len(weights))
+        
         if weights is None:
             print('no WEIGHTS ')
             self._weights = np.zeros(self._npoints)
@@ -153,10 +158,8 @@ class PowerTesselation(object):
                 xmax += dx
                 ymax += dy
                 zmax += dz
-                self.mins = np.array([-1, -1, -1])
-                self.maxs = np.array([1, 1, 1])
-                #self.mins = np.array([xmin, ymin, zmin])
-                #self.maxs = np.array([xmax, ymax, zmax])
+                self.mins = np.array([xmin, ymin, zmin])
+                self.maxs = np.array([xmax, ymax, zmax])
                 print('minLimits %f %f %f' %(xmin, ymin, zmin))
                 print('maxLimits %f %f %f' %(xmax, ymax, zmax))
 
@@ -170,11 +173,15 @@ class PowerTesselation(object):
             else:
                 xmin, ymin, zmin, xmax, ymax, zmax = limits
 
-        #point_distances = cdist(points, points)
-        #point_distances = point_distances[np.triu_indices(point_distances.shape[0], k=1)]
-        #if np.nanmin(point_distances) == 0:
-        #    raise ValueError('There are identical points (distance is zero).')
-        #print('distances', point_distances.min(), point_distances.max())
+        if check_distances:
+            point_distances = cdist(points, points)
+            point_distances[np.diag_indices_from(point_distances)] = 1
+            #point_distances = point_distances[np.triu_indices(point_distances.shape[0], k=1)]
+            print('distances', point_distances.min(), point_distances.max())
+            print(np.argwhere(point_distances == 0))
+            print(point_distances.shape)
+            if np.nanmin(point_distances) == 0:
+                raise ValueError('There are identical points (distance is zero).')
 
         start = time.time()
         #dx = xmax - xmin
