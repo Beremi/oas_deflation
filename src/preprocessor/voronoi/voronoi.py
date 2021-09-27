@@ -269,12 +269,12 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
     #quarter je ctvrt valec, ktery se pocital pro RWTH punch test, jinak se nepouziva
 
 
-    dataOut = np.asarray(data)
+    data = np.asarray(data)
     print ('Input nodes %d' %len(data))
     rad = radius + 1e-5
     print(directionDim)
     if (directionDim == 0):
-        if quarter == True:
+        if quarter == False:
             dataOut =  np.vstack((data,
                 (np.array([-1e-5,0,0]) + data * np.array([-1,1,1])),
                 (np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1]))
@@ -370,7 +370,7 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
         dataOut =  np.vstack((dataOut, mirroredData))
 
-
+    """
     print('limits min')
     print (np.min(dataOut[0]))
     print (np.min(dataOut[1]))
@@ -381,14 +381,14 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
     print (np.max(dataOut[0]))
     print (np.max(dataOut[1]))
     print (np.max(dataOut[2]))
-
+    """
 
     utilitiesGeom.saveNodes('', dataOut, "node",3, "nodesMirr.inp")
 
 
 
     if weights is not None:
-        weightsOut = np.hstack([weights]*1)
+        weightsOut = np.hstack([weights]*6)
         print ('Mirrored nodes %d, mirrored weights %d' %(len(dataOut), len(weightsOut)) )
         return dataOut, weightsOut
 

@@ -83,7 +83,7 @@
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 0.2 Ysize 0.5 minDist 0.01 notchH 0.5 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 #Model 3d_coupledArtificialCrack Xsize 0.02 Ysize 0.05 Zsize 0.005 minDist 0.0015 notchH 0.6 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
-Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.007 activeTransport 0 activeMechanics 1 coupled 0 trials 1500 powerTes 1
+Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.006 activeTransport 1 activeMechanics 1 coupled 1 trials 1500 powerTes 1
 #Model 2d_coupledPress Xsize 0.025 Ysize 0.2 minDist 0.0008 trials 10000 activeTransport 1 activeMechanics 1 coupled 1 
 #
 #Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.05 minDist 0.006 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth -1
@@ -128,6 +128,7 @@ Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
 #Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 21000000.0 Gt 500
 #dalsi TrsprtMaterial
 #Material TrsprtMaterial	capacity	11.000000	permeability 22e-18 viscosity 1e-5 crack_turtuosity 0.5 density	1e3
+#
 #
 #
 #

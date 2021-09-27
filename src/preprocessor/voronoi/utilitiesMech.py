@@ -307,7 +307,7 @@ class TransportMaterial:
 
     def getString (self):
         if self.coupled:
-            line = 'TrsprtCoupledMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity) +   '\t' +        'biot_coeff\t%e'%(self.biot_coeff)
+            line = 'DiscreteTrsprtCoupledMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity) +   '\t' +        'biot_coeff\t%e'%(self.biot_coeff)
         else:
             line = 'TrsprtMaterial'+ '\t' + 'capacity\t%e'%(self.capacity)  + '\t' + 'density\t%e'%(self.density)  + '\t' + 'permeability\t%e'%(self.permeability)  + '\t' + 'viscosity\t%e'%(self.viscosity)  + '\t' +        'crack_turtuosity\t%e'%(self.crack_turtuosity)
 

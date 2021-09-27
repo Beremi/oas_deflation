@@ -45,7 +45,7 @@ class PowerTesselation(object):
     limits: ndarray of floats, shape (npoints), optional
         Dimensions of box - (dx, dy [, dz])
     check_distances: bool
-        check zero distances in points. Can consume a lot of memory 
+        check zero distances in points. Can consume a lot of memory
     Attributes
     ----------
     points : ndarray of double, shape (npoints, ndim)
@@ -123,7 +123,7 @@ class PowerTesselation(object):
         self._points = np.asarray(points, dtype=np.float64)
         self._npoints, self._ndim = points.shape
         print ('len weiights %d' %len(weights))
-        
+
         if weights is None:
             print('no WEIGHTS ')
             self._weights = np.zeros(self._npoints)
@@ -160,8 +160,8 @@ class PowerTesselation(object):
                 zmax += dz
                 self.mins = np.array([xmin, ymin, zmin])
                 self.maxs = np.array([xmax, ymax, zmax])
-                print('minLimits %f %f %f' %(xmin, ymin, zmin))
-                print('maxLimits %f %f %f' %(xmax, ymax, zmax))
+                #print('minLimits %f %f %f' %(xmin, ymin, zmin))
+                #print('maxLimits %f %f %f' %(xmax, ymax, zmax))
 
         elif limits == 'unit':
             xmin, ymin, zmin = 0, 0, 0
@@ -258,7 +258,7 @@ class PowerTesselation(object):
         start = time.time()
 
         for i, cell in enumerate(self.diagram):
-            print(i)
+
             region = []
             point_region.append(i + 1)
             (id_, x, y, z, r) = self.container.get(i)
