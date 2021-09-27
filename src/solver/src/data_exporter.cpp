@@ -573,7 +573,7 @@ double StructuralExporter :: calcValue() const {
 // CONTAINER FOR EXPORTERS
 ExporterContainer :: ~ExporterContainer() {
     for ( vector< DataExporter * > :: iterator e = exporters.begin(); e != exporters.end(); ++e ) {
-        delete * e;
+        if( *e != nullptr) delete * e;
     }
 }
 
@@ -736,6 +736,16 @@ void ExporterContainer :: init(const bool &initial) {
         }
     }
 };
+
+
+void ExporterContainer :: clear() {
+    for ( vector< DataExporter * > :: iterator e = exporters.begin(); e != exporters.end(); ++e ) {
+        if( *e != nullptr) delete * e;
+    }
+}
+
+//////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const {

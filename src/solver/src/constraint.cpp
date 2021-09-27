@@ -263,7 +263,14 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 //////////////////////////////////////////////////////////
 ConstraintContainer :: ~ConstraintContainer() {
     for ( auto &c: constraints ) {
-        delete c;
+        if (c!= nullptr) delete c;
+    }
+}
+
+
+void ConstraintContainer :: clear() {
+    for ( auto &c: constraints ) {
+        if (c!= nullptr) delete c;
     }
 }
 

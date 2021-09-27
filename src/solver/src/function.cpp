@@ -74,8 +74,6 @@ double PieceWiseLinearFunction :: giveNextEtreme(const double &t) const {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunctionWithExtremes :: giveNextEtreme(const double &t) const {
-    return INFINITY;
-
     if ( x.size() <= 0 ) {
         return INFINITY;
     }
@@ -304,7 +302,7 @@ double SinusFunction :: giveNextEtreme(const double &t) const {
 // CONTAINER FOR FUNCTIONS
 FunctionContainer :: ~FunctionContainer() {
     for ( vector< Function * > :: iterator f = functions.begin(); f != functions.end(); ++f ) {
-        delete * f;
+        if (*f!=nullptr) delete * f;
     }
 }
 

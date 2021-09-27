@@ -14,7 +14,7 @@ private:
 protected:
     unsigned ndim;
     string name;
-    bool is_natural; //boolean determining if shape functions are computet in natural or real coordinates
+    bool is_natural; //boolean determining if shape functions are computed in natural or real coordinates
     vector< Point * >points;
 
     virtual void giveShapeFGradNatural(const Point *x, Matrix &phiGradNat) const { ( void ) x; ( void ) phiGradNat; }; //without Jacobi transformation, natural coordinates
@@ -26,7 +26,6 @@ protected:
 public:
     ShapeFunc() { name = "basic shape functions"; is_natural = true; }
     virtual ~ShapeFunc() {};
-    virtual void init() {};
     virtual void init(vector< Node * > &nodes);
     virtual void init(vector< Point * >points);
     unsigned giveDimension() const { return ndim; }

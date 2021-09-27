@@ -20,7 +20,7 @@ protected:
     FunctionContainer *funcs;
     double time, dt, initdt, termination_time;
     double init_time = 0.0;  ///> when starting from previously calculated results
-    Vector f_ext, load, f_int, pbc, r, f, full_ddr, ddr, residuals;
+    Vector f_ext, load, load_old, f_int, pbc, r, f, full_ddr, ddr, residuals;
     Vector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
@@ -63,9 +63,9 @@ protected:
     CoordinateIndexedSparseMatrix Keff, K;
 
     virtual void updateFieldVariables();
-    virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, frozen, dt); };
-    virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, frozen, dt); };
-    virtual void computeInternalExternalForces(const Vector &rr, const bool frozen, double timeStep);
+    virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, dt); };
+    virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, dt); };
+    virtual void computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep);
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
 private:

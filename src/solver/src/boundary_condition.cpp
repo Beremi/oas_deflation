@@ -188,10 +188,19 @@ vector< unsigned >BodyLoad :: giveArrayOfBodyForceDoFs() const {
 // CONTAINER FOR BOUNDARY CONDITIONS
 BCContainer :: ~BCContainer() {
     for ( auto &bc: BC ) {
-        delete bc;
+        if(bc!=nullptr) delete bc;
     }
     for ( auto &vl: loads ) {
-        delete vl;
+        if(vl!=nullptr) delete vl;
+    }
+}
+
+void BCContainer :: clear() {
+    for ( auto &bc: BC ) {
+        if(bc!=nullptr) delete bc;
+    }
+    for ( auto &vl: loads ) {
+        if(vl!=nullptr) delete vl;
     }
 }
 

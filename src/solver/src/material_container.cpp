@@ -10,7 +10,7 @@
 //////////////////////////////////////////////////////////
 MaterialContainer :: ~MaterialContainer() {
     for ( vector< Material * > :: iterator m = matrs.begin(); m != matrs.end(); ++m ) {
-        delete * m;
+        if (*m!=nullptr) delete * m;
     }
 }
 
@@ -77,10 +77,6 @@ void MaterialContainer :: readFromFile(const string filename) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("HTCMaterial") == 0 ) {
                     HTCMaterial *newmat = new HTCMaterial();
-                    newmat->readFromLine(iss);
-                    matrs.push_back(newmat);
-                } else if ( matType.compare("DiscreteTransportRVEMaterialPrecomputed") == 0 ) {
-                    DiscreteTransportRVEMaterialPrecomputed *newmat = new DiscreteTransportRVEMaterialPrecomputed();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("DiscreteCoupledRVEMaterial") == 0 ) {

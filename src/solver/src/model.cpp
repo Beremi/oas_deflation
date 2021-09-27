@@ -1,6 +1,11 @@
 #include "model.h"
 
 //////////////////////////////////////////////////////////
+Model :: ~Model() {
+    if(solver != nullptr ) delete solver; 
+};
+
+//////////////////////////////////////////////////////////
 Model :: Model(bool pT) {
     printTime = pT;
     nodes.setContainers(& bconds, & constr);
@@ -9,6 +14,7 @@ Model :: Model(bool pT) {
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
+    solver = nullptr;
 }
 
 //////////////////////////////////////////////////////////
@@ -161,6 +167,13 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 void Model :: clear() {
     // TODO JK: check containers for memory leaks
     // initialize new model with clear geometry, only solver remains
+    bconds.clear();
+    constr.clear();
+    nodes.clear();
+    elems.clear();
+    exporters.clear();
+    pblocks.clear();
+
     // funcs = FunctionContainer();  // functions remain too
     bconds = BCContainer();
     constr = ConstraintContainer();
