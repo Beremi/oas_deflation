@@ -118,7 +118,9 @@ class PowerTesselation(object):
     def __init__(self, points, weights=None, limits='unit'):
         self._points = np.asarray(points, dtype=np.float64)
         self._npoints, self._ndim = points.shape
+        print ('len weiights %d' %len(weights))
         if weights is None:
+            print('no WEIGHTS ')
             self._weights = np.zeros(self._npoints)
         else:
             self._weights = np.asarray(weights, dtype=np.float64)
@@ -143,6 +145,7 @@ class PowerTesselation(object):
             else:
                 xmin, ymin, zmin = self._point_mins
                 xmax, ymax, zmax = self._point_maxs
+
                 dx, dy, dz = (self._point_maxs - self._point_mins) * 1
                 xmin -= dx
                 ymin -= dy
@@ -150,8 +153,13 @@ class PowerTesselation(object):
                 xmax += dx
                 ymax += dy
                 zmax += dz
-                self.mins = np.array([xmin, ymin, zmin])
-                self.maxs = np.array([xmax, ymax, zmax])
+                self.mins = np.array([-1, -1, -1])
+                self.maxs = np.array([1, 1, 1])
+                #self.mins = np.array([xmin, ymin, zmin])
+                #self.maxs = np.array([xmax, ymax, zmax])
+                print('minLimits %f %f %f' %(xmin, ymin, zmin))
+                print('maxLimits %f %f %f' %(xmax, ymax, zmax))
+
         elif limits == 'unit':
             xmin, ymin, zmin = 0, 0, 0
             xmax, ymax, zmax = 1, 1, 1
@@ -243,6 +251,7 @@ class PowerTesselation(object):
         start = time.time()
 
         for i, cell in enumerate(self.diagram):
+            print(i)
             region = []
             point_region.append(i + 1)
             (id_, x, y, z, r) = self.container.get(i)

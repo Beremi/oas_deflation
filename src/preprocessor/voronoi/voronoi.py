@@ -5,6 +5,7 @@ import scipy
 import math
 import os
 import itertools
+import utilitiesGeom
 
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
@@ -258,22 +259,25 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
 
     """
     dataOut = np.asarray(dataOut)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots()assembleCoupledBrazilianDisc
     ax.scatter(dataOut[:,0], dataOut[:,1])
     plt.show()
     """
     return dataOut
 
-def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = False):
-    data = np.asarray(data)
+def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = False, weights=None ):
+    #quarter je ctvrt valec, ktery se pocital pro RWTH punch test, jinak se nepouziva
+
+
+    dataOut = np.asarray(data)
+    print ('Input nodes %d' %len(data))
     rad = radius + 1e-5
     print(directionDim)
     if (directionDim == 0):
-        print(quarter)
-        if quarter == False:
+        if quarter == True:
             dataOut =  np.vstack((data,
-                np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
-                np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
+                (np.array([-1e-5,0,0]) + data * np.array([-1,1,1])),
+                (np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1]))
                 ))
 
             mirroredData = np.zeros( (len(dataOut)*3) )
@@ -290,6 +294,7 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
 
         if quarter == True:
+            print('QUARTER')
             dataOut =  np.vstack((data,
                 np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
                 np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
@@ -297,15 +302,6 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
             mirroredData = np.zeros( (len(dataOut)*3) )
             mirroredData = np.reshape ( mirroredData, (len(dataOut),3))
-
-            """
-            print('first')
-            if SHOW_PLOT:
-                fig = plt.figure()
-                ax = Axes3D(fig)
-                ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
-                plt.show()
-            """
 
             for i in range (len(mirroredData)):
                 rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
@@ -315,15 +311,6 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
                 mirroredData[i,2] = center[2] + (-center[2]+dataOut[i,2]) * ((2*rad-rad0) / rad0 )
 
             dataOut =  np.vstack((dataOut, mirroredData))
-
-            """
-            print('first')
-            if SHOW_PLOT:
-                fig = plt.figure()
-                ax = Axes3D(fig)
-                ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
-                plt.show()
-            """
 
             dataOutM =  np.vstack((
                 np.array([ 0 ,-1e-4,0]) + dataOut * np.array([1,-1,1]),
@@ -384,6 +371,27 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
         dataOut =  np.vstack((dataOut, mirroredData))
 
 
+    print('limits min')
+    print (np.min(dataOut[0]))
+    print (np.min(dataOut[1]))
+    print (np.min(dataOut[2]))
+
+
+    print('limits max')
+    print (np.max(dataOut[0]))
+    print (np.max(dataOut[1]))
+    print (np.max(dataOut[2]))
+
+
+    utilitiesGeom.saveNodes('', dataOut, "node",3, "nodesMirr.inp")
+
+
+
+    if weights is not None:
+        weightsOut = np.hstack([weights]*1)
+        print ('Mirrored nodes %d, mirrored weights %d' %(len(dataOut), len(weightsOut)) )
+        return dataOut, weightsOut
+
     """
     print('first')
     if SHOW_PLOT:
@@ -392,6 +400,7 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
         ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
         plt.show()
     """
+
 
     return dataOut
 
