@@ -8,6 +8,9 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import voronoi, power
 from power_tesselation import PowerTesselation
+import matplotlib
+#import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 #2d voronoi a teselace
 from scipy.spatial import Voronoi
@@ -108,8 +111,14 @@ def runMirroredPowerDam (node_coords, radii, dim, maxLim, topsize, shifts=0):
     vor = PowerTesselation(points, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
     return vor
 
-def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim, quarter = False):
-    vor = Voronoi(voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim, quarter = quarter))
+def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionDim, quarter = False, weights=[]):
+
+    if len(weights) == 0:
+        vor = Voronoi(voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim, quarter = quarter))
+    else:
+        points, radii = voronoi.mirror_dataCylinder(node_coords, center, radius, height, directionDim, quarter = quarter, weights=weights)
+        vor = PowerTesselation(points, weights=radii, limits='auto')
+
     volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
     return vor, volumes
 

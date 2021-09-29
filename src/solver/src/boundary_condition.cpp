@@ -195,6 +195,15 @@ BCContainer :: ~BCContainer() {
     }
 }
 
+void BCContainer :: clear() {
+    for ( auto &bc: BC ) {
+        if(bc!=nullptr) delete bc;
+    }
+    for ( auto &vl: loads ) {
+        if(vl!=nullptr) delete vl;
+    }
+}
+
 //////////////////////////////////////////////////////////
 void BCContainer :: readFromFile(const string filename, NodeContainer *nodes, ElementContainer *elems) {
     size_t origBCsize = BC.size();

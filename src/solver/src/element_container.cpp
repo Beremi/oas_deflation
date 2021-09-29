@@ -14,6 +14,12 @@ ElementContainer :: ~ElementContainer() {
 }
 
 //////////////////////////////////////////////////////////
+void ElementContainer :: clear() {
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+        if( *e != nullptr) delete * e;
+    }
+}
+//////////////////////////////////////////////////////////
 void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
     this->materials = matrs;
     size_t origsize = elems.size();

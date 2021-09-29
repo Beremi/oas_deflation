@@ -30,6 +30,7 @@ public:
     void readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool get_time_from_file = true);
     void setFileToLoadStatsFrom(const std :: string &str);
     void init();
+    void clear();
     size_t giveSize() const { return elems.size(); }
     void findElementFriends();
     void updateMaterialStatuses();

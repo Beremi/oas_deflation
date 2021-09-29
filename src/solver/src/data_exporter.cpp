@@ -737,6 +737,16 @@ void ExporterContainer :: init(const bool &initial) {
     }
 };
 
+
+void ExporterContainer :: clear() {
+    for ( vector< DataExporter * > :: iterator e = exporters.begin(); e != exporters.end(); ++e ) {
+        if( *e != nullptr) delete * e;
+    }
+}
+
+//////////////////////////////////////////////////////////
+
+
 //////////////////////////////////////////////////////////
 void ExporterContainer :: exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const {
     //add step number to gauge exporter files

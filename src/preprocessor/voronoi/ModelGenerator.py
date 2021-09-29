@@ -543,7 +543,7 @@ class Model:
 
 
     def run_3d_coupledBrazilianDisc(self):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, powerTes = self.powerTes)
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 

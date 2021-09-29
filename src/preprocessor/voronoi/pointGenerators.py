@@ -314,6 +314,8 @@ except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
+
+
 #generates random points onto a set 3d line. No closer than minDst
 #catch corners: samples the boundary points first
 def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners, equidist):
@@ -356,6 +358,53 @@ def generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
             coords[1] = (nodeB[1] - nodeA[1])*indnt/length +(nodeB[1] - nodeA[1])*mD/length*i  + nodeA[1]
             coords[2] = (nodeB[2] - nodeA[2])*indnt/length +(nodeB[2] - nodeA[2])*mD/length*i  + nodeA[2]
             node_coords.append(coords)
+
+
+def generateParticlesLine3dRand(nodeA, nodeB, minDiam, maxDiam, volumeRatio, trials, node_coords, radii, catchCorners=False, equidist=False):
+    #tuhle funkci je potreba vytvorit
+    """
+    print('Generating 3d line segment from [%f; %f; %f] to [%f; %f; %f] '
+     %(nodeA[0], nodeA[1],nodeA[2],nodeB[0], nodeB[1],nodeB[2]) )
+
+    if(catchCorners):
+        node_coords.append(np.copy(nodeA))
+        node_coords.append(np.copy(nodeB))
+
+    if not equidist:
+        tr=0
+        while (tr<trials):
+            tr = 0;
+            #
+            distIsGood = False
+            while (distIsGood == False):
+                coords = randPointOnLine(dim, nodeA, nodeB)
+                #
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(dim, minDist, node_coords, coords)
+                #
+                if (distIsGood == False):
+                    tr += 1
+                if (tr > trials): break
+            if (tr > trials): break
+            #
+            #Adding node coords
+            if (tr < trials):
+                node_coords.append(coords)
+
+    else:
+        #print('Equid')
+        mD = minDist #* 1.6
+        length = np.linalg.norm(nodeA - nodeB)
+        nodeNr = int (length / mD)
+        indnt = (length-(nodeNr-1)*mD) / 2
+        for i in range (nodeNr):
+            coords = np.zeros(3)
+            coords[0] = (nodeB[0] - nodeA[0])*indnt/length +(nodeB[0] - nodeA[0])*mD/length*i  + nodeA[0]
+            coords[1] = (nodeB[1] - nodeA[1])*indnt/length +(nodeB[1] - nodeA[1])*mD/length*i  + nodeA[1]
+            coords[2] = (nodeB[2] - nodeA[2])*indnt/length +(nodeB[2] - nodeA[2])*mD/length*i  + nodeA[2]
+            node_coords.append(coords)
+
+
+    """
 
 
 def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, minDistAmongNewPoints=False):
@@ -604,7 +653,47 @@ def generateNodesOrtoCircle3dRand(center, radius, directionDim, minDist, node_co
             node_coords.append(coords)
 
 
+def generateParticlesOrtoCircle3dRand(center, radiusCirc, directionDim, minDiam, maxDiam, volumeRatio, trials, node_coords, radii):
+    print ('POWER Generating a 3d circle segment...')
+    gap = 0.1
+    Volume = np.pi * radiusCirc **2
+    d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
+    freq = fuller3D(d, maxDiam)
 
+    saturation = 0;
+    iters = 0
+    di = 0
+    radius = maxDiam/2.
+    while (2*radius>minDiam and iters<trials):
+            point = randPointInCircle(center, radiusCirc, directionDim)
+
+            approved = False
+            if ( len(node_coords)==0): approved = True
+            else:
+                delta = np.abs(node_coords-point)
+                dist2 = np.sum(np.square(delta),axis=1)
+                if (min(dist2 - np.square((1.+gap)*(radii+radius)))>0): approved = True
+            if ( approved) :
+                node_coords = np.vstack((node_coords, point));
+                radii = np.hstack((radii, radius));
+
+                iters = 0
+                saturation += np.pi/6*np.power(radius*2.,3)/Volume
+
+                while ((1. - saturation / volumeRatio ) < freq[di]):
+                    di+=1;
+                    #print (' di %d' %di)
+                radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
+
+                sys.stdout.write('\r'+'Particles: ' +  str(len(node_coords)))
+
+                sys.stdout.flush()
+
+            else: iters += 1
+
+    print(" Saturation of the volume: ", saturation)
+
+    return node_coords, radii
 
 def generateNodesOrtoAnnulus2dRand(center, radius, thickness,  minDist, node_coords, trials, minD=-1, maxD=-1):
     print ('Generating a 2d annulus surface. Ctr [%f, %f], Rad: %f, Thick: %f' %(center[0],center[1],radius, thickness))
@@ -723,6 +812,32 @@ def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, n
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
+
+
+def generateParticlesOrtoCircleBorder3dRand(center, radius, directionDim, minDiam, maxDiam, volumeRatio, trials, node_coords, radii):
+    #tuhle funkci je potreba vytvorit
+    """
+    print ('Generating a 3d circle border. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointOnCircle(center, radius, directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+    """
 
 def randPointInCircle(center, radius, directionDim):
 
@@ -940,6 +1055,72 @@ def randPointOnCircle(center, radius, directionDim, angleLimitA = None, angleLim
         else:
             return point
 
+
+def generateParticlesOrtoCilinder3dRand(center, radiusCyl, height, directionDim, minDiam, maxDiam, volumeRatio,  trials, node_coords, radii):
+    print ('POWER Generating a 3d cylinder segment...')
+
+    gap = 0.1
+    Volume = np.pi * radiusCyl**2 * height
+    d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
+    freq = fuller3D(d, maxDiam)
+    saturation = 0;
+    iters = 0
+    di = 0
+    radius = maxDiam/2.
+    while (2*radius>minDiam and iters<trials):
+            point = randPointInCilinder(center, radiusCyl, height, directionDim)
+
+            approved = False
+            if ( len(node_coords)==0): approved = True
+            else:
+                delta = np.abs(node_coords-point)
+                dist2 = np.sum(np.square(delta),axis=1)
+                if (min(dist2 - np.square((1.+gap)*(radii+radius)))>0): approved = True
+            if ( approved) :
+                node_coords = np.vstack((node_coords, point));
+                radii = np.hstack((radii, radius));
+                iters = 0
+                saturation += np.pi/6*np.power(radius*2.,3)/Volume
+
+                while ((1. - saturation / volumeRatio ) < freq[di]):
+                    di+=1;
+                    #print (' di %d' %di)
+                radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
+
+                sys.stdout.write('\r'+'Particles: ' +  str(len(node_coords)))
+
+                sys.stdout.flush()
+
+            else: iters += 1
+
+
+    print("Saturation of the volume: ", saturation)
+
+    return node_coords, radii
+
+    """
+    print ('Generating a 3d cylinder segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
+
+    tr=0
+    while (tr<trials):
+        tr = 0;
+        #
+        distIsGood = False
+        while (distIsGood == False):
+            coords = randPointInCilinder(center, radius, height, directionDim)
+            #
+            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #
+            if (distIsGood == False):
+                tr += 1
+            if (tr > trials): break
+        if (tr > trials): break
+        #
+        #Adding node coords
+        if (tr < trials):
+            node_coords.append(coords)
+
+    """
 
 
 def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist, node_coords, trials):

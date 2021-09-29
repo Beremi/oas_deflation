@@ -83,7 +83,7 @@
 #COUPLED MODELS AVAILABLE
 #Model 2d_coupledArtificialCrack Xsize 0.2 Ysize 0.5 minDist 0.01 notchH 0.5 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 #Model 3d_coupledArtificialCrack Xsize 0.02 Ysize 0.05 Zsize 0.005 minDist 0.0015 notchH 0.6 activeTransport 1 activeMechanics 1 coupled 1 trials 10000
-#Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.003 activeTransport 0 activeMechanics 1 coupled 0 trials 20000
+Model 3d_coupledBrazilianDisc cylinderHeight 0.025 cylinderRad 0.05 minDist 0.006 activeTransport 1 activeMechanics 1 coupled 1 trials 1500 powerTes 1
 #Model 2d_coupledPress Xsize 0.025 Ysize 0.2 minDist 0.0008 trials 10000 activeTransport 1 activeMechanics 1 coupled 1 
 #
 #Model 2d_notched3pb Xsize 0.8 Ysize 0.2 notchH 0 loadWidth 0.05 minDist 0.006 fracZoneWidth 0.25 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth -1
@@ -96,9 +96,8 @@
 #SpecifiedNode 0.3 1e-6
 #SpecifiedNode 0.7 1e-6
 #
-Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0025  interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.2 gradientRegDepth 0.5
-#Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.002 interfaceMinDist 0.001 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 0 activeMechanics 1 coupled 0 trials 4000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.3 gradientRegDepth 0.5
-
+#Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0025  interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.2 gradientRegDepth 0.5
+#Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.002 interfaceMinDist 0.002 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 4000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.4 gradientRegDepth 0.5
 #
 ####################################################################################
 #SOLVER SETUP
@@ -133,5 +132,7 @@ Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
 #
 #
 #
+#
 #EXPORTERS
 Exporter VTKElementExporter elems saveEvery 0.001 cellData 3 materialID damage crack_opening pointData 2 nodal_stress pressure
+##TXTGaussPointExporter txtout 13 x y normal_x normal_y damageT damageN strainTY strainTZ strainPLTY strainPLTZ stressN stressT1 stressT2 saveEvery 1e-3

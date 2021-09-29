@@ -167,6 +167,13 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 void Model :: clear() {
     // TODO JK: check containers for memory leaks
     // initialize new model with clear geometry, only solver remains
+    bconds.clear();
+    constr.clear();
+    nodes.clear();
+    elems.clear();
+    exporters.clear();
+    pblocks.clear();
+
     // funcs = FunctionContainer();  // functions remain too
     bconds = BCContainer();
     constr = ConstraintContainer();

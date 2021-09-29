@@ -2,6 +2,7 @@
 // TODO change thsi to class region -> inherited classes circle, polygon etc with same fns isinside etc
 #include "geometry.h"
 #include <fstream>
+#include <memory>
 // Define Infinite (Using INT_MAX caused overflow problems)
 #define INF 10000
 #define TOL 1e-9
@@ -232,7 +233,7 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 }
 
 
-void readRegions(const std :: string &filename, std :: vector< Region * > &regions) {
+void readRegions(const std :: string &filename, std :: vector< std::unique_ptr<Region> > &regions) {
     size_t origsize = regions.size();
     string line, regionType;
     ifstream inputfile(filename.c_str() );
@@ -250,11 +251,11 @@ void readRegions(const std :: string &filename, std :: vector< Region * > &regio
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
                     Block *newregion = new Block();
                     newregion->readFromLine(iss);
-                    regions.push_back(newregion);
+                    regions.push_back(std::unique_ptr<Block>(newregion));
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
                     Sphere *newregion = new Sphere();
                     newregion->readFromLine(iss);
-                    regions.push_back(newregion);
+                    regions.push_back(std::unique_ptr<Sphere>(newregion));
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -270,7 +271,7 @@ void readRegions(const std :: string &filename, std :: vector< Region * > &regio
 }
 
 
-bool isInsideRegions(const std :: vector< Region * > &regions, const Point &p) {
+bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Point &p) {
     for ( auto const &reg : regions ) {
         if ( reg->isInside(p) ) {
             return true;
@@ -280,7 +281,7 @@ bool isInsideRegions(const std :: vector< Region * > &regions, const Point &p) {
 }
 
 
-bool isInsideRegions(const std :: vector< Region * > &regions, const Element *el) {
+bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Element *el) {
     unsigned inside = 0;
     for ( auto const &reg : regions ) {
         inside = 0;

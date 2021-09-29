@@ -43,6 +43,7 @@ public:
     unsigned giveTotalNumDoFs() const { return totalDoFs; };
     unsigned giveNumFreeDoFs() const { return freeDoFs; };
     void init();
+    void clear();
     void addRHS_nodalLoad(Vector &RHS, double time) const;
     void updateDirrichletBC(Vector &bc, double time) const;
     void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;

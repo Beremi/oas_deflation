@@ -213,6 +213,7 @@ public:
     void readFromFile(const string filename, unsigned dim);
     void setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex);
     void apply();
+    void clear();
     unsigned giveSize() const { return blocks.size(); };
     PBlock *givePBlock(unsigned i) { return blocks [ i ]; };
 protected:

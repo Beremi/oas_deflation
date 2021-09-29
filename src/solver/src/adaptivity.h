@@ -6,6 +6,8 @@
 #include <fstream>
 #include <iomanip>      // std::setw
 #include <iterator>
+#include <memory>
+// #include <sanitizer/lsan_interface.h>
 #include "solver.h"
 #include "data_exporter.h"
 #include "geometry.h"
@@ -121,8 +123,8 @@ private:
     std :: vector< Point >nodeCentersToRmesh;   // clear after remesh
 
     std :: string regionsToSkip;
-    std :: vector< Region * >regionsNotToRemesh;  // can be specified on the input
-    std :: vector< Region * >fineRegions;   // regions previously remeshed
+    std :: vector< std::unique_ptr<Region> >regionsNotToRemesh;  // can be specified on the input
+    std :: vector< std::unique_ptr<Region> >fineRegions;   // regions previously remeshed
     unsigned remeshMaterialId;
 
     std :: vector< unsigned >nodesToKeep;
@@ -151,11 +153,14 @@ private:
         Node *n;
         Point p;
         // create vector of centers to remove nodes from
-        std :: vector< Region * >regionsToRemove;
-        regionsToRemove.resize( this->nodeCentersToRmesh.size() );
-        unsigned rr = 0;
+        std :: vector< std::unique_ptr<Region> >regionsToRemove;
+        // regionsToRemove.resize( this->nodeCentersToRmesh.size() );
+        // unsigned rr = 0;
+        // for ( auto const &cent : this->nodeCentersToRmesh ) {
+        //     regionsToRemove [ rr++ ] = new Sphere(cent, this->radius2);
+        // }
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove [ rr++ ] = new Sphere(cent, this->radius2);
+            regionsToRemove.push_back(std::unique_ptr<Sphere>(new Sphere(cent, this->radius2)));
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -176,9 +181,9 @@ private:
             ( fs :: path(this->remeshDir) / node_file ).string(),
             this->nodesToKeep
             );
-        for ( auto delr : regionsToRemove ) {
-            delete delr;
-        }
+        // for ( auto delr : regionsToRemove ) {
+        //     delete delr;
+        // }
     };
 
     void saveNodesFine() {
@@ -186,11 +191,15 @@ private:
         Point p;
         std :: vector< unsigned >nodeIdsToSave;
         // create vector of centers to remove nodes from
-        std :: vector< Region * >regionsToRemove;
-        regionsToRemove.resize( this->nodeCentersToRmesh.size() );
-        unsigned rr = 0;
+        // std :: vector< Region * >regionsToRemove;
+        // regionsToRemove.resize( this->nodeCentersToRmesh.size() );
+        // unsigned rr = 0;
+        // for ( auto const &cent : this->nodeCentersToRmesh ) {
+            //     regionsToRemove [ rr++ ] = new Sphere(cent, this->radius);
+            // }
+        std :: vector< std::unique_ptr<Region> >regionsToRemove;
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove [ rr++ ] = new Sphere(cent, this->radius);
+            regionsToRemove.push_back(std::unique_ptr<Sphere>(new Sphere(cent, this->radius2)));
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -210,9 +219,9 @@ private:
             ( fs :: path(this->remeshDir) / node_file ).string(),
             nodeIdsToSave
             );
-        for ( auto delr : regionsToRemove ) {
-            delete delr;
-        }
+        // for ( auto delr : regionsToRemove ) {
+        //     delete delr;
+        // }
     };
 
     //////////////////////////////////////////////////////////////////////////////
@@ -425,7 +434,7 @@ private:
             this->updateGeometry(); // run python preprocessor
 
             for ( auto const &p : nodeCentersToRmesh ) {
-                this->fineRegions.push_back( new Sphere(p, this->radius) );
+                this->fineRegions.push_back( std::unique_ptr<Sphere>( new Sphere(p, this->radius) ) );
             }
 
             this->loadRemeshData(); // load updated geometry
@@ -613,6 +622,7 @@ public:
         remeshGeometry();
 
         BaseSolver :: runAfterEachStep();
+        // __lsan_do_leak_check();
     };
 
     virtual void solve() {

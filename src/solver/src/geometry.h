@@ -1,6 +1,7 @@
 #ifndef _GEOMETRY_H
 #define _GEOMETRY_H
 
+#include <memory>
 #include "linear_algebra.h"
 #include "element.h"
 // TODO move all functions regarding geometrical operations etc.
@@ -103,9 +104,9 @@ public:
 
 
 
-bool isInsideRegions(const std :: vector< Region * > &regions, const Point &p);
-void readRegions(const std :: string &filename, std :: vector< Region * > &regions);
-bool isInsideRegions(const std :: vector< Region * > &regions, const Element *el);
+bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Point &p);
+void readRegions(const std :: string &filename, std :: vector< std::unique_ptr<Region> > &regions);
+bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Element *el);
 ///////////////////////////////////////////////////////////////////////////////////
 
 

@@ -6,11 +6,11 @@ import utilitiesNumeric
 import pointGenerators
 import voronoi
 import math
-import matplotlib
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 #matplotlib.matplotlib_fname()
 #import voronoi_viewer
-from mpl_toolkits.mplot3d import Axes3D
+
 
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d
@@ -1248,34 +1248,73 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     #fn1 = utilitiesNumeric.constantFunc(0)
     #functions.append (fn1)
 
-    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
-    trsptLeftRigidPlate.setDirectNodes(faces1)
-    trsptLeftRigidPlateMechBC = np.array([0,-1])
-    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    trsptBottomRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+    trsptBottomRigidPlate.setDirectNodes(faces1)
+    trsptBottomRigidPlateMechBC = np.array([0,-1])
+    rigidPlatesTrspt.append(trsptBottomRigidPlate)
     govNodesTrspt.append(np.array([ 0, 0]))
-    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptBottomRigidPlateMechBC))
 
 
-    """
+
     ### selecting vertices on the top surface
     boundA = np.array([-1e-8, maxLim[1]-1e-8])
     boundB = np.array([maxLim[0], maxLim[1]+1e-8])
     faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
     vert = vor.vertices[faces1,:]
 
+    trsptTopRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
+    trsptTopRigidPlate.setDirectNodes(faces2)
+    trsptTopRigidPlateMechBC = np.array([-1,-1])
+    rigidPlatesTrspt.append(trsptTopRigidPlate)
+    govNodesTrspt.append(np.array([ -1, 1]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptTopRigidPlateMechBC))
+
+
+
+    ### selecting vertices on the left surface
+    boundA = np.array([-1e-8, 1e-8])
+    boundB = np.array([1e-8, maxLim[1]-1e-8])
+    faces3 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
     trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
-    trsptRightRigidPlate.setDirectNodes(faces2)
-    trsptRightRigidPlateMechBC = np.array([3,-1])
+    trsptRightRigidPlate.setDirectNodes(faces3)
+    trsptRightRigidPlateMechBC = np.array([-1,-1])
     rigidPlatesTrspt.append(trsptRightRigidPlate)
-    govNodesTrspt.append(np.array([ -1, -1]))
+    govNodesTrspt.append(np.array([ -1, 2]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
-    """
+
+
+
+    ### selecting vertices on the left surface
+    boundA = np.array([maxLim[0]-1e-8, 1e-8])
+    boundB = np.array([maxLim[0]+1e-8, maxLim[1]-1e-8])
+    faces4 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+    vert = vor.vertices[faces1,:]
+
+    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
+    trsptLeftRigidPlate.setDirectNodes(faces4)
+    trsptLeftRigidPlateMechBC = np.array([-1,-1])
+    rigidPlatesTrspt.append(trsptLeftRigidPlate)
+    govNodesTrspt.append(np.array([ -1, -1]))
+    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+
+
+
 
     funcTrsprt = []
     funcTrsprt.append( np.array([0,0]) )
     funcTrsprt.append( np.array([1, 100]) )
     fnTrsprt = utilitiesNumeric.generalFunc(funcTrsprt)
     functions.append (fnTrsprt)
+
+    funcTrsprt1 = []
+    funcTrsprt1.append( np.array([0,1]) )
+    #funcTrsprt1.append( np.array([1, 1]) )
+    fnTrsprt1 = utilitiesNumeric.generalFunc(funcTrsprt1)
+    functions.append (fnTrsprt1)
+
     ### selecting vertices on rebar interfaces
     clipRadius = rebarDiameter/2 + minDist/3
     for r in range (rebarCount):
@@ -1295,7 +1334,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
         #print(interfaceVertices)
         trsptRebarRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 4, None, directIdcs = True)
         trsptRebarRigidPlate.setDirectNodes(interfaceVertices.copy())
-        trsptRebarRigidPlateMechBC = np.array([3,-1])
+        trsptRebarRigidPlateMechBC = np.array([4,-1])
         rigidPlatesTrspt.append(trsptRebarRigidPlate)
         govNodesTrspt.append(center-1e-4)
         govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRebarRigidPlateMechBC))
@@ -1308,33 +1347,30 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
 
 
-def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, trials):
+def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, trials, powerTes=False):
     dim = 3
     print('Creating coupled brazilian disc...')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates  = assembleCoupledBrazilianDisc(center, cylinderRad, cylinderHeight, minDist, trials, 0, [] )
-    #print(*node_coords, sep='\n')
+    node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates, radii  = assembleCoupledBrazilianDisc(center, cylinderRad, cylinderHeight, minDist, trials, 0, powerTes = powerTes )
 
-    #node_coords = np.asarray(node_coords)
 
-    """
-    if SHOW_PLOT:
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-        plt.show()
-    """
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    #ax.auto_scale_xyz([0, maxLim[0]], [0, maxLim[1]], [0, maxLim[2]])
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+
+
+    utilitiesGeom.saveNodes('', node_coords, "node",dim, "nodes.inp")
+
+
 
 
     print('Conducting Voronoi tesselation...', end='')
-    ### conducting Voronoi tesselation
-    vor, volumes = utilitiesNumeric.runCylinderMirroredVoronoi (node_coords, center, cylinderRad, cylinderHeight, 0, quarter=False)
+    vor, volumes = utilitiesNumeric.runCylinderMirroredVoronoi (node_coords, center, cylinderRad, cylinderHeight, 0, quarter=False, weights=radii)
     print('done.')
 
-    # if SHOW_PLOT:
-    #     fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
-    #     plt.show()
 
     functions = []
 
@@ -1350,27 +1386,10 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
     fn2 = utilitiesNumeric.generalFunc(func2)
     functions.append (fn2)
 
-
+    #2 unitary pressure
     fn3 = utilitiesNumeric.constantFunc(1)
     functions.append (fn3)
 
-
-    """
-    boundA = np.zeros(dim)-1e-8
-    boundB = maxLim + 1e-8
-    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    vert = vor.vertices[faces1,:]
-    boundA = np.zeros(dim)+1e-8
-    boundB = maxLim - 1e-8
-    faces0 = utilitiesGeom.excludeSelectedPts(boundA, boundB, vert)
-    faces = faces1[faces0]
-
-    for i,k in enumerate(faces):
-        fn1 = utilitiesNumeric.constantFunc(np.sin(vor.vertices[k,0])*np.exp(vor.vertices[k,1]))
-        functions.append (fn1)
-        trsBC = utilitiesMech.transportBC(k,[i,-1])
-        transportBC_merged.append(trsBC)
-    """
 
     #"""
     ### indirect setting of transportBCs by spatial selection of vertices
@@ -1381,24 +1400,16 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
     boundA = np.array(  [-1e-4 , -cylinderRad*2, -cylinderRad*2] )
     boundB = np.array(  [ 1e-4 , cylinderRad*2, cylinderRad*2]  )
     leftFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    """
-    for i in range (len(leftFace)):
-        trsBC = utilitiesMech.transportBC(leftFace[i], leftFaceBC)
-        transportBC_merged.append(trsBC)
-    """
+
 
     ### selecting vertices on the right surface
     rightFaceBC = np.array([2,-1])
     boundA = np.array(  [cylinderHeight-1e-4 , -cylinderRad*2, -cylinderRad*2] )
     boundB = np.array(  [cylinderHeight+1e-4 , cylinderRad*2, cylinderRad*2]  )
     rightFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    """
-    for i in range (len(rightFace)):
-        trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
-        transportBC_merged.append(trsBC)
-    """
 
-    #setting of transport bc by using rigid plate
+
+    #setting of transport bc by using rigid plates
     rigidPlatesTrspt = []
     govNodesTrspt = []
     govNodesTrsptBC = []
@@ -6752,7 +6763,7 @@ def assemble2dRWTHShearCylinder (maxLim, minDist, trials, innerRadTop, innerRadB
 
 
 
-def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, directionDim, functions ):
+def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, directionDim, powerTes=False ):
     indent = 1e-6
     dim=3
     #lists for the model
@@ -6763,6 +6774,11 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
     govNodesMechBC = []
     rigidPlates = []
 
+    if powerTes == False:
+        radii = None
+    else:
+        radii = []
+
     lineSupported = True
 
     node_coords.append( np.array([height/2, 0, radius/2]))
@@ -6771,29 +6787,30 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
     node_coords.append( np.array([height/2, 0, 0.0508/2]))
     node_coords.append( np.array([height/2, 0, -0.0508/2]))
 
-
+    # tady se natvrdo sampluji nody ve vetknuti
     if lineSupported:
-        node_coords.append( np.array([height/2, radius/4, radius/4]))
+        #node_coords.append( np.array([height/2, radius/4, radius/4]))
+
 
 
         oldLen = len(node_coords)
-        nodeA = np.array([indent, radius*0.99, radius*0.10])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.10])
+        nodeA = np.array([indent, radius*0.99, radius*0.12])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.12])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, radius*0.06])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.06])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, radius*0.02])
+        nodeB = np.array([height-indent, radius*0.99, radius*0.02])
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, radius*0.99, -radius*0.12])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.12])
         #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, radius*0.05])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.05])
+        nodeA = np.array([indent, radius*0.99, -radius*0.06])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.06])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, radius*0.0])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.00])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.1])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.1])
-        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.05])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.05])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.0])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.00])
+        nodeA = np.array([indent, radius*0.99, -radius*0.02])
+        nodeB = np.array([height-indent, radius*0.99, -radius*0.02])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
 
@@ -6801,7 +6818,6 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         rpIdcs = []
         for i in range (newNodes):
             rpIdcs.append(oldLen + i)
-
 
         topRigidPlate = utilitiesMech.RigidPlate(-1, 3, None, directIdcs = True)
         topRigidPlate.setDirectNodes(rpIdcs)
@@ -6811,53 +6827,25 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
 
         oldLen = len(node_coords)
-        nodeA = np.array([indent, -radius*0.99, radius*0.10])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.10])
+        nodeA = np.array([indent, -radius*0.99, radius*0.12])
+        nodeB = np.array([height-indent, -radius*0.99, radius*0.12])
         #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, radius*0.05])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.05])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, radius*0.0])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.00])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.10])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.10])
-        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.05])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.05])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.0])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.00])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        newNodes = len(node_coords)-oldLen
-        """
-        oldLen = len(node_coords)
-        nodeA = np.array([indent, -radius*0.99, radius*0.14])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.14])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, radius*0.10])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.10])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, radius*0.06])
         nodeB = np.array([height-indent, -radius*0.99, radius*0.06])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, radius*0.02])
         nodeB = np.array([height-indent, -radius*0.99, radius*0.02])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.02])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        nodeA = np.array([indent, -radius*0.99, -radius*0.12])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.12])
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, -radius*0.06])
         nodeB = np.array([height-indent, -radius*0.99, -radius*0.06])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.10])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.10])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.14])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.14])
+        nodeA = np.array([indent, -radius*0.99, -radius*0.02])
+        nodeB = np.array([height-indent, -radius*0.99, -radius*0.02])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
-        """
 
         print()
         rpIdcs = []
@@ -6872,7 +6860,9 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodes.append(np.array([ height/2, -radius, 0]))
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, bottomRigidPlateMechBC))
 
-
+        if powerTes == True:
+            for i in range (len(node_coords)):
+                radii.append(0)
 
 
     if not lineSupported:
@@ -6882,13 +6872,10 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
         mechBC_merged.append(mBC)
 
-
-
         mechBC = np.array([0,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
         node_coords.append( np.array([height/2, -radius+2*indent, 0]))
         mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
         mechBC_merged.append(mBC)
-
 
         contactWidth = radius/3
         ## top support surf
@@ -6911,8 +6898,6 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodes.append(np.array([ height/2, radius, 0]))
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
 
-
-
         ## bottom support surf
         nodeA = np.array([ indent , -radius+indent, -contactWidth/2])
         nodeB = np.array([ height-indent , -radius+indent, contactWidth/2])
@@ -6933,25 +6918,37 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodes.append(np.array([ height/2, -radius, 0]))
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, bottomRigidPlateMechBC))
 
+    radii = np.asarray(radii)
+    node_coords = np.asarray(node_coords)
+    print (len(node_coords))
 
+    ###############generating of points left face ###############
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
+    if powerTes == False:
+        pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
+    else:
+        node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
+    print (len(node_coords))
 
-    ###############generating of points supported surface left face ###############
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
-
-    ###############generating of points loaded surface right face ###############
+    ###############generating of points  right face ###############
     nodeA = center.copy()
     nodeA[directionDim] += height-indent
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
-
+    #pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
+    if powerTes == False:
+        pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
+    else:
+        node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(nodeA, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
+    print (len(node_coords))
     ###############generating of points cylinder surf###############
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    #pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
 
     ###############generating of points cylinder volume ###############
-    pointGenerators.generateNodesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    if powerTes==False:
+        pointGenerators.generateNodesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    else:
+        node_coords, radii=pointGenerators.generateParticlesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
     #######################################################################
-
+    print (len(node_coords))
 
     """
     node_coords = np.asarray(node_coords)
@@ -6964,8 +6961,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
 
 
 
-
-    return node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates
+    return node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates, radii
 
 def assemble3dDam(maxLim, minDist, trials, topsize):
     node_coords = np.zeros((0,3))

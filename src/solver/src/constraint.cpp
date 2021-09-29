@@ -267,6 +267,13 @@ ConstraintContainer :: ~ConstraintContainer() {
     }
 }
 
+
+void ConstraintContainer :: clear() {
+    for ( auto &c: constraints ) {
+        if (c!= nullptr) delete c;
+    }
+}
+
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
     //initiate volumetric averages

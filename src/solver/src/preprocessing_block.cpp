@@ -1415,6 +1415,13 @@ PBlockContainer :: ~PBlockContainer() {
 }
 
 //////////////////////////////////////////////////////////
+void PBlockContainer :: clear() {
+    for ( vector< PBlock * > :: iterator f = blocks.begin(); f != blocks.end(); ++f ) {
+        if (*f != nullptr) delete * f;
+    }
+}
+
+//////////////////////////////////////////////////////////
 void PBlockContainer :: setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex) {
     nodes = n;
     elems = e;

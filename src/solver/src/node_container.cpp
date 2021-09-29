@@ -8,6 +8,13 @@ NodeContainer :: ~NodeContainer() {
 }
 
 //////////////////////////////////////////////////////////
+void NodeContainer :: clear() {
+    for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+        if (*n != nullptr) delete * n;
+    }
+}
+
+//////////////////////////////////////////////////////////
 void NodeContainer :: readFromFile(const string filename, const int dim) {
     size_t origsize = nodes.size();
     string line, nodeType;
