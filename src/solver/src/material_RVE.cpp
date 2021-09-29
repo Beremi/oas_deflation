@@ -3,6 +3,7 @@
 #include "element_discrete.h"
 #include "element_continuous.h"
 
+# define M_PI           3.14159265358979323846  /* pi */
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -508,6 +509,10 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
     temp_strain = addEigenStrain(strain); //macroscopic eigenstrain
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     temp_stress = macromaterial->givePrecomputedElasticTensor() * temp_strain;
+    if (checkOttosenCriterion()){
+        this->setFromPrecomputedToFullModel();
+        giveStress(strain, timeStep);
+    }
     return temp_stress;
 }
 
@@ -516,7 +521,6 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
     ( void ) timeStep;
 
     //precomputed material
-
     if (is_precomputed) return giveStressPrecomputed(strain, timeStep);
 
     temp_strain = addEigenStrain(strain); //macroscopic eigenstrain
@@ -534,7 +538,7 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
     temp_stress *= 0;
     collectStresses();
 
-    //*
+    /*
     cout << "STRAIN MECH";
     for ( unsigned v = 0; v < temp_strain.size(); v++ ) {
         cout << " " << temp_strain [ v ];
@@ -546,9 +550,39 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
         cout << " " << temp_stress [ v ];
     }
     cout << endl;
-    //*/
+    */
 
     return temp_stress;
+}
+
+/////////////////////////////////./////////////////////////
+bool  DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion(){
+    vector <Vector> eigvecs;
+    Vector eignums;
+    
+    //from paper Adaptive multiscale homogenization of the lattice discrete particle model for the analysis of damage and fracture in concrete, Roozbeh Rezakhani and Xinwei Zhou and Gianluca Cusatis
+    double fc =  20e6;
+    double ft = 2.35e6;
+    double c1 = 4.775/fc;
+    double c2 = 7.048/fc;
+    double c3 = 0.88/pow(fc,2);
+
+    LinalgEigenSolver(temp_stress, eignums, eigvecs);
+    double I1 = eignums[0] + eignums[1] + eignums[2];
+    if (abs(I1)<1e-10) return false;
+
+    double J2 = (pow(eignums[0]-eignums[1],2) + pow(eignums[0]-eignums[2],2) + pow(eignums[1]-eignums[2],2))/6;    
+    double J3 = (eignums[0]-I1/3.)*(eignums[1]-I1/3.)*(eignums[2]-I1/3.);
+    double xi = I1/sqrt(3);
+    double rho = sqrt(2*J2);
+    double cos3theta = (3.*sqrt(3.)*J3)/(2.*pow(J2,3./2.));
+    double K = 1 - 6.8*pow( ft/fc -0.07, 2 );
+    double r;
+    if (cos3theta > 0 ) r = cos( acos (K*cos3theta ) / 3 );  
+    else r = cos( M_PI/3 - acos (-K*cos3theta ) / 3 );  
+    
+    double otto = c1*xi + c2*rho*r + c3*pow(rho,2) -1;
+    return otto>0;
 }
 
 /////////////////////////////////./////////////////////////
@@ -795,6 +829,8 @@ void DiscreteCoupledRVEMaterialStatus ::  setFromPrecomputedToFullModel(){
 
     is_precomputed = false;
     if (is_master_status) return; //this was the master status already initialized
+    mechRVEstat -> setFromPrecomputedToFullModel();
+    trspRVEstat -> setFromPrecomputedToFullModel();
     findFriends();    
 }
 
@@ -816,10 +852,12 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
         ine = giveInertiaTensor();
         macromaterial->setPrecomputedElasticDampingAndInertiaTensors(ela, dam, ine);
 
-        is_precomputed = true; //set back to precomputed to use it
+        setToPrecomputed(); //set back to precomputed to use it        
     } else {
         ndim = macromaterial->giveMechanicalRVEmat()->giveDimension();
     }
+
+    setFromPrecomputedToFullModel(); //switch to nonlinear
 }
 
 //////////////////////////////////////////////////////////
