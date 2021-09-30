@@ -2634,7 +2634,7 @@ def create3dcylinderUniPressFree(center, radius, height, minDist, trials, direct
 
 
 
-def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim ):
+def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim, powerTes=False ):
 
     ########################################################################
     functions = []
@@ -2649,6 +2649,9 @@ def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directi
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     node_coords, mechBC_merged, mechIC_merged  = assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim, functions )
+
+    #node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates, radii  = assembleCoupledBrazilianDisc(center, cylinderRad, cylinderHeight, minDist, trials, 0, powerTes = powerTes )
+
 
     #print(*node_coords, sep='\n')
 
@@ -2697,7 +2700,7 @@ def create3dcylinderTorsionFree(center, radius, height, minDist, trials, directi
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, volumes, functions
 
 
-def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, activeTransport):
+def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, activeTransport, powerTes = False):
 
     ########################################################################
     functions = []
@@ -2726,7 +2729,7 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates  = assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions )
+    node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates  = assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions, powerTes=powerTes )
 
     """
     node_coords = np.asarray(node_coords)
@@ -6057,7 +6060,7 @@ def assemble3dcylinderUniPressFree(center, radius, height, minDist, trials, dire
 
 
 
-def assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim, functions):
+def assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, directionDim, functions, powerTes = False):
     indent = 1e-5
     dim=3
     #lists for the model
@@ -6065,8 +6068,18 @@ def assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, direc
     mechBC_merged = []
     mechInitC_merged = []
 
+
+    if powerTes == False:
+        radii = None
+    else:
+        radii = []
+
+
     mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
     node_coords.append( center+indent)
+    if powerTes == True:
+        radii.append(0)
+
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
     mechBC_merged.append(mBC)
 
@@ -6128,7 +6141,7 @@ def assemble3dcylinderTorsionFree(center, radius, height, minDist, trials, direc
 
 
 
-def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions):
+def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions, powerTes=False):
     indent = 1e-5
     dim=3
     #lists for the model
@@ -6139,6 +6152,12 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
     govNodesMechBC = []
     rigidPlates = []
 
+
+    if powerTes == False:
+        radii = None
+    else:
+        radii = []
+
     ### fixed nodes
     mechBC = np.array([0,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
     node_coords.append( np.array([indent*3,indent,indent]))
@@ -6148,6 +6167,10 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
     node_coords.append( np.array([height-indent*3,indent,indent]))
     mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
     mechBC_merged.append(mBC)
+
+    if powerTes == True:
+        for i in range (len(node_coords)):
+            radii.append(0)
 
 
     ### nodes for gauges
@@ -6183,31 +6206,39 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
 
     print ('Nodes so far: %d' %len(node_coords))
 
-
+    radii = np.asarray(radii)
+    node_coords = np.asarray(node_coords)
+    
     ###############generating of points supported surface left face ###############
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
+    if powerTes==False:
+        pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
+        pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
+    else:
+        node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
 
-    print ('Nodes so far: %d' %len(node_coords))
+
 
     ###############generating of points loaded surface right face ###############
     nodeA = center.copy()
     nodeA[directionDim] += height-indent
-    pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
-    pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
+    if powerTes==False:
+        pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
+        pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
+    else:
+        node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(nodeA, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
 
-    print ('Nodes so far: %d' %len(node_coords))
 
     ###############generating of points cylinder surf###############
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    #pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
 
-    print ('Nodes so far: %d' %len(node_coords))
 
+    if powerTes==False:
     ###############generating of points cylinder volume ###############
-    pointGenerators.generateNodesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
-    #######################################################################
+        pointGenerators.generateNodesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+    else:
+        node_coords, radii=pointGenerators.generateParticlesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
 
-    print ('Nodes so far: %d' %len(node_coords))
+
 
     """
     node_coords = np.asarray(node_coords)
