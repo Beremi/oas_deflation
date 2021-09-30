@@ -90,6 +90,7 @@ public:
     virtual void update();   
     void setFromPrecomputedToFullModel();
     virtual void setParameterValue(string code, double value);
+    virtual void setToPrecomputed(){ is_precomputed = true; };
     bool isPrecomputed() const {return is_precomputed;};
 };
 
@@ -126,12 +127,12 @@ protected:
     virtual void applyEigenStrains();
     virtual void collectStresses();
     virtual unsigned giveStrainSize(unsigned rdim) const;    
+    bool checkOttosenCriterion();
 
 
     bool is_master_status;
     bool is_precomputed;
 
-    void setFromPrecomputedToFullModel();
     Point calculateCentroid();
     vector< vector< Vector > > calculateProjectors(const Point centroid);
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
@@ -146,6 +147,8 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveInertiaTensor() const;
     virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); };
+    void setFromPrecomputedToFullModel();
+    virtual void setToPrecomputed(){ is_precomputed = true; };
     bool isPrecomputed() const {return is_precomputed;};
 };
 
@@ -173,7 +176,7 @@ public:
     vector< vector< Vector > > * giveProjectors(){return &projectors;};
     unsigned giveDimension(){return ndim;}; 
 };
-
+ 	
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DISCRETE COUPLED RVE MATERIAL
@@ -211,6 +214,7 @@ public:
     virtual double computeBiotEffect() const;
     virtual void setParameterValue(string code, double value);
     virtual void setFromPrecomputedToFullModel();
+    virtual void setToPrecomputed(){ is_precomputed = true; mechRVEstat->setToPrecomputed(); trspRVEstat->setToPrecomputed();};
 };
 
 //////////////////////////////////////////////////////////

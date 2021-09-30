@@ -4,6 +4,7 @@
 //////////////////////////////////////////////////////////
 
 #include "linear_algebra.h"
+# define M_PI           3.14159265358979323846  /* pi */
 
 Point :: Point() {
     x = 0;
@@ -1500,10 +1501,6 @@ Matrix dyadicProduct(const Vector &a, const Vector &b) {
 double l2_norm(Vector x) {
     return pow(inner_product(& x [ 0 ], & x [ x.size() ], & x [ 0 ], ( double ) ( 0 ) ), 0.5);
 }
-
-
-
-
 
 
 //////////////////////////////////////////////////////////

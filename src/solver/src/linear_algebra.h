@@ -541,4 +541,5 @@ Point triNormal3D(const Point *a, const Point *b, const Point *c);
 double triArea3D(const Point *a, const Point *b, const Point *c);
 double tetVolume3D(const Point *a, const Point *b, const Point *c, const Point *d);
 
+
 #endif

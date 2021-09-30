@@ -63,8 +63,8 @@ protected:
     CoordinateIndexedSparseMatrix Keff, K;
 
     virtual void updateFieldVariables();
-    virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, dt); };
-    virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, dt); };
+    virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
+    virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, -1); };
     virtual void computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep);
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
