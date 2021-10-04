@@ -47,13 +47,13 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "transport mat. status";
     avgPressure = 0;
-    updateEffectiveConductivity();
+    effConductivity = updateEffectiveConductivity();
 }
 
 
 //////////////////////////////////////////////////////////
 Vector TrsprtMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    updateEffectiveConductivity(); //nonlinear effecto of pressure
+    effConductivity = updateEffectiveConductivity(); //nonlinear effecto of pressure
     return giveStressWithFrozenIntVars(strain, timeStep);
 };
 
@@ -70,7 +70,7 @@ Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimensi
     ( void ) type;
     Matrix T(dimension, dimension);
     for ( unsigned i = 0; i < dimension; i++ ) {
-        T [ i ] [ i ] = -effConductivity;
+        T [ i ] [ i ] = - giveEffectiveConductivity(type);
     }
     return T;
 };
@@ -120,9 +120,9 @@ double TrsprtMaterialStatus :: giveValue(string code) const {
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtMaterialStatus :: updateEffectiveConductivity() {
+double TrsprtMaterialStatus :: updateEffectiveConductivity() const {
     TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    effConductivity = calculatePressureDependentPermeability(avgPressure) * tmat->giveDensity() / tmat->giveViscosity();
+    return calculatePressureDependentPermeability(avgPressure) * tmat->giveDensity() / tmat->giveViscosity();
 }
 
 //////////////////////////////////////////////////////////
@@ -205,7 +205,7 @@ Matrix DiscreteTrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned
     ( void ) type;
     ( void ) dimension;
     Matrix T(1, 1); //discrete material, only one direction in any dimension
-    T [ 0 ] [ 0 ] = -effConductivity;
+    T [ 0 ] [ 0 ] = - giveEffectiveConductivity(type);
     return T;
 };
 
@@ -458,11 +458,19 @@ double DiscreteTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string t
         TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
         return calculatePressureDependentPermeability(0.) * tmat->giveDensity() / tmat->giveViscosity();
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
-        return effConductivity;
+        return updateEffectiveConductivity();
     } else {
         cerr << "Error: DiscreteTrsprtCoupledMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
+}
+
+
+//////////////////////////////////////////////////////////
+double DiscreteTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() const {
+    DiscreteTrsprtCoupledMaterial *tmat = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
+    Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );  
+    return (TrsprtMaterialStatus::updateEffectiveConductivity()) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
 }
 
 //////////////////////////////////////////////////////////
@@ -473,12 +481,7 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, d
         volStrainRate = 0;
     }
 
-    DiscreteTrsprtCoupledMaterial *tmat = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
-
-    Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );
-
-    updateEffectiveConductivity();
-    effConductivity += tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
+    effConductivity = updateEffectiveConductivity();
     temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
     return temp_stress;

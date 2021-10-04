@@ -90,8 +90,9 @@ public:
     virtual void update();   
     void setFromPrecomputedToFullModel();
     virtual void setParameterValue(string code, double value);
-    virtual void setToPrecomputed(){ is_precomputed = true; };
+    void setToPrecomputed(){ is_precomputed = true; };
     bool isPrecomputed() const {return is_precomputed;};
+    void setToMasterStatus(){ is_master_status = true; };
 };
 
 //////////////////////////////////////////////////////////
@@ -129,10 +130,6 @@ protected:
     virtual unsigned giveStrainSize(unsigned rdim) const;    
     bool checkOttosenCriterion();
 
-
-    bool is_master_status;
-    bool is_precomputed;
-
     Point calculateCentroid();
     vector< vector< Vector > > calculateProjectors(const Point centroid);
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
@@ -149,7 +146,6 @@ public:
     virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); };
     void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed(){ is_precomputed = true; };
-    bool isPrecomputed() const {return is_precomputed;};
 };
 
 //////////////////////////////////////////////////////////

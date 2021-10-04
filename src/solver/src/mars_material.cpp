@@ -206,8 +206,8 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
 
     //temp_damage = min( temp_damage, m->giveMaxDamage() ); //dangerous, better switched off
 
-    //temp_crackOpening = (L*damage)*strain[0]; //normal opening only
-    temp_crackOpening = l2_norm( ( L * damage ) * strain );  //total opening
+    temp_crackOpening = (L*temp_damage)*strain[0]; //normal opening only
+    //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening    
 
     //if(temp_damage>0) cout << "damage " << " " << temp_damage << " " << strain[0] << " " << strain[1] << endl;
 
