@@ -74,18 +74,21 @@ public:
     Matrix giveStoredBMatrix(unsigned i) { return Bs [ i ]; };
     virtual Matrix giveHMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); };
     Matrix giveStoredHMatrix(unsigned i) { return Hs [ i ]; };
-    virtual Vector giveStrain(const Point *x, const Vector &DoFs) { return giveBMatrix(x) * DoFs; };
+    virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
     unsigned giveDimension() const { return ndim; }
     virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
     unsigned giveVTKCellType() const { return vtk_cell_type; };
     virtual void changeMaterial(Material *newmat);
     virtual Vector integrateInternalSources();
-
     virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
+    virtual bool giveGlobalCoords(Point *x, const Point *xn) const; 
+    virtual Vector giveMasterVariables(const Point *x, const Vector &DoFs) const { return giveHMatrix(x) * DoFs; };
+    Vector giveElemDoFsFromFullDoFs( const Vector &FullDoFs) const;
 
     virtual void collectInformationsFromNeigborhood() {};
+    virtual bool isPointInside(Point* xn, const Point *x) const;
 };
 
 

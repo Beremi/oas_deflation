@@ -1428,7 +1428,7 @@ def createCoupledBrazilianDisc(center, cylinderRad, cylinderHeight,  minDist, tr
     govNodesTrspt.append(np.array([ -1, -1, -1]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
 
-    return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+    return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, radii
 
 def create2dPeriodicShear(maxLim, minDist, trials, powerTes ):
     print('Creating 2d periodic rectangle, shear loaded.')
@@ -2729,7 +2729,7 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates  = assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions, powerTes=powerTes )
+    node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, radii  = assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, directionDim, functions, powerTes=powerTes )
 
     """
     node_coords = np.asarray(node_coords)
@@ -2800,7 +2800,7 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
 
 
-    return node_coords, mechBC_merged,  vor, volumes, functions,  govNodes, govNodesMechBC, rigidPlates, transportBC_merged, govNodesTrspt, rigidPlatesTrspt, govNodesTrsptBC
+    return node_coords, mechBC_merged,  vor, volumes, functions,  govNodes, govNodesMechBC, rigidPlates, transportBC_merged, govNodesTrspt, rigidPlatesTrspt, govNodesTrsptBC, radii
 
     #return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, volumes, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
 
@@ -6154,7 +6154,7 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
 
 
     if powerTes == False:
-        radii = None
+        radii = []
     else:
         radii = []
 
@@ -6168,9 +6168,8 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
     mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
     mechBC_merged.append(mBC)
 
-    if powerTes == True:
-        for i in range (len(node_coords)):
-            radii.append(0)
+    for i in range (len(node_coords)):
+        radii.append(0)
 
 
     ### nodes for gauges
@@ -6205,14 +6204,11 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
 
     print ('Nodes so far: %d' %len(node_coords))
-
-    radii = np.asarray(radii)
-    node_coords = np.asarray(node_coords)
     
     ###############generating of points supported surface left face ###############
-    if powerTes==False:
-        pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
-        pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
+    if powerTes==False or 1:
+        pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-1e-5, directionDim, minDist*0.4, node_coords, trials)
+        pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist*0.4, node_coords, trials)
     else:
         node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
 
@@ -6221,9 +6217,9 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
     ###############generating of points loaded surface right face ###############
     nodeA = center.copy()
     nodeA[directionDim] += height-indent
-    if powerTes==False:
-        pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
-        pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius-1e-5,  directionDim, minDist, node_coords, trials)
+    if powerTes==False or 1:
+        pointGenerators.generateNodesOrtoCircleBorder3dRand(nodeA, radius-1e-5,  directionDim, minDist*0.4, node_coords, trials)
+        pointGenerators.generateNodesOrtoCircle3dRand(nodeA, radius-1e-5,  directionDim, minDist*0.4, node_coords, trials)
     else:
         node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(nodeA, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
 
@@ -6235,7 +6231,9 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
     if powerTes==False:
     ###############generating of points cylinder volume ###############
         pointGenerators.generateNodesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+        radii = []
     else:
+        radii = np.zeros(len(node_coords))
         node_coords, radii=pointGenerators.generateParticlesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
 
 
@@ -6252,7 +6250,7 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
 
 
 
-    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
+    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates, radii
 
 
 def assemble3dRWTHShearCylinder(center, radiusInp, heightInp, minDist, trials, directionDim, functions, notchRadLeft, notchRadRight, notchWidthLeft, notchWidthRight, notchDepth, quarter=False):
@@ -6822,8 +6820,6 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
     if lineSupported:
         #node_coords.append( np.array([height/2, radius/4, radius/4]))
 
-
-
         oldLen = len(node_coords)
         nodeA = np.array([indent, radius*0.99, radius*0.12])
         nodeB = np.array([height-indent, radius*0.99, radius*0.12])
@@ -6836,7 +6832,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, radius*0.99, -radius*0.12])
         nodeB = np.array([height-indent, radius*0.99, -radius*0.12])
-        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, radius*0.99, -radius*0.06])
         nodeB = np.array([height-indent, radius*0.99, -radius*0.06])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
@@ -6860,7 +6856,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         oldLen = len(node_coords)
         nodeA = np.array([indent, -radius*0.99, radius*0.12])
         nodeB = np.array([height-indent, -radius*0.99, radius*0.12])
-        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, radius*0.06])
         nodeB = np.array([height-indent, -radius*0.99, radius*0.06])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
@@ -6869,7 +6865,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, -radius*0.12])
         nodeB = np.array([height-indent, -radius*0.99, -radius*0.12])
-        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
         nodeA = np.array([indent, -radius*0.99, -radius*0.06])
         nodeB = np.array([height-indent, -radius*0.99, -radius*0.06])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
@@ -6949,8 +6945,6 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodes.append(np.array([ height/2, -radius, 0]))
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, bottomRigidPlateMechBC))
 
-    radii = np.asarray(radii)
-    node_coords = np.asarray(node_coords)
     print (len(node_coords))
 
     ###############generating of points left face ###############
@@ -6958,7 +6952,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
     if powerTes == False:
         pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
     else:
-        node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
+        pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist*0.4, node_coords, trials)
     print (len(node_coords))
 
     ###############generating of points  right face ###############
@@ -6968,7 +6962,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
     if powerTes == False:
         pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
     else:
-        node_coords, radii=pointGenerators.generateParticlesOrtoCircle3dRand(nodeA, radius-1e-5, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
+        pointGenerators.generateNodesOrtoCircle3dRand(center, radius-1e-5, directionDim, minDist*0.4, node_coords, trials)
     print (len(node_coords))
     ###############generating of points cylinder surf###############
     #pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
@@ -6976,7 +6970,9 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
     ###############generating of points cylinder volume ###############
     if powerTes==False:
         pointGenerators.generateNodesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist,  node_coords, trials)
+        radii = np.zeros(len(node_coords))
     else:
+        radii = np.zeros(len(node_coords))
         node_coords, radii=pointGenerators.generateParticlesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
     #######################################################################
     print (len(node_coords))
@@ -6989,7 +6985,6 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
         plt.show()
     #"""
-
 
 
     return node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates, radii

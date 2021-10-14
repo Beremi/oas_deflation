@@ -50,6 +50,7 @@ public:
     double giveVolume() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual Matrix giveDampingMatrix() const;
+    virtual bool isPointInside(Point* xn, const Point *x) const { (void) xn; (void) x; return false;}; //TODO: discrete elements does not interpolate
 };
 
 //////////////////////////////////////////////////////////
@@ -114,6 +115,7 @@ public:
     virtual Vector integrateInternalSources();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     vector< Node * >giveVertices() const { return vert; };
+    virtual bool isPointInside(Point* xn, const Point *x) const { (void) xn; (void) x; return false;}; //TODO: discrete elements does not interpolate
 };
 
 //////////////////////////////////////////////////////////

@@ -70,7 +70,7 @@ protected:
 public:
     MechanicalBrick();
     ~MechanicalBrick() {};
-    virtual Matrix giveBMatrix(const Point *x) const;    
+    virtual Matrix giveBMatrix(const Point *x) const; 
 };
 
 

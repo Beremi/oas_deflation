@@ -544,3 +544,17 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
     // std::cerr << '\n';
     return nullptr;
 }
+
+//////////////////////////////////////////////////////////
+bool ElementContainer :: findElementOwningPoint(Element **elem, Point *xn, const Point *x) const{
+    (void) elem;
+    bool found=false;
+    for(auto &e:elems){
+        found = e->isPointInside(xn,x);
+        if (found){
+            *elem = e;
+            return true;
+        }
+    }
+    return false;
+}

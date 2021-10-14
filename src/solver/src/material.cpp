@@ -450,6 +450,10 @@ MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e, unsign
 
 DiscreteTrsprtCoupledMaterialStatus :: DiscreteTrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : DiscreteTrsprtMaterialStatus(m, e, ipnum) {
     name = "discrete coupled transport mat. status";
+    crackParam = 0.;
+    tempVolumetricStrain = 0.;
+    volumetricStrain = 0;
+    volStrainRate = 0.;
 }
 
 //////////////////////////////////////////////////////////
@@ -469,7 +473,7 @@ double DiscreteTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string t
 //////////////////////////////////////////////////////////
 double DiscreteTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() const {
     DiscreteTrsprtCoupledMaterial *tmat = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
-    Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );  
+    Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );
     return (TrsprtMaterialStatus::updateEffectiveConductivity()) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
 }
 
