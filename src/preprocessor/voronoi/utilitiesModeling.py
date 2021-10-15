@@ -4903,27 +4903,31 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         if (notch > 0):
             notchSide0 = []
             oldLen = len(node_coords)
-            nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
-            nodeB = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
-            # NOTE JK here is the lmin on notch
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=True, equidist=True)
-            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
             """
             nodeA = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/8, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/8, maxLim[2]-indent])
             pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
             """
+            # line from bottom to crack tip - front face
             nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/2, indent])
             # NOTE JK here is the lmin on notch
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=False, equidist=True)
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=True, equidist=True)
             # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # line from bottom to crack tip - rear face
             nodeA = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
             # NOTE JK here is the lmin on notch
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=False, equidist=True)
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=True, equidist=True)
             # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # line at the bottom of a specimen
+            nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
+            nodeB = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
+            # NOTE JK here is the lmin on notch
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
 
+            # notch face
             nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
             # NOTE JK here is the lmin on notch
