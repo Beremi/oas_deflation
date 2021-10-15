@@ -199,7 +199,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             maxErr = abs(currErr);
         }
         //
-        if ( maxErr > 1e-6 ) {
+        if ( maxErr > 1e-4 ) {
             cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
             exit(1);
         }

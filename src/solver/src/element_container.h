@@ -48,6 +48,7 @@ public:
     Element *giveElement(unsigned const num) const { return elems [ num ]; }
     Element *giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const;
     unsigned giveElemId(const Element *elem) const;
+    bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;
 
     vector< Element * > :: iterator begin() { return elems.begin(); }
     vector< Element * > :: iterator end() { return elems.end(); }

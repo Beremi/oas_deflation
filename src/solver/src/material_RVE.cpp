@@ -34,7 +34,8 @@ void RVEMaterialStatus :: init() {
     appendname << "_" << std :: setfill('0') << std :: setw(4) << element->giveID() << "_" << std :: setw(2) << idx;
     RVE->giveExporters()->appendToAllNames(appendname.str() );
 
-    ndim = RVE->giveDimension();
+    RVEMaterial * macromat = static_cast< RVEMaterial * >(mat);    
+    macromat -> setNumOfDimensions( RVE-> giveDimension() );
 }
 
 //////////////////////////////////////////////////////////
@@ -75,6 +76,8 @@ DiscreteTransportRVEMaterialStatus :: DiscreteTransportRVEMaterialStatus(RVEMate
 /////////////////////////////////./////////////////////////
 void DiscreteTransportRVEMaterialStatus :: applyEigenStrains() {
     //set eigenstrains and set nonlinearity
+    DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
     ElementContainer *elems = RVE->giveElements();
     Point normal;
     Vector eigstr(1);
@@ -101,6 +104,8 @@ void DiscreteTransportRVEMaterialStatus :: applyEigenStrains() {
 
 /////////////////////////////////./////////////////////////
 void DiscreteTransportRVEMaterialStatus :: collectStresses() {
+    DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
     ElementContainer *elems = RVE->giveElements();
     double volume = 0.;
     Vector factor;
@@ -127,6 +132,9 @@ void DiscreteTransportRVEMaterialStatus :: collectStresses() {
 Vector DiscreteTransportRVEMaterialStatus :: giveStressPrecomputed(const Vector &strain, double timeStep) {
     ( void ) timeStep;
 
+    DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >(mat);    
+
+    unsigned ndim = macromat->giveNumOfDimensions();
     temp_strain.resize(giveStrainSize(ndim) );
     for ( unsigned i = 0; i < temp_strain.size(); i++ ) {
         temp_strain [ i ] = strain [ i ];
@@ -135,6 +143,7 @@ Vector DiscreteTransportRVEMaterialStatus :: giveStressPrecomputed(const Vector 
     DiscreteTransportRVEMaterial *macromaterial = static_cast< DiscreteTransportRVEMaterial * >( mat );
     temp_nonlin = macromaterial->giveMasterStatus()->calculatePressureDependentPermeability(macro_pressure) / macromaterial->giveMasterMaterial()->givePermeability();
     temp_stress = matrix_vector_multiply(macromaterial->givePrecomputedConductivity(), temp_strain) * temp_nonlin;
+
     return temp_stress;
 }
 
@@ -145,7 +154,7 @@ Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain, do
     //precomputed material
     if (is_precomputed) return giveStressPrecomputed(strain, timeStep);
 
-
+    cout << "Solving transport RVE" << endl;
     temp_strain  =strain;
     temp_strain = addEigenStrain(temp_strain); //macroscopic eigenstrain
 
@@ -162,7 +171,6 @@ Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain, do
     temp_stress.resize(temp_strain.size() );
     temp_stress *= 0;
     collectStresses();
-
     return temp_stress;
 }
 
@@ -176,13 +184,24 @@ void DiscreteTransportRVEMaterialStatus :: setParameterValue(string code, double
 }
 /////////////////////////////////./////////////////////////
 Vector DiscreteTransportRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    //TODO: this is WRONG, needs fix in future
-    return giveStress(strain, timeStep);
+    (void) timeStep;
+    temp_strain = strain;
+    DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
+    temp_stress = giveStiffnessTensor("elastic", ndim)*strain;
+    return temp_stress;
 }
 
 /////////////////////////////////./////////////////////////
 unsigned DiscreteTransportRVEMaterialStatus :: giveStrainSize(unsigned dimension) const {
     return dimension;
+}
+
+
+/////////////////////////////////./////////////////////////
+unsigned DiscreteTransportRVEMaterialStatus :: giveStrainSize() const {
+    RVEMaterial *macromat = static_cast< RVEMaterial * >(mat);
+    return giveStrainSize( macromat->giveNumOfDimensions());
 }
 
 //////////////////////////////////////////////////////////
@@ -237,6 +256,10 @@ void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
 void DiscreteTransportRVEMaterialStatus :: generateVolumetricAverageBC() {
     //this function applies volumetric constraint
     //it is not really wise to use it as it leads to relatively full stiffness matrix after transfer to constraint space
+
+    DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
+
     NodeContainer *nodes = RVE->giveNodes();
     BCContainer *bconds = RVE->giveBC();
     ElementContainer *elems = RVE->giveElements();
@@ -354,6 +377,7 @@ Matrix DiscreteTransportRVEMaterialStatus :: giveDampingTensorPrecomputed() cons
 //////////////////////////////////////////////////////////
 void DiscreteTransportRVEMaterialStatus :: setFromPrecomputedToFullModel(){
 
+    if (!is_precomputed) return;
     is_precomputed = false;
     if (is_master_status) return; //this was the master status already initialized
 
@@ -379,12 +403,12 @@ void DiscreteTransportRVEMaterialStatus :: init() {
     if ( stiff.size() == 0 ) {
         DiscreteTransportRVEMaterialStatus::setFromPrecomputedToFullModel();
         is_master_status = true;
-
+        unsigned ndim = macromaterial->giveNumOfDimensions();
     
         /*
         //TODO: if this is needed, one should call it only once and distribute the result among all identical RVEs
         cout << "Precomputing primary fields for transport RVE" << endl;
-        ndim = RVE->giveDimension();
+        ndim = RVE-> giveNumOfDimensions();
         stiff = Matrix(ndim, ndim);
         Vector strainDoFs(ndim + 1);
         Vector stress;
@@ -400,11 +424,9 @@ void DiscreteTransportRVEMaterialStatus :: init() {
         Matrix c = DiscreteTransportRVEMaterialStatus :: giveDampingTensor();
 
         TrsprtMaterialStatus *status = static_cast< TrsprtMaterialStatus * >( RVE->giveElements()->giveElement(0)->giveMatStatus(0) );TrsprtMaterial *material = static_cast< TrsprtMaterial * >( RVE->giveElements()->giveElement(0)->giveMaterial() );
-        macromaterial->setPrecomputedConductivityAndCapacityAndMasterMaterial(giveStiffnessTensor("elastic", ndim), c[0][0], status,material, ndim);
+        macromaterial->setPrecomputedConductivityAndCapacityAndMasterMaterial(giveStiffnessTensor("elastic", ndim), c[0][0], status,material);
 
         is_precomputed = true; //set back to precomputed to use it
-    }else{
-        ndim = macromaterial->giveDimension();
     }
 }
 
@@ -419,12 +441,11 @@ MaterialStatus *DiscreteTransportRVEMaterial :: giveNewMaterialStatus(Element *e
 
 
 //////////////////////////////////////////////////////////
-void DiscreteTransportRVEMaterial :: setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS, TrsprtMaterial *masterM, unsigned dimension) {
+void DiscreteTransportRVEMaterial :: setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS, TrsprtMaterial *masterM) {
     conductivity = lam;
     capacity = c;
     masterStatus = masterS;
     masterMaterial = masterM;
-    ndim = dimension;
 
     const char *buffer = "precomputed_conductivity.out";
     ofstream outputfile( ( masterModel->giveResultDirectory() / buffer ).string() );
@@ -460,6 +481,7 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
     DiscreteMechanicalRVEMaterial *macromat = static_cast<DiscreteMechanicalRVEMaterial*>(mat);
     vector< vector< Vector > > * projectors = macromat->giveProjectors();
     ElementContainer *elems = RVE->giveElements();
+    unsigned ndim = macromat->giveNumOfDimensions();
     Vector eigstr(ndim);
     unsigned num = 0;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
@@ -480,6 +502,7 @@ void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
     DiscreteMechanicalRVEMaterial *macromat = static_cast<DiscreteMechanicalRVEMaterial*>(mat);
     vector< vector< Vector > > * projectors = macromat->giveProjectors();
     ElementContainer *elems = RVE->giveElements();
+    unsigned ndim = macromat->giveNumOfDimensions();
     double volume = 0.;
     Vector factor;
     unsigned num = 0;
@@ -508,7 +531,7 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     temp_stress = macromaterial->givePrecomputedElasticTensor() * temp_strain;
     if (checkOttosenCriterion()){
-        this->setFromPrecomputedToFullModel();
+        setFromPrecomputedToFullModel();
         giveStress(strain, timeStep);
     }
     return temp_stress;
@@ -520,6 +543,8 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
 
     //precomputed material
     if (is_precomputed) return giveStressPrecomputed(strain, timeStep);
+
+    cout << "Solving mechanical RVE" << endl;
 
     temp_strain = addEigenStrain(strain); //macroscopic eigenstrain
     //set eigenstrains
@@ -585,8 +610,12 @@ bool  DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion(){
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    //TODO: this is WRONG, needs fix in future
-    return giveStress(strain, timeStep);
+    (void) timeStep;
+    temp_strain = strain;
+    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
+    temp_stress = giveStiffnessTensor("elastic", ndim)*strain;
+    return temp_stress;
 }
 
 /////////////////////////////////./////////////////////////
@@ -594,6 +623,12 @@ unsigned DiscreteMechanicalRVEMaterialStatus :: giveStrainSize(unsigned rdim) co
     unsigned strain_size = rdim * rdim;
     strain_size += ( rdim == 3 ) ? rdim * rdim : rdim; //in 2D only vector
     return strain_size;
+}
+
+/////////////////////////////////./////////////////////////
+unsigned DiscreteMechanicalRVEMaterialStatus :: giveStrainSize() const {
+    RVEMaterial *macromat = static_cast< RVEMaterial * >(mat);
+    return giveStrainSize( macromat->giveNumOfDimensions());
 }
 
 //////////////////////////////////////////////////////////
@@ -637,7 +672,8 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveDampingTensor() const {
     DiscreteMechanicalRVEMaterial *macromat = static_cast<DiscreteMechanicalRVEMaterial*>(mat);
     if (is_precomputed) {
         return macromat->givePrecomputedDampingTensor();
-    } else {
+    } else {        
+        unsigned ndim = macromat->giveNumOfDimensions();
         unsigned dof_size = 3*(ndim-1);
         Matrix Keff(dof_size, dof_size);
         for(unsigned i=0; i<dof_size; i++) Keff[i][i] = 1e-20;
@@ -654,6 +690,7 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveInertiaTensor() const {
     if (is_precomputed) {
         return macromat->givePrecomputedInertiaTensor();
     } else {
+        unsigned ndim = macromat->giveNumOfDimensions();
         unsigned dof_size = 3*(ndim-1);
         Matrix Keff(dof_size, dof_size);
         return Keff;
@@ -686,6 +723,8 @@ Point DiscreteMechanicalRVEMaterialStatus :: calculateCentroid() {  //only for m
 vector< vector< Vector > > DiscreteMechanicalRVEMaterialStatus :: calculateProjectors(const Point centroid) {  //only for mechanics
     vector< vector< Vector > > projectors;
 
+    DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
     ElementContainer *elems = RVE->giveElements();
     projectors.resize(ndim);
     unsigned strain_size = giveStrainSize(ndim);
@@ -749,6 +788,7 @@ vector< vector< Vector > > DiscreteMechanicalRVEMaterialStatus :: calculateProje
 //////////////////////////////////////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: setFromPrecomputedToFullModel(){
 
+    if (!is_precomputed) return;
     is_precomputed = false;
     if (is_master_status) return; //this was the master status already initialized
     cout << "*** initialization of mechanical RVE ***" << endl;
@@ -763,18 +803,16 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
     if ( D.size() == 0 ) {            
         DiscreteMechanicalRVEMaterialStatus::setFromPrecomputedToFullModel();
         is_master_status = true;
-        ndim = RVE->giveDimension();
+        unsigned ndim = RVE-> giveDimension();
         Point centroid = calculateCentroid();
         vector< vector< Vector > > projectors = calculateProjectors(centroid);
-        macromaterial->setCentroidProjectorsAndDimensions(centroid, projectors, ndim);
+        macromaterial->setCentroidAndProjectors(centroid, projectors);
         
         macromaterial->setPrecomputedElasticTensor(giveStiffnessTensor("secant", ndim));
         macromaterial->setPrecomputedDampingTensor(giveDampingTensor());
         macromaterial->setPrecomputedInertiaTensor(giveInertiaTensor());
 
         is_precomputed = true; //set back to precomputed to use it
-    } else {
-        ndim = macromaterial->giveDimension();
     }
 }
 
@@ -788,10 +826,9 @@ MaterialStatus *DiscreteMechanicalRVEMaterial :: giveNewMaterialStatus(Element *
 }
 
 //////////////////////////////////////////////////////////
-void DiscreteMechanicalRVEMaterial :: setCentroidProjectorsAndDimensions(Point c, vector< vector< Vector > >p, unsigned d){
+void DiscreteMechanicalRVEMaterial :: setCentroidAndProjectors(Point c, vector< vector< Vector > >p){
     centroid = c;
     projectors = p;
-    ndim = d;
 }
 
 //////////////////////////////////////////////////////////
@@ -825,10 +862,11 @@ DiscreteCoupledRVEMaterialStatus ::  ~DiscreteCoupledRVEMaterialStatus() {
 //////////////////////////////////////////////////////////
 void DiscreteCoupledRVEMaterialStatus ::  setFromPrecomputedToFullModel(){
 
+    if (!is_precomputed) return;
     is_precomputed = false;
     mechRVEstat -> setFromPrecomputedToFullModel();
     trspRVEstat -> setFromPrecomputedToFullModel();
-    if (!is_master_status) findFriends();    
+    if (!is_master_status) findFriends();  
 }
 
 //////////////////////////////////////////////////////////
@@ -843,19 +881,18 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
         is_master_status = true;
         mechRVEstat->setToMasterStatus();
         trspRVEstat->setToMasterStatus();        
-        ndim =macromaterial->giveMechanicalRVEmat()->giveDimension();
+        unsigned ndim =trspRVEstat->giveWholeRVE() -> giveDimension();
 
         Matrix ela, dam, ine;
         ela = giveStiffnessTensor("secant", ndim);
         dam = giveDampingTensor();
         ine = giveInertiaTensor();
         macromaterial->setPrecomputedElasticDampingAndInertiaTensors(ela, dam, ine);
+        macromaterial->setNumOfDimensions(ndim);
 
         setToPrecomputed(); //set back to precomputed to use it        
-    } else {
-        ndim = macromaterial->giveMechanicalRVEmat()->giveDimension();
-    }    
-    setFromPrecomputedToFullModel(); //switch to nonlinear
+    }   
+    //setFromPrecomputedToFullModel(); //switch to nonlinear
 }
 
 //////////////////////////////////////////////////////////
@@ -884,6 +921,7 @@ void DiscreteCoupledRVEMaterialStatus :: setParameterValue(string code, double v
 Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
     DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
 
+    unsigned ndim = dcm->giveNumOfDimensions();
     unsigned sizeM = mechRVEstat->giveStrainSize();
     unsigned sizeT = trspRVEstat->giveStrainSize();
     temp_strain.resize(sizeM + sizeT);
@@ -907,6 +945,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
     }
 
     Vector stressM = mechRVEstat->giveStress(strainM, timeStep);
+    if( !mechRVEstat->isPrecomputed() && trspRVEstat->isPrecomputed() ) setFromPrecomputedToFullModel(); //when mechanical RVE changes to full version
+
     double mechBiot = -temp_pressure * dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
 
     Vector stressT = trspRVEstat->giveStress(strainT, timeStep);
@@ -924,7 +964,6 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
     for ( i = 0; i < sizeT; i++ ) {
         temp_stress [ i + sizeM ] = stressT [ i ];
     }
-
     return temp_stress;
 }
 
@@ -936,7 +975,12 @@ double DiscreteCoupledRVEMaterialStatus :: computeBiotEffect() const {
 
 //////////////////////////////////////////////////////////
 Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    return giveStress(strain, timeStep);
+    (void) timeStep;
+    temp_strain = strain;
+    DiscreteCoupledRVEMaterial *macromat = static_cast< DiscreteCoupledRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
+    temp_stress = giveStiffnessTensor("secant", ndim)*strain;
+    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -1018,7 +1062,7 @@ Matrix DiscreteCoupledRVEMaterialStatus :: giveInertiaTensor() const {
 }
 //////////////////////////////////////////////////////////
 void DiscreteCoupledRVEMaterialStatus :: findFriends() {
-    cout << "searching for mechanical friends of transport elements" << endl;
+    cout << "searching for mechanical friends of transport elements across RVEs" << endl;
 
     ElementContainer *elemsM = mechRVEstat->giveWholeRVE()->giveElements();
     ElementContainer *elemsT = trspRVEstat->giveWholeRVE()->giveElements();
@@ -1034,6 +1078,9 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
             RVEsize = mpb->giveDimensions();
         }
     }
+
+    DiscreteCoupledRVEMaterial *macromat = static_cast< DiscreteCoupledRVEMaterial * >(mat);    
+    unsigned ndim = macromat->giveNumOfDimensions();
 
     //attach mech elems to node numbers
     vector< vector< RigidBodyContact * > >attachedRBC(nodesM->giveSize() );
@@ -1069,7 +1116,7 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
             }
         }
     }
-
+ 
     //attach mech elems to transport elements
     Transp1DCoupled *trsp;
     vector< Node * >vertices;
@@ -1078,7 +1125,11 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
     unsigned pold;
     double weight = 0;
     for ( unsigned k = 0; k < elemsT->giveSize(); k++ ) {
-        trsp = static_cast< Transp1DCoupled * >( elemsT->giveElement(k) );
+        trsp = dynamic_cast< Transp1DCoupled * >( elemsT->giveElement(k) );
+        if (!trsp){
+            cerr << "Coupled transport elements are required" << endl;
+            exit(1);
+        }
         vertices = trsp->giveVertices();
         vnums.resize(vertices.size() );
         for ( unsigned p = 0; p < vertices.size(); p++ ) {
@@ -1105,7 +1156,6 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
                 vnums [ p ] = nodesT->giveNodeNumber(foundN);
             }
         }
-
         mechelemsold = attachedRBC [ vnums.back() ];
         pold = vnums.size() - 1;
         for ( unsigned p = 0; p < vnums.size(); p++ ) {
@@ -1116,7 +1166,7 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
                         weight = me->giveArea();
                     } else if ( ndim == 3 ) {
                         weight = ( trsp->giveIPLoc(0) - ( vertices [ p ]->givePoint() + vertices [ pold ]->givePoint() ) / 2. ).norm();
-                    }
+                    }    
                     trsp->addNewFriend(me, weight);
                     break;
                 }

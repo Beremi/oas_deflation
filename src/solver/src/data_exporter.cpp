@@ -491,26 +491,52 @@ void DisplacementGauge :: readFromLine(istringstream &iss) {
 void DisplacementGauge :: init() {
     time_each = 0;
     time_last = 0;
-    //find closest point
-    //TODO: better to use direct displacements at given points A and B
+    //find element or closest point
     double dist;
-    nodeA = nodes->findClosestMechanicalNode(pointA, & dist);
-    nodeB = nodes->findClosestMechanicalNode(pointB, & dist);
+    bool foundA = elems->findElementOwningPoint(&elemA, &natCoordsA, &pointA);
+    if (!foundA) {
+        elemA = nullptr;
+        nodeA = nodes->findClosestMechanicalNode(pointA, & dist);
+    }
+    bool foundB = elems->findElementOwningPoint(&elemB, &natCoordsB, &pointB);
+    if (!foundB) {
+        elemB = nullptr;
+        nodeB = nodes->findClosestMechanicalNode(pointB, & dist);
+    }
+
 }
 
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) reactions;
     char buffer [ 100 ];
-    double value = 0;
+    double valueA = 0;
+    double valueB = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        value = nodeB->giveDoFBasedValue(codes [ 0 ], DoFs) - nodeA->giveDoFBasedValue(codes [ 0 ], DoFs);
-        outputfile << "\t" << value * multiplier;
+        if (elemA){
+            Vector mv = elemA->giveMasterVariables(&natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs));
+            valueA = 0;
+            if ( codes[0].compare("ux") == 0 ) valueA = mv[0];   
+            else if ( dim > 1 && codes[0].compare("uy") == 0 ) valueA = mv[1];  
+            else if ( dim > 2 && codes[0].compare("uz") == 0 ) valueA = mv[2]; 
+        }else{
+            valueA = nodeA->giveDoFBasedValue(codes [ 0 ], DoFs);
+        }
+        if (elemB){
+            Vector mv = elemB->giveMasterVariables(&natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs));
+            valueB = 0;
+            if ( codes[0].compare("ux") == 0 ) valueB = mv[0];   
+            else if ( dim > 1 && codes[0].compare("uy") == 0 ) valueB = mv[1];  
+            else if ( dim > 2 && codes[0].compare("uz") == 0 ) valueB = mv[2]; 
+        }else{
+            valueB = nodeB->giveDoFBasedValue(codes [ 0 ], DoFs);
+        }    
+        outputfile << "\t" << (valueB-valueA) * multiplier;
     }
     outputfile.close();
 }

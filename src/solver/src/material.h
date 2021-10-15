@@ -22,6 +22,7 @@ public:
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
     virtual ~MaterialStatus() {};
     string whoAmI() { return name; }
+    string giveName() { return name; }
     Material *giveMaterial() { return mat; };
     virtual void init() {};
     virtual void update();
