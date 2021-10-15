@@ -4902,7 +4902,9 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             oldLen = len(node_coords)
             nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
+            # NOTE JK here is the lmin on notch
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=True, equidist=True)
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
             """
             nodeA = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/8, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/8, maxLim[2]-indent])
@@ -4910,45 +4912,65 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             """
             nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/2, indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # NOTE JK here is the lmin on notch
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
             nodeA = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # NOTE JK here is the lmin on notch
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
 
             nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
-            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/3, dim, node_coords, trials,minDistAmongNewPoints=True)
-
-
-            for i in range (oldLen, len(node_coords), 1):
-                notchSide0.append(i)
-
+            # NOTE JK here is the lmin on notch
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials,minDistAmongNewPoints=True)
+            # pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/3, dim, node_coords, trials,minDistAmongNewPoints=True)
 
             notchSide1 = []
-            oldLen = len(node_coords)
-            nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
-            nodeB = np.array([maxLim[0]/2+notchWidth, indent, maxLim[2]-indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
-            """
-            nodeA = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/8, indent])
-            nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/8, maxLim[2]-indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
-            """
-            nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
-            nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/2, indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
-            nodeA = np.array([maxLim[0]/2+notchWidth, indent, maxLim[2]-indent])
-            nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
-
-            nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
-            nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
-            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/3, dim, node_coords, 50000, minDistAmongNewPoints= True)
-
-
-
             for i in range (oldLen, len(node_coords), 1):
-                notchSide1.append(i)
+                notchSide0.append(i)
+                node_coords.append(np.array([maxLim[0]/2+notchWidth,
+                                             node_coords[i][1],
+                                             node_coords[i][2]]))
+                notchSide1.append(len(node_coords)-1)
+
+
+
+
+
+            # oldLen = len(node_coords)
+            # nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
+            # nodeB = np.array([maxLim[0]/2+notchWidth, indent, maxLim[2]-indent])
+            # # NOTE JK here is the lmin on notch
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=True, equidist=True)
+            # # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
+            # """
+            # nodeA = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/8, indent])
+            # nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/8, maxLim[2]-indent])
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
+            # """
+            # nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
+            # nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/2, indent])
+            # # NOTE JK here is the lmin on notch
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # nodeA = np.array([maxLim[0]/2+notchWidth, indent, maxLim[2]-indent])
+            # nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
+            # # NOTE JK here is the lmin on notch
+            # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, trials, catchCorners=False, equidist=True)
+            # # pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=False, equidist=True)
+            #
+            # nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
+            # nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist/2, maxLim[2]-indent])
+            # # NOTE JK here is the lmin on notch
+            # pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.45, dim, node_coords, 50000, minDistAmongNewPoints= True)
+            # # pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/3, dim, node_coords, 50000, minDistAmongNewPoints= True)
+            #
+            #
+            #
+            # for i in range (oldLen, len(node_coords), 1):
+            #     notchSide1.append(i)
 
             notchL = []
             notchL.append(notchSide0)
@@ -6208,7 +6230,7 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
 
     radii = np.asarray(radii)
     node_coords = np.asarray(node_coords)
-    
+
     ###############generating of points supported surface left face ###############
     if powerTes==False:
         pointGenerators.generateNodesOrtoCircleBorder3dRand(center, radius-1e-5, directionDim, minDist, node_coords, trials)
