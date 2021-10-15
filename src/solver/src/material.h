@@ -22,6 +22,7 @@ public:
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
     virtual ~MaterialStatus() {};
     string whoAmI() { return name; }
+    string giveName() { return name; }
     Material *giveMaterial() { return mat; };
     virtual void init() {};
     virtual void update();
@@ -98,7 +99,7 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual double giveValue(string code) const;
     virtual double giveEffectiveConductivity(string type) const;
-    virtual void updateEffectiveConductivity();
+    virtual double updateEffectiveConductivity() const;
     virtual double calculatePressureDependentPermeability(double pressure) const;
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(string code, double value);
@@ -169,6 +170,7 @@ public:
     virtual Vector giveInternalSource() const;
     virtual double giveValue(string code) const;
     virtual void setParameterValue(string code, double value);
+    virtual double updateEffectiveConductivity() const;
 };
 
 //////////////////////////////////////////////////////////

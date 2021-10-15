@@ -22,7 +22,6 @@ class RVEMaterialStatus : public MaterialStatus
 {
 protected:
     Model *RVE;
-    unsigned ndim;
     fs :: path inputfile;
     
     //setup for volumetric average
@@ -36,7 +35,6 @@ public:
     virtual void init();
     virtual void update();
     Model *giveWholeRVE() { return RVE; };
-    unsigned giveNumOfDimensions() const { return ndim; };
 };
 
 //////////////////////////////////////////////////////////
@@ -44,7 +42,7 @@ class RVEMaterial : public Material
 {
 protected:
     fs :: path inputfile;
-
+    unsigned ndim;
 
 public:
     RVEMaterial() { name = "generic RVE material";};
@@ -52,6 +50,8 @@ public:
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     fs :: path givePathToInputFile() const { return inputfile; };
+    unsigned giveNumOfDimensions() const { return ndim; };
+    void setNumOfDimensions(unsigned dim){ndim=dim;};
 };
 
 
@@ -86,12 +86,13 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual Matrix giveDampingTensor() const;
-    virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); }; 
+    virtual unsigned giveStrainSize() const; 
     virtual void update();   
     void setFromPrecomputedToFullModel();
     virtual void setParameterValue(string code, double value);
-    virtual void setToPrecomputed(){ is_precomputed = true; };
+    void setToPrecomputed(){ is_precomputed = true; };
     bool isPrecomputed() const {return is_precomputed;};
+    void setToMasterStatus(){ is_master_status = true; };
 };
 
 //////////////////////////////////////////////////////////
@@ -102,7 +103,6 @@ protected:
     TrsprtMaterial *masterMaterial;
     Matrix conductivity; // precomputed form one integration point, then used everywhere
     double capacity;
-    unsigned ndim;
 
 public:
     DiscreteTransportRVEMaterial() { name = "transport RVE material";  conductivity = Matrix(0, 0); };
@@ -112,8 +112,7 @@ public:
     double givePrecomputedCapacity() const { return capacity; };
     TrsprtMaterialStatus *giveMasterStatus() { return masterStatus; };
     TrsprtMaterial *giveMasterMaterial() { return masterMaterial; };
-    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM, unsigned dimension); 
-    unsigned giveDimension(){return ndim;}; 
+    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM); 
 };
 
 //////////////////////////////////////////////////////////
@@ -129,10 +128,6 @@ protected:
     virtual unsigned giveStrainSize(unsigned rdim) const;    
     bool checkOttosenCriterion();
 
-
-    bool is_master_status;
-    bool is_precomputed;
-
     Point calculateCentroid();
     vector< vector< Vector > > calculateProjectors(const Point centroid);
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
@@ -146,10 +141,9 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveInertiaTensor() const;
-    virtual unsigned giveStrainSize() const { return giveStrainSize(ndim); };
+    virtual unsigned giveStrainSize() const;
     void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed(){ is_precomputed = true; };
-    bool isPrecomputed() const {return is_precomputed;};
 };
 
 //////////////////////////////////////////////////////////
@@ -159,7 +153,6 @@ protected:
     Matrix precompElastic, precompDamping, precompInertia; 
     Point centroid;
     vector< vector< Vector > >projectors;   
-    unsigned ndim;
 
 public:
     DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; precompElastic=Matrix(0,0);};
@@ -168,13 +161,12 @@ public:
     void setPrecomputedElasticTensor(Matrix ela){precompElastic = ela;};
     void setPrecomputedDampingTensor(Matrix dam){precompDamping = dam;};
     void setPrecomputedInertiaTensor(Matrix ine){precompInertia = ine;};
-    void setCentroidProjectorsAndDimensions(Point c, vector< vector< Vector > >p, unsigned d);
+    void setCentroidAndProjectors(Point c, vector< vector< Vector > >p);
     Matrix givePrecomputedElasticTensor() const { return precompElastic; };
     Matrix givePrecomputedDampingTensor() const { return precompDamping; };
     Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
     Point giveCentroid(){return centroid;};
     vector< vector< Vector > > * giveProjectors(){return &projectors;};
-    unsigned giveDimension(){return ndim;}; 
 };
  	
 //////////////////////////////////////////////////////////

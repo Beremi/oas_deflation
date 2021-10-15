@@ -476,7 +476,7 @@ class Model:
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='box', maxLim=self.maxLim)
         (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates,
-        self.trsprtBC_merged, self.govNodesTrspt, self.rigidPlatesTrspt, self.govNodesTrsptBC)    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, 0 , self.activeTransport, powerTes=self.powerTes)
+        self.trsprtBC_merged, self.govNodesTrspt, self.rigidPlatesTrspt, self.govNodesTrsptBC, self.radii)    = utilitiesModeling.create3dcylinderTorsionPressFree(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, 0 , self.activeTransport, powerTes=self.powerTes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
         self.materialZones =  None
         if self.elasticZone >0:
@@ -546,7 +546,7 @@ class Model:
 
 
     def run_3d_coupledBrazilianDisc(self):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, powerTes = self.powerTes)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii)  = utilitiesModeling.createCoupledBrazilianDisc(np.zeros(3), self.cylinderRad, self.cylinderHeight,  self.minDist, self.trials, powerTes = self.powerTes)
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 

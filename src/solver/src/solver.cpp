@@ -675,6 +675,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 converged = true;
             }
             it++;
+            //if (it>10) exit(1);
         }
         if ( !converged && dt > dtmin ) {
             time -= dt;
