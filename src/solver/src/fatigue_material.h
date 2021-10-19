@@ -18,8 +18,9 @@ private:
     double damageShear; ///< damage in tangential direction
     double zIso;  ///< isotropic hardening variable
     double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
+    Point slip_free;
 
-    Point temp_sPi, temp_slip, temp_alphaKin;
+    Point temp_sPi, temp_slip, temp_slip_free, temp_alphaKin;
     Point stressT, temp_stressT;
     double temp_damageShear, temp_zIso; ///<temporary variables
 
