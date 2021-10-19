@@ -1,7 +1,7 @@
 #include "preprocessing_block.h"
 #include "geometry.h"
 #include "model.h"
-#include "misc.h"
+// #include "misc.h"  // TODO JK: this include causes linking error
 
 
 std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {
@@ -18,6 +18,19 @@ bool containsChar(const std :: string &str, char c)
 {
     // std::cout << "str = " << str << ", char = " << c << '\n';
     return str.find(c) != std :: string :: npos;
+}
+
+/*
+ * Case Sensitive Implementation of endsWith()
+ * It checks if the string 'mainStr' ends with given string 'toMatch'
+ */
+bool endsWith(const std::string &mainStr, const std::string &toMatch)
+{
+    if(mainStr.size() >= toMatch.size() &&
+            mainStr.compare(mainStr.size() - toMatch.size(), toMatch.size(), toMatch) == 0)
+            return true;
+        else
+            return false;
 }
 
 

@@ -16,18 +16,7 @@ bool isStringInVect(const std :: string &val, const std :: vector< std :: string
     return std :: find(vect.begin(), vect.end(), val) != vect.end();
 }
 
-/*
- * Case Sensitive Implementation of endsWith()
- * It checks if the string 'mainStr' ends with given string 'toMatch'
- */
-bool endsWith(const std::string &mainStr, const std::string &toMatch)
-{
-    if(mainStr.size() >= toMatch.size() &&
-            mainStr.compare(mainStr.size() - toMatch.size(), toMatch.size(), toMatch) == 0)
-            return true;
-        else
-            return false;
-}
+
 
 
 
