@@ -15,11 +15,11 @@ import sys
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.cdivision(True)
 def generateNodesRect_cython(double[:] maxLim,
-                      float minDist,
+                      double minDist,
                       int dim,
                       int trials,
                       list node_coords,
-                      bool useLowBound=False, float topMinDist = -1, float bottomMinDist=-1, int gradienDirection = -1,                        int minDistCenter=-1):
+                      bool useLowBound=False, double topMinDist = -1, double bottomMinDist=-1, int gradienDirection = -1,                        int minDistCenter=-1):
     print('Generating {:d}d block segment of size: {}'.format(dim, ' / '.join('{:f}'.format(i) for i in maxLim)))
     cdef:
         int generatedPoints = 0
@@ -292,8 +292,154 @@ def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double
         return node_coords, radii
 
 
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True)
+def generateParticlesOrtoCilinder3dRand_cython(double[:] center,
+                                        double radiusCyl,
+                                        double height,
+                                        int directionDim,
+                                        double minDiam,
+                                        double maxDiam,
+                                        double volumeRatio,
+                                        int trials,
+                                        np.ndarray[np.float64_t, ndim=2] node_coords,
+                                        np.ndarray[np.float64_t, ndim=1] radii):
+                                        #np.ndarray[np.float64_t, ndim=2] node_coords, np.ndarray[np.float64_t, ndim=1] radii
+    print ('POWER Generating a 3d cylinder segment... (cython)')
+    cdef:
+        double gap = 0.1
+        double PI = np.pi
+        double Volume = PI * radiusCyl**2 * height
+        vector[double] diam, freq, point
+        vector[double] node_coords_temp, delta, dist2, radii_temp
+        double saturation = 0
+        int iters = 0
+        int d = 0
+        int di = 0
+        bool approved
+        double radius, dist, dist_tmp, rnd, angle
+        double min_dist2 = 1.0e30
+        int node_coords_input_len = node_coords.shape[0]
+        int generatedPoints = 0, p = 0, i = 0
+        int dim = 3
+        double rn
 
+    if node_coords_input_len > 0:
+        for i in range(node_coords_input_len):
+            for d in range(dim):
+                node_coords_temp.push_back(node_coords[i, d])
 
+    if node_coords_input_len > 0:
+        for i in range(node_coords_input_len):
+            radii_temp.push_back(radii[i])
+
+    cdef int diam_len = 30
+    for i in range(diam_len):
+        dist_tmp = (minDiam * 0.5 - maxDiam)/(diam_len-1.)
+        diam.push_back(maxDiam + dist_tmp*i )
+    #diam = np.linspace(maxDiam, minDiam * 0.5, 30)
+
+    for i in range(diam_len):
+        freq.push_back(diam[i] / maxDiam)
+    if dim == 2:
+        for i in range(diam_len):
+            freq[i] = (1.065 * sqrt(freq[i]) - 0.053*pow(freq[i], 4) -
+                    0.012 * pow(freq[i], 6) - 0.0045*pow(freq[i], 8) -
+                    0.0025 * pow(freq[i], 10))
+    elif dim == 3:
+        for i in range(diam_len):
+            freq[i] = sqrt(freq[i])
+
+    for d in range(dim):
+        point.push_back(0.0)
+
+    radius = maxDiam / 2.
+    while ((2 * radius > minDiam) and (iters < trials)):
+        angle = random.random() * PI * 2
+        rn = random.random() * radiusCyl
+        for d in range(dim):
+            point[d] = 0
+            # point[d] += center[d]
+        if (directionDim == 0 ):
+            point[0] = height * random.random()
+            point[1] = cos(angle) * rn
+            point[2] = sin(angle) * rn
+        if (directionDim == 1):
+            point[0] = cos(angle) * rn
+            point[1] = height * random.random()
+            point[2] = sin(angle) * rn
+        if (directionDim == 2):
+            point[0] = cos(angle) * rn
+            point[1] = sin(angle) * rn
+            point[2] = height * random.random()
+        #for d in range(dim):
+        #    point[d] = 0
+            # point[d] += center[d]
+        #    if d == directionDim:
+        #        point[d] = random.random() * height
+        #    else:
+        #        if directionDim > 0:
+        #            point[0] = rn * cos(angle)
+
+        approved = False
+        if ( (node_coords_input_len + generatedPoints)==0):
+            approved = True
+        else:
+            dist2.clear()
+            delta.clear()
+            for i in range(node_coords_input_len + generatedPoints):
+                for d in range(dim):
+                    delta.push_back(abs(node_coords_temp[i*dim+d] - point[d]))
+            for i in range(node_coords_input_len + generatedPoints):
+                dist = 0
+                for d in range(dim):
+                    dist += delta[i*dim+d] * delta[i*dim+d]
+                dist2.push_back(dist)
+            #printf('XXX %d - %d\n', node_coords_input_len + generatedPoints, len(delta))
+            #sys.stdout.flush()
+            min_dist2 = 1e30 # reset min
+            for i in range(node_coords_input_len + generatedPoints):
+                dist_tmp = ((1 + gap) * (radii_temp[i] + radius))
+                dist_tmp = dist2[i] - dist_tmp * dist_tmp
+                if min_dist2 > dist_tmp:
+                    min_dist2 = dist_tmp
+            if min_dist2>0:
+                approved = True
+        if ( approved) :
+            for d in range(dim):
+                node_coords_temp.push_back(point[d])
+            radii_temp.push_back(radius)
+            iters = 0
+            if (dim==2):  saturation += PI * radius*radius / Volume
+            elif (dim==3): saturation += PI/6 * (radius*2.)* (radius*2.)* (radius*2.) / Volume
+
+            while ((1. - saturation / volumeRatio ) < freq[di]):
+                di+=1
+            radius = (diam[di] + (diam[di - 1] - diam[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+            generatedPoints += 1
+            sys.stdout.write('\r'+'Particles:' +  str(node_coords_input_len + generatedPoints))
+            sys.stdout.flush()
+        else: iters += 1
+
+    print("Saturation of the volume: ", saturation)
+
+    # Copy back to lists
+    cdef np.ndarray node_coords_res = np.zeros([generatedPoints, dim], dtype=np.float64)
+    cdef np.ndarray radii_res = np.zeros([generatedPoints], dtype=np.float64)
+    node_coords = np.vstack((node_coords, node_coords_res))
+    radii = np.hstack((radii, radii_res))
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
+        if (dim==2):
+            node_coords[p, 0] = node_coords_temp[p*dim]
+            node_coords[p, 1] = node_coords_temp[p*dim+1]
+        if (dim==3):
+            node_coords[p, 0] = node_coords_temp[p*dim]
+            node_coords[p, 1] = node_coords_temp[p*dim+1]
+            node_coords[p, 2] = node_coords_temp[p*dim+2]
+        radii[p] = radii_temp[p]
+
+    return node_coords, radii
 
 
 
@@ -305,7 +451,7 @@ def generateNodesOrtoCilinder3dRand_cython(
                       double radius,
                       double height,
                       int directionDim,
-                      float minDist,
+                      double minDist,
                       list node_coords,
                       int trials
                       ):
@@ -393,7 +539,7 @@ def generateNodesOrtoTube3dRand_cython(
                       double height,
                       double thickness,
                       int directionDim,
-                      float minDist,
+                      double minDist,
                       list node_coords,
                       int trials
                       ):
@@ -478,7 +624,7 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
                       double radius,
                       double height,
                       int directionDim,
-                      float minDist,
+                      double minDist,
                       list node_coords,
                       int trials,
                        angleLimitA=None, angleLimitB=None, mirrorIndent=None
@@ -559,7 +705,7 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.cdivision(True)
 def checkMutDistancesLoops_cython(int dim,
-                                  float minDist,
+                                  double minDist,
                                   list currentNodes,
                                   list newNode):
     cdef:
@@ -597,7 +743,7 @@ def checkMutDistancesLoops_cython(int dim,
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.cdivision(True)
 def generateNodesRectPeriodic_cython(double[:] maxLim,
-                      float minDist,
+                      double minDist,
                       int dim,
                       int trials,
                       list node_coords):
@@ -674,7 +820,7 @@ def generateNodesRectPeriodic_cython(double[:] maxLim,
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.cdivision(True)
-def checkMutDistancesLoopsPeriodic_cython(int dim, float minDist, list currentNodes, list newNode, double[:] maxLim):
+def checkMutDistancesLoopsPeriodic_cython(int dim, double minDist, list currentNodes, list newNode, double[:] maxLim):
     cdef:
         bool distIsGood = True
         int p, d

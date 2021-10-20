@@ -1098,6 +1098,13 @@ def generateParticlesOrtoCilinder3dRand(center, radiusCyl, height, directionDim,
 
     return node_coords, radii
 
+try:
+    from point_generators_cython import generateParticlesOrtoCilinder3dRand_cython as generateParticlesOrtoCilinder3dRand
+    print('Using Cython version of point generator - generateParticlesOrtoCilinder3dRand.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
     """
     print ('Generating a 3d cylinder segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
