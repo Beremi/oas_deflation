@@ -6260,6 +6260,7 @@ def assemble3dcylinderTorsionPressFree(center, radius, height, minDist, trials, 
         radii = []
     else:
         radii = np.zeros(len(node_coords))
+        node_coords = np.array(node_coords)
         node_coords, radii=pointGenerators.generateParticlesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
 
 
@@ -6999,6 +7000,7 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         radii = np.zeros(len(node_coords))
     else:
         radii = np.zeros(len(node_coords))
+        node_coords = np.array(node_coords)
         node_coords, radii=pointGenerators.generateParticlesOrtoCilinder3dRand(center, radius-1e-5, height, directionDim, minDist*0.4, minDist, 0.8,  trials, node_coords, radii)
     #######################################################################
     print (len(node_coords))
