@@ -1953,7 +1953,10 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     functions.append (fn2)
 
     transportBC_merged = []
-    transportIC_merged = []
+    govNodesTrspt = []
+    govNodesTrsptBC = []
+    rigidPlatesTrspt = []
+
     if coupled == True:
 
         ### selecting vertices on the bottom surface
@@ -1962,9 +1965,28 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
         boundB = np.array(  [ maxLim[0]+1e-4 , 1e-5, maxLim[2]+1e-5]  )
         botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
-        for i in range (len(botFace)):
-            trsBC = utilitiesMech.transportBC(botFace[i], botFaceBC)
-            transportBC_merged.append(trsBC)
+        ### selecting vertices inside notch
+        notchFaceBC = np.array([2,-1])
+        boundA = np.array(  [ maxLim[0]/2-notchWidth/3 , -1e-5, -1e-5] )
+        boundB = np.array(  [ maxLim[0]/2+notchWidth/3 , maxLim[1]*notch+minDist*0.9, maxLim[2]+1e-5]  )
+        notchFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+
+        for i in range (len(notchFace)):
+            if not notchFace[i] in botFace:
+                botFace = np.hstack((botFace, notchFace[i]))
+            #else:
+                #print('Point is already a part of the bottom surface.')
+
+        trsptBottomRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+        trsptBottomRigidPlate.setDirectNodes(botFace)
+        trsptBottomRigidPlateMechBC = botFaceBC
+        rigidPlatesTrspt.append(trsptBottomRigidPlate)
+        govNodesTrspt.append(np.array([ 0, 0,0]))
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptBottomRigidPlateMechBC))
+
+        #for i in range (len(botFace)):
+        #    trsBC = utilitiesMech.transportBC(botFace[i], botFaceBC)
+        #    transportBC_merged.append(trsBC)
 
         ### selecting vertices on the top surface
         topFaceBC = np.array([0,-1])
@@ -1972,12 +1994,23 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
         boundB = np.array(  [ maxLim[0]+1e-4 , maxLim[1]+1e-5, maxLim[2]+1e-5]  )
         topFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
-        for i in range (len(topFace)):
-            trsBC = utilitiesMech.transportBC(topFace[i], topFaceBC)
-            transportBC_merged.append(trsBC)
+        trsptTopRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
+        trsptTopRigidPlate.setDirectNodes(topFace)
+        trsptTopRigidPlateMechBC = topFaceBC
+        rigidPlatesTrspt.append(trsptTopRigidPlate)
+        govNodesTrspt.append(np.array([ -1, 1,0]))
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptTopRigidPlateMechBC))
 
-    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
+        #for i in range (len(topFace)):
+        #    trsBC = utilitiesMech.transportBC(topFace[i], topFaceBC)
+        #    transportBC_merged.append(trsBC)
 
+
+
+    #return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
+    #return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+    #return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, transportBC_merged
+    return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, [],notches
 
 def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None ):
     print('Creating 3d cube. Power tesselation: %s' %powerTes)
@@ -4853,9 +4886,6 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
     #width of the supports
     supportWidth = maxLim[0] / 21
-
-    print('Input maxlim %s' %maxLim)
-
 
 
     #lists for the model

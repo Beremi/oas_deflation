@@ -21,7 +21,7 @@
 ###########
 ########### A: 0.5/0.2/0.1, B: 1.0/0.4/0.1  ///  0.525   1.050
 ###########Model 2d_notched3pb Xsize 0.525 Ysize 0.2 notchH 0.16667 loadWidth 0.005 minDist 0.008 fracZoneWidth 0.05 activeMechanics 1 orthogonalFracZone 0 trials 100000 notchWidth 0.008 elasticZone 1 
-Model 3d_notched3pb Xsize 0.50 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 10000 notchWidth 0.008 elasticZone 1 nr_models 10
+###########Model 3d_notched3pb Xsize 0.50 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 10000 notchWidth 0.008 elasticZone 1 nr_models 10
 ###########Model 3d_notched3pb Xsize 1 Ysize 0.4 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.05 activeMechanics 1 orthogonalFracZone 0 trials 10000 notchWidth 0.008 elasticZone 1 
 ###########
 ###########
@@ -91,7 +91,7 @@ Model 3d_notched3pb Xsize 0.50 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01
 ###########
 ###########
 ###########Model 3d_notched3pb Xsize 0.8 Ysize 0.1 Zsize 0.05 notchH 0 loadWidth 0.05 minDist 0.02 fracZoneWidth 0.5 activeMechanics 1 activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth -1
-###########Model 3d_notched3pb Xsize 1.0 Ysize 0.4 Zsize 0.1 notchH 0.0 loadWidth 0.01 minDist 0.02 fracZoneWidth 0.5 activeMechanics 1  activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.0
+Model 3d_notched3pb Xsize 0.5 Ysize 0.2 Zsize 0.1 notchH 0.5 loadWidth 0.01 minDist 0.01 fracZoneWidth 0.5 activeMechanics 1  activeTransport 1 coupled 1 orthogonalFracZone 0 trials 2000 notchWidth 0.01
 ###########
 ###########Model 2d_notched3pb Xsize 1.0 Ysize 0.4 notchH 0.0 loadWidth 0.005 minDist 0.01 fracZoneWidth 1.0 activeMechanics 1  activeTransport 1 coupled 1 orthogonalFracZone 0 trials 10000 notchWidth 0.0
 ###########SpecifiedNode 0.3 1e-6

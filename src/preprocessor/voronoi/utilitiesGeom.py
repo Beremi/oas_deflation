@@ -1397,7 +1397,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
     nodes_out = np.array(nodes_out)
     #writing nodes
-    #print(len(nodes_out))
+    print(len(nodes_out))
     num = dim
 
     if (dim == 2):
