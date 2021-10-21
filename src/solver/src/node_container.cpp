@@ -373,9 +373,9 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
         while ( getline(inputfile >> std :: ws, line) ) {
             istringstream iss(line);
             iss >> numi;
+            startDoF = nodes [ numi ]->giveStartingDoF();
             for ( unsigned v = 0; v < nodes [ numi ]->giveNumberOfDoFs(); v++ ) {
                 iss >> numd;
-                startDoF = nodes [ numi ]->giveStartingDoF();
                 initvalues [ startDoF + v ] = numd;
             }
         }

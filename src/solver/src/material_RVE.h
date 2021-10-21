@@ -189,6 +189,7 @@ protected:
     double temp_pressure, pressure, pressureRate;
 
     void findFriends();
+    void updateRateVariables(double timeStep);
 public:
     DiscreteCoupledRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfileM, fs :: path masterfileT);
     virtual ~DiscreteCoupledRVEMaterialStatus();

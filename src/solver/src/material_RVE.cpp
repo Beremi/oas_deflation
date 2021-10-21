@@ -541,6 +541,9 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
 
+    //cout << "strain " << endl;
+    //for (auto s: strain) cout << s << endl;
+
     //precomputed material
     if (is_precomputed) return giveStressPrecomputed(strain, timeStep);
 
@@ -844,6 +847,7 @@ DiscreteCoupledRVEMaterialStatus ::  DiscreteCoupledRVEMaterialStatus(RVEMateria
 
         temp_volumetricStrain = volumetricStrain = 0;
         temp_pressure = pressure = 0;
+        volStrainRate = pressureRate = 0;
 
         is_precomputed = true;
         is_master_status = false;
@@ -918,6 +922,17 @@ void DiscreteCoupledRVEMaterialStatus :: setParameterValue(string code, double v
 }
 
 //////////////////////////////////////////////////////////
+void DiscreteCoupledRVEMaterialStatus ::  updateRateVariables(double timeStep) {
+    if ( timeStep > 0 ) {
+        volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / (timeStep);
+        pressureRate =  ( temp_pressure - pressure ) / (timeStep);
+    } else {
+        volStrainRate = 0;
+        pressureRate = 0;
+    }
+}
+
+//////////////////////////////////////////////////////////
 Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
     DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
 
@@ -936,13 +951,7 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
     }
     strainT [ sizeT ] = strain [ sizeT + sizeM ]; //macroscopic pressure
 
-    if ( timeStep > 0 ) {
-        volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / (timeStep);
-        pressureRate =  ( temp_pressure - pressure ) / (timeStep);
-    } else {
-        volStrainRate = 0;
-        pressureRate = 0;
-    }
+    updateRateVariables(timeStep);
 
     Vector stressM = mechRVEstat->giveStress(strainM, timeStep);
     if( !mechRVEstat->isPrecomputed() && trspRVEstat->isPrecomputed() ) setFromPrecomputedToFullModel(); //when mechanical RVE changes to full version
@@ -977,9 +986,16 @@ double DiscreteCoupledRVEMaterialStatus :: computeBiotEffect() const {
 Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     (void) timeStep;
     temp_strain = strain;
-    DiscreteCoupledRVEMaterial *macromat = static_cast< DiscreteCoupledRVEMaterial * >(mat);    
-    unsigned ndim = macromat->giveNumOfDimensions();
+    DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
+    unsigned ndim = dcm->giveNumOfDimensions();
     temp_stress = giveStiffnessTensor("secant", ndim)*strain;
+
+    //updateRateVariables(timeStep);
+    double mechBiot = -temp_pressure * dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        temp_stress [ i ] += mechBiot;
+    }
+
     return temp_stress;
 }
 
