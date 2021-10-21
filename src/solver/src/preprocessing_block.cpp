@@ -974,6 +974,279 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// Voigt's constraint
+//////////////////////////////////////////////////////////
+VoigtConstraint::VoigtConstraint() {
+    volume = 1;
+}
+
+//////////////////////////////////////////////////////////
+VoigtConstraint::~VoigtConstraint() {
+}
+
+//////////////////////////////////////////////////////////
+void VoigtConstraint::apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
+    (void) elems;
+
+    MechDoF *master;
+    unsigned masterNodeNum = nodes->giveSize();
+    master = new MechDoF(3 * ( dim - 1 ) );
+    nodes->addNode(master);
+
+    //export data
+    string export_name = "strain_stress";
+    vector< unsigned >nn(1, masterNodeNum);
+    vector< string >gname(3 * dim - 3);
+    vector< string >codes(3 * dim - 3);
+    ForceGauge *fg;
+    gname [ 0 ] = "sigma_x";
+    gname [ 1 ] = "sigma_y";
+    gname [ 2 ] = "tau_xy";
+    codes [ 0 ] = "0";
+    codes [ 1 ] = "1";
+    codes [ 2 ] = "2";
+    if ( dim == 3 ) {
+        gname [ 2 ] = "sigma_z";
+        gname [ 3 ] = "tau_yz";
+        gname [ 4 ] = "tau_xz";
+        gname [ 5 ] = "tau_xy";
+        codes [ 2 ] = "2";
+        codes [ 3 ] = "3";
+        codes [ 4 ] = "4";
+        codes [ 5 ] = "5";
+    }
+    for ( unsigned i = 0; i < gname.size(); i++ ) {
+        fg = new ForceGauge(export_name, gname [ i ], codes [ i ], nn, nodes, 1. / volume, dim);
+        ex->addExporter(fg);
+    }
+
+    DoFGauge *dg;
+    gname [ 0 ] = "eps_x";
+    gname [ 1 ] = "eps_y";
+    gname [ 2 ] = "gamma_xy";
+    codes [ 0 ] = "ux";
+    codes [ 1 ] = "uy";
+    codes [ 2 ] = "rz";
+    if ( dim == 3 ) {
+        gname [ 2 ] = "eps_z";
+        gname [ 3 ] = "gamma_yz";
+        gname [ 4 ] = "gamma_xz";
+        gname [ 5 ] = "gamma_xy";
+        codes [ 2 ] = "uz";
+        codes [ 3 ] = "rx";
+        codes [ 4 ] = "ry";
+        codes [ 5 ] = "rz";
+    }
+    for ( unsigned i = 0; i < gname.size(); i++ ) {
+        dg = new DoFGauge(export_name, gname [ i ], codes [ i ], nn, nodes, 1., dim);
+        ex->addExporter(dg);
+    }
+
+    //create new zero function for rotations
+    unsigned funcnum = funcs->giveSize();
+    vector< double >x, y;
+    x.resize(1, 0);
+    y.resize(1, 0);
+    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+    funcs->addFunction(newf);
+
+    //set prescribed strain and stress
+    vector< double >bcmults;
+    BoundaryCondition *bc;
+    vector< int >dBC, nBC;   
+
+    unsigned rotbcnum = (3 * ( dim - 1 ) );
+    dBC.resize(rotbcnum, -1);
+    nBC.resize(rotbcnum, -1);
+    bcmults.resize(rotbcnum, 1);
+    for ( unsigned i = dim; i < rotbcnum; i++ ) {
+        dBC [ i ] = funcnum;
+    }
+
+    //apply contraints    
+    JointDoF *jd;
+    vector< Node * >vm;
+    vector< unsigned >dirs;
+    vector< double >mults;
+    Node *s = nullptr;
+    Point diff;
+    for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+        s = nodes->giveNode(n);
+        if ( s->doesMechanics() && ( dynamic_cast< MechDoF * >( s ) == nullptr ) ) {
+            
+            //connect rotations
+            if ( dynamic_cast< Particle * >( s ) ) {
+                bc = new BoundaryCondition(s, dBC, nBC, bcmults);
+                bcs->addBoundaryCondition(bc);
+            }
+
+            //connect translations
+            diff = s->givePoint();
+
+            //direction X  (all gammaxy and gammaxy realized here)
+            if ( dim == 3 ) {
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3, 0);
+                dirs [ 1 ] = 5; //gamma xy
+                dirs [ 2 ] = 4; //gamma xz
+                vm [ 1 ] = nodes->giveNode(masterNodeNum);
+                vm [ 2 ] = nodes->giveNode(masterNodeNum); //gamma xz
+                mults [ 2 ] = diff.z / 2;
+            } else if ( dim == 2 ) {
+                vm.resize(2);
+                mults.resize(2);
+                dirs.resize(2, 0);
+                dirs [ 1 ] = 2; //gamma xy
+                vm [ 1 ] = nodes->giveNode(masterNodeNum);
+            }
+            dirs [ 0 ] = 0; //eps x
+            vm [ 0 ] = nodes->giveNode(masterNodeNum);
+            mults [ 0 ] = diff.x;
+            mults [ 1 ] = diff.y / 2;
+            jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Y  (gammaxz realized here)
+            if ( dim == 3 ) {
+                dirs [ 1 ] = 5; //gamma xy
+                dirs [ 2 ] = 3; //gamma yz
+                mults [ 2 ] = diff.z / 2;
+            }
+            dirs [ 0 ] = 1; //eps y
+            mults [ 0 ] = diff.y;
+            mults [ 1 ] = diff.x / 2;
+            jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Z  (gammaxz realized here)
+            if ( dim == 3 ) {
+                dirs [ 1 ] = 4; //gamma xz
+                dirs [ 2 ] = 3; //gamma yz
+                mults [ 2 ] = diff.y / 2;
+
+                dirs [ 0 ] = 2; //eps z
+                mults [ 0 ] = diff.z;
+                mults [ 1 ] = diff.x / 2;
+                jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+                constrs->addConstraint(jd);
+            }
+        }
+    }
+    //set prescribed strain and stress
+    unsigned n = strainFunc.size();
+    dBC.resize(n, -1);
+    nBC.resize(n, -1);
+    bcmults.resize(n, 1);
+    for ( unsigned i = 0; i < strainFunc.size(); i++ ) {
+        if ( strainFunc [ i ] >= 0 ) {
+            dBC [ i ] = strainFunc [ i ];
+        }
+        if ( stressFunc [ i ] >= 0 ) {
+            bcmults [ i ] = volume;
+            nBC [ i ] = stressFunc [ i ];
+        }
+        if ( strainFunc [ i ] >= 0 && stressFunc [ i ] >= 0 ) {
+            cout << strainFunc [ i ] << " " << stressFunc [ i ] << endl;
+            cerr << "Error in Voigt's constraint: cannot prescribe both stress and strain for the same direction" << endl;
+        }
+    }
+    bc = new BoundaryCondition(nodes->giveNode(masterNodeNum), dBC, nBC, bcmults);
+    bcs->addBoundaryCondition(bc);
+
+}
+ 
+//////////////////////////////////////////////////////////
+void VoigtConstraint::readFromLine(istringstream &iss, unsigned d){ 
+    dim = d;
+    string param;
+    unsigned num, hnum;
+
+    bool volumeB, loadB;
+    volumeB = loadB = false;
+
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("load") == 0 ) {
+            loadB = true;
+            iss >> num;
+
+            strainFunc.resize(3 * ( dim - 1 ), -1);
+            stressFunc.resize(3 * ( dim - 1 ), -1);
+
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> param >> hnum;
+                if ( dim == 2 ) {
+                    std :: size_t found = param.find("z");
+                    if ( found != std :: string :: npos ) {
+                        cout << "Error in VoigtConstraint: cannot load by " << param << " in two dimensional setup" << '\n';
+                        exit(1);
+                    }
+                    if ( param.compare("ex") == 0 ) {
+                        strainFunc [ 0 ] = hnum;
+                    } else if ( param.compare("ey") == 0 ) {
+                        strainFunc [ 1 ] = hnum;
+                    } else if ( param.compare("gxy") == 0 ) {
+                        strainFunc [ 2 ] = hnum;
+                    } else if ( param.compare("sx") == 0 ) {
+                        stressFunc [ 0 ] = hnum;
+                    } else if ( param.compare("sy") == 0 ) {
+                        stressFunc [ 1 ] = hnum;
+                    } else if ( param.compare("txy") == 0 ) {
+                        stressFunc [ 2 ] = hnum;
+                    } else {
+                        cout << "Error in VoigtConstraint: cannot load by " << param << " not implemented yet" << '\n';
+                        exit(1);
+                    }
+                } else if ( dim == 3 ) {
+                    if      ( param.compare("ex") == 0 ) {
+                        strainFunc [ 0 ] = hnum;
+                    } else if ( param.compare("ey") == 0 ) {
+                        strainFunc [ 1 ] = hnum;
+                    } else if ( param.compare("ez") == 0 ) {
+                        strainFunc [ 2 ] = hnum;
+                    } else if ( param.compare("gyz") == 0 ) {
+                        strainFunc [ 3 ] = hnum;
+                    } else if ( param.compare("gxz") == 0 ) {
+                        strainFunc [ 4 ] = hnum;
+                    } else if ( param.compare("gxy") == 0 ) {
+                        strainFunc [ 5 ] = hnum;
+                    } else if ( param.compare("sx") == 0 ) {
+                        stressFunc [ 0 ] = hnum;
+                    } else if ( param.compare("sy") == 0 ) {
+                        stressFunc [ 1 ] = hnum;
+                    } else if ( param.compare("sz") == 0 ) {
+                        stressFunc [ 2 ] = hnum;
+                    } else if ( param.compare("tyz") == 0 ) {
+                        stressFunc [ 3 ] = hnum;
+                    } else if ( param.compare("txz") == 0 ) {
+                        stressFunc [ 4 ] = hnum;
+                    } else if ( param.compare("txy") == 0 ) {
+                        stressFunc [ 5 ] = hnum;
+                    } else {
+                        cout << "Error in VoigtConstraint: cannot load by " << param << " not implemented yet" << '\n';
+                        exit(1);
+                    }
+                }
+            }
+        } else if ( param.compare("volume") == 0 ) {
+            volumeB = true;
+            iss >> volume;
+        }
+    }
+
+    if ( !volumeB ) {
+        cout << "Error in VoigtConstraint: volume was not specified" << endl;
+        exit(1);
+    }
+    if ( !loadB ) {
+        cout << "Error in VoigtConstraint:  load was not specified" << endl;
+        exit(1);
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 void RigidPlate :: setDirectionToFix(istringstream &iss) {
     bool bw = false;
@@ -1492,6 +1765,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("ExpansionRingSingleDoFLoad") == 0 ) {
                     ExpansionRingSingleDoFLoad *newblock = new ExpansionRingSingleDoFLoad();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("VoigtConstraint") == 0 ) {
+                    VoigtConstraint *newblock = new VoigtConstraint();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else {

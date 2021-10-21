@@ -111,6 +111,19 @@ public:
 };
 
 //////////////////////////////////////////////////////////
+// Voigt's constraint
+class VoigtConstraint : public PBlock
+{
+    double volume;
+    vector<int> strainFunc, stressFunc;
+public:
+    VoigtConstraint();
+    virtual ~VoigtConstraint();
+    virtual void apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+};
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Rigid Plate
 class RigidPlate : public PBlock
