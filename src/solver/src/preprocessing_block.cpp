@@ -1,7 +1,7 @@
 #include "preprocessing_block.h"
 #include "geometry.h"
 #include "model.h"
-// #include "misc.h"
+// #include "misc.h"  // TODO JK: this include causes linking error
 
 
 std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {
@@ -18,6 +18,19 @@ bool containsChar(const std :: string &str, char c)
 {
     // std::cout << "str = " << str << ", char = " << c << '\n';
     return str.find(c) != std :: string :: npos;
+}
+
+/*
+ * Case Sensitive Implementation of endsWith()
+ * It checks if the string 'mainStr' ends with given string 'toMatch'
+ */
+bool endsWith(const std::string &mainStr, const std::string &toMatch)
+{
+    if(mainStr.size() >= toMatch.size() &&
+            mainStr.compare(mainStr.size() - toMatch.size(), toMatch.size(), toMatch) == 0)
+            return true;
+        else
+            return false;
 }
 
 
@@ -1284,7 +1297,9 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
 
 void RigidPlate :: checkMechTransport(Node *master) {
     // in case of rigid plate, master is a virtual virtual node and not a physical particle or
-    master->setName(master->giveName().append("-virtual") );
+    if (!endsWith(master->giveName() , "virtual")) {
+        master->setName(master->giveName().append("-virtual") );
+    }
 
     if ( dynamic_cast< MechNode * >( master ) ) {
         if ( master->giveNumberOfDoFs() != ( 3 * ( this->dim - 1 ) ) ) {
@@ -1354,7 +1369,7 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 
     for ( auto const &nod : * nodes ) {
         if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ) {
-            if ( nod == master ) {
+            if ( nod == master || endsWith(nod->giveName(), "virtual")) {
                 continue;
             }
             connectSlaveMasterRigid(constrs, nod, master, this->dim, which, this->transport);

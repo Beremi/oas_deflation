@@ -1397,7 +1397,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
     nodes_out = np.array(nodes_out)
     #writing nodes
-    #print(len(nodes_out))
+    print(len(nodes_out))
     num = dim
 
     if (dim == 2):
@@ -2252,7 +2252,7 @@ def saveDisplacementGauge(master_folder, columnName, dir, coordsA, coordsB):
         fl.write('DisplacementGauge LD %s\t%s\t%e\t%e\t%e\t%e\t%e\t%e\n' %(columnName, dir, coordsA[0],coordsA[1], coordsA[2],coordsB[0],coordsB[1], coordsB[2]))
     fl.close()
 
-def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes, expansionRingsProps=[],virtualDoF=0):
+def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, totalNodeCount, nodes, expansionRingsProps=[],virtualDoF=0, nodesMechBC = []):
     #saving gov nodes
     saveNodes (master_folder,govNodes, "GovParticle", dim, govNodesFile, virtualDoF=virtualDoF)
     #saving gov nodes mech BC
@@ -2281,6 +2281,10 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
         print('Nodes affected by Rigid plate #%d:' %rp)
         print(rigidPlates[rp].getNodesAffected(nodes))
 
+    print('mechbc')
+    #if (len(nodesMechBC)!=0):
+    #    for i in range(len(nodesMechBC)):
+    #s        saveForceGauges(master_folder, dim, nodesMechBC[i].nodeIdx, name='Node%d'%nodesMechBC[i].nodeIdx, moments=False)
 
 
 def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrsptBC, rigidPlatesTrspt, totalNodeCount, node_coords, vert_count, verticesIdxDict, vertIdxStart):
@@ -2329,11 +2333,11 @@ def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', tr
                     saveForceGauge(master_folder, 'mz#%s'%name, 'mz', nodeIdx )
     else:
         if (name==''):
-            saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
+            #saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
             saveForceGauge(master_folder, 'flux#%d'%nodeIdx, 'flux', nodeIdx )
 
         else:
-            saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
+            #saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
             saveForceGauge(master_folder, 'flux#%s'%name, 'flux', nodeIdx )
 
 

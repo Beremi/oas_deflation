@@ -122,12 +122,21 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
     double sensititvity_param = ( ( stress [ 0 ] < 0.0 ) ? m->giveMC() : m->giveMT() );
 
-    //kill shear element when excessive tension occur
+    //load strains from one or two shear directions, ignore normal strain "strain[0]"
+    double x = 0;
+    double y = strain [ 1 ];
+    double z = ( strain.size() == 3 ) ? strain [ 2 ] : 0; // 3D problem has also generally nonzero second component of shear strain
+
+    temp_slip = (Point(x, y, z) * strain_slip_multiplier) - slip_free;
+    // std::cout << "strain_slip_multiplier = " << strain_slip_multiplier << '\n';
+
+    //kill shear element when excessive tensile strain occurs
     if ( m->giveTauBar() - sensititvity_param * stress [ 0 ] <= 0 ) {
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
         }
-        temp_damageShear = 1 - 1e-10;
+        temp_slip_free = temp_slip - temp_sPi;
+        // temp_damageShear = 1 - 1e-10;
         tang_stiff = 0;
         return stress;
     }
@@ -137,14 +146,6 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     double dLambda;
     double omega_dot;//rate of shear damage (to be multiplied by lambda and added to current damageShear)
     omega_dot = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
-
-    //load strains from one or two shear directions, ignore normal strain "strain[0]"
-    double x = 0;
-    double y = strain [ 1 ];
-    double z = ( strain.size() == 3 ) ? strain [ 2 ] : 0; // 3D problem has also generally nonzero second component of shear strain
-
-    temp_slip = Point(x, y, z) * strain_slip_multiplier;
-    // std::cout << "strain_slip_multiplier = " << strain_slip_multiplier << '\n';
 
     if ( true ) { // here will be more options like new return mapping etc.
         // sub-stepping process - long step is cutted in a certain number of substeps
@@ -308,6 +309,7 @@ void FatigueShearMaterialStatus :: update() {
     alphaKin = temp_alphaKin;
     zIso = temp_zIso;
     slip = temp_slip;
+    slip_free = temp_slip_free;
     lambda = temp_lambda;
     stressT = temp_stressT;
 

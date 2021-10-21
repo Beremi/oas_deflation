@@ -275,7 +275,7 @@ class Model:
             sys.exit(1)
 
 
-    def createModel(self, node_coords_init=None):
+    def createModel(self, node_coords_init=None, modelnr=-1):
         print ('Creating model %s' %self.modelType)
         #
         #if (self.printout == False): blockPrint()
@@ -289,7 +289,7 @@ class Model:
         if self.modelType == '2d_notched3pb':
             self.run_2d_notched3pb(node_coords_init=node_coords_init)
         if self.modelType == '3d_notched3pb':
-            self.run_3d_notched3pb(node_coords_init=node_coords_init)
+            self.run_3d_notched3pb(node_coords_init=node_coords_init, modelnr=modelnr)
 
         if self.modelType == '2d_coupledCompression':
             self.run_2d_coupledCompression()
@@ -366,34 +366,27 @@ class Model:
 
     def run_2d_notched3pb(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)  = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes)
+        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
-    def run_3d_notched3pb(self, node_coords_init=None):
+    def run_3d_notched3pb(self, node_coords_init=None,modelnr=-1):
         #width of the supports, nemenit, je i v assemble3DSSBeamBending !!!!
         supportWidth = self.maxLim[0] / 20
-        # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
-        #na kazdou stranu se prida pulka podpory
-        self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
 
+        if modelnr ==0:
+            # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
+            #na kazdou stranu se prida pulka podpory
+            self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
 
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes)
+        #(self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged)
+        #(self.node_coords, self.mechBC_merged, self.mechInitC_merged,  self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.trsprtBC_merged)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
+        print(self.govNodesTrspt)
+
         materialZones = None
-        """
-        if self.elasticZone ==True:
-            lim = np.array([
-            self.maxLim[0]*0.5  - self.maxLim[0]*self.fracZoneWidth*1.1,
-            self.maxLim[1] * 0.9,
-            -self.maxLim[2]* 0.1,
-            self.maxLim[0]*0.5  + self.maxLim[0]*self.fracZoneWidth*1.1,
-            self.maxLim[1] * 1.1,
-            self.maxLim[2] * 1.1
-            ])
-            print (lim)
-            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim)
-        """
+
         if self.elasticZone ==1:
             lim = np.array([
             self.maxLim[0]*0.5  + self.maxLim[1] * 0.2,#+ self.maxLim[0]*self.fracZoneWidth*1,
@@ -403,7 +396,7 @@ class Model:
             self.maxLim[1] * 1.1,
             self.maxLim[2] * 1.1
             ])
-            print (lim)
+            #print (lim)
             lim1=np.array([
             self.maxLim[0]*0.5  - self.maxLim[0] * self.fracZoneWidth * 0.4,
             self.maxLim[1] * 0.0,
@@ -412,8 +405,10 @@ class Model:
             self.maxLim[1] * self.notchH*1.8,
             self.maxLim[2]* 1.1,
             ])
-            print (lim1)
+            # print (lim1)
             self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
+
+
 
 
     def run_3d_cube(self, node_coords_init=None):
@@ -638,10 +633,10 @@ class Model:
                         expansionRingsProps.append(self.rebarDiameter)
                         expansionRingsProps.append(self.maxLim)
 
-                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount)
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount, nodesMechBC=self.mechBC_merged)
                         self.constraint = True
                     else:
-                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords)
+                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords,nodesMechBC=self.mechBC_merged)
                         self.constraint = True
 
         self.totalNodeCount += len(self.govNodes)
@@ -652,7 +647,6 @@ class Model:
         if self.govNodesTrspt != None:
             if self.rigidPlatesTrspt != None:
                 if self.govNodesTrsptBC != None:
-
                     utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart)
                     self.constraintTrspt = True
 
@@ -997,7 +991,8 @@ if __name__ == '__main__':
                 print ('Copying prep_master used... %s' %dst_file)
                 copyfile(file, dst_file)
 
-            model.createModel()
+
+            model.createModel(modelnr = i)
             model.saveGeometry()
             model.saveRest(solver, file, exporters)
 

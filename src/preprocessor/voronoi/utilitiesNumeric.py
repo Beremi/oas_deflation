@@ -134,6 +134,7 @@ class generalFunc:
         self.table = table
 
     def getString(self):
+        print (self.table)
         line = 'PWLFunction\t%d'%(len(self.table))
 
         for i in range (len(self.table)):
