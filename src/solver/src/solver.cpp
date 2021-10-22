@@ -308,6 +308,7 @@ void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runBeforeEachStep() {
     Solver :: runBeforeEachStep();
+    trial_r = r;
     cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
 }
 

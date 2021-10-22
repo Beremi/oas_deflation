@@ -587,8 +587,8 @@ bool  DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion(){
     Vector eignums;
     
     //from paper Adaptive multiscale homogenization of the lattice discrete particle model for the analysis of damage and fracture in concrete, Roozbeh Rezakhani and Xinwei Zhou and Gianluca Cusatis
-    double fc =  20e6;
-    double ft = 2.35e6*2./3.;
+    double fc =  20e6/2.;
+    double ft = 2.35e6/2.;
     double c1 = 4.775/fc;
     double c2 = 7.048/fc;
     double c3 = 0.88/pow(fc,2);

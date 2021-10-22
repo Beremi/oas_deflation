@@ -380,6 +380,11 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
             }
         }
         inputfile.close();
+
+        Vector initreduced(freeDoFs - constrDoFs);
+        giveReducedDoFArray(initvalues,initreduced);// to propagate intial master field through constraints
+        giveFullDoFArray(initreduced,initvalues);
+
         cout << "Input file '" <<  initfile << "' succesfully loaded" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  initfile <<  "'" << endl;
