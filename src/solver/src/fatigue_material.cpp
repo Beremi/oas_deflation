@@ -140,6 +140,8 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
         // temp_damageShear = 1 - 1e-10;
         tang_stiff = 0;
         return stress;
+    } else {
+        temporarily_killed = false;
     }
 
     double f_trial;
