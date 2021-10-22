@@ -63,7 +63,7 @@ public:
     double giveLcrs() { return Lcrs; }
     double giveLcrt() { return Lcrt; }
     double giveKc() { return Kc; }
-    double giveMaxDamage() { return 1.0 - damage_residuum; }
+    double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
 
     virtual void init();

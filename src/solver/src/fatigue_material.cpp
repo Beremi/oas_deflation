@@ -136,6 +136,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
             stress [ i ] = 0;
         }
         temp_slip_free = temp_slip - temp_sPi;
+        temporarily_killed = true;
         // temp_damageShear = 1 - 1e-10;
         tang_stiff = 0;
         return stress;
@@ -346,7 +347,7 @@ Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned d
         return stiff;
     } else if ( type.compare("secant") == 0 ) {     //not implemented, used unloading
         for ( unsigned i = 1; i < dim; i++ ) {
-            stiff [ i ] [ i ] *= ( 1. - temp_damageShear );                          // normal stiffness stays elastic
+            stiff [ i ] [ i ] *= fmax( temporarily_killed ? 0 : 1. - temp_damageShear, damage_residuum );                          // normal stiffness stays elastic
         }
         return stiff;
     } else if ( type.compare("unloading") == 0 ) {
@@ -765,14 +766,14 @@ Matrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type, unsigned 
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {  //not implemented, used unloading
-        if ( temp_epsN >= 0 ) {
-            stiff *= ( 1. - temp_damage );     // this is just unloading one
+        if ( temp_epsN - epsNP >= 0 ) {
+            stiff *= fmax( 1. - temp_damage, damage_residuum );     // this is just unloading one
         }
         return stiff;
     } else if ( type.compare("unloading") == 0 ) {
         if ( temp_epsN >= 0 ) {
             for ( unsigned i = 1; i < dim; i++ ) {
-                stiff [ i ] [ i ] *= ( 1 - temp_damage );                           //IS THIS CORRECT????
+                stiff [ i ] [ i ] *= fmax( 1. - temp_damage, damage_residuum );                           //IS THIS CORRECT????
             }
         }
         return stiff;
