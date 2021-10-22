@@ -19,6 +19,7 @@ private:
     double zIso;  ///< isotropic hardening variable
     double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
     Point slip_free;
+    double temporarily_killed = false;
 
     Point temp_sPi, temp_slip, temp_slip_free, temp_alphaKin;
     Point stressT, temp_stressT;
@@ -44,6 +45,7 @@ private:
 
     double coup_dam;
     bool comp_dam;
+    double damage_residuum = 1e-6;  ///> for stiffness matrix
 public:
     FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e, unsigned ipnum);
     virtual ~FatigueShearMaterialStatus() {};
@@ -130,6 +132,7 @@ private:
 
     double Kt;    ///>  initial slope of the softening curve (when Gt - fracture energy - used)
 
+    double damage_residuum = 1e-6;  ///> for stiffness matrix
     void print() const;
 public:
     DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e, unsigned ipnum);

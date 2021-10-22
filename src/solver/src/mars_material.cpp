@@ -207,7 +207,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     //temp_damage = min( temp_damage, m->giveMaxDamage() ); //dangerous, better switched off
 
     temp_crackOpening = (L*temp_damage)*strain[0]; //normal opening only
-    //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening    
+    //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
 
     //if(temp_damage>0) cout << "damage " << " " << temp_damage << " " << strain[0] << " " << strain[1] << endl;
 
@@ -233,9 +233,8 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        if ( m->giveMaxDamage() < 1.0 ) {
-            double dam = min(temp_damage, m->giveMaxDamage() );
-            return stiff * ( 1 - dam );
+        if ( m->giveDamageResiduum() > 0.0 ) {
+            return stiff * fmax( 1 - temp_damage, m->giveDamageResiduum() );
         } else if ( m->giveStressResiduum() > 0.0 ) {
             // TODO finish this JK
             // QUESTION is this performed before update?
