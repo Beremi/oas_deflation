@@ -59,6 +59,8 @@ void MarsMaterialStatus :: init() {
     temp_damage = 0;
     temp_maxEpsN = 0;
     temp_maxEpsT = 0;
+    temp_crackOpening = 0;
+    volumetricStrain = 0;
 
     RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
     if ( rbc ) {
@@ -206,8 +208,10 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
 
     //temp_damage = min( temp_damage, m->giveMaxDamage() ); //dangerous, better switched off
 
-    temp_crackOpening = (L*temp_damage)*strain[0]; //normal opening only
-    //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
+    if (epsN>0) {
+        temp_crackOpening = (L*temp_damage)*strain[0]; //normal opening only
+        //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
+    } else temp_crackOpening = 0;
 
     //if(temp_damage>0) cout << "damage " << " " << temp_damage << " " << strain[0] << " " << strain[1] << endl;
 
