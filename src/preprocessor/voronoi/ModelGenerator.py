@@ -416,7 +416,7 @@ class Model:
         self.materialZones=None
 
     def run_3d_consolidation(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dConsolidation(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged, self.radii) = utilitiesModeling.create3dConsolidation(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
         self.materialZones=None
 
     def run_2d_dogbone(self):

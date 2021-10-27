@@ -2077,7 +2077,7 @@ def create3dConsolidation(maxLim, minDist, trials, powerTes, coupled=False, node
     print('Creating 3d cube. Power tesselation: %s' %powerTes)
     #govNodes, rigidPlates
     dim = 3
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init);
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, radii  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init);
     node_coords = np.asarray(node_coords)
     """
     if SHOW_PLOT:
@@ -2157,7 +2157,7 @@ def create3dConsolidation(maxLim, minDist, trials, powerTes, coupled=False, node
         mechBC_merged.append(mechBC)
 
 
-    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
+    return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged, radii
 
 
 
@@ -5407,6 +5407,7 @@ def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords
     if node_coords_init is None:
         if powerTes == False:
             node_coords.append((  np.array([maxLim[0]/2, maxLim[1]/2, maxLim[2]/2])  ))
+            radii = []
             """
             mechBC = np.array([-1,0,0,   -1,-1,-1,    -1,-1,-1,-1,-1,-1])
             mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
@@ -5516,7 +5517,7 @@ def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords
             node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
 
             # volume
-            node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=True)
+            node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = False, periodic_distance=True)
 
 
 
@@ -5531,7 +5532,7 @@ def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords
 
     #if coupled:
     #    notches = []
-    return node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates
+    return node_coords, mechBC_merged, mechInitC_merged, govNodes, govNodesMechBC, rigidPlates, radii
 
 
 
