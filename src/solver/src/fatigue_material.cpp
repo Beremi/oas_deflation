@@ -91,8 +91,7 @@ void FatigueShearMaterialStatus :: init() {
     sPi = prev_sPi = temp_sPi = Point();
     prev_stressT = stressT = temp_stressT = Point();
     alphaKin = prev_alphaKin = temp_alphaKin = Point();
-    slip = temp_slip = prev_slip = slip_free = temp_slip_free = Point();
-   
+    slip = temp_slip = prev_slip = temp_slip_free = slip_free = Point();
 
     coup_dam = m->isDamageCoupled();
 
@@ -119,7 +118,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
 
-    stress [ 0 ] = stiffN * strain [ 0 ]; //normal stress
+    stress [ 0 ] = stiffN * strain [ 0 ]; //effective normal stress
 
     double sensititvity_param = ( ( stress [ 0 ] < 0.0 ) ? m->giveMC() : m->giveMT() );
 
@@ -136,7 +135,23 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
         }
-        temp_slip_free = (Point(x, y, z) * strain_slip_multiplier) - sPi;
+        // temp_slip_free = temp_slip - sPi;
+        double slip_multip;
+        if ( m->giveKin() != 0 ){
+            if ( m->giveGamma() != 0 ){
+                slip_multip = m->giveKin() / (m->giveKin() + m->giveGamma());
+                // if ( m->giveKin() > m->giveGamma() ) {
+                //     slip_multip = 1 - (m->giveGamma() / m->giveKin());
+                // } else {
+                //     slip_multip = (m->giveKin() / m->giveGamma());
+                // }
+            } else {
+                slip_multip = 1.0;
+            }
+        } else {
+            slip_multip = 0.0;
+        }
+        temp_slip_free = (Point(x, y, z) * strain_slip_multiplier) - sPi * slip_multip;
         temporarily_killed = true;
         // temp_damageShear = 1 - 1e-10;
         tang_stiff = 0;
@@ -187,8 +202,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
             //compute trials
             tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiffT;//are the inelastic strains always positive irrespective the direction of shearing?
 
-            f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - (
-                                                                                                                         sensititvity_param * stress [ 0 ] ) );
+            f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - (sensititvity_param * stress [ 0 ] ) );
 
             if ( f_trial < 0 ) {
                 // std::cout << " elastic" << '\t';
@@ -245,8 +259,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     stress [ 1 ] = temp_stressT.getY();
     if ( strain.size() == 3 ) {
         stress [ 2 ] = temp_stressT.getZ();
-    }                                                           //3D problem has two shear stresses
-
+    }
     return stress;
 }
 
@@ -349,13 +362,24 @@ Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned d
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {     //not implemented, used unloading
-        stiff *= fmax( temporarily_killed ? 0 : 1. - temp_damageShear, damage_residuum );
+        stiff *= fmax( temporarily_killed ? 0 : 1. - temp_damageShear, damage_residuum );                          // normal stiffness stays elastic
+        // double multip;
+        // if ( temporarily_killed ) {
+        //     multip = damage_residuum;
+        // } else if ( temp_slip_free.norm() != 0 ) {
+        //     multip = -1;
+        // } else {
+        //     multip = fmax(damage_residuum, 1 - temp_damageShear);
+        // }
+        // stiff [ i ] [ i ] *= multip;
         return stiff;
     } else if ( type.compare("unloading") == 0 ) {
-        stiff *= ( 1. - temp_damageShear );
+
+        stiff *= ( 1. - temp_damageShear );                          // normal stiffness stays elastic
+
         return stiff;
     } else if ( type.compare("tangent") == 0 ) {
-        stiff  *= ( 1. - tang_stiff );        
+            stiff *= ( 1. - tang_stiff );
         return stiff;
     } else {
         cerr << "Error: FatigueShearMaterialStatus does not provide '" << type << "' stiffness";
