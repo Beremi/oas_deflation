@@ -135,7 +135,7 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
     for ( auto const &e : * elems ) {
         rbc = nullptr;
         // NOTE do not use this for transport elements
-        if ( e->giveName().compare("LTCBEAM") == 0 ) {
+        if ( e->giveName().compare("LTCBEAM") == 0 || e->giveName().compare("LTCBEAMCoupled") == 0) {
             elDoFs = e->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -186,7 +186,8 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
                             }
                         }
                     } else if ( codes [ i ].compare("crack_opening") == 0 ) {
-                        data = strainNT [ 0 ] * rbc->giveLength() * rbc->giveIPValue("damageN", 0);
+                        //data = strainNT [ 0 ] * rbc->giveLength() * rbc->giveIPValue("damageN", 0);
+                        data = rbc->giveIPValue("crack_opening", 0);
                     } else if ( codes [ i ].compare("crack_sliding") == 0 ) {
                         double strT = 0;
                         for ( unsigned j = 1; j < strainNT.size(); j++ ) {

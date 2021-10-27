@@ -18,8 +18,7 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) {
 //////////////////////////////////////////////////////////
 double RigidBodyContact :: giveValue(string code) const {
     if ( code.compare("damage") == 0 ) {
-        DisMechMaterialStatus *dmstats = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
-        return dmstats->giveValue(code);
+        return stats [ 0 ]->giveValue(code);
     } else {
         return MechanicalElement :: giveValue(code);
     }

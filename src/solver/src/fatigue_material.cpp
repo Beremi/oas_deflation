@@ -91,7 +91,8 @@ void FatigueShearMaterialStatus :: init() {
     sPi = prev_sPi = temp_sPi = Point();
     prev_stressT = stressT = temp_stressT = Point();
     alphaKin = prev_alphaKin = temp_alphaKin = Point();
-    slip = temp_slip = prev_slip = Point();
+    slip = temp_slip = prev_slip = slip_free = temp_slip_free = Point();
+   
 
     coup_dam = m->isDamageCoupled();
 
@@ -135,7 +136,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
         }
-        temp_slip_free = temp_slip - temp_sPi;
+        temp_slip_free = (Point(x, y, z) * strain_slip_multiplier) - sPi;
         temporarily_killed = true;
         // temp_damageShear = 1 - 1e-10;
         tang_stiff = 0;
@@ -348,19 +349,13 @@ Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned d
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {     //not implemented, used unloading
-        for ( unsigned i = 1; i < dim; i++ ) {
-            stiff [ i ] [ i ] *= fmax( temporarily_killed ? 0 : 1. - temp_damageShear, damage_residuum );                          // normal stiffness stays elastic
-        }
+        stiff *= fmax( temporarily_killed ? 0 : 1. - temp_damageShear, damage_residuum );
         return stiff;
     } else if ( type.compare("unloading") == 0 ) {
-        for ( unsigned i = 1; i < dim; i++ ) {
-            stiff [ i ] [ i ] *= ( 1. - temp_damageShear );                          // normal stiffness stays elastic
-        }
+        stiff *= ( 1. - temp_damageShear );
         return stiff;
     } else if ( type.compare("tangent") == 0 ) {
-        for ( unsigned i = 1; i < dim; i++ ) {
-            stiff [ i ] [ i ] *= ( 1. - tang_stiff );                                  // normal stiffness stays elastic
-        }
+        stiff  *= ( 1. - tang_stiff );        
         return stiff;
     } else {
         cerr << "Error: FatigueShearMaterialStatus does not provide '" << type << "' stiffness";
