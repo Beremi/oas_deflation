@@ -137,20 +137,22 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
         }
         // temp_slip_free = temp_slip - sPi;
         double slip_multip;
-        if ( m->giveKin() != 0 ){
-            if ( m->giveGamma() != 0 ){
-                slip_multip = m->giveKin() / (m->giveKin() + m->giveGamma());
-                // if ( m->giveKin() > m->giveGamma() ) {
-                //     slip_multip = 1 - (m->giveGamma() / m->giveKin());
-                // } else {
-                //     slip_multip = (m->giveKin() / m->giveGamma());
-                // }
-            } else {
-                slip_multip = 1.0;
-            }
-        } else {
-            slip_multip = 0.0;
-        }
+        // if ( m->giveKin() != 0 ){
+        //     if ( m->giveGamma() != 0 ){
+        //         slip_multip = m->giveKin() / (m->giveKin() + m->giveGamma());
+        //         // if ( m->giveKin() > m->giveGamma() ) {
+        //         //     slip_multip = 1 - (m->giveGamma() / m->giveKin());
+        //         // } else {
+        //         //     slip_multip = (m->giveKin() / m->giveGamma());
+        //         // }
+        //     } else {
+        //         slip_multip = 1.0;
+        //     }
+        // } else {
+        //     slip_multip = 0.0;
+        // }
+        slip_multip = 1.0;
+        temp_alphaKin = Point();
         temp_slip_free = (Point(x, y, z) * strain_slip_multiplier) - sPi * slip_multip;
         temporarily_killed = true;
         // temp_damageShear = 1 - 1e-10;
