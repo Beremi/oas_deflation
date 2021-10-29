@@ -51,7 +51,7 @@
 ###########Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 ###########
 ########### Cusatis torsion press
-##Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.012 activeMechanics 1 activeTransport 1 coupled 1 trials 10000 #powerTes 1
+###########Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.012 activeMechanics 1 activeTransport 1 coupled 1 trials 10000 #powerTes 1
 ###########
 ###########
 ########### Noguiera torsion
@@ -97,8 +97,8 @@
 ###########SpecifiedNode 0.3 1e-6
 ###########SpecifiedNode 0.7 1e-6
 ###########
-###########Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0025  interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 0 activeMechanics 1 coupled 0 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.2 gradientRegDepth 0.5
-###########Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.003 interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.8 gradientRegDepth 0.1
+###########Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0025  interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 1 activeMechanics 1 coupled 1 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.2 gradientRegDepth 0.5
+Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.003 interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.8 gradientRegDepth 0.1
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 ###########SOLVER SETUP

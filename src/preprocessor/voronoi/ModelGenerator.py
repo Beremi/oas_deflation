@@ -416,7 +416,7 @@ class Model:
         self.materialZones=None
 
     def run_3d_consolidation(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged, self.radii) = utilitiesModeling.create3dConsolidation(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dConsolidation(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
         self.materialZones=None
 
     def run_2d_dogbone(self):
@@ -633,7 +633,7 @@ class Model:
                         expansionRingsProps.append(self.rebarDiameter)
                         expansionRingsProps.append(self.maxLim)
 
-                        utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount, nodesMechBC=self.mechBC_merged)
+                        mechDofIndices = utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount, nodesMechBC=self.mechBC_merged)
                         self.constraint = True
                     else:
                         utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords,nodesMechBC=self.mechBC_merged)
@@ -647,9 +647,24 @@ class Model:
         if self.govNodesTrspt != None:
             if self.rigidPlatesTrspt != None:
                 if self.govNodesTrsptBC != None:
-                    utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart, self.interfaceNodeIndices)
+                    utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart)
                     self.constraintTrspt = True
+                    #
+                    if self.interfaceNodeIndices != None:
+                        direction = 0
+                        materialId = 1
+                        coeff = self.rebarDiameter
 
+                        circleLength = 2*np.pi*self.rebarDiameter/2
+                        nrNodes = int ( circleLength / self.interfaceMinDist )
+                        nrNodes = (int (nrNodes / 4) +1 ) * 4
+
+                        interfaceElementLength = circleLength / nrNodes
+                        rebarArea = np.pi * (self.rebarDiameter/2)**2
+
+                        coeff = interfaceElementLength / rebarArea
+
+                        utilitiesGeom.saveCoupledConstraint(self.master_folder, self.interfaceNodeIndices, mechDofIndices, direction, materialId, coeff)
 
 
         if (self.measuringGauges!=None):

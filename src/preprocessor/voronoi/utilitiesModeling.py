@@ -3749,11 +3749,14 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
     #rebar
 
+    interfaceNodeIndices = []
 
-    oldLen = len(node_coords)
     #sampling interfaces
     for r in range (rebarCount):
         if node_coords_init is None:
+            oldLen = len(node_coords)
+            interface = []
+
             print ('Interface #%d' %r)
             #rebar edge
             if (rebarCount==1):
@@ -3801,14 +3804,16 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
                 mBC = utilitiesMech.mechanicalBC(dim, nodesOld + n, mechBC)
                 #mechBC_merged.append(mBC)
 
+        newLen = len(node_coords)
 
+        for i in range (newLen-oldLen):
+            interface.append(oldLen+i)
+        interfaceNodeIndices.append(interface)
+        
         rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
-    newLen = len(node_coords)
-    interfaceNodeIndices = []
-    for i in range (newLen-oldLen):
-        interfaceNodeIndices.append(oldLen+i)
+
 
 
     if node_coords_init is None:

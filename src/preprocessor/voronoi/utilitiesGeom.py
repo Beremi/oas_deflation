@@ -2192,6 +2192,10 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
     return newAuxNodes
 
+
+
+
+
 def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False, expansionRingsProps=[]):
     print('Saving rigid plates...', end='')
 
@@ -2199,6 +2203,9 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
         file = constraintFile
     else:
         file = constraintTrsptFile
+
+    mechDofIndices = []
+
 
     with open(os.path.join(master_folder,file), 'w') as f:
         totNodeC = totalNodeCount
@@ -2233,9 +2240,14 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
                 #f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
                 f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
 
+                mechDofIndices.append(totNodeC+r)
+
 
 
     print('done.')
+
+
+    return mechDofIndices
 
 
 ## ForceGauge file_name gauge_name which_force how_many node_ids
@@ -2281,39 +2293,56 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
     #saving rigid plates
     for rp in rigidPlates:
         rp.getNodesAffected(nodes)
-    saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, expansionRingsProps=expansionRingsProps)
+    mechDofIndices = saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, expansionRingsProps=expansionRingsProps)
 
     for rp in range (len(rigidPlates)):
         print('Nodes affected by Rigid plate #%d:' %rp)
         print(rigidPlates[rp].getNodesAffected(nodes))
 
-    print('mechbc')
+
+    #print('mechbc')
     #if (len(nodesMechBC)!=0):
     #    for i in range(len(nodesMechBC)):
     #s        saveForceGauges(master_folder, dim, nodesMechBC[i].nodeIdx, name='Node%d'%nodesMechBC[i].nodeIdx, moments=False)
 
+    return mechDofIndices
 
-def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrsptBC, rigidPlatesTrspt, totalNodeCount, node_coords, vert_count, verticesIdxDict, vertIdxStart, interfaceNodeIndices=None):
+def saveCoupledConstraint(master_folder, interfaceNodeIndices, masterNodesIds, direction, materialId, coeff):
+    print ('Saving coupled constraint...', end='')
+    # PressureFromMechanicalLoad \t MasterNodeId \t Direction \t MaterialId \t Coeff
+    with open(os.path.join(master_folder,constraintTrsptFile), 'a') as f:
+        f.write("#PressureFromMechanicalLoad \t MasterNodeId \t Direction \t MaterialId \t Coeff \t NrInterfaceNodes \t InterfaceNodesIndices\n"  )
+        for i in range (len(interfaceNodeIndices)):
+            intrfc = interfaceNodeIndices[i]
+            masterNodeId = masterNodesIds[i]
+            #print(intrfc)
+            intrfrcLine = ''
+            for n in intrfc:
+                intrfrcLine += '%s \t' %n
+
+            f.write("PressureFromMechanicalLoad \t %d \t %d \t %d \t %e \t %d \t %s\n" %(masterNodeId, direction, materialId, coeff, len(intrfc), intrfrcLine) )
+
+    print ('done.')
+
+
+
+def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrsptBC, rigidPlatesTrspt, totalNodeCount, node_coords, vert_count, verticesIdxDict, vertIdxStart):
     print ('Saving Transport constraint...')
-    print(govNodesTrspt)
+    #print(govNodesTrspt)
     saveNodes (master_folder,govNodesTrspt, "TrsprtNode", dimension, govNodesTrsptFile)
 
     for i in range (len(govNodesTrsptBC)):
         m = govNodesTrsptBC[i]
         m.nodeIdx = totalNodeCount + i
 
-
     for rp in rigidPlatesTrspt:
         rp.renumberVertices(verticesIdxDict, vertIdxStart)
-
 
     #print (govNodesTrsptBC)
     saveTransportBC(master_folder,govNodesTrsptBC, verticesIdxDict, vertIdxStart, govNodesBC=True, totalNodeCount=totalNodeCount)
 
-
     for i in range (len(govNodesTrsptBC)):
         saveForceGauges(master_folder, dimension, govNodesTrsptBC[i].nodeIdx, moments=False, name='TrsptPLT%d'%i, transport=True)
-
 
     saveRigidPlates(master_folder, dimension, rigidPlatesTrspt, totalNodeCount, trspt=True)
 
