@@ -1198,7 +1198,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init, roughMinDistCoef=roughMinDistCoef, adaptivityReady=adaptivityReady, fineRingThickness=fineRingThickness, fineRegDepth=fineRegDepth, gradientRegDepth=gradientRegDepth)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, interfaceNodeIndices  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init, roughMinDistCoef=roughMinDistCoef, adaptivityReady=adaptivityReady, fineRingThickness=fineRingThickness, fineRegDepth=fineRegDepth, gradientRegDepth=gradientRegDepth)
 
 
 
@@ -1341,7 +1341,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
 
 
-    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, interfaceNodeIndices
 
 
 
@@ -3749,6 +3749,8 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
     #rebar
 
+
+    oldLen = len(node_coords)
     #sampling interfaces
     for r in range (rebarCount):
         if node_coords_init is None:
@@ -3802,6 +3804,12 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
         rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
+
+    newLen = len(node_coords)
+    interfaceNodeIndices = []
+    for i in range (newLen-oldLen):
+        interfaceNodeIndices.append(oldLen+i)
+
 
     if node_coords_init is None:
         fineRegDepth *= maxLim[1]
@@ -3906,7 +3914,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
         plt.show()
 
 
-    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, interfaceNodeIndices
 
 
 
