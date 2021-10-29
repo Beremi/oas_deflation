@@ -19,7 +19,7 @@ private:
     double zIso;  ///< isotropic hardening variable
     double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
     Point slip_free;
-    double temporarily_killed = false;
+    bool temporarily_killed = false;
 
     Point temp_sPi, temp_slip, temp_slip_free, temp_alphaKin;
     Point stressT, temp_stressT;
