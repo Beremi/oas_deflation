@@ -373,6 +373,7 @@ Vector CoupledCosseratBrick :: giveStrain(unsigned i, const Vector &DoFs) {
     return strain;
 }
 
+/*
 //////////////////////////////////////////////////////////
 Vector CoupledCosseratBrick :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     Vector intF = CosseratBrick :: giveInternalForces(DoFs, frozen, timeStep);
@@ -380,18 +381,19 @@ Vector CoupledCosseratBrick :: giveInternalForces(const Vector &DoFs, bool froze
 
     //Biot effect
     DiscreteCoupledRVEMaterialStatus *couplm;
-    double volumetricBiotPart;
+    double intTrsprtSource;
     Matrix H;
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         couplm = static_cast< DiscreteCoupledRVEMaterialStatus * >( stats [ k ] );
-        volumetricBiotPart = couplm->computeBiotEffect();
+        intTrsprtSource = couplm->giveInternalSource();
         for ( unsigned j = 0; j < 8; j++ ) {
-            intF [ 7*j+6 ] -= Hs [ k ] [ 6 ] [ 7*j+6 ] *volumetricBiotPart *inttype->giveIPWeight(k);            
+            intF [ 7*j+6 ] -= Hs [ k ] [ 6 ] [ 7*j+6 ] *intTrsprtSource *inttype->giveIPWeight(k);            
         }
     }
 
     return intF;
 }
+*/
 
 //////////////////////////////////////////////////////////
 Matrix CoupledCosseratBrick :: giveBMatrix(const Point *x) const {

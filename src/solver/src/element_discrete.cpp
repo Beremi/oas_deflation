@@ -305,7 +305,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         exit(EXIT_FAILURE);
     }
 
-    inttype->setIPWeight(0, length * area);  // NOTE JK: this works for stiffness matrix, since there is actually A * L, but not for the mass matrix, where volume should be taken (divide by dim) // JE: Agreed, independent integration of mass has been included for this element
+    inttype->setIPWeight(0, length * area / ndim);
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
 }
@@ -437,8 +437,28 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
 };
 
 //////////////////////////////////////////////////////////
+Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const{
+    return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
+}
+
+//////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveDampingMatrix() const {
     return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+    return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: integrateLoad(BodyLoad *vl, double time) const {
+    return Element :: integrateLoad(vl, time) / ndim;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: integrateInternalSources(){
+    return Element :: integrateInternalSources() / ndim;
 }
 
 //////////////////////////////////////////////////////////
@@ -695,7 +715,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         //exit(1);
     }
 
-    inttype->setIPWeight(0, length * area);   // NOTE JK: should not this be divided by dimension? Otherwise you integrate dim-times volume that is actually there (this is what caused problems in study on unstructured grid for FDM contribution)
+    inttype->setIPWeight(0, length * area / ndim);
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
 }
 
@@ -759,15 +779,6 @@ Matrix Transp1D :: giveDampingMatrix() const {
 
 
 //////////////////////////////////////////////////////////
-vector< double >Transp1D :: integrateLoad(BodyLoad *vl, double time) const {
-    vector< double >load = Element :: integrateLoad(vl, time);
-    for ( auto &p:load ) {
-        p /= ndim;
-    }
-    return load;
-}
-
-//////////////////////////////////////////////////////////
 double Transp1D :: giveVolume() const {
     return area * length / ndim;
 };
@@ -790,6 +801,29 @@ Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
     stats [ 0 ]->setParameterValue("pressure", averagePressure);
     return Element :: giveStrain(i, DoFs);
 };
+
+
+//////////////////////////////////////////////////////////
+Matrix Transp1D :: giveStiffnessMatrix(string matrixType) const{
+    return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
+}
+
+
+//////////////////////////////////////////////////////////
+Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+    return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
+}
+
+//////////////////////////////////////////////////////////
+Vector Transp1D :: integrateLoad(BodyLoad *vl, double time) const {
+    return Element :: integrateLoad(vl, time) / ndim;
+}
+
+//////////////////////////////////////////////////////////
+Vector Transp1D :: integrateInternalSources(){
+    return Element :: integrateInternalSources() / ndim;
+}
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -824,14 +858,10 @@ void Transp1DCoupled :: addNewFriend(RigidBodyContact *f, double weight) {
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: integrateInternalSources() {
-    return ( 1. / ndim ) * Element :: integrateInternalSources(); //volumetric integration but IP weight related to area
-}
-
-//////////////////////////////////////////////////////////
 Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     //crack opening
     double crackInNeighborhood = 0;
+    double crackVolume = 0;
     double elem_crack_opening;
     size_t m = 0;
     for ( auto &f: friends ) {
@@ -840,9 +870,11 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
             elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
+        crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() / f->giveNumOfVertices();
         m++;
     }
     stats [ 0 ]->setParameterValue("crack_opening", crackInNeighborhood);
+    stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
 
     //Biot effect
     double volStrain = 0;
@@ -865,7 +897,8 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
             volStrain = s1->giveVolumetricStrain();
         }
     }
-    stats [ 0 ]->setParameterValue("volumetric_strain", volStrain);
+    
+    stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //3 is there to obtain mechanical volumetric strain
 
     return Transp1D :: giveStrain(i, DoFs);
 };

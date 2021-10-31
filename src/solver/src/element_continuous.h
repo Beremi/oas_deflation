@@ -131,7 +131,6 @@ public:
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveDampingMatrix() const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);    
 };
 #endif  /* _ELEMENT_STRUCT_H */

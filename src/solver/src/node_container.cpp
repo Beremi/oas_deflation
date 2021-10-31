@@ -228,7 +228,7 @@ void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
         RHS [ loadedDoFs [ k ] ] += nodalLoad [ k ];
     }
 
-    vector< double >bodyLoad = BC->giveBodyForceDoFValues(time);
+    vector< double > bodyLoad = BC->giveBodyForceDoFValues(time);
     for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
         RHS [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
     }

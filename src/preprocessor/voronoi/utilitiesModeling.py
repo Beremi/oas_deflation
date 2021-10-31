@@ -6891,24 +6891,14 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         #node_coords.append( np.array([height/2, radius/4, radius/4]))
 
         oldLen = len(node_coords)
-        nodeA = np.array([indent, radius*0.99, radius*0.12])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, radius*0.06])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, radius*0.02])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.12])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.06])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.02])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        width = radius*0.24
+        step = minDist*0.35
+        da = int(width/step)
+        pos = np.linspace(-width/2., width/2., da)
+        for p in pos:
+            nodeA = np.array([indent, radius*0.99, p])
+            nodeB = np.array([height-indent, radius*0.99, p])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, step, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
 
 
@@ -6924,24 +6914,10 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
 
         oldLen = len(node_coords)
-        nodeA = np.array([indent, -radius*0.99, radius*0.12])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, radius*0.06])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, radius*0.02])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.12])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.06])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.02])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        for p in pos:
+            nodeA = np.array([indent, -radius*0.99, p])
+            nodeB = np.array([height-indent, -radius*0.99, p])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, step, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
 
         print()

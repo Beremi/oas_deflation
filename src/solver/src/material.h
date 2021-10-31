@@ -158,7 +158,7 @@ class DiscreteTrsprtCoupledMaterial;
 class DiscreteTrsprtCoupledMaterialStatus : public DiscreteTrsprtMaterialStatus
 {
 protected:
-    double tempVolumetricStrain, volumetricStrain, volStrainRate, crackParam;
+    double tempVolumetricStrain, volumetricStrain, volStrainRate, crackParam, tempCrackVolume, crackVolume, crackVolumeRate, pressure, pressureRate;
 public:
     DiscreteTrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~DiscreteTrsprtCoupledMaterialStatus() {};
@@ -177,14 +177,17 @@ public:
 class DiscreteTrsprtCoupledMaterial : public DiscreteTrsprtMaterial
 {
 private:
-    double crack_turtuosity, biotCoeff;
+    double crack_turtuosity, biotCoeff, refP, Kw, Mb; 
 public:
-    DiscreteTrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true; };
+    DiscreteTrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true; refP = 0.; Kw = 2.15e9; Mb = 1e9;};
     ~DiscreteTrsprtCoupledMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveTurtuosity() { return crack_turtuosity; };
     double giveBiotCoeff() const { return biotCoeff; };
+    double giveKw() const {return Kw;};
+    double giveMb() const {return Mb;};
+    double giveReferencePressure() const {return refP; };
 };
 
 //////////////////////////////////////////////////////////

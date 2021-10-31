@@ -65,6 +65,7 @@ public:
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex);
     virtual void readFromLine(istringstream &iss, unsigned d);
     vector< double >giveDimensions() const { return PUCsize; };
+    double giveVolume() const;
 };
 
 //////////////////////////////////////////////////////////
