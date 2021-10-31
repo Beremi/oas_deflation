@@ -240,14 +240,17 @@ class linearElasticMaterial:
 ##################################################
 #### Mars material ####
 class MarsMaterial:
-    def __init__ (self, youngModulus, poisson, density, ft, Gt):
+    def __init__ (self, youngModulus, poisson, density, ft, Gt, coupled = False):
         self.youngModulus = youngModulus
         self.poisson = poisson
         self.density = density
         self.ft = ft
         self.Gt = Gt
+        self.coupled = coupled
     def getString (self):
         line = 'MarsMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'ft\t%f' %(self.ft) +'\t' + 'Gt\t%f' %(self.Gt)
+        if self.coupled == True:
+            line = 'CoupledMarsMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'ft\t%f' %(self.ft) +'\t' + 'Gt\t%f' %(self.Gt) +'\t' + 'biot_coeff\t0.5'
         return line
 ##################################################
 
