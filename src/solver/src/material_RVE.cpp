@@ -629,6 +629,19 @@ unsigned DiscreteMechanicalRVEMaterialStatus :: giveStrainSize(unsigned rdim) co
 }
 
 /////////////////////////////////./////////////////////////
+double DiscreteMechanicalRVEMaterialStatus :: giveCrackVolume() const{
+    if (is_precomputed) return 0;
+    double crackVolume = 0.;
+    RigidBodyContact *e;
+    ElementContainer *elems = RVE->giveElements();
+    for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+        e = static_cast< RigidBodyContact * >( elems->giveElement(i) );  
+        crackVolume += e->giveCrackOpening()*e->giveArea();
+    }
+    return crackVolume;      
+}
+
+/////////////////////////////////./////////////////////////
 unsigned DiscreteMechanicalRVEMaterialStatus :: giveStrainSize() const {
     RVEMaterial *macromat = static_cast< RVEMaterial * >(mat);
     return giveStrainSize( macromat->giveNumOfDimensions());
@@ -847,7 +860,16 @@ DiscreteCoupledRVEMaterialStatus ::  DiscreteCoupledRVEMaterialStatus(RVEMateria
 
         temp_volumetricStrain = volumetricStrain = 0;
         temp_pressure = pressure = 0;
-        volStrainRate = pressureRate = 0;
+        temp_crackVolume = crackVolume  = 0;
+        volStrainRate = pressureRate = crackVolumeRate = 0;
+
+
+        DiscreteTransportRVEMaterial* dtRVEmat = static_cast< DiscreteTransportRVEMaterial* >(trspRVEstat->giveMaterial());
+        DiscreteTrsprtCoupledMaterial* dctm = dynamic_cast< DiscreteTrsprtCoupledMaterial* >(dtRVEmat->giveMasterMaterial());
+        if(!dctm) {
+            cerr << "Error in " << name << ": transport material in RVE is not DiscreteTrsprtCoupledMaterial"  << endl; 
+        }
+        coupledm->setMasterMaterial(dctm);
 
         is_precomputed = true;
         is_master_status = false;
@@ -894,6 +916,21 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
         macromaterial->setPrecomputedElasticDampingAndInertiaTensors(ela, dam, ine);
         macromaterial->setNumOfDimensions(ndim);
 
+        TransportPeriodicBC * tp;
+        double PUCVolume = 0.;
+        PBlockContainer* pblocks = trspRVEstat->giveWholeRVE()->givePBlockContainer();
+        for (unsigned i=0; i<pblocks->giveSize(); i++) {
+            tp = dynamic_cast < TransportPeriodicBC * >(pblocks->givePBlock(i));
+            if (tp){ 
+                PUCVolume = tp->giveVolume();
+                break;
+            }
+        }
+        if (PUCVolume==0){
+            cerr << "Error in DiscreteCoupledRVEMaterialStatus: PUC volume was not determined" << endl; 
+            exit(1);
+        } else macromaterial->setPUCVolume(PUCVolume);
+
         setToPrecomputed(); //set back to precomputed to use it        
     }   
     //setFromPrecomputedToFullModel(); //switch to nonlinear
@@ -906,6 +943,7 @@ void DiscreteCoupledRVEMaterialStatus ::  update() {
 
     volumetricStrain = temp_volumetricStrain;
     pressure = temp_pressure;
+    crackVolume = temp_crackVolume;
 }
 
 //////////////////////////////////////////////////////////
@@ -914,8 +952,7 @@ void DiscreteCoupledRVEMaterialStatus :: setParameterValue(string code, double v
         temp_volumetricStrain = value;
     } else if ( code.compare("pressure") == 0 ) {
         trspRVEstat -> setParameterValue(code, value);
-        temp_pressure = value;
-                
+        temp_pressure = value;                
     } else {
         MaterialStatus :: setParameterValue(code, value);
     }
@@ -926,9 +963,11 @@ void DiscreteCoupledRVEMaterialStatus ::  updateRateVariables(double timeStep) {
     if ( timeStep > 0 ) {
         volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / (timeStep);
         pressureRate =  ( temp_pressure - pressure ) / (timeStep);
+        crackVolumeRate =  ( temp_crackVolume - crackVolume ) / (timeStep);
     } else {
-        volStrainRate = 0;
-        pressureRate = 0;
+        volStrainRate = 0.;
+        pressureRate = 0.;
+        crackVolumeRate = 0.;
     }
 }
 
@@ -950,6 +989,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
         strainT [ i ] = temp_strain [ i + sizeM ] = strain [ i + sizeM ];
     }
     strainT [ sizeT ] = strain [ sizeT + sizeM ]; //macroscopic pressure
+
+    temp_crackVolume = mechRVEstat->giveCrackVolume();
 
     updateRateVariables(timeStep);
 
@@ -977,9 +1018,28 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
 }
 
 //////////////////////////////////////////////////////////
-double DiscreteCoupledRVEMaterialStatus :: computeBiotEffect() const {
+Vector DiscreteCoupledRVEMaterialStatus :: giveInternalSource() const {
     DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
-    return dcm->giveBiotCoefficient() * volStrainRate * 3 * 1.000000e+03; //TODO: fix density
+    unsigned ndim = dcm->giveNumOfDimensions();
+
+
+    DiscreteCoupledRVEMaterial* dcRVEmat = static_cast< DiscreteCoupledRVEMaterial* >(mat);
+    DiscreteTrsprtCoupledMaterial* dtcm = dcRVEmat->giveMasterMaterial();
+
+
+    double PUCVolume = dcm->givePUCVolume();
+    Vector intS;
+    intS.resize(3*(ndim-1)+1);
+    unsigned TDoF = 3*(ndim-1);
+    
+    intS[TDoF] = -dcm->giveBiotCoefficient() * volStrainRate * 3.;
+    intS[TDoF] -= pressureRate/ dtcm->giveMb();
+    intS[TDoF] -= temp_crackVolume*pressureRate/(PUCVolume*dtcm->giveKw());
+    intS[TDoF] -= crackVolumeRate/PUCVolume*(1. - dcm->giveBiotCoefficient() + (temp_pressure - dtcm->giveReferencePressure())/dtcm->giveKw() );
+   
+    
+    intS[TDoF] *= dtcm->giveDensity();
+    return intS;
 }
 
 //////////////////////////////////////////////////////////
@@ -995,6 +1055,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Ve
     for ( unsigned i = 0; i < ndim; i++ ) {
         temp_stress [ i ] += mechBiot;
     }
+
+    
 
     return temp_stress;
 }

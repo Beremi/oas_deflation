@@ -213,7 +213,6 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
         //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
     } else temp_crackOpening = 0;
     
-
     // compression recovery
     //if (temp_damage < damage && epsN>0)  temp_damage = damage;
     //if (temp_damage < damageC && epsN<0) temp_damage = damageC;

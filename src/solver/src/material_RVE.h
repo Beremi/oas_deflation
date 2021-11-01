@@ -142,6 +142,7 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveInertiaTensor() const;
     virtual unsigned giveStrainSize() const;
+    virtual double giveCrackVolume() const;
     void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed(){ is_precomputed = true; };
 };
@@ -187,6 +188,7 @@ protected:
 
     double temp_volumetricStrain, volumetricStrain, volStrainRate;
     double temp_pressure, pressure, pressureRate;
+    double temp_crackVolume, crackVolume, crackVolumeRate;
 
     void findFriends();
     void updateRateVariables(double timeStep);
@@ -204,7 +206,7 @@ public:
     virtual Matrix giveInertiaTensor() const;
     virtual void setEigenStrain(Vector &x);
     virtual std :: string giveLineToSave() const;
-    virtual double computeBiotEffect() const;
+    virtual Vector giveInternalSource() const;
     virtual void setParameterValue(string code, double value);
     virtual void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed(){ is_precomputed = true; mechRVEstat->setToPrecomputed(); trspRVEstat->setToPrecomputed();};
@@ -217,10 +219,11 @@ protected:
     DiscreteMechanicalRVEMaterial *mechRVEmat;
     DiscreteTransportRVEMaterial *trspRVEmat;
     Matrix precompElastic, precompDamping, precompInertia; 
-    double biotCoeff;   
+    double biotCoeff, PUCVolume;   
+    DiscreteTrsprtCoupledMaterial *masterMaterial;
 
 public:
-    DiscreteCoupledRVEMaterial() { name = "coupled RVE material";  precompElastic=Matrix(0,0);};
+    DiscreteCoupledRVEMaterial() { name = "coupled RVE material";  precompElastic=Matrix(0,0); produceInternalSources = true; PUCVolume=0;};
     virtual ~DiscreteCoupledRVEMaterial();
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void readFromLine(istringstream &iss);
@@ -231,6 +234,10 @@ public:
     Matrix givePrecomputedElasticTensor() const { return precompElastic; };
     Matrix givePrecomputedDampingTensor() const { return precompDamping; };
     Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
+    DiscreteTrsprtCoupledMaterial *giveMasterMaterial() { return masterMaterial; };
+    void setMasterMaterial(DiscreteTrsprtCoupledMaterial *masterM){ masterMaterial = masterM; };
+    void setPUCVolume(double vol){ PUCVolume = vol; };
+    double givePUCVolume() const { return PUCVolume; };
 };
 
 #endif /* _MAT_RVE_H */

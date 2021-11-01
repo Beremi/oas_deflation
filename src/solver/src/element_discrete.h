@@ -14,7 +14,6 @@ protected:
     double length, area;
     Point normal, t1, t2;
     Matrix R;
-    double tempCrackOpening; //needed for coupled analysis;
 
     Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;
@@ -31,6 +30,7 @@ public:
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     vector< Node * >giveVertices() const { return vert; };
+    unsigned giveNumOfVertices() const {return vert.size(); };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
     virtual Vector giveContactStrainNT() const;
@@ -41,7 +41,7 @@ public:
 
     virtual double giveValue(string code) const;
     virtual double giveIPValue(string code, unsigned ipnum) const;
-    double giveCrackOpening() { return tempCrackOpening; };
+    double giveCrackOpening() { return giveIPValue("tempCrackOpening", 0); };
     Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     Point giveNormal() const { return normal; };
     Point giveT1() const { return t1; };
@@ -49,7 +49,13 @@ public:
     double giveVolume(unsigned nodenum) const;
     double giveVolume() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector integrateLoad(BodyLoad *vl, double time) const;
+    virtual Vector integrateInternalSources();
+
+
     virtual bool isPointInside(Point* xn, const Point *x) const { (void) xn; (void) x; return false;}; //TODO: discrete elements does not interpolate
 };
 
@@ -111,7 +117,9 @@ public:
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveDampingMatrix() const;
-    virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector integrateInternalSources();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     vector< Node * >giveVertices() const { return vert; };

@@ -201,9 +201,9 @@ Matrix Element :: giveMassMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-vector< double >Element :: integrateLoad(BodyLoad *vl, double time) const {
+Vector Element :: integrateLoad(BodyLoad *vl, double time) const {
     unsigned nDoFs = DoFids.size();
-    vector< double >load(nDoFs);
+    Vector load(nDoFs);
     double fvalue;
     unsigned dir = vl->giveDirection();
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {

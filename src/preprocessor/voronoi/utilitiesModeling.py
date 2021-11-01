@@ -1198,7 +1198,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init, roughMinDistCoef=roughMinDistCoef, adaptivityReady=adaptivityReady, fineRingThickness=fineRingThickness, fineRegDepth=fineRegDepth, gradientRegDepth=gradientRegDepth)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, interfaceNodeIndices  = assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMinDist, rebarDiameter, rebarCount, rebarDepth, sampleBorders, node_coords_init=node_coords_init, roughMinDistCoef=roughMinDistCoef, adaptivityReady=adaptivityReady, fineRingThickness=fineRingThickness, fineRegDepth=fineRegDepth, gradientRegDepth=gradientRegDepth)
 
 
 
@@ -1341,7 +1341,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
 
 
-    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+    return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, interfaceNodeIndices
 
 
 
@@ -3749,9 +3749,14 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
     #rebar
 
+    interfaceNodeIndices = []
+
     #sampling interfaces
     for r in range (rebarCount):
         if node_coords_init is None:
+            oldLen = len(node_coords)
+            interface = []
+
             print ('Interface #%d' %r)
             #rebar edge
             if (rebarCount==1):
@@ -3799,9 +3804,17 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
                 mBC = utilitiesMech.mechanicalBC(dim, nodesOld + n, mechBC)
                 #mechBC_merged.append(mBC)
 
+        newLen = len(node_coords)
 
+        for i in range (newLen-oldLen):
+            interface.append(oldLen+i)
+        interfaceNodeIndices.append(interface)
+        
         rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
+
+
+
 
     if node_coords_init is None:
         fineRegDepth *= maxLim[1]
@@ -3906,7 +3919,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
         plt.show()
 
 
-    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, interfaceNodeIndices
 
 
 
@@ -6891,24 +6904,14 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         #node_coords.append( np.array([height/2, radius/4, radius/4]))
 
         oldLen = len(node_coords)
-        nodeA = np.array([indent, radius*0.99, radius*0.12])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, radius*0.06])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, radius*0.02])
-        nodeB = np.array([height-indent, radius*0.99, radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.12])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.06])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, radius*0.99, -radius*0.02])
-        nodeB = np.array([height-indent, radius*0.99, -radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        width = radius*0.24
+        step = minDist*0.35
+        da = int(width/step)
+        pos = np.linspace(-width/2., width/2., da)
+        for p in pos:
+            nodeA = np.array([indent, radius*0.99, p])
+            nodeB = np.array([height-indent, radius*0.99, p])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, step, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
 
 
@@ -6924,24 +6927,10 @@ def assembleCoupledBrazilianDisc(center, radius, height, minDist, trials, direct
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
 
         oldLen = len(node_coords)
-        nodeA = np.array([indent, -radius*0.99, radius*0.12])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, radius*0.06])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, radius*0.02])
-        nodeB = np.array([height-indent, -radius*0.99, radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.12])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.12])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.06])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.06])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
-        nodeA = np.array([indent, -radius*0.99, -radius*0.02])
-        nodeB = np.array([height-indent, -radius*0.99, -radius*0.02])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist = True)
+        for p in pos:
+            nodeA = np.array([indent, -radius*0.99, p])
+            nodeB = np.array([height-indent, -radius*0.99, p])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, step, dim, node_coords, trials, catchCorners=True, equidist = True)
         newNodes = len(node_coords)-oldLen
 
         print()

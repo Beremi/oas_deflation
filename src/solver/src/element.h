@@ -77,7 +77,7 @@ public:
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
     unsigned giveDimension() const { return ndim; }
-    virtual vector< double >integrateLoad(BodyLoad *vl, double time) const;
+    virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     unsigned giveVTKCellType() const { return vtk_cell_type; };
     virtual void changeMaterial(Material *newmat);
     virtual Vector integrateInternalSources();

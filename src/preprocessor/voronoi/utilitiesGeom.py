@@ -385,7 +385,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
     if activeTransport:
@@ -664,7 +664,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
         saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
 
@@ -1259,6 +1259,7 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
     f.write('limit_tolerance\t%e\n'%limitTolerance)
     f.write('maxIt\t%d\n'%maxIt)
     f.write('tolerance\t%e\n'%tolerance)
+    f.write('stiffness_matrix_update\t0\n')
 
     f.close()
 
@@ -1397,7 +1398,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
     nodes_out = np.array(nodes_out)
     #writing nodes
-    print(len(nodes_out))
+    print((nodes_out))
     num = dim
 
     if (dim == 2):
@@ -1431,7 +1432,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
 
 
-def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None, notches = None, randomizeMaterial = False):
+def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None, notches = None, randomizeMaterial = False, coupled = False):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
@@ -1448,7 +1449,6 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
 
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
-
 
         for i in range (len(mechElemRidges)):
             nodeA = nodes[int(mechElemRidges[i][0])]
@@ -1654,7 +1654,10 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
         #print(mechElemRidges[0])
-        np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+        if coupled == False:
+            np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+        if coupled == True:
+            np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
 
     if (dim == 3):
@@ -1664,7 +1667,10 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
         fl.write(headerLine)
         for i in range (len(mechElemRidges)):
             ro = np.array(mechElemRidges[i], ndmin=2)
-            fmt='LTCBEAM\t%d\t%d\t%d'
+            if coupled == False:
+                fmt='LTCBEAM\t%d\t%d\t%d'
+            if coupled == True:
+                fmt='LTCBEAMCoupled\t%d\t%d\t%d'
             np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
     sys.stdout.flush()
@@ -2186,6 +2192,10 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
     return newAuxNodes
 
+
+
+
+
 def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False, expansionRingsProps=[]):
     print('Saving rigid plates...', end='')
 
@@ -2193,6 +2203,9 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
         file = constraintFile
     else:
         file = constraintTrsptFile
+
+    mechDofIndices = []
+
 
     with open(os.path.join(master_folder,file), 'w') as f:
         totNodeC = totalNodeCount
@@ -2227,9 +2240,14 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
                 #f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
                 f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
 
+                mechDofIndices.append(totNodeC+r)
+
 
 
     print('done.')
+
+
+    return mechDofIndices
 
 
 ## ForceGauge file_name gauge_name which_force how_many node_ids
@@ -2275,39 +2293,56 @@ def saveConstraint(master_folder, dim, govNodes, govNodesMechBC, rigidPlates, to
     #saving rigid plates
     for rp in rigidPlates:
         rp.getNodesAffected(nodes)
-    saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, expansionRingsProps=expansionRingsProps)
+    mechDofIndices = saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, expansionRingsProps=expansionRingsProps)
 
     for rp in range (len(rigidPlates)):
         print('Nodes affected by Rigid plate #%d:' %rp)
         print(rigidPlates[rp].getNodesAffected(nodes))
 
-    print('mechbc')
+
+    #print('mechbc')
     #if (len(nodesMechBC)!=0):
     #    for i in range(len(nodesMechBC)):
     #s        saveForceGauges(master_folder, dim, nodesMechBC[i].nodeIdx, name='Node%d'%nodesMechBC[i].nodeIdx, moments=False)
 
+    return mechDofIndices
+
+def saveCoupledConstraint(master_folder, interfaceNodeIndices, masterNodesIds, direction, materialId, coeff):
+    print ('Saving coupled constraint...', end='')
+    # PressureFromMechanicalLoad \t MasterNodeId \t Direction \t MaterialId \t Coeff
+    with open(os.path.join(master_folder,constraintTrsptFile), 'a') as f:
+        f.write("#PressureFromMechanicalLoad \t MasterNodeId \t Direction \t MaterialId \t Coeff \t NrInterfaceNodes \t InterfaceNodesIndices\n"  )
+        for i in range (len(interfaceNodeIndices)):
+            intrfc = interfaceNodeIndices[i]
+            masterNodeId = masterNodesIds[i]
+            #print(intrfc)
+            intrfrcLine = ''
+            for n in intrfc:
+                intrfrcLine += '%s \t' %n
+
+            f.write("PressureFromMechanicalLoad \t %d \t %d \t %d \t %e \t %d \t %s\n" %(masterNodeId, direction, materialId, coeff, len(intrfc), intrfrcLine) )
+
+    print ('done.')
+
+
 
 def saveConstraintTransport(master_folder, dimension, govNodesTrspt, govNodesTrsptBC, rigidPlatesTrspt, totalNodeCount, node_coords, vert_count, verticesIdxDict, vertIdxStart):
     print ('Saving Transport constraint...')
-    print(govNodesTrspt)
+    #print(govNodesTrspt)
     saveNodes (master_folder,govNodesTrspt, "TrsprtNode", dimension, govNodesTrsptFile)
 
     for i in range (len(govNodesTrsptBC)):
         m = govNodesTrsptBC[i]
         m.nodeIdx = totalNodeCount + i
 
-
     for rp in rigidPlatesTrspt:
         rp.renumberVertices(verticesIdxDict, vertIdxStart)
-
 
     #print (govNodesTrsptBC)
     saveTransportBC(master_folder,govNodesTrsptBC, verticesIdxDict, vertIdxStart, govNodesBC=True, totalNodeCount=totalNodeCount)
 
-
     for i in range (len(govNodesTrsptBC)):
         saveForceGauges(master_folder, dimension, govNodesTrsptBC[i].nodeIdx, moments=False, name='TrsptPLT%d'%i, transport=True)
-
 
     saveRigidPlates(master_folder, dimension, rigidPlatesTrspt, totalNodeCount, trspt=True)
 

@@ -165,10 +165,14 @@ double BodyLoad :: giveValue(const Point *xyz, double t) {
 
 //////////////////////////////////////////////////////////
 vector< double >BodyLoad :: giveBodyForceDoFValues(double t) {
-    vector< double >load, elemLoad;
+    vector< double > load; 
+    Vector elemLoad;
+    unsigned s = 0;
     for ( auto &e: els ) {
+        s = load.size();
         elemLoad = e->integrateLoad(this, t);
-        load.insert(load.end(), elemLoad.begin(), elemLoad.end() );
+        load.resize(s+elemLoad.size());
+        for( unsigned i=0; i<elemLoad.size(); i++) load[s+i] = elemLoad[i];
     }
     return load;
 }
