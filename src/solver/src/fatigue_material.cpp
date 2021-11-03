@@ -190,7 +190,18 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
         if ( deltaS_full > deltaS_part ) {
             divide_by = ( deltaS_full /  deltaS_part ) + 1;
-            // std::cout << "step divided into " << divide_by << " substeps " << '\n';
+            // std::cout << "step divided into " << divide_by << " substeps ";
+            if (divide_by > 1000) {
+                divide_by = 1;
+                // temp_damageShear = 1 - 1e-10;
+                // for ( unsigned i = 1; i < stress.size(); i++ ) {
+                //     stress [ i ] = 0;
+                // }
+                // std::cout << "-> return zero stress" << '\n';
+                return stress;
+            }
+            // std::cout << '\n';
+
         }
         slip_increment = ( temp_slip - slip ) / divide_by;
 
