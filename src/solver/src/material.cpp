@@ -483,13 +483,12 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, d
     if ( timeStep > 0 ) {
         volStrainRate = ( tempVolumetricStrain - volumetricStrain ) / timeStep;
         crackVolumeRate = (tempCrackVolume - crackVolume) / timeStep;
-        pressureRate = (avgPressure - pressure) / timeStep;
+        pressureRate = (avgPressure - pressure) / timeStep;        
     } else {
         volStrainRate = 0.;
         crackVolumeRate = 0.;
         pressureRate = 0.;
     }
-
     effConductivity = updateEffectiveConductivity();
     temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
@@ -501,15 +500,13 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, d
 Vector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const {
     Vector ints(1);
     DiscreteTrsprtCoupledMaterial *m = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
-
    
     ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
-    ints [ 0 ] -= pressureRate/ m->giveMb();
     if (crackVolumeRate>0 || tempCrackVolume>0 ){
         Transp1D * trs = static_cast<Transp1D*>(element); 
         double vol = trs->giveVolume();
-        ints [ 0 ] -= crackVolumeRate * ( 1 - m->giveBiotCoeff() +  ( avgPressure - m->giveReferencePressure() ) / m->giveKw() ) / vol;
         ints [ 0 ] -= tempCrackVolume * pressureRate / (vol * m->giveKw() );
+        ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( avgPressure - m->giveReferencePressure() ) / m->giveKw() );        
     }
     return ints*m->giveDensity();
 }
@@ -552,6 +549,14 @@ void DiscreteTrsprtCoupledMaterialStatus ::  update() {
 double DiscreteTrsprtCoupledMaterialStatus ::  giveValue(string code) const {
     if ( code.compare("volumetric_strain") == 0 ) {
         return volumetricStrain;
+    } else if ( code.compare("crack_volume") == 0 ) {
+        return tempCrackVolume;
+    } else if ( code.compare("crack_volume_rate") == 0 ) {
+        return crackVolumeRate;
+    } else if ( code.compare("rel_crack_volume_rate") == 0 ) {
+        Transp1D * trs = static_cast<Transp1D*>(element); 
+        double vol = trs->giveVolume();
+        return crackVolumeRate / vol;
     } else {
         return TrsprtMaterialStatus :: giveValue(code);
     }

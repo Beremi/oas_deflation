@@ -62,6 +62,9 @@ void MarsMaterialStatus :: init() {
     temp_crackOpening = 0;
     volumetricStrain = 0;
 
+
+    crackOpening = 0;
+
     RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
     if ( rbc ) {
         L = rbc->giveLength();
@@ -213,6 +216,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
         //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
     } else temp_crackOpening = 0;
     
+
     // compression recovery
     //if (temp_damage < damage && epsN>0)  temp_damage = damage;
     //if (temp_damage < damageC && epsN<0) temp_damage = damageC;
@@ -225,6 +229,8 @@ void MarsMaterialStatus :: update() {
     damage = temp_damage;
     maxEpsN = temp_maxEpsN;
     maxEpsT = temp_maxEpsT;
+
+    crackOpening = temp_crackOpening;
 }
 
 //////////////////////////////////////////////////////////
@@ -278,6 +284,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(addEigenStrain(strain) );
+    RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 

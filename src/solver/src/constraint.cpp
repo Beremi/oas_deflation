@@ -165,14 +165,14 @@ void VolumetricAverage :: init() {
             for ( unsigned p = 0; p < 2; p++ ) {
                 r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
                 if ( r < s ) {
-                    m [ r ] += et->giveVolume(p);
+                    m [ r ] += et->giveVolumeAssociatedWithNode(p);
                 }
             }
         } else if ( em ) {
             for ( unsigned p = 0; p < 2; p++ ) {
                 r = ( std :: find(nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
                 if ( r < s ) {
-                    m [ r ] += em->giveVolume(p);
+                    m [ r ] += em->giveVolumeAssociatedWithNode(p);
                 }
             }
         }

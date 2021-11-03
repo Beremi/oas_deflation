@@ -23,6 +23,8 @@ private:
     void computeOmega0();
     void computeDamage(Vector strain);
     void computeKsAnsKt();
+
+    double crackOpening;
 public:
     MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
     virtual ~MarsMaterialStatus() {};
