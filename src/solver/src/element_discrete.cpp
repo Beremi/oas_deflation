@@ -887,7 +887,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         if ( s0 ) {
             volStrain = s0->giveVolumetricStrain();
         }
-    } else {
+    } else if (s0 && s1 ) {
         if ( ( s0->isValid() && s1->isValid() ) || ( !s0->isValid() && !s1->isValid() ) ) {
             volStrain = ( s0->giveVolumetricStrain() + s1->giveVolumetricStrain() ) / 2.;
         } else if ( s0->isValid() ) {
@@ -895,7 +895,11 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         } else {
             volStrain = s1->giveVolumetricStrain();
         }
+    } else {
+        cerr << "no simplex found" << endl;
+        exit(1);
     }
+
     
     stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //3 is there to obtain mechanical volumetric strain
 

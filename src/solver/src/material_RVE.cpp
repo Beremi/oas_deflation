@@ -1026,7 +1026,6 @@ Vector DiscreteCoupledRVEMaterialStatus :: giveInternalSource() const {
     DiscreteCoupledRVEMaterial* dcRVEmat = static_cast< DiscreteCoupledRVEMaterial* >(mat);
     DiscreteTrsprtCoupledMaterial* dtcm = dcRVEmat->giveMasterMaterial();
 
-
     double PUCVolume = dcm->givePUCVolume();
     Vector intS;
     intS.resize(3*(ndim-1)+1);
@@ -1046,6 +1045,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Ve
     DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
     unsigned ndim = dcm->giveNumOfDimensions();
     temp_stress = giveStiffnessTensor("secant", ndim)*strain;
+
+    updateRateVariables(timeStep);
 
     double mechBiot = -temp_pressure * dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
     for ( unsigned i = 0; i < ndim; i++ ) {

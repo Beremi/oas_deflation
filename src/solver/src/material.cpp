@@ -479,7 +479,7 @@ double DiscreteTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() cons
 }
 
 //////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void DiscreteTrsprtCoupledMaterialStatus ::  updateRateVariables(double timeStep) {
     if ( timeStep > 0 ) {
         volStrainRate = ( tempVolumetricStrain - volumetricStrain ) / timeStep;
         crackVolumeRate = (tempCrackVolume - crackVolume) / timeStep;
@@ -489,6 +489,13 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, d
         crackVolumeRate = 0.;
         pressureRate = 0.;
     }
+}
+
+//////////////////////////////////////////////////////////
+Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+
+    updateRateVariables(timeStep);
+
     effConductivity = updateEffectiveConductivity();
     temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain);
@@ -528,7 +535,7 @@ void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, doubl
 
 //////////////////////////////////////////////////////////
 Vector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
+    updateRateVariables(timeStep);
     temp_strain.resize(1);
     temp_strain [ 0 ] = strain [ 0 ];
     temp_stress = -effConductivity *addEigenStrain(strain);

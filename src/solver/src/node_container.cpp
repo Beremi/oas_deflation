@@ -121,8 +121,13 @@ void NodeContainer :: initSimplices() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
+    //update valid simplices
     for ( auto &n:nodes ) {
-        n->updateSimplexVolumetricStrain(fullDoFs);
+        if (n->hasValidSimplex()) n->updateSimplexVolumetricStrain(fullDoFs);        
+    }
+    //update from neighbours
+    for ( auto &n:nodes ) {
+        if (n->hasSimplex() && !n->hasValidSimplex()) n->updateSimplexVolumetricStrain(fullDoFs);        
     }
 }
 

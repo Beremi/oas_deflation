@@ -171,6 +171,7 @@ public:
     virtual double giveValue(string code) const;
     virtual void setParameterValue(string code, double value);
     virtual double updateEffectiveConductivity() const;
+    void updateRateVariables(double timeStep);
 };
 
 //////////////////////////////////////////////////////////

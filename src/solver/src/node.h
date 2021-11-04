@@ -63,6 +63,8 @@ public:
     void initSimplex();
     void updateSimplexVolumetricStrain(const Vector &fullDoFs);
     Simplex *giveSimplex() { return simplex; }
+    bool hasSimplex()const{return simplex!=nullptr;}
+    bool hasValidSimplex() const { if (!simplex) return false; return simplex->isValid();}
 };
 
 //////////////////////////////////////////////////////////
