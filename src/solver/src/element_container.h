@@ -26,7 +26,7 @@ public:
     void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs);
     // void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
-    void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now = 0, const unsigned &step = 0, const bool &saveNodeIds = true) const;
+    void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double time_now = 0, const unsigned step = 0, const bool saveNodeIds = true, const double idc_time = 0) const;
     void readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool get_time_from_file = true);
     void setFileToLoadStatsFrom(const std :: string &str);
     void init();
@@ -34,6 +34,7 @@ public:
     size_t giveSize() const { return elems.size(); }
     void findElementFriends();
     void updateMaterialStatuses();
+    void resetMaterialStatuses();
     void prepareStiffnessMatrix(CoordinateIndexedSparseMatrix &K) const;
     void updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const;
     void prepareDampingMatrix(CoordinateIndexedSparseMatrix &C) const;

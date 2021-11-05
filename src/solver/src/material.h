@@ -26,6 +26,7 @@ public:
     Material *giveMaterial() { return mat; };
     virtual void init() {};
     virtual void update();
+    virtual void downgrade() {};  ///> if step reset applied, reset temprary variables to last converged state
     virtual Vector giveStress(const Vector &strain, double timeStep) { return giveStressWithFrozenIntVars(strain, timeStep); };
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep) { ( void ) strain; ( void ) timeStep; return Vector(0); };
     virtual double giveValue(string code) const { ( void ) code; return 0; };

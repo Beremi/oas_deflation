@@ -1,4 +1,5 @@
 #include "exporter_model.h"
+// #include "solver.h"
 #include <cstdio>
 
 void ElementStatsExporter :: giveFileName(unsigned step, char *buffer) const {
@@ -35,8 +36,11 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
     giveFileName(step, buffer);
 
     std :: string this_file_path = ( resultDir / buffer ).string();
-
-    elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step, false);
+    double idc_time_converged = 0;
+    // if (masterModel->giveSolver()->giveName().compare("SteadyStateNonLinearSolver") == 0 ) {
+    //     idc_time_converged = static_cast< SteadyStateNonLinearSolver * >( masterModel->giveSolver() )->giveIDCtime();
+    // }
+    elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step, false, idc_time_converged);
 
     if ( remove_previous ) {
         if ( this->last_saved_file.compare("none") != 0 ) {

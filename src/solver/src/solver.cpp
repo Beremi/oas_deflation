@@ -354,9 +354,9 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector(freeDoFnum - nodes->giveNumConstrDoFs() );
         if ( initial ) {
-            idc_time = 0;
+            idc_time = init_time;
             idc_dt = 1e-6;
-            idc_time_converged = 0;
+            idc_time_converged = init_time;
         } else {
             // JK: during solver initialization after geometry update, idc_time must be set to time of previously converged step
             idc_time = idc_time_converged;
@@ -571,6 +571,13 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
     * residu_error = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
     * displa_error = sqrt(full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
     * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
+
+    // std :: cout << "f_extM " << f_extM << '\t' <<
+    // "f_intM " << f_intM << '\t' <<
+    // "residualM " << residualM << '\t' <<
+    // "full_ddrM " << full_ddrM << '\t' <<
+    // "trial_rM " << trial_rM << '\t' <<
+    // "energyM " << energyM << '\n';
 }
 
 
@@ -582,6 +589,9 @@ void SteadyStateNonLinearSolver :: solve() {
     double displa_error = 0;
     double energy_error = 0;
     double residu_error = 0;
+
+    // bool restart_now = true;  // JK: left for testing
+    Vector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
 
     while ( !converged ) {
         //setup loading
@@ -598,7 +608,7 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( updateSystemMatrices("secant", it) ) {
                 computeKeff();                                    //only if required
             }
-            nodes->giveReducedForceArray(residuals, f);
+            nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here
 
             if ( idc ) {      //indirect displacement control
                 f_last_iter = f;
@@ -678,16 +688,25 @@ void SteadyStateNonLinearSolver :: solve() {
             it++;
             //if (it>10) exit(1);
         }
-        if ( !converged && dt > dtmin ) {
-            time -= dt;
-            dt = fmax(dt * critical_step_decrease, dtmin);
-            time += dt;
+        if ( (!converged && dt > dtmin)
+         // || restart_now  // JK: left for testing
+                                        ) {
+            // if ( restart_now ) {
+            //     restart_now = false; converged = false;
+            // } else {
+                time -= dt;
+                dt = fmax(dt * critical_step_decrease, dtmin);
+                time += dt;
+            // }
             cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
             restarted = true;
             trial_r = r;
             f_int = f_int_old;
             f_ext = f_ext_old;
             load *= 0;
+            ddr *= 0;
+            residuals = reset_residuals;
+            this->elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
             if ( idc ) {
                 idc_time = idc_time_converged;
             }
@@ -699,7 +718,6 @@ void SteadyStateNonLinearSolver :: solve() {
                 std :: cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
                 terminated = true;
                 return;
-                // exit(1);
             }
         } else if ( ( !restarted ) && converged && it < enlargeIt && dt < dtmax ) {
             dt = fmin(dt * step_increase, dtmax);
@@ -762,6 +780,11 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
             idc_time_converged = idc_time;
         }
     }
+}
+
+double SteadyStateNonLinearSolver :: giveIDCtime(const bool converged) {
+    if ( converged ) return this->idc_time_converged;
+    return this->idc_time;
 }
 
 //////////////////////////////////////////////////////////

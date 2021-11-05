@@ -20,6 +20,7 @@ private:
     double tang_stiff;  ///< consistent algorithmic (= tangent) shear stiffness
     Point slip_free;
     bool temporarily_killed = false;
+    bool prev_temporarily_killed = false;
 
     Point temp_sPi, temp_slip, temp_slip_free, temp_alphaKin;
     Point stressT, temp_stressT;
@@ -51,11 +52,14 @@ public:
     virtual ~FatigueShearMaterialStatus() {};
     void init();
     virtual void update();
+    virtual void downgrade();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
     double isDamageCoupled() const { return coup_dam; }
+    virtual std :: string giveLineToSave() const;
+    virtual void readFromLine(istringstream &iss);
 protected:
     void setDamage(const double &new_damage) {
         if ( new_damage > this->temp_damageShear ) {
@@ -139,10 +143,13 @@ public:
     virtual ~DamagePlasticMaterialStatus() {};
     void init();
     virtual void update();
+    virtual void downgrade();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
+    virtual std :: string giveLineToSave() const;
+    virtual void readFromLine(istringstream &iss);
 protected:
     void setDamage(const double &new_damage) {
         if ( new_damage > this->temp_damage ) {
@@ -200,10 +207,13 @@ public:
     virtual ~FatigueMaterialStatus() {};
     void init();
     virtual void update();
+    virtual void downgrade();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveValue(string code) const;
+    virtual std :: string giveLineToSave() const;
+    virtual void readFromLine(istringstream &iss);
 };
 
 
