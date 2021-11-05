@@ -227,6 +227,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         //JM: integration point coordinates as an average of CGs of face triangles weighted by areas
         Point centroid = Point(0.0, 0.0, 0.0);
         area = 0.0;
+        perimeter = 0;
         double ai = 0.0;
         unsigned int j = 0;
         for ( unsigned int i = 0; i < vert.size(); i++ ) {
@@ -237,6 +238,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
             ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
             area += ai;
+            perimeter += ( vert [ i ]->givePoint() - vert [ j ]->givePoint() ).norm();
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
         }
@@ -308,6 +310,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     inttype->setIPWeight(0, length * area / ndim);
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
+    volume = area * length / ndim;   
 }
 
 //////////////////////////////////////////////////////////
@@ -401,12 +404,7 @@ Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsign
 }
 
 //////////////////////////////////////////////////////////
-double RigidBodyContact :: giveVolume() const {
-    return area * length / ndim;
-};
-
-//////////////////////////////////////////////////////////
-double RigidBodyContact :: giveVolume(unsigned nodenum) const {
+double RigidBodyContact :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
     if ( nodenum == 0 ) {
         return dot(vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint(), normal) * area / ndim;
     } else if ( nodenum == 1 ) {
@@ -717,6 +715,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
     inttype->setIPWeight(0, length * area / ndim);
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
+    volume = area * length / ndim;   
 }
 
 //////////////////////////////////////////////////////////
@@ -756,10 +755,13 @@ Matrix Transp1D :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveHMatrix(const Point *x) const {
     Matrix H(1, 2);
-    double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
-    double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
-    H [ 0 ] [ 0 ] = l1 / length;
-    H [ 0 ] [ 1 ] = l2 / length;
+    //double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
+    //double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
+    //H [ 0 ] [ 0 ] = l1 / length;
+    //H [ 0 ] [ 1 ] = l2 / length;
+    H [ 0 ] [ 0 ] = giveVolumeAssociatedWithNode(0) / volume;
+    H [ 0 ] [ 1 ] = giveVolumeAssociatedWithNode(1) / volume;
+
 
     return H;
 }
@@ -777,14 +779,8 @@ Matrix Transp1D :: giveDampingMatrix() const {
     return S;
 }
 
-
 //////////////////////////////////////////////////////////
-double Transp1D :: giveVolume() const {
-    return area * length / ndim;
-};
-
-//////////////////////////////////////////////////////////
-double Transp1D :: giveVolume(unsigned nodenum) const {
+double Transp1D :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
     if ( nodenum == 0 ) {
         return dot(vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint(), normal) * area / ndim;
     } else if ( nodenum == 1 ) {
@@ -797,7 +793,7 @@ double Transp1D :: giveVolume(unsigned nodenum) const {
 
 //////////////////////////////////////////////////////////
 Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
-    double averagePressure = ( DoFs [ 0 ] * giveVolume(0) + DoFs [ 1 ] * giveVolume(1) ) / giveVolume();
+    double averagePressure = ( DoFs [ 0 ] * giveVolumeAssociatedWithNode(0) + DoFs [ 1 ] * giveVolumeAssociatedWithNode(1) ) / volume;
     stats [ 0 ]->setParameterValue("pressure", averagePressure);
     return Element :: giveStrain(i, DoFs);
 };
@@ -811,6 +807,8 @@ Matrix Transp1D :: giveStiffnessMatrix(string matrixType) const{
 
 //////////////////////////////////////////////////////////
 Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+    //Vector Q = Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
+    //for (auto p:Q) cout << " " << p;
     return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
 }
 
@@ -861,18 +859,19 @@ void Transp1DCoupled :: addNewFriend(RigidBodyContact *f, double weight) {
 Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     //crack opening
     double crackInNeighborhood = 0;
-    double crackVolume = 0;
+    double crackVolume = 0.;
     double elem_crack_opening;
     size_t m = 0;
     for ( auto &f: friends ) {
-        elem_crack_opening = 0;
+        elem_crack_opening = 0.;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
             elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
-        crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() / f->giveNumOfVertices();
+        crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
         m++;
     }
+
     stats [ 0 ]->setParameterValue("crack_opening", crackInNeighborhood);
     stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
 
@@ -888,7 +887,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         if ( s0 ) {
             volStrain = s0->giveVolumetricStrain();
         }
-    } else {
+    } else if (s0 && s1 ) {
         if ( ( s0->isValid() && s1->isValid() ) || ( !s0->isValid() && !s1->isValid() ) ) {
             volStrain = ( s0->giveVolumetricStrain() + s1->giveVolumetricStrain() ) / 2.;
         } else if ( s0->isValid() ) {
@@ -896,7 +895,11 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         } else {
             volStrain = s1->giveVolumetricStrain();
         }
+    } else {
+        cerr << "no simplex found" << endl;
+        exit(1);
     }
+
     
     stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //3 is there to obtain mechanical volumetric strain
 

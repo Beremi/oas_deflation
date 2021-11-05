@@ -99,8 +99,6 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
             volstrain += simn->giveVolumetricStrain();
         }
         volstrain /= neighbors.size();
-    } else {
-        volstrain = 0;
     }
 
     if ( transport ) {

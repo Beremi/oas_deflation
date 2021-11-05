@@ -11,7 +11,7 @@ class RigidBodyContact : public MechanicalElement
 {
 protected:
     vector< Node * >vert;
-    double length, area;
+    double length, area, perimeter;
     Point normal, t1, t2;
     Matrix R;
 
@@ -46,14 +46,14 @@ public:
     Point giveNormal() const { return normal; };
     Point giveT1() const { return t1; };
     Point giveT2() const { return t2; };
-    double giveVolume(unsigned nodenum) const;
-    double giveVolume() const;
+    double giveVolumeAssociatedWithNode(unsigned nodenum) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector integrateInternalSources();
+    double givePerimeter()const {return perimeter;};
 
 
     virtual bool isPointInside(Point* xn, const Point *x) const { (void) xn; (void) x; return false;}; //TODO: discrete elements does not interpolate
@@ -111,8 +111,7 @@ public:
     double giveArea() const { return area; }
     Point giveNormal() const { return normal; }
     double giveLength() const { return length; }
-    double giveVolume(unsigned nodenum) const;
-    double giveVolume() const;
+    double giveVolumeAssociatedWithNode(unsigned nodenum) const;
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;

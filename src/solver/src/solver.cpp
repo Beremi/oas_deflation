@@ -475,13 +475,14 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
             dtmax = dtmin;
             dtmin = dm;
         }
-        if ( dt < dtmin ) {
-            std :: cerr << "dt < dtmin, setting dtmin = dt" << '\n';
-            dtmin = dt;
-        } else if ( dt > dtmax ) {
-            std :: cerr << "dt > dtmax, setting dtmax = dt" << '\n';
-            dtmax = dt;
-        }
+        //Jan E: NO, let's tolerate that first step can be out of bounds
+        //if ( dt < dtmin ) {
+        //    std :: cerr << "dt < dtmin, setting dtmin = dt" << '\n';
+        //    dtmin = dt;
+        //} else if ( dt > dtmax ) {
+        //    std :: cerr << "dt > dtmax, setting dtmax = dt" << '\n';
+        //    dtmax = dt;
+        //}
     } else {
         cout << endl;
     }
@@ -688,6 +689,9 @@ void SteadyStateNonLinearSolver :: solve() {
             it++;
             //if (it>10) exit(1);
         }
+
+        computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+
         if ( (!converged && dt > dtmin)
          // || restart_now  // JK: left for testing
                                         ) {
@@ -719,16 +723,23 @@ void SteadyStateNonLinearSolver :: solve() {
                 terminated = true;
                 return;
             }
-        } else if ( ( !restarted ) && converged && it < enlargeIt && dt < dtmax ) {
+        } else if ( ( !restarted ) && converged && it < enlargeIt) {
             dt = fmin(dt * step_increase, dtmax);
             std :: cout << "enlarging step, timestep = " << dt << '\n';
         } else if ( converged && it > shortenIt && dt > dtmin ) {
             dt = fmax(dt * step_decrease, dtmin);
             std :: cout << "shortening step, timestep = " << dt << '\n';
         }
+        if  (dt > dtmax) {
+            dt = dtmax;
+            std :: cout << "shortening step to the maximum one: " << dt << '\n';
+        }
+        if  (dt < dtmin) {
+            dt = dtmin;
+            std :: cout << "enlarging step to the minimum one: " << dt << '\n';
+        }
     }
 
-    computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 }
 
 //////////////////////////////////////////////////////////

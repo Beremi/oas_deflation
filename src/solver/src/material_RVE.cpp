@@ -635,9 +635,10 @@ double DiscreteMechanicalRVEMaterialStatus :: giveCrackVolume() const{
     RigidBodyContact *e;
     ElementContainer *elems = RVE->giveElements();
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = static_cast< RigidBodyContact * >( elems->giveElement(i) );  
+        e = static_cast< RigidBodyContact * >( elems->giveElement(i) ); 
         crackVolume += e->giveCrackOpening()*e->giveArea();
     }
+
     return crackVolume;      
 }
 
@@ -990,15 +991,14 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStress(const Vector &strain, dou
     }
     strainT [ sizeT ] = strain [ sizeT + sizeM ]; //macroscopic pressure
 
-    temp_crackVolume = mechRVEstat->giveCrackVolume();
-
-    updateRateVariables(timeStep);
-
+    //solve mechanics
     Vector stressM = mechRVEstat->giveStress(strainM, timeStep);
     if( !mechRVEstat->isPrecomputed() && trspRVEstat->isPrecomputed() ) setFromPrecomputedToFullModel(); //when mechanical RVE changes to full version
-
     double mechBiot = -temp_pressure * dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
 
+    //solve transport
+    temp_crackVolume = mechRVEstat->giveCrackVolume();
+    updateRateVariables(timeStep);
     Vector stressT = trspRVEstat->giveStress(strainT, timeStep);
 
 
@@ -1026,18 +1026,14 @@ Vector DiscreteCoupledRVEMaterialStatus :: giveInternalSource() const {
     DiscreteCoupledRVEMaterial* dcRVEmat = static_cast< DiscreteCoupledRVEMaterial* >(mat);
     DiscreteTrsprtCoupledMaterial* dtcm = dcRVEmat->giveMasterMaterial();
 
-
     double PUCVolume = dcm->givePUCVolume();
     Vector intS;
     intS.resize(3*(ndim-1)+1);
     unsigned TDoF = 3*(ndim-1);
     
     intS[TDoF] = -dcm->giveBiotCoefficient() * volStrainRate * 3.;
-    intS[TDoF] -= pressureRate/ dtcm->giveMb();
     intS[TDoF] -= temp_crackVolume*pressureRate/(PUCVolume*dtcm->giveKw());
     intS[TDoF] -= crackVolumeRate/PUCVolume*(1. - dcm->giveBiotCoefficient() + (temp_pressure - dtcm->giveReferencePressure())/dtcm->giveKw() );
-   
-    
     intS[TDoF] *= dtcm->giveDensity();
     return intS;
 }
@@ -1050,7 +1046,8 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Ve
     unsigned ndim = dcm->giveNumOfDimensions();
     temp_stress = giveStiffnessTensor("secant", ndim)*strain;
 
-    //updateRateVariables(timeStep);
+    updateRateVariables(timeStep);
+
     double mechBiot = -temp_pressure * dcm->giveBiotCoefficient(); //take pressure strored in element for integration point IDX
     for ( unsigned i = 0; i < ndim; i++ ) {
         temp_stress [ i ] += mechBiot;
@@ -1096,7 +1093,6 @@ Matrix DiscreteCoupledRVEMaterialStatus :: giveStiffnessTensor(string type, unsi
 Matrix DiscreteCoupledRVEMaterialStatus :: giveDampingTensor() const {
     if (is_precomputed) {
         DiscreteCoupledRVEMaterial *macromat = static_cast<DiscreteCoupledRVEMaterial*>(mat);
-        //macromat->givePrecomputedDampingTensor().print();
         return macromat->givePrecomputedDampingTensor();
     } else {
         Matrix M = mechRVEstat->giveDampingTensor();

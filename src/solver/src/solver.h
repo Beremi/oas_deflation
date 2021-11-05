@@ -47,6 +47,7 @@ public:
     void setTime(double t);
     void setStep(unsigned t) { step = t; };
     void setTimeStep(double timeStep) { dt = timeStep; };
+    double giveTimeStep() const { return dt; };
     void setInitialTimeAndStep(double t, unsigned s) { this->init_time = t; this->init_step = s; }
     virtual void setNextStepTime();
     virtual void runBeforeEachStep();
