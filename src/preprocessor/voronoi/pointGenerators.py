@@ -1161,37 +1161,60 @@ except:
 
 
 
-def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials, angleLimitA=None, angleLimitB=None, mirrorIndent=None):
+def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials, angleLimitA=None, angleLimitB=None, mirrorIndent=None, equia
+=0):
     print ('Generating a 3d cylinder surf segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
     mirroredPoints = []
+    if equiAngNodes >0:
+        nodeNr = equiAngNodes
+        #indntAng = (2*np.pi-(nodeNr-1)*mD) / 2
+        stepAng =  2*np.pi / nodeNr
 
-    tr=0
-    while (tr<trials):
-        tr = 0;
-        #
-        distIsGood = False
-        while (distIsGood == False):
-            if (mirrorIndent == None):
-                coords = randPointOnCilinder(center, radius, height, directionDim, angleLimitA = angleLimitA, angleLimitB = angleLimitB ,mirrorIndent = mirrorIndent)
-            else:
-                coords, mirrored_coords = randPointOnCilinder(center, radius, height, directionDim, angleLimitA = angleLimitA, angleLimitB = angleLimitB ,mirrorIndent = mirrorIndent)
+        for i in range (nodeNr):
+            #print (i)
+            coords = np.zeros(3)
+            coords[0] = radius * np.cos(stepAng*i)
+            coords[1] = radius * np.sin(stepAng*i)
+            coords += center
 
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            mD = minDist
+            length = np.linalg.norm(nodeA - nodeB)
+            nodeNr = int (length / mD)
+            indnt = (length-(nodeNr-1)*mD) / 2
+            for i in range (nodeNr):
+                coords[2] = height*indnt/length + height*mD/length*i + center[2]
+                node_coords.append(coords)
+
+
+
+    else:
+        tr=0
+        while (tr<trials):
+            tr = 0;
             #
-            if (distIsGood == False):
-                tr += 1
-            if (tr > trials): break
-        if (tr > trials): break
-        #
-        #Adding node coords
-        if (tr < trials):
-            node_coords.append(coords)
-            if (mirrorIndent != None):
-                mirroredPoints.append(mirrored_coords)
+            distIsGood = False
+            while (distIsGood == False):
+                if (mirrorIndent == None):
+                    coords = randPointOnCilinder(center, radius, height, directionDim, angleLimitA = angleLimitA, angleLimitB = angleLimitB ,mirrorIndent = mirrorIndent)
+                else:
+                    coords, mirrored_coords = randPointOnCilinder(center, radius, height, directionDim, angleLimitA = angleLimitA, angleLimitB = angleLimitB ,mirrorIndent = mirrorIndent)
 
-    if (mirrorIndent != None):
-        return mirroredPoints
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+                #
+                if (distIsGood == False):
+                    tr += 1
+                if (tr > trials): break
+            if (tr > trials): break
+            #
+            #Adding node coords
+            if (tr < trials):
+                node_coords.append(coords)
+                if (mirrorIndent != None):
+                    mirroredPoints.append(mirrored_coords)
+
+        if (mirrorIndent != None):
+            return mirroredPoints
 
 try:
     from point_generators_cython import generateNodesOrtoCylinderSurf3dRand_cython as generateNodesOrtoCilinderSurf3dRand

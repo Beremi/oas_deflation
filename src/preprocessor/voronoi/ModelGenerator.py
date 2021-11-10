@@ -1,5 +1,5 @@
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import Preprocessor, sys, time, numpy as np, random
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -102,7 +102,7 @@ class Model:
         self.elasticZone = 0
 
         self.node_indices_dogbone = []
-
+        self.interfaceVertexIndices = []
 
         self.rebarMinDist = None
         self.rebarDiameter = None
@@ -340,6 +340,8 @@ class Model:
 
         if self.modelType == '2d_corrosionRebar':
             self.run_2d_corrosionRebar(node_coords_init=node_coords_init)
+        if self.modelType == '3d_corrosionRebar':
+            self.run_3d_corrosionRebar(node_coords_init=node_coords_init)
 
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
@@ -543,7 +545,7 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_brazilianDisc', maxLim=self.maxLim)
 
     def run_2d_corrosionRebar(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceNodeIndices)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady,
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceVertexIndices)  = utilitiesModeling.create2dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady,
         fineRingThickness=self.fineRingThickness, fineRegDepth=self.fineRegDepth, gradientRegDepth=self.gradientRegDepth)
         self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='2d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
         if self.activeTransport == False:
@@ -559,6 +561,23 @@ class Model:
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_corrosionRebar', expansionRingsProps=expansionRingsProps)
 
+
+    def run_3d_corrosionRebar(self, node_coords_init=None):
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceVertexIndices)  = utilitiesModeling.create3dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady,
+        fineRingThickness=self.fineRingThickness, fineRegDepth=self.fineRegDepth, gradientRegDepth=self.gradientRegDepth)
+        self.materialZones= utilitiesModeling.assembleMaterialZones(0,  2, model='3d_corrosionRebar', maxLim=self.maxLim, rebarDepth=self.rebarDepth, rebarDiameter=self.rebarDiameter, rebarCount=self.rebarCount)
+        if self.activeTransport == False:
+            self.rigidPlatesTrspt = []
+            self.govNodesTrspt=[]
+            self.govNodesTrsptBC = []
+
+        expansionRingsProps = []
+        expansionRingsProps.append(self.rebarCount)
+        expansionRingsProps.append(self.rebarDepth)
+        expansionRingsProps.append(self.rebarDiameter)
+        expansionRingsProps.append(self.maxLim)
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_corrosionRebar', expansionRingsProps=expansionRingsProps)
 
     def run_2d_coupledRVE(self):
         print('2d_coupledRVE')
@@ -597,9 +616,13 @@ class Model:
             notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial)
 
         #if (self.printout == False): enablePrint()
+        if len(self.interfaceVertexIndices)>0:
+            self.interfaceVertexIndices += self.vertIdxStart
+
         print ('done.')
 
     def saveRest(self, solver, master_file, exporters):
+        print('dim %d' %self.dimension)
         # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
         bc_path = os.path.join(self.master_folder,
                                utilitiesGeom.mechBCFile)
@@ -626,7 +649,8 @@ class Model:
                 if self.govNodesMechBC != None:
                     #if not (self.activeTransport==True and self.coupled==False):
 
-                    if self.modelType == '2d_corrosionRebar':
+                    if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar':
+                        print ('getting master nodes ids from constraint')
                         expansionRingsProps = []
                         expansionRingsProps.append(self.rebarCount)
                         expansionRingsProps.append(self.rebarDepth)
@@ -640,7 +664,7 @@ class Model:
                         self.constraint = True
 
         self.totalNodeCount += len(self.govNodes)
-        if self.modelType == '2d_corrosionRebar':
+        if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar' :
             self.totalNodeCount += self.rebarCount
 
         #saving transport rigid plates
@@ -650,7 +674,9 @@ class Model:
                     utilitiesGeom.saveConstraintTransport(self.master_folder, self.dimension, self.govNodesTrspt, self.govNodesTrsptBC, self.rigidPlatesTrspt, self.totalNodeCount, self.node_coords, self.vert_count, self.verticesIdxDict, self.vertIdxStart)
                     self.constraintTrspt = True
                     #
-                    if self.interfaceNodeIndices != None:
+                    if len(self.interfaceVertexIndices)>0:
+                        #print(self.interfaceVertexIndices)
+
                         direction = 0
                         materialId = 1
                         coeff = self.rebarDiameter
@@ -664,7 +690,7 @@ class Model:
 
                         coeff = interfaceElementLength / rebarArea
 
-                        utilitiesGeom.saveCoupledConstraint(self.master_folder, self.interfaceNodeIndices, mechDofIndices, direction, materialId, coeff)
+                        utilitiesGeom.saveCoupledConstraint(self.master_folder, self.interfaceVertexIndices, mechDofIndices, direction, materialId, coeff)
 
 
         if (self.measuringGauges!=None):

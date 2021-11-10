@@ -1273,26 +1273,16 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
      saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt, tolerance=tolerance)
 
      if not periodic:
-
-         """
-         if (solver == "SteadyStateLinearSolver"):
-                fl.write('Solver\tSteadyStateLinearSolver\ttime_step\t%e\ttotal_time\t%e\tconj_grad_precission\t1e-18
-conj_grad_relative_maxit\t2\n' %(solStep, simTime))
-         if (solver == "SteadyStateNonLinearSolver"):
-                fl.write('Solver\tSteadyStateNonLinearSolver\ttime_step\t%e\tmax_time_step\t%e\tmin_time_step\t%e\ttotal_time\t%e\tlimit_tolerance\t%e\tmaxIt\t%d\tconj_grad_precission\t1e-18
-conj_grad_relative_maxit\t2\n' %(solStep,  maxStep, minStep, simTime, limitTolerance, maxIt))
-         """
-
          if not constraint:
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
          else:
-             if (constraint and not constraintTrspt):
+             if (constraint and not activeTransport):
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
-             elif (not constraint and constraintTrspt):
+             elif (not activeMechanics and constraintTrspt):
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintTrsptFile))
-             elif (constraint and constraintTrspt):
+             elif (constraint and constraintTrspt and activeTransport and activeMechanics):
                  fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
 
@@ -1398,7 +1388,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
     nodes_out = np.array(nodes_out)
     #writing nodes
-    print((nodes_out))
+    #print((nodes_out))
     num = dim
 
     if (dim == 2):
@@ -1457,13 +1447,13 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
             if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count):
                 onlyMechNodesConnected = False
 
-            if (dim==2):
+            if (dim==2 or mZ[0][0]=='circle'):
 
                 #rebars
                 if (mZ[0][0]=='circle'):
                     inRebar = False
                     for rebar in range (mZ[0][3]):
-                        if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2]) < mZ[rebar][1] ) and (np.linalg.norm(nodeB[0:2]-mZ[rebar][2]) < mZ[rebar][1] ):
+                        if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2][0:2]) < mZ[rebar][1] ) and (np.linalg.norm(nodeB[0:2]-mZ[rebar][2][0:2]) < mZ[rebar][1] ):
                             inRebar = True
                     if inRebar:
                         mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
@@ -1485,7 +1475,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
 
 
 
-            if (dim==3):
+            if (dim==3 and  mZ[0][0]!='circle'):
                 triangle = False
                 if (mZ[0][0][0] > mZ[0][1][0]):
                     triangle = True
@@ -2221,7 +2211,7 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
 
             totNodeC += 1
 
-        if len(expansionRingsProps)>0 and dim == 2:
+        if len(expansionRingsProps)>0:
             rebarCount = expansionRingsProps[0]
             rebarDepth = expansionRingsProps[1]
             rebarDiameter = expansionRingsProps[2]
@@ -2232,13 +2222,18 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
             for r in range (rebarCount):
                 if (rebarCount==1):
                     #puvodni poloha rebars polovina od kraje
-                    centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth  ])
+                    centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth,0  ])
                 else:
                     #poloha rebars presne jak je ve clanku
-                    centre = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth  ])
+                    centre = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth,0  ])
                 #f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
                 #f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
-                f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
+                if dim == 2:
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
+                if dim == 3:
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e %e \n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*1.01 ) )
+
+                #print( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
 
                 mechDofIndices.append(totNodeC+r)
 
@@ -2313,14 +2308,19 @@ def saveCoupledConstraint(master_folder, interfaceNodeIndices, masterNodesIds, d
     with open(os.path.join(master_folder,constraintTrsptFile), 'a') as f:
         f.write("#PressureFromMechanicalLoad \t MasterNodeId \t Direction \t MaterialId \t Coeff \t NrInterfaceNodes \t InterfaceNodesIndices\n"  )
         for i in range (len(interfaceNodeIndices)):
+            print(i)
+            #print(interfaceNodeIndices[i])
+            #print(masterNodesIds[i])
+            #print()
+
             intrfc = interfaceNodeIndices[i]
             masterNodeId = masterNodesIds[i]
-            #print(intrfc)
+
             intrfrcLine = ''
             for n in intrfc:
                 intrfrcLine += '%s \t' %n
 
-            f.write("PressureFromMechanicalLoad \t %d \t %d \t %d \t %e \t %d \t %s\n" %(masterNodeId, direction, materialId, coeff, len(intrfc), intrfrcLine) )
+            f.write("#PressureFromMechanicalLoad \t %d \t %d \t %d \t %e \t %d \t %s\n" %(masterNodeId, direction, materialId, coeff, len(intrfc), intrfrcLine) )
 
     print ('done.')
 
@@ -2361,10 +2361,10 @@ def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', tr
             saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
             saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
             if (dimension==3): saveForceGauge(master_folder, 'fz#%s'%name, 'fz', nodeIdx )
-            if moments == True:
+            if moments == True and not (virtualDoF>0):
                 if (dimension==3): saveForceGauge(master_folder, 'mx#%s'%name , 'mx', nodeIdx )
-                if (dimension==3): saveForceGauge(master_folder, 'my#%s'%name, 'my', nodeIdx )
-                if not (virtualDoF>0):
+                if (dimension==3):
+                    saveForceGauge(master_folder, 'my#%s'%name, 'my', nodeIdx )
                     saveForceGauge(master_folder, 'mz#%s'%name, 'mz', nodeIdx )
     else:
         if (name==''):
