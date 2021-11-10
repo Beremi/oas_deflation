@@ -1044,9 +1044,9 @@ double FatigueMaterialStatus :: giveValue(string code) const {
         return DamagePlasticMaterialStatus :: giveValue("work_elaN") + FatigueShearMaterialStatus :: giveValue("work_elaT");
     } else if  ( code.compare("work_dissip") == 0 ) {
         return DamagePlasticMaterialStatus :: giveValue("work_dissipN") + FatigueShearMaterialStatus :: giveValue("work_dissipT");
-    } else if ( code.back() == 'N' ) {  // last char of string
+    } else if ( code.back() == 'N' || code.compare("crack_opening") == 0) {  // last char of string
         return DamagePlasticMaterialStatus :: giveValue(code);
-    } else if ( code.back() == 'T' ) {
+    } else if ( code.back() == 'T' || code.compare("crack_sliding") == 0) {
         return FatigueShearMaterialStatus :: giveValue(code);
     } else {
         return 0;
