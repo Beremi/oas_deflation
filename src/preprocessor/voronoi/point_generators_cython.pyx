@@ -150,6 +150,7 @@ def generateNodesRect_cython(double[:] maxLim,
                 node_coords_temp.push_back(coords[d])
             generatedPoints += 1
 
+
     # Copy back to lists
     for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
         if (dim==2):
@@ -627,7 +628,7 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
                       double minDist,
                       list node_coords,
                       int trials,
-                       angleLimitA=None, angleLimitB=None, mirrorIndent=None
+                       angleLimitA=None, angleLimitB=None, mirrorIndent=None, equiAngNodes=0
                       ):
     print ('Generating a 3d cylinder surf cython. ')
     cdef:
@@ -651,46 +652,62 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
             for d in range(3):
                 node_coords_temp.push_back(node[d])
 
-    while (tr < trials):
-        tr = 0
-        distIsGood = False
-        while (not distIsGood) and (tr < trials):
-            angle = random.random()  * np.pi * 2
-            rn = random.random()
-            if (directionDim == 0 ):
-                coords[0] = center[0] + height * random.random()
-                coords[1] = center[1] + radius * np.cos(angle)
-                coords[2] = center[2] + radius * np.sin(angle)
-            if (directionDim == 1 ):
-                coords[0] = center[0] + radius * np.cos(angle)
-                coords[1] = center[1] + height * random.random()
-                coords[2] = center[2] + radius * np.sin(angle)
-            if (directionDim == 2 ):
-                coords[0] = center[0] + radius * np.cos(angle)
-                coords[1] = center[1] + radius * np.sin(angle)
-                coords[2] = center[2] + height * random.random()
+    if equiAngNodes >0:
+      for i in range (equiAngNodes):
+        if (directionDim==2):
+          coords[0] = center[0] + radius * np.cos(2*np.pi / equiAngNodes  *i)
+          coords[1] = center[1] + radius * np.sin(2*np.pi / equiAngNodes  *i)
 
+          for z in range (int(height/minDist)+1):
 
+            coords[2] =  center[2] + (  height / int(height/minDist) ) *z
 
-            distIsGood = True
-
-            for p in range(node_coords_input_len + generatedPoints):
-                distInt = 0
-                for d in range(3):
-                    dx = node_coords_temp[p*dim+d]
-                    dx -= coords[d]
-                    distInt += dx * dx
-                distInt = distInt**0.5
-                if (distInt < minDist):
-                    distIsGood = False
-                    tr += 1
-                    break
-
-        # Adding node coords
-        if distIsGood and (tr < trials):
             for d in range(3):
                 node_coords_temp.push_back(coords[d])
+                
             generatedPoints += 1
+
+    if equiAngNodes <=0:
+      while (tr < trials):
+          tr = 0
+          distIsGood = False
+          while (not distIsGood) and (tr < trials):
+              angle = random.random()  * np.pi * 2
+              rn = random.random()
+              if (directionDim == 0 ):
+                  coords[0] = center[0] + height * random.random()
+                  coords[1] = center[1] + radius * np.cos(angle)
+                  coords[2] = center[2] + radius * np.sin(angle)
+              if (directionDim == 1 ):
+                  coords[0] = center[0] + radius * np.cos(angle)
+                  coords[1] = center[1] + height * random.random()
+                  coords[2] = center[2] + radius * np.sin(angle)
+              if (directionDim == 2 ):
+                  coords[0] = center[0] + radius * np.cos(angle)
+                  coords[1] = center[1] + radius * np.sin(angle)
+                  coords[2] = center[2] + height * random.random()
+
+
+
+              distIsGood = True
+
+              for p in range(node_coords_input_len + generatedPoints):
+                  distInt = 0
+                  for d in range(3):
+                      dx = node_coords_temp[p*dim+d]
+                      dx -= coords[d]
+                      distInt += dx * dx
+                  distInt = distInt**0.5
+                  if (distInt < minDist):
+                      distIsGood = False
+                      tr += 1
+                      break
+
+          # Adding node coords
+          if distIsGood and (tr < trials):
+              for d in range(3):
+                  node_coords_temp.push_back(coords[d])
+              generatedPoints += 1
 
     # Copy back to lists
     for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):

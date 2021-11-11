@@ -160,7 +160,7 @@ unsigned ElementContainer :: giveElemId(const Element *elem) const {
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double &time_now, const unsigned &step, const bool &saveNodeIds) const {
+void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double time_now, const unsigned step, const bool saveNodeIds, const double idc_time) const {
     std :: ofstream outputfile(filepath);
     unsigned stat_id = 0;
     unsigned num;
@@ -172,6 +172,9 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
         outputfile << "internal_variables ...";
         if ( time_now != 0 && step != 0 ) {
             outputfile << "\ntime " << time_now << " " << step;
+        }
+        if ( idc_time != 0 ) {
+            outputfile << " idc_time " << idc_time;
         }
         for ( auto const &elem_id : elems_to_save ) {
             stat_id = 0;
@@ -300,6 +303,13 @@ void ElementContainer :: init() {
 void ElementContainer :: updateMaterialStatuses() {
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->updateMaterialStatuses();
+    }
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: resetMaterialStatuses() {
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+        ( * e )->resetMaterialStatuses();
     }
 }
 

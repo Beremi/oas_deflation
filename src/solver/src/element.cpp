@@ -107,6 +107,13 @@ void Element :: updateMaterialStatuses() {
 }
 
 //////////////////////////////////////////////////////////
+void Element :: resetMaterialStatuses() {
+    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
+        ( * m )->downgrade();
+    }
+}
+
+//////////////////////////////////////////////////////////
 double Element :: giveValue(string code) const {
     ( void ) code;
     return 0;

@@ -130,27 +130,9 @@ def mirror_data_rebars(data, dim, sizes, rebarDiameter, rebarDepth, rebarCount):
         np.array([0,0]) + data * np.array([1,-1])
         ))
 
-    for node in dataOut:
-        for r in range (rebarCount):
-            if (rebarCount==1):
-                #puvodni poloha rebars polovina od kraje
-                center = np.array([ (sizes[0]/rebarCount)*(r+0.5), sizes[1]-rebarDepth  ])
-            else:
-                #poloha rebars presne jak je ve clanku
-                center = np.array([ (0.058 + (sizes[0]-0.116)/(rebarCount-1)*r), sizes[1]-rebarDepth  ])
-            dist = np.linalg.norm(node-center)
 
-            if (dist < (rebarDiameter/2+0.001)  ):
-                #print()
-                #print('node dist %f' %dist)
-                rad0 = dist
-                mirroredNode = np.zeros((2))
-                mirroredNode[0] = center[0] + (-center[0]+node[0]) * ((2*(rebarDiameter-1e-6)/2-rad0) / rad0 )
-                mirroredNode[1] = center[1] + (-center[1]+node[1]) * ((2*(rebarDiameter-1e-6)/2-rad0) / rad0 )
 
-                #print('mirrored  dist %f' % np.linalg.norm(mirroredNode-center))
-                dataOut= np.vstack((dataOut,   mirroredNode     ))
-    """
+
     if (dim == 3):
         dataOut =  np.vstack((data,
             np.array([0,0,0]) + data * np.array([-1,1,1]),
@@ -160,23 +142,67 @@ def mirror_data_rebars(data, dim, sizes, rebarDiameter, rebarDepth, rebarCount):
             np.array([ 0 ,0,0]) + data * np.array([1,1,-1]),
             np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
         ))
-    """
 
+    intrfcNodes = []
+    mrdnodes = []
+
+    for node in dataOut:
+        for r in range (rebarCount):
+            if (rebarCount==1):
+                #puvodni poloha rebars polovina od kraje
+                center = np.array([ (sizes[0]/rebarCount)*(r+0.5), sizes[1]-rebarDepth ,0 ])
+            else:
+                #poloha rebars presne jak je ve clanku
+                center = np.array([ (0.058 + (sizes[0]-0.116)/(rebarCount-1)*r), sizes[1]-rebarDepth ,0 ])
+            dist = np.linalg.norm(node[0:2]-center[0:2])
+
+            if (dist < (rebarDiameter/2*1.05)  ):
+                intrfcNodes.append(node)
+                rad0 = dist
+                mirroredNode = np.zeros((dim))
+                mirroredNode[0] = center[0] + (-center[0]+node[0]) * ((2*(rebarDiameter*0.9)/2-rad0) / rad0 )
+                mirroredNode[1] = center[1] + (-center[1]+node[1]) * ((2*(rebarDiameter*0.9)/2-rad0) / rad0 )
+                if dim ==3:
+                    mirroredNode[2] = node[2]
+
+                mrdnodes.append(np.copy(mirroredNode))
+
+                dataOut= np.vstack((dataOut,  np.copy(mirroredNode[0:dim])     ))
+    #"""
+
+
+    intrfcNodes = np.asarray(intrfcNodes)
+    mrdnodes = np.asarray(mrdnodes)
     dataOut = np.asarray(dataOut)
-    fig, ax = plt.subplots()
-    ax.scatter(dataOut[:,0], dataOut[:,1])
+
+    """
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(mrdnodes[:,0], mrdnodes[:,1], mrdnodes[:,2])
+    ax.scatter(intrfcNodes[:,0], intrfcNodes[:,1], intrfcNodes[:,2])
+    plt.show()
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(dataOut[:,0], dataOut[:,1], dataOut[:,2])
+
     plt.show()
 
 
-    #dataOut += shifts
+
+    #"""
+
     """
-    if weights is not None:
-        if dim == 2:
-            weightsOut = np.hstack([weights]*5)
-        else:
-            weightsOut = np.hstack([weights]*7)
-        return dataOut, weightsOut
+    mrdnodes = np.asarray(mrdnodes)
+    intrfcNodes = np.asarray(intrfcNodes)
+    dataOut = np.asarray(dataOut)
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(mrdnodes[:,0], mrdnodes[:,1], mrdnodes[:,2], c='r')
+    ax.scatter(intrfcNodes[:,0], intrfcNodes[:,1], intrfcNodes[:,2])
+    plt.show()
     """
+
     return dataOut
 
 

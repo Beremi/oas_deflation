@@ -19,6 +19,7 @@ FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m
 //////////////////////////////////////////////////////////
 double FatigueShearMaterialStatus :: giveValue(string code) const {
     if ( ( code.compare("damage") == 0 ) ||  ( code.compare("damageT") == 0 ) ) {
+        if (temporarily_killed) return -1;
         return damageShear;
     } else if ( ( code.compare("temp_damage") == 0 ) ||  ( code.compare("temp_damageT") == 0 ) ) {
         return temp_damageShear;
@@ -129,12 +130,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
     temp_slip = (Point(x, y, z) * strain_slip_multiplier) - slip_free;
     // std::cout << "strain_slip_multiplier = " << strain_slip_multiplier << '\n';
+    temporarily_killed = prev_temporarily_killed;
 
     //kill shear element when excessive tensile strain occurs
     if ( m->giveTauBar() - sensititvity_param * stress [ 0 ] <= 0 ) {
-        for ( unsigned i = 1; i < stress.size(); i++ ) {
-            stress [ i ] = 0;
-        }
         // temp_slip_free = temp_slip - sPi;
         double slip_multip;
         // if ( m->giveKin() != 0 ){
@@ -192,11 +191,12 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
             divide_by = ( deltaS_full /  deltaS_part ) + 1;
             // std::cout << "step divided into " << divide_by << " substeps ";
             if (divide_by > 1000) {
+                // if strain is 1000 times the elastic part, direct calculation does not make the difference, since the contact is probably all damaged
                 divide_by = 1;
-                // temp_damageShear = 1 - 1e-10;
-                // for ( unsigned i = 1; i < stress.size(); i++ ) {
-                //     stress [ i ] = 0;
-                // }
+                temp_damageShear = 1 - 1e-10;
+                for ( unsigned i = 1; i < stress.size(); i++ ) {
+                    stress [ i ] = 0;
+                }
                 // std::cout << "-> return zero stress" << '\n';
                 return stress;
             }
@@ -243,7 +243,9 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                     omega_dot = 0.0;//increment of shear damage
                 } else {
                     //increment of shear damage as the derivative of phi wrt thermodyn force
-                    omega_dot = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+                    omega_dot = pow(1 - temp_damageShear, m->giveC() ) *
+                    ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) *
+                    pow(Ynext / m->giveS(), m->giveR() );
                 }
                 temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );  //limited by <0,1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
@@ -303,7 +305,7 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
     }
 
     stress [ 0 ] = stiffN * strain [ 0 ]; // elastic normal stress
-    Point XstressT = ( Point(x, y, z) - temp_sPi ) * ( 1. - temp_damageShear ) * stiffT;
+    Point XstressT = ( Point(x, y, z) - temp_sPi ) * ( this->temporarily_killed ? 0 : 1. - temp_damageShear ) * stiffT;
 
     for ( unsigned i = 1; i < strain.size(); i++ ) {
         if ( i == 1 ) {
@@ -331,6 +333,8 @@ void FatigueShearMaterialStatus :: update() {
     prev_zIso = zIso;
     prev_stressT = stressT;
     prev_slip = slip;
+    prev_temporarily_killed = temporarily_killed;
+
 
     work_tot += dot(temp_slip - slip, ( temp_stressT + stressT ) * 0.5);
 
@@ -352,6 +356,22 @@ void FatigueShearMaterialStatus :: update() {
 
     energy_Kin += dot(alphaKin * m->giveGamma(), ( alphaKin - prev_alphaKin ) );
     energy_Iso += ( zIso * m->giveKin() ) * ( zIso - prev_zIso );
+}
+
+//////////////////////////////////////////////////////////
+void FatigueShearMaterialStatus :: downgrade() {
+    DisMechMaterialStatus :: downgrade();
+
+    temporarily_killed = prev_temporarily_killed;
+
+    temp_damageShear = damageShear;
+    temp_sPi = sPi;
+    temp_alphaKin = alphaKin;
+    temp_zIso = zIso;
+    temp_slip = slip;
+    temp_slip_free = slip_free;
+    temp_lambda = lambda;
+    temp_stressT = stressT;
 }
 
 //////////////////////////////////////////////////////////
@@ -398,6 +418,47 @@ Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned d
         cerr << "Error: FatigueShearMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
+}
+
+std :: string FatigueShearMaterialStatus :: giveLineToSave() const{
+    return "slip " + to_string(this->slip.getY()) + " " +
+                     to_string(this->slip.getZ()) +
+           " slip_free " + to_string(this->slip_free.getY()) + " " +
+                          to_string(this->slip_free.getZ()) +
+           " sPi " + to_string(this->sPi.getY()) + " " +
+                     to_string(this->sPi.getZ()) +
+           " alphaKin " + to_string(this->alphaKin.getY()) + " " +
+                          to_string(this->alphaKin.getZ()) +
+           " damageShear " + to_string(this->damageShear) +
+           " zIso " + to_string(this->zIso) +
+           " temporarily_killed " + to_string(this->temporarily_killed);
+}
+
+void FatigueShearMaterialStatus :: readFromLine(istringstream &iss) {
+    std :: string param;
+    double y, z;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("slip") == 0 ) {
+            iss >> y >> z;
+            this->slip = Point(0, y, z);
+        } else if ( param.compare("slip_free") == 0 ) {
+            iss >> y >> z;
+            this->slip_free = Point(0, y, z);
+        } else if ( param.compare("sPi") == 0 ) {
+            iss >> y >> z;
+            this->sPi = Point(0, y, z);
+        } else if ( param.compare("alphaKin") == 0 ) {
+            iss >> y >> z;
+            this->alphaKin = Point(0, y, z);
+        } else if ( param.compare("damageShear") == 0 ) {
+            iss >> this->damageShear;
+        } else if ( param.compare("zIso") == 0 ) {
+            iss >> this->zIso;
+        } else if ( param.compare("temporarily_killed") == 0 ) {
+            iss >> this->temporarily_killed;
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -778,6 +839,20 @@ void DamagePlasticMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
+void DamagePlasticMaterialStatus :: downgrade() {
+    DisMechMaterialStatus :: downgrade();
+
+    temp_damage = damage;
+    temp_epsN = epsN;
+    temp_epsNP = epsNP;
+    temp_alphaN = alphaN;
+    temp_zN = zN;
+    temp_rN = rN;
+    temp_stressN = stressN;
+    temp_Y = Y_next;
+}
+
+//////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: print() const {
     std :: cout << "damage = " << damage << '\n';
     std :: cout << "temp_damage = " << temp_damage << '\n';
@@ -821,6 +896,38 @@ Matrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type, unsigned 
         exit(1);
     };
 }
+
+
+std :: string DamagePlasticMaterialStatus :: giveLineToSave() const{
+    return "epsN " + to_string(this->epsN) +
+            " epsNP " + to_string(this->epsNP) +
+            " damageN " + to_string(this->damage) +
+            " alphaN " + to_string(this->alphaN) +
+            " zN " + to_string(this->zN) +
+            " rN " + to_string(this->rN);
+}
+
+void DamagePlasticMaterialStatus :: readFromLine(istringstream &iss) {
+    // TODO finish this
+    std :: string param;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("epsN") == 0 ) {
+            iss >> this->epsN;
+        } else if ( param.compare("epsNP") == 0 ) {
+            iss >> this->epsNP;
+        } else if ( param.compare("damageN") == 0 ) {
+            iss >> this->damage;
+        } else if ( param.compare("alphaN") == 0 ) {
+            iss >> this->alphaN;
+        } else if ( param.compare("zN") == 0 ) {
+            iss >> this->zN;
+        } else if ( param.compare("rN") == 0 ) {
+            iss >> this->rN;
+        }
+    }
+}
+
 
 
 //////////////////////////////////////////////////////////
@@ -937,9 +1044,9 @@ double FatigueMaterialStatus :: giveValue(string code) const {
         return DamagePlasticMaterialStatus :: giveValue("work_elaN") + FatigueShearMaterialStatus :: giveValue("work_elaT");
     } else if  ( code.compare("work_dissip") == 0 ) {
         return DamagePlasticMaterialStatus :: giveValue("work_dissipN") + FatigueShearMaterialStatus :: giveValue("work_dissipT");
-    } else if ( code.back() == 'N' ) {  // last char of string
+    } else if ( code.back() == 'N' || code.compare("crack_opening") == 0) {  // last char of string
         return DamagePlasticMaterialStatus :: giveValue(code);
-    } else if ( code.back() == 'T' ) {
+    } else if ( code.back() == 'T' || code.compare("crack_sliding") == 0) {
         return FatigueShearMaterialStatus :: giveValue(code);
     } else {
         return 0;
@@ -1009,6 +1116,12 @@ void FatigueMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
+void FatigueMaterialStatus :: downgrade() {
+    FatigueShearMaterialStatus :: downgrade();
+    DamagePlasticMaterialStatus :: downgrade();
+}
+
+//////////////////////////////////////////////////////////
 Matrix FatigueMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     if ( type.compare("elastic") == 0 ) {
         Matrix stiff = FatigueShearMaterialStatus :: giveStiffnessTensor("elastic", dim);
@@ -1022,6 +1135,18 @@ Matrix FatigueMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
         cerr << "Error: FatigueMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
+}
+
+std :: string FatigueMaterialStatus :: giveLineToSave() const {
+    return FatigueShearMaterialStatus :: giveLineToSave() + " " + DamagePlasticMaterialStatus :: giveLineToSave();
+}
+
+
+void FatigueMaterialStatus :: readFromLine(istringstream &iss) {
+    FatigueShearMaterialStatus :: readFromLine(iss);
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+    DamagePlasticMaterialStatus :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////

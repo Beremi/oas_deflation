@@ -52,6 +52,7 @@ public:
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
+    void resetMaterialStatuses();
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
@@ -84,7 +85,7 @@ public:
     virtual Vector integrateInternalSources();
     virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
-    virtual bool giveGlobalCoords(Point *x, const Point *xn) const; 
+    virtual bool giveGlobalCoords(Point *x, const Point *xn) const;
     virtual Vector giveMasterVariables(const Point *x, const Vector &DoFs) const { return giveHMatrix(x) * DoFs; };
     Vector giveElemDoFsFromFullDoFs( const Vector &FullDoFs) const;
     double giveVolume() const {return volume;};
