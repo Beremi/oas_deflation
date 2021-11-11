@@ -109,7 +109,7 @@ void Element :: updateMaterialStatuses() {
 //////////////////////////////////////////////////////////
 void Element :: resetMaterialStatuses() {
     for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
-        ( * m )->downgrade();
+        ( * m )->resetTemporaryVariables();
     }
 }
 

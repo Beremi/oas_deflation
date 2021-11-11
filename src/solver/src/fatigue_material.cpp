@@ -360,8 +360,8 @@ void FatigueShearMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-void FatigueShearMaterialStatus :: downgrade() {
-    DisMechMaterialStatus :: downgrade();
+void FatigueShearMaterialStatus :: resetTemporaryVariables() {
+    DisMechMaterialStatus :: resetTemporaryVariables();
 
     temporarily_killed = prev_temporarily_killed;
 
@@ -839,8 +839,8 @@ void DamagePlasticMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-void DamagePlasticMaterialStatus :: downgrade() {
-    DisMechMaterialStatus :: downgrade();
+void DamagePlasticMaterialStatus :: resetTemporaryVariables() {
+    DisMechMaterialStatus :: resetTemporaryVariables();
 
     temp_damage = damage;
     temp_epsN = epsN;
@@ -1116,9 +1116,9 @@ void FatigueMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-void FatigueMaterialStatus :: downgrade() {
-    FatigueShearMaterialStatus :: downgrade();
-    DamagePlasticMaterialStatus :: downgrade();
+void FatigueMaterialStatus :: resetTemporaryVariables() {
+    FatigueShearMaterialStatus :: resetTemporaryVariables();
+    DamagePlasticMaterialStatus :: resetTemporaryVariables();
 }
 
 //////////////////////////////////////////////////////////

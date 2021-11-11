@@ -30,7 +30,7 @@ public:
     virtual ~MarsMaterialStatus() {};
     virtual void init();
     virtual void update();
-    virtual void downgrade() { temp_damage = damage; };
+    virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
@@ -91,6 +91,7 @@ public:
     virtual double giveValue(string code) const;
     virtual void init();
     virtual void update();
+    virtual void resetTemporaryVariables();
     virtual void setParameterValue(string code, double value);
 };
 

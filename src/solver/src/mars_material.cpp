@@ -236,6 +236,17 @@ void MarsMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
+void MarsMaterialStatus :: resetTemporaryVariables() {
+    DisMechMaterialStatus :: resetTemporaryVariables();
+    temp_damage = damage;
+    temp_maxEpsN = maxEpsN;
+    temp_maxEpsT = maxEpsT;
+    temp_crackOpening = crackOpening;
+}
+
+
+
+//////////////////////////////////////////////////////////
 Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
@@ -466,6 +477,11 @@ Vector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &st
 //////////////////////////////////////////////////////////
 void CoupledMarsMaterialStatus :: update() {
     MarsMaterialStatus :: update();
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMarsMaterialStatus :: resetTemporaryVariables() {
+    MarsMaterialStatus :: resetTemporaryVariables();
 }
 
 //////////////////////////////////////////////////////////

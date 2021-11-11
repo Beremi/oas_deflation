@@ -711,7 +711,7 @@ void SteadyStateNonLinearSolver :: solve() {
             load *= 0;
             ddr *= 0;
             residuals = reset_residuals;
-            this->elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
+            elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
             if ( idc ) {
                 idc_time = idc_time_converged;
             }

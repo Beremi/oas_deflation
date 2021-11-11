@@ -24,6 +24,13 @@ void MaterialStatus :: update() {
     updt_stress = temp_stress;
 }
 
+//////////////////////////////////////////////////////////
+void MaterialStatus :: resetTemporaryVariables() {
+    temp_strain = updt_strain;
+    temp_stress = updt_stress;
+}
+
+
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: setEigenStrain(Vector &x) {
@@ -46,7 +53,7 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 
 TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "transport mat. status";
-    avgPressure = 0;
+    temp_pressure = 0;
     effConductivity = updateEffectiveConductivity();
 }
 
@@ -122,7 +129,7 @@ double TrsprtMaterialStatus :: giveValue(string code) const {
 //////////////////////////////////////////////////////////
 double TrsprtMaterialStatus :: updateEffectiveConductivity() const {
     TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    return calculatePressureDependentPermeability(avgPressure) * tmat->giveDensity() / tmat->giveViscosity();
+    return calculatePressureDependentPermeability(temp_pressure) * tmat->giveDensity() / tmat->giveViscosity();
 }
 
 //////////////////////////////////////////////////////////
@@ -134,7 +141,7 @@ bool TrsprtMaterialStatus :: isElastic(const bool &now) const {
 //////////////////////////////////////////////////////////
 void TrsprtMaterialStatus :: setParameterValue(string code, double value) {
     if ( code.compare("pressure") == 0 ) {
-        avgPressure = value;
+        temp_pressure = value;
     } else {
         MaterialStatus :: setParameterValue(code, value);
     }
@@ -451,8 +458,8 @@ MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e, unsign
 DiscreteTrsprtCoupledMaterialStatus :: DiscreteTrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : DiscreteTrsprtMaterialStatus(m, e, ipnum) {
     name = "discrete coupled transport mat. status";
     crackParam = 0.;
-    tempVolumetricStrain = volumetricStrain = volStrainRate = 0.;
-    tempCrackVolume = crackVolume = crackVolumeRate = 0.;
+    temp_volumetricStrain = volumetricStrain = volStrainRate = 0.;
+    temp_crackVolume = crackVolume = crackVolumeRate = 0.;
     pressure = pressureRate = 0.;
 }
 
@@ -480,9 +487,9 @@ double DiscreteTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() cons
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtCoupledMaterialStatus ::  updateRateVariables(double timeStep) {
     if ( timeStep > 0 ) {
-        volStrainRate = ( tempVolumetricStrain - volumetricStrain ) / timeStep;
-        crackVolumeRate = ( tempCrackVolume - crackVolume ) / timeStep;
-        pressureRate = ( avgPressure - pressure ) / timeStep;
+        volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / timeStep;
+        crackVolumeRate = ( temp_crackVolume - crackVolume ) / timeStep;
+        pressureRate = ( temp_pressure - pressure ) / timeStep;
     } else {
         volStrainRate = 0.;
         crackVolumeRate = 0.;
@@ -507,11 +514,11 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const {
     DiscreteTrsprtCoupledMaterial *m = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
 
     ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
-    if ( crackVolumeRate > 0 || tempCrackVolume > 0 ) {
+    if ( crackVolumeRate > 0 || temp_crackVolume > 0 ) {
         Transp1D *trs = static_cast< Transp1D * >( element );
         double vol = trs->giveVolume();
-        ints [ 0 ] -= tempCrackVolume * pressureRate / ( vol * m->giveKw() );
-        ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( avgPressure - m->giveReferencePressure() ) / m->giveKw() );
+        ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
+        ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
     }
     return ints * m->giveDensity();
 }
@@ -520,11 +527,11 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const {
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, double value) {
     if ( code.compare("volumetric_strain") == 0 ) {
-        tempVolumetricStrain = value;
+        temp_volumetricStrain = value;
     } else if ( code.compare("crack_opening") == 0 ) {
         crackParam = value;
     } else if ( code.compare("crack_volume") == 0 ) {
-        tempCrackVolume = value;
+        temp_crackVolume = value;
     } else {
         TrsprtMaterialStatus :: setParameterValue(code, value);
     }
@@ -545,17 +552,27 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const 
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtCoupledMaterialStatus ::  update() {
     TrsprtMaterialStatus :: update();
-    volumetricStrain = tempVolumetricStrain;
-    crackVolume = tempCrackVolume;
-    pressure = avgPressure;
+    volumetricStrain = temp_volumetricStrain;
+    crackVolume = temp_crackVolume;
+    pressure = temp_pressure;
 }
+
+//////////////////////////////////////////////////////////
+void DiscreteTrsprtCoupledMaterialStatus ::  resetTemporaryVariables() {
+    TrsprtMaterialStatus :: resetTemporaryVariables();
+    temp_volumetricStrain = volumetricStrain;
+    temp_crackVolume = crackVolume;
+    temp_pressure = pressure;
+}
+
+
 
 //////////////////////////////////////////////////////////
 double DiscreteTrsprtCoupledMaterialStatus ::  giveValue(string code) const {
     if ( code.compare("volumetric_strain") == 0 ) {
         return volumetricStrain;
     } else if ( code.compare("crack_volume") == 0 ) {
-        return tempCrackVolume;
+        return temp_crackVolume;
     } else if ( code.compare("crack_volume_rate") == 0 ) {
         return crackVolumeRate;
     } else if ( code.compare("rel_crack_volume_rate") == 0 ) {
