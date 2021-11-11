@@ -112,7 +112,7 @@ bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, co
 
 bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop);
 bool isInCircle(const Point &P, const Point &center, const double &radius,
-                const unsigned dir=2);
+                const unsigned &dir);
 
 bool onSegment(const Point &p, const Point &q, const Point &r);
 int orientation(const Point &p, const Point &q, const Point &r);

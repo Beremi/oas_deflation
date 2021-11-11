@@ -1599,11 +1599,11 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     xm = 1;
     ym = 1;
     zm = 1;
-    if ( direction == 0 ) {
+    if ( this->direction == 0 ) {
         xm = 0;
-    } else if ( direction == 1 ) {
+    } else if ( this->direction == 1 ) {
         ym = 0;
-    } else if ( direction == 2 ) {
+    } else if ( this->direction == 2 ) {
         zm = 0;
     }
 
@@ -1645,13 +1645,14 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
                 num_nodes++;
                 // std::cout << "nod name = " << nod->giveName() << '\n';
 
-                n_i = ( Point((this->direction == 0) ? 0 : nod->givePoint().getX(),
-                              (this->direction == 1) ? 0 : nod->givePoint().getY(),
-                              (this->direction == 2) ? 0 : nod->givePoint().getZ()) -
-                      Point((this->direction == 0) ? 0 : this->center.getX(),
-                                    (this->direction == 1) ? 0 : this->center.getY(),
-                                    (this->direction == 2) ? 0 : this->center.getZ())
-                        );
+                // n_i = ( Point((this->direction == 0) ? 0 : nod->givePoint().getX(),
+                //               (this->direction == 1) ? 0 : nod->givePoint().getY(),
+                //               (this->direction == 2) ? 0 : nod->givePoint().getZ()) -
+                //       Point((this->direction == 0) ? 0 : this->center.getX(),
+                //                     (this->direction == 1) ? 0 : this->center.getY(),
+                //                     (this->direction == 2) ? 0 : this->center.getZ())
+                //         );
+                n_i = (node_point - this->center);
                 l_i = n_i.norm();
                 n_i.normalize();
                 // std::cout << "dim = " << this->dim << '\n';
