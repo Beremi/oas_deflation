@@ -343,6 +343,9 @@ class Model:
         if self.modelType == '3d_corrosionRebar':
             self.run_3d_corrosionRebar(node_coords_init=node_coords_init)
 
+        if self.modelType == '3d_TubeInnerPressure':
+            self.run_3d_TubeInnerPressure()
+
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
@@ -519,11 +522,19 @@ class Model:
     def run_3d_transportPatchTest(self):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.createPatchTestTransport(self.maxLim, self.minDist, self.trials, self.dimension, self.powerTes)
 
+
     def run_3d_BiparvaTubeTransport(self):
         #node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii
         self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
         (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC)  = utilitiesModeling.create3dBiparvaTubeTransport(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
+
+
+    def run_3d_TubeInnerPressure(self):
+        self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
+        (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceVertexIndices)  = utilitiesModeling.create3dTubeInnerPressure(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
+
 
 
     def run_2d_coupledArtificialCrack(self):
@@ -647,25 +658,33 @@ class Model:
         if self.govNodes != None:
             if self.rigidPlates != None:
                 if self.govNodesMechBC != None:
-                    #if not (self.activeTransport==True and self.coupled==False):
+                    if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar' or self.modelType == '3d_TubeInnerPressure':
+                        if self.modelType == '3d_TubeInnerPressure':
+                            expansionRingsProps = []
+                            expansionRingsProps.append(1)
+                            expansionRingsProps.append(0)
+                            expansionRingsProps.append(self.cylinderRad*2)
+                            expansionRingsProps.append(self.maxLim)
+                        if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar':
+                            expansionRingsProps = []
+                            expansionRingsProps.append(self.rebarCount)
+                            expansionRingsProps.append(self.rebarDepth)
+                            expansionRingsProps.append(self.rebarDiameter)
+                            expansionRingsProps.append(self.maxLim)
 
-                    if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar':
-                        print ('getting master nodes ids from constraint')
-                        expansionRingsProps = []
-                        expansionRingsProps.append(self.rebarCount)
-                        expansionRingsProps.append(self.rebarDepth)
-                        expansionRingsProps.append(self.rebarDiameter)
-                        expansionRingsProps.append(self.maxLim)
-
-                        mechDofIndices = utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=self.rebarCount, nodesMechBC=self.mechBC_merged)
+                        mechDofIndices = utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=expansionRingsProps[0], nodesMechBC=self.mechBC_merged)
                         self.constraint = True
                     else:
                         utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords,nodesMechBC=self.mechBC_merged)
                         self.constraint = True
 
         self.totalNodeCount += len(self.govNodes)
-        if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar' :
+
+        if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar'  :
             self.totalNodeCount += self.rebarCount
+
+        if self.modelType == '3d_TubeInnerPressure':
+            self.totalNodeCount += 1
 
         #saving transport rigid plates
         if self.govNodesTrspt != None:
@@ -677,18 +696,35 @@ class Model:
                     if len(self.interfaceVertexIndices)>0:
                         #print(self.interfaceVertexIndices)
 
-                        direction = 0
-                        materialId = 1
-                        coeff = self.rebarDiameter
+                        if (self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar' ):
+                            direction = 0
+                            materialId = 1
 
-                        circleLength = 2*np.pi*self.rebarDiameter/2
-                        nrNodes = int ( circleLength / self.interfaceMinDist )
-                        nrNodes = (int (nrNodes / 4) +1 ) * 4
+                            circleLength = 2*np.pi*self.rebarDiameter/2
+                            nrNodes = int ( circleLength / self.interfaceMinDist )
+                            nrNodes = (int (nrNodes / 4) +1 ) * 4
 
-                        interfaceElementLength = circleLength / nrNodes
-                        rebarArea = np.pi * (self.rebarDiameter/2)**2
+                            interfaceElementLength = circleLength / nrNodes
+                            rebarArea = np.pi * (self.rebarDiameter/2)**2
+                            if self.dimension ==3:
+                                rebarArea *=self.maxLim[2]
 
-                        coeff = interfaceElementLength / rebarArea
+                            coeff = interfaceElementLength / rebarArea
+
+                        if (self.modelType == '3d_TubeInnerPressure'):
+                            direction = 0
+                            materialId = 1
+
+
+                            circleLength = 2*np.pi*(self.cylinderRad-self.tubeThickness)
+
+                            nrNodes = int ( circleLength / self.minDist )
+                            nrNodes = (int (nrNodes / 4) +1 ) * 4
+
+                            rebarArea = np.pi * (self.cylinderRad)**2 * self.cylinderHeight
+
+                            interfaceElementLength = circleLength / nrNodes
+                            coeff = interfaceElementLength / rebarArea
 
                         utilitiesGeom.saveCoupledConstraint(self.master_folder, self.interfaceVertexIndices, mechDofIndices, direction, materialId, coeff)
 

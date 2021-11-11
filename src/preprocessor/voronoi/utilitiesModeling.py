@@ -3304,7 +3304,10 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
-    fn1 = utilitiesNumeric.constantFunc(100)
+    func1 = []
+    func1.append( np.array([0,0]) )
+    func1.append( np.array([1, 10]) )
+    fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
     ### sampling of nodes
@@ -3338,7 +3341,7 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
     modelVertices = utilitiesGeom.returnSelectedPtsRadial (radius-thickness-1e-3 , radius+1e-3 , vor.vertices)
     ### selecting vertices on the outer surface
 
-    outerFaceBC = np.array([2,-1])
+    outerFaceBC = np.array([0,-1])
     outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices, xmin = 1e-5, xmax = height - 1e-5)
     trsptOuterRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
     trsptOuterRigidPlate.setDirectNodes(outerFace)
@@ -3357,12 +3360,18 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
         plt.show()
 
     govNodesTrspt.append(np.array([ -1, -1, -1]))
-    innerFaceBC = np.array([0,-1])
+    innerFaceBC = np.array([2,-1])
     innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices,xmin = 1e-5, xmax = height - 1e-5)
     trsptInnerRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
     trsptInnerRigidPlate.setDirectNodes(innerFace)
     rigidPlatesTrspt.append(trsptInnerRigidPlate)
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], innerFaceBC))
+
+
+    interfaceVertexIndices = []
+    interfaceVertexIndices.append(innerFace)
+    interfaceVertexIndices = np.asarray(interfaceVertexIndices)
+
 
 
     govNodesTrspt.append(np.array([ 1, -1, -1]))
@@ -3401,8 +3410,9 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
 
 
+
     radii = np.zeros((len(node_coords))) + minDist
-    return node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
+    return node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, interfaceVertexIndices
 
 
 
@@ -7799,9 +7809,10 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
 
 
 def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, trials):
-    print ('Assembling Biparva tube...')
+    print ('Assembling tube with inner pressure...')
     directionDim = 0
     indent = 1e-5
+    indentRP = 1e-6
     dim=3
     #lists for the model
     node_coords = []
@@ -7812,12 +7823,25 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     rigidPlates = []
 
     center[0] += 1e-7
-    node_coords.append( np.array([  indent,  radius-thickness/2,  0 ]))
+    node_coords.append( np.array([  indent,  radius-1e-5,  0 ]))
+    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+    mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    mechBC_merged.append(mBC)
+
+
+
+    circleLength = 2*np.pi*radius
+    nrNodes = int ( circleLength / minDist )
+    nrNodes = (int (nrNodes / 4) +1 ) * 4
+
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height-indent, 0, minDist,  node_coords, trials, equiAngNodes=nrNodes )
+
+
 
     pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
 
-    indentRP = 1e-6
-    leftRigidPlateMechBC = np.array([0, 0,0, 0,-1,-1,  -1,-1,-1,   -1,-1,-1])
+
+    leftRigidPlateMechBC = np.array([-1, -1,-1,   -1,-1,-1,  -1,-1,-1,   -1,-1,-1])
     leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
     -indentRP, indentRP,
     -radius-indentRP, radius+indentRP,
@@ -7832,7 +7856,7 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
 
     pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
 
-    rightRigidPlateMechBC = np.array([1, 0,0, -1,-1,-1,  -1,-1,-1,   -1,-1,-1])
+    rightRigidPlateMechBC = np.array([-1, -1, -1, -1,-1,-1,  -1,-1,-1,   -1,-1,-1])
     rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
     -indentRP+height, indentRP+height,
     -radius-indentRP, radius+indentRP,
