@@ -151,9 +151,9 @@ void RigidBodyContact :: checkNodeType() const {
 Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //Matrix B
-    Matrix B = Matrix(ndim, 6 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
+    Matrix B = Matrix( ndim, 6 * ( ndim - 1 ) );
+    Matrix Aa = giveAMatrix( nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix( nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B [ i ] [ j ] = Aa [ i ] [ j ];
@@ -186,7 +186,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         double currErr = 0.0;
         //
         for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
-            currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+            currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
             if ( abs(currErr) > maxErr ) {
                 maxErr = abs(currErr);
             }
@@ -204,7 +204,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        Point n = cross(vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = cross( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
 
         //JM: Perpendicularity check of the beam and face directions
@@ -246,7 +246,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-6 ) {
             cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
@@ -310,7 +310,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     inttype->setIPWeight(0, length * area / ndim);
 
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
-    volume = area * length / ndim;   
+    volume = area * length / ndim;
 }
 
 //////////////////////////////////////////////////////////
@@ -321,7 +321,7 @@ void RigidBodyContact :: init() {
 
     //create simplices
     for ( auto &v: vert ) {
-        simplices.push_back(v->addElementToSimplex(this) );
+        simplices.push_back( v->addElementToSimplex(this) );
     }
 
     //check that material is DisMechMat
@@ -341,7 +341,7 @@ Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
-    Matrix A(ndim, 3 * ( ndim - 1 ) );
+    Matrix A( ndim, 3 * ( ndim - 1 ) );
     if ( ndim == 3 ) {
         A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = A [ 2 ] [ 2 ] = 1;
         A [ 1 ] [ 3 ] = a.z - x.z;
@@ -390,7 +390,7 @@ Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
 Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
     ( void ) ip_id;
     Point distance = inttype->giveIPLocation(0) - nodes [ node_i ]->givePoint();
-    Vector dst( ( double ) 0, ndim );
+    Vector dst( ( double ) 0, ndim);
     for ( unsigned i = 0; i < ndim; i++ ) {
         if ( i == 0 ) {
             dst [ i ] = distance.getX();
@@ -435,7 +435,7 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
 };
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const{
+Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
 }
 
@@ -445,7 +445,7 @@ Matrix RigidBodyContact :: giveDampingMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
 }
 
@@ -455,7 +455,7 @@ Vector RigidBodyContact :: integrateLoad(BodyLoad *vl, double time) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: integrateInternalSources(){
+Vector RigidBodyContact :: integrateInternalSources() {
     return Element :: integrateInternalSources() / ndim;
 }
 
@@ -522,8 +522,8 @@ Matrix Truss :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //Matrix B
     Matrix B = Matrix(ndim, 2 * ndim);
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
+    Matrix Aa = giveAMatrix( nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix( nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < ndim; j++ ) {
             B [ i ] [ j ] = Aa [ i ] [ j ];
@@ -627,7 +627,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         if ( vert.size() > 3 ) {
             for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
                 // JM Zakomentoval cout << i <<  " " << endl;
-                currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+                currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
                 if ( abs(currErr) > maxErr ) {
                     maxErr = abs(currErr);
                 }
@@ -641,7 +641,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
         //JM: face normal vector made from first 3 vertices
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-        Point n = cross(vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = cross( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
         Point t2;
         if ( fabs(n.x) > fabs(n.z) ) {
@@ -689,7 +689,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-10 ) {
             cerr << "TRSPRT: Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
@@ -715,7 +715,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
     inttype->setIPWeight(0, length * area / ndim);
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
-    volume = area * length / ndim;   
+    volume = area * length / ndim;
 }
 
 //////////////////////////////////////////////////////////
@@ -754,7 +754,7 @@ Matrix Transp1D :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveHMatrix(const Point *x) const {
-    (void) x;
+    ( void ) x;
     Matrix H(1, 2);
     //double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
     //double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
@@ -801,13 +801,13 @@ Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
 
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D :: giveStiffnessMatrix(string matrixType) const{
+Matrix Transp1D :: giveStiffnessMatrix(string matrixType) const {
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
 }
 
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     //Vector Q = Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
     //for (auto p:Q) cout << " " << p;
     return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
@@ -819,7 +819,7 @@ Vector Transp1D :: integrateLoad(BodyLoad *vl, double time) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: integrateInternalSources(){
+Vector Transp1D :: integrateInternalSources() {
     return Element :: integrateInternalSources() / ndim;
 }
 
@@ -866,11 +866,14 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     for ( auto &f: friends ) {
         elem_crack_opening = 0.;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
-            elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
+            elem_crack_opening += abs( f->giveIPValue("tempCrackOpening", k) );
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
-        if (ndim == 3) crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
-        else if (ndim == 2) crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea();
+        if ( ndim == 3 ) {
+            crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
+        } else if ( ndim == 2 ) {
+            crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea();
+        }
         m++;
     }
 
@@ -889,7 +892,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         if ( s0 ) {
             volStrain = s0->giveVolumetricStrain();
         }
-    } else if (s0 && s1 ) {
+    } else if ( s0 && s1 ) {
         if ( ( s0->isValid() && s1->isValid() ) || ( !s0->isValid() && !s1->isValid() ) ) {
             volStrain = ( s0->giveVolumetricStrain() + s1->giveVolumetricStrain() ) / 2.;
         } else if ( s0->isValid() ) {
@@ -902,7 +905,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         exit(1);
     }
 
-    
+
     stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //3 is there to obtain mechanical volumetric strain
 
     return Transp1D :: giveStrain(i, DoFs);

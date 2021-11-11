@@ -158,7 +158,7 @@ private:
     Point natCoordsA, natCoordsB;
     Element *elemA, *elemB;
 public:
-    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; elemA = nullptr; elemB = nullptr;};
+    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; elemA = nullptr; elemB = nullptr; };
     ~DisplacementGauge() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;

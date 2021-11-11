@@ -30,7 +30,7 @@ public:
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     vector< Node * >giveVertices() const { return vert; };
-    unsigned giveNumOfVertices() const {return vert.size(); };
+    unsigned giveNumOfVertices() const { return vert.size(); };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
     virtual Vector giveContactStrainNT() const;
@@ -53,10 +53,10 @@ public:
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector integrateInternalSources();
-    double givePerimeter()const {return perimeter;};
+    double givePerimeter()const { return perimeter; };
 
 
-    virtual bool isPointInside(Point* xn, const Point *x) const { (void) xn; (void) x; return false;}; //TODO: discrete elements does not interpolate
+    virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 
 //////////////////////////////////////////////////////////
@@ -122,7 +122,7 @@ public:
     virtual Vector integrateInternalSources();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     vector< Node * >giveVertices() const { return vert; };
-    virtual bool isPointInside(Point* xn, const Point *x) const { (void) xn; (void) x; return false;}; //TODO: discrete elements does not interpolate
+    virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 
 //////////////////////////////////////////////////////////

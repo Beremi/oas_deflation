@@ -116,7 +116,7 @@ public:
 class VoigtConstraint : public PBlock
 {
     double volume;
-    vector<int> strainFunc, stressFunc;
+    vector< int >strainFunc, stressFunc;
 public:
     VoigtConstraint();
     virtual ~VoigtConstraint();
@@ -132,8 +132,8 @@ class PressureFromMechanicalLoad : public PBlock
     unsigned master;
     unsigned direction, masterdirection;
     unsigned materialnum;
-    vector<unsigned> trsprtnodes;
-        
+    vector< unsigned >trsprtnodes;
+
 public:
     PressureFromMechanicalLoad();
     virtual ~PressureFromMechanicalLoad();

@@ -32,7 +32,7 @@ protected:
     Simplex *simplex; //simplex used to determine volumetric strain
 public:
     Node() { name = "basic node"; isMechanical = false; isTransport = false; simplex = nullptr; };
-    virtual ~Node() { if (simplex!=nullptr) delete simplex; };
+    virtual ~Node() { if ( simplex != nullptr ) { delete simplex; } };
 
     /// A pure virtual member.
     /**
@@ -63,8 +63,8 @@ public:
     void initSimplex();
     void updateSimplexVolumetricStrain(const Vector &fullDoFs);
     Simplex *giveSimplex() { return simplex; }
-    bool hasSimplex()const{return simplex!=nullptr;}
-    bool hasValidSimplex() const { if (!simplex) return false; return simplex->isValid();}
+    bool hasSimplex()const { return simplex != nullptr; }
+    bool hasValidSimplex() const { if ( !simplex ) { return false; } return simplex->isValid(); }
 };
 
 //////////////////////////////////////////////////////////
@@ -187,8 +187,8 @@ public:
     virtual ~CoupledParticle() {};
     virtual double giveDoFBasedValue(string code, const Vector &DoFs) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
-    virtual bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) return true;  else  return false;  };
-    virtual bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) return true;  else  return false; };
+    virtual bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) { return true; } else { return false; } };
+    virtual bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) { return true; } else { return false; } };
 };
 
 #endif /* _NODE_H */

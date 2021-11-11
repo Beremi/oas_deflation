@@ -33,10 +33,10 @@ void Element :: initIntegration() {
 
 //////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {
-    stats.resize(inttype->giveNumIP() );
+    stats.resize( inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
-        inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian( inttype->giveIPLocationPointer(k) ) );
+        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k) ) );
     }
 };
 
@@ -74,17 +74,17 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
-    Bs.resize(inttype->giveNumIP() );
-    Hs.resize(inttype->giveNumIP() );
+    Bs.resize( inttype->giveNumIP() );
+    Hs.resize( inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        Bs [ k ] = giveBMatrix(inttype->giveIPLocationPointer(k) );
-        Hs [ k ] = giveHMatrix(inttype->giveIPLocationPointer(k) );
+        Bs [ k ] = giveBMatrix( inttype->giveIPLocationPointer(k) );
+        Hs [ k ] = giveHMatrix( inttype->giveIPLocationPointer(k) );
     }
 }
 
 //////////////////////////////////////////////////////////
 vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
-    vector< unsigned >DoFinDir(nodes.size() );
+    vector< unsigned >DoFinDir( nodes.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
     }
@@ -148,7 +148,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF(DoFids.size() );
+    Vector intF( DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -172,7 +172,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
 
 //////////////////////////////////////////////////////////
 Vector Element :: integrateInternalSources() {
-    Vector intS(DoFids.size() );
+    Vector intS( DoFids.size() );
     Vector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         intmats = stats [ i ]->giveInternalSource();
@@ -226,85 +226,104 @@ Vector Element :: integrateLoad(BodyLoad *vl, double time) const {
 void Element :: changeMaterial(Material *newmat) {
     this->mat = newmat;
     for ( unsigned p = 0; p < stats.size(); p++ ) {
-        if (stats [ p ] != nullptr) delete stats [ p ];
+        if ( stats [ p ] != nullptr ) {
+            delete stats [ p ];
+        }
         stats [ p ] = this->mat->giveNewMaterialStatus(this, p);
     }
     this->initMaterialStatuses();
 }
 
 //////////////////////////////////////////////////////////
-bool Element :: giveGlobalCoords(Point *x, const Point *xn) const{
-    Vector phi(nodes.size());
+bool Element :: giveGlobalCoords(Point *x, const Point *xn) const {
+    Vector phi( nodes.size() );
     shafunc->giveShapeF(xn, phi);
-    *x = Point(0,0,0);
-    for (unsigned n=0; n<nodes.size(); n++){
-        *x += nodes[n]->givePoint()*phi[n];  
-    }    
+    * x = Point(0, 0, 0);
+    for ( unsigned n = 0; n < nodes.size(); n++ ) {
+        * x += nodes [ n ]->givePoint() * phi [ n ];
+    }
     return true;
 }
 
 
 //////////////////////////////////////////////////////////
-bool Element :: isPointInside(Point* xn, const Point *x) const {
+bool Element :: isPointInside(Point *xn, const Point *x) const {
     //initial screening
-    Point maxc(-1e10,-1e10,-1e10);
-    Point minc( 1e10, 1e10, 1e10);
+    Point maxc(-1e10, -1e10, -1e10);
+    Point minc(1e10, 1e10, 1e10);
     Point *p;
-    for(auto &n: nodes){
+    for ( auto &n: nodes ) {
         p = n->givePointPointer();
-        for(unsigned c=0; c<ndim; c++){
-            maxc.setCoord(c,max(maxc.giveCoord(c),p->giveCoord(c)));
-            minc.setCoord(c,min(minc.giveCoord(c),p->giveCoord(c)));
+        for ( unsigned c = 0; c < ndim; c++ ) {
+            maxc.setCoord( c, max( maxc.giveCoord(c), p->giveCoord(c) ) );
+            minc.setCoord( c, min( minc.giveCoord(c), p->giveCoord(c) ) );
         }
-    }   
-    for(unsigned c=0; c<ndim; c++){
-        if (x->giveCoord(c)>maxc.giveCoord(c) || x->giveCoord(c)<minc.giveCoord(c)) return false;
     }
-    
+    for ( unsigned c = 0; c < ndim; c++ ) {
+        if ( x->giveCoord(c) > maxc.giveCoord(c) || x->giveCoord(c) < minc.giveCoord(c) ) {
+            return false;
+        }
+    }
+
     //find natural coordinates
     //initial estimation
     Point center;
-    *xn = Point(0,0,0);    
+    * xn = Point(0, 0, 0);
     Point aux, diff, diffC;
-    Point size = maxc-minc;
-    giveGlobalCoords(&center, xn);
-        
+    Point size = maxc - minc;
+    giveGlobalCoords(& center, xn);
+
     //initial estimation
-    aux = ((*x) - center)*2.;    
-    for(unsigned c=0; c<ndim; c++) xn->setCoord(c, aux.giveCoord(c)/size.giveCoord(c));
-    giveGlobalCoords(&aux, xn);      
+    aux = ( ( * x ) - center ) * 2.;
+    for ( unsigned c = 0; c < ndim; c++ ) {
+        xn->setCoord( c, aux.giveCoord(c) / size.giveCoord(c) );
+    }
+    giveGlobalCoords(& aux, xn);
 
     int i = 0;
     int max_i = 500;
     double maxerror = 1;
-    diff = aux-(*x);
-    while(maxerror>1e-4 && i<max_i){
-        for(unsigned c=0; c<ndim; c++){
-            if (abs(diff.giveCoord(c)/size.giveCoord(c))<1e-8) continue;
-            if (diffC.giveCoord(c)>1e-16)  xn->setCoord(c, xn->giveCoord(c) - xn->giveCoord(c)*diff.giveCoord(c)/diffC.giveCoord(c)); 
-            else xn->setCoord(c, xn->giveCoord(c) - 2.*diff.giveCoord(c)/size.giveCoord(c));
+    diff = aux - ( * x );
+    while ( maxerror > 1e-4 && i < max_i ) {
+        for ( unsigned c = 0; c < ndim; c++ ) {
+            if ( abs( diff.giveCoord(c) / size.giveCoord(c) ) < 1e-8 ) {
+                continue;
+            }
+            if ( diffC.giveCoord(c) > 1e-16 ) {
+                xn->setCoord( c, xn->giveCoord(c) - xn->giveCoord(c) * diff.giveCoord(c) / diffC.giveCoord(c) );
+            } else {
+                xn->setCoord( c, xn->giveCoord(c) - 2. * diff.giveCoord(c) / size.giveCoord(c) );
+            }
         }
 
-        giveGlobalCoords(&aux, xn);
-        diff = aux-(*x);
+        giveGlobalCoords(& aux, xn);
+        diff = aux - ( * x );
         diffC = aux - center;
         maxerror = 0.;
-        for(unsigned c=0; c<ndim; c++) maxerror = max(maxerror, abs(diff.giveCoord(c)/size.giveCoord(c)) ); 
+        for ( unsigned c = 0; c < ndim; c++ ) {
+            maxerror = max( maxerror, abs( diff.giveCoord(c) / size.giveCoord(c) ) );
+        }
         i++;
     }
-    if(i==max_i) return false;
-    
+    if ( i == max_i ) {
+        return false;
+    }
+
     //check natural coordinates are inside limits
     //TODO: works only for brick and quadrilateral
-    for(unsigned c=0; c<ndim; c++) if (abs(xn->giveCoord(c))>1.) return false;
+    for ( unsigned c = 0; c < ndim; c++ ) {
+        if ( abs( xn->giveCoord(c) ) > 1. ) {
+            return false;
+        }
+    }
     return true;
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveElemDoFsFromFullDoFs( const Vector &FullDoFs) const{
-    Vector elemDoFs(DoFids.size());
-    for (unsigned i=0; i<DoFids.size(); i++){
-        elemDoFs[i] = FullDoFs[DoFids[i]];
+Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
+    Vector elemDoFs( DoFids.size() );
+    for ( unsigned i = 0; i < DoFids.size(); i++ ) {
+        elemDoFs [ i ] = FullDoFs [ DoFids [ i ] ];
     }
     return elemDoFs;
 }

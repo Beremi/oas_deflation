@@ -34,7 +34,7 @@ public:
     unsigned giveSlaveDir() const { return direction; };
     std :: vector< Node * >giveMasterNodes() { return masters; };
     virtual unsigned giveNumOfDoFMasters() const { return masters.size(); }; //TODO: warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
-    virtual unsigned giveNumOfConjugateMasters() const { return 0; }; 
+    virtual unsigned giveNumOfConjugateMasters() const { return 0; };
     Node *giveMasterNode(unsigned k) { return masters [ k ]; };
     unsigned giveMasterDoF(unsigned k) const;
     std :: vector< unsigned >giveMasterDirs() { return directions; };
@@ -75,10 +75,11 @@ class DoFDependentOnConjugates : public JointDoF
 protected:
 public:
     DoFDependentOnConjugates() {};
-    DoFDependentOnConjugates(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});;
+    DoFDependentOnConjugates(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
+    ;
     ~DoFDependentOnConjugates() {};
     virtual unsigned giveNumOfDoFMasters() const { return 0; }; //TODO: warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
-    virtual unsigned giveNumOfConjugateMasters() const { return masters.size(); }; 
+    virtual unsigned giveNumOfConjugateMasters() const { return masters.size(); };
     virtual void init(Solver *solver);
 };
 
@@ -102,7 +103,7 @@ public:
     void init(NodeContainer *nodes, BCContainer *bconds, Solver *solver); // here matrix X will be created
     void clear();
     void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now = 0);
-    void calculateDependentDoFs(Vector &fullDoFs, const double time_now = 0.0, const bool all = false) const; 
+    void calculateDependentDoFs(Vector &fullDoFs, const double time_now = 0.0, const bool all = false) const;
     void calculateDoFsDependentOnConjugates(Vector &full_ddr, const Vector &fullDoFs, const Vector &fullFExt) const;
     void calculateMasterForces(Vector &fullForces);
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };

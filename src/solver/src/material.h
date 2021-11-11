@@ -179,16 +179,16 @@ public:
 class DiscreteTrsprtCoupledMaterial : public DiscreteTrsprtMaterial
 {
 private:
-    double crack_turtuosity, biotCoeff, refP, Kw; 
+    double crack_turtuosity, biotCoeff, refP, Kw;
 public:
-    DiscreteTrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true; refP = 0.; Kw = 2.15e9;};
+    DiscreteTrsprtCoupledMaterial() { name = "coupled transport material";  produceInternalSources = true; refP = 0.; Kw = 2.15e9; };
     ~DiscreteTrsprtCoupledMaterial() {};
     void readFromLine(istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveTurtuosity() { return crack_turtuosity; };
     double giveBiotCoeff() const { return biotCoeff; };
-    double giveKw() const {return Kw;};
-    double giveReferencePressure() const {return refP; };
+    double giveKw() const { return Kw; };
+    double giveReferencePressure() const { return refP; };
 };
 
 //////////////////////////////////////////////////////////

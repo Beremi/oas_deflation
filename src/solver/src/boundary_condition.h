@@ -68,7 +68,7 @@ public:
     void readFromLine(istringstream &iss, ElementContainer *elems);
     void init(FunctionContainer *funcs);
     double giveValue(const Point *xyz, double time);
-    vector <double> giveBodyForceDoFValues(double t);
+    vector< double >giveBodyForceDoFValues(double t);
     vector< unsigned >giveArrayOfBodyForceDoFs() const;
     unsigned giveDirection() const { return dir; };
 };

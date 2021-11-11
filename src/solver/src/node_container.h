@@ -48,7 +48,7 @@ public:
     void clear();
     void addRHS_nodalLoad(Vector &f, double time) const;
     void updateDirrichletBC(Vector &r, double time) const;
-    void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const; 
+    void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
     void updateFullDoFsByDependenciesOnConjugates(Vector &ddr, const Vector &trial_r, const Vector &f_ext) const; // accounts also for constraints between master and conjugate variables
     void giveReducedForceArray(Vector &fullDoFs, Vector &fDoFs) const;
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
