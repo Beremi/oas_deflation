@@ -1386,6 +1386,7 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 
 
 void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
+    this->direction=2;
     this->dim = d;
     double x, y, z, rI, rO;
     string dir;
@@ -1401,20 +1402,16 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     this->r_outer = rO;
     if ( dim == 3 ) {
         iss >> dir;
-        if ( dir.compare("x") ) {
-            direction = 0;
-        } else if ( dir.compare("y") ) {
-            direction = 1;
-        } else if ( dir.compare("z") ) {
-            direction = 2;
+        if ( dir.compare("dir") ) {
+            iss >> this->direction;
         }
         // iss >> x >> y >> z;
         // axis = Point(x, y, z);
-    } else {
-        // for 2D case, normal
-        // axis = Point(0, 0, 1);
-        direction = 2;
     }
+    // else {
+    //     // for 2D case, normal
+    //     // axis = Point(0, 0, 1);
+    // }
 
     RigidPlate :: setDirectionToFix(iss);
 }
@@ -1446,8 +1443,8 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
-        if ( isInCircle(node_point, this->center, this->r_outer) ) {
-            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+        if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
                 if ( nod == master ) {
                     continue;
                 }
@@ -1509,8 +1506,8 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
-        if ( isInCircle(node_point, this->center, this->r_outer) ) {
-            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+        if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
                 if ( nod == master ) {
                     continue;
                 }
@@ -1574,8 +1571,8 @@ void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BC
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
-        if ( isInCircle(node_point, this->center, this->r_outer) ) {
-            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+        if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
                 if ( nod == master ) {
                     continue;
                 }
@@ -1640,14 +1637,21 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
             continue;
         }
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
-        if ( isInCircle(node_point, this->center, this->r_outer) ) {
-            if ( !isInCircle(node_point, this->center, this->r_inner) ) {
+        if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
+            if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
                 // if ( nod == expMaster ) {
                 //     continue;
                 // }
                 num_nodes++;
                 // std::cout << "nod name = " << nod->giveName() << '\n';
-                n_i = ( nod->givePoint() - this->center );
+
+                n_i = ( Point((this->direction == 0) ? 0 : nod->givePoint().getX(),
+                              (this->direction == 1) ? 0 : nod->givePoint().getY(),
+                              (this->direction == 2) ? 0 : nod->givePoint().getZ()) -
+                      Point((this->direction == 0) ? 0 : this->center.getX(),
+                                    (this->direction == 1) ? 0 : this->center.getY(),
+                                    (this->direction == 2) ? 0 : this->center.getZ())
+                        );
                 l_i = n_i.norm();
                 n_i.normalize();
                 // std::cout << "dim = " << this->dim << '\n';

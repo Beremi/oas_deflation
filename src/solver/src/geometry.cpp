@@ -122,9 +122,12 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
     return false;
 }
 
-bool isInCircle(const Point &P, const Point &center, const double &radius) {
-    // TODO make fn isInCilinder (for arbitrary cilinder orientation)
-    if ( ( P - center ).norm() < radius ) {
+bool isInCircle(const Point &P, const Point &center, const double &radius,
+                const unsigned dir) {
+    Point P1, C1;
+    P1 = Point((dir == 0) ? 0 : P.getX(), (dir == 1) ? 0 : P.getY(), (dir == 2) ? 0 : P.getZ());
+    C1 = Point((dir == 0) ? 0 : center.getX(), (dir == 1) ? 0 : center.getY(), (dir == 2) ? 0 : center.getZ());
+    if ( ( P1 - C1 ).norm() < radius ) {
         return true;
     }
     return false;
