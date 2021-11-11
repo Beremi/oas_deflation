@@ -227,7 +227,7 @@ void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
             break;
         }
         jd = constrs->giveConstraint(j);
-        for ( unsigned k = 0; k < jd->giveNumOfMasters(); k++ ) {
+        for ( unsigned k = 0; k < jd->giveNumOfDoFMasters(); k++ ) {
             masternode = jd->giveMasterNode(0);
             if ( dynamic_cast< MechDoF * >( masternode ) == nullptr && dynamic_cast< TrsDoF * >( masternode ) == nullptr ) {
                 BoundaryCondition *bc;

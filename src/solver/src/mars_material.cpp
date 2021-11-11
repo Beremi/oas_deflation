@@ -284,7 +284,6 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(addEigenStrain(strain) );
-    RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 

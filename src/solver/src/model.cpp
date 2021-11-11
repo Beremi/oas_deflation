@@ -11,10 +11,10 @@ Model :: Model(bool pT) {
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
     elems.setContainers(& nodes, & bconds);
-    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
+    solver = nullptr;
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
-    solver = nullptr;
 }
 
 //////////////////////////////////////////////////////////
@@ -27,7 +27,7 @@ void Model :: init(const bool &initial) {     //initialization
     }
     elems.init();
     nodes.initSimplices();
-    constr.init(& nodes, & bconds);
+    constr.init(& nodes, & bconds, solver);
     elems.findElementFriends();
     exporters.init(initial);
 
@@ -186,7 +186,7 @@ void Model :: clear() {
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
     elems.setContainers(& nodes, & bconds);
-    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters);
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 
     solver->setContainers(& elems, & nodes, & funcs);

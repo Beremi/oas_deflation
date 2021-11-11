@@ -1,4 +1,5 @@
 #include "node_container.h"
+#include "solver.h"
 
 //////////////////////////////////////////////////////////
 NodeContainer :: ~NodeContainer() {
@@ -227,15 +228,16 @@ void NodeContainer :: establishDoFArray() {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
-    vector< double >nodalLoad = BC->giveLoadedDoFValues(time);
-    for ( unsigned k = 0; k < nodalLoad.size(); k++ ) {
-        RHS [ loadedDoFs [ k ] ] += nodalLoad [ k ];
-    }
-
+void NodeContainer :: addRHS_nodalLoad(Vector &f, double time) const {
+    
     vector< double > bodyLoad = BC->giveBodyForceDoFValues(time);
     for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
-        RHS [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
+        f [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
+    }
+
+    vector< double >nodalLoad = BC->giveLoadedDoFValues(time);
+    for ( unsigned k = 0; k < nodalLoad.size(); k++ ) {
+        f [ loadedDoFs [ k ] ] += nodalLoad [ k ];
     }
 }
 
@@ -256,10 +258,14 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
         }
     }
-
-    // #constr_new
     this->giveConstraints()->calculateDependentDoFs(fullDoFs);
 }
+
+//////////////////////////////////////////////////////////
+void NodeContainer :: updateFullDoFsByDependenciesOnConjugates(Vector &ddr, const Vector &trial_r, const Vector &f_ext) const{ // accounts also for constraints between master and conjugate variables
+    this->giveConstraints()->calculateDoFsDependentOnConjugates(ddr, trial_r, f_ext);
+}
+
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const {
@@ -288,10 +294,9 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vecto
     this->giveConstraints()->calculateMasterForces(f_dam);
     this->giveConstraints()->calculateMasterForces(f_acc);
 
-
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
-        if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {
+        if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {       
             f_ext [ k ] += f_int [ k ] + f_dam [ k ] + f_acc [ k ];
         }
     }

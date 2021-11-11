@@ -302,8 +302,11 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
+    ( void ) mats;
+    ( void ) solver;
+
     volume = 1;
     for ( auto const a : PUCsize ) {
         volume *= a;
@@ -475,8 +478,6 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
 
 //////////////////////////////////////////////////////////
 double MechanicalPeriodicBC :: giveVolume() const{
-    double volume = 1.;
-    for(auto &a:PUCsize) volume *= a;
     return volume;
 }
 
@@ -612,54 +613,82 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
     ( void ) elems;
     ( void ) constrs;
 
-    //all rotations are zero
+    if(use_half_gammas){
+        //all rotations are zero
 
-    //add constant function
-    vector< double >x, y;
-    x.resize(1, 0);
-    y.resize(1, 0);
-    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
-    funcs->addFunction(newf);
+        //add constant function
+        vector< double >x, y;
+        x.resize(1, 0);
+        y.resize(1, 0);
+        PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+        funcs->addFunction(newf);
 
-    Node *node;
-    vector< int >dBC, nBC;
-    if ( dim == 2 ) {
-        dBC.resize(3);
-        nBC.resize(3);
-        for ( unsigned i = 0; i < 3; i++ ) {
-            dBC [ i ] = -1;
-            nBC [ i ] = -1;
-        }
-        dBC [ 2 ] = funcs->giveSize() - 1; //rotation
-    } else if ( dim == 3 ) {
-        dBC.resize(6);
-        nBC.resize(6);
-        for ( unsigned i = 0; i < 6; i++ ) {
-            if ( i < 3 ) {
+        Node *node;
+        vector< int >dBC, nBC;
+        if ( dim == 2 ) {
+            dBC.resize(3);
+            nBC.resize(3);
+            for ( unsigned i = 0; i < 3; i++ ) {
                 dBC [ i ] = -1;
-            } else {
-                dBC [ i ] = funcs->giveSize() - 1; //rotations
+                nBC [ i ] = -1;
             }
-            nBC [ i ] = -1;
+            dBC [ 2 ] = funcs->giveSize() - 1; //rotation
+        } else if ( dim == 3 ) {
+            dBC.resize(6);
+            nBC.resize(6);
+            for ( unsigned i = 0; i < 6; i++ ) {
+                if ( i < 3 ) {
+                    dBC [ i ] = -1;
+                } else {
+                    dBC [ i ] = funcs->giveSize() - 1; //rotations
+                }
+                nBC [ i ] = -1;
+            }
         }
+        BoundaryCondition *bc;
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            node = nodes->giveNode(n);
+            if ( dynamic_cast< Particle * >( node ) != nullptr ) {
+                bc = new BoundaryCondition(node, dBC, nBC);
+                bcs->addBoundaryCondition(bc);
+            }
+        }
+    } else {
+        cerr << "Error: MechanicalPeriodicBCwithVoigtConstraint must use parameter 'use_half_gammas' as the resulting rotations are not properly set otherwise" << endl;
+        exit(1);
+        
+        //nonzero rotations compensating shear strain applied assymetrically - Cosseart continuum
+        JointDoF *jd;
+        vector< Node * >vm(1);
+        vm[0] = nodes->giveNode(initalNodeNum);
+        vector< unsigned >dirs(1);
+        vector< double >mults(1);
+        mults[0] = 0.5;
+        Node *s = nullptr;    
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            s = nodes->giveNode(n);
+            if ( s->doesMechanics() && ( dynamic_cast< MechDoF * >( s ) == nullptr ) ) {
+                for (unsigned i=0; i<2*(dim-1)-1; i++) {
+                    dirs[0] = dim+i;
+                    jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+                    constrs->addConstraint(jd);
+                }
+            }
+        }    
     }
+ 
 
-    BoundaryCondition *bc;
-    for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-        node = nodes->giveNode(n);
-        if ( dynamic_cast< Particle * >( node ) != nullptr ) {
-            bc = new BoundaryCondition(node, dBC, nBC);
-            bcs->addBoundaryCondition(bc);
-        }
-    }
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Mechanical Periodic BC with Elastic constraint
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
+    ( void ) mats;
+    ( void ) solver;
+
     volume = 1;
     for ( auto const a : PUCsize ) {
         volume *= a;
@@ -705,7 +734,6 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
 
     //compute elastic solutions
     cout << "*** computing elastic solution on the periodic model" << endl;
-    Solver *oldSolver = masterModel->giveSolver();
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
     linS->setContainers(masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions() );
@@ -783,7 +811,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         DoFnum += nodeDoFs;
     }
 
-    masterModel->setSolver(oldSolver);
+    masterModel->setSolver(solver);
     cout << "*** reseting solver and leaving preprocessing block" << endl;
 
     //export data
@@ -1005,8 +1033,10 @@ VoigtConstraint::~VoigtConstraint() {
 }
 
 //////////////////////////////////////////////////////////
-void VoigtConstraint::apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex){
+void VoigtConstraint::apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver){
     (void) elems;
+    ( void ) mats;
+    ( void ) solver;
 
     MechDoF *master;
     unsigned masterNodeNum = nodes->giveSize();
@@ -1267,6 +1297,72 @@ void VoigtConstraint::readFromLine(istringstream &iss, unsigned d){
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+PressureFromMechanicalLoad :: PressureFromMechanicalLoad(){
+    multiplier = 0.;
+    master = 0 ;
+    direction = masterdirection = 0;
+    materialnum = 0;
+};
+
+//////////////////////////////////////////////////////////
+PressureFromMechanicalLoad :: ~PressureFromMechanicalLoad() {
+};
+
+//////////////////////////////////////////////////////////
+void PressureFromMechanicalLoad::apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver){
+    (void) e;
+    (void) b;
+    (void) funcs;
+    (void) ex;
+    (void) solver;
+
+    DiscreteTrsprtCoupledMaterial *dtcm = dynamic_cast< DiscreteTrsprtCoupledMaterial * > ( mats->giveMaterial(materialnum) );
+    if( dtcm==nullptr ) {
+        cerr << "Error in PressureFromMechanicalLoad: material is not of DiscreteTrsprtCoupledMaterial type" << endl;
+        exit(1);
+    } 
+    double biot = dtcm->giveBiotCoeff();
+    if( biot <1e-5 ) {
+        cerr << "Error in PressureFromMechanicalLoad: Biot coefficient " <<  biot << " is too small" << endl;
+        exit(1);
+    } 
+    
+
+    vector< unsigned> directions(1);
+    directions[0] = masterdirection;
+    vector< Node*> masters(1);
+    masters[0] = n->giveNode(master);
+    vector< double > mults(1);
+    mults[0] = multiplier/biot;
+
+    DoFDependentOnConjugates *ddc;
+    Node * trs;
+    for(auto &p: trsprtnodes){
+        trs = n->giveNode(p);
+        if (!trs->isDoFTransport(direction)) {
+            cerr << "Error in PressureFromMechanicalLoad: node " << p << " direction " << direction <<  " is not pressure DoF" << endl;
+            exit(1);
+        }     
+        ddc = new DoFDependentOnConjugates(trs, direction, masters, directions, mults);
+        c->addConstraint(ddc);
+
+    }
+}
+
+//////////////////////////////////////////////////////////
+void PressureFromMechanicalLoad::readFromLine(istringstream &iss, unsigned d){
+    (void) d;
+    iss >> master >> masterdirection >> materialnum >> multiplier >> direction;
+    unsigned s;
+    iss >> s;
+    trsprtnodes.resize(s);
+    for (unsigned i=0; i<s; i++) {
+        iss >> trsprtnodes[i];
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 void RigidPlate :: setDirectionToFix(istringstream &iss) {
     bool bw = false;
@@ -1325,11 +1421,14 @@ void RigidPlate :: checkMechTransport(Node *master) {
     }
 }
 
-void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
     ( void ) funcs;
     ( void ) ex;
+    ( void ) mats;
+    ( void ) solver;
+
     Node *master, *slave;
     //////////////////////////////////////////////////////////
     // read the line "masterId numSlaves slaveId1, slaveId2...."
@@ -1362,11 +1461,14 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     RigidPlate :: setDirectionToFix(iss);
 }
 
-void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
     ( void ) funcs;
     ( void ) ex;
+    ( void ) mats;
+    ( void ) solver;
+
     // jointDoF jD;
     Node *master;
 
@@ -1419,11 +1521,14 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     RigidPlate :: setDirectionToFix(iss);
 }
 
-void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
     ( void ) funcs;
     ( void ) ex;
+    ( void ) mats;
+    ( void ) solver;
+
     // jointDoF jD;
     Node *master;
 
@@ -1482,11 +1587,14 @@ void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
     }
 }
 
-void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
     ( void ) funcs;
     ( void ) ex;
+    ( void ) mats;
+    ( void ) solver;
+
     // jointDoF jD;
     Node *master;
 
@@ -1544,11 +1652,14 @@ void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
     }
 }
 
-void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
     ( void ) funcs;
     ( void ) ex;
+    ( void ) mats;
+    ( void ) solver;
+
     // jointDoF jD;
     Node *master;
     Node *expMaster;
@@ -1586,11 +1697,14 @@ void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BC
 }
 
 
-void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex) {
+void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer * mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
     ( void ) funcs;
     ( void ) ex;
+    ( void ) mats;
+    ( void ) solver;
+
     // jointDoF jD;
     Node *slave;
     Node *expMaster;
@@ -1717,19 +1831,21 @@ void PBlockContainer :: clear() {
 }
 
 //////////////////////////////////////////////////////////
-void PBlockContainer :: setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex) {
+void PBlockContainer :: setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex, MaterialContainer * mats, Solver *solv) {
     nodes = n;
     elems = e;
     bcs = b;
     constrs = c;
     funcs = f;
     exporters = ex;
+    materials = mats;
+    solver = solv;
 }
 
 //////////////////////////////////////////////////////////
 void PBlockContainer :: apply() {
     for ( auto b: blocks ) {
-        b->apply(nodes, elems, bcs, constrs, funcs, exporters);
+        b->apply(nodes, elems, bcs, constrs, funcs, exporters, materials, solver);
     }
 }
 
@@ -1791,6 +1907,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("VoigtConstraint") == 0 ) {
                     VoigtConstraint *newblock = new VoigtConstraint();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("PressureFromMechanicalLoad") == 0 ) {
+                    PressureFromMechanicalLoad *newblock = new PressureFromMechanicalLoad();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else {

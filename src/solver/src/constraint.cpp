@@ -3,6 +3,7 @@
 #include "element_container.h"
 #include "element_discrete.h"
 #include "boundary_condition.h"
+#include "solver.h"
 #include <fstream>
 
 //////////////////////////////////////////////////////////
@@ -62,7 +63,8 @@ void JointDoF :: print() {
 }
 
 //////////////////////////////////////////////////////////
-void JointDoF :: init() {
+void JointDoF :: init(Solver *solver) {
+    (void) solver;
     //consolidate (do not allow repetition of masters)
     for ( unsigned k = masters.size() - 1; k > 0; k-- ) {
         for ( unsigned l = 0; l < k; l++ ) {
@@ -134,7 +136,7 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
 }
 
 //////////////////////////////////////////////////////////
-void VolumetricAverage :: init() {
+void VolumetricAverage :: init(Solver *solver) {
     //collect all slaves from other joint DoFs
     vector< unsigned >otherslaves;
     otherslaves.resize(constraints->giveSize() );
@@ -213,7 +215,26 @@ void VolumetricAverage :: init() {
             multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end() );
         }
     }
-    JointDoF :: init();
+    JointDoF :: init(solver);
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// BC DEPENDENT ON OTHER DOFS OR CONJUGATE VARIABLES
+DoFDependentOnConjugates :: DoFDependentOnConjugates(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult) : JointDoF(s, dir, m, dirs, mult, fns, time_mult){
+}
+
+
+//////////////////////////////////////////////////////////
+void DoFDependentOnConjugates :: init(Solver *solver) {
+    JointDoF :: init(solver);
+    TransientLinearTransportSolver *ts = dynamic_cast< TransientLinearTransportSolver *> (solver);
+    if (ts){
+        cerr << "*******************************" << endl;
+        cerr << "Warning: using DoFDependentOnConjugates is strongly discouraged as the time integration might not take place at the end of time step so the update of primary variables at the end will be incorrect" << endl;
+        cerr << "*******************************" << endl;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -275,7 +296,7 @@ void ConstraintContainer :: clear() {
 }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
+void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
     //initiate volumetric averages
 
     unsigned numFreeDoFs = nodecont->giveTotalNumDoFs() - bccont->giveNumBlockedDoFs();
@@ -284,7 +305,7 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
     bconds = bccont;
 
     for ( auto const &jD : constraints ) {
-        jD->init();
+        jD->init(solver);
     }
     VolumetricAverage *va;
     for ( int k = constraints.size() - 1; k >= 0; k-- ) {
@@ -327,7 +348,7 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
             std :: cerr << "constraint applied simultaneously with boundary conditions" << '\n';
             exit(1);
         }
-        numM = jD->giveNumOfMasters();
+        numM = jD->giveNumOfDoFMasters();
         for ( unsigned ind = 0; ind < numM; ind++ ) {
             j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
             if ( j < numFreeDoFs - constraints.size() ) {
@@ -373,14 +394,31 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) {
+void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) const {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
     if ( this->isActive() ) {
-        // std::cout << "calculateDependentDoFs, time = " << time_now << '\n';
         for ( auto const &jD : constraints ) {
             fullDoFs [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
-            for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+            //standard constraint, imposed relations between dofs
+            for ( unsigned i = 0; i < jD->giveNumOfDoFMasters(); i++ ) {
                 fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i) + ( all ? jD->giveFnDepPart(i, time_now) : 0.0 );
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: calculateDoFsDependentOnConjugates(Vector &full_ddr, const Vector &trial_r, const Vector &fullFExt) const {
+    // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
+    if ( this->isActive() ) {
+        for ( auto const &jD : constraints ) {
+            //full_ddr [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
+            //constraint relating DoFs to conjugate variables
+            for ( unsigned i = 0; i < jD->giveNumOfConjugateMasters(); i++ ) {
+                full_ddr [ jD->giveSlaveDoF() ] += fullFExt [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i);
+            }
+            if ( jD->giveNumOfConjugateMasters() > 0){
+                full_ddr [ jD->giveSlaveDoF() ] -= trial_r [ jD->giveSlaveDoF() ];   //this is needed because ddr will be later summed with trial_r, but the calculated pressures are already absolute (after the summation)
             }
         }
     }
@@ -391,7 +429,7 @@ void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
     if ( this->isActive() ) {
         // std::cout << "calculateMasterForces, time = " << time_now << '\n';
         for ( auto const &jD : constraints ) {
-            for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+            for ( unsigned i = 0; i < jD->giveNumOfDoFMasters(); i++ ) {
                 fullForces [ jD->giveMasterDoF(i) ] += fullForces [ jD->giveSlaveDoF() ] * ( jD->giveMasterMultiplier(i) );
                 // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
                 // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept

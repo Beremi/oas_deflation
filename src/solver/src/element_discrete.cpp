@@ -754,6 +754,7 @@ Matrix Transp1D :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveHMatrix(const Point *x) const {
+    (void) x;
     Matrix H(1, 2);
     //double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
     //double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
@@ -868,7 +869,8 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
             elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
-        crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
+        if (ndim == 3) crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
+        else if (ndim == 2) crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea();
         m++;
     }
 

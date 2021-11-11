@@ -33,7 +33,7 @@ public:
     BoundaryCondition() {};
     BoundaryCondition(Node *n, vector< int > &dBC, vector< int > &nBC, vector< double > &m) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers = m; };
     BoundaryCondition(Node *n, vector< int > &dBC, vector< int > &nBC) { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.); };
-    ~BoundaryCondition() {};
+    virtual ~BoundaryCondition() {};
     void replaceDirichBC(vector< int > &newdBC) { dirichBC = newdBC; };
     void replaceNeumannBC(vector< int > &newnBC) { neumannBC = newnBC; };
     void readFromLine(istringstream &iss, NodeContainer *nodes);
@@ -42,8 +42,8 @@ public:
     unsigned giveNumberOfLoadedDoFs() const { return loadedDoFNum; };
     vector< unsigned >giveBlockedDoFs() const;
     vector< unsigned >giveLoadedDoFs() const;
-    vector< double >giveBlockedDoFValues(double t) const;
-    vector< double >giveLoadedDoFValues(double t) const;
+    virtual vector< double >giveBlockedDoFValues(double t) const;
+    virtual vector< double >giveLoadedDoFValues(double t) const;
     void setMultipliers(vector< double > &m) { multipliers = m; };
     Node *giveNode() { return node; };
 };
@@ -64,7 +64,7 @@ protected:
 
 public:
     BodyLoad() {};
-    ~BodyLoad() {};
+    virtual ~BodyLoad() {};
     void readFromLine(istringstream &iss, ElementContainer *elems);
     void init(FunctionContainer *funcs);
     double giveValue(const Point *xyz, double time);
@@ -72,6 +72,7 @@ public:
     vector< unsigned >giveArrayOfBodyForceDoFs() const;
     unsigned giveDirection() const { return dir; };
 };
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

@@ -315,6 +315,7 @@ void SteadyStateLinearSolver :: runBeforeEachStep() {
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: updateFieldVariables() {
     nodes->giveFullDoFArray(ddr, full_ddr);
+    nodes->updateFullDoFsByDependenciesOnConjugates(full_ddr, trial_r, f_ext);
     trial_r += full_ddr;
 }
 
@@ -595,7 +596,7 @@ void SteadyStateNonLinearSolver :: solve() {
         }
 
         unsigned it = 0;
-        while ( !converged && it < maxIt ) {
+        while ( !converged && it < maxIt) {
             if ( updateSystemMatrices("secant", it) ) {
                 computeKeff();                                    //only if required
             }

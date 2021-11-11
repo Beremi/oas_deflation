@@ -199,6 +199,7 @@ BCContainer :: ~BCContainer() {
     }
 }
 
+//////////////////////////////////////////////////////////
 void BCContainer :: clear() {
     for ( auto &bc: BC ) {
         if(bc!=nullptr) delete bc;
