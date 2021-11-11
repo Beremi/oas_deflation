@@ -48,7 +48,6 @@ class RigidPlate:
             for n in self.directNodes:
                 line +='%d\t' %n
 
-
         if self.radial==0 and self.directIdcs == False:
             ## type      masterNode  numSlaves slave1 slave2 ...
             #RigidPlate  1656 18 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
