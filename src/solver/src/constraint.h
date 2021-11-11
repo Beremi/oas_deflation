@@ -10,7 +10,7 @@ class NodeContainer; //forward declaration
 class ElementContainer;  // forward declaration
 class ConstraintContainer;  // forward declaration
 class BCContainer;  // forward declaration
-
+class Solver;  // forward declaration
 
 class JointDoF
 {
@@ -28,12 +28,13 @@ public:
     JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
     void readFromLine(istringstream &iss, NodeContainer *nodes);
     void print();
-    virtual void init();
+    virtual void init(Solver *solver);
     unsigned giveSlaveDoF() const;
     Node *giveSlaveNode() const { return slaveNode; };
     unsigned giveSlaveDir() const { return direction; };
     std :: vector< Node * >giveMasterNodes() { return masters; };
-    unsigned giveNumOfMasters() const { return masters.size(); }; //TODO: warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
+    virtual unsigned giveNumOfDoFMasters() const { return masters.size(); }; //TODO: warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
+    virtual unsigned giveNumOfConjugateMasters() const { return 0; };
     Node *giveMasterNode(unsigned k) { return masters [ k ]; };
     unsigned giveMasterDoF(unsigned k) const;
     std :: vector< unsigned >giveMasterDirs() { return directions; };
@@ -62,8 +63,26 @@ protected:
 public:
     VolumetricAverage(vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc);
     virtual ~VolumetricAverage() {};
-    void init();
+    virtual void init(Solver *solver);
 };
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// UPDATE PRESSURE BASED ON TOTAL LOAD
+class DoFDependentOnConjugates : public JointDoF
+{
+protected:
+public:
+    DoFDependentOnConjugates() {};
+    DoFDependentOnConjugates(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
+    ;
+    ~DoFDependentOnConjugates() {};
+    virtual unsigned giveNumOfDoFMasters() const { return 0; }; //TODO: warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
+    virtual unsigned giveNumOfConjugateMasters() const { return masters.size(); };
+    virtual void init(Solver *solver);
+};
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -81,10 +100,11 @@ public:
     ~ConstraintContainer();
     void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);
-    void init(NodeContainer *nodes, BCContainer *bconds); // here matrix X will be created
+    void init(NodeContainer *nodes, BCContainer *bconds, Solver *solver); // here matrix X will be created
     void clear();
     void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now = 0);
-    void calculateDependentDoFs(Vector &fullDoFs, const double time_now = 0.0, const bool all = false);
+    void calculateDependentDoFs(Vector &fullDoFs, const double time_now = 0.0, const bool all = false) const;
+    void calculateDoFsDependentOnConjugates(Vector &full_ddr, const Vector &fullDoFs, const Vector &fullFExt) const;
     void calculateMasterForces(Vector &fullForces);
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };

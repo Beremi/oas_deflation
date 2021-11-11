@@ -104,9 +104,9 @@ public:
 
 
 
-bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Point &p);
-void readRegions(const std :: string &filename, std :: vector< std::unique_ptr<Region> > &regions);
-bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Element *el);
+bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions, const Point &p);
+void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions);
+bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions, const Element *el);
 ///////////////////////////////////////////////////////////////////////////////////
 
 

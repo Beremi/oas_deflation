@@ -3,6 +3,7 @@
 #include "element_container.h"
 #include "element_discrete.h"
 #include "boundary_condition.h"
+#include "solver.h"
 #include <fstream>
 
 //////////////////////////////////////////////////////////
@@ -34,7 +35,7 @@ void JointDoF :: readFromLine(istringstream &iss, NodeContainer *nodes) {
     iss >> intn;
     for ( unsigned i = 0; i < intn; i++ ) {
         iss >> intmas >> mult;
-        masters.push_back(nodes->giveNode(intmas) );
+        masters.push_back( nodes->giveNode(intmas) );
         directions.push_back(0);
         multipliers.push_back(mult);
     }
@@ -62,7 +63,8 @@ void JointDoF :: print() {
 }
 
 //////////////////////////////////////////////////////////
-void JointDoF :: init() {
+void JointDoF :: init(Solver *solver) {
+    ( void ) solver;
     //consolidate (do not allow repetition of masters)
     for ( unsigned k = masters.size() - 1; k > 0; k-- ) {
         for ( unsigned l = 0; l < k; l++ ) {
@@ -100,12 +102,12 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
         jd = constraints->giveConstraint(j);
         va = dynamic_cast< VolumetricAverage * >( jd );
         if ( !va ) {
-            excludedNodes.push_back(jd->giveSlaveNode() );
+            excludedNodes.push_back( jd->giveSlaveNode() );
             jdm = jd->giveMasterNodes();
-            excludedNodes.insert(excludedNodes.end(), jdm.begin(), jdm.end() );
-            excudedDirs.push_back(jd->giveSlaveDir() );
+            excludedNodes.insert( excludedNodes.end(), jdm.begin(), jdm.end() );
+            excudedDirs.push_back( jd->giveSlaveDir() );
             jdd = jd->giveMasterDirs();
-            excudedDirs.insert(excudedDirs.end(), jdd.begin(), jdd.end() );
+            excudedDirs.insert( excudedDirs.end(), jdd.begin(), jdd.end() );
         }
     }
 
@@ -134,10 +136,10 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
 }
 
 //////////////////////////////////////////////////////////
-void VolumetricAverage :: init() {
+void VolumetricAverage :: init(Solver *solver) {
     //collect all slaves from other joint DoFs
     vector< unsigned >otherslaves;
-    otherslaves.resize(constraints->giveSize() );
+    otherslaves.resize( constraints->giveSize() );
     JointDoF *jd;
     for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
         jd = constraints->giveConstraint(j);
@@ -155,7 +157,7 @@ void VolumetricAverage :: init() {
     unsigned r;
     unsigned s = nodes.size();
     vector< double >m;
-    m.resize(nodes.size() );
+    m.resize( nodes.size() );
     Transp1D *et;
     RigidBodyContact *em;
     for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
@@ -163,14 +165,14 @@ void VolumetricAverage :: init() {
         em = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
         if ( et ) {
             for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
+                r = ( std :: find( nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
                 if ( r < s ) {
                     m [ r ] += et->giveVolumeAssociatedWithNode(p);
                 }
             }
         } else if ( em ) {
             for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
+                r = ( std :: find( nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
                 if ( r < s ) {
                     m [ r ] += em->giveVolumeAssociatedWithNode(p);
                 }
@@ -208,12 +210,30 @@ void VolumetricAverage :: init() {
             for ( auto &k:jdmults ) {
                 k *= m [ i ];
             }
-            masters.insert(masters.end(), jdmasters.begin(), jdmasters.end() );
-            directions.insert(directions.end(), jddirs.begin(), jddirs.end() );
-            multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end() );
+            masters.insert( masters.end(), jdmasters.begin(), jdmasters.end() );
+            directions.insert( directions.end(), jddirs.begin(), jddirs.end() );
+            multipliers.insert( multipliers.end(), jdmults.begin(), jdmults.end() );
         }
     }
-    JointDoF :: init();
+    JointDoF :: init(solver);
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// BC DEPENDENT ON OTHER DOFS OR CONJUGATE VARIABLES
+DoFDependentOnConjugates :: DoFDependentOnConjugates(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult) : JointDoF(s, dir, m, dirs, mult, fns, time_mult) {}
+
+
+//////////////////////////////////////////////////////////
+void DoFDependentOnConjugates :: init(Solver *solver) {
+    JointDoF :: init(solver);
+    TransientLinearTransportSolver *ts = dynamic_cast< TransientLinearTransportSolver * >( solver );
+    if ( ts ) {
+        cerr << "*******************************" << endl;
+        cerr << "Warning: using DoFDependentOnConjugates is strongly discouraged as the time integration might not take place at the end of time step so the update of primary variables at the end will be incorrect" << endl;
+        cerr << "*******************************" << endl;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -224,7 +244,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
     ( void ) ndim;
     unsigned origsize = constraints.size();
     string line, ConstrType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -263,19 +283,23 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
 //////////////////////////////////////////////////////////
 ConstraintContainer :: ~ConstraintContainer() {
     for ( auto &c: constraints ) {
-        if (c!= nullptr) delete c;
+        if ( c != nullptr ) {
+            delete c;
+        }
     }
 }
 
 
 void ConstraintContainer :: clear() {
     for ( auto &c: constraints ) {
-        if (c!= nullptr) delete c;
+        if ( c != nullptr ) {
+            delete c;
+        }
     }
 }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
+void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
     //initiate volumetric averages
 
     unsigned numFreeDoFs = nodecont->giveTotalNumDoFs() - bccont->giveNumBlockedDoFs();
@@ -284,7 +308,7 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
     bconds = bccont;
 
     for ( auto const &jD : constraints ) {
-        jD->init();
+        jD->init(solver);
     }
     VolumetricAverage *va;
     for ( int k = constraints.size() - 1; k >= 0; k-- ) {
@@ -310,7 +334,7 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
     unsigned j, numM; // column index = master DoF
     for ( auto const &jD : constraints ) {
         // jD->print();
-        i = nodes->giveDoFid(jD->giveSlaveDoF() );
+        i = nodes->giveDoFid( jD->giveSlaveDoF() );
         //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", numFreeDoFs = " << numFreeDoFs << '\n';
         // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
         // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
@@ -327,14 +351,14 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
             std :: cerr << "constraint applied simultaneously with boundary conditions" << '\n';
             exit(1);
         }
-        numM = jD->giveNumOfMasters();
+        numM = jD->giveNumOfDoFMasters();
         for ( unsigned ind = 0; ind < numM; ind++ ) {
-            j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
+            j = nodes->giveDoFid( jD->giveMasterDoF(ind) );
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
-                indeces11.insert(pair< pair< size_t, size_t >, double >
-                                     (pair< size_t, size_t >(i, j),
-                                     jD->giveMasterMultiplier(ind) ) );
+                indeces11.insert( pair< pair< size_t, size_t >, double >
+                                      ( pair< size_t, size_t >(i, j),
+                                      jD->giveMasterMultiplier(ind) ) );
             }
         }
     }
@@ -343,9 +367,9 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont) {
     ///////////////////////////////////////////////////
     for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
         // fill the matrix with 1 for each unrestrained DoF (diagonal)
-        indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
+        indeces11.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
     }
-    X = CoordinateIndexedSparseMatrix(indeces11, numFreeDoFs, numFreeDoFs - constraints.size() );
+    X = CoordinateIndexedSparseMatrix( indeces11, numFreeDoFs, numFreeDoFs - constraints.size() );
 
     // // JK - left for testing:
     // for ( auto const &cn : this->constraints ){
@@ -373,14 +397,31 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) {
+void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) const {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
     if ( this->isActive() ) {
-        // std::cout << "calculateDependentDoFs, time = " << time_now << '\n';
         for ( auto const &jD : constraints ) {
             fullDoFs [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
-            for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+            //standard constraint, imposed relations between dofs
+            for ( unsigned i = 0; i < jD->giveNumOfDoFMasters(); i++ ) {
                 fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i) + ( all ? jD->giveFnDepPart(i, time_now) : 0.0 );
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: calculateDoFsDependentOnConjugates(Vector &full_ddr, const Vector &trial_r, const Vector &fullFExt) const {
+    // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
+    if ( this->isActive() ) {
+        for ( auto const &jD : constraints ) {
+            //full_ddr [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
+            //constraint relating DoFs to conjugate variables
+            for ( unsigned i = 0; i < jD->giveNumOfConjugateMasters(); i++ ) {
+                full_ddr [ jD->giveSlaveDoF() ] += fullFExt [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i);
+            }
+            if ( jD->giveNumOfConjugateMasters() > 0 ) {
+                full_ddr [ jD->giveSlaveDoF() ] -= trial_r [ jD->giveSlaveDoF() ];   //this is needed because ddr will be later summed with trial_r, but the calculated pressures are already absolute (after the summation)
             }
         }
     }
@@ -391,7 +432,7 @@ void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
     if ( this->isActive() ) {
         // std::cout << "calculateMasterForces, time = " << time_now << '\n';
         for ( auto const &jD : constraints ) {
-            for ( unsigned i = 0; i < jD->giveNumOfMasters(); i++ ) {
+            for ( unsigned i = 0; i < jD->giveNumOfDoFMasters(); i++ ) {
                 fullForces [ jD->giveMasterDoF(i) ] += fullForces [ jD->giveSlaveDoF() ] * ( jD->giveMasterMultiplier(i) );
                 // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
                 // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept

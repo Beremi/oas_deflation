@@ -1,16 +1,21 @@
 #include "node_container.h"
+#include "solver.h"
 
 //////////////////////////////////////////////////////////
 NodeContainer :: ~NodeContainer() {
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
-        if (*n != nullptr) delete * n;
+        if ( * n != nullptr ) {
+            delete * n;
+        }
     }
 }
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: clear() {
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
-        if (*n != nullptr) delete * n;
+        if ( * n != nullptr ) {
+            delete * n;
+        }
     }
 }
 
@@ -18,7 +23,7 @@ void NodeContainer :: clear() {
 void NodeContainer :: readFromFile(const string filename, const int dim) {
     size_t origsize = nodes.size();
     string line, nodeType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -123,11 +128,15 @@ void NodeContainer :: initSimplices() {
 void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
     //update valid simplices
     for ( auto &n:nodes ) {
-        if (n->hasValidSimplex()) n->updateSimplexVolumetricStrain(fullDoFs);        
+        if ( n->hasValidSimplex() ) {
+            n->updateSimplexVolumetricStrain(fullDoFs);
+        }
     }
     //update from neighbours
     for ( auto &n:nodes ) {
-        if (n->hasSimplex() && !n->hasValidSimplex()) n->updateSimplexVolumetricStrain(fullDoFs);        
+        if ( n->hasSimplex() && !n->hasValidSimplex() ) {
+            n->updateSimplexVolumetricStrain(fullDoFs);
+        }
     }
 }
 
@@ -145,7 +154,7 @@ void NodeContainer :: establishDoFArray() {
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
     loadedDoFs = BC->giveArrayOfLoadedDoFs();
     bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
-    blockedDoFid.resize(blocked.size() );
+    blockedDoFid.resize( blocked.size() );
     freeDoFs = totalDoFs - blocked.size();
 
 
@@ -155,23 +164,23 @@ void NodeContainer :: establishDoFArray() {
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-    cstr.resize(constr->giveSize() );
+    cstr.resize( constr->giveSize() );
     for ( unsigned j = 0; j < constr->giveSize(); j++ ) {
         cstr [ j ].first = constr->giveConstraint(j)->giveSlaveDoF();
         cstr [ j ].second = j;
     }
-    sort(cstr.begin(), cstr.end() );
+    sort( cstr.begin(), cstr.end() );
 
     /////////////////////////////////////////////////////////////////
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
-    a.resize(blocked.size() );
+    a.resize( blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
-    sort(a.begin(), a.end() );
+    sort( a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
     if ( a.size() > 0 ) {
@@ -227,15 +236,15 @@ void NodeContainer :: establishDoFArray() {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: addRHS_nodalLoad(Vector &RHS, double time) const {
-    vector< double >nodalLoad = BC->giveLoadedDoFValues(time);
-    for ( unsigned k = 0; k < nodalLoad.size(); k++ ) {
-        RHS [ loadedDoFs [ k ] ] += nodalLoad [ k ];
+void NodeContainer :: addRHS_nodalLoad(Vector &f, double time) const {
+    vector< double >bodyLoad = BC->giveBodyForceDoFValues(time);
+    for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
+        f [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
     }
 
-    vector< double > bodyLoad = BC->giveBodyForceDoFValues(time);
-    for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
-        RHS [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
+    vector< double >nodalLoad = BC->giveLoadedDoFValues(time);
+    for ( unsigned k = 0; k < nodalLoad.size(); k++ ) {
+        f [ loadedDoFs [ k ] ] += nodalLoad [ k ];
     }
 }
 
@@ -256,10 +265,14 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
         }
     }
-
-    // #constr_new
     this->giveConstraints()->calculateDependentDoFs(fullDoFs);
 }
+
+//////////////////////////////////////////////////////////
+void NodeContainer :: updateFullDoFsByDependenciesOnConjugates(Vector &ddr, const Vector &trial_r, const Vector &f_ext) const { // accounts also for constraints between master and conjugate variables
+    this->giveConstraints()->calculateDoFsDependentOnConjugates(ddr, trial_r, f_ext);
+}
+
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const {
@@ -287,7 +300,6 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vecto
     this->giveConstraints()->calculateMasterForces(f_int);
     this->giveConstraints()->calculateMasterForces(f_dam);
     this->giveConstraints()->calculateMasterForces(f_acc);
-
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
@@ -373,7 +385,7 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
     unsigned numi, startDoF;
     double numd;
     Vector initvalues(totalDoFs);
-    ifstream inputfile(initfile.c_str() );
+    ifstream inputfile( initfile.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             istringstream iss(line);
@@ -387,8 +399,8 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
         inputfile.close();
 
         Vector initreduced(freeDoFs - constrDoFs);
-        giveReducedDoFArray(initvalues,initreduced);// to propagate intial master field through constraints
-        giveFullDoFArray(initreduced,initvalues);
+        giveReducedDoFArray(initvalues, initreduced);// to propagate intial master field through constraints
+        giveFullDoFArray(initreduced, initvalues);
 
         cout << "Input file '" <<  initfile << "' succesfully loaded" << endl;
     } else {

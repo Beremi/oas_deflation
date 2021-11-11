@@ -52,7 +52,7 @@ public:
     virtual ~FatigueShearMaterialStatus() {};
     void init();
     virtual void update();
-    virtual void downgrade();
+    virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
@@ -143,7 +143,7 @@ public:
     virtual ~DamagePlasticMaterialStatus() {};
     void init();
     virtual void update();
-    virtual void downgrade();
+    virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
@@ -207,7 +207,7 @@ public:
     virtual ~FatigueMaterialStatus() {};
     void init();
     virtual void update();
-    virtual void downgrade();
+    virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);

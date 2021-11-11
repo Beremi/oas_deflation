@@ -43,7 +43,7 @@ protected:
     //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
 
 public:
-    Element() { name = "basic element"; solution_order = 0; volume = 0;}
+    Element() { name = "basic element"; solution_order = 0; volume = 0; }
     virtual ~Element();
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
@@ -87,11 +87,11 @@ public:
     virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
     virtual bool giveGlobalCoords(Point *x, const Point *xn) const;
     virtual Vector giveMasterVariables(const Point *x, const Vector &DoFs) const { return giveHMatrix(x) * DoFs; };
-    Vector giveElemDoFsFromFullDoFs( const Vector &FullDoFs) const;
-    double giveVolume() const {return volume;};
+    Vector giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const;
+    double giveVolume() const { return volume; };
 
     virtual void collectInformationsFromNeigborhood() {};
-    virtual bool isPointInside(Point* xn, const Point *x) const;
+    virtual bool isPointInside(Point *xn, const Point *x) const;
 };
 
 

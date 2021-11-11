@@ -164,7 +164,7 @@ double ConstSawToothFunction :: giveY(double t) const {
         return multip * t * lower / ( abs(time_shift) );
     } else {
         return ( ( upper - lower ) - ( ( ( upper - lower ) / ( 0.5 * period ) ) *
-                                       abs(fmod( ( t + time_shift ), period ) - 0.5 * period) ) +
+                                       abs(fmod( ( t + time_shift ), period) - 0.5 * period) ) +
                  lower ) * multip;
     }
 }
@@ -302,7 +302,9 @@ double SinusFunction :: giveNextEtreme(const double &t) const {
 // CONTAINER FOR FUNCTIONS
 FunctionContainer :: ~FunctionContainer() {
     for ( vector< Function * > :: iterator f = functions.begin(); f != functions.end(); ++f ) {
-        if (*f!=nullptr) delete * f;
+        if ( * f != nullptr ) {
+            delete * f;
+        }
     }
 }
 
@@ -310,7 +312,7 @@ FunctionContainer :: ~FunctionContainer() {
 void FunctionContainer :: readFromFile(const string filename) {
     size_t origsize = functions.size();
     string line, ftype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -355,7 +357,7 @@ void FunctionContainer :: readFromFile(const string filename) {
                     VaryingSawToothFunction *newf = new VaryingSawToothFunction();
                     newf->readFromLine(iss);
                     // it is necessary to specify which of two parent classes will the tree go throug
-                    functions.push_back( ( ConstSawToothFunction * ) newf );
+                    functions.push_back( ( ConstSawToothFunction * ) newf);
                 } else {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);

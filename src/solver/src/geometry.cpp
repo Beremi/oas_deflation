@@ -125,8 +125,8 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
 bool isInCircle(const Point &P, const Point &center, const double &radius,
                 const unsigned &dir) {
     Point P1, C1;
-    P1 = Point((dir == 0) ? 0 : P.getX(), (dir == 1) ? 0 : P.getY(), (dir == 2) ? 0 : P.getZ());
-    C1 = Point((dir == 0) ? 0 : center.getX(), (dir == 1) ? 0 : center.getY(), (dir == 2) ? 0 : center.getZ());
+    P1 = Point( ( dir == 0 ) ? 0 : P.getX(), ( dir == 1 ) ? 0 : P.getY(), ( dir == 2 ) ? 0 : P.getZ() );
+    C1 = Point( ( dir == 0 ) ? 0 : center.getX(), ( dir == 1 ) ? 0 : center.getY(), ( dir == 2 ) ? 0 : center.getZ() );
     if ( ( P1 - C1 ).norm() < radius ) {
         return true;
     }
@@ -138,8 +138,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius,
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.getX() <= max(p.getX(), r.getX() ) && q.getX() >= min(p.getX(), r.getX() ) &&
-         q.getY() <= max(p.getY(), r.getY() ) && q.getY() >= min(p.getY(), r.getY() ) ) {
+    if ( q.getX() <= max( p.getX(), r.getX() ) && q.getX() >= min( p.getX(), r.getX() ) &&
+         q.getY() <= max( p.getY(), r.getY() ) && q.getY() >= min( p.getY(), r.getY() ) ) {
         return true;
     }
     return false;
@@ -236,10 +236,10 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 }
 
 
-void readRegions(const std :: string &filename, std :: vector< std::unique_ptr<Region> > &regions) {
+void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -254,11 +254,11 @@ void readRegions(const std :: string &filename, std :: vector< std::unique_ptr<R
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
                     Block *newregion = new Block();
                     newregion->readFromLine(iss);
-                    regions.push_back(std::unique_ptr<Block>(newregion));
+                    regions.push_back( std :: unique_ptr< Block >(newregion) );
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
                     Sphere *newregion = new Sphere();
                     newregion->readFromLine(iss);
-                    regions.push_back(std::unique_ptr<Sphere>(newregion));
+                    regions.push_back( std :: unique_ptr< Sphere >(newregion) );
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -274,7 +274,7 @@ void readRegions(const std :: string &filename, std :: vector< std::unique_ptr<R
 }
 
 
-bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Point &p) {
+bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions, const Point &p) {
     for ( auto const &reg : regions ) {
         if ( reg->isInside(p) ) {
             return true;
@@ -284,12 +284,12 @@ bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, co
 }
 
 
-bool isInsideRegions(const std :: vector< std::unique_ptr<Region> > &regions, const Element *el) {
+bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions, const Element *el) {
     unsigned inside = 0;
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside(n->givePoint() ) ) {
+            if ( reg->isInside( n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }
