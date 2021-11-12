@@ -655,23 +655,47 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
             }
         }
     } else {
-        cerr << "Error: MechanicalPeriodicBCwithVoigtConstraint must use parameter 'use_half_gammas' as the resulting rotations are not properly set otherwise" << endl;
-        exit(1);
+        cerr << "Warning: MechanicalPeriodicBCwithVoigtConstraint should use parameter 'use_half_gammas' as the resulting rotations of the bodies might not be set to correct nonzero value and one can experience small differences. " << endl;
+        //exit(1);
 
         //nonzero rotations compensating shear strain applied assymetrically - Cosseart continuum
+        //create new degrees of freedom connected to rotations        
+        MechDoF *mn;
+        unsigned rotDoF = nodes->giveSize();
+        unsigned rotnum =  2 * ( dim - 1 ) - 1; 
+        mn = new MechDoF( rotnum);
+        nodes->addNode(mn);
+        //it is better to leave rotations free, setting them is not clear in case of shear stress loading
+        /*
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        vector< double > bcmults;
+        dBC.resize(rotnum);
+        nBC.resize(rotnum);
+        bcmults.resize(rotnum);
+        for ( unsigned i = 0; i < rotnum; i++ ) {
+            dBC[i] = strainFunc[dim+i];
+            nBC[i] = stressFunc[dim+i];
+            if(nBC[i]<0) bcmults[i] = 1;
+            else bcmults[i] = volume;
+        }        
+        bc = new BoundaryCondition(nodes->giveNode(rotDoF), dBC, nBC, bcmults);
+        //bcs->addBoundaryCondition(bc);
+        */
+
         JointDoF *jd;
         vector< Node * >vm(1);
-        vm [ 0 ] = nodes->giveNode(initalNodeNum);
+        vm [ 0 ] = nodes->giveNode(rotDoF);
         vector< unsigned >dirs(1);
         vector< double >mults(1);
-        mults [ 0 ] = 0.5;
         Node *s = nullptr;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             s = nodes->giveNode(n);
-            if ( s->doesMechanics() && ( dynamic_cast< MechDoF * >( s ) == nullptr ) ) {
-                for ( unsigned i = 0; i < 2 * ( dim - 1 ) - 1; i++ ) {
-                    dirs [ 0 ] = dim + i;
-                    jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            if ( dynamic_cast< Particle * >( s ) != nullptr ) {
+                for ( unsigned i = 0; i < rotnum; i++ ) {
+                    dirs [ 0 ] = i;
+                    mults [ 0 ] = 0.5*pow(-1.,i+1);
+                    jd = new JointDoF(s, dim + i, vm, dirs, mults);
                     constrs->addConstraint(jd);
                 }
             }
