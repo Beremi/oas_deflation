@@ -46,7 +46,7 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
     elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step, false, idc_time_converged, time_step);
 
     if ( remove_previous ) {
-        if ( !masterModel->giveSolver()->isTerminated() ) {  // apply remove previous
+        if ( !masterModel->giveSolver()->isTerminated() && masterModel->giveSolver()->convergedToTolerance() ) {  // remove previous only if not terminated and reached tolerance in this step
             if ( this->last_saved_file.compare("none") != 0 ) {
                 if ( std :: remove( last_saved_file.c_str() ) == 0 ) {
                     std :: cout << "element statuses saved to file " << this_file_path << '\n';

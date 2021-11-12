@@ -149,6 +149,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     }
 
     terminated = false;
+    fully_converged = true;  ///> only make sense for nonlin solvers, true otherwise
 
     freeDoFnum = nodes->giveNumFreeDoFs();
     fixedDoFnum = ( nodes->giveTotalNumDoFs() - freeDoFnum );
@@ -349,7 +350,7 @@ SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
 void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     elems->readMatStatsFromFile(this->init_time, this->init_step, this->initdt, this->init_idc_time);
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
-
+    this->fully_converged = false;
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
         ddf = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
@@ -695,6 +696,8 @@ void SteadyStateNonLinearSolver :: solve() {
 
         computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 
+        if ( converged ) this->fully_converged = true;
+
         if ( ( !converged && dt > dtmin )
              // || restart_now  // JK: left for testing
               ) {
@@ -721,6 +724,7 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
                 std :: cerr << "tolerance increased in this step" << '\n';
                 converged = true;
+                this->fully_converged = false;
             } else {
                 std :: cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
                 terminated = true;

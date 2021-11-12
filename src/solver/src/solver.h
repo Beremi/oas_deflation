@@ -25,7 +25,7 @@ protected:
     unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
     int step;
     unsigned init_step = 0;  ///> when starting from previously calculated results
-    bool terminated;
+    bool terminated, fully_converged;
     string symsolver_type = "EigenConj";
 
 
@@ -38,6 +38,7 @@ public:
     void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions);
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
+    bool convergedToTolerance() const { return fully_converged; };
     Vector giveDoFValues() const { return r; }
     Vector giveTrialDoFValues() const { return trial_r; }
     Vector giveNodalForces() { return f_ext; }
