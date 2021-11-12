@@ -82,6 +82,7 @@ void FatigueShearMaterialStatus :: init() {
     newIter = m->newIterativeApproachOn();
     bisectionMeth = m->bisectionMethOn();
     comp_dam = m->isCompressiveDamageOff();
+    damage_residuum = m->giveDamageResiduum();
 
     damageShear = prev_damageShear = temp_damageShear = 0;
     lambda = temp_lambda = 0;
@@ -521,6 +522,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             iss >> comp_dam;
         } else if ( param.compare("comp_threshold") == 0 ) {
             iss >> comp_thresh;
+        } else if ( param.compare("damage_residuum") == 0 ) {
+            iss >> this->damage_residuum;
         }
     }
     if ( !btau ) {
@@ -629,6 +632,7 @@ void DamagePlasticMaterialStatus :: init() {
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     strain_displ_multiplier = pow( rbc->giveLength(), int( m->useDispl() ) );
+    damage_residuum = m->giveDamageResiduum();
 
     damage = temp_damage = prev_damage = 0;
     epsN = temp_epsN = prev_epsN = 0;
@@ -971,6 +975,8 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
             use_displ = true;
         } else if ( param.compare("symmetric") == 0 ) {
             sym = true;
+        } else if ( param.compare("damage_residuum") == 0 ) {
+            iss >> this->damage_residuum;
         }
     }
     if ( !bfc ) {
