@@ -99,6 +99,7 @@ protected:
     IndirectDC *idc;        //indirect displacement control
     Vector ddf, full_ddf, f_last_iter;
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
+    double init_idc_time = 0.0;  ///> when starting from previously calculated results
     int stiffnessMatrixUpdate, dampingMatrixUpdate, massMatrixUpdate; //update matrices every X iteration
     void printAllVectors();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);

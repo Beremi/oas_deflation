@@ -142,10 +142,10 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     ( void ) init_r_file;
     ( void ) init_v_file;
 
-    elems->readMatStatsFromFile(this->init_time, this->init_step);
     if ( initial ) {
         step = init_step;
         time = init_time;
+        dt = initdt;
     }
 
     terminated = false;
@@ -347,6 +347,7 @@ SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    elems->readMatStatsFromFile(this->init_time, this->init_step, this->initdt, this->init_idc_time);
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
 
     if ( idc ) {
@@ -355,9 +356,9 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
         if ( initial ) {
-            idc_time = init_time;
+            idc_time = this->init_idc_time;
             idc_dt = 1e-6;
-            idc_time_converged = init_time;
+            idc_time_converged = this->init_idc_time;
         } else {
             // JK: during solver initialization after geometry update, idc_time must be set to time of previously converged step
             idc_time = idc_time_converged;
@@ -595,6 +596,7 @@ void SteadyStateNonLinearSolver :: solve() {
     // bool restart_now = true;  // JK: left for testing
     Vector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
 
+    std::cout << "step start idc_time = " << this->idc_time << ", converged = " << this->idc_time_converged << '\n';
     while ( !converged ) {
         //setup loading
 
@@ -740,6 +742,7 @@ void SteadyStateNonLinearSolver :: solve() {
             std :: cout << "enlarging step to the minimum one: " << dt << '\n';
         }
     }
+    std::cout << "step end   idc_time = " << this->idc_time << ", converged = " << this->idc_time_converged << '\n';
 }
 
 //////////////////////////////////////////////////////////
