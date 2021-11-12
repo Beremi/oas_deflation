@@ -1498,7 +1498,7 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     this->r_outer = rO;
     if ( dim == 3 ) {
         iss >> dir;
-        if ( dir.compare("dir") ) {
+        if ( dir.compare("dir") == 0 ) {
             iss >> this->direction;
         }
         // iss >> x >> y >> z;
@@ -1811,6 +1811,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     masterNodes.clear();
     multipliers.clear();
     directions.clear();
+    std::cout << "Expansion volumetric load applied: center(" << this->center.getX() << ", " << this->center.getY() << ", " << this->center.getZ() << ") rI = " << this->r_inner << ", rO = " << this->r_outer << ", direction: " << this->direction <<  '\n';
 }
 
 //////////////////////////////////////////////////////////
