@@ -597,7 +597,6 @@ void SteadyStateNonLinearSolver :: solve() {
     // bool restart_now = true;  // JK: left for testing
     Vector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
 
-    std::cout << "step start idc_time = " << this->idc_time << ", converged = " << this->idc_time_converged << '\n';
     while ( !converged ) {
         //setup loading
 
@@ -746,7 +745,6 @@ void SteadyStateNonLinearSolver :: solve() {
             std :: cout << "enlarging step to the minimum one: " << dt << '\n';
         }
     }
-    std::cout << "step end   idc_time = " << this->idc_time << ", converged = " << this->idc_time_converged << '\n';
 }
 
 //////////////////////////////////////////////////////////
