@@ -1,5 +1,6 @@
 #include "exporter_model.h"
-// #include "solver.h"
+#include "model.h"
+#include "solver.h"
 #include <cstdio>
 
 void ElementStatsExporter :: giveFileName(unsigned step, char *buffer) const {
@@ -37,17 +38,21 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
 
     std :: string this_file_path = ( resultDir / buffer ).string();
     double idc_time_converged = 0;
-    // if (masterModel->giveSolver()->giveName().compare("SteadyStateNonLinearSolver") == 0 ) {
-    //     idc_time_converged = static_cast< SteadyStateNonLinearSolver * >( masterModel->giveSolver() )->giveIDCtime();
-    // }
-    elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step, false, idc_time_converged);
+    double time_step;
+    time_step = masterModel->giveSolver()->giveTimeStep();
+    if (masterModel->giveSolver()->giveName().compare("SteadyStateNonLinearSolver") == 0 ) {
+        idc_time_converged = static_cast< SteadyStateNonLinearSolver * >( masterModel->giveSolver() )->giveIDCtime();
+    }
+    elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step, false, idc_time_converged, time_step);
 
     if ( remove_previous ) {
-        if ( this->last_saved_file.compare("none") != 0 ) {
-            if ( std :: remove( last_saved_file.c_str() ) == 0 ) {
-                std :: cout << "element statuses saved to file " << this_file_path << '\n';
-            } else {
-                std :: cerr << "previous file with elem statuses not removed" << '\n';
+        if ( !masterModel->giveSolver()->isTerminated() && masterModel->giveSolver()->convergedToTolerance() ) {  // remove previous only if not terminated and reached tolerance in this step
+            if ( this->last_saved_file.compare("none") != 0 ) {
+                if ( std :: remove( last_saved_file.c_str() ) == 0 ) {
+                    std :: cout << "element statuses saved to file " << this_file_path << '\n';
+                } else {
+                    std :: cerr << "previous file with elem statuses not removed" << '\n';
+                }
             }
         }
         // here I need to modify private var in scope of const method

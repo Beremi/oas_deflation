@@ -1,11 +1,6 @@
 #include "fatigue_material.h"
 #include "element_discrete.h"
 
-template< typename T >int sgn(T &val) {
-    // NOTE this returns 1 for val = 0 (this is an intention, do not repair it!!)
-    return ( T(0) <= val ) - ( val < T(0) );
-}
-
 
 double get_Lambda(const double &E_b, const double &K, const double &alpha, const double &gamma, const double &omega, const double &s, const double &sPi);
 
@@ -87,6 +82,7 @@ void FatigueShearMaterialStatus :: init() {
     newIter = m->newIterativeApproachOn();
     bisectionMeth = m->bisectionMethOn();
     comp_dam = m->isCompressiveDamageOff();
+    damage_residuum = m->giveDamageResiduum();
 
     damageShear = prev_damageShear = temp_damageShear = 0;
     lambda = temp_lambda = 0;
@@ -421,17 +417,17 @@ Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned d
 }
 
 std :: string FatigueShearMaterialStatus :: giveLineToSave() const {
-    return "slip " + to_string( this->slip.getY() ) + " " +
-           to_string( this->slip.getZ() ) +
-           " slip_free " + to_string( this->slip_free.getY() ) + " " +
-           to_string( this->slip_free.getZ() ) +
-           " sPi " + to_string( this->sPi.getY() ) + " " +
-           to_string( this->sPi.getZ() ) +
-           " alphaKin " + to_string( this->alphaKin.getY() ) + " " +
-           to_string( this->alphaKin.getZ() ) +
-           " damageShear " + to_string(this->damageShear) +
-           " zIso " + to_string(this->zIso) +
-           " temporarily_killed " + to_string(this->temporarily_killed);
+    return "slip " + to_string_sci( this->slip.getY() ) + " " +
+           to_string_sci( this->slip.getZ() ) +
+           " slip_free " + to_string_sci( this->slip_free.getY() ) + " " +
+           to_string_sci( this->slip_free.getZ() ) +
+           " sPi " + to_string_sci( this->sPi.getY() ) + " " +
+           to_string_sci( this->sPi.getZ() ) +
+           " alphaKin " + to_string_sci( this->alphaKin.getY() ) + " " +
+           to_string_sci( this->alphaKin.getZ() ) +
+           " damageShear " + to_string_sci(this->damageShear) +
+           " zIso " + to_string_sci(this->zIso) +
+           " temporarily_killed " + to_string_sci(this->temporarily_killed);
 }
 
 void FatigueShearMaterialStatus :: readFromLine(istringstream &iss) {
@@ -526,6 +522,8 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
             iss >> comp_dam;
         } else if ( param.compare("comp_threshold") == 0 ) {
             iss >> comp_thresh;
+        } else if ( param.compare("damage_residuum") == 0 ) {
+            iss >> this->damage_residuum;
         }
     }
     if ( !btau ) {
@@ -634,6 +632,7 @@ void DamagePlasticMaterialStatus :: init() {
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     strain_displ_multiplier = pow( rbc->giveLength(), int( m->useDispl() ) );
+    damage_residuum = m->giveDamageResiduum();
 
     damage = temp_damage = prev_damage = 0;
     epsN = temp_epsN = prev_epsN = 0;
@@ -899,12 +898,12 @@ Matrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type, unsigned 
 
 
 std :: string DamagePlasticMaterialStatus :: giveLineToSave() const {
-    return "epsN " + to_string(this->epsN) +
-           " epsNP " + to_string(this->epsNP) +
-           " damageN " + to_string(this->damage) +
-           " alphaN " + to_string(this->alphaN) +
-           " zN " + to_string(this->zN) +
-           " rN " + to_string(this->rN);
+    return "epsN " + to_string_sci(this->epsN) +
+           " epsNP " + to_string_sci(this->epsNP) +
+           " damageN " + to_string_sci(this->damage) +
+           " alphaN " + to_string_sci(this->alphaN) +
+           " zN " + to_string_sci(this->zN) +
+           " rN " + to_string_sci(this->rN);
 }
 
 void DamagePlasticMaterialStatus :: readFromLine(istringstream &iss) {
@@ -976,6 +975,8 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
             use_displ = true;
         } else if ( param.compare("symmetric") == 0 ) {
             sym = true;
+        } else if ( param.compare("damage_residuum") == 0 ) {
+            iss >> this->damage_residuum;
         }
     }
     if ( !bfc ) {

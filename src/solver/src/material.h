@@ -296,4 +296,29 @@ public:
     double giveE0() const { return E0; }
 };
 
+
+
+template <typename T>
+std::string to_string_sci(const T a_value)
+{
+    std::ostringstream out;
+    out << std :: scientific;
+    out << a_value;
+    return out.str();
+}
+
+
+template <typename T>
+std::string to_string_with_precision(const T a_value, const int n = 6)
+{
+    std::ostringstream out;
+    out.precision(n);
+    out << std::fixed << a_value;
+    return out.str();
+}
+template< typename T >int sgn(T &val) {
+    // NOTE this returns 1 for val = 0 (this is an intention, do not repair it!!)
+    return ( T(0) <= val ) - ( val < T(0) );
+}
+
 #endif /* _MATERIAL_H */
