@@ -761,6 +761,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
     linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions() );
     linS->setTimeStep(dt);
+    Solver* oldSolver = masterModel->giveSolver();
     masterModel->setSolver(linS);
     vector< Vector >elastSol(n);
     for ( unsigned i = 0; i < n; i++ ) {
@@ -834,7 +835,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         DoFnum += nodeDoFs;
     }
 
-    masterModel->setSolver(solver);
+    masterModel->setSolver(oldSolver);
     cout << "*** reseting solver and leaving preprocessing block" << endl;
 
     //export data
@@ -1763,9 +1764,11 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     //
     // zjistit na lineárním výpočtu to jak má být contraint
 
+    MechNode * mn;
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
-        if ( nod->giveName().compare("Particle") != 0 ) {
+        mn = dynamic_cast < MechNode * >(nod);
+        if ( mn==nullptr ) {
             continue;
         }
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
