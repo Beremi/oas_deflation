@@ -655,8 +655,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
             }
         }
     } else {
-        cerr << "Error: MechanicalPeriodicBCwithVoigtConstraint must use parameter 'use_half_gammas' as the resulting rotations are not properly set otherwise" << endl;
-        exit(1);
+        cerr << "Warning: MechanicalPeriodicBCwithVoigtConstraint must use parameter 'use_half_gammas' as the resulting rotations cannot be set properly otherwise" << endl;
 
         //nonzero rotations compensating shear strain applied assymetrically - Cosseart continuum
         JointDoF *jd;
