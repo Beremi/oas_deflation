@@ -1868,7 +1868,7 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
             }
             istringstream iss(line);
             iss >> ftype;
-            if ( !ftype.rfind("#", 0) == 0 ) {
+            if ( !(ftype.rfind("#", 0) == 0) ) {
                 if ( ftype.compare("MechanicalPeriodicBC") == 0 ) {
                     MechanicalPeriodicBC *newblock = new MechanicalPeriodicBC();
                     newblock->readFromLine(iss, dim);

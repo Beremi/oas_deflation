@@ -323,7 +323,7 @@ void FunctionContainer :: readFromFile(const string filename) {
             }
             istringstream iss(line);
             iss >> ftype;
-            if ( !ftype.rfind("#", 0) == 0 ) {
+            if ( !(ftype.rfind("#", 0) == 0) ) {
                 if ( ftype.compare("GeneralSpatialFunction") == 0 ) {
 #ifdef __EXPRTK_MODULE
                     GeneralSpatialFunction *newf = new GeneralSpatialFunction();
