@@ -2222,18 +2222,19 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
             for r in range (rebarCount):
                 if (rebarCount==1):
                     #puvodni poloha rebars polovina od kraje
-                    centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth,0  ])
+                    if rebarDepth >0: centre = np.array([ (maxLim[0]/rebarCount)*(r+0.5), maxLim[1]-rebarDepth,0  ])
+                    else: centre=np.zeros(3)
                 else:
                     #poloha rebars presne jak je ve clanku
                     centre = np.array([ (0.058 + (maxLim[0]-0.116)/(rebarCount-1)*r), maxLim[1]-rebarDepth,0  ])
-                #f.write( 'ExpansionRing	%d %e %e %e %e volExpFn %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, 2 ) )
-                #f.write( 'ExpansionRingDoFLoad %d %e %e %e %e expansionMaster %d\n' %(totNodeC+r, centre[0],centre[1],  0, rebarDiameter/2, totNodeC+rebarCount ) )
+
+                #Ve 2D je v tom řádku node_IS x y rInner rOuter a ve 3D je tam potřeba přidat xyz,
                 if dim == 2:
+                    f.write( '#ExpansionRingSingleDoFLoad node_IS x y rInner rOuter \n' )
                     f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
                 if dim == 3:
-                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e %e \n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*1.01 ) )
-
-                #print( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
+                    f.write( '#ExpansionRingSingleDoFLoad node_IS x y z rInner rOuter dir\n' )
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e 0 %e dir 2\n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*1.01 ) )
 
                 mechDofIndices.append(totNodeC+r)
 
