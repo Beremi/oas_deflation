@@ -250,7 +250,7 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
             }
             istringstream iss(line);
             iss >> std :: ws >> regionType;
-            if ( !regionType.rfind("#", 0) == 0 ) {
+            if ( !(regionType.rfind("#", 0) == 0) ) {
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
                     Block *newregion = new Block();
                     newregion->readFromLine(iss);

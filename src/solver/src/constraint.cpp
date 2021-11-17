@@ -255,7 +255,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
             }
             istringstream iss(line);
             iss >> std :: ws >> ConstrType;
-            if ( !ConstrType.rfind("#", 0) == 0 ) {
+            if ( !(ConstrType.rfind("#", 0) == 0) ) {
                 if ( ConstrType.compare("jointDoF") == 0 ) {
                     JointDoF *newJD = new JointDoF();
                     newJD->readFromLine(iss, nodecont);

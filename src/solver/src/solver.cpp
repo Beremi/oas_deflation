@@ -142,13 +142,14 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     ( void ) init_r_file;
     ( void ) init_v_file;
 
-    elems->readMatStatsFromFile(this->init_time, this->init_step);
     if ( initial ) {
         step = init_step;
         time = init_time;
+        dt = initdt;
     }
 
     terminated = false;
+    fully_converged = true;  ///> only make sense for nonlin solvers, true otherwise
 
     freeDoFnum = nodes->giveNumFreeDoFs();
     fixedDoFnum = ( nodes->giveTotalNumDoFs() - freeDoFnum );
@@ -347,17 +348,18 @@ SteadyStateNonLinearSolver :: ~SteadyStateNonLinearSolver() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    elems->readMatStatsFromFile(this->init_time, this->init_step, this->initdt, this->init_idc_time);
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
-
+    this->fully_converged = false;
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
         ddf = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
         full_ddf = Vector(totalDoFnum);
         f_last_iter = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
         if ( initial ) {
-            idc_time = init_time;
+            idc_time = this->init_idc_time;
             idc_dt = 1e-6;
-            idc_time_converged = init_time;
+            idc_time_converged = this->init_idc_time;
         } else {
             // JK: during solver initialization after geometry update, idc_time must be set to time of previously converged step
             idc_time = idc_time_converged;
@@ -693,6 +695,8 @@ void SteadyStateNonLinearSolver :: solve() {
 
         computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 
+        if ( converged ) this->fully_converged = true;
+
         if ( ( !converged && dt > dtmin )
              // || restart_now  // JK: left for testing
               ) {
@@ -719,6 +723,7 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
                 std :: cerr << "tolerance increased in this step" << '\n';
                 converged = true;
+                this->fully_converged = false;
             } else {
                 std :: cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
                 terminated = true;

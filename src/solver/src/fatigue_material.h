@@ -82,6 +82,7 @@ private:
     double coup_dam;
     bool comp_dam;
     double comp_thresh = 0.0;
+    double damage_residuum = 0.1;  ///> if not specified
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
@@ -105,6 +106,7 @@ public:
     double isDamageCoupled() const { return coup_dam; }
     bool isCompressiveDamageOff() const { return comp_dam; }
     double giveCompressiveThreshold() const { return comp_thresh; }
+    double giveDamageResiduum() const { return damage_residuum; };
 };
 
 //////////////////////////////////////////////////////////
@@ -136,7 +138,7 @@ private:
 
     double Kt;    ///>  initial slope of the softening curve (when Gt - fracture energy - used)
 
-    double damage_residuum = 1e-1;  ///> for stiffness matrix
+    double damage_residuum = 0.1;  ///> for stiffness matrix
     void print() const;
 public:
     DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e, unsigned ipnum);
@@ -174,6 +176,7 @@ private:
     bool use_displ;  ///< whether to use absolute values of displacements instead of strains
 
     bool sym;
+    double damage_residuum = 1e-1;  ///> for stiffness matrix
 
 public:
     DamagePlasticMaterial() { name = "Damage Plastic material"; };
@@ -193,6 +196,7 @@ public:
 
     bool useDispl() const { return use_displ; }
     bool isSym() const { return sym; }
+    double giveDamageResiduum() const { return damage_residuum; };
 };
 
 ///////////////////////////////////////////////////////////

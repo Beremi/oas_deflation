@@ -164,7 +164,7 @@ unsigned ElementContainer :: giveElemId(const Element *elem) const {
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double time_now, const unsigned step, const bool saveNodeIds, const double idc_time) const {
+void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :: vector< unsigned > &elems_to_save, const double time_now, const unsigned step, const bool saveNodeIds, const double idc_time, const double time_step) const {
     std :: ofstream outputfile(filepath);
     unsigned stat_id = 0;
     unsigned num;
@@ -175,11 +175,12 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
         }
         outputfile << "internal_variables ...";
         if ( time_now != 0 && step != 0 ) {
-            outputfile << "\ntime " << time_now << " " << step;
+            outputfile <<  scientific;
+            outputfile << "\ntime " << time_now << " " << step << " " << time_step << " " << idc_time;
         }
-        if ( idc_time != 0 ) {
-            outputfile << " idc_time " << idc_time;
-        }
+        // if ( time_step != 0 ) {
+        //     outputfile << "\ntime_step " << time_step;
+        // }
         for ( auto const &elem_id : elems_to_save ) {
             stat_id = 0;
             for ( auto const &mat_stat : this->giveElement(elem_id)->giveMaterialStats() ) {
@@ -231,12 +232,12 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
 };
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, const bool get_time_from_file) {
+void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, double &ini_time_step, double &ini_idc_time, const bool get_time_from_file) {
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
         unsigned elem_id, stat_id, mat_id, st;
-        double timo;
-        std :: vector< double >initial_times;
+        double timo, idc_timo, time_step;
+        std :: vector< double >initial_times, ini_time_steps, initial_idc_times;
         std :: vector< unsigned >initial_steps;
         for ( auto const &file_with_stats : this->file_to_load_from ) {
             ifstream inputfile( file_with_stats.c_str() );
@@ -248,9 +249,11 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                     istringstream iss(line);
                     iss >> param;
                     if ( param.compare("time") == 0 ) {
-                        iss >> timo >> st;
+                        iss >> timo >> st >> time_step >> idc_timo;
                         initial_times.push_back(timo);
                         initial_steps.push_back(st);
+                        ini_time_steps.push_back(time_step);
+                        initial_idc_times.push_back(idc_timo);
                     } else if ( param.compare("matStat") == 0 ) {
                         iss >> elem_id >> stat_id >> mat_id;
                         // std::cout << "line: " << line << '\n';
@@ -281,6 +284,8 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
             // and set them accordign to values from files
             ini_step = initial_steps [ 0 ];
             ini_time = initial_times [ 0 ];
+            ini_time_step = ini_time_steps[0];
+            ini_idc_time = initial_idc_times[0];
         }
     }
 }

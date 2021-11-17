@@ -76,7 +76,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
         //connect translations
         diff = s->givePoint() - m->givePoint();
 
-        if ( use_half_gammas ) {
+        if ( !nonsymmetric_shear ) {
             //direction X  (all gammaxy and gammaxy realized here)
             if ( dim == 3 ) {
                 vm.resize(4);
@@ -430,7 +430,6 @@ void MechanicalPeriodicBC :: readLoading(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
-    use_half_gammas = false;
     dim = d;
     string param;
     unsigned num;
@@ -448,8 +447,8 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
             for ( unsigned i = 0; i < num; i++ ) {
                 iss >> slaves [ i ] >> masters [ i ];
             }
-        } else if ( param.compare("use_half_gammas") == 0 ) {
-            use_half_gammas = true;
+        } else if ( param.compare("nonsymmetric_shear") == 0 ) {
+            nonsymmetric_shear = true;
         } else if ( param.compare("load") == 0 ) {
             loadB = true;
             readLoading(iss);
@@ -500,7 +499,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
             //connect translations
             diff = s->givePoint();
 
-            if ( use_half_gammas ) {
+            if ( !nonsymmetric_shear ) {
                 //direction X  (all gammaxy and gammaxy realized here)
                 if ( dim == 3 ) {
                     vm.resize(3);
@@ -614,7 +613,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
     ( void ) elems;
     ( void ) constrs;
 
-    if ( use_half_gammas ) {
+    if ( !nonsymmetric_shear ) {
         //all rotations are zero
 
         //add constant function
@@ -655,23 +654,47 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
             }
         }
     } else {
-        cerr << "Error: MechanicalPeriodicBCwithVoigtConstraint must use parameter 'use_half_gammas' as the resulting rotations are not properly set otherwise" << endl;
-        exit(1);
+        cerr << "Warning: MechanicalPeriodicBCwithVoigtConstraint should use avoid parameter 'nonsymmetric_shear' as the resulting rotations of the bodies might not be set to correct nonzero value and one can experience some differences" << endl;
+        //exit(1);
 
         //nonzero rotations compensating shear strain applied assymetrically - Cosseart continuum
+        //create new degrees of freedom connected to rotations        
+        MechDoF *mn;
+        unsigned rotDoF = nodes->giveSize();
+        unsigned rotnum =  2 * ( dim - 1 ) - 1; 
+        mn = new MechDoF( rotnum);
+        nodes->addNode(mn);
+        //it is better to leave rotations free, setting them is not clear in case of shear stress loading
+        /*
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        vector< double > bcmults;
+        dBC.resize(rotnum);
+        nBC.resize(rotnum);
+        bcmults.resize(rotnum);
+        for ( unsigned i = 0; i < rotnum; i++ ) {
+            dBC[i] = strainFunc[dim+i];
+            nBC[i] = stressFunc[dim+i];
+            if(nBC[i]<0) bcmults[i] = 1;
+            else bcmults[i] = volume;
+        }        
+        bc = new BoundaryCondition(nodes->giveNode(rotDoF), dBC, nBC, bcmults);
+        //bcs->addBoundaryCondition(bc);
+        */
+
         JointDoF *jd;
         vector< Node * >vm(1);
-        vm [ 0 ] = nodes->giveNode(initalNodeNum);
+        vm [ 0 ] = nodes->giveNode(rotDoF);
         vector< unsigned >dirs(1);
         vector< double >mults(1);
-        mults [ 0 ] = 0.5;
         Node *s = nullptr;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             s = nodes->giveNode(n);
-            if ( s->doesMechanics() && ( dynamic_cast< MechDoF * >( s ) == nullptr ) ) {
-                for ( unsigned i = 0; i < 2 * ( dim - 1 ) - 1; i++ ) {
-                    dirs [ 0 ] = dim + i;
-                    jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            if ( dynamic_cast< Particle * >( s ) != nullptr ) {
+                for ( unsigned i = 0; i < rotnum; i++ ) {
+                    dirs [ 0 ] = i;
+                    mults [ 0 ] = 0.5*pow(-1.,i+1);
+                    jd = new JointDoF(s, dim + i, vm, dirs, mults);
                     constrs->addConstraint(jd);
                 }
             }
@@ -732,11 +755,13 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     bcs->addBoundaryCondition(bc);
 
     //compute elastic solutions
+    //Solver* oldSolver = masterModel->giveSolver();
     cout << "*** computing elastic solution on the periodic model" << endl;
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
     linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions() );
     linS->setTimeStep(dt);
+    linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);
     vector< Vector >elastSol(n);
     for ( unsigned i = 0; i < n; i++ ) {
@@ -802,7 +827,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
             for ( unsigned dir = 0; dir < nodeDoFs; dir++ ) {
                 for ( unsigned k = 0; k < n; k++ ) {
                     mults [ k ] = elastSol [ k ] [ DoFnum + dir ];
-                }
+                }                 
                 jd = new JointDoF(s, dir, vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
@@ -810,6 +835,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         DoFnum += nodeDoFs;
     }
 
+    //masterModel->setSolver(oldSolver);
     masterModel->setSolver(solver);
     cout << "*** reseting solver and leaving preprocessing block" << endl;
 
@@ -1739,9 +1765,11 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     //
     // zjistit na lineárním výpočtu to jak má být contraint
 
+    MechNode * mn;
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
-        if ( nod->giveName().compare("Particle") != 0 ) {
+        mn = dynamic_cast < MechNode * >(nod);
+        if ( mn==nullptr ) {
             continue;
         }
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
@@ -1868,7 +1896,7 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
             }
             istringstream iss(line);
             iss >> ftype;
-            if ( !ftype.rfind("#", 0) == 0 ) {
+            if ( !(ftype.rfind("#", 0) == 0) ) {
                 if ( ftype.compare("MechanicalPeriodicBC") == 0 ) {
                     MechanicalPeriodicBC *newblock = new MechanicalPeriodicBC();
                     newblock->readFromLine(iss, dim);
