@@ -76,7 +76,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
         //connect translations
         diff = s->givePoint() - m->givePoint();
 
-        if ( use_half_gammas ) {
+        if ( !nonsymmetric_shear ) {
             //direction X  (all gammaxy and gammaxy realized here)
             if ( dim == 3 ) {
                 vm.resize(4);
@@ -430,7 +430,6 @@ void MechanicalPeriodicBC :: readLoading(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
-    use_half_gammas = false;
     dim = d;
     string param;
     unsigned num;
@@ -448,8 +447,8 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
             for ( unsigned i = 0; i < num; i++ ) {
                 iss >> slaves [ i ] >> masters [ i ];
             }
-        } else if ( param.compare("use_half_gammas") == 0 ) {
-            use_half_gammas = true;
+        } else if ( param.compare("nonsymmetric_shear") == 0 ) {
+            nonsymmetric_shear = true;
         } else if ( param.compare("load") == 0 ) {
             loadB = true;
             readLoading(iss);
@@ -500,7 +499,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
             //connect translations
             diff = s->givePoint();
 
-            if ( use_half_gammas ) {
+            if ( !nonsymmetric_shear ) {
                 //direction X  (all gammaxy and gammaxy realized here)
                 if ( dim == 3 ) {
                     vm.resize(3);
@@ -614,7 +613,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
     ( void ) elems;
     ( void ) constrs;
 
-    if ( use_half_gammas ) {
+    if ( !nonsymmetric_shear ) {
         //all rotations are zero
 
         //add constant function
@@ -655,7 +654,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
             }
         }
     } else {
-        cerr << "Warning: MechanicalPeriodicBCwithVoigtConstraint should use parameter 'use_half_gammas' as the resulting rotations of the bodies might not be set to correct nonzero value and one can experience small differences. " << endl;
+        cerr << "Warning: MechanicalPeriodicBCwithVoigtConstraint should use avoid parameter 'nonsymmetric_shear' as the resulting rotations of the bodies might not be set to correct nonzero value and one can experience some differences" << endl;
         //exit(1);
 
         //nonzero rotations compensating shear strain applied assymetrically - Cosseart continuum
@@ -756,12 +755,13 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     bcs->addBoundaryCondition(bc);
 
     //compute elastic solutions
+    //Solver* oldSolver = masterModel->giveSolver();
     cout << "*** computing elastic solution on the periodic model" << endl;
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
     linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions() );
     linS->setTimeStep(dt);
-    Solver* oldSolver = masterModel->giveSolver();
+    linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);
     vector< Vector >elastSol(n);
     for ( unsigned i = 0; i < n; i++ ) {
@@ -827,7 +827,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
             for ( unsigned dir = 0; dir < nodeDoFs; dir++ ) {
                 for ( unsigned k = 0; k < n; k++ ) {
                     mults [ k ] = elastSol [ k ] [ DoFnum + dir ];
-                }
+                }                 
                 jd = new JointDoF(s, dir, vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
@@ -835,7 +835,8 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         DoFnum += nodeDoFs;
     }
 
-    masterModel->setSolver(oldSolver);
+    //masterModel->setSolver(oldSolver);
+    masterModel->setSolver(solver);
     cout << "*** reseting solver and leaving preprocessing block" << endl;
 
     //export data
