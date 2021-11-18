@@ -539,10 +539,11 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
     temp_strain = addEigenStrain(strain); //macroscopic eigenstrain
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     temp_stress = macromaterial->givePrecomputedElasticTensor() * temp_strain;
-    if ( checkOttosenCriterion() ) {
+    if ( checkOttosenCriterion() && 0) {
         setFromPrecomputedToFullModel();
-        giveStress(strain, timeStep);
+        temp_stress = giveStress(strain, timeStep);
     }
+
     return temp_stress;
 }
 
@@ -883,14 +884,6 @@ DiscreteCoupledRVEMaterialStatus ::  DiscreteCoupledRVEMaterialStatus(RVEMateria
         temp_crackVolume = crackVolume  = 0;
         volStrainRate = pressureRate = crackVolumeRate = 0;
 
-
-        DiscreteTransportRVEMaterial *dtRVEmat = static_cast< DiscreteTransportRVEMaterial * >( trspRVEstat->giveMaterial() );
-        DiscreteTrsprtCoupledMaterial *dctm = dynamic_cast< DiscreteTrsprtCoupledMaterial * >( dtRVEmat->giveMasterMaterial() );
-        if ( !dctm ) {
-            cerr << "Error in " << name << ": transport material in RVE is not DiscreteTrsprtCoupledMaterial"  << endl;
-        }
-        coupledm->setMasterMaterial(dctm);
-
         is_precomputed = true;
         is_master_status = false;
     } else {
@@ -941,6 +934,13 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
         ine = giveInertiaTensor();
         macromaterial->setPrecomputedElasticDampingAndInertiaTensors(ela, dam, ine);
         macromaterial->setNumOfDimensions(ndim);
+        DiscreteTransportRVEMaterial *dtRVEmat = static_cast< DiscreteTransportRVEMaterial * >( trspRVEstat->giveMaterial() );
+        DiscreteTrsprtCoupledMaterial *dctm = dynamic_cast< DiscreteTrsprtCoupledMaterial * >( dtRVEmat->giveMasterMaterial() );
+        if ( !dctm ) {
+            cerr << "Error in " << name << ": transport material in RVE is not DiscreteTrsprtCoupledMaterial" << endl;
+            exit(1);
+        }
+        macromaterial->setMasterMaterial(dctm);
 
         TransportPeriodicBC *tp;
         double PUCVolume = 0.;
