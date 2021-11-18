@@ -125,6 +125,16 @@ def checkLowerThan (matrix, minDist):
 
 #check mutual distances between particles using cDist
 def checkMutDistancesCdist(dim, minDist, currentNodes, newNode):
+
+    ncrds = np.asarray(currentNodes)
+    dist = np.zeros(len(currentNodes))
+    for i in range(dim):
+        dist += np.square(ncrds[:,i]-newNode[i])
+    dist = np.sqrt(np.min(dist))    
+    return dist>minDist
+    """
+
+
     ncrds = np.asarray(currentNodes)
     crds = np.asarray(newNode)
     crds = np.reshape(crds, (-1, dim))
@@ -132,6 +142,7 @@ def checkMutDistancesCdist(dim, minDist, currentNodes, newNode):
     #dists = dists.flatten()
     distIsGood = checkLowerThan(dists, minDist)
     return distIsGood
+    """
 
 #check mutual distances between particles using cKDTree
 def checkMutDistancesCKDTree (dim, minDist, currentNodes, newNode):

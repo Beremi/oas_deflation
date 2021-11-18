@@ -1766,12 +1766,17 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     // zjistit na lineárním výpočtu to jak má být contraint
 
     MechNode * mn;
+    MechDoF * md;
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
     for ( auto const &nod : * nodes ) {
         mn = dynamic_cast < MechNode * >(nod);
         if ( mn==nullptr ) {
             continue;
         }
+    	md = dynamic_cast < MechDoF * >(nod);
+    	if ( md != nullptr ) continue;
+    	if ( endsWith(nod->giveName(), "virtual") ) continue;	
+
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
             if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {

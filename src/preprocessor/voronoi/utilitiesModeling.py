@@ -3325,10 +3325,10 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
     print (len(node_coords))
 
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    #fig = plt.figure()
+    #ax = Axes3D(fig)
+    #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    #plt.show()
 
     print('Conducting Voronoi tesselation...', end='')
     directionDim = 0
