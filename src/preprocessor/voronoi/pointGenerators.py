@@ -741,6 +741,7 @@ def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minD
             coords = randPointInAnnulus(center, radius, thickness,directionDim)
             #
             distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #distIsGood = utilitiesGeom.checkMutDistancesLoops(3, minDist, node_coords, list(coords))
             #
             if (distIsGood == False):
                 tr += 1
