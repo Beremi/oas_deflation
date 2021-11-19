@@ -741,17 +741,18 @@ def checkMutDistancesLoops_cython(int dim,
 
     # NOTE JK: currentNodes list must be faltten, but maybe in some older versions it was already sent here as a flatt array (but then does not make sense (len() and range(p*dim + d)))
     if currentNodes_len == 0:
-      return distIsGood
-    if type(currentNodes[0]) is not float:
-      currentNodes = np.concatenate(currentNodes).ravel().tolist()
+        return distIsGood
+    #if type(currentNodes[0]) is not float:
+    #  currentNodes = np.concatenate(currentNodes).ravel().tolist()
 
-
+    minDist *= minDist
     for p in range (currentNodes_len):
         distInt = 0
         for d in range(dim):
-            dx = currentNodes[p*dim+d] - newNode[d]
+            #dx = currentNodes[p*dim+d] - newNode[d]
+            dx = currentNodes[p][d] - newNode[d]
             distInt += dx * dx
-        distInt = distInt**0.5
+        #distInt = distInt**0.5
         if (distInt < minDist):
             distIsGood = False
             break
