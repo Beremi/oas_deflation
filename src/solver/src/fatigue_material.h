@@ -33,6 +33,8 @@ private:
     double lambda;
     double temp_lambda;
 
+    double temp_strain_normal, strain_normal;
+
     double strain_slip_multiplier;
     double regularization_multiplier_area;
 
@@ -107,6 +109,7 @@ public:
     bool isCompressiveDamageOff() const { return comp_dam; }
     double giveCompressiveThreshold() const { return comp_thresh; }
     double giveDamageResiduum() const { return damage_residuum; };
+    double giveCriticalNormalStrain() const { return this->tauBar / ( this->E0 * this->mT); };
 };
 
 //////////////////////////////////////////////////////////
