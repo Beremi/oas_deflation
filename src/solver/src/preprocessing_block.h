@@ -49,7 +49,7 @@ protected:
     vector< int >strainFunc;
     vector< int >stressFunc;
     double volume;
-    bool use_half_gammas;
+    bool nonsymmetric_shear;
     unsigned initalNodeNum;
 
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
@@ -60,7 +60,7 @@ protected:
     virtual void readLoading(istringstream &iss);
     virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
-    MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; };
+    MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; nonsymmetric_shear = false;};
     virtual ~MechanicalPeriodicBC() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
     virtual void readFromLine(istringstream &iss, unsigned d);

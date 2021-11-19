@@ -14,7 +14,6 @@ Model :: Model(bool pT) {
     bconds.setContainers(& funcs);
     elems.setContainers(& nodes, & bconds);
     solver = nullptr;
-    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
 }
@@ -162,6 +161,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 
     //here we apply periodic blocks to generate all the necessary objects
     //it was removed from Model initialization, because it had to be called in advance for RVE materials
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
     pblocks.apply();
 }
 

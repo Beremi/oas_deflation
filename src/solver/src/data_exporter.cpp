@@ -370,6 +370,8 @@ void DoFGauge :: init() {
         if ( dim == 2 ) {
             DoFpos = 2;
         }
+    } else if ( all_of(codes [ 0 ].begin(), codes [ 0 ].end(), ::isdigit) ) {
+        DoFpos = atoi(codes [ 0 ].c_str()); 
     } else {
         if ( dim == 3 ) {
             cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;

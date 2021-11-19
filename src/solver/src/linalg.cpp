@@ -12,6 +12,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     }
 
     if ( solver_type == "ConjGrad" ) {
+        //old solver, in-house
         bool result = ConjGrad(A, x, b, x0, precision, relmaxit);
 
 #if PRINT_DEBUG_TIME
@@ -81,6 +82,9 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         cgx = cgK.solveWithGuess(cgb, cgx0);
         //VectorXd cgx = cgK.solve(cgb);
         result = size_t( cgK.iterations() ) < Maxit;
+        if(!result){
+            cout << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
+        } 
     } else if ( solver_type == "EigenLDLT" ) {
         SimplicialLDLT< SparseMatrix< double > >simplicial_ldlt_solver;
         cgx = simplicial_ldlt_solver.compute(mat).solve(cgb);

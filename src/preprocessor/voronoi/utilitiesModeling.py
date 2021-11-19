@@ -1395,7 +1395,7 @@ def create3dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     #2 mech loading function
     func2 = []
     func2.append( np.array([0,0]) )
-    func2.append( np.array([1, -1e-2]) )
+    func2.append( np.array([1, 1e-2]) )
     fn2 = utilitiesNumeric.generalFunc(func2)
     functions.append (fn2)
 
@@ -2958,52 +2958,54 @@ def create3dcylinderTorsionPressFree(center, radius, height, minDist, trials, di
     ### indirect setting of transportBCs by spatial selection of vertices
     transportBC_merged = []
 
-    maxLim = np.array([height, 2*radius, 2*radius])
-
-    #"""
-    ### selecting vertices on the bottom surface
-    boundA = np.array([-minDist/10, -100, -100])
-    boundB = np.array([minDist/10, 100, 100])
-    faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    vert = vor.vertices[faces1,:]
-
-
-
-    fn1 = utilitiesNumeric.constantFunc(100)
-    functions.append (fn1)
-
-    ### selecting vertices on the top surface
-    boundA = np.array([maxLim[0]-minDist/10, -100, -100])
-    boundB = np.array([maxLim[0]+minDist/10, 100, 100])
-    faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    vert = vor.vertices[faces2,:]
-
-    fn1 = utilitiesNumeric.constantFunc(0)
-    functions.append (fn1)
-
-    transportBC_merged = []
     transportIC_merged = []
 
     govNodesTrspt = []
     govNodesTrsptBC = []
     rigidPlatesTrspt = []
 
-    print(faces1)
-    print(faces2)
+    maxLim = np.array([height, 2*radius, 2*radius])
 
-    trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
-    trsptLeftRigidPlate.setDirectNodes(faces1)
-    trsptLeftRigidPlateMechBC = np.array([3,-1])
-    rigidPlatesTrspt.append(trsptLeftRigidPlate)
-    govNodesTrspt.append(np.array([ 0, 0, 0]))
-    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+    if activeTransport:
+        #"""
+        ### selecting vertices on the bottom surface
+        boundA = np.array([-minDist/10, -100, -100])
+        boundB = np.array([minDist/10, 100, 100])
+        faces1 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+        vert = vor.vertices[faces1,:]
 
-    trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
-    trsptRightRigidPlate.setDirectNodes(faces2)
-    trsptRightRigidPlateMechBC = np.array([4,-1])
-    rigidPlatesTrspt.append(trsptRightRigidPlate)
-    govNodesTrspt.append(np.array([ height, 0, 0]))
-    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
+
+
+        fn1 = utilitiesNumeric.constantFunc(100)
+        functions.append (fn1)
+
+        ### selecting vertices on the top surface
+        boundA = np.array([maxLim[0]-minDist/10, -100, -100])
+        boundB = np.array([maxLim[0]+minDist/10, 100, 100])
+        faces2 = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+        vert = vor.vertices[faces2,:]
+
+        fn1 = utilitiesNumeric.constantFunc(0)
+        functions.append (fn1)
+
+
+
+        print(faces1)
+        print(faces2)
+
+        trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+        trsptLeftRigidPlate.setDirectNodes(faces1)
+        trsptLeftRigidPlateMechBC = np.array([3,-1])
+        rigidPlatesTrspt.append(trsptLeftRigidPlate)
+        govNodesTrspt.append(np.array([ 0, 0, 0]))
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
+
+        trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+        trsptRightRigidPlate.setDirectNodes(faces2)
+        trsptRightRigidPlateMechBC = np.array([4,-1])
+        rigidPlatesTrspt.append(trsptRightRigidPlate)
+        govNodesTrspt.append(np.array([ height, 0, 0]))
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
 
 
     return node_coords, mechBC_merged,  vor, volumes, functions,  govNodes, govNodesMechBC, rigidPlates, transportBC_merged, govNodesTrspt, rigidPlatesTrspt, govNodesTrsptBC, radii
@@ -3290,7 +3292,7 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
 
 
 
-def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLim):
+def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLim, activeTransport):
     center = np.zeros((3))
     ########################################################################
     functions = []
@@ -3304,6 +3306,13 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
+    #2 mech loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, 1e-2]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
     func1 = []
     func1.append( np.array([0,0]) )
     func1.append( np.array([1, 10]) )
@@ -3316,10 +3325,10 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
     print (len(node_coords))
 
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
-    plt.show()
+    #fig = plt.figure()
+    #ax = Axes3D(fig)
+    #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    #plt.show()
 
     print('Conducting Voronoi tesselation...', end='')
     directionDim = 0
@@ -3332,82 +3341,85 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
     transportIC_merged = []
 
     govNodesTrspt = []
-    govNodesTrspt.append(np.array([ 0, 0, 0]))
+    interfaceVertexIndices = []
 
 
     govNodesTrsptBC = []
     rigidPlatesTrspt = []
 
-    modelVertices = utilitiesGeom.returnSelectedPtsRadial (radius-thickness-1e-3 , radius+1e-3 , vor.vertices)
-    ### selecting vertices on the outer surface
+    if activeTransport:
+        govNodesTrspt.append(np.array([ 0, 0, 0]))
 
-    outerFaceBC = np.array([0,-1])
-    outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices, xmin = 1e-5, xmax = height - 1e-5)
-    trsptOuterRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
-    trsptOuterRigidPlate.setDirectNodes(outerFace)
-    rigidPlatesTrspt.append(trsptOuterRigidPlate)
-    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], outerFaceBC))
+        modelVertices = utilitiesGeom.returnSelectedPtsRadial (radius-thickness-1e-3 , radius+1e-3 , vor.vertices)
+        ### selecting vertices on the outer surface
 
-    #for i in range (len(outerFace)):
-    #   trsBC = utilitiesMech.transportBC(outerFace[i], outerFaceBC)
-    #   transportBC_merged.append(trsBC)
+        outerFaceBC = np.array([0,-1])
+        outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices, xmin = 1e-5, xmax = height - 1e-5)
+        trsptOuterRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+        trsptOuterRigidPlate.setDirectNodes(outerFace)
+        rigidPlatesTrspt.append(trsptOuterRigidPlate)
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], outerFaceBC))
 
-    if SHOW_PLOT:
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
-        ax.scatter(vor.vertices[outerFace,0], vor.vertices[outerFace,1], vor.vertices[outerFace,2])
-        plt.show()
+        #for i in range (len(outerFace)):
+        #   trsBC = utilitiesMech.transportBC(outerFace[i], outerFaceBC)
+        #   transportBC_merged.append(trsBC)
 
-    govNodesTrspt.append(np.array([ -1, -1, -1]))
-    innerFaceBC = np.array([2,-1])
-    innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices,xmin = 1e-5, xmax = height - 1e-5)
-    trsptInnerRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
-    trsptInnerRigidPlate.setDirectNodes(innerFace)
-    rigidPlatesTrspt.append(trsptInnerRigidPlate)
-    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], innerFaceBC))
+        if SHOW_PLOT:
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
+            ax.scatter(vor.vertices[outerFace,0], vor.vertices[outerFace,1], vor.vertices[outerFace,2])
+            plt.show()
 
-
-    interfaceVertexIndices = []
-    interfaceVertexIndices.append(innerFace)
-    interfaceVertexIndices = np.asarray(interfaceVertexIndices)
+        govNodesTrspt.append(np.array([ -1, -1, -1]))
+        innerFaceBC = np.array([2,-1])
+        innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices,xmin = 1e-5, xmax = height - 1e-5)
+        trsptInnerRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+        trsptInnerRigidPlate.setDirectNodes(innerFace)
+        rigidPlatesTrspt.append(trsptInnerRigidPlate)
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], innerFaceBC))
 
 
 
-    govNodesTrspt.append(np.array([ 1, -1, -1]))
-    topFaceBC = np.array([-1,0])
-    boundA = np.array(  [-1e-5 , -radius*10, -radius*10] )
-    boundB = np.array(  [ 1e-5 , radius*10, radius*10] )
-    topFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    print(topFace)
-    trsptTopRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
-    trsptTopRigidPlate.setDirectNodes(topFace)
-    rigidPlatesTrspt.append(trsptTopRigidPlate)
-    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], topFaceBC))
-
-    govNodesTrspt.append(np.array([ 2, -1, -1]))
-    boundA = np.array(  [height-1e-5 , -radius*10, -radius*10] )
-    boundB = np.array(  [height+1e-5  , radius*10, radius*10] )
-    botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
-    print(botFace)
-    trsptBotRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
-    trsptBotRigidPlate.setDirectNodes(botFace)
-    rigidPlatesTrspt.append(trsptBotRigidPlate)
-    govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], topFaceBC))
+        interfaceVertexIndices.append(innerFace)
+        interfaceVertexIndices = np.asarray(interfaceVertexIndices)
 
 
 
-    #for i in range (len(innerFace)):
-    #    trsBC = utilitiesMech.transportBC(innerFace[i], innerFaceBC)
-    #    transportBC_merged.append(trsBC)
+        govNodesTrspt.append(np.array([ 1, -1, -1]))
+        topFaceBC = np.array([-1,0])
+        boundA = np.array(  [-1e-5 , -radius*10, -radius*10] )
+        boundB = np.array(  [ 1e-5 , radius*10, radius*10] )
+        topFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+        print(topFace)
+        trsptTopRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+        trsptTopRigidPlate.setDirectNodes(topFace)
+        rigidPlatesTrspt.append(trsptTopRigidPlate)
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], topFaceBC))
 
-    if SHOW_PLOT:
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
-        ax.scatter(vor.vertices[innerFace,0], vor.vertices[innerFace,1], vor.vertices[innerFace,2])
-        plt.show()
+        govNodesTrspt.append(np.array([ 2, -1, -1]))
+        boundA = np.array(  [height-1e-5 , -radius*10, -radius*10] )
+        boundB = np.array(  [height+1e-5  , radius*10, radius*10] )
+        botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+        print(botFace)
+        trsptBotRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
+        trsptBotRigidPlate.setDirectNodes(botFace)
+        rigidPlatesTrspt.append(trsptBotRigidPlate)
+        govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], topFaceBC))
 
+
+
+        #for i in range (len(innerFace)):
+        #    trsBC = utilitiesMech.transportBC(innerFace[i], innerFaceBC)
+        #    transportBC_merged.append(trsBC)
+
+    """    if SHOW_PLOT:
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            ax.scatter(vor.vertices[modelVertices,0], vor.vertices[modelVertices,1], vor.vertices[modelVertices,2])
+            ax.scatter(vor.vertices[innerFace,0], vor.vertices[innerFace,1], vor.vertices[innerFace,2])
+            plt.show()
+    """
 
 
 
@@ -4252,7 +4264,7 @@ def assemble3dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
 
     if node_coords_init is None:
-        node_coords.append(np.array([indent, indentRP*3, indent]))
+        node_coords.append(np.array([indentRP*3, indentRP*3, indentRP*3]))
         mechBC = np.array([0,0,0,  0,0,0,  -1,-1,-1,   -1,-1,-1])
         mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
         mechBC_merged.append(mBC)
@@ -4265,30 +4277,51 @@ def assemble3dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
 
     ##################### CONSTRAINTS AND RIGID PLATES
     indentRP = 1e-6
-    topRigidPlateMechBC = np.array([-1, -1,-1,  0,0,0, -1,-1,-1, -1,-1,-1])#np.array([1,0,-1])
-    #topRigidPlate = utilitiesMech.RigidPlate(-1, 3,    np.array([    -indentRP, -indentRP, -indentRP,    maxLim[0]+indentRP, indentRP, maxLim[2]+indentRP])    )
-    topRigidPlate = utilitiesMech.RigidPlate(-1, 3,    np.array([    -indentRP, maxLim[0]+indentRP, -indentRP, indentRP, -indentRP,      maxLim[2]+indentRP])    )
+    topRigidPlateMechBC = np.array([-1, -1,-1,  0, 0, 0, -1,-1,-1, -1,-1,-1])#np.array([1,0,-1])
+    topRigidPlate = utilitiesMech.RigidPlate(-1, 3,    np.array([    indentRP, maxLim[0]-indentRP, -indentRP, indentRP, -indentRP,      maxLim[2]+indentRP])    )
     rigidPlates.append(topRigidPlate)
     govNodes.append(np.array([ maxLim[0]/2, indent, maxLim[2]/2 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
 
+    #front surf
+    frontRigidPlateMechBC = np.array([0, -1,-1,  0, 0, 0, -1,-1,-1, -1,-1,-1])#np.array([1,0,-1])
+    frontRigidPlate = utilitiesMech.RigidPlate(-1, 3,    np.array([    -indentRP, maxLim[0]+indentRP, -indentRP, maxLim[1]+indentRP, -indentRP,      indentRP])    )
+    rigidPlates.append(frontRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2, maxLim[1]/2, 0 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, frontRigidPlateMechBC))
+
+    nodeA = np.array([indent, indent, indent])
+    nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+
+    #rear surf
+    frontRigidPlateMechBC = np.array([0, -1,-1,  0, 0, 0, -1,-1,-1, -1,-1,-1])#np.array([1,0,-1])
+    frontRigidPlate = utilitiesMech.RigidPlate(-1, 3,    np.array([    -indentRP, maxLim[0]+indentRP, -indentRP, maxLim[1]+indentRP, maxLim[2]-indentRP,     maxLim[2]+indentRP])    )
+    rigidPlates.append(frontRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2, maxLim[1]/2, maxLim[2] ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -3, frontRigidPlateMechBC))
+
+    nodeA = np.array([indent, indent, maxLim[2]-indent])
+    nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+    oldLen = len(node_coords)
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
+
+
+    """
+    node_coords=np.asarray(node_coords)
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+    """
 
     nodeA = np.array([indent, maxLim[1]-indent, indent])
     nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
     oldLen = len(node_coords)
     pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, trials)
 
-    """
-    ##################### CONSTRAINTS AND RIGID PLATES
-    #rigid plate left slit face
-    indentRP = 1e-6
-    botRigidPlateMechBC = np.array([0, 2,0,  -1,-1,-1, -1,-1,-1, -1,-1,-1])#np.array([1,0,-1])
-    #botRigidPlate = utilitiesMech.RigidPlate(-1, 3,    np.array([   - indentRP, maxLim[1]-indentRP, -indentRP,    maxLim[0]+indentRP, maxLim[1]+indentRP, maxLim[2]+indentRP])    )
-    botRigidPlate = utilitiesMech.RigidPlate(-1, 3,    np.array([   - indentRP,  maxLim[0]+indentRP, maxLim[1]-indentRP,  maxLim[1]+indentRP, -indentRP, maxLim[2]+indentRP])    )
-    rigidPlates.append(botRigidPlate)
-    govNodes.append(np.array([ maxLim[0]/2, maxLim[1], maxLim[2]/2 ]))
-    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, botRigidPlateMechBC))
-    #"""
 
 
 
@@ -4440,6 +4473,16 @@ def assemble3dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
         #.copy()
     node_coords = newNodes
     node_coords = np.asarray(node_coords)
+
+
+
+    node_coords=np.asarray(node_coords)
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
+    plt.show()
+
+
 
     """
     fig, ax = plt.subplots()
@@ -7811,8 +7854,8 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
 def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, trials):
     print ('Assembling tube with inner pressure...')
     directionDim = 0
-    indent = 1e-5
-    indentRP = 1e-6
+    indent = 1e-6
+    indentRP = 1e-5
     dim=3
     #lists for the model
     node_coords = []
@@ -7822,26 +7865,32 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     govNodesMechBC = []
     rigidPlates = []
 
-    center[0] += 1e-7
-    node_coords.append( np.array([  indent,  radius-1e-5,  0 ]))
-    mechBC = np.array([0,0,0,0,0,0,    -1,-1,-1,-1,-1,-1])
+    center[0] += indent
+    node_coords.append( np.array([  indentRP*2,  radius,  1e-6 ]))
+    node_coords.append( np.array([  indentRP*2,  -radius,  1e-6 ]))
+    mechBC = np.array([0,-1,-1,  0,0,0,    -1,-1,-1,-1,-1,-1])
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
+    mechBC_merged.append(mBC)
+    mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
     mechBC_merged.append(mBC)
 
 
 
-    circleLength = 2*np.pi*radius
+    circleLength = 2*np.pi*(radius-thickness)
     nrNodes = int ( circleLength / minDist )
     nrNodes = (int (nrNodes / 4) +1 ) * 4
 
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-1e-5, height-indent, 0, minDist,  node_coords, trials, equiAngNodes=nrNodes )
+
+
+
+    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist,  node_coords, trials, equiAngNodes=nrNodes )
 
 
 
     pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
 
 
-    leftRigidPlateMechBC = np.array([-1, -1,-1,   -1,-1,-1,  -1,-1,-1,   -1,-1,-1])
+    leftRigidPlateMechBC = np.array([0, -1,-1,   0,0,0,  -1,-1,-1,   -1,-1,-1])
     leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
     -indentRP, indentRP,
     -radius-indentRP, radius+indentRP,
@@ -7850,13 +7899,14 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     govNodes.append(np.array([ 0,0,0 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
 
-    center[0] -= 2e-7
+
+    center[0] -= 2*indent
     nodeA = center.copy()
     nodeA[directionDim] += float(height)
 
     pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
 
-    rightRigidPlateMechBC = np.array([-1, -1, -1, -1,-1,-1,  -1,-1,-1,   -1,-1,-1])
+    rightRigidPlateMechBC = np.array([0, -1, -1, 0,0,0, -1,-1,-1,   -1,-1,-1])
     rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
     -indentRP+height, indentRP+height,
     -radius-indentRP, radius+indentRP,
@@ -7865,9 +7915,12 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     govNodes.append(np.array([ height ,0,0 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
 
-
     ###############generating of points rectangular volume ###############
     pointGenerators.generateNodesOrtoTube3dRand(np.zeros((3)), radius-1e-5, height, thickness, directionDim, minDist,  node_coords, trials)
+
+
+    rebarBC = np.array([2, 0, -1,    -1, -1, -1,  -1,-1,-1,   -1,-1,-1])
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 
     return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates

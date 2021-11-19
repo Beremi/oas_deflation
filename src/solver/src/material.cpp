@@ -541,8 +541,7 @@ void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, doubl
 //////////////////////////////////////////////////////////
 Vector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     updateRateVariables(timeStep);
-    temp_strain.resize(1);
-    temp_strain [ 0 ] = strain [ 0 ];
+    temp_strain  = strain;
     temp_stress = -effConductivity *addEigenStrain(strain);
 
     return temp_stress;

@@ -631,7 +631,7 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
                        angleLimitA=None, angleLimitB=None, mirrorIndent=None, equiAngNodes=0
                       ):
     print ('Generating a 3d cylinder surf cython. ')
-    cdef:
+    cdef:#
         int generatedPoints = 0
         int p, d
         int tr = 0
@@ -653,19 +653,27 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
                 node_coords_temp.push_back(node[d])
 
     if equiAngNodes >0:
+
       for i in range (equiAngNodes):
+        print(radius)
+        if (directionDim==0):
+          coords[1] = center[1] + radius * np.cos(2*np.pi / equiAngNodes  *i)
+          coords[2] = center[2] + radius * np.sin(2*np.pi / equiAngNodes  *i)
+          for z in range (int(height/minDist)):
+            coords[0] =  center[0] + (  height / int(height/minDist) ) * (z+0.5)
+            for d in range(3):
+                node_coords_temp.push_back(coords[d])
+            generatedPoints += 1
+
         if (directionDim==2):
           coords[0] = center[0] + radius * np.cos(2*np.pi / equiAngNodes  *i)
           coords[1] = center[1] + radius * np.sin(2*np.pi / equiAngNodes  *i)
-
-          for z in range (int(height/minDist)+1):
-
-            coords[2] =  center[2] + (  height / int(height/minDist) ) *z
-
+          for z in range (int(height/minDist)):
+            coords[2] =  center[2] + (  height / int(height/minDist) ) * (z+0.5)
             for d in range(3):
                 node_coords_temp.push_back(coords[d])
-                
             generatedPoints += 1
+
 
     if equiAngNodes <=0:
       while (tr < trials):
@@ -733,17 +741,18 @@ def checkMutDistancesLoops_cython(int dim,
 
     # NOTE JK: currentNodes list must be faltten, but maybe in some older versions it was already sent here as a flatt array (but then does not make sense (len() and range(p*dim + d)))
     if currentNodes_len == 0:
-      return distIsGood
-    if type(currentNodes[0]) is not float:
-      currentNodes = np.concatenate(currentNodes).ravel().tolist()
+        return distIsGood
+    #if type(currentNodes[0]) is not float:
+    #  currentNodes = np.concatenate(currentNodes).ravel().tolist()
 
-
+    minDist *= minDist
     for p in range (currentNodes_len):
         distInt = 0
         for d in range(dim):
-            dx = currentNodes[p*dim+d] - newNode[d]
+            #dx = currentNodes[p*dim+d] - newNode[d]
+            dx = currentNodes[p][d] - newNode[d]
             distInt += dx * dx
-        distInt = distInt**0.5
+        #distInt = distInt**0.5
         if (distInt < minDist):
             distIsGood = False
             break

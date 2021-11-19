@@ -160,8 +160,8 @@ def mirror_data_rebars(data, dim, sizes, rebarDiameter, rebarDepth, rebarCount):
                 intrfcNodes.append(node)
                 rad0 = dist
                 mirroredNode = np.zeros((dim))
-                mirroredNode[0] = center[0] + (-center[0]+node[0]) * ((2*(rebarDiameter*0.9)/2-rad0) / rad0 )
-                mirroredNode[1] = center[1] + (-center[1]+node[1]) * ((2*(rebarDiameter*0.9)/2-rad0) / rad0 )
+                mirroredNode[0] = center[0] + (-center[0]+node[0]) * ((2*(rebarDiameter*0.99)/2-rad0) / rad0 )
+                mirroredNode[1] = center[1] + (-center[1]+node[1]) * ((2*(rebarDiameter*0.99)/2-rad0) / rad0 )
                 if dim ==3:
                     mirroredNode[2] = node[2]
 

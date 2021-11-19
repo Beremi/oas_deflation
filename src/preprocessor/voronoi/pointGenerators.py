@@ -731,6 +731,7 @@ def generateNodesOrtoAnnulus2dRand(center, radius, thickness,  minDist, node_coo
 def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials):
     print ('Generating a 3d annulus surface. Ctr [%f, %f, %f], Rad: %f, Thick: %f' %(center[0],center[1],center[2], radius, thickness))
 
+    oldcount = len(node_coords)
     tr=0
     while (tr<trials):
         tr = 0;
@@ -739,7 +740,8 @@ def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minD
         while (distIsGood == False):
             coords = randPointInAnnulus(center, radius, thickness,directionDim)
             #
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            #distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+            distIsGood = utilitiesGeom.checkMutDistancesLoops(3, minDist, node_coords, list(coords))
             #
             if (distIsGood == False):
                 tr += 1
@@ -749,6 +751,7 @@ def generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minD
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
+    print("generated", len(node_coords)-oldcount, "points")
 
 def generateNodesOrtoTube3dRand(center, radius, height, thickness, directionDim, minDist, node_coords, trials, minD=-1, maxD=-1):
     print ('Generating a 3d tube. Ctr [%f, %f, %f], Rad: %f, Thick: %f' %(center[0],center[1],center[2], radius, thickness))
