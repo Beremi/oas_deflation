@@ -13,7 +13,7 @@ class MeasuringGauge:
 
 
 class RigidPlate:
-    def __init__ (self, govNodeIdx, dim, limits, radial = -1, innerRad = None, directIdcs = False):
+    def __init__ (self, govNodeIdx, dim, limits, radial = -1, innerRad = None, directIdcs = False, which=None):
         self.govNodeIdx = govNodeIdx
         self.dim = dim
         self.limits = limits
@@ -23,7 +23,7 @@ class RigidPlate:
         self.nodes = []
         self.directNodes = []
         self.directIdcs = directIdcs
-
+        self.which = which
     def setDirectNodes(self, ndsList):
         for n in ndsList:
             self.directNodes.append(n)
@@ -65,6 +65,11 @@ class RigidPlate:
             if (self.dim == 3):
                 line += '%e\t' %self.limits[4] #zmin
                 line += '%e\t' %self.limits[5] #zmax
+
+
+        if self.which is not None:
+            line += 'which %s' %self.which
+
 
         return line
 

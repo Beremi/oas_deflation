@@ -1185,6 +1185,8 @@ def saveMechBC(master_folder,dim, nodes_mechBCmerged, govNodesBC = False):
 
         elif (dim == 3):
             bc = np.zeros (1 + 12)
+            print('for node %s' %nodes_mechBCmerged[i].getNodeIdx())
+            print(nodes_mechBCmerged[i].getMechBC())
             bc[0] = nodes_mechBCmerged[i].getNodeIdx()
             bc[1:] = nodes_mechBCmerged[i].getMechBC()
 
