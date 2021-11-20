@@ -3313,12 +3313,6 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
     fn2 = utilitiesNumeric.generalFunc(func2)
     functions.append (fn2)
 
-    func1 = []
-    func1.append( np.array([0,0]) )
-    func1.append( np.array([1, 10]) )
-    fn1 = utilitiesNumeric.generalFunc(func1)
-    functions.append (fn1)
-
     ### sampling of nodes
     node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, trials)
     node_coords = np.asarray(node_coords)
@@ -3354,7 +3348,7 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
         ### selecting vertices on the outer surface
 
         outerFaceBC = np.array([0,-1])
-        outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices, xmin = 1e-5, xmax = height - 1e-5)
+        outerFace = utilitiesGeom.returnSelectedPtsRadial (radius-minDist/2 , radius+minDist/2 , vor.vertices, xmin = -1e-5, xmax = height + 1e-5) # JE: I need also edges
         trsptOuterRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
         trsptOuterRigidPlate.setDirectNodes(outerFace)
         rigidPlatesTrspt.append(trsptOuterRigidPlate)
@@ -3373,7 +3367,7 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
         govNodesTrspt.append(np.array([ -1, -1, -1]))
         innerFaceBC = np.array([2,-1])
-        innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices,xmin = 1e-5, xmax = height - 1e-5)
+        innerFace = utilitiesGeom.returnSelectedPtsRadial ((radius-thickness)-minDist/2 , (radius-thickness)+minDist/2, vor.vertices, xmin = -1e-5, xmax = height + 1e-5) # JE: I need also edges
         trsptInnerRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 3, None, directIdcs = True)
         trsptInnerRigidPlate.setDirectNodes(innerFace)
         rigidPlatesTrspt.append(trsptInnerRigidPlate)
@@ -3384,8 +3378,8 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
         interfaceVertexIndices.append(innerFace)
         interfaceVertexIndices = np.asarray(interfaceVertexIndices)
 
-
-
+        #TOP and BOTTOM face not needed
+        """
         govNodesTrspt.append(np.array([ 1, -1, -1]))
         topFaceBC = np.array([-1,0])
         boundA = np.array(  [-1e-5 , -radius*10, -radius*10] )
@@ -3406,7 +3400,7 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
         trsptBotRigidPlate.setDirectNodes(botFace)
         rigidPlatesTrspt.append(trsptBotRigidPlate)
         govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], topFaceBC))
-
+        """
 
 
         #for i in range (len(innerFace)):

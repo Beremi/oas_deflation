@@ -920,20 +920,22 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
     DiscreteCoupledRVEMaterial *macromaterial = static_cast< DiscreteCoupledRVEMaterial * >( mat );
     mechRVEstat->init();
     trspRVEstat->init();
-
     if ( macromaterial->givePrecomputedElasticTensor().size() == 0 ) {
+        unsigned ndim = trspRVEstat->giveWholeRVE()->giveDimension();
+        macromaterial->setNumOfDimensions(ndim);
+
         DiscreteCoupledRVEMaterialStatus :: setFromPrecomputedToFullModel();
         is_master_status = true;
         mechRVEstat->setToMasterStatus();
         trspRVEstat->setToMasterStatus();
-        unsigned ndim = trspRVEstat->giveWholeRVE()->giveDimension();
+
 
         Matrix ela, dam, ine;
         ela = giveStiffnessTensor("secant", ndim);
         dam = giveDampingTensor();
         ine = giveInertiaTensor();
         macromaterial->setPrecomputedElasticDampingAndInertiaTensors(ela, dam, ine);
-        macromaterial->setNumOfDimensions(ndim);
+
         DiscreteTransportRVEMaterial *dtRVEmat = static_cast< DiscreteTransportRVEMaterial * >( trspRVEstat->giveMaterial() );
         DiscreteTrsprtCoupledMaterial *dctm = dynamic_cast< DiscreteTrsprtCoupledMaterial * >( dtRVEmat->giveMasterMaterial() );
         if ( !dctm ) {
