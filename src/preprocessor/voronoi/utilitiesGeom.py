@@ -130,7 +130,7 @@ def checkMutDistancesCdist(dim, minDist, currentNodes, newNode):
     dist = np.zeros(len(currentNodes))
     for i in range(dim):
         dist += np.square(ncrds[:,i]-newNode[i])
-    dist = np.sqrt(np.min(dist))    
+    dist = np.sqrt(np.min(dist))
     return dist>minDist
     """
 
@@ -661,6 +661,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
 
 
+
     newAuxNodes = 0
     if (activeTransport):
         newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
@@ -689,6 +690,10 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
+
+
+    checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
+
 
     return v_count, verticesIdxDict, vertIdxStart, totalPointCount
 
@@ -1419,6 +1424,16 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
         num = num + 1
 
 
+    #fig = plt.figure()
+    #ax = Axes3D(fig)
+    #ax.scatter(nodes_out[:,0], nodes_out[:,1], nodes_out[:,2])
+    #plt.show()
+
+    #fig, ax = plt.subplots()
+    #ax.scatter(nodes_out[:,1], nodes_out[:,2])
+    #plt.show()
+
+
     fl=open(os.path.join(master_folder,filename),'w')
     if len(nodes_out) > 0:
         np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
@@ -1737,6 +1752,10 @@ def getRandCoef(integrationPoint):
 
 def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False, mZ=[]):
     print('Creating TRSPRT elements...', end='')
+
+    print ('tube: %s' %isTube)
+
+
     sys.stdout.flush()
     transportElements = []
     transportElements_dict = {}
@@ -2197,7 +2216,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
 
 
 
-def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False, expansionRingsProps=[]):
+def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False, expansionRingsProps=[], dir=2):
     print('Saving rigid plates...', end='')
 
     if trspt == False:
@@ -2227,6 +2246,7 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
             rebarDepth = expansionRingsProps[1]
             rebarDiameter = expansionRingsProps[2]
             maxLim = expansionRingsProps[3]
+            dir = expansionRingsProps[4]
 
             print ('rebarcount %d' %rebarCount)
 
@@ -2245,7 +2265,7 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
                     f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
                 if dim == 3:
                     f.write( '#ExpansionRingSingleDoFLoad node_IS x y z rInner rOuter dir\n' )
-                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e 0 %e dir 2\n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*1.01 ) )
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e 0 %e dir %d\n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*1.01, dir ))
 
                 mechDofIndices.append(totNodeC+r)
 
@@ -2416,6 +2436,8 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
     test_nodeCoords = np.genfromtxt(os.path.join(master_folder,nodesFile),  dtype= None, encoding='ascii', usecols=cols)
     print('\t\t %d nodes loaded.' %len(test_nodeCoords))
 
+
+    #"""
 
     if (os.path.exists(os.path.join(master_folder,auxNodesFile))):
         print('Loading back aux node coords...', end='')

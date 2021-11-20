@@ -607,7 +607,7 @@ class Model:
 
     def saveGeometry(self):
         tube = False
-        if self.modelType == '3d_BiparvaTubeTransport': tube = True
+        if self.modelType == '3d_BiparvaTubeTransport' or self.modelType=='3d_TubeInnerPressure': tube = True
 
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
@@ -660,17 +660,20 @@ class Model:
                 if self.govNodesMechBC != None:
                     if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar' or self.modelType == '3d_TubeInnerPressure':
                         if self.modelType == '3d_TubeInnerPressure':
+
                             expansionRingsProps = []
                             expansionRingsProps.append(1)
                             expansionRingsProps.append(0)
                             expansionRingsProps.append(self.cylinderRad*2-self.tubeThickness*2)
                             expansionRingsProps.append(self.maxLim)
+                            expansionRingsProps.append(0) #dir
                         if self.modelType == '2d_corrosionRebar' or self.modelType == '3d_corrosionRebar':
                             expansionRingsProps = []
                             expansionRingsProps.append(self.rebarCount)
                             expansionRingsProps.append(self.rebarDepth)
                             expansionRingsProps.append(self.rebarDiameter)
                             expansionRingsProps.append(self.maxLim)
+                            expansionRingsProps.append(2) #dir
 
                         mechDofIndices = utilitiesGeom.saveConstraint(self.master_folder, self.dimension, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.totalNodeCount, self.node_coords, expansionRingsProps=expansionRingsProps, virtualDoF=expansionRingsProps[0], nodesMechBC=self.mechBC_merged)
                         self.constraint = True

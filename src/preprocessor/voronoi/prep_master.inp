@@ -77,8 +77,8 @@
 ###########
 ###########Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 ###########Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
-###########Model 3d_BiparvaTubeTransport minDist 0.003 cylinderRad 0.05 cylinderHeight 0.2 tubeThickness 0.025 activeTransport 1 activeMechanics 1 coupled 1 trials 5000
-Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.03 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
+###########Model 3d_BiparvaTubeTransport minDist 0.005 cylinderRad 0.05 cylinderHeight 0.05 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 5000
+Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 ###########
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################

@@ -7887,7 +7887,7 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
 
 
 
-    pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoAnnulus3dRand(center, radius, thickness, directionDim, minDist, node_coords, trials)
 
 
     leftRigidPlateMechBC = np.array([0, -1,-1,   0,0,0,  -1,-1,-1,   -1,-1,-1])
@@ -7904,7 +7904,7 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     nodeA = center.copy()
     nodeA[directionDim] += float(height)
 
-    pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
+    #pointGenerators.generateNodesOrtoAnnulus3dRand(nodeA, radius, thickness, directionDim, minDist, node_coords, trials)
 
     rightRigidPlateMechBC = np.array([0, -1, -1, 0,0,0, -1,-1,-1,   -1,-1,-1])
     rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, np.array([
