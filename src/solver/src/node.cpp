@@ -74,13 +74,25 @@ void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
 void MechDoF :: readFromLine(istringstream &iss) {
-    ( void ) iss;
+    double x, y, z;
+    if ( dim == 2 ) {
+        iss >> x >> y;
+        point = Point(x, y, 0.);
+    } else if ( dim == 3 ) {
+        iss >> x >> y >> z;
+        point = Point(x, y, z);
+    }
+    iss >> nDoFs;
+    if (iss.fail()) {
+         cerr << "MechDoF reading failed!" << endl;
+         exit(1);
+    }
 }
 
 //////////////////////////////////////////////////////////
-MechDoF :: MechDoF(unsigned dimension) : MechNode(dimension) {
+MechDoF :: MechDoF(unsigned dimension, unsigned numDoFs) : MechNode(dimension) {
     point = Point(0, 0, 0);
-    nDoFs = dimension;
+    nDoFs = numDoFs;
     dim = dimension;
     name = "MechDoF";
 }
@@ -151,14 +163,26 @@ double TrsTemprtrCoupledNode :: giveDoFBasedValue(string code, const Vector &DoF
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
 void TrsDoF :: readFromLine(istringstream &iss) {
-    ( void ) iss;
+    double x, y, z;
+    if ( dim == 2 ) {
+        iss >> x >> y;
+        point = Point(x, y, 0.);
+    } else if ( dim == 3 ) {
+        iss >> x >> y >> z;
+        point = Point(x, y, z);
+    }
+    iss >> nDoFs;
+    if (iss.fail()) {
+         cerr << "TrsDoF reading failed!" << endl;
+         exit(1);
+    }
 }
 
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
-TrsDoF :: TrsDoF(unsigned dimension) : TrsNode(dimension) {
+TrsDoF :: TrsDoF(unsigned dimension, unsigned numDoFs) : TrsNode(dimension) {
     point = Point(0, 0, 0);
-    nDoFs = dimension;
+    nDoFs = numDoFs;
     dim = dimension;
     name = "TrsDoF";
 }

@@ -102,6 +102,7 @@ void Solver :: setNextStepTime() {
 
 //////////////////////////////////////////////////////////
 void Solver :: runBeforeEachStep() {
+
     step += 1;
     setNextStepTime();
 
@@ -152,8 +153,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     fully_converged = true;  ///> only make sense for nonlin solvers, true otherwise
 
     freeDoFnum = nodes->giveNumFreeDoFs();
-    fixedDoFnum = ( nodes->giveTotalNumDoFs() - freeDoFnum );
-    totalDoFnum = freeDoFnum + fixedDoFnum;
+    totalDoFnum = nodes->giveTotalNumDoFs();
 
     load = Vector(totalDoFnum);
     r = Vector(totalDoFnum);
@@ -162,13 +162,20 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     f_dam = Vector(totalDoFnum);
     f_acc = Vector(totalDoFnum);
     trial_r = Vector(totalDoFnum);
-    pbc = Vector(fixedDoFnum);
-    f = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = Vector( freeDoFnum );
     residuals = Vector(totalDoFnum);
-    ddr = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+    ddr = Vector( freeDoFnum );
     full_ddr = Vector(totalDoFnum);
     f_int_old = Vector(totalDoFnum);
     f_ext_old = Vector(totalDoFnum);
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: updateFieldVariables() {
+    nodes->giveFullDoFArray(ddr, full_ddr);
+    nodes->updateFullDoFsByDependenciesOnConjugates(full_ddr, trial_r, f_ext);
+    trial_r += full_ddr;
 }
 
 //////////////////////////////////////////////////////////
@@ -314,13 +321,6 @@ void SteadyStateLinearSolver :: runBeforeEachStep() {
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: updateFieldVariables() {
-    nodes->giveFullDoFArray(ddr, full_ddr);
-    nodes->updateFullDoFsByDependenciesOnConjugates(full_ddr, trial_r, f_ext);
-    trial_r += full_ddr;
-}
-
-//////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runAfterEachStep() {
     Solver :: runAfterEachStep();
 }
@@ -353,9 +353,9 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
     this->fully_converged = false;
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
-        ddf = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+        ddf = Vector( freeDoFnum );
         full_ddf = Vector(totalDoFnum);
-        f_last_iter = Vector( freeDoFnum - nodes->giveNumConstrDoFs() );
+        f_last_iter = Vector( freeDoFnum );
         if ( initial ) {
             idc_time = this->init_idc_time;
             idc_dt = 1e-6;
@@ -584,7 +584,6 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
     // "energyM " << energyM << '\n';
 }
 
-
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: solve() {
     double load_mult;
@@ -749,6 +748,14 @@ void SteadyStateNonLinearSolver :: solve() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runBeforeEachStep() {
+
+    if (time==init_time && idc){
+        nodes->addRHS_nodalLoad(load, time); //add nodal load
+        nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs at time 0
+        computeInternalExternalForces( trial_r, load, true, -1. );
+    }
+
+
     SteadyStateLinearSolver :: runBeforeEachStep();
 
     cout <<  scientific; //cout << setprecision(8);
@@ -1023,7 +1030,7 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
         nodes->giveConstraints()->transformToConstraintSpace(Mred);
     }
-    Vector v_red( freeDoFnum - nodes->giveNumConstrDoFs() );
+    Vector v_red( freeDoFnum );
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
     a = Vector(totalDoFnum);

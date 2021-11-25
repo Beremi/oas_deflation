@@ -13,7 +13,7 @@
 // #include "element_container.h"
 #include "data_exporter.h"
 
-void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp = false);
+void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector<bool> &activeDirs, const bool trsp = false);
 
 void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp = false, Function *fn = nullptr);
 
@@ -112,6 +112,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // Voigt's constraint
 class VoigtConstraint : public PBlock
 {
@@ -124,7 +125,7 @@ public:
     virtual void readFromLine(istringstream &iss, unsigned d);
 };
 
-
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 class PressureFromMechanicalLoad : public PBlock
 {
@@ -150,7 +151,7 @@ class RigidPlate : public PBlock
 private:
     std :: vector< unsigned >slave_ids;
 public:
-    RigidPlate() {};
+    RigidPlate() { };
     virtual ~RigidPlate() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
     virtual void readFromLine(istringstream &iss, unsigned d);
@@ -158,10 +159,13 @@ protected:
     bool transport = false;
     unsigned master_id, ndim;
     std :: string which;  ///< which direction to fix (e.g. to leave expansion in perpendicualr direction)
+    vector< bool > activeDirs;
     void checkMechTransport(Node *master);
     void setDirectionToFix(istringstream &iss);
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 class CoordRigidPlate : public RigidPlate
 {
 private:
@@ -174,7 +178,8 @@ public:
 protected:
 };
 
-
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // rigid plate constraining nodes in holow cylindric
 class RingRigidPlate : public RigidPlate
 {
@@ -190,7 +195,8 @@ protected:
     unsigned direction;
 };
 
-
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // rigid plate constraining nodes in holow cylindric
 class ExpansionRing : public RingRigidPlate
 {
@@ -204,6 +210,8 @@ public:
 protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // rigid plate constraining nodes in holow cylindric
 class ExpansionRingDoFLoad : public RingRigidPlate
 {
@@ -216,6 +224,8 @@ protected:
     unsigned expansion_master_id;
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // rigid plate constraining nodes in holow cylindric
 class ExpansionRingSingleDoFLoad : public ExpansionRingDoFLoad
 {

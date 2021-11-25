@@ -42,7 +42,7 @@ void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
     initalNodeNum = nodes->giveSize();
-    mn = new MechDoF( 3 * ( dim - 1 ) );
+    mn = new MechDoF( dim, 3 * ( dim - 1 ) );
     nodes->addNode(mn);
 }
 
@@ -281,7 +281,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
             if ( dim == 3 ) {
                 nDoFs = 6;
             }
-            MechDoF *pn = new MechDoF(nDoFs);
+            MechDoF *pn = new MechDoF(dim, nDoFs);
             nodes->addNode(pn);
 
             vector< unsigned >dirs( vm.size() );
@@ -662,7 +662,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
         MechDoF *mn;
         unsigned rotDoF = nodes->giveSize();
         unsigned rotnum =  2 * ( dim - 1 ) - 1; 
-        mn = new MechDoF( rotnum);
+        mn = new MechDoF( dim, rotnum);
         nodes->addNode(mn);
         //it is better to leave rotations free, setting them is not clear in case of shear stress loading
         /*
@@ -854,7 +854,7 @@ void TransportPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     TrsDoF *mn;
     initalNodeNum = nodes->giveSize(); //todo warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-    mn = new TrsDoF(dim);
+    mn = new TrsDoF(dim, dim);
     nodes->addNode(mn);
 }
 
@@ -1028,7 +1028,7 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
             }
         }
         if ( vm.size() > 0 ) {
-            TrsDoF *tn = new TrsDoF(1);
+            TrsDoF *tn = new TrsDoF(dim, 1);
             nodes->addNode(tn);
 
             vector< unsigned >dirs( vm.size() );
@@ -1064,7 +1064,7 @@ void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
 
     MechDoF *master;
     unsigned masterNodeNum = nodes->giveSize();
-    master = new MechDoF( 3 * ( dim - 1 ) );
+    master = new MechDoF( dim, 3 * ( dim - 1 ) );
     nodes->addNode(master);
 
     //export data
@@ -1385,23 +1385,28 @@ void PressureFromMechanicalLoad :: readFromLine(istringstream &iss, unsigned d) 
 //////////////////////////////////////////////////////////
 
 void RigidPlate :: setDirectionToFix(istringstream &iss) {
-    bool bw = false;
+    
     string param;
+    unsigned num;
+    bool b;
     while ( !iss.eof() ) {
         iss >> param;
-        if ( param.compare("which") == 0 ) {
-            iss >> which;
-            // std::cout << "which" << '\n';
-            bw = true;
-            std :: cout << "using RigidPlate rigid in " << which << " direction, use proper BC for Particle (fix unused DoFs to zero)" << '\n';
+        if ( param.compare("dirs") == 0 ) {
+            iss >> num;
+            activeDirs.resize(num);
+            for (unsigned i=0; i<num; i++) {
+                iss >> b;
+                activeDirs[i] = b;
+                cout << b << endl;
+            }
+        }else if ( param.compare("which") == 0 ) {
+            cerr << "RigidPlate error: you are using old unsupported way of specifying active directions" << endl;
+            exit(1);
         }
-    }
-    if ( !bw ) {
-        this->which = "xyz"; //abc for rotations
     }
 }
 
-
+//////////////////////////////////////////////////////////
 void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     // jointDoF jD;
     this->dim = d;
@@ -1418,6 +1423,7 @@ void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     this->setDirectionToFix(iss);
 }
 
+//////////////////////////////////////////////////////////
 void RigidPlate :: checkMechTransport(Node *master) {
     // in case of rigid plate, master is a virtual virtual node and not a physical particle or
     if ( !endsWith(master->giveName(), "virtual") ) {
@@ -1429,11 +1435,17 @@ void RigidPlate :: checkMechTransport(Node *master) {
             cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( this->dim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
             exit(EXIT_FAILURE);
         }
+        if (activeDirs.size()==0) {
+            activeDirs.resize( 3 * ( this->dim - 1 ), true );
+        }
     } else if ( dynamic_cast< TrsNode * >( master ) ) {
         this->transport = true;
         if ( master->giveNumberOfDoFs() != 1 ) {
             cerr << "Error in " << __func__ << ": Master for RigidPlate in transport must have " << 1 << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
             exit(EXIT_FAILURE);
+        }
+        if (activeDirs.size()==0) {
+            activeDirs.resize( 1, true );
         }
     } else {
         cerr << "Error in " << __func__ << ": Master for RigidPlate is niether mechanical nor transport " << '\n';
@@ -1441,6 +1453,7 @@ void RigidPlate :: checkMechTransport(Node *master) {
     }
 }
 
+//////////////////////////////////////////////////////////
 void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
@@ -1458,12 +1471,13 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer 
 
     for ( auto const &sl_id : slave_ids ) {
         slave = nodes->giveNode(sl_id);
-        connectSlaveMasterRigid(constrs, slave, master, this->dim, which, this->transport);
+        connectSlaveMasterRigid(constrs, slave, master, this->dim, activeDirs, this->transport);
     }
 }
 
+//////////////////////////////////////////////////////////
 void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
-    this->dim = d;
+    dim = d;
     if ( d == 2 ) {
         double x0, x1, y0, y1;
         iss >> master_id >> x0 >> x1 >> y0 >> y1;
@@ -1481,6 +1495,7 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     RigidPlate :: setDirectionToFix(iss);
 }
 
+//////////////////////////////////////////////////////////
 void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
@@ -1498,15 +1513,19 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCConta
 
     for ( auto const &nod : * nodes ) {
         if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ) {
-            if ( nod == master || endsWith(nod->giveName(), "virtual") ) {
+            if ( nod == master || endsWith(nod->giveName(), "virtual")) {
                 continue;
             }
-            connectSlaveMasterRigid(constrs, nod, master, this->dim, which, this->transport);
+            if (transport){
+                if (!dynamic_cast< TrsNode* >(nod) || dynamic_cast< TrsDoF* >(nod)) continue;
+            }else if (!dynamic_cast< MechNode* >(nod) || dynamic_cast< MechDoF* >(nod)) continue;
+            connectSlaveMasterRigid(constrs, nod, master, this->dim, activeDirs, this->transport);
         }
     }
 }
 
 
+//////////////////////////////////////////////////////////
 void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     this->direction = 2;
     this->dim = d;
@@ -1538,6 +1557,7 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     RigidPlate :: setDirectionToFix(iss);
 }
 
+//////////////////////////////////////////////////////////
 void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
@@ -1573,14 +1593,14 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
                 if ( nod == master ) {
                     continue;
                 }
-                connectSlaveMasterRigid(constrs, nod, master, this->dim, which, this->transport);
+                connectSlaveMasterRigid(constrs, nod, master, this->dim, activeDirs, this->transport);
             }
         }
     }
 }
 
 
-
+//////////////////////////////////////////////////////////
 void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
     RingRigidPlate :: readFromLine(iss, d);
     if ( typeid( this ) != typeid( ExpansionRing ) ) {
@@ -1604,6 +1624,7 @@ void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
     }
 }
 
+//////////////////////////////////////////////////////////
 void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver) {
     ( void ) e;
     ( void ) bcs;
@@ -1636,7 +1657,7 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
             if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
-                if ( nod == master ) {
+                if ( nod == master || !dynamic_cast< MechNode * >( nod ) || dynamic_cast< MechDoF * >( nod )) {
                     continue;
                 }
                 connectSlaveMasterExpansion( constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
@@ -1838,6 +1859,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
             multipliers [ j ] /= slave_dir_vect_value;
         }
         JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers);
+            for(unsigned u=0; u<multipliers.size(); u++) if(multipliers[u]!=multipliers[u]) {cout << "multipliersX ERROR" << endl; exit(1);}
         constrs->addConstraint(newJD);
     }
 
@@ -1966,24 +1988,22 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
 
 
 
-void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const string &which, const bool trsp) {
+void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector < bool > &activeDirs, const bool transport) {
+    
     unsigned nDoFsPerNode;
-    if ( trsp ) {
-        // if master is transport, slave must be transport
-        if ( !dynamic_cast< TrsNode * >( slave ) ) {
-            return;
-        }
+    if ( transport ) {
         nDoFsPerNode = 1;
     } else {
-        if ( !dynamic_cast< Particle * >( slave ) ) {
-            return;                                         // NOTE could be MechNode, but so far, nDoFs corresponds to Particles
-        }
         nDoFsPerNode = 3 * ( ndim - 1 );
     }
 
 
-    if ( slave->giveNumberOfDoFs() != master->giveNumberOfDoFs() ) {
-        std :: cerr << "slave and master must have the same number of DoFs, slave numDoFs = " << slave->giveNumberOfDoFs() << ", master numDoFs = " << master->giveNumberOfDoFs() << '\n';
+    if ( nDoFsPerNode != master->giveNumberOfDoFs()) {
+        std :: cerr << "RigidPlate Error: master node with " << master->giveNumberOfDoFs() << " DoFs should have " << nDoFsPerNode << "DoFs instead" << endl;
+        exit(1);
+    }
+    if ( nDoFsPerNode != activeDirs.size() ) {
+        std :: cerr << "RigidPlate Error: active directions with " << nDoFsPerNode << " entries should have " << nDoFsPerNode << " entries instead" << endl;
         exit(1);
     }
 
@@ -2023,18 +2043,9 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
     // read the table and put the information to jointDoFs
     // NOTE this could be done in the previous loop
     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        // for transport nodes, only ones are in tableOfMultipliers
-        if ( !trsp ) {
-            if ( containsChar(which, 'x') && ( i == 0 || i == 4 || i == nDoFsPerNode - 1 ) ) {
-                // std::cout << "fixed in x dir" << '\n';
-            } else if ( containsChar(which, 'y') && ( i == 1 || i == 3 || i == nDoFsPerNode - 1 ) ) {
-                // std::cout << "fixed in y dir" << '\n';
-            } else if ( containsChar(which, 'z') && ( i == 2 || i == 3 || i == 4 ) && ndim > 2 ) {
-                // std::cout << "fixed in z dir" << '\n';
-            } else {
-                continue;
-            }
-        }
+        // for transport nodes, only ones are in tableOfMultipliers        
+        if ( !activeDirs[i] ) continue;
+        //if (i==1 || i==2) continue;
         for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
             if ( tableOfMultipliers [ j ] [ i ] != 0 ) {
                 masterNodes.push_back(master);
