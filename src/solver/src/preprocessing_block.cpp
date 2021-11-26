@@ -739,7 +739,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     x [ 1 ] = 1;
     y.resize(2);
     y [ 0 ] = 0;
-    y [ 1 ] = 1;
+    y [ 1 ] = 1e-6;
     PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
     funcs->addFunction(newf);
 
@@ -770,7 +770,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         masterModel->init();
         linS->runBeforeEachStep();
         linS->solve();
-        elastSol [ i ] = linS->giveTrialDoFValues();
+        elastSol [ i ] = linS->giveTrialDoFValues()*1e6;
         dBC [ i ] = cfunc;
     }
 
@@ -1397,7 +1397,6 @@ void RigidPlate :: setDirectionToFix(istringstream &iss) {
             for (unsigned i=0; i<num; i++) {
                 iss >> b;
                 activeDirs[i] = b;
-                cout << b << endl;
             }
         }else if ( param.compare("which") == 0 ) {
             cerr << "RigidPlate error: you are using old unsupported way of specifying active directions" << endl;
