@@ -601,9 +601,10 @@ void SteadyStateNonLinearSolver :: solve() {
     double displa_error = 0;
     double energy_error = 0;
     double residu_error = 0;
-
-    // bool restart_now = true;  // JK: left for testing
-    Vector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
+    
+    bool restart_now = false;
+    //Vector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
+                                            //JE: no, these are recomputed                                                        
 
     while ( !converged ) {
         //setup loading
@@ -618,9 +619,9 @@ void SteadyStateNonLinearSolver :: solve() {
         unsigned it = 0;
         while ( !converged && it < maxIt ) {
             if ( updateSystemMatrices("secant", it) ) {
-                //computeKeff();                                    //only if required
+                computeKeff();                                    //only if required
             }
-            nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here
+            nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
 
             if ( idc ) {      //indirect displacement control
                 f_last_iter = f;
@@ -631,30 +632,33 @@ void SteadyStateNonLinearSolver :: solve() {
                 nodes->giveReducedForceArray(residuals, f);
 
                 if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    terminated = true;
-                    cerr << "Conjugate gradients did not converge" << endl;
-                    return;
+                    cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;    
+                    it = maxIt;
+                    break;
                 }
                 if ( LinalgSymmetricSolver(Keff, ddf, f - f_last_iter, ddf, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    terminated = true;
-                    cerr << "Conjugate gradients did not converge" << endl;
-                    return;
+                    cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
+                    it = maxIt;
+                    break;
                 }
-                //nodes->giveFullDoFArray(ddr, full_ddr);
-                nodes->giveFullDoFArray(ddf, full_ddf);
-                //load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
-                load_mult = idc->giveMultiplierCorrection(trial_r, full_ddf, time);
-                ddr += load_mult * ddf;
-                idc_time += idc_dt * load_mult;
-
-                load *= 0;
-                nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
-                nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
+                
+                if ( !restart_now ){
+                    //nodes->giveFullDoFArray(ddr, full_ddr);
+                    nodes->giveFullDoFArray(ddf, full_ddf);
+                    //load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
+                    load_mult = idc->giveMultiplierCorrection(trial_r, full_ddf, time);
+                    ddr += load_mult * ddf;
+                    idc_time += idc_dt * load_mult;
+    
+                    load *= 0;
+                    nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
+                    nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
+                }
             } else {         //direct controll
                 if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    terminated = true;
-                    cerr << "Conjugate gradients did not converge" << endl;
-                    return;
+                    cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
+                    it = maxIt;
+                    break;
                 }
             }
 
@@ -687,42 +691,36 @@ void SteadyStateNonLinearSolver :: solve() {
                 if ( std :: isnan(energy_error) ) {
                     std :: cerr << "\nenergies ";
                 }
-                std :: cerr << "- exit" << '\n';
-                terminated = true;
-                return;
+                it = maxIt;
+                break;
             }
 
-            if ( displa_error > disErr || residu_error > resErr || energy_error > eneErr ) {
-                converged = false;
-            } else {
+            if ( displa_error <= disErr && residu_error <= resErr && energy_error <= eneErr ) {
                 converged = true;
+            } else {
+                converged = false;
             }
             it++;
-            //if (it>10) exit(1);
         }
 
         computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
 
         if ( converged ) this->fully_converged = true;
 
-        if ( ( !converged && dt > dtmin )
-             // || restart_now  // JK: left for testing
-              ) {
-            // if ( restart_now ) {
-            //     restart_now = false; converged = false;
-            // } else {
+        if ( !converged && dt > dtmin ) {
             time -= dt;
             dt = fmax(dt * critical_step_decrease, dtmin);
             time += dt;
             // }
             cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
             restarted = true;
+            restart_now = false;
             trial_r = r;
             f_int = f_int_old;
             f_ext = f_ext_old;
             load *= 0;
             ddr *= 0;
-            residuals = reset_residuals;
+            //residuals = reset_residuals; //JE: not needed
             elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
             if ( idc ) {
                 idc_time = idc_time_converged;
