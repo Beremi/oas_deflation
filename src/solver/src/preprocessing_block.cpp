@@ -658,10 +658,10 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
         //exit(1);
 
         //nonzero rotations compensating shear strain applied assymetrically - Cosseart continuum
-        //create new degrees of freedom connected to rotations        
+        //create new degrees of freedom connected to rotations
         MechDoF *mn;
         unsigned rotDoF = nodes->giveSize();
-        unsigned rotnum =  2 * ( dim - 1 ) - 1; 
+        unsigned rotnum =  2 * ( dim - 1 ) - 1;
         mn = new MechDoF( dim, rotnum);
         nodes->addNode(mn);
         //it is better to leave rotations free, setting them is not clear in case of shear stress loading
@@ -677,7 +677,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
             nBC[i] = stressFunc[dim+i];
             if(nBC[i]<0) bcmults[i] = 1;
             else bcmults[i] = volume;
-        }        
+        }
         bc = new BoundaryCondition(nodes->giveNode(rotDoF), dBC, nBC, bcmults);
         //bcs->addBoundaryCondition(bc);
         */
@@ -773,6 +773,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         elastSol [ i ] = linS->giveTrialDoFValues()/(linS->giveTime()*1e-6);
         dBC [ i ] = cfunc;
     }
+    delete linS; linS = nullptr;
 
     //remove added BC
     for ( int p = int( bcs->giveSize() ) - 1; p >= int( bcs_num ); p-- ) {
@@ -827,7 +828,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
             for ( unsigned dir = 0; dir < nodeDoFs; dir++ ) {
                 for ( unsigned k = 0; k < n; k++ ) {
                     mults [ k ] = elastSol [ k ] [ DoFnum + dir ];
-                }                 
+                }
                 jd = new JointDoF(s, dir, vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
@@ -1385,7 +1386,7 @@ void PressureFromMechanicalLoad :: readFromLine(istringstream &iss, unsigned d) 
 //////////////////////////////////////////////////////////
 
 void RigidPlate :: setDirectionToFix(istringstream &iss) {
-    
+
     string param;
     unsigned num;
     bool b;
@@ -1795,7 +1796,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
         }
     	md = dynamic_cast < MechDoF * >(nod);
     	if ( md != nullptr ) continue;
-    	if ( endsWith(nod->giveName(), "virtual") ) continue;	
+    	if ( endsWith(nod->giveName(), "virtual") ) continue;
 
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
@@ -1988,7 +1989,7 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
 
 
 void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector < bool > &activeDirs, const bool transport) {
-    
+
     unsigned nDoFsPerNode;
     if ( transport ) {
         nDoFsPerNode = 1;
@@ -2042,7 +2043,7 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
     // read the table and put the information to jointDoFs
     // NOTE this could be done in the previous loop
     for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        // for transport nodes, only ones are in tableOfMultipliers        
+        // for transport nodes, only ones are in tableOfMultipliers
         if ( !activeDirs[i] ) continue;
         //if (i==1 || i==2) continue;
         for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
