@@ -183,7 +183,7 @@ void Solver :: updateFieldVariables() {
 // STEADY STATE LINEAR SOLVER
 SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
-    conj_grad_precision = 1e-13;
+    conj_grad_precision = 1e-16;
     conj_grad_relative_maxit = 0.85;
 }
 
@@ -609,7 +609,7 @@ void SteadyStateNonLinearSolver :: solve() {
         unsigned it = 0;
         while ( !converged && it < maxIt ) {
             if ( updateSystemMatrices("secant", it) ) {
-                //computeKeff();                                    //only if required
+                computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here
 
