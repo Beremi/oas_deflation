@@ -275,6 +275,8 @@ void BCContainer :: init() {
 void BCContainer :: calculateDoFfields() {
     vector< unsigned >help;
     vector< double >help2;
+    dirichDoFs.clear();
+    neumannDoFs.clear();
     for ( vector< BoundaryCondition * > :: iterator bc = BC.begin(); bc != BC.end(); ++bc ) {
         help = ( * bc )->giveBlockedDoFs();
         dirichDoFs.insert( dirichDoFs.end(), help.begin(), help.end() );

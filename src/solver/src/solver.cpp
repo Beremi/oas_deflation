@@ -576,12 +576,21 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
     * displa_error = sqrt( full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
     * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
 
-    // std :: cout << "f_extM " << f_extM << '\t' <<
-    // "f_intM " << f_intM << '\t' <<
-    // "residualM " << residualM << '\t' <<
-    // "full_ddrM " << full_ddrM << '\t' <<
-    // "trial_rM " << trial_rM << '\t' <<
-    // "energyM " << energyM << '\n';
+    /*
+     std :: cout << "f_extM " << f_extM << '\t' << 
+     "f_intM " << f_intM << '\t' <<
+     "residualM " << residualM << '\t' <<
+     "full_ddrM " << full_ddrM << '\t' <<
+     "trial_rM " << trial_rM << '\t' <<
+     "energyM " << energyM << '\n';
+
+     std :: cout << "f_extT " << f_extT << '\t' << 
+     "f_intT " << f_intT << '\t' <<
+     "residualT " << residualT << '\t' <<
+     "full_ddrT " << full_ddrT << '\t' <<
+     "trial_rT " << trial_rT << '\t' <<
+     "energyT " << energyT << '\n';
+    */
 }
 
 //////////////////////////////////////////////////////////
@@ -609,7 +618,7 @@ void SteadyStateNonLinearSolver :: solve() {
         unsigned it = 0;
         while ( !converged && it < maxIt ) {
             if ( updateSystemMatrices("secant", it) ) {
-                computeKeff();                                    //only if required
+                //computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here
 

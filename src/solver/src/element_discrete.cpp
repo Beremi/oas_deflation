@@ -918,6 +918,10 @@ void Transp1DCoupled :: collectInformationsFromNeigborhood() {
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: findFriendsFromSimplices() {
+    
+    friends.resize(0);
+    friendsweight.resize(0);
+
     unordered_set< RigidBodyContact * >allNeighbors;
     vector< RigidBodyContact * >simplexElems;
     Simplex *s;

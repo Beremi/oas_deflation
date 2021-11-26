@@ -55,6 +55,12 @@ void Element :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mater
 
 //////////////////////////////////////////////////////////
 void Element :: init() {
+
+    //delete possible previous statuses
+    for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
+        delete * e;
+    }
+
     unsigned totalDoFs = 0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         totalDoFs += ( * n )->giveNumberOfDoFs();

@@ -770,7 +770,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         masterModel->init();
         linS->runBeforeEachStep();
         linS->solve();
-        elastSol [ i ] = linS->giveTrialDoFValues()*1e6;
+        elastSol [ i ] = linS->giveTrialDoFValues()/(linS->giveTime()*1e-6);
         dBC [ i ] = cfunc;
     }
 
