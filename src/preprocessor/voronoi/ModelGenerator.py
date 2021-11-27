@@ -532,7 +532,7 @@ class Model:
 
     def run_3d_TubeInnerPressure(self):
         self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
-        (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceVertexIndices, self.radii)  = utilitiesModeling.create3dTubeInnerPressure(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim, self.activeTransport, self.powerTes)
+        (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceVertexIndices)  = utilitiesModeling.create3dTubeInnerPressure(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim, self.activeTransport, self.powerTes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
 
 
