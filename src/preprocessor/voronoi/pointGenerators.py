@@ -792,6 +792,53 @@ except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
+def generateParticlesOrtoTube3dRand(center, radius, height, thickness, directionDim, minDiam, maxDiam, volumeRatio, node_coords, radii, trials, minD=-1, maxD=-1):
+    print ('POWER Generating a 3d tube')
+    gap = 0.1
+    Volume = np.pi * (radius **2 - ( radius -thickness )**2) * height;
+    d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
+    freq = fuller3D(d, maxDiam)
+
+    saturation = 0;
+    iters = 0
+    di = 0
+    rad = maxDiam/2.
+    while (2*rad>minDiam and iters<trials):
+            point = randPointInTube(center, radius-rad, height-2*rad, thickness-2*rad, directionDim)
+
+            approved = False
+            if ( len(node_coords)==0): approved = True
+            else:
+                delta = np.abs(node_coords-point)
+                dist2 = np.sum(np.square(delta),axis=1)
+                if (min(dist2 - np.square((1.+gap)*(radii+rad)))>0): approved = True
+            if ( approved) :
+                node_coords = np.vstack((node_coords, point));
+                radii = np.hstack((radii, rad));
+
+                iters = 0
+                saturation += np.pi/6*np.power(rad*2.,3)/Volume
+
+                while ((1. - saturation / volumeRatio ) < freq[di]):
+                    di+=1;
+                    #print (' di %d' %di)
+                rad = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
+
+                sys.stdout.write('\r'+'Particles: ' +  str(len(node_coords)))
+
+                sys.stdout.flush()
+
+            else: iters += 1
+
+    print(" Saturation of the volume: ", saturation)
+    return  node_coords, radii
+
+try:
+    from point_generators_cython import generateParticlesOrtoTube3dRand_cython as generateParticlesOrtoTube3dRand
+    print('Using Cython version of point generator - generateParticlesOrtoTube3dRand.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
 
 
 def generateNodesOrtoCircleBorder3dRand(center, radius, directionDim, minDist, node_coords, trials):

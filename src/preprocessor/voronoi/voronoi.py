@@ -430,7 +430,7 @@ def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = Fa
 
     return dataOut
 
-def mirror_dataTube(data, center, radius, height, thickness, directionDim):
+def mirror_dataTube(data, center, radius, height, thickness, directionDim, radii = []):
     data = np.asarray(data)
     outerRad = radius * 1.01
     innerRad = (radius - thickness)*0.98
@@ -445,23 +445,27 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim):
             np.array([-1e-5,0,0]) + data * np.array([-1,1,1]),
             np.array([ (height +1e-5)*2 ,0,0]) + data * np.array([-1,1, 1])
             ))
+        if len(radii)>0: radii = np.hstack((radii,radii,radii))
 
         mirroredOutside = np.zeros( (len(dataOut)*3) )
         mirroredOutside = np.reshape ( mirroredOutside, (len(dataOut),3))
-
+        radiiOutside =  np.zeros( len(mirroredOutside) )
+    
         for i in range (len(mirroredOutside)):
             rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
             mirroredOutside[i,0] = dataOut[i,0]
             mirroredOutside[i,1] = center[1] + (dataOut[i,1]-center[1]) * ((2*outerRad-rad0) / rad0 )
             mirroredOutside[i,2] = center[2] + (dataOut[i,2]-center[2]) * ((2*outerRad-rad0) / rad0 )
+            if len(radii)>0: radiiOutside[i] = radii[i]
 
         mirroredInside = []
-
+        radiiInside = []
+    
         for i in range (len(dataOut)):
             point = dataOut[i]
             rad0  = np.linalg.norm(point[1:3]-center[1:3])
 
-            if (rad0 < innerRad*1.9  ):
+            if (rad0 < innerRad*1.2  ):
                 mirroredIns = np.zeros((3))
                 mirroredIns[0] = point[0]
                 mirroredIns[1] = center[1] + (point[1]-center[1])  * (1 - 2*(rad0-innerRad)/rad0)# * (1 - 2*float(1-rad0/innerRad))
@@ -469,11 +473,11 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim):
 
 
                 mirroredInside.append(mirroredIns)
-
+                if len(radii)>0: radiiInside.append(radii[i])
 
 
         mirroredInside=np.asarray(mirroredInside)
-
+        radiiInside=np.asarray(radiiInside)
         """
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -485,7 +489,8 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim):
         
     dataOut =  np.vstack((dataOut, mirroredOutside))
     dataOut =  np.vstack((dataOut, mirroredInside))
-    return dataOut
+    radii = np.hstack((radii, radiiOutside, radiiInside))
+    return dataOut, radii
 
 
 def copy_dataBeam(data, dim, sizes):
