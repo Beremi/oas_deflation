@@ -690,17 +690,17 @@ def generateParticlesOrtoTube3dRand_cython(
             point[d] = 0
             # point[d] += center[d]
         if (directionDim == 0 ):
-            point[0] = height * random.random() + radius
+            point[0] = (height-2*radius) * random.random() + radius
             point[1] = cos(angle) * rn
             point[2] = sin(angle) * rn
         if (directionDim == 1):
             point[0] = cos(angle) * rn
-            point[1] = height * random.random() + radius
+            point[1] = (height-2*radius)  * random.random() + radius
             point[2] = sin(angle) * rn
         if (directionDim == 2):
             point[0] = cos(angle) * rn
             point[1] = sin(angle) * rn
-            point[2] = height * random.random() + radius
+            point[2] = (height-2*radius)  * random.random() + radius
         #for d in range(dim):
         #    point[d] = 0
             # point[d] += center[d]
@@ -808,7 +808,6 @@ def generateNodesOrtoCylinderSurf3dRand_cython(
     if equiAngNodes >0:
 
       for i in range (equiAngNodes):
-        print(radius)
         if (directionDim==0):
           coords[1] = center[1] + radius * np.cos(2*np.pi / equiAngNodes  *i)
           coords[2] = center[2] + radius * np.sin(2*np.pi / equiAngNodes  *i)

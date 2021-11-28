@@ -7866,25 +7866,22 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     radii = []
 
     center[0] += indent
-    node_coords.append( np.array([  indentRP*2,  radius,  1e-6 ]))
-    node_coords.append( np.array([  indentRP*2,  -radius,  1e-6 ]))
+    node_coords.append( np.array([ height/2.,  radius,  1e-6 ]))
+    node_coords.append( np.array([ height/2.,  -radius,  1e-6 ]))
     mechBC = np.array([0,-1,-1,  0,0,0,    -1,-1,-1,-1,-1,-1])
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
     mechBC_merged.append(mBC)
     mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
     mechBC_merged.append(mBC)
 
-
-
     circleLength = 2*np.pi*(radius-thickness)
-    nrNodes = int ( circleLength / minDist )
-    nrNodes = (int (nrNodes / 4) +1 ) * 4
-
-
-
     if powerTes:
+        nrNodes = int ( circleLength / (minDist*0.4) )
+        nrNodes = (int (nrNodes / 4) +1 ) * 4
         pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist*0.4, node_coords, trials, equiAngNodes=nrNodes )
     else:
+        nrNodes = int ( circleLength / minDist )
+        nrNodes = (int (nrNodes / 4) +1 ) * 4
         pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist,  node_coords, trials, equiAngNodes=nrNodes )   
 
 

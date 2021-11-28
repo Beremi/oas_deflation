@@ -805,7 +805,7 @@ def generateParticlesOrtoTube3dRand(center, radius, height, thickness, direction
     rad = maxDiam/2.
     while (2*rad>minDiam and iters<trials):
             point = randPointInTube(center, radius-rad, height-2*rad, thickness-2*rad, directionDim)
-
+            point[0] += radius
             approved = False
             if ( len(node_coords)==0): approved = True
             else:

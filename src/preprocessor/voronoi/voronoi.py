@@ -465,7 +465,7 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim, radii
             point = dataOut[i]
             rad0  = np.linalg.norm(point[1:3]-center[1:3])
 
-            if (rad0 < innerRad*1.2  ):
+            if (rad0 < innerRad*1.1  ):
                 mirroredIns = np.zeros((3))
                 mirroredIns[0] = point[0]
                 mirroredIns[1] = center[1] + (point[1]-center[1])  * (1 - 2*(rad0-innerRad)/rad0)# * (1 - 2*float(1-rad0/innerRad))
