@@ -632,13 +632,15 @@ void SteadyStateNonLinearSolver :: solve() {
                 nodes->giveReducedForceArray(residuals, f);
 
                 if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;    
+                    std :: cout << "Conjugate gradients did not converge, attempt to restart step" << endl;    
                     it = maxIt;
+                    residu_error = 1e10;
                     break;
                 }
                 if ( LinalgSymmetricSolver(Keff, ddf, f - f_last_iter, ddf, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
+                    std :: cout << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
+                    residu_error = 1e10;
                     break;
                 }
                 
@@ -656,8 +658,9 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
             } else {         //direct controll
                 if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
+                    std :: cout << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
+                    residu_error = 1e10;
                     break;
                 }
             }
@@ -681,18 +684,19 @@ void SteadyStateNonLinearSolver :: solve() {
             cout << setw(15) << energy_error << endl;
 
             if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
-                std :: cerr << "calculating with NaN in ";
+                std :: cout << "calculating with NaN in ";
                 if ( std :: isnan(residu_error) ) {
-                    std :: cerr << "\tresidua ";
+                    std :: cout << "\tresidua ";
                 }
                 if ( std :: isnan(displa_error) ) {
-                    std :: cerr << "\tdisplacements ";
+                    std :: cout << "\tdisplacements ";
                 }
                 if ( std :: isnan(energy_error) ) {
-                    std :: cerr << "\tenergies ";
+                    std :: cout << "\tenergies ";
                 }
-                std :: cerr << endl;
+                std :: cout << endl;
                 it = maxIt;
+                residu_error = 1e10;
                 break;
             }
 
