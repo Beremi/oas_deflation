@@ -43,6 +43,8 @@ class Model:
 
         self.specifiedNodes = []
 
+        self.auxmechelements = False
+
         self.trials = 3e4
 
         self.powerTes = self.activeMechanics = self.activeTransport = self.coupled = False
@@ -162,6 +164,10 @@ class Model:
                 if (int(r[i+1])==1): self.randomizeMaterial = True
                 if (int(r[i+1])==0): self.randomizeMaterial = False
 
+            if (r[i]=='auxmechelements'):
+                if (int(r[i+1])==1): self.auxmechelements = True
+                if (int(r[i+1])==0): self.auxmechelements = False
+
 
 
             if (r[i]=='powerTes'):
@@ -280,7 +286,7 @@ class Model:
         #
         #if (self.printout == False): blockPrint()
         if self.modelType == '2d_transportPatchTest':
-            self.run_2d_transportPatchTest()
+            self.run_2d_trans1portPatchTest()
         if self.modelType == '3d_transportPatchTest':
             self.run_3d_transportPatchTest()
         if self.modelType == '3d_BiparvaTubeTransport':
@@ -388,7 +394,7 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
-        print(self.govNodesTrspt)
+
 
         materialZones = None
 
@@ -612,7 +618,8 @@ class Model:
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
-        (self.vert_count,
+        print('nodes before %d' %len(self.node_coords))
+        (new_node_coords,self.vert_count,
         self.verticesIdxDict,
         self.vertIdxStart,
         self.totalNodeCount) = utilitiesGeom.extractGeometry(
@@ -624,11 +631,18 @@ class Model:
             self.areas,
             self.activeTransport, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
-            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial)
+            notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial, auxmechelements=self.auxmechelements)
 
+        print('nodes after %d' %len(new_node_coords))
+
+        self.node_coords = np.copy(new_node_coords)
+        self.node_count = len(self.node_coords)
         #if (self.printout == False): enablePrint()
+
         if len(self.interfaceVertexIndices)>0:
-            self.interfaceVertexIndices += self.vertIdxStart
+            for i in range (len(self.interfaceVertexIndices)):
+                for j in range (len(self.interfaceVertexIndices[i])):
+                    self.interfaceVertexIndices[i][j] += int(self.vertIdxStart)
 
         print ('done.')
 
@@ -758,6 +772,8 @@ class Model:
 
 
         print ('done.')
+
+        utilitiesGeom.checkSavedModel(self.master_folder, self.dimension, self.activeMechanics, self.activeTransport)
 
     def addMaterial(self, row):
         r = row.split()

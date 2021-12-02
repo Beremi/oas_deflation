@@ -476,9 +476,10 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,      loadWidth =
 
     #"""
 
+    print(transportBC_merged)
+
 
     #return node_coords, mechBC_merged, transportBC_merged,  notches, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions
-
 
     return node_coords, mechBC_merged, [], vor, areas, functions, notches, govNodes,    govNodesMechBC, rigidPlates, transportBC_merged
 
@@ -5753,6 +5754,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         maxLim[1]*notch-indent,
         indent])
         if not orthogonalFracZone:
+            print(maxLimF)
             pointGenerators.generateNodesRect(maxLimF, minDist/2, dim, trials, node_coords, useLowBound=True)
         else:
             #pointGenerators.generateOrtogrid(maxLimF, minDist/2, dim, node_coords, maxLim[0]*fracZoneWidth)  #
@@ -7868,18 +7870,11 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     mBC = utilitiesMech.mechanicalBC(dim, 1, mechBC)
     mechBC_merged.append(mBC)
 
-
-
     circleLength = 2*np.pi*(radius-thickness)
     nrNodes = int ( circleLength / minDist )
     nrNodes = (int (nrNodes / 4) +1 ) * 4
 
-
-
-
     pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist,  node_coords, trials, equiAngNodes=nrNodes )
-
-
 
     borderRing_1 = []
     borderRing_2 = []
@@ -7893,13 +7888,13 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
 
 
     leftRigidPlateMechBC = np.array([0, -1,-1,   -1,-1,-1 , -1,-1,-1,   -1,-1,-1])
-    borderRing_RP1 = utilitiesMech.RigidPlate(-1, 1, None, directIdcs = True, which='x')
+    borderRing_RP1 = utilitiesMech.RigidPlate(-1, 1, None, directIdcs = True, dirs='6 1 0 0 0 0 0')
     borderRing_RP1.setDirectNodes(borderRing_1)
     rigidPlates.append(borderRing_RP1)
     govNodes.append(np.array([ 1e-4,0,0 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, np.copy(leftRigidPlateMechBC)) )
 
-    borderRing_RP2 = utilitiesMech.RigidPlate(-2, 1, None, directIdcs = True, which='x')
+    borderRing_RP2 = utilitiesMech.RigidPlate(-2, 1, None, directIdcs = True, dirs='6 1 0 0 0 0 0')
     borderRing_RP2.setDirectNodes(borderRing_2)
     rigidPlates.append(borderRing_RP2)
     govNodes.append(np.array([ height-1e-4,0,0 ]))
@@ -7913,7 +7908,7 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     leftRigidPlate = utilitiesMech.RigidPlate(-3, 3, np.array([
     -indentRP, indentRP,
     -radius-indentRP, radius+indentRP,
-    -radius-indentRP, radius+indentRP, ]), which='x')
+    -radius-indentRP, radius+indentRP, ]), dirs='6 1 0 0 0 0 0')
     rigidPlates.append(leftRigidPlate)
     govNodes.append(np.array([ 0,0,0 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -3, np.copy(leftRigidPlateMechBC)) )
@@ -7929,7 +7924,7 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     rightRigidPlate = utilitiesMech.RigidPlate(-4, 3, np.array([
     -indentRP+height, indentRP+height,
     -radius-indentRP, radius+indentRP,
-    -radius-indentRP, radius+indentRP, ]), which='x')
+    -radius-indentRP, radius+indentRP, ]), dirs='6 1 0 0 0 0 0')
     rigidPlates.append(rightRigidPlate)
     govNodes.append(np.array([ height ,0,0 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -4, rightRigidPlateMechBC))
