@@ -18,6 +18,9 @@
 ###########Model 3d_cube Xsize 1.0 Ysize 1.0 Zsize 1 minDist 0.1 powerTes 1 activeMechanics 1 activeTransport 1 coupled 1 trials 10000
 ###########
 ###########RWTH Notched 3pb
+# #Pepa
+Model 3d_notched3pb Xsize 1.0 Ysize 0.4 Zsize 0.05 notchH 0.0 loadWidth 0.05 minDist 0.01 fracZoneWidth 0.05 activeMechanics 1  activeTransport 1 coupled 1 orthogonalFracZone 0 trials 1000 notchWidth 0.012 auxmechelements 1
+#Model 3d_notched3pb Xsize 0.50 Ysize 0.2 Zsize 0.1 notchH 0.16667 loadWidth 0.01 minDist 0.008 fracZoneWidth 0.1 activeMechanics 1 orthogonalFracZone 0 trials 10000 notchWidth 0.008
 ###########
 ########### A: 0.5/0.2/0.1, B: 1.0/0.4/0.1  ///  0.525   1.050
 ###########Model 2d_notched3pb Xsize 0.525 Ysize 0.2 notchH 0.16667 loadWidth 0.005 minDist 0.008 fracZoneWidth 0.05 activeMechanics 1 orthogonalFracZone 0 trials 100000 notchWidth 0.008 elasticZone 1 
@@ -78,7 +81,7 @@
 ###########Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 ###########Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
 ###########Model 3d_BiparvaTubeTransport minDist 0.005 cylinderRad 0.05 cylinderHeight 0.05 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 5000
-Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
+###########Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
 ###########
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
@@ -100,7 +103,7 @@ Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tu
 ###########
 ###########Model 3d_corrosionRebar Xsize 0.15 Ysize 0.15 Zsize 0.015 minDist 0.004 interfaceMinDist 0.0015 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 10000 roughMinDistCoef 4 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.4 gradientRegDepth 0.3
 ###########Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.0025  interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 1 activeMechanics 1 coupled 1 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.2 gradientRegDepth 0.5
-###########Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.003 interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 1000 roughMinDistCoef 5 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.8 gradientRegDepth 0.1
+############Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.003 interfaceMinDist 0.003 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 1000 roughMinDistCoef 3 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.6 gradientRegDepth 0.1 auxmechelements 0
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 ###########SOLVER SETUP
