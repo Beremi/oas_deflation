@@ -13,6 +13,7 @@ masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
 verticesFile                = "vertices.inp"
 mechElemsFile               = "mechElems.inp"
+boundaryMechElemsFile               = "boundaryMechElems.inp"
 trsprtElemsFile             = "trsprtElems.inp"
 mechBCFile                  = "mechBC.inp"
 mechICFile                  = "mechIC.inp"
@@ -1320,7 +1321,7 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
 
     f.close()
 
-def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3):
+def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3, auxMechElements=False):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
@@ -1336,7 +1337,6 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
          if not constraint:
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
          else:
-            
              if (constraint and not activeTransport):
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintFile))
@@ -1348,16 +1348,31 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
                  fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
 
-         fl.write("MatFiles\t1\t%s\n"%materialsFile)
-         if (activeTransport and activeMechanics):
-             fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
-             fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
-         elif  (activeTransport):
-             fl.write("ElemFiles\t1\t%s\n"%(trsprtElemsFile))
-             fl.write("BCFiles\t1\t%s\n"%(trsprtBCFile))
-         elif  (activeMechanics):
-             fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
-             fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
+             fl.write("MatFiles\t1\t%s\n"%materialsFile)
+
+         if not auxMechElements:
+            if (activeTransport and activeMechanics):
+                fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+                fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+            elif  (activeTransport):
+                fl.write("ElemFiles\t1\t%s\n"%(trsprtElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(trsprtBCFile))
+            elif  (activeMechanics):
+                fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
+
+
+         if auxMechElements == True:
+            if (activeTransport and activeMechanics):
+                fl.write("ElemFiles\t3\t%s\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile, boundaryMechElemsFile))
+                fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+            elif  (activeTransport):
+                fl.write("ElemFiles\t2\t%s\t%s\n"%(trsprtElemsFile, boundaryMechElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(trsprtBCFile))
+            elif  (activeMechanics):
+                fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile, boundaryMechElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
+
 
      else:
          if (os.path.isfile(os.path.join(master_folder,auxNodesFile))):
@@ -1738,6 +1753,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
+        """
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
         #print(mechElemRidges[0])
         if coupled == False:
@@ -1747,12 +1763,42 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
             np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
+        #"""
+        if auxMechElements == False:
+            fl=open(os.path.join(master_folder,mechElemsFile),'w')
+            if coupled == False:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            if coupled == True:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            fl.close()
+        else:
+            fl=open(os.path.join(master_folder,mechElemsFile),'w')
+            if coupled == False:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            if coupled == True:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            fl.close()
+
+            fl=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
+            if coupled == False:
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            if coupled == True:
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            fl.close()
+
+
+
 
     if (dim == 3):
         headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
         ro = np.asarray(mechElemRidges[0])
         fl.write(headerLine)
+
+        if auxmechelements == True:
+            flaux=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
+            flaux.write(headerLine)
+
         for i in range (len(mechElemRidges)):
             if i < trueMechElements:
                 ro = np.array(mechElemRidges[i], ndmin=2)
@@ -1768,7 +1814,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                     fmt='BoundaryMechElement\t%d\t%d\t%d'
                 if coupled == True:
                     fmt='BoundaryMechElementCoupled\t%d\t%d\t%d'
-                np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
+                np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
 
     sys.stdout.flush()

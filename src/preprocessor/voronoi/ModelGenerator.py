@@ -754,7 +754,7 @@ class Model:
                 utilitiesGeom.saveRadii(self.master_folder, self.radii)
 
         utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint, constraintTrspt=self.constraintTrspt,
-        limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance)
+        limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance, auxMechElements=self.auxmechelements)
 
         # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
         # get only the filename from master file string https://docs.python.org/3/library/os.path.html#os.path.basename
