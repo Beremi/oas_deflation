@@ -56,11 +56,11 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else if ( nodeType.compare("MechDoF") == 0 ) {
-                    MechDoF *newnode = new MechDoF(dim);
+                    MechDoF *newnode = new MechDoF(dim,0);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else if ( nodeType.compare("TrsDoF") == 0 ) {
-                    TrsDoF *newnode = new TrsDoF(dim);
+                    TrsDoF *newnode = new TrsDoF(dim,0);
                     newnode->readFromLine(iss);
                     nodes.push_back(newnode);
                 } else if ( nodeType.compare("TrsTemprtrCoupledNode") == 0 ) {
@@ -155,8 +155,6 @@ void NodeContainer :: establishDoFArray() {
     loadedDoFs = BC->giveArrayOfLoadedDoFs();
     bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
     blockedDoFid.resize( blocked.size() );
-    freeDoFs = totalDoFs - blocked.size();
-
 
     /////////////////////////////////////////////////////////////////
     // #constraint
@@ -172,6 +170,7 @@ void NodeContainer :: establishDoFArray() {
     sort( cstr.begin(), cstr.end() );
 
     /////////////////////////////////////////////////////////////////
+    freeDoFs = totalDoFs - constrDoFs - blocked.size();
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
@@ -201,7 +200,7 @@ void NodeContainer :: establishDoFArray() {
     unsigned id = 0;
     for ( vector< unsigned > :: iterator d = DoFid.begin(); d != DoFid.end(); ++d, id++ ) {
         if ( k < a.size() && id == a [ k ].first ) {
-            * d = freeDoFs + k;
+            * d = freeDoFs + constrDoFs + k;
             blockedDoFid [ a [ k ].second ] = id;
             k++;
             if ( cs < cstr.size() && id == cstr [ cs ].first ) {
@@ -210,7 +209,7 @@ void NodeContainer :: establishDoFArray() {
             }
         } else if ( cs < cstr.size() && id == cstr [ cs ].first ) {
             // #constraint
-            * d = freeDoFs - constrDoFs + cs; //todo:  warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+            * d = freeDoFs + cs; //todo:  warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
             constrainedDoFid [ cstr [ cs ].second ] = id;
             cs++;
         } else {
@@ -232,7 +231,7 @@ void NodeContainer :: establishDoFArray() {
     }
 
 
-    cout << "Loaded problem contains " << freeDoFs - constrDoFs << " DoF; additional " << constrDoFs << " DoF are dictated by constraint and "  << totalDoFs - freeDoFs << " DoF are directly prescribed" << endl;
+    cout << "Loaded problem contains " << freeDoFs << " DoF; additional " << constrDoFs << " DoF are dictated by constraint and "  << totalDoFs - freeDoFs - constrDoFs << " DoF are directly prescribed" << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -261,7 +260,7 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs - constrDoFs ) {
+        if ( DoFid [ i ] < freeDoFs ) {
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
         }
     }
@@ -277,7 +276,7 @@ void NodeContainer :: updateFullDoFsByDependenciesOnConjugates(Vector &ddr, cons
 //////////////////////////////////////////////////////////
 void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs - constrDoFs ) {
+        if ( DoFid [ i ] < freeDoFs ) {
             fDoFs [ DoFid [ i ] ] = fullDoFs [ i ];
         }
     }
@@ -288,7 +287,7 @@ void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
     this->giveConstraints()->calculateMasterForces(fullf);
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
-        if ( DoFid [ i ] < freeDoFs - constrDoFs  ) {
+        if ( DoFid [ i ] < freeDoFs ) {
             f [ DoFid [ i ] ] = fullf [ i ];
         }
     }
@@ -303,7 +302,7 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vecto
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
-        if ( DoFid [ k ] >= freeDoFs - constrDoFs ) {
+        if ( DoFid [ k ] >= freeDoFs ) {
             f_ext [ k ] += f_int [ k ] + f_dam [ k ] + f_acc [ k ];
         }
     }
@@ -398,7 +397,7 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
         }
         inputfile.close();
 
-        Vector initreduced(freeDoFs - constrDoFs);
+        Vector initreduced( freeDoFs );
         giveReducedDoFArray(initvalues, initreduced);// to propagate intial master field through constraints
         giveFullDoFArray(initreduced, initvalues);
 

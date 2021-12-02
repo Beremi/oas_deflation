@@ -170,6 +170,8 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
         if ( deltaS_full > deltaS_part ) {
             divide_by = ( deltaS_full /  deltaS_part ) + 1;
             // std::cout << "step divided into " << divide_by << " substeps " << '\n';
+            // JK: for deformation in order of 100 times eps at the elastic limit, do not apply substepping (NOTE JK: if verry large S param used, this could cause problems)
+            if ( divide_by > 1000 ) divide_by = 1;
         }
         slip_increment = ( temp_slip - slip ) / divide_by;
 

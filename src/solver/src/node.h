@@ -103,7 +103,7 @@ private:
 
 protected:
 public:
-    MechDoF(unsigned dimension);
+    MechDoF(unsigned dimension, unsigned numDoFs);
     virtual ~MechDoF() {};
     void readFromLine(istringstream &iss);
 };
@@ -148,7 +148,7 @@ class TrsDoF : public TrsNode
 private:
 protected:
 public:
-    TrsDoF(unsigned dimension);
+    TrsDoF(unsigned dimension, unsigned numDoFs);
     virtual ~TrsDoF() {};
     void readFromLine(istringstream &iss);
 };

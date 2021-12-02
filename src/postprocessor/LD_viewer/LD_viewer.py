@@ -206,7 +206,16 @@ class ControlPanel(HasStrictTraits):
             )
 
 
+class TC_Handler(Handler):
+
+    def object_title_changed(self, info):
+        if info.initialized:
+            info.ui.title = info.object.title
+
+
 class LDViewer(HasStrictTraits):
+
+    title = Str('LD_Viewer')
 
     panel = Instance(ControlPanel)
     figure = Instance(Figure)
@@ -225,7 +234,8 @@ class LDViewer(HasStrictTraits):
    #     if pathlib.Path('LD.out').exists():
    #         self.panel.ldfilesld_file = 'LD.out'
 
-    view = View( HSplit('@panel',
+    view = View(Item('title', label='window title'),
+                HSplit('@panel',
                        Item('figure', show_label=False, editor=MPLFigureEditor(), dock='vertical', width=0.8),
                        show_labels=False, id='ld_hsplit', dock='tab'
                       ),
@@ -233,6 +243,7 @@ class LDViewer(HasStrictTraits):
                 resizable=True,
                 height=0.75, width=0.75,
                 buttons=NoButtons,
+                handler=TC_Handler(),
                 id='ld_viewer')
 
 
@@ -271,7 +282,7 @@ if __name__ == '__main__':
         for ld_idx, ld_file in enumerate(args.ld_files):
             ld_viewer.panel.ldfiles.add_ldfile = True
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = ld_file
-            ld_viewer.panel.ldfiles.ldfiles[ld_idx].name = pathlib.Path(ld_file).parts[-3]
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].name = pathlib.Path(ld_file).absolute().parts[-3]
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].add_ldcurve = True
             if args.x:# in ld_viewer.labels:
                 #ld_viewer.x_values = args.x

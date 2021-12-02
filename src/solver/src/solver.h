@@ -22,12 +22,13 @@ protected:
     double init_time = 0.0;  ///> when starting from previously calculated results
     Vector f_ext, load, load_old, f_int, pbc, r, f, full_ddr, ddr, residuals;
     Vector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
-    unsigned freeDoFnum, fixedDoFnum, totalDoFnum;
+    unsigned freeDoFnum, totalDoFnum;
     int step;
     unsigned init_step = 0;  ///> when starting from previously calculated results
     bool terminated, fully_converged;
     string symsolver_type = "EigenConj";
 
+    virtual void updateFieldVariables();
 
 public:
     Solver();
@@ -65,7 +66,6 @@ protected:
     double conj_grad_relative_maxit;
     CoordinateIndexedSparseMatrix Keff, K;
 
-    virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, -1); };
     virtual void computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep);

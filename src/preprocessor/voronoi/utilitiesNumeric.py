@@ -126,7 +126,14 @@ def runCylinderMirroredVoronoi  (node_coords, center, radius, height, directionD
     return vor, volumes
 
 def runTubeMirroredVoronoi  (node_coords, center, radius, height,thickness, directionDim):
-    vor = Voronoi(voronoi.mirror_dataTube(node_coords, center, radius, height,  thickness, directionDim))
+    points, radii = voronoi.mirror_dataTube(node_coords, center, radius, height,  thickness, directionDim)
+    vor = Voronoi(points)
+    volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
+    return vor, volumes
+
+def runTubeMirroredPower  (node_coords, center, radius, height,thickness, directionDim, radii):
+    points, radii = voronoi.mirror_dataTube(node_coords, center, radius, height,  thickness, directionDim, radii) 
+    vor = PowerTesselation(points, weights=radii, limits='auto')
     volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
     return vor, volumes
 

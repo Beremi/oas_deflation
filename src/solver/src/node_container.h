@@ -18,13 +18,12 @@ private:
     vector< unsigned >loadedDoFs;
     vector< unsigned >bodyForceDoFs;
     vector< unsigned >blockedDoFid;
-    unsigned totalDoFs, freeDoFs;
+    unsigned totalDoFs, freeDoFs, constrDoFs;
     BCContainer *BC;
 
     vector< bool >mechDoFs, transpDoFs; //tells if the DoF is mechanical or Transport
 
     // #constraint
-    size_t constrDoFs;
     vector< unsigned >constrainedDoFid;  //mapping from particle order to DoF order for constrained DoFs
     ConstraintContainer *constr;
 
@@ -44,6 +43,7 @@ public:
     void establishDoFArray(BCContainer *BC);
     unsigned giveTotalNumDoFs() const { return totalDoFs; };
     unsigned giveNumFreeDoFs() const { return freeDoFs; };
+    unsigned giveNumConstrDoFs() const { return constrDoFs; };
     void init();
     void clear();
     void addRHS_nodalLoad(Vector &f, double time) const;
@@ -63,7 +63,6 @@ public:
     void initSimplices();
     void updateSimplexVolumetricStrains(const Vector &fullDoFs);
 
-    size_t giveNumConstrDoFs() const { return constrDoFs; };
     ConstraintContainer *giveConstraints() const { return constr; };
     Vector readInitialConditions(string initfile) const;
 

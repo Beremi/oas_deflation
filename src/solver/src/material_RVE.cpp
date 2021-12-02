@@ -290,7 +290,7 @@ void DiscreteTransportRVEMaterialStatus :: generateVolumetricAverageBC() {
         if ( ndim == 3 ) {
             nDoFs = 6;
         }
-        MechDoF *pn = new MechDoF(nDoFs);   //?? for transport
+        MechDoF *pn = new MechDoF(ndim, nDoFs);   //?? for transport
         nodes->addNode(pn);
 
         dirs.resize( vm.size() );

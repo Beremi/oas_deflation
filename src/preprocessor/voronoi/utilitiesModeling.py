@@ -3293,7 +3293,8 @@ def create3dBiparvaTubeTransport( radius, height, thickness, minDist, trials, ma
 
 
 
-def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLim, activeTransport):
+def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLim, activeTransport, powerTes):
+
     center = np.zeros((3))
     ########################################################################
     functions = []
@@ -3315,7 +3316,7 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
     functions.append (fn2)
 
     ### sampling of nodes
-    node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, trials)
+    node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates, radii = assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, trials, powerTes)
     node_coords = np.asarray(node_coords)
 
     print (len(node_coords))
@@ -3327,7 +3328,11 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
     print('Conducting Voronoi tesselation...', end='')
     directionDim = 0
-    vor, volumes = utilitiesNumeric.runTubeMirroredVoronoi (node_coords, center, radius, height, thickness, directionDim)
+    if powerTes:
+        vor, volumes = utilitiesNumeric.runTubeMirroredPower (node_coords, center, radius, height, thickness, directionDim, radii)
+    else:
+        vor, volumes = utilitiesNumeric.runTubeMirroredVoronoi (node_coords, center, radius, height, thickness, directionDim)
+        radii = []
     print('done.')
 
     ########################################################################
@@ -3418,7 +3423,6 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
 
 
-    radii = np.zeros((len(node_coords))) + minDist
     return node_coords, mechBC_merged, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, vor, volumes, functions, radii, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, interfaceVertexIndices
 
 
@@ -7847,7 +7851,7 @@ def assemble3dBiparvaTubeTransport(center, radius, height, thickness, minDist, t
 
 
 
-def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, trials):
+def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, trials, powerTes):
     print ('Assembling tube with inner pressure...')
     directionDim = 0
     indent = 1e-6
@@ -7861,9 +7865,11 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     govNodesMechBC = []
     rigidPlates = []
 
+    radii = []
+
     center[0] += indent
-    node_coords.append( np.array([  indentRP*2,  radius,  1e-6 ]))
-    node_coords.append( np.array([  indentRP*2,  -radius,  1e-6 ]))
+    node_coords.append( np.array([ height/2.,  radius,  1e-6 ]))
+    node_coords.append( np.array([ height/2.,  -radius,  1e-6 ]))
     mechBC = np.array([0,-1,-1,  0,0,0,    -1,-1,-1,-1,-1,-1])
     mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
     mechBC_merged.append(mBC)
@@ -7871,10 +7877,14 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     mechBC_merged.append(mBC)
 
     circleLength = 2*np.pi*(radius-thickness)
-    nrNodes = int ( circleLength / minDist )
-    nrNodes = (int (nrNodes / 4) +1 ) * 4
-
-    pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist,  node_coords, trials, equiAngNodes=nrNodes )
+    if powerTes:
+        nrNodes = int ( circleLength / (minDist*0.4) )
+        nrNodes = (int (nrNodes / 4) +1 ) * 4
+        pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist*0.4, node_coords, trials, equiAngNodes=nrNodes )
+    else:
+        nrNodes = int ( circleLength / minDist )
+        nrNodes = (int (nrNodes / 4) +1 ) * 4
+        pointGenerators.generateNodesOrtoCilinderSurf3dRand(center, radius-thickness, height, directionDim, minDist,  node_coords, trials, equiAngNodes=nrNodes )
 
     borderRing_1 = []
     borderRing_2 = []
@@ -7930,14 +7940,19 @@ def assemble3dTubeInnerPressure(center, radius, height, thickness, minDist, tria
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -4, rightRigidPlateMechBC))
 
     ###############generating of points rectangular volume ###############
-    pointGenerators.generateNodesOrtoTube3dRand(np.zeros((3)), radius-1e-5, height, thickness, directionDim, minDist,  node_coords, trials)
+    if powerTes:
+        radii = np.zeros(len(node_coords))
+        node_coords = np.array(node_coords)
+        node_coords, radii = pointGenerators.generateParticlesOrtoTube3dRand(np.zeros((3)), radius-1e-5, height, thickness, directionDim, minDist*0.4, minDist, 0.8, node_coords, radii, trials)
+    else:
+        pointGenerators.generateNodesOrtoTube3dRand(np.zeros((3)), radius-1e-5, height, thickness, directionDim, minDist,  node_coords, trials)
+        radii = np.zeros(len(node_coords))
 
 
     rebarBC = np.array([2, 0, -1,    -1, -1, -1,  -1,-1,-1,   -1,-1,-1])
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-5), rebarBC))
 
-
-    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
+    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates, radii
 
 
 def assemble3dslimTubeTorsionFree(center, radius, height, thickness, minDist, trials, directionDim, functions):
