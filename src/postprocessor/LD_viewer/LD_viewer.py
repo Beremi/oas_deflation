@@ -7,6 +7,7 @@ from traits.api import HasStrictTraits, Instance, File, List, Enum, Button, Str,
                         Any, Bool, DelegatesTo, Property, Float
 from traitsui.api import Item, Group, View, HSplit, NoButtons, EnumEditor, HGroup,\
                          Handler, VGroup, Tabbed, TextEditor, Label, ListEditor
+from traitsui.message import error
 from traitsui.file_dialog  import open_file, TextInfo, FileInfo, save_file
 from mpl_qt_editor import MPLFigureEditor
 from matplotlib.figure import Figure
@@ -17,6 +18,7 @@ import pandas as pd
 # HGroup Item hack
 def HItem(value=None, **traits):
     return HGroup(Item(value, **traits, springy=True))
+
 
 class LDFile(HasStrictTraits):
     ldfile_num = 0
@@ -47,7 +49,7 @@ class LDFile(HasStrictTraits):
         """
         file_name = open_file(extensions=FileInfo(), id='ld_openfile')
         if file_name != '':
-            self.ld_file = file_name
+            self.ld_file = pathlib.Path(file_name).absolute()
 
     def _reload_button_fired ( self ):
         """
@@ -58,7 +60,14 @@ class LDFile(HasStrictTraits):
         self.labels = self.__load_data()
 
     def __load_data(self):
-        self.data = pd.read_csv(self.ld_file, sep='\t', header=0, index_col=False)
+        try:
+            self.data = pd.read_csv(self.ld_file, sep='\t', header=0, index_col=False)
+        except BaseException as err:
+            # https://stackoverflow.com/questions/1483429/how-to-print-an-exception-in-python
+            message = 'The file {} cannot be loaded\n'.format(self.ld_file)
+            message += str(err)
+            error(message, 'Error')
+            self.data = np.array([])
         return list(self.data)
 
     def _labels_changed(self):
@@ -281,7 +290,7 @@ if __name__ == '__main__':
     if args.ld_files:
         for ld_idx, ld_file in enumerate(args.ld_files):
             ld_viewer.panel.ldfiles.add_ldfile = True
-            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = ld_file
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = pathlib.Path(ld_file).absolute()
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].name = pathlib.Path(ld_file).absolute().parts[-3]
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].add_ldcurve = True
             if args.x:# in ld_viewer.labels:
