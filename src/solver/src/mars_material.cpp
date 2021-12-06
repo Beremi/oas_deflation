@@ -45,6 +45,10 @@ double MarsMaterialStatus :: giveValue(string code) const {
     } else if ( code.compare("E0") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
         return m->giveE0();
+    } else if ( ( code.compare("strainN") == 0 ) || ( code.compare("strain") == 0 ) ) {
+        return temp_strain[0];
+    } else if ( ( code.compare("stressN") == 0 ) || ( code.compare("stress") == 0 ) ) {
+        return temp_stress[0];
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }

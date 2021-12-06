@@ -96,6 +96,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     CoupledCosseratBrick *newelem = new CoupledCosseratBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("CoupledCosseratBrickWithDependentUpperZLayer") == 0 ) {
+                    CoupledCosseratBrickWithDependentUpperZLayer *newelem = new CoupledCosseratBrickWithDependentUpperZLayer();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("TranspPolygonal") == 0 ) {
                     TranspPolygonal *newelem = new TranspPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);

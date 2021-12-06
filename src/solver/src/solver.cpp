@@ -632,13 +632,13 @@ void SteadyStateNonLinearSolver :: solve() {
                 nodes->giveReducedForceArray(residuals, f);
 
                 if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    std :: cout << "Conjugate gradients did not converge, attempt to restart step" << endl;    
+                    std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;    
                     it = maxIt;
                     residu_error = 1e10;
                     break;
                 }
                 if ( LinalgSymmetricSolver(Keff, ddf, f - f_last_iter, ddf, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    std :: cout << "Conjugate gradients did not converge, attempt to restart step" << endl;
+                    std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
                     residu_error = 1e10;
                     break;
@@ -658,7 +658,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
             } else {         //direct controll
                 if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                    std :: cout << "Conjugate gradients did not converge, attempt to restart step" << endl;
+                    std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
                     residu_error = 1e10;
                     break;
@@ -684,17 +684,17 @@ void SteadyStateNonLinearSolver :: solve() {
             cout << setw(15) << energy_error << endl;
 
             if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
-                std :: cout << "calculating with NaN in ";
+                std :: cerr << "calculating with NaN in ";
                 if ( std :: isnan(residu_error) ) {
-                    std :: cout << "\tresidua ";
+                    std :: cerr << "\tresidua ";
                 }
                 if ( std :: isnan(displa_error) ) {
-                    std :: cout << "\tdisplacements ";
+                    std :: cerr << "\tdisplacements ";
                 }
                 if ( std :: isnan(energy_error) ) {
-                    std :: cout << "\tenergies ";
+                    std :: cerr << "\tenergies ";
                 }
-                std :: cout << endl;
+                std :: cerr << endl;
                 it = maxIt;
                 residu_error = 1e10;
                 break;
@@ -717,7 +717,7 @@ void SteadyStateNonLinearSolver :: solve() {
             dt = fmax(dt * critical_step_decrease, dtmin);
             time += dt;
             // }
-            std :: cerr << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+            std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
             restarted = true;
             restart_now = false;
             trial_r = r;
@@ -732,7 +732,7 @@ void SteadyStateNonLinearSolver :: solve() {
             }
         } else if ( !converged ) {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
-                std :: cerr << "tolerance increased in this step" << '\n';
+                std :: cout << "tolerance increased in this step" << '\n';
                 converged = true;
                 this->fully_converged = false;
             } else {

@@ -98,12 +98,9 @@ Matrix TrsprtTemprtrCoupledBrick :: giveHMatrix(const Point *x) const {
 Vector TrsprtTemprtrCoupledBrick :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector strain = Element :: giveStrain(i, DoFs);
 
-    Vector masters;
-    for ( unsigned j = 0; j < inttype->giveNumIP(); j++ ) {
-        masters = Hs [ i ] * DoFs;
-        stats [ j ]->setParameterValue("humidity", masters [ 0 ]);
-        stats [ j ]->setParameterValue("temperature", masters [ 1 ]);
-    }
+    Vector masters = Hs [ i ] * DoFs;
+    stats [ i ]->setParameterValue("humidity", masters [ 0 ]);
+    stats [ i ]->setParameterValue("temperature", masters [ 1 ]);
     return strain;
 }
 
@@ -451,3 +448,150 @@ Matrix CoupledCosseratBrick :: giveDampingMatrix() const {
     //return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
     return Element :: giveDampingMatrix();
 }
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK COSSERAT MECHANICAL ELEMENT
+CoupledCosseratBrickWithDependentUpperZLayer :: CoupledCosseratBrickWithDependentUpperZLayer(){
+    name = "CoupledCosseratBrickWithDependentUpperZLayer";
+    bindlayers = false;
+}
+
+
+//////////////////////////////////////////////////////////
+void CoupledCosseratBrickWithDependentUpperZLayer :: setIntegrationPointsAndWeights() {
+    if(bindlayers) stats.resize( inttype->giveNumIP()/2. );
+    else stats.resize( inttype->giveNumIP());
+    for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
+        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k) ) );
+
+        if (k<4 || !bindlayers) {
+            stats [ k ] = mat->giveNewMaterialStatus(this, k);
+            DiscreteCoupledRVEMaterialStatus * dcrve = dynamic_cast< DiscreteCoupledRVEMaterialStatus* >( stats [ k ] );
+            if ( dcrve !=nullptr){
+                Matrix r(3,3);
+                r[2][2] = 1.;
+                double xcent = 0;
+                double ycent = 0;
+                for (unsigned i=0; i<4; i++){
+                    xcent += nodes[i]->givePoint().getX();
+                    ycent += nodes[i]->givePoint().getY();
+                } 
+                double alpha = atan2(ycent/4.,xcent/4.);
+                r[0][0] = r[1][1] = cos(alpha);
+                r[0][1] = sin(alpha);
+                r[1][0] = -sin(alpha);
+                
+                dcrve -> setReferenceSystemDirections(r);
+            }
+        }
+    }
+};
+
+//////////////////////////////////////////////////////////
+Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveStiffnessMatrix(string matrixType) const {
+    unsigned nDoFs = DoFids.size();
+    Matrix K(nDoFs, nDoFs);
+    Matrix D(0, 0);
+
+    unsigned q;    
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        if (i<4 || !bindlayers) q = i;
+        else q = i-4;
+        D = stats [ q ]->giveStiffnessTensor(matrixType, ndim);
+        K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight(i) );
+    }
+    return K;
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledCosseratBrickWithDependentUpperZLayer :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
+    Vector intF( DoFids.size() );
+    Vector stress;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        if (i<4 || !bindlayers)  {
+            if ( frozen ) {
+                stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
+            } else {
+                stress = stats [ i ]->giveStress(giveStrain(i, DoFs), timeStep); //full evaluation of stress including change of state variables
+            }
+        } else {
+            stress = stats [ i -4 ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
+        }
+        intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
+    }
+
+    //add internal sources
+    if ( mat->isProducingInternalSources() ) {
+        Vector intS = integrateInternalSources();
+        for ( unsigned i = 0; i < intF.size(); i++ ) {
+            intF [ i ] += intS [ i ];
+        }
+    }
+
+    return intF;
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledCosseratBrickWithDependentUpperZLayer :: integrateInternalSources() {
+    Vector intS( DoFids.size() );
+    Vector intmats;
+    unsigned q;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        if (i<4 || !bindlayers) q = i;
+        else q = i-4;
+        intmats = stats [ q ]->giveInternalSource();
+        intS += Hs [ i ].transpose() * ( intmats * inttype->giveIPWeight(i) );
+    }
+
+    return intS;
+}
+
+
+//////////////////////////////////////////////////////////
+Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveDampingMatrix() const {
+    unsigned nDoFs = DoFids.size();
+    Matrix M(nDoFs, nDoFs);
+    Matrix c;
+    unsigned q;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        if (i<4 || !bindlayers) q = i;
+        else q = i-4;
+        c = stats [ q ]->giveDampingTensor();
+        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+    }
+    return M;
+}
+
+//////////////////////////////////////////////////////////
+Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveMassMatrix() const {
+    unsigned nDoFs = DoFids.size();
+    Matrix M(nDoFs, nDoFs);
+    Matrix c;
+    unsigned q;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        if (i<4 || !bindlayers) q = i;
+        else q = i-4;
+        c = stats [ q ]->giveMassTensor();
+        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+    }
+    return M;
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledCosseratBrickWithDependentUpperZLayer :: giveStrain(unsigned i, const Vector &DoFs) {
+    Vector strain = CosseratBrick :: giveStrain(i, DoFs);
+
+    //pressure at integration point for material model
+    Vector pf = Hs [ i ] * DoFs;
+    unsigned q;
+    if (i<4 || !bindlayers) q = i;
+    else q = i-4;    
+    stats [ q ]->setParameterValue("pressure", pf [ 6 ]);
+    //volumetric strain at integration point for material model
+    stats [ q ]->setParameterValue("volumetricStrain", ( strain [ 0 ] + strain [ 1 ] + strain [ 2 ] ) / 3.);
+
+    return strain;
+}
+
+

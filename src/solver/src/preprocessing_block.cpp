@@ -1751,9 +1751,9 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
 
     Point node_point;
     int xm, ym, zm;
-    xm = 1;
-    ym = 1;
-    zm = 1;
+    xm = 1.;
+    ym = 1.;
+    zm = 1.;
     if ( this->direction == 0 ) {
         xm = 0;
     } else if ( this->direction == 1 ) {
@@ -1789,6 +1789,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     MechNode * mn;
     MechDoF * md;
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    
     for ( auto const &nod : * nodes ) {
         mn = dynamic_cast < MechNode * >(nod);
         if ( mn==nullptr ) {
@@ -1826,6 +1827,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
                         directions.push_back(i);
                         multipliers.push_back(-n_vect [ i ]);
                     }
+                    //cout << "MASTER " << nod << " " << nod->giveName() << " " << n_vect [ 0 ] << " " << n_vect [ 1 ] << " " << n_vect [ 2 ] << endl;
                 } else {
                     // first node is taken as a slave
                     slave = nod;
@@ -1844,13 +1846,14 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
                         }
                     }
                     slave_used = true;
+                    //cout << "SLAVE " << slave->giveName() << " " << n_vect [ 0 ] << " " << n_vect [ 1 ] << " " << n_vect [ 2 ] << " " <<  slave_dir << endl;
                 }
             }
         }
     }
 
     // adding master DoF governing the expansion
-    multipliers.push_back(double( num_nodes ) * this->r_outer / 2.);
+    multipliers.push_back(double( num_nodes ) * (r_outer+r_inner) / 4.);
     masterNodes.push_back(expMaster);
     directions.push_back(0);
 

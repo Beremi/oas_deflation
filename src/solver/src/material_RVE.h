@@ -23,6 +23,9 @@ class RVEMaterialStatus : public MaterialStatus
 protected:
     Model *RVE;
     fs :: path inputfile;
+    
+    Matrix transf;   //transformation matrix
+    Matrix axDirs;  //directional matrix
 
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
@@ -30,11 +33,14 @@ protected:
     virtual void generateRandomFixedBC() {};
     virtual void generateVolumetricAverageBC() {};
 public:
-    RVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
+    RVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~RVEMaterialStatus();
     virtual void init();
     virtual void update();
     Model *giveWholeRVE() { return RVE; };
+    virtual void setReferenceSystemDirections(Matrix r) {axDirs = r;};
+    Matrix giveTransformationMatrix() {return transf;};
+    Matrix giveReferenceSystemDirections() {return axDirs;};
 };
 
 //////////////////////////////////////////////////////////
@@ -43,15 +49,18 @@ class RVEMaterial : public Material
 protected:
     fs :: path inputfile;
     unsigned ndim;
+    bool nonlinear;  
 
 public:
-    RVEMaterial() { name = "generic RVE material"; };
+    RVEMaterial() { name = "generic RVE material"; nonlinear = true; };
     virtual ~RVEMaterial() {};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     fs :: path givePathToInputFile() const { return inputfile; };
     unsigned giveNumOfDimensions() const { return ndim; };
     void setNumOfDimensions(unsigned dim) { ndim = dim; };
+    void setPathToInputFolder(string f){ inputfile = GlobPaths :: BASEDIR  / f; };
+    void enforceLinearity() {nonlinear = false;};
 };
 
 
@@ -69,17 +78,24 @@ protected:
     bool is_master_status;
     bool is_precomputed;
 
+    Vector local_strain, local_stress;
+
     virtual void generateRandomFixedBC();
     virtual void generateVolumetricAverageBC();
     virtual void applyEigenStrains();
     virtual void collectStresses();
     virtual unsigned giveStrainSize(unsigned rdim) const;
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
-    virtual Matrix giveStiffnessTensorPrecomputed(string type, unsigned dimension) const;
+    virtual Matrix giveStiffnessTensorLocal(string type, unsigned dimension) const;
+    virtual Matrix giveStiffnessTensorPrecomputedLocal(string type, unsigned dimension) const;
     virtual Matrix giveDampingTensorPrecomputed() const;
 
+    virtual void transformStrain();
+    virtual void transformStress();
+    virtual void calculateTransformationMatrix();
+
 public:
-    DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
+    DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteTransportRVEMaterialStatus() {};
     virtual void init();
     virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
@@ -131,9 +147,14 @@ protected:
     Point calculateCentroid();
     vector< vector< Vector > >calculateProjectors(const Point centroid);
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
+    virtual Matrix giveStiffnessTensorLocal(string type, unsigned dimension) const;
+
+    virtual void transformStrain();
+    virtual void transformStress();
+    virtual void calculateTransformationMatrix();
 
 public:
-    DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile);
+    DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
     virtual void init();
     virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
@@ -150,13 +171,13 @@ public:
 //////////////////////////////////////////////////////////
 class DiscreteMechanicalRVEMaterial : public RVEMaterial
 {
-protected:
+protected: 
     Matrix precompElastic, precompDamping, precompInertia;
     Point centroid;
     vector< vector< Vector > >projectors;
 
 public:
-    DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; precompElastic = Matrix(0, 0); };
+    DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; precompElastic = Matrix(0, 0);};
     virtual ~DiscreteMechanicalRVEMaterial() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; };
@@ -168,6 +189,7 @@ public:
     Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
     Point giveCentroid() { return centroid; };
     vector< vector< Vector > > *giveProjectors() { return & projectors; };
+    bool isNonlinear() const { return nonlinear; }; 
 };
 
 //////////////////////////////////////////////////////////
@@ -193,7 +215,7 @@ protected:
     void findFriends();
     void updateRateVariables(double timeStep);
 public:
-    DiscreteCoupledRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfileM, fs :: path masterfileT);
+    DiscreteCoupledRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfileM, fs :: path masterfileT, unsigned ndim);
     virtual ~DiscreteCoupledRVEMaterialStatus();
     virtual void init();
     virtual void update();
@@ -210,6 +232,7 @@ public:
     virtual void setParameterValue(string code, double value);
     virtual void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; mechRVEstat->setToPrecomputed(); trspRVEstat->setToPrecomputed(); };
+    virtual void setReferenceSystemDirections(Matrix r);
 };
 
 //////////////////////////////////////////////////////////

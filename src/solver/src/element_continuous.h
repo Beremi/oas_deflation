@@ -14,7 +14,7 @@ class TrsprtQuad : public TransportElement
 protected:
 public:
     TrsprtQuad();
-    ~TrsprtQuad() {};
+    virtual ~TrsprtQuad() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
@@ -29,7 +29,7 @@ protected:
 
 public:
     TrsprtBrick();
-    ~TrsprtBrick() {};
+    virtual ~TrsprtBrick() {};
 };
 
 
@@ -42,7 +42,7 @@ protected:
 
 public:
     TrsprtTemprtrCoupledBrick();
-    ~TrsprtTemprtrCoupledBrick() {};
+    virtual ~TrsprtTemprtrCoupledBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
@@ -55,7 +55,7 @@ class MechanicalQuad : public MechanicalElement
 protected:
 public:
     MechanicalQuad();
-    ~MechanicalQuad() {};
+    virtual ~MechanicalQuad() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
 };
@@ -69,7 +69,7 @@ class MechanicalBrick : public MechanicalQuad
 protected:
 public:
     MechanicalBrick();
-    ~MechanicalBrick() {};
+    virtual ~MechanicalBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
 };
 
@@ -83,7 +83,7 @@ protected:
 
 public:
     CosseratQuad();
-    ~CosseratQuad() {};
+    virtual ~CosseratQuad() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
 };
@@ -98,7 +98,7 @@ protected:
 
 public:
     CosseratBrick();
-    ~CosseratBrick() {};
+    virtual ~CosseratBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
 };
@@ -112,7 +112,7 @@ protected:
 
 public:
     CoupledCosseratQuad();
-    ~CoupledCosseratQuad() {};
+    virtual ~CoupledCosseratQuad() {};
     virtual void init();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
@@ -127,10 +127,30 @@ protected:
 
 public:
     CoupledCosseratBrick();
-    ~CoupledCosseratBrick() {};
+    virtual ~CoupledCosseratBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveDampingMatrix() const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
+class CoupledCosseratBrickWithDependentUpperZLayer : public CoupledCosseratBrick
+{
+protected:
+    bool bindlayers;
+
+public:
+    CoupledCosseratBrickWithDependentUpperZLayer();
+    virtual ~CoupledCosseratBrickWithDependentUpperZLayer() {};
+    virtual void setIntegrationPointsAndWeights();
+    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector integrateInternalSources();
+    virtual Matrix giveDampingMatrix() const;
+    virtual Matrix giveMassMatrix() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 #endif  /* _ELEMENT_STRUCT_H */
