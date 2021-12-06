@@ -13,6 +13,7 @@ masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
 verticesFile                = "vertices.inp"
 mechElemsFile               = "mechElems.inp"
+boundaryMechElemsFile               = "boundaryMechElems.inp"
 trsprtElemsFile             = "trsprtElems.inp"
 mechBCFile                  = "mechBC.inp"
 mechICFile                  = "mechIC.inp"
@@ -187,22 +188,23 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0, node_indices_dogbone=[], randomizeMaterial=False):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0, node_indices_dogbone=[], randomizeMaterial=False, auxmechelements=False):
+
     if (dim == 2):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial)
+            node_coords, vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial, auxmechelements=auxmechelements)
         if (periodicModel == 1):
-            vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ)
+            node_coords, vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ)
     if (dim == 3):
         if (periodicModel == 0):
-            vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, randomizeMaterial=randomizeMaterial)
+            node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, randomizeMaterial=randomizeMaterial,auxmechelements=auxmechelements)
         if (periodicModel == 1):
-            vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3Dperiodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ,  notches = notches, isTube=isTube)
-    return vert_count, verticesIdxDict, vertIdxStart, totalNodeCount
+            node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3Dperiodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ,  notches = notches, isTube=isTube)
+    return node_coords,vert_count, verticesIdxDict, vertIdxStart, totalNodeCount
 
 
 #Extract geometry 2d
-def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None, coupled=False, node_indices_dogbone=[], randomizeMaterial=False):
+def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches = None, coupled=False, node_indices_dogbone=[], randomizeMaterial=False,auxmechelements=False):
     dim = 2
     print('Extracting the geometry...', end='')
     sys.stdout.flush()
@@ -211,6 +213,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     nodes_out[:, dim] = 0
     nodes_out[:, dim + 1] = 0
 
+    old_node_count = node_count
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area error: %.5e ' %(relAreaError)  )
     ########################################################################################
@@ -233,21 +236,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     else:
         cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
         validRidgeIdxs = np.where(cond)[0]
-    #print(validRidgeIdxs.shape)
-#    print(validRidgeIdxs)
 
-    #REMOVE
-    #validRidgeIdxs = []
-    #for i in range (vor.ridge_points.shape[0]):
-        #pr = False
-        #for p in range (2):
-            #if (vor.ridge_points[i][p] < node_count):
-                #pr=True
-
-        #if (pr):
-           #validRidgeIdxs.append(i)
-
-    #validRidgeIdxs = np.asarray(validRidgeIdxs)
     ########################################################################################
     # vertices: [xA,yA,zA] [origIdx]
     vertices_out = []
@@ -264,11 +253,10 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     print()
     start = time.time()
     vertices_out_set = set()
+    #fig, ax = plt.subplots()
     for i in range (validRidgeIdxs.size):
         sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
-
         sys.stdout.flush()
-
 
         #array for two vertices A and B
         vrtxA = np.zeros ( (dim  +1 +1 ) )
@@ -293,21 +281,6 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         addVrtxA = True
         addVrtxB = True
 
-        # OLD - SLOW
-        #for j in range (len(vertices_out)):
-        #    if (vertices_out[j][0] ==  vor.vertices[vertA][0] and vertices_out[j][1] ==  vor.vertices[vertA][1]):
-        #        addVrtxA = False
-        #    if (vertices_out[j][0] ==  vor.vertices[vertB][0] and vertices_out[j][1] ==  vor.vertices[vertB][1]):
-        #        addVrtxB = False
-
-        ## SLOWER ALTERNATIVE
-        #vertices_out_arr = np.array(vertices_out)
-        #if vertices_out_arr.shape[0] > 0:
-        #    vertices_out_arr = vertices_out_arr[:, :dim]
-        #    cond = np.all(vertices_out_arr == vor.vertices[vertA], axis=1)
-        #    addVrtxA = ~np.any(cond)
-        #    cond = np.all(vertices_out_arr == vor.vertices[vertB], axis=1)
-        #    addVrtxB = ~np.any(cond)
         addVrtxA = tuple(vor.vertices[vertA].tolist()) not in vertices_out_set
         addVrtxB = tuple(vor.vertices[vertB].tolist()) not in vertices_out_set
 
@@ -348,26 +321,37 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
                 pB = np.asarray( vor.points[pointB, :]  )
                 ptA = (pA + pB)/2
 
-                pointA = node_count + len(aux_nodes)
+                pointA = node_count + len(aux_nodes)+1
                 aux_nodes.append(ptA)
 
-
-
-        if(pointA >= node_count and pointB<node_count):
+        if(pointA >= old_node_count and pointB<=old_node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
             ptA = (pA + pB)/2
-
-            pointA = node_count + len(aux_nodes)
+            #if auxmechelements == True:
+            #    aux_nodes.append(np.hstack((ptA,0)))
+            #else:
             aux_nodes.append(ptA)
+            pointA = node_count + len(aux_nodes) -1
 
-        if(pointB >= node_count  and pointA<node_count):
+            #print('A%d \t%s B%d \t%s \tnds%d \taux%d' %(-pointA+node_count, ptA, pointB, pB, node_count, len(aux_nodes)))
+
+
+        if(pointB >= old_node_count  and pointA<=old_node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
             ptB = (pA + pB)/2
 
-            pointB = node_count + len(aux_nodes)
+            #if auxmechelements == True:
+            #    aux_nodes.append(np.hstack((ptB,0)))
+            #else:
             aux_nodes.append(ptB)
+
+            aux_nodes.append(ptB)
+            pointB = node_count + len(aux_nodes)-1
+            #print('A%d \t%s B%d \t%s \tnds%d \taux%d' %(pointA, pA, -pointB+node_count, ptB, node_count, len(aux_nodes)))
+
+
         #
         rdg[0] = pointA
         rdg[1] = pointB
@@ -379,10 +363,13 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         rdg[4] = verticesIdxDict[vertB]
         #adding the ridge into the list of ridges
         ridges_out.append(rdg)
+    #plt.show()
     #
+    node_count = len(nodes_out)
     print(' - time:', time.time()-start)
     v_count = len (vertices_out)
     vertIdxStart = node_count + len(aux_nodes)
+    print('auxnodes %d' % len(aux_nodes))
 
     ridges_out = np.array(ridges_out)
     ridges_out[:, 3] += vertIdxStart
@@ -392,22 +379,75 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     sys.stdout.flush()
     #output: nodes_out, aux_nodes, vertices_out, ridges_out
 
+    node_count = len(nodes_out)
+    aux_nodes=np.asarray(aux_nodes)
 
-    saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
+    #fig, ax = plt.subplots()
+    #ax.scatter(nodes_out[:,0], nodes_out[:,1])
+    #ax.scatter(aux_nodes[:,0], aux_nodes[:,1])
+    #plt.show()
+
+    #fig, ax = plt.subplots()
+    x = []
+    y = []
+    x1 = []
+    y1 = []
+    for i in range (len(ridges_out)):
+        ia = int(ridges_out[i,0])
+        ib = int(ridges_out[i,1])
+
+        if ia < old_node_count and ib < old_node_count:
+            na = nodes_out[ia][0:2]
+            nb = nodes_out[ib][0:2]
+
+            x.append(na[0])
+            x.append(nb[0])
+            y.append(na[1])
+            y.append(nb[1])
+
+        else:
+            if ia >= old_node_count:
+                ia = -(ia-old_node_count)
+                na = aux_nodes[-ia][0:2]
+            else:
+                na = nodes_out[ia][0:2]
+
+            if ib >= old_node_count:
+                ib = -(ib-old_node_count)
+                nb = aux_nodes[-ib][0:2]
+            else:
+                nb = nodes_out[ib][0:2]
+
+            x1.append(na[0])
+            x1.append(nb[0])
+            y1.append(na[1])
+            y1.append(nb[1])
+
+    #"""
+    #plt.show()
+
+
+    #if auxmechelements:
+    #    saveNodes(master_folder, aux_nodes, "Particle", dim, auxNodesFile)
+    #else:
+    saveNodes(master_folder, aux_nodes, "AuxNode", dim, auxNodesFile)
+
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled)
+        saveMechanicalElements(master_folder, ridges_out, old_node_count, dim, nodes_out, aux_nodes,mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled, auxmechelements=auxmechelements)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
+
+
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
-        saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, coupled=coupled, mZ=mZ)
+        saveTransportElements(master_folder, ridges_out,dim, old_node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, coupled=coupled, mZ=mZ)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
 
-    return v_count, verticesIdxDict, vertIdxStart, totalPointCount #, nodes_out, aux_nodes, vertices_out, ridges_out
+    return nodes_out, v_count, verticesIdxDict, vertIdxStart, totalPointCount #, nodes_out, aux_nodes, vertices_out, ridges_out
 
 def findClosest(points, target, dim):
     dist2 = np.zeros(len(points))
@@ -480,7 +520,7 @@ def ridgeWithinCenterBox(vertices, maxLim):
 
     return within
 
-def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, randomizeMaterial=False):
+def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, randomizeMaterial=False, auxmechelements=False):
     start_time = time.time()
     dim = 3
 
@@ -676,7 +716,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
         saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled)
+        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, aux_nodes,mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled, auxmechelements=auxmechelements)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
 
@@ -695,7 +735,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
 
-    return v_count, verticesIdxDict, vertIdxStart, totalPointCount
+    return node_coords, v_count, verticesIdxDict, vertIdxStart, totalPointCount
 
 
 def returnSelectedPtsRadial (innerRad , outerRad, points, axisDim=0, xmin = -1, xmax = -1):
@@ -1056,7 +1096,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
-    return v_count, [], vertIdxStart, totalPointCount
+    return node_coords, v_count, [], vertIdxStart, totalPointCount
 
 
 def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeMechanics, activeTransport, minDist, mZ=None):
@@ -1281,7 +1321,7 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
 
     f.close()
 
-def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3):
+def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3, auxMechElements=False):
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
@@ -1289,6 +1329,9 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
      fl.write("Dimension\t%d\n"%dim)
      fl.write("Solver\t%s\n"%(solverFile))
      saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt, tolerance=tolerance)
+
+
+
 
      if not periodic:
          if not constraint:
@@ -1301,19 +1344,35 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
                  fl.write("NodeFiles\t4\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t1\t%s\n' %(constraintTrsptFile))
              elif (constraint and constraintTrspt and activeTransport and activeMechanics):
+                 print('alltrue')
                  fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
 
-         fl.write("MatFiles\t1\t%s\n"%materialsFile)
-         if (activeTransport and activeMechanics):
-             fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
-             fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
-         elif  (activeTransport):
-             fl.write("ElemFiles\t1\t%s\n"%(trsprtElemsFile))
-             fl.write("BCFiles\t1\t%s\n"%(trsprtBCFile))
-         elif  (activeMechanics):
-             fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
-             fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
+             fl.write("MatFiles\t1\t%s\n"%materialsFile)
+
+         if not auxMechElements:
+            if (activeTransport and activeMechanics):
+                fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
+                fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+            elif  (activeTransport):
+                fl.write("ElemFiles\t1\t%s\n"%(trsprtElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(trsprtBCFile))
+            elif  (activeMechanics):
+                fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
+
+
+         if auxMechElements == True:
+            if (activeTransport and activeMechanics):
+                fl.write("ElemFiles\t3\t%s\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile, boundaryMechElemsFile))
+                fl.write("BCFiles\t2\t%s\t%s\n"%(mechBCFile,trsprtBCFile))
+            elif  (activeTransport):
+                fl.write("ElemFiles\t2\t%s\t%s\n"%(trsprtElemsFile, boundaryMechElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(trsprtBCFile))
+            elif  (activeMechanics):
+                fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile, boundaryMechElemsFile))
+                fl.write("BCFiles\t1\t%s\n"%(mechBCFile))
+
 
      else:
          if (os.path.isfile(os.path.join(master_folder,auxNodesFile))):
@@ -1409,6 +1468,7 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
     #print((nodes_out))
     num = dim
 
+
     if (dim == 2):
         headerLine  = "Type\tnodeCrdX\tnodeCrdY"
         fmt= nodetype + '\t%.15e\t%.15e'
@@ -1420,10 +1480,12 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
         fmt= nodetype + '\t%.15e\t%.15e\t%.15e'
         if nodetype=="GovParticle":
             fmt= 'Particle' + '\t%.15e\t%.15e\t%.15e'
-    if nodetype=="Particle":
+
+    if nodetype=="Particle" :
         headerLine = headerLine + "\tpowRadius"
         fmt = fmt + '\t%.15e'
         num = num + 1
+
 
 
     #fig = plt.figure()
@@ -1450,29 +1512,50 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
 
 
-def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ=None, notches = None, randomizeMaterial = False, coupled = False):
+def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, aux_nodes, mZ=None, notches = None, randomizeMaterial = False, coupled = False, auxmechelements=False):
     print('Saving MECH elements...', end ='')
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
     mechElemRidges = []
+    aux_mechElemRidges = []
+
     for m in range (len(ridges_out)):
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
             mechElemRidges.append( ridges_out[m].copy() )
-    print ('Mech elements: %d' %len(mechElemRidges))
+        #auxmech elements
+        elif auxmechelements == True and (ridges_out[m][0] < node_count+len(aux_nodes) and ridges_out[m][1] < node_count+len(aux_nodes) and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
+            aux_mechElemRidges.append( ridges_out[m].copy() )
+
+    print ('Mech elements: %d, aux_mechElemRidges: %d' %(len(mechElemRidges), len(aux_mechElemRidges)))
+
+    trueMechElements = len(mechElemRidges)
+    auxMechElements = len(aux_mechElemRidges)
+
+    for r in aux_mechElemRidges:
+        mechElemRidges.append(r)
 
     onlyMechNodesConnected = True
     elaElems = []
     fig, ax = plt.subplots()
 
-
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
 
         for i in range (len(mechElemRidges)):
-            nodeA = nodes[int(mechElemRidges[i][0])]
-            nodeB = nodes[int(mechElemRidges[i][1])]
+            iNa = int(mechElemRidges[i][0])
+            iNb = int(mechElemRidges[i][0])
 
-            if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count):
+            if iNa >= node_count and auxmechelements==True:
+                nodeA = aux_nodes[iNa-node_count]
+            else:
+                nodeA = nodes[iNa]
+
+            if iNb >= node_count and auxmechelements==True:
+                nodeB = aux_nodes[iNb-node_count]
+            else:
+                nodeB = nodes[iNb]
+
+            if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) and (auxmechelements==False):
                 onlyMechNodesConnected = False
 
             if (dim==2 or mZ[0][0]=='circle'):
@@ -1670,26 +1753,69 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, mZ
 
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
+        """
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
         #print(mechElemRidges[0])
         if coupled == False:
-            np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         if coupled == True:
-            np.savetxt(fl, mechElemRidges, delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
+        #"""
+        if auxMechElements == False:
+            fl=open(os.path.join(master_folder,mechElemsFile),'w')
+            if coupled == False:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            if coupled == True:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            fl.close()
+        else:
+            fl=open(os.path.join(master_folder,mechElemsFile),'w')
+            if coupled == False:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            if coupled == True:
+                np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            fl.close()
+
+            fl=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
+            if coupled == False:
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            if coupled == True:
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            fl.close()
+
+
+
 
     if (dim == 3):
         headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
         ro = np.asarray(mechElemRidges[0])
         fl.write(headerLine)
+
+        if auxmechelements == True:
+            flaux=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
+            flaux.write(headerLine)
+
         for i in range (len(mechElemRidges)):
-            ro = np.array(mechElemRidges[i], ndmin=2)
-            if coupled == False:
-                fmt='LTCBEAM\t%d\t%d\t%d'
-            if coupled == True:
-                fmt='LTCBEAMCoupled\t%d\t%d\t%d'
-            np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
+            if i < trueMechElements:
+                ro = np.array(mechElemRidges[i], ndmin=2)
+                if coupled == False:
+                    fmt='LTCBEAM\t%d\t%d\t%d'
+                if coupled == True:
+                    fmt='LTCBEAMCoupled\t%d\t%d\t%d'
+                np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
+
+            if i >= trueMechElements:
+                ro = np.array(mechElemRidges[i], ndmin=2)
+                if coupled == False:
+                    fmt='BoundaryMechElement\t%d\t%d\t%d'
+                if coupled == True:
+                    fmt='BoundaryMechElementCoupled\t%d\t%d\t%d'
+                np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
+
 
     sys.stdout.flush()
 

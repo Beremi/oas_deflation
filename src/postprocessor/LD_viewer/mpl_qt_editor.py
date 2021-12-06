@@ -22,7 +22,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
 from traits.api import Any, Instance
 from traitsui.qt4.editor import Editor
-from traitsui.qt4.basic_editor_factory import BasicEditorFactory
+from traitsui.basic_editor_factory import BasicEditorFactory
 from traitsui.api import Handler
 
 class _MPLFigureEditor(Editor):
