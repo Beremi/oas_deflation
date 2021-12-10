@@ -38,35 +38,35 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                 if ( nodeType.compare("TrsprtNode") == 0 ) {
                     TrsNode *newnode = new TrsNode(dim);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else if ( nodeType.compare("MechNode") == 0 ) {
                     MechNode *newnode = new MechNode(dim);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else if ( nodeType.compare("Particle") == 0 ) {
                     Particle *newnode = new Particle(dim);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else if ( nodeType.compare("CoupledParticle") == 0 ) {
                     CoupledParticle *newnode = new CoupledParticle(dim);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else if ( nodeType.compare("AuxNode") == 0 ) {
                     AuxNode *newnode = new AuxNode(dim);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else if ( nodeType.compare("MechDoF") == 0 ) {
                     MechDoF *newnode = new MechDoF(dim,0);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else if ( nodeType.compare("TrsDoF") == 0 ) {
                     TrsDoF *newnode = new TrsDoF(dim,0);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else if ( nodeType.compare("TrsTemprtrCoupledNode") == 0 ) {
                     TrsTemprtrCoupledNode *newnode = new TrsTemprtrCoupledNode(dim);
                     newnode->readFromLine(iss);
-                    nodes.push_back(newnode);
+                    addNode(newnode);
                 } else {
                     cerr << "Error: node type '" <<  nodeType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);

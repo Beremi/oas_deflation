@@ -333,3 +333,34 @@ Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
     }
     return elemDoFs;
 }
+
+//////////////////////////////////////////////////////////
+Vector Element :: extrapolateIPValuesToNodes(string code) const {
+    Vector phi( nodes.size() );
+    Vector res( nodes.size() );
+    Vector rhs( nodes.size() );
+    Matrix M(nodes.size(), nodes.size());
+    double jacobian, value;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        shafunc->giveShapeF(inttype->giveIPLocationPointer(i), phi);
+        jacobian = shafunc->giveJacobian(inttype->giveIPLocationPointer(i));
+        value = giveIPValue(code, i);
+        for (unsigned k=0; k<nodes.size(); k++){
+            rhs [ k ] += phi[k]*jacobian*value;
+            for (unsigned l=0; l<nodes.size(); l++){
+                M[k][l] += phi[k]*phi[l]*jacobian;
+            }
+        }
+    }
+
+    map< pair< size_t, size_t >, double >indices11;
+    for ( unsigned i = 0; i < nodes.size(); i++ ) {
+        for ( unsigned j = 0; j < nodes.size(); j++ ) {
+            indices11.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M[i][j]) );
+        }
+    }
+    CoordinateIndexedSparseMatrix Msparse(indices11, nodes.size(), nodes.size());
+    LinalgSymmetricSolver(Msparse, res, rhs, res, 1e-15, 1.0, "EigenConj");
+
+    return res;
+}

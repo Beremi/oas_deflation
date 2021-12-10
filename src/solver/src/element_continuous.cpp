@@ -454,7 +454,7 @@ Matrix CoupledCosseratBrick :: giveDampingMatrix() const {
 // 3D BRICK COSSERAT MECHANICAL ELEMENT
 CoupledCosseratBrickWithDependentUpperZLayer :: CoupledCosseratBrickWithDependentUpperZLayer(){
     name = "CoupledCosseratBrickWithDependentUpperZLayer";
-    bindlayers = false;
+    bindlayers = false; // TRUE not working, need fix
 }
 
 

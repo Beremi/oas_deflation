@@ -222,7 +222,7 @@ public:
 
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual double giveValue(string code);
+    virtual double giveValue(string code) const;
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveInertiaTensor() const;

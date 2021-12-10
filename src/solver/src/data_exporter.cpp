@@ -681,6 +681,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     VTKElementExporter *newexp = new VTKElementExporter(e, n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("VTKElement2Exporter") == 0 ) {
+                    VTKElement2Exporter *newexp = new VTKElement2Exporter(e, n, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKRBExporter") == 0 ) {
                     if ( dimension == 2 ) {
                         VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n, dimension);
