@@ -1307,9 +1307,13 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Ve
 }
 
 //////////////////////////////////////////////////////////
-double DiscreteCoupledRVEMaterialStatus ::  giveValue(string code) {
-    ( void ) code;
-    return 0;
+double DiscreteCoupledRVEMaterialStatus ::  giveValue(string code) const {
+    if ( code.compare("crack_volume_density") == 0 ) {
+        DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
+        return temp_crackVolume/dcm->givePUCVolume();
+    } else {
+        return RVEMaterialStatus :: giveValue(code);
+    }
 }
 
 //////////////////////////////////////////////////////////

@@ -28,6 +28,7 @@ protected:
     string name;
     bool isMechanical;
     bool isTransport;
+    unsigned id;
 
     Simplex *simplex; //simplex used to determine volumetric strain
 public:
@@ -65,6 +66,8 @@ public:
     Simplex *giveSimplex() { return simplex; }
     bool hasSimplex()const { return simplex != nullptr; }
     bool hasValidSimplex() const { if ( !simplex ) { return false; } return simplex->isValid(); }
+    unsigned giveID() const {return id;};
+    void setID(unsigned p) {id=p;};
 };
 
 //////////////////////////////////////////////////////////

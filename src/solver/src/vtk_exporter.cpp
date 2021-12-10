@@ -14,35 +14,44 @@ void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
 void VTKExporter :: readFromLine(istringstream &iss) {
     string param;
     unsigned num;
-    vector< string >cell_data, point_data;
-    cell_data.resize(0);
-    point_data.resize(0);
+    vector< string >cellData, pointData, extPointData;
     iss >> filename;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("cellData") == 0 ) {
             iss >> num;
-            cell_data.resize(num);
+            cellData.resize(num);
             for ( unsigned i = 0; i < num; i++ ) {
-                iss >> cell_data [ i ];
+                iss >> cellData [ i ];
             }
-        } else if ( param.compare("pointData") == 0 ) {
+        } else if ( param.compare("pointData") == 0 || param.compare("nodeData") == 0) {
             iss >> num;
-            point_data.resize(num);
+            pointData.resize(num);
             for ( unsigned i = 0; i < num; i++ ) {
-                iss >> point_data [ i ];
+                iss >> pointData [ i ];
+            }
+        } else if ( param.compare("extrapolatedNodeData") == 0 ) {
+            iss >> num;
+            extPointData.resize(num);
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> extPointData [ i ];
             }
         }
     }
-    codes.resize( cell_data.size() + point_data.size() );
+    codes.resize( cellData.size() + pointData.size() + extPointData.size());
     num = 0;
-    for ( auto const &cel : cell_data ) {
+    for ( auto const &cel : cellData ) {
         codes [ num++ ] = cel;
     }
-    cell_data_size = cell_data.size();
-    for ( auto const &po : point_data ) {
+    cell_data_size = cellData.size();
+    for ( auto const &po : pointData ) {
         codes [ num++ ] = po;
     }
+    node_data_size = pointData.size();
+    for ( auto const &ex : extPointData ) {
+        codes [ num++ ] = ex;
+    }
+
     DataExporter :: readFromLine(iss);
 }
 
@@ -233,6 +242,259 @@ vector< double >MatrixToStdVectForParaview(const Matrix &s, const unsigned &dim)
         data [ 4 ] = 0.5 * ( s [ 2 ] [ 1 ] + s [ 1 ] [ 2 ] );
     }
     return data;
+}
+
+
+//////////////////////////////////////////////////////////
+// ELEMENTS TO VTU FILE
+//////////////////////////////////////////////////////////
+void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
+    // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
+    char buffer [ 100 ];
+    // Point P;
+    // Element *ee;
+
+    vector< int >points_id;
+    vector< vector< int > >all_points_id;
+
+    // vector of nodal stresses - Matrices (tensors) dim x dim
+    // TODO make this only for particles, now vector nodal_stress has length of all nodes, vertices and auxnodes (then node_id is needed for each matrix of nodal stresss - either pair <unsigned, Matrix> or two vectors - vector<unsigned> + vector<Matrix>) combine it at the beginning in init() - then it will apply also for adaptivity
+    vector< Matrix >nodal_stress;
+    bool export_nodal_stress = isStringInVect("nodal_stress", codes);
+
+    vector< int >cell_types;
+    vector< int >offsets;
+    vector< Point >displ;
+
+    vector< string >materials;
+    unsigned matI;
+
+    vector < Vector > smoothing;  
+
+    vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
+    for ( unsigned i = 0; i < cell_data_size; i++ ) {
+        codes_positions [ i ] = isAddonCellScalarData(codes [ i ]);
+    }
+
+    vector< vector< Vector > >cell_vect_data;
+    vector< unsigned >vector_data_code_indeces;  // indeces of data to be exported as vectors
+
+    vector< vector< double > >cell_data;
+    cell_data.resize(cell_data_size);
+
+    vector< vector< double > >point_data;
+    point_data.resize(codes.size() - cell_data_size);
+
+    smoothing.resize(codes.size() - cell_data_size - node_data_size);
+    Vector numOfElements(nodes->giveSize());
+    for(auto const &e: * elems){
+        vector< Node * > ne = e->giveNodes();
+        for(auto r: ne) {
+            numOfElements[r->giveID()] +=1;
+        }
+    }
+
+    for(unsigned k=0; k<smoothing.size(); k++){
+        smoothing[k].resize(nodes->giveSize());
+
+        for(auto const &e: * elems){
+            Vector dat = e->extrapolateIPValuesToNodes(codes[k+cell_data_size+ node_data_size]);
+            vector< Node * > ne = e->giveNodes();
+            for(unsigned r=0; r<ne.size(); r++) {
+                smoothing[k][ne[r]->giveID()] += dat[r];
+            }
+        }
+
+        for(unsigned rr=0; rr< nodes->giveSize(); rr++) {
+            if(numOfElements[rr]==0) smoothing[k][rr] = 10;
+            else smoothing[k][rr] /= numOfElements[rr];
+        }
+    }
+
+
+
+
+    size_t offset = 0;
+    for ( auto const &el : * elems ) {
+        for ( auto const &n : el->giveNodes() ) {
+            auto res = std :: find(begin(* nodes), end(* nodes), n);
+            points_id.push_back( std :: distance(begin(* nodes), res) );  //todo warning C4244: 'argument': conversion from '__int64' to '_Ty', possible loss of data
+            // points_id.push_back(n - *nodes->begin());
+        }
+        all_points_id.push_back(points_id);
+        cell_types.push_back( el->giveVTKCellType() );
+        offset += points_id.size();
+        offsets.push_back(offset);
+        for ( unsigned i = 0; i < cell_data_size; i++ ) {
+            if ( isAddonCellScalarData(codes [ i ]) || isAddonPointVectorialData(codes [ i ]) ) {
+                // TODO this needs to be improved, it is duplicated in these two functions
+                continue;
+            } else if ( isAddonCellVectorialData(codes [ i ]) ) {
+                vector_data_code_indeces.push_back(i);
+                continue;
+            } else if ( codes [ i ].compare("material") == 0 ) {
+                matI = 0;
+                while ( true ) {
+                    if ( matI >= materials.size() ) {
+                        materials.push_back( el->giveMaterial()->giveName() );
+                        break;
+                    } else if ( materials.size() > 0 && materials [ matI ].compare( el->giveMaterial()->giveName() ) == 0 ) {
+                        break;
+                    }
+                    matI++;
+                }
+                cell_data [ i ].push_back(matI);
+            } else {
+                cell_data [ i ].push_back( el->giveIPValue(codes [ i ], 0) );  // so far for single IP point
+            }
+        }
+        points_id.clear();
+    }
+    cell_vect_data.resize( vector_data_code_indeces.size() );
+
+    if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
+        // TODO toto je nutný udělat jinak, teď, když jsou tady i jiný sady (vektorový data), není to prostě buď jedno nebo druhý
+        return i == true;
+    }) ) {
+        exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data);
+    }
+    if ( vector_data_code_indeces.size() > 0 ) {
+        exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
+    }
+    if ( export_nodal_stress ) {
+        // reserve space only if nodal stresses should be exported
+        nodal_stress.resize( nodes->giveSize(), Matrix(this->dim, this->dim) );
+        // export nodal stresses:
+        ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
+    }
+
+    giveFileName(step, buffer);
+    ofstream outputfile( ( resultDir / buffer ).string() );
+
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+        outputfile << "<?xml version=\"1.0\"?>\n";
+        outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
+        outputfile << "<UnstructuredGrid>" << '\n';
+        outputfile << "<Piece NumberOfPoints=\"" << nodes->giveSize() << "\" NumberOfCells=\"" << elems->giveSize() << "\">" << '\n';
+
+
+        outputfile << "<Points>" << '\n';
+        outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
+        for ( auto const &n : * nodes ) {
+            outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t" << n->givePoint().getZ() << '\n';
+
+            displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
+                                  n->giveDoFBasedValue("uy", DoFs),
+                                  dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
+                                  )
+                            );
+
+            for ( unsigned i = cell_data_size; i < codes.size(); i++ ) {
+                point_data [ i - cell_data_size ].push_back( n->giveDoFBasedValue(codes [ i ], DoFs) );
+            }
+        }
+        // for (unsigned n; n < nodes->giveSize(); n++) {
+        //   P = nodes->giveNode(n)->givePoint();
+        // }
+        outputfile << "</DataArray>" << "\n";
+        outputfile << "</Points>" << "\n";
+        // /*
+        outputfile << "<Cells>" << '\n';
+        outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
+        for ( auto const &value : all_points_id ) {
+            for ( auto const &id : value ) {
+                outputfile << "\t" << id;
+            }
+            outputfile << '\n';
+        }
+        outputfile << "</DataArray>" << '\n';
+        outputfile << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << '\n';
+        for ( auto const &value : offsets ) {
+            outputfile << value << '\n';
+        }
+        outputfile << "</DataArray>" << '\n';
+        outputfile << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << '\n';
+        for ( auto const &value : cell_types ) {
+            outputfile << value << '\n';
+        }
+        outputfile << "</DataArray>" << '\n';
+        outputfile << "</Cells>" << '\n';
+        // */
+        outputfile << "<PointData Scalars=\"scalars\">" << "\n";
+        outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
+        for ( auto const &p : displ ) {
+            outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
+        }
+        outputfile << "</DataArray>" << '\n';
+        //////////////////////////////////////////////////////////////////////////
+        if ( export_nodal_stress ) {
+            outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << ( dim - 1 ) * 3 << "\" format=\"ascii\">" << '\n';
+            vector< double >data;
+
+            for ( auto const &s : nodal_stress ) {
+                data = MatrixToStdVectForParaview(s, dim);
+
+                for ( auto const &d : data ) {
+                    outputfile << d << '\t';
+                }
+                outputfile << '\n';
+                // data.clear();
+            }
+            outputfile << "</DataArray>" << '\n';
+        }
+        //////////////////////////////////////////////////////////////////////////
+        for ( unsigned i = 0; i < point_data.size(); i++ ) {
+            if ( codes [ i + cell_data_size ].compare("nodal_stress") == 0 ) {
+                continue;
+            }
+            outputfile << "<DataArray type=\"Float32\" Name=\" " << codes [ i + cell_data_size ] << "\" format=\"ascii\">" << '\n';
+            if (i < node_data_size){
+                for ( auto const &p : point_data [ i ] ) {
+                    outputfile << p << '\n';
+                } 
+            } else {
+                for ( auto const &p : smoothing [ i - node_data_size ] ) {
+                    outputfile << p << '\n';
+                } 
+
+            }
+            outputfile << "</DataArray>" << '\n';
+        }
+        //////////////////////////////////////////////////////////////////////////
+        outputfile << "</PointData>" << '\n';
+        // /*
+        outputfile << "<CellData Scalars=\"scalars\">" << "\n";
+        unsigned num_vectors = 0;
+        for ( unsigned i = 0; i < cell_data.size(); i++ ) {
+            if ( isInVect(i, vector_data_code_indeces) ) {
+                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] <<
+                    "\" NumberOfComponents=\"" << dim << "\"  format=\"ascii\">" << '\n';
+                for ( auto const &value : cell_vect_data [ num_vectors ] ) {
+                    for ( auto const &a : value ) {
+                        outputfile << a << '\t';
+                    }
+                    outputfile << '\n';
+                }
+                outputfile << "</DataArray>" << '\n';
+                num_vectors += 1;
+            } else {
+                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
+                for ( auto const &value : cell_data [ i ] ) {
+                    outputfile << value << '\n';
+                }
+                outputfile << "</DataArray>" << '\n';
+            }
+        }
+        outputfile << "</CellData>" << '\n';
+        // */
+        outputfile << "</Piece>" << '\n';
+        outputfile << "</UnstructuredGrid>" << '\n';
+        outputfile << "</VTKFile>" << '\n';
+        outputfile.close();
+    }
 }
 
 
@@ -449,6 +711,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         outputfile.close();
     }
 }
+
 
 //////////////////////////////////////////////////////////
 // function tahat calculates displacement of any point of rigid body from its rotations and

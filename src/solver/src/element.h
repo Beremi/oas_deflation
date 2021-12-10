@@ -2,6 +2,7 @@
 #define _ELEMENT_H
 
 #include "linear_algebra.h"
+#include "linalg.h"
 #include "node_container.h"
 #include "material_container.h"
 #include "shape_functions.h"
@@ -83,12 +84,14 @@ public:
     unsigned giveVTKCellType() const { return vtk_cell_type; };
     virtual void changeMaterial(Material *newmat);
     virtual Vector integrateInternalSources();
-    virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
-    virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
+    //virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
+    //virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
     virtual bool giveGlobalCoords(Point *x, const Point *xn) const;
     virtual Vector giveMasterVariables(const Point *x, const Vector &DoFs) const { return giveHMatrix(x) * DoFs; };
     Vector giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const;
     double giveVolume() const { return volume; };
+
+    Vector extrapolateIPValuesToNodes(string code) const;
 
     virtual void collectInformationsFromNeigborhood() {};
     virtual bool isPointInside(Point *xn, const Point *x) const;
