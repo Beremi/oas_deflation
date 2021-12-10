@@ -104,6 +104,7 @@ protected:
     double init_idc_time = 0.0;  ///> when starting from previously calculated results
     int stiffnessMatrixUpdate, dampingMatrixUpdate, massMatrixUpdate; //update matrices every X iteration
     void printAllVectors();
+    void checkAllVectorsForNaNs();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
     virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
 

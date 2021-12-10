@@ -335,7 +335,7 @@ void RigidBodyContact :: init() {
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix(12, 12);
+    return Matrix(12, 12);  // NOTE JK: this should be based on ndim
 }
 
 
@@ -460,15 +460,12 @@ Vector RigidBodyContact :: integrateInternalSources() {
 }
 
 //////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
 RigidBodyContactCoupled :: RigidBodyContactCoupled(const unsigned dim) : RigidBodyContact(dim) {
     name = "LTCBEAMCoupled";
 }
 
-//////////////////////////////////////////////////////////
-Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-    //extract pressure from simplices
+void RigidBodyContactCoupled :: extractPressureFromSimplices(){
     double averagePressure = 0;
     unsigned validSnum = 0;
     for ( auto &s: simplices ) {
@@ -482,9 +479,87 @@ Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     }
 
     stats [ 0 ]->setParameterValue("pressure", averagePressure);
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
+    // TODO put this into a separate fn to make it avaliable separately for derived methods
+    //extract pressure from simplices
+    this->extractPressureFromSimplices();
 
     return RigidBodyContact :: giveStrain(i, DoFs);
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// RBSN BOUNDARY ELEMENT COUPLED
+RigidBodyBoundaryCoupled :: RigidBodyBoundaryCoupled(const unsigned dim) : RigidBodyContactCoupled(dim) {
+    name = "LTCBoundaryCoupled";
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyBoundaryCoupled :: checkNodeType() const {
+    // do nothing here, since the check is already performed during init() together setting correct order of nodes
+};
+
+void RigidBodyBoundaryCoupled :: init() {
+    //check that nodes are one particle and one auxNode
+    if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] )) {
+        // this is fine, do nothing, just use it to check if particle and auxnode is there
+    } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] )) {
+        std :: reverse(this->nodes.begin(), this->nodes.end());
+        std :: reverse(this->vert.begin(), this->vert.end());
+    } else {
+        cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
+    }
+    // init of parent class must be done after reverse of node, because the geometrical matrices are calculated in init()
+    RigidBodyContact :: init();
+}
+
+// //////////////////////////////////////////////////////////
+// Vector RigidBodyBoundaryCoupled :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+//     Vector innttff = RigidBodyContactCoupled :: giveInternalForces(DoFs, frozen, timeStep);
+//
+//     // std::cout << "Boundary int F:" << '\t';
+//     // for ( auto const &cc : innttff ) {
+//     //     std::cout << cc << '\t';
+//     // }
+//     // std::cout << '\n';
+//
+//     // return Vector((double)0, (this->ndim - 1) * 3);
+//     return innttff;
+// };
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs){
+    // DONE  call only separate fn for update of pressure due to transport
+    // Vector dummy = RigidBodyContactCoupled :: giveStrain(i, DoFs);
+    this->extractPressureFromSimplices();
+    // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
+    return Vector((double)0, (this->ndim - 1) * 3);
+};
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyBoundaryCoupled :: giveHMatrix(const Point *x) const {
+    ( void ) x;
+    return Matrix((this->ndim - 1) * 3, (this->ndim - 1) * 3);
+}
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
+    ( void ) x;
+    // Matrix B = Matrix( ndim, 6 * ( ndim - 1 ) );
+    Matrix B = Matrix( ndim, 3 * ( ndim - 1 ) );
+    Matrix Aa = giveAMatrix( nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
+    // Matrix Ab = giveAMatrix( nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
+            B [ i ] [ j ] = Aa [ i ] [ j ];
+            // B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab [ i ] [ j ];
+        }
+    }
+    return matrix_multiply(R, B) / length;
+}
 
 
 //////////////////////////////////////////////////////////

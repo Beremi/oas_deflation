@@ -800,6 +800,28 @@ void SteadyStateNonLinearSolver :: printAllVectors() {
     }
 }
 
+void SteadyStateNonLinearSolver :: checkAllVectorsForNaNs() {
+    // JK left for testing
+    bool trial_r_nan, r_nan, full_ddr_nan, ddr_nan, f_int_nan, f_ext_nan, load_nan, f_nan;
+    trial_r_nan = r_nan = full_ddr_nan = ddr_nan = f_int_nan = f_ext_nan = load_nan = f_nan = false;
+    for ( unsigned i = 0; i < trial_r.size(); i++ ) {
+        if (std :: isnan(trial_r [ i ]) || std :: isinf(trial_r [ i ])) trial_r_nan = true;
+        if (std :: isnan(r [ i ]) || std :: isinf(r [ i ])) r_nan = true;
+        if (std :: isnan(full_ddr [ i ]) || std :: isinf(full_ddr [ i ])) full_ddr_nan = true;
+        if ( i < ddr.size() ) {
+            if (std :: isnan(ddr [ i ]) || std :: isinf(ddr [ i ])) ddr_nan = true;
+        }
+
+        if (std :: isnan(f_int [ i ]) || std :: isinf(f_int [ i ])) f_int_nan = true;
+        if (std :: isnan(f_ext [ i ]) || std :: isinf(f_ext [ i ])) f_ext_nan = true;
+        if (std :: isnan(load [ i ]) || std :: isinf(load [ i ])) load_nan = true;
+        if ( i < f.size() ) {
+            if (std :: isnan(f [ i ]) || std :: isinf(f [ i ])) f_nan = true;
+        }
+    }
+    std::cout << "trial_r_nan " << trial_r_nan << " r_nan " << r_nan << " full_ddr_nan " << full_ddr_nan << " ddr_nan " << ddr_nan << " f_int_nan " << f_int_nan << " f_ext_nan " << f_ext_nan << " load_nan " << load_nan << " f_nan " << f_nan << '\n';
+}
+
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {

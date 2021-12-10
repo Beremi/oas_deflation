@@ -1761,7 +1761,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
             np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         if coupled == True:
             np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
-            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
         #"""
         if auxMechElements == False:
@@ -1783,7 +1783,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
             if coupled == False:
                 np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             if coupled == True:
-                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             fl.close()
 
 
@@ -1813,7 +1813,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 if coupled == False:
                     fmt='BoundaryMechElement\t%d\t%d\t%d'
                 if coupled == True:
-                    fmt='BoundaryMechElementCoupled\t%d\t%d\t%d'
+                    fmt='LTCBoundaryCoupled\t%d\t%d\t%d'
                 np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
 
