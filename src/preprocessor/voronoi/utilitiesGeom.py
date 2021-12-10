@@ -1758,7 +1758,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
         #print(mechElemRidges[0])
         if coupled == False:
             np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
-            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundary\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         if coupled == True:
             np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
@@ -1781,7 +1781,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
             fl=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
             if coupled == False:
-                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='LTCBoundary\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             if coupled == True:
                 np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             fl.close()
@@ -1811,7 +1811,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
             if i >= trueMechElements:
                 ro = np.array(mechElemRidges[i], ndmin=2)
                 if coupled == False:
-                    fmt='BoundaryMechElement\t%d\t%d\t%d'
+                    fmt='LTCBoundary\t%d\t%d\t%d'
                 if coupled == True:
                     fmt='LTCBoundaryCoupled\t%d\t%d\t%d'
                 np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
