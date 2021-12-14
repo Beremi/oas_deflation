@@ -4119,13 +4119,13 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
                 mBC = utilitiesMech.mechanicalBC(dim, nodesOld + n, mechBC)
                 #mechBC_merged.append(mBC)
 
-        newLen = len(node_coords)
+            newLen = len(node_coords)
 
-        for i in range (newLen-oldLen):
-            interface.append(oldLen+i)
-        interfaceNodeIndices.append(interface)
+            for i in range (newLen-oldLen):
+                interface.append(oldLen+i)
+            interfaceNodeIndices.append(interface)
 
-        rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
+        rebarBC = np.array([2, -1,  -1,-1,-1,-1,  -1,-1,-1])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 
@@ -4409,7 +4409,7 @@ def assemble3dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             interface.append(oldLen+i)
         interfaceNodeIndices.append(interface)
 
-        rebarBC = np.array([2, 0, -1,    -1, -1, -1,  -1,-1,-1,   -1,-1,-1])
+        rebarBC = np.array([2, -1,              -1,-1, -1, -1,  -1,-1,-1,   -1,-1,-1])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 

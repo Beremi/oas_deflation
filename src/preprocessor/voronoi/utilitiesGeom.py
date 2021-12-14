@@ -1502,9 +1502,15 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
     if len(nodes_out) > 0:
         np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
 
+    # "MechDoF/TrsDof X Y [Z] N" kde X, Y a Z jsou souradnice a N je pocet vytvorenych stupnu volnosti.
+    crds = np.array([ 10,0,0])
     if virtualDoF !=0:
         for i in range (virtualDoF):
-            fl.write('MechDoF\n')
+            if dim == 2:
+                fl.write('MechDoF\t%f\t%f\t1\n' %(crds[0],crds[1]) )
+            if dim == 3:
+                fl.write('MechDoF\t%f\t%f\t%f\t1\n' %(crds[0],crds[1],crds[2]) )
+            crds[0] += 1
 
     fl.close()
     print('done.')
