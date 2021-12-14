@@ -1321,13 +1321,28 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
 
     f.close()
 
-def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3, auxMechElements=False):
+def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3, auxMechElements=False, masterSolver=False, masterMaterials=False, masterFunctions = False):
+
+     solverF = solverFile
+     if masterSolver ==True:
+         solverF = '../' + solverFile
+
+     materialsF = materialsFile
+     if masterMaterials ==True:
+         materialsF = '../' + materialsFile
+
+     functionsF = functionsFile
+     if masterFunctions ==True:
+         functionsF = '../' + functionsFile
+
+
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
+
      fl.write("Dimension\t%d\n"%dim)
-     fl.write("Solver\t%s\n"%(solverFile))
+     fl.write("Solver\t%s\n"%(solverF))
      saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt, tolerance=tolerance)
 
 
@@ -1348,7 +1363,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
                  fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
 
-             fl.write("MatFiles\t1\t%s\n"%materialsFile)
+             fl.write("MatFiles\t1\t%s\n"%materialsF)
 
          if not auxMechElements:
             if (activeTransport and activeMechanics):
@@ -1379,7 +1394,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
          else:
              fl.write("NodeFiles\t2\t%s\t%s\n"%(nodesFile,verticesFile))
-         fl.write("MatFiles\t1\t%s\n"%materialsFile)
+         fl.write("MatFiles\t1\t%s\n"%materialsF)
          if (activeTransport and activeMechanics):
              fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
          elif  (activeTransport):
@@ -1387,7 +1402,8 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
          elif  (activeMechanics):
              fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
          fl.write("PBlockFiles\t1\t%s\n" %blocksFile)
-     fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
+
+     fl.write("FunctionFiles\t1\t%s\n"%functionsF)
      fl.write("ExporterFiles\t1\t%s"%exportersFile)
      #fl.write('INITMECH:\t%s\n' % initConditionsMechFile   )
      #fl.write('INITTRSPRT:\t%s\n' % initConditionsTrsprtFile   )
@@ -1503,13 +1519,13 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
         np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
 
     # "MechDoF/TrsDof X Y [Z] N" kde X, Y a Z jsou souradnice a N je pocet vytvorenych stupnu volnosti.
-    crds = np.array([ 10,0,0])
+    crds = np.array([ 0,0,0])
     if virtualDoF !=0:
         for i in range (virtualDoF):
             if dim == 2:
-                fl.write('MechDoF\t%f\t%f\t1\n' %(crds[0],crds[1]) )
+                fl.write('MechDoF\t%d\t%d\t1\n' %(crds[0],crds[1]) )
             if dim == 3:
-                fl.write('MechDoF\t%f\t%f\t%f\t1\n' %(crds[0],crds[1],crds[2]) )
+                fl.write('MechDoF\t%d\t%d\t%d\t1\n' %(crds[0],crds[1],crds[2]) )
             crds[0] += 1
 
     fl.close()

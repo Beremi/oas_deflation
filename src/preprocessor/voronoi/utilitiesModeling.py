@@ -4125,7 +4125,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
                 interface.append(oldLen+i)
             interfaceNodeIndices.append(interface)
 
-        rebarBC = np.array([2, -1,  -1,-1,-1,-1,  -1,-1,-1])
+        rebarBC = np.array([-1, -2,  -1,-1,-1,-1,  -1,-1,-1])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 
