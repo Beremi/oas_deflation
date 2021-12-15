@@ -2412,10 +2412,10 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
                 #Ve 2D je v tom řádku node_IS x y rInner rOuter a ve 3D je tam potřeba přidat xyz,
                 if dim == 2:
                     f.write( '#ExpansionRingSingleDoFLoad node_IS x y rInner rOuter \n' )
-                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*0.99, rebarDiameter/2*1.01 ) )
                 if dim == 3:
                     f.write( '#ExpansionRingSingleDoFLoad node_IS x y z rInner rOuter dir\n' )
-                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e 0 %e dir %d\n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*1.01, dir ))
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e %e %e dir %d\n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*0.99, rebarDiameter/2*1.01, dir ))
 
                 mechDofIndices.append(totNodeC+r)
 
@@ -2429,10 +2429,10 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
 
 ## ForceGauge file_name gauge_name which_force how_many node_ids
 #ForceGauge LD reactF fx 1 5678
-def saveForceGauge(master_folder, dir,columnName, nodeIdx):
+def saveForceGauge(master_folder, dir,columnName, nodeIdx, gaugename='ForceGauge'):
     print('Saving force %s gauge for node %d' %(dir, nodeIdx) )
     fl=open(os.path.join(master_folder,exportersFile),'a')
-    fl.write('ForceGauge LD %s %s 1 %d\n' %(dir, columnName, nodeIdx))
+    fl.write('%s LD %s %s 1 %d\n' %(gaugename, dir, columnName, nodeIdx))
     fl.close()
 
 ### displacement gauge uy x1coord y1coord x2coord y2coord
@@ -2541,7 +2541,12 @@ def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', tr
                 saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
         else:
             saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
-            saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
+            if virtualDoF<0:
+                saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
+            else:
+                saveForceGauge(master_folder, 'volumetric_strain', 'ux', nodeIdx, gaugename='DoFGauge' )
+                #DoFGauge LD volumetric_strain ux 1 1013
+
             if (dimension==3): saveForceGauge(master_folder, 'fz#%s'%name, 'fz', nodeIdx )
             if moments == True and not (virtualDoF>0):
                 if (dimension==3): saveForceGauge(master_folder, 'mx#%s'%name , 'mx', nodeIdx )
@@ -2552,10 +2557,12 @@ def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', tr
         if (name==''):
             #saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
             saveForceGauge(master_folder, 'flux#%d'%nodeIdx, 'flux', nodeIdx )
+            saveForceGauge(master_folder, 'pressure', 'ux', nodeIdx, gaugename='DoFGauge' )
 
         else:
             #saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
             saveForceGauge(master_folder, 'flux#%s'%name, 'flux', nodeIdx )
+            saveForceGauge(master_folder, 'pressure', 'ux', nodeIdx, gaugename='DoFGauge' )
 
 
 
