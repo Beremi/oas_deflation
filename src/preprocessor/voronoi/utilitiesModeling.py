@@ -4119,13 +4119,13 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
                 mBC = utilitiesMech.mechanicalBC(dim, nodesOld + n, mechBC)
                 #mechBC_merged.append(mBC)
 
-        newLen = len(node_coords)
+            newLen = len(node_coords)
 
-        for i in range (newLen-oldLen):
-            interface.append(oldLen+i)
-        interfaceNodeIndices.append(interface)
+            for i in range (newLen-oldLen):
+                interface.append(oldLen+i)
+            interfaceNodeIndices.append(interface)
 
-        rebarBC = np.array([2, 0, -1, -1, -1, -1, 0])
+        rebarBC = np.array([-1, 2,  -1,-1,-1,-1,  -1,-1,-1])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 
@@ -4409,7 +4409,7 @@ def assemble3dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             interface.append(oldLen+i)
         interfaceNodeIndices.append(interface)
 
-        rebarBC = np.array([2, 0, -1,    -1, -1, -1,  -1,-1,-1,   -1,-1,-1])
+        rebarBC = np.array([2, -1,              -1,-1, -1, -1,  -1,-1,-1,   -1,-1,-1])
         govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, (-3), rebarBC))
 
 
@@ -5647,6 +5647,31 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             notch22.append(notchSide0)
             notch22.append(rightTop)
             notches.append(notch22)
+
+    else:  # mark nodes on the side of the notch for remesher
+        if notch > 0:
+            notchWidth /= 2.0  # done the same way as in previous part just to correspond, but it's horrible!!
+            tol = minDist/20
+            # the following is done only for remesher performed in adaptivity
+            # this can be don more elegant, but as a quick fix sufficient
+            node_coords_nparray = np.asarray(node_coords)
+            xs = node_coords_nparray[:, 0]
+            ys = node_coords_nparray[:, 1]
+            zs = node_coords_nparray[:, 2]
+            xs_bounds = np.array([[maxLim[0] / 2 - notchWidth - tol, maxLim[0] / 2 - notchWidth + tol],
+                                  [maxLim[0] / 2 + notchWidth - tol, maxLim[0] / 2 + notchWidth + tol]
+                                  ])
+            ys_bound = maxLim[1] * notch
+
+            ymask = np.ma.masked_where(ys <= ys_bound, ys).mask
+
+            xmask0 = np.ma.masked_inside(xs, xs_bounds[0, 0], xs_bounds[0, 1]).mask
+            xmask1 = np.ma.masked_inside(xs, xs_bounds[1, 0], xs_bounds[1, 1]).mask
+
+            ntch01 = []
+            ntch01.append(np.argwhere(ymask & xmask0)[:,0].tolist())  # argwhere adds dimension
+            ntch01.append(np.argwhere(ymask & xmask1)[:,0].tolist())
+            notches.append(ntch01)
 
     """
     node_coords = np.asarray(node_coords)

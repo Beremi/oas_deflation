@@ -850,7 +850,10 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
     RigidBodyContact *rbc;
 
     for ( auto const &el : * elems ) {
-        if ( el->giveName().compare("LTCBEAM") == 0 ) {
+        // use only elements that are derived from LTCBEAM
+        // but dynamic cast costs a lot and this is performed every step (in adaptivity), or on every model vtk save
+        // rfind overload to compare start of a string
+        if ( el->giveName().rfind("LTCB", 0) == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
             elDoFvalues.resize( elDoFs.size() );

@@ -59,6 +59,23 @@ public:
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 
+// //////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
+// // RBSN BOUNDARY ELEMENT
+// TODO this will be needed in dynamics
+// class RigidBodyBoundary : public RigidBodyContact
+// {
+// protected:
+//     virtual void checkNodeType() const;
+// public:
+//     RigidBodyBoundary(const unsigned dim);
+//     ~RigidBodyBoundary() {};
+//     virtual Matrix giveStiffnessMatrix(string matrixType) const;
+//     virtual Matrix giveDampingMatrix() const;
+//     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+//     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+// };
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
@@ -66,9 +83,33 @@ class Transp1D; //forward declaration
 class RigidBodyContactCoupled : public RigidBodyContact
 {
 protected:
+    void extractPressureFromSimplices();
 public:
     RigidBodyContactCoupled(const unsigned dim);
     ~RigidBodyContactCoupled() {};
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COUPLED RBSN BOUNDARY ELEMENT
+// takes boundary pressure (or similar) and transfer into internal force according to biot coeff
+class RigidBodyBoundaryCoupled : public RigidBodyContactCoupled
+{
+protected:
+    virtual void checkNodeType() const;
+public:
+    RigidBodyBoundaryCoupled(const unsigned dim);
+    ~RigidBodyBoundaryCoupled() {};
+
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+
+    void init();
+
+    virtual Matrix giveStiffnessMatrix(string matrixType) const { ( void ) matrixType; return Matrix((this->ndim - 1) * 3, (this->ndim - 1) * 3);};
+    virtual Matrix giveDampingMatrix() const{ return Matrix((this->ndim - 1) * 3, (this->ndim - 1) * 3);};
+    // virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 

@@ -113,6 +113,7 @@ class Model:
         self.interfaceMinDist = None
 
 
+        self.masterSolver = self.masterMaterials = self.masterFunctions = False
 
         for i in range (len(r)):
 
@@ -168,6 +169,17 @@ class Model:
                 if (int(r[i+1])==1): self.auxmechelements = True
                 if (int(r[i+1])==0): self.auxmechelements = False
 
+            if (r[i]=='masterSolver'):
+                if (int(r[i+1])==1): self.masterSolver = True
+                if (int(r[i+1])==0): self.masterSolver = False
+
+            if (r[i]=='masterMaterials'):
+                if (int(r[i+1])==1): self.masterMaterials = True
+                if (int(r[i+1])==0): self.masterMaterials = False
+
+            if (r[i]=='masterFunctions'):
+                if (int(r[i+1])==1): self.masterFunctions = True
+                if (int(r[i+1])==0): self.masterFunctions = False
 
 
             if (r[i]=='powerTes'):
@@ -754,7 +766,7 @@ class Model:
                 utilitiesGeom.saveRadii(self.master_folder, self.radii)
 
         utilitiesGeom.saveMasterInput(self.master_folder, self.dimension, solver.solverType, solver.time_step, solver.min_time_step, solver.max_time_step, solver.total_time, self.activeTransport, self.activeMechanics, periodic=self.periodicModel, constraint=self.constraint, constraintTrspt=self.constraintTrspt,
-        limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance, auxMechElements=self.auxmechelements)
+        limitTolerance= solver.limit_tolerance, maxIt=solver.maxIt, tolerance=solver.tolerance, auxMechElements=self.auxmechelements, masterSolver=self.masterSolver, masterMaterials=self.masterMaterials, masterFunctions=self.masterFunctions)
 
         # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
         # get only the filename from master file string https://docs.python.org/3/library/os.path.html#os.path.basename

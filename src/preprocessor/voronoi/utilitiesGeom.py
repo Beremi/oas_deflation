@@ -1321,13 +1321,28 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
 
     f.close()
 
-def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3, auxMechElements=False):
+def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3, auxMechElements=False, masterSolver=False, masterMaterials=False, masterFunctions = False):
+
+     solverF = solverFile
+     if masterSolver ==True:
+         solverF = '../' + solverFile
+
+     materialsF = materialsFile
+     if masterMaterials ==True:
+         materialsF = '../' + materialsFile
+
+     functionsF = functionsFile
+     if masterFunctions ==True:
+         functionsF = '../' + functionsFile
+
+
      print('Saving master file...', end='')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
+
      fl.write("Dimension\t%d\n"%dim)
-     fl.write("Solver\t%s\n"%(solverFile))
+     fl.write("Solver\t%s\n"%(solverF))
      saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt, tolerance=tolerance)
 
 
@@ -1348,7 +1363,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
                  fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
 
-             fl.write("MatFiles\t1\t%s\n"%materialsFile)
+             fl.write("MatFiles\t1\t%s\n"%materialsF)
 
          if not auxMechElements:
             if (activeTransport and activeMechanics):
@@ -1379,7 +1394,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
          else:
              fl.write("NodeFiles\t2\t%s\t%s\n"%(nodesFile,verticesFile))
-         fl.write("MatFiles\t1\t%s\n"%materialsFile)
+         fl.write("MatFiles\t1\t%s\n"%materialsF)
          if (activeTransport and activeMechanics):
              fl.write("ElemFiles\t2\t%s\t%s\n"%(mechElemsFile,trsprtElemsFile))
          elif  (activeTransport):
@@ -1387,7 +1402,8 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
          elif  (activeMechanics):
              fl.write("ElemFiles\t1\t%s\n"%(mechElemsFile))
          fl.write("PBlockFiles\t1\t%s\n" %blocksFile)
-     fl.write("FunctionFiles\t1\t%s\n"%functionsFile)
+
+     fl.write("FunctionFiles\t1\t%s\n"%functionsF)
      fl.write("ExporterFiles\t1\t%s"%exportersFile)
      #fl.write('INITMECH:\t%s\n' % initConditionsMechFile   )
      #fl.write('INITTRSPRT:\t%s\n' % initConditionsTrsprtFile   )
@@ -1502,9 +1518,15 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
     if len(nodes_out) > 0:
         np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
 
+    # "MechDoF/TrsDof X Y [Z] N" kde X, Y a Z jsou souradnice a N je pocet vytvorenych stupnu volnosti.
+    crds = np.array([ 0,0,0])
     if virtualDoF !=0:
         for i in range (virtualDoF):
-            fl.write('MechDoF\n')
+            if dim == 2:
+                fl.write('MechDoF\t%d\t%d\t1\n' %(crds[0],crds[1]) )
+            if dim == 3:
+                fl.write('MechDoF\t%d\t%d\t%d\t1\n' %(crds[0],crds[1],crds[2]) )
+            crds[0] += 1
 
     fl.close()
     print('done.')
@@ -1758,10 +1780,10 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
         #print(mechElemRidges[0])
         if coupled == False:
             np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAM\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
-            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundary\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         if coupled == True:
             np.savetxt(fl, mechElemRidges[0:trueMechElements], delimiter='\t',fmt='LTCBEAMCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
-            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+            np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
         fl.close()
         #"""
         if auxMechElements == False:
@@ -1781,9 +1803,9 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
             fl=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
             if coupled == False:
-                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElement\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='LTCBoundary\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             if coupled == True:
-                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='BoundaryMechElementCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             fl.close()
 
 
@@ -1811,9 +1833,9 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
             if i >= trueMechElements:
                 ro = np.array(mechElemRidges[i], ndmin=2)
                 if coupled == False:
-                    fmt='BoundaryMechElement\t%d\t%d\t%d'
+                    fmt='LTCBoundary\t%d\t%d\t%d'
                 if coupled == True:
-                    fmt='BoundaryMechElementCoupled\t%d\t%d\t%d'
+                    fmt='LTCBoundaryCoupled\t%d\t%d\t%d'
                 np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
 
@@ -2390,10 +2412,10 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
                 #Ve 2D je v tom řádku node_IS x y rInner rOuter a ve 3D je tam potřeba přidat xyz,
                 if dim == 2:
                     f.write( '#ExpansionRingSingleDoFLoad node_IS x y rInner rOuter \n' )
-                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e 0 %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*1.01 ) )
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e %e \n' %( totNodeC+r, centre[0],centre[1], rebarDiameter/2*0.99, rebarDiameter/2*1.01 ) )
                 if dim == 3:
                     f.write( '#ExpansionRingSingleDoFLoad node_IS x y z rInner rOuter dir\n' )
-                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e 0 %e dir %d\n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*1.01, dir ))
+                    f.write( 'ExpansionRingSingleDoFLoad %d %e %e %e %e %e dir %d\n' %( totNodeC+r, centre[0],centre[1], centre[2], rebarDiameter/2*0.99, rebarDiameter/2*1.01, dir ))
 
                 mechDofIndices.append(totNodeC+r)
 
@@ -2407,10 +2429,10 @@ def saveRigidPlates(master_folder, dim, rigidPlates, totalNodeCount, trspt=False
 
 ## ForceGauge file_name gauge_name which_force how_many node_ids
 #ForceGauge LD reactF fx 1 5678
-def saveForceGauge(master_folder, dir,columnName, nodeIdx):
+def saveForceGauge(master_folder, dir,columnName, nodeIdx, gaugename='ForceGauge'):
     print('Saving force %s gauge for node %d' %(dir, nodeIdx) )
     fl=open(os.path.join(master_folder,exportersFile),'a')
-    fl.write('ForceGauge LD %s %s 1 %d\n' %(dir, columnName, nodeIdx))
+    fl.write('%s LD %s %s 1 %d\n' %(gaugename, dir, columnName, nodeIdx))
     fl.close()
 
 ### displacement gauge uy x1coord y1coord x2coord y2coord
@@ -2519,7 +2541,12 @@ def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', tr
                 saveForceGauge(master_folder, 'mz#%d'%nodeIdx, 'mz', nodeIdx )
         else:
             saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
-            saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
+            if virtualDoF<0:
+                saveForceGauge(master_folder, 'fy#%s'%name, 'fy', nodeIdx )
+            else:
+                saveForceGauge(master_folder, 'volumetric_strain', 'ux', nodeIdx, gaugename='DoFGauge' )
+                #DoFGauge LD volumetric_strain ux 1 1013
+
             if (dimension==3): saveForceGauge(master_folder, 'fz#%s'%name, 'fz', nodeIdx )
             if moments == True and not (virtualDoF>0):
                 if (dimension==3): saveForceGauge(master_folder, 'mx#%s'%name , 'mx', nodeIdx )
@@ -2530,10 +2557,12 @@ def saveForceGauges(master_folder, dimension, nodeIdx, moments=True, name='', tr
         if (name==''):
             #saveForceGauge(master_folder, 'fx#%d'%nodeIdx , 'fx', nodeIdx )
             saveForceGauge(master_folder, 'flux#%d'%nodeIdx, 'flux', nodeIdx )
+            saveForceGauge(master_folder, 'pressure', 'ux', nodeIdx, gaugename='DoFGauge' )
 
         else:
             #saveForceGauge(master_folder, 'fx#%s'%name , 'fx', nodeIdx )
             saveForceGauge(master_folder, 'flux#%s'%name, 'flux', nodeIdx )
+            saveForceGauge(master_folder, 'pressure', 'ux', nodeIdx, gaugename='DoFGauge' )
 
 
 
