@@ -708,9 +708,10 @@ void SteadyStateNonLinearSolver :: solve() {
             it++;
         }
 
-        computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
-
-        if ( converged ) this->fully_converged = true;
+        if ( converged ) {
+            this->fully_converged = true;
+            computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+        }
 
         if ( !converged && dt > dtmin ) {
             time -= dt;
@@ -735,8 +736,9 @@ void SteadyStateNonLinearSolver :: solve() {
                 std :: cout << "tolerance increased in this step" << '\n';
                 converged = true;
                 this->fully_converged = false;
+                computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
             } else {
-                std :: cerr << "Error: Nonlinear static solver did not converge to the solution" << endl;
+                std :: cerr << "Error: " << name << " did not converge to the solution" << endl;
                 terminated = true;
                 return;
             }
