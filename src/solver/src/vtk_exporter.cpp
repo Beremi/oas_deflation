@@ -900,7 +900,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     int offset = 0;
     unsigned node_id_i;
     for ( auto const &el : * elems ) {
-        if ( el->giveName().compare("LTCBEAM") != 0 ) {
+        if ( el->giveName().compare("LTCBEAM") != 0 && el->giveName().compare("LTCBEAMCoupled") != 0) {
             continue;
         }
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( el );
