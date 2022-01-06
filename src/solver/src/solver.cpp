@@ -713,7 +713,7 @@ void SteadyStateNonLinearSolver :: solve() {
             computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
         }
 
-        if ( !converged && dt > dtmin ) {
+        if ( !converged && dt > dtmin*1.00001 ) {
             time -= dt;
             dt = fmax(dt * critical_step_decrease, dtmin);
             time += dt;

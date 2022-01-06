@@ -1056,6 +1056,11 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep
         }
     }
 
+    DamagePlasticMaterialStatus :: temp_stress = stress;
+    DamagePlasticMaterialStatus :: temp_strain = strain;
+    FatigueShearMaterialStatus :: temp_stress = stress;
+    FatigueShearMaterialStatus :: temp_strain = strain;
+
     return stress;
 }
 
