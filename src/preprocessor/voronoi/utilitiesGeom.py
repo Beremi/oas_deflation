@@ -1345,8 +1345,12 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
      fl.write("Solver\t%s\n"%(solverF))
      saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitTolerance, maxIt, tolerance=tolerance)
 
-
-
+     """
+     mechBCF = '../' + mechBCFile
+     trsprtBCF = '../' + trsprtBCFile
+     constraintF = '../' + constraintFile
+     constraintTrsptF = '../' + constraintTrsptFile
+     """
 
      if not periodic:
          if not constraint:
@@ -1547,6 +1551,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
         #auxmech elements
         elif auxmechelements == True and (ridges_out[m][0] < node_count+len(aux_nodes) and ridges_out[m][1] < node_count+len(aux_nodes) and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
             aux_mechElemRidges.append( ridges_out[m].copy() )
+            #print( ridges_out[m])
 
     print ('Mech elements: %d, aux_mechElemRidges: %d' %(len(mechElemRidges), len(aux_mechElemRidges)))
 
