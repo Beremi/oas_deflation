@@ -119,9 +119,9 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
 
-    stress [ 0 ] = stiffN * strain [ 0 ]; //normal stress
+    eff_stress = stiffN * strain [ 0 ]; //normal stress
 
-    double sensititvity_param = ( ( stress [ 0 ] < 0.0 ) ? m->giveMC() : m->giveMT() );
+    double sensititvity_param = ( ( eff_stress < 0.0 ) ? m->giveMC() : m->giveMT() );
 
     //load strains from one or two shear directions, ignore normal strain "strain[0]"
     double x = 0;
@@ -133,7 +133,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
 
     //kill shear element when excessive tension occur
-    if ( m->giveTauBar() - sensititvity_param * stress [ 0 ] <= 0 ) {
+    if ( m->giveTauBar() - sensititvity_param * eff_stress <= 0 ) {
         for ( unsigned i = 1; i < stress.size(); i++ ) {
             stress [ i ] = 0;
         }
@@ -146,7 +146,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     Point sgn1;
     double dLambda;
     double omega_dot;//rate of shear damage (to be multiplied by lambda and added to current damageShear)
-    omega_dot = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+    omega_dot = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow(Ynext / m->giveS(), m->giveR() );
 
     if ( true ) { // here will be more options like new return mapping etc.
         // sub-stepping process - long step is cutted in a certain number of substeps
@@ -187,7 +187,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
             tauTildaPiTrial = ( slip_cur - temp_sPi ) * stiffT;//are the inelastic strains always positive irrespective the direction of shearing?
 
             f_trial = ( tauTildaPiTrial - temp_alphaKin * m->giveGamma() ).norm() - ( m->giveKin() * temp_zIso ) - ( m->giveTauBar() - (
-                                                                                                                         sensititvity_param * stress [ 0 ] ) );
+                                                                                                                         sensititvity_param * eff_stress ) );
 
             if ( f_trial < 0 ) {
                 // std::cout << " elastic" << '\t';
@@ -210,12 +210,12 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
                 Ynext = 0.5 * stiffT * ( slip_cur - temp_sPi ).sqNorm();
 
-                if ( comp_dam && stress [ 0 ] < m->giveCompressiveThreshold() ) {
+                if ( comp_dam && eff_stress < m->giveCompressiveThreshold() ) {
                     //when under compression, do not increase shear damage (damage rate = 0)
                     omega_dot = 0.0;//increment of shear damage
                 } else {
                     //increment of shear damage as the derivative of phi wrt thermodyn force
-                    omega_dot = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * stress [ 0 ] ) ) * pow(Ynext / m->giveS(), m->giveR() );
+                    omega_dot = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow(Ynext / m->giveS(), m->giveR() );
                 }
                 temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );  //limited by <0,1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
