@@ -4,7 +4,7 @@
 #include "material.h"
 
 //////////////////////////////////////////////////////////
-// CUSATIS/MARS MATERIAL
+// CUSATIS/MARS MATERIAL 2007
 
 class MarsMaterial;
 class MarsMaterialStatus : public DisMechMaterialStatus
@@ -72,7 +72,31 @@ public:
     virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+// LDPM MATERIAL (2011)
 
+class LDPMMaterial;
+class LDPMMaterialStatus : public MarsMaterialStatus
+{
+private:
+    
+public:
+    LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
+    virtual ~LDPMMaterialStatus() {};
+    void computeDamage(Vector strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+};
+
+
+class LDPMMaterial : public MarsMaterial
+{
+private:
+
+public:
+    LDPMMaterial() { name = "LDPM material"; };
+    virtual ~LDPMMaterial() {};
+    virtual void readFromLine(istringstream &iss);
+};
 
 //////////////////////////////////////////////////////////
 //COUPLED MARS MATERIAL
