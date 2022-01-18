@@ -119,7 +119,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
 
-    eff_stress = stiffN * strain [ 0 ]; //normal stress
+    double eff_stress = stiffN * strain [ 0 ]; //normal stress
 
     double sensititvity_param = ( ( eff_stress < 0.0 ) ? m->giveMC() : m->giveMT() );
 
