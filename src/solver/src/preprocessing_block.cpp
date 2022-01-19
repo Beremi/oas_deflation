@@ -34,6 +34,66 @@ bool endsWith(const std :: string &mainStr, const std :: string &toMatch)
     }
 }
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MaterialRegion
+void MaterialRegion :: readFromLine(istringstream &iss, unsigned d) {
+    // enter line in pblockFile.inp:
+    // MaterialRegion mech/trsp material_id id region 'block' x1 y1 z1 x2 y2 z2
+    // coordinates refer to minimum and maximum point of block bounding box
+    // TODO JK distinguish betwwen 2D and 3D and enable for use of cilinder region in 3D
+    // dim = d;
+    ( void ) d;
+    std :: string param, region_name;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("trsp") == 0 ) {
+            this->transport = true;
+        } else if ( param.compare("mech") == 0 ) {
+            this->transport = false;
+        } else if ( param.compare("material_id") == 0 || param.compare("materialID") == 0 ) {
+            iss >> material_id;
+        } else if ( param.compare("region") == 0 ) {
+            iss >> region_name;
+            if ( region_name.compare("block") == 0 ){
+                double x, y, z, x2, y2, z2;
+                iss >> x >> y >> z >> x2 >> y2 >> z2;
+                block = Block(Point(x, y, z), Point(x2, y2, z2));
+            // } else if ( region_name.compare("shpere") == 0 ){
+            //     double x, y, z, r;
+            //     reg = Sphere(Point(x, y, z), r);
+            } else {
+                std::cerr << "region named '" << region_name << "' not implemented yet" << '\n';
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+}
+
+void MaterialRegion :: apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver) {
+    ( void ) solver;
+    ( void ) ex;
+    ( void ) funcs;
+    ( void ) constrs;
+    ( void ) bcs;
+    ( void ) nodes;
+
+    // TODO make sure material is sutable for mech / transport
+
+    for (auto & el : *e) {
+        for (auto const & nod : el->giveNodes()){
+            if (( !this->transport && nod->doesMechanics() )
+                || ( this->transport && nod->doesTransport() )) {
+                // TODO JK: are there any elems that are mechanical and connect transport nodes and same for transport elems?
+                if ( this->block.isInside(nod->givePoint() ) ){
+                    el->changeMaterial(mats->giveMaterial(this->material_id));
+                    break;
+                }
+            }
+        }
+    }
+}
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -1749,6 +1809,9 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
 
     expMaster = nodes->giveNode(this->master_id);
 
+    // std::cout << expMaster->giveNumberOfDoFs() << " master point " << expMaster->giveName() << '\n';
+    // expMaster->givePoint().print();
+
     Point node_point;
     int xm, ym, zm;
     xm = 1.;
@@ -1789,7 +1852,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     MechNode * mn;
     MechDoF * md;
     this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
-    
+
     for ( auto const &nod : * nodes ) {
         mn = dynamic_cast < MechNode * >(nod);
         if ( mn==nullptr ) {
@@ -1870,6 +1933,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     multipliers.clear();
     directions.clear();
     std::cout << "Expansion volumetric load applied: center(" << this->center.getX() << ", " << this->center.getY() << ", " << this->center.getZ() << ") rI = " << this->r_inner << ", rO = " << this->r_outer << ", direction: " << this->direction <<  '\n';
+    // exit(0);
 }
 
 //////////////////////////////////////////////////////////
@@ -1975,6 +2039,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     PressureFromMechanicalLoad *newblock = new PressureFromMechanicalLoad();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
+                } else if ( ftype.compare("MaterialRegion") == 0 ) {
+                    MaterialRegion *newblock = new MaterialRegion();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
                 } else {
                     cerr << "Error: preprocessor block '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -1992,7 +2060,6 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
 
 
 void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector < bool > &activeDirs, const bool transport) {
-
     unsigned nDoFsPerNode;
     if ( transport ) {
         nDoFsPerNode = 1;

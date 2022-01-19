@@ -12,6 +12,7 @@
 // #include "node_container.h"
 // #include "element_container.h"
 #include "data_exporter.h"
+#include "geometry.h"
 
 void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector<bool> &activeDirs, const bool trsp = false);
 
@@ -35,7 +36,21 @@ public:
 };
 
 // TODO JK: regions with separate material / elastic regions
-
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MaterialRegion
+class MaterialRegion : public PBlock
+{
+private:
+    Block block;
+    bool transport = false;
+    unsigned material_id;
+public:
+    MaterialRegion() { };
+    virtual ~MaterialRegion() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+};
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Mechanical Periodic Boundary Condition on prism
