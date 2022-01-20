@@ -39,13 +39,34 @@ Circle :: Circle(const Point &c, const double &r) {
 }
 
 void Circle :: readFromLine(istringstream &iss) {
-    double x, y, z, r;
-    iss >> x >> y >> z >> r;
-    this->mainPoint = Point(x, y, z);
+    double x, y, r;
+    std :: string param;
+    iss >> x >> y >> r >> param;
+    if ( param.compare("along") == 0 ) {
+        iss >> this->along;
+    }
+    if (this->along == 'x') {
+        this->mainPoint = Point(0, x, y);
+    } else if (this->along == 'x') {
+        this->mainPoint = Point(x, 0, y);
+    } else if (this->along == 'z') {
+        this->mainPoint = Point(x, y, 0);
+    }
     this->size = r;
 }
 
 bool Circle :: isInside(const Point &P) const {
+    // JK in 2D circle == sphere
+    // in 3D circle = cylinder with axis along z axis
+    // TODO make this more universal to be able to switch cylinder axis to x or y
+    Point P_to_compare = P;
+    if (this->along == 'x') {
+        P_to_compare.setX(0);
+    } else if (this->along == 'x') {
+        P_to_compare.setY(0);
+    } else if (this->along == 'z') {
+        P_to_compare.setZ(0);
+    }
     if ( ( P - this->mainPoint ).norm() < this->size ) {
         return true;
     }

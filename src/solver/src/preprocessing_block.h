@@ -42,7 +42,8 @@ public:
 class MaterialRegion : public PBlock
 {
 private:
-    Block block;
+    Region *reg;
+    // Block block;
     bool transport = false;
     unsigned material_id;
 public:

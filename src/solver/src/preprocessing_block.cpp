@@ -41,9 +41,11 @@ void MaterialRegion :: readFromLine(istringstream &iss, unsigned d) {
     // enter line in pblockFile.inp:
     // MaterialRegion mech/trsp material_id id region 'block' x1 y1 z1 x2 y2 z2
     // coordinates refer to minimum and maximum point of block bounding box
-    // TODO JK distinguish betwwen 2D and 3D and enable for use of cilinder region in 3D
-    // dim = d;
-    ( void ) d;
+    // MaterialRegion mech/trsp material_id id region 'sphere' x1 y1 z1 r
+    // MaterialRegion mech/trsp material_id id region 'cylinder' x1 y1 r
+    // important NOTE: in 2D model, use only x1 y1 x2 y2
+
+
     std :: string param, region_name;
     while ( !iss.eof() ) {
         iss >> param;
@@ -56,12 +58,30 @@ void MaterialRegion :: readFromLine(istringstream &iss, unsigned d) {
         } else if ( param.compare("region") == 0 ) {
             iss >> region_name;
             if ( region_name.compare("block") == 0 ){
-                double x, y, z, x2, y2, z2;
-                iss >> x >> y >> z >> x2 >> y2 >> z2;
-                block = Block(Point(x, y, z), Point(x2, y2, z2));
-            // } else if ( region_name.compare("shpere") == 0 ){
-            //     double x, y, z, r;
-            //     reg = Sphere(Point(x, y, z), r);
+                if ( d == 2 ) {
+                    double x, y, x2, y2;
+                    iss >> x >> y >> x2 >> y2;
+                    reg = new Block(Point(x, y, -1e10), Point(x2, y2, 1e10));
+                } else if ( d == 3 ){
+                    double x, y, z, x2, y2, z2;
+                    iss >> x >> y >> z >> x2 >> y2 >> z2;
+                    reg = new Block(Point(x, y, z), Point(x2, y2, z2));
+                }
+            } else if ( region_name.compare("shpere") == 0 ){
+                if ( d == 2 ) {
+                    double x, y, r;
+                    iss >> x >> y >> r;
+                    reg = new Sphere(Point(x, y, 0), r);
+                } else if ( d == 3 ) {
+                    double x, y, z, r;
+                    iss >> x >> y >> z >> r;
+                    reg = new Sphere(Point(x, y, z), r);
+                }
+            } else if ( region_name.compare("cylinder") == 0 || region_name.compare("circle") == 0 ){
+                // aplicable in 2D or in 3D as cylinder along z axis
+                double x, y, r;
+                iss >> x >> y >> r;
+                reg = new Circle(Point(x, y, 0), r);
             } else {
                 std::cerr << "region named '" << region_name << "' not implemented yet" << '\n';
                 exit(EXIT_FAILURE);
@@ -85,7 +105,7 @@ void MaterialRegion :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
             if (( !this->transport && nod->doesMechanics() )
                 || ( this->transport && nod->doesTransport() )) {
                 // TODO JK: are there any elems that are mechanical and connect transport nodes and same for transport elems?
-                if ( this->block.isInside(nod->givePoint() ) ){
+                if ( this->reg->isInside(nod->givePoint() ) ){
                     el->changeMaterial(mats->giveMaterial(this->material_id));
                     break;
                 }

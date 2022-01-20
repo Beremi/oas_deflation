@@ -69,6 +69,8 @@ public:
 
 class Circle : public RegularRegion
 {
+private:
+    char along = 'z';
 public:
     Circle() {};
     virtual ~Circle() {};
