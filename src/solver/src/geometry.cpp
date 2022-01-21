@@ -80,6 +80,13 @@ Sphere :: Sphere(const Point &c, const double &r) {
     this->size = r;
 }
 
+void Sphere :: readFromLine(istringstream &iss) {
+    double x, y, z, r;
+    iss >> x >> y >> z >> r;
+    this->mainPoint = Point(x, y, z);
+    this->size = r;
+}
+
 bool Sphere :: isInside(const Point &P) const {
     if ( ( P - this->mainPoint ).norm() < this->size ) {
         return true;
