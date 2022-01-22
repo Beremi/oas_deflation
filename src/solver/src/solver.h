@@ -80,6 +80,7 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve();
+    virtual void reset();
 };
 
 //////////////////////////////////////////////////////////
@@ -107,6 +108,7 @@ protected:
     void checkAllVectorsForNaNs();
     void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
     virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
+    virtual void reset();
 
 public:
     SteadyStateNonLinearSolver();

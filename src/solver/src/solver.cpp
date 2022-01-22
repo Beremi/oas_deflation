@@ -223,6 +223,25 @@ void SteadyStateLinearSolver :: computeKeff() {
 }
 
 //////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: reset(){
+    load *= 0.;
+    nodes->addRHS_nodalLoad(load, time); //add nodal load
+    nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
+    computeForcesAtIntegrationTime(true);
+    nodes->giveReducedForceArray(residuals, f);
+
+    if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
+       std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
+       cerr << "solver restart did not work" << endl;
+       exit(1);
+    }
+    updateFieldVariables();
+    computeForcesAtIntegrationTime(true);
+
+    runAfterEachStep();
+}
+
+//////////////////////////////////////////////////////////
 Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
@@ -576,7 +595,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
     * displa_error = sqrt( full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
     * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
 
-    /*
+    //*
      std :: cout << "f_extM " << f_extM << '\t' << 
      "f_intM " << f_intM << '\t' <<
      "residualM " << residualM << '\t' <<
@@ -590,7 +609,28 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
      "full_ddrT " << full_ddrT << '\t' <<
      "trial_rT " << trial_rT << '\t' <<
      "energyT " << energyT << '\n';
-    */
+    //*/
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: reset(){
+    load *= 0.;
+    double reset_time = time;
+    if( idc ) reset_time = idc_time;
+    nodes->addRHS_nodalLoad(load, reset_time); //add nodal load
+    nodes->updateDirrichletBC(trial_r, reset_time); //give prescribed DoFs
+    computeForcesAtIntegrationTime(true);
+    nodes->giveReducedForceArray(residuals, f);
+
+    if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
+       std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
+       cerr << "solver restart did not work" << endl;
+       exit(1);
+    }
+    updateFieldVariables();
+    computeForcesAtIntegrationTime(true);
+
+    runAfterEachStep();
 }
 
 //////////////////////////////////////////////////////////
@@ -649,6 +689,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     nodes->giveFullDoFArray(ddf, full_ddf);
                     //load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
                     load_mult = idc->giveMultiplierCorrection(trial_r, full_ddf, time);
+
                     ddr += load_mult * ddf;
                     idc_time += idc_dt * load_mult;
     
@@ -759,6 +800,7 @@ void SteadyStateNonLinearSolver :: solve() {
         }
     }
 }
+
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runBeforeEachStep() {
