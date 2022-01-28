@@ -61,11 +61,7 @@ void Model :: solve() {
 void Model :: readFromFile(const string filename, const bool &initial) {
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
-    if ( initial ) {
-        resultDir = baseDir / "results";
-    }
-
-    exporters.setResultDirectory(resultDir);
+    std :: string result_dir_name = "results";
 
     string istr, line;
     int iint;
@@ -150,6 +146,8 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> initialFieldFile;
             } else if ( initial && istr.compare("initial_master_time_derivative_field") == 0 ) {
                 iss >> initialTimeDerFieldFile;
+            }  else if ( initial && istr.compare("result_dir") == 0 ) {
+                iss >> result_dir_name;
             }
         }
         inputfile.close();
@@ -158,6 +156,12 @@ void Model :: readFromFile(const string filename, const bool &initial) {
         cerr << "Error: unable to open input file '" <<  fullPath.string() <<  "'" << endl;
         exit(EXIT_FAILURE);
     }
+
+    if ( initial ) {
+        resultDir = baseDir / result_dir_name;
+    }
+
+    exporters.setResultDirectory(resultDir);
 
     //here we apply periodic blocks to generate all the necessary objects
     //it was removed from Model initialization, because it had to be called in advance for RVE materials

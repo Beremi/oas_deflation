@@ -3,6 +3,7 @@
 #include "element_continuous.h"
 #include "element_polyhedral.h"
 #include <algorithm>
+#include "model.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -221,10 +222,10 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
         unsigned LD_num = 0;
         std :: string fnm = "LD";
         // NOTE here GlobPaths :: RESULTDIR would be usefull
-        std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / ( fnm + ".out" ) ).string();
+        std :: string fnm_ini = ( masterModel->resultDir / ( fnm + ".out" ) ).string();
         std :: string fnm_fin;
         while ( LD_num < 1000 ) {
-            fnm_fin = ( GlobPaths :: BASEDIR / "results" / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
+            fnm_fin = ( masterModel->resultDir / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
             if ( !fs :: exists(fnm_fin) ) {
                 if ( fs :: exists(fnm_ini) ) {
                     std :: rename( fnm_ini.c_str(), fnm_fin.c_str() );
