@@ -595,7 +595,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
     * displa_error = sqrt( full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
     * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
 
-    //*
+    /*
      std :: cout << "f_extM " << f_extM << '\t' << 
      "f_intM " << f_intM << '\t' <<
      "residualM " << residualM << '\t' <<
@@ -609,7 +609,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
      "full_ddrT " << full_ddrT << '\t' <<
      "trial_rT " << trial_rT << '\t' <<
      "energyT " << energyT << '\n';
-    //*/
+    */
 }
 
 //////////////////////////////////////////////////////////
@@ -757,6 +757,16 @@ void SteadyStateNonLinearSolver :: solve() {
         if ( !converged && dt > dtmin*1.00001 ) {
             time -= dt;
             dt = fmax(dt * critical_step_decrease, dtmin);
+            //residuals = reset_residuals; //JE: not needed
+            elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
+            if ( idc ) {
+                idc_time = idc_time_converged;
+                load *= 0.;
+                nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
+                nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
+                computeForcesAtIntegrationTime(true);
+            }
+
             time += dt;
             // }
             std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
@@ -767,11 +777,6 @@ void SteadyStateNonLinearSolver :: solve() {
             f_ext = f_ext_old;
             load *= 0;
             ddr *= 0;
-            //residuals = reset_residuals; //JE: not needed
-            elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
-            if ( idc ) {
-                idc_time = idc_time_converged;
-            }
         } else if ( !converged ) {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
                 std :: cout << "tolerance increased in this step" << '\n';
