@@ -617,19 +617,90 @@ void SteadyStateNonLinearSolver :: reset(){
     load *= 0.;
     double reset_time = time;
     if( idc ) reset_time = idc_time;
-    nodes->addRHS_nodalLoad(load, reset_time); //add nodal load
-    nodes->updateDirrichletBC(trial_r, reset_time); //give prescribed DoFs
-    computeForcesAtIntegrationTime(true);
-    nodes->giveReducedForceArray(residuals, f);
 
-    if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-       std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
-       cerr << "solver restart did not work" << endl;
-       exit(1);
+    bool converged = false;
+    double displa_error = 0;
+    double energy_error = 0;
+    double residu_error = 0;
+
+    while ( !converged ) {            
+        nodes->addRHS_nodalLoad(load, reset_time); //add nodal load
+        nodes->updateDirrichletBC(trial_r, reset_time); //give prescribed DoFs
+        updateFieldVariables();
+        computeForcesAtIntegrationTime(true);
+
+        unsigned it = 0;
+        while ( !converged && it < maxIt ) {
+            if ( updateSystemMatrices("secant", it) ) {
+                computeKeff();                                    //only if required
+            }
+            nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
+
+           if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
+                    std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
+                    it = maxIt;
+                    residu_error = 1e10;
+                    break;
+            }
+
+            //update DoFs
+            updateFieldVariables();
+            //compute residuals
+            computeForcesAtIntegrationTime(true); //to obtain the actual stress, fluxes, ...
+
+            //compute and print errors
+            evaluateErrors(& displa_error, & energy_error, & residu_error);
+            if ( it == 0 ) {
+                displa_error = 0;                        //error in displacement change, only from second iteration
+            }
+            cout << setw(6) << it << setw(15) << residu_error;
+            if ( it == 0 ) {
+                cout << setw(15) << "---";
+            } else {
+                cout << setw(15) << displa_error;
+            }
+            cout << setw(15) << energy_error << endl;
+
+            if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
+                std :: cerr << "calculating with NaN in ";
+                if ( std :: isnan(residu_error) ) {
+                    std :: cerr << "\tresidua ";
+                }
+                if ( std :: isnan(displa_error) ) {
+                    std :: cerr << "\tdisplacements ";
+                }
+                if ( std :: isnan(energy_error) ) {
+                    std :: cerr << "\tenergies ";
+                }
+                std :: cerr << endl;
+                it = maxIt;
+                residu_error = 1e10;
+                break;
+            }
+
+            if ( displa_error <= disErr && residu_error <= resErr && energy_error <= eneErr ) {
+                converged = true;
+            } else {
+                converged = false;
+            }
+            it++;
+        }
+
+        if ( converged ) {
+            this->fully_converged = true;
+        } else if ( !converged ) {
+            if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
+                std :: cout << "tolerance increased in this step" << '\n';
+                converged = true;
+                this->fully_converged = false;
+                computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+            } else {
+                std :: cerr << "Error: " << name << " did not converge to the solution" << endl;
+                terminated = true;
+                return;
+            }
+        }
     }
-    updateFieldVariables();
-    computeForcesAtIntegrationTime(true);
-
     runAfterEachStep();
 }
 
@@ -757,26 +828,23 @@ void SteadyStateNonLinearSolver :: solve() {
         if ( !converged && dt > dtmin*1.00001 ) {
             time -= dt;
             dt = fmax(dt * critical_step_decrease, dtmin);
-            //residuals = reset_residuals; //JE: not needed
+            trial_r = r;
+            f_int = f_int_old;
+            f_ext = f_ext_old;
+            std::fill(begin(load), end(load), 0);
+            std::fill(begin(ddr), end(ddr), 0);            ddr *= 0;
             elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
-            if ( idc ) {
+            if ( idc ) { //idc solver needs residuals from last converged step
                 idc_time = idc_time_converged;
-                load *= 0.;
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
                 computeForcesAtIntegrationTime(true);
             }
 
             time += dt;
-            // }
             std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
             restarted = true;
             restart_now = false;
-            trial_r = r;
-            f_int = f_int_old;
-            f_ext = f_ext_old;
-            load *= 0;
-            ddr *= 0;
         } else if ( !converged ) {
             if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
                 std :: cout << "tolerance increased in this step" << '\n';

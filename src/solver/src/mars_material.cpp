@@ -215,14 +215,6 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
 
     //temp_damage = min( temp_damage, m->giveMaxDamage() ); //dangerous, better switched off
 
-    if ( epsN > 0 ) {
-        temp_crackOpening = ( L * temp_damage ) * strain [ 0 ]; //normal opening only
-        //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
-    } else {
-        temp_crackOpening = 0;
-    }
-
-
     // compression recovery
     //if (temp_damage < damage && epsN>0)  temp_damage = damage;
     //if (temp_damage < damageC && epsN<0) temp_damage = damageC;
@@ -308,9 +300,16 @@ Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     temp_strain = strain;
     temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );
+    if ( strain [ 0 ] > 0 ) {
+        temp_crackOpening = ( L * temp_damage ) * strain [ 0 ]; //normal opening only
+        //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
+    } else {
+        temp_crackOpening = 0;
+    }
     return temp_stress;
 }
 
+//////////////////////////////////////////////////////////
 std :: string MarsMaterialStatus :: giveLineToSave() const {
     return "damage " + to_string_sci(this->damage) + " maxEpsN " + to_string_sci(this->maxEpsN) + " maxEpsT " + to_string_sci(this->maxEpsT);
 }
@@ -331,10 +330,13 @@ void MarsMaterialStatus :: readFromLine(istringstream &iss) {
         iss >> param;
         if ( param.compare("damage") == 0 ) {
             iss >> this->damage;
+             temp_damage = damage;
         } else if ( param.compare("maxEpsN") == 0 ) {
             iss >> this->maxEpsN;
+            temp_maxEpsN = maxEpsN;
         } else if ( param.compare("maxEpsT") == 0 ) {
             iss >> this->maxEpsT;
+            temp_maxEpsT = maxEpsT;
         }
     }
 }

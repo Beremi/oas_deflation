@@ -448,7 +448,6 @@ private:
             BaseSolver :: dt = BaseSolver :: time - this->time_before_step;
             BaseSolver :: step--;
             BaseSolver :: time = this->time_before_step;
-            cout << "TIME SENT "<< this->time_before_step << endl;
             BaseSolver :: reset();
             BaseSolver :: runBeforeEachStep();
 
