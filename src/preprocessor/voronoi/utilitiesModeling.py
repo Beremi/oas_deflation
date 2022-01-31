@@ -1333,7 +1333,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     functions.append (fnTrsprt1)
 
     ### selecting vertices on rebar interfaces
-    clipRadius = rebarDiameter/2 + minDist/3
+    clipRadius = rebarDiameter/2*1.01
     for r in range (rebarCount):
         interfaceVertices = []
         for i in range (len(vor.vertices)):

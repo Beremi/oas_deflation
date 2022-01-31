@@ -67,6 +67,8 @@ class Model:
 
         self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC =self.expansionRings= None
 
+        self.tpbwedgeheight = 0.2
+
         self.functions = []
         self.radii = []
         self.totalNodeCount = -1
@@ -159,6 +161,9 @@ class Model:
                 self.minDist = float(r[i+1])
             if (r[i]=='trials'):
                 self.trials = int(r[i+1])
+
+            if (r[i]=='tpbwedgeheight'):
+                self.tpbwedgeheight = float(r[i+1])
 
             self.randomizeMaterial = False
             if (r[i]=='randomizeMaterial'):
@@ -413,7 +418,7 @@ class Model:
         if self.elasticZone ==1:
             lim = np.array([
             self.maxLim[0]*0.5  + self.maxLim[1] * 0.2,#+ self.maxLim[0]*self.fracZoneWidth*1,
-            self.maxLim[1] * 0.9,
+            self.maxLim[1] * (1-self.tpbwedgeheight),
             -self.maxLim[2]* 0.1,
             self.maxLim[0]*0.5  - self.maxLim[1] * 0.2,#- self.maxLim[0]*self.fracZoneWidth*1,
             self.maxLim[1] * 1.1,

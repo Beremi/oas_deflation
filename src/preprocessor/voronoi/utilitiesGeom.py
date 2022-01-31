@@ -1651,6 +1651,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       print('node in notch')
 
                 if ( triangle == True ):
+                      #print('triangle')
                       isPresentA = False
                       isPresentB = False
 
@@ -1671,6 +1672,12 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
                       #print ('cx %f' %(xmin+xTop*0.5/yTop))
                       #print ('cy %f' %(xmax-yTop*0.05/xTop))
+
+                      if (nodeA[0]==(xmin+xmax)/2 or nodeB[0]==(xmin+xmax)/2 ):
+                          if (nodeA[1]>ymin or nodeB[1]>ymin):
+                              isPresentA = True
+                              isPresentB = True
+                              print ('chycenb')
                       if (nodeA[0] > xmin and nodeA[0]<(xmin+xmax)/2):
                           xMINlim = xmin + xTop * y / yTop
                           yMINlim = ymax - yTop * x / xTop
