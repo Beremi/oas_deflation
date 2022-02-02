@@ -1913,10 +1913,7 @@ def getRandCoef(integrationPoint):
 
 
 def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False, mZ=[]):
-    print('Creating TRSPRT elements...', end='')
-
-    print ('tube: %s' %isTube)
-
+    print('Creating TRSPRT elements...')
 
     sys.stdout.flush()
     transportElements = []
@@ -1929,7 +1926,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     aux = len(aux_nodes)
     vrt = vertCount
 
-
+    #tady se kontroluje, jestli transportni prvek spojuje jen vertexy
     if (dim == 2):
         for i in range (len(ridges_out)):
             connNds = []
@@ -2052,11 +2049,9 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             for i in range (1, len( elem.connectedNodes )-2, 2) :
                 if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
                     reorderOk = False
-                    #print ('!!! %d Reorder not ok %s \n\n\n' %((i), elem.connectedNodes))
+                    print ('!!! %d Reorder not ok %s \n\n\n' %((i), elem.connectedNodes))
                     allReorderedFine = False
                     break
-            #if (reorderOk == True):
-            #    print ('Reordered fine: %s' %elem.connectedNodes)
 
 
     if (allReorderedFine == True):
