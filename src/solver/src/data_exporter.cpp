@@ -3,6 +3,7 @@
 #include "exporter_model.h"
 #include "geometry.h"
 #include "element_discrete.h"
+#include "solver.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -552,6 +553,42 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EXPORT OF SOLVER VALUES
+void SolverGauge :: readFromLine(istringstream &iss) {
+    iss >> filename;
+    iss >> name;
+    codes.resize(1);
+    iss >> codes [ 0 ];
+    DataExporter :: readFromLine(iss);
+}
+//////////////////////////////////////////////////////////
+void SolverGauge :: init() {
+}
+
+//////////////////////////////////////////////////////////
+void SolverGauge :: setSolverPointer(Solver *s) {
+    solver = s;
+}
+
+
+//////////////////////////////////////////////////////////
+void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    ( void ) reactions;
+    ( void ) DoFs;
+    char buffer [ 100 ];
+    giveFileName(step, buffer);
+    ofstream outputfile;
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    if ( outputfile.good() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+        outputfile << "\t" << solver->giveValue( codes [ 0 ] );
+    }
+    outputfile.close();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // EXPORT OF DISPLACEMENTS
 /*!
  *  Export displacements of the structure to txt.
@@ -673,6 +710,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     IPGauge *newexp = new IPGauge(e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("SolverGauge") == 0 ) {
+                    SolverGauge *newexp = new SolverGauge(dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTGaussPointExporter") == 0 ) {
                     TXTGaussPointExporter *newexp = new TXTGaussPointExporter(e, dimension);
                     newexp->readFromLine(iss);
@@ -716,6 +757,14 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
     } else {
         cerr << "Error ExporterContainer: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void ExporterContainer :: setSolver(Solver *s){
+    for ( auto &exp : exporters ) {
+        SolverGauge *sg = dynamic_cast< SolverGauge* >(exp);
+        if (sg) sg->setSolverPointer(s);
     }
 }
 
@@ -799,6 +848,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
         ofstream outputfile;
         outputfile.open( ( resultDir / buffer ).string(), ios :: app);
         if ( outputfile.good() ) {
+            outputfile << std :: scientific;
             outputfile << step << "\t" << time;
         }
         outputfile.close();

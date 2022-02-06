@@ -104,6 +104,14 @@ void Solver :: setNextStepTime() {
 void Solver :: runBeforeEachStep() {
 
     step += 1;
+
+    if ( time + dt > termination_time ) {
+        dt = termination_time - time;
+    }
+    if ( dt < 1e-15 ) {
+        terminated = true;
+    }
+
     setNextStepTime();
 
     load_old = load; //copy old load to be used in generalized alpha method
@@ -117,12 +125,6 @@ void Solver :: runAfterEachStep() {
     f_int_old = f_int;
     f_ext_old = f_ext;
 
-    if ( time + dt > termination_time ) {
-        dt = termination_time - time;
-    }
-    if ( dt < 1e-15 ) {
-        terminated = true;
-    }
     elems->updateMaterialStatuses();
 }
 
@@ -176,6 +178,19 @@ void Solver :: updateFieldVariables() {
     nodes->giveFullDoFArray(ddr, full_ddr);
     nodes->updateFullDoFsByDependenciesOnConjugates(full_ddr, trial_r, f_ext);
     trial_r += full_ddr;
+}
+
+//////////////////////////////////////////////////////////
+double Solver :: giveValue(string code){
+    if ( code.compare("simulation_time") == 0 ) {
+        return time;
+    } else if ( code.compare("elapsed_time") == 0 ) {
+        return chrono::duration_cast<std::chrono::duration<double>>( std :: chrono :: system_clock :: now() - masterModel->giveStartTime()).count();
+    } else if ( code.compare("number_of_dof") == 0 ) {
+        return freeDoFnum;
+    } else {
+        return 0;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -356,6 +371,21 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     W_int_oldM = 0;
     W_ext_oldT = 0;
     W_int_oldT = 0;
+
+
+    maxIt = 30;
+    enlargeIt = shortenIt = 0;
+    maxDisErr = maxResErr = maxEneErr = 1e-5;
+    limitEneErr = limitResErr = limitDisErr = 0;
+    step_increase = 1.25;
+    step_decrease = 0.8;
+    critical_step_decrease = 0.5;
+    stiffnessMatrixUpdate = 1e3;
+    dampingMatrixUpdate = -1;
+    massMatrixUpdate = -1;
+
+    it = 0;
+    restarts = 0;
 }
 
 //////////////////////////////////////////////////////////
@@ -390,17 +420,6 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
 Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     SteadyStateLinearSolver :: readFromFile(filename);
 
-    maxIt = 30;
-    enlargeIt = shortenIt = 0;
-    disErr = resErr = eneErr = 1e-5;
-    limitEneErr = limitResErr = limitDisErr = 0;
-    step_increase = 1.25;
-    step_decrease = 0.8;
-    critical_step_decrease = 0.5;
-    stiffnessMatrixUpdate = 1e3;
-    dampingMatrixUpdate = -1;
-    massMatrixUpdate = -1;
-
     string param, line;
     dtmax = dtmin = dt;
     bool bdtmin = false;
@@ -427,8 +446,8 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 bdtmin = true;
                 iss >> dtmin;
             } else if ( param.compare("tolerance") == 0 ) {
-                iss >> disErr;
-                resErr = eneErr = disErr;
+                iss >> maxDisErr;
+                maxResErr = maxEneErr = maxDisErr;
             } else if ( param.compare("stiffness_matrix_update") == 0 ) {
                 iss >> valueIN;
                 stiffnessMatrixUpdate = int( valueIN + 0.5 );
@@ -524,6 +543,26 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
 };
 
 
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: giveValue(string code){
+    if ( code.compare("iterations") == 0 ) {
+        return it;
+    } else if ( code.compare("restars") == 0 ) {
+        return restarts;
+    } else if ( code.compare("error_displacements") == 0 ) {
+        return disErr;
+    } else if ( code.compare("error_residuals") == 0 ) {
+        return resErr;
+    } else if ( code.compare("error_energy") == 0 ) {
+        return eneErr;
+    } else if ( code.compare("idc_time") == 0 ) {
+        return idc_time;
+    } else if ( code.compare("converged") == 0 ) {
+        return fully_converged;
+    } else {
+        return SteadyStateLinearSolver :: giveValue(code);
+    }
+}
 
 //////////////////////////////////////////////////////////
 bool SteadyStateNonLinearSolver :: updateSystemMatrices(string matrixType, unsigned iteration) {
@@ -537,7 +576,7 @@ bool SteadyStateNonLinearSolver :: updateSystemMatrices(string matrixType, unsig
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *energy_error, double *residu_error) {
+void SteadyStateNonLinearSolver :: evaluateErrors() {
     vector< bool >mechDoFs  = nodes->giveMechDoFsIndicator();   //these fields should be on input
     vector< bool >transpDoFs = nodes->giveTranspDoFsIndicator();
     double f_extM = 0;
@@ -591,9 +630,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors(double *displa_error, double *
             W_kinT += 0.; //TODO: correct kinetic energy
         }
     }
-    * residu_error = sqrt( residualM / max(max( max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max( max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
-    * displa_error = sqrt( full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
-    * energy_error = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
+    resErr = sqrt( residualM / max(max( max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max( max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
+    disErr = sqrt( full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
+    eneErr = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
 
     /*
      std :: cout << "f_extM " << f_extM << '\t' <<
@@ -619,17 +658,15 @@ void SteadyStateNonLinearSolver :: reset(){
     if( idc ) reset_time = idc_time;
 
     bool converged = false;
-    double displa_error = 0;
-    double energy_error = 0;
-    double residu_error = 0;
 
+    restarts = 0;
     while ( !converged ) {            
         nodes->addRHS_nodalLoad(load, reset_time); //add nodal load
         nodes->updateDirrichletBC(trial_r, reset_time); //give prescribed DoFs
         updateFieldVariables();
         computeForcesAtIntegrationTime(true);
 
-        unsigned it = 0;
+        it = 0;
         while ( !converged && it < maxIt ) {
             if ( updateSystemMatrices("secant", it) ) {
                 computeKeff();                                    //only if required
@@ -639,7 +676,7 @@ void SteadyStateNonLinearSolver :: reset(){
            if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
-                    residu_error = 1e10;
+                    resErr = 1e10;
                     break;
             }
 
@@ -649,36 +686,36 @@ void SteadyStateNonLinearSolver :: reset(){
             computeForcesAtIntegrationTime(true); //to obtain the actual stress, fluxes, ...
 
             //compute and print errors
-            evaluateErrors(& displa_error, & energy_error, & residu_error);
+            evaluateErrors();
             if ( it == 0 ) {
-                displa_error = 0;                        //error in displacement change, only from second iteration
+                disErr = 0;                        //error in displacement change, only from second iteration
             }
-            cout << setw(6) << it << setw(15) << residu_error;
+            cout << setw(6) << it << setw(15) << resErr;
             if ( it == 0 ) {
                 cout << setw(15) << "---";
             } else {
-                cout << setw(15) << displa_error;
+                cout << setw(15) << disErr;
             }
-            cout << setw(15) << energy_error << endl;
+            cout << setw(15) << eneErr << endl;
 
-            if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
+            if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
-                if ( std :: isnan(residu_error) ) {
+                if ( std :: isnan(resErr) ) {
                     std :: cerr << "\tresidua ";
                 }
-                if ( std :: isnan(displa_error) ) {
+                if ( std :: isnan(disErr) ) {
                     std :: cerr << "\tdisplacements ";
                 }
-                if ( std :: isnan(energy_error) ) {
+                if ( std :: isnan(eneErr) ) {
                     std :: cerr << "\tenergies ";
                 }
                 std :: cerr << endl;
                 it = maxIt;
-                residu_error = 1e10;
+                resErr = 1e10;
                 break;
             }
 
-            if ( displa_error <= disErr && residu_error <= resErr && energy_error <= eneErr ) {
+            if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr ) {
                 converged = true;
             } else {
                 converged = false;
@@ -689,7 +726,7 @@ void SteadyStateNonLinearSolver :: reset(){
         if ( converged ) {
             this->fully_converged = true;
         } else if ( !converged ) {
-            if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
+            if ( disErr < limitDisErr && resErr < limitResErr && eneErr < limitEneErr ) {
                 std :: cout << "tolerance increased in this step" << '\n';
                 converged = true;
                 this->fully_converged = false;
@@ -709,14 +746,11 @@ void SteadyStateNonLinearSolver :: solve() {
     double load_mult;
     bool converged = false;
     bool restarted = false;
-    double displa_error = 0;
-    double energy_error = 0;
-    double residu_error = 0;
     
     bool restart_now = false;
     //Vector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
                                             //JE: no, these are recomputed                                                        
-
+    restarts = 0;
     while ( !converged ) {
         //setup loading
 
@@ -727,7 +761,7 @@ void SteadyStateNonLinearSolver :: solve() {
             computeForcesAtIntegrationTime(true);
         }
 
-        unsigned it = 0;
+        it = 0;
         while ( !converged && it < maxIt ) {
             if ( updateSystemMatrices("secant", it) ) {
                 computeKeff();                                    //only if required
@@ -745,13 +779,13 @@ void SteadyStateNonLinearSolver :: solve() {
                 if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;    
                     it = maxIt;
-                    residu_error = 1e10;
+                    resErr = 1e10;
                     break;
                 }
                 if ( LinalgSymmetricSolver(Keff, ddf, f - f_last_iter, ddf, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
-                    residu_error = 1e10;
+                    resErr = 1e10;
                     break;
                 }
                 
@@ -772,7 +806,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
-                    residu_error = 1e10;
+                    resErr = 1e10;
                     break;
                 }
             }
@@ -783,36 +817,36 @@ void SteadyStateNonLinearSolver :: solve() {
             computeForcesAtIntegrationTime(false); //to obtain the actual stress, fluxes, ...
 
             //compute and print errors
-            evaluateErrors(& displa_error, & energy_error, & residu_error);
+            evaluateErrors();
             if ( it == 0 ) {
-                displa_error = 0;                        //error in displacement change, only from second iteration
+                disErr = 0;                        //error in displacement change, only from second iteration
             }
-            cout << setw(6) << it << setw(15) << residu_error;
+            cout << setw(6) << it << setw(15) << resErr;
             if ( it == 0 ) {
                 cout << setw(15) << "---";
             } else {
-                cout << setw(15) << displa_error;
+                cout << setw(15) << disErr;
             }
-            cout << setw(15) << energy_error << endl;
+            cout << setw(15) << eneErr << endl;
 
-            if ( std :: isnan(residu_error) || std :: isnan(displa_error) || std :: isnan(energy_error) ) {
+            if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
-                if ( std :: isnan(residu_error) ) {
+                if ( std :: isnan(resErr) ) {
                     std :: cerr << "\tresidua ";
                 }
-                if ( std :: isnan(displa_error) ) {
+                if ( std :: isnan(disErr) ) {
                     std :: cerr << "\tdisplacements ";
                 }
-                if ( std :: isnan(energy_error) ) {
+                if ( std :: isnan(eneErr) ) {
                     std :: cerr << "\tenergies ";
                 }
                 std :: cerr << endl;
                 it = maxIt;
-                residu_error = 1e10;
+                resErr = 1e10;
                 break;
             }
 
-            if ( displa_error <= disErr && residu_error <= resErr && energy_error <= eneErr ) {
+            if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr ) {
                 converged = true;
             } else {
                 converged = false;
@@ -843,10 +877,11 @@ void SteadyStateNonLinearSolver :: solve() {
 
             time += dt;
             std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+            restarts ++;
             restarted = true;
             restart_now = false;
         } else if ( !converged ) {
-            if ( displa_error < limitDisErr && residu_error < limitResErr && energy_error < limitEneErr ) {
+            if ( disErr < limitDisErr && resErr < limitResErr && eneErr < limitEneErr ) {
                 std :: cout << "tolerance increased in this step" << '\n';
                 converged = true;
                 this->fully_converged = false;
@@ -890,7 +925,7 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
     cout <<  scientific; //cout << setprecision(8);
     cout << "----------------------------------------------------" << endl;
     cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
-    cout << setw(6) << " " << setw(15) << resErr << setw(15) << disErr << setw(15) << eneErr << endl;
+    cout << setw(6) << " " << setw(15) << maxResErr << setw(15) << maxDisErr << setw(15) << maxEneErr << endl;
     cout << "----------------------------------------------------" << endl;
 }
 

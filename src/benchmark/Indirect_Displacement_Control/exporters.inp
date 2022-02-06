@@ -8,3 +8,13 @@ ForceGauge LD fy#1208 fy 1 1208
 ForceGauge LD fy#1209 fy 1 1209
 DisplacementGauge LD ux#totalLS	ux	4.000000e-01	1.000000e-01	0.000000e+00	0.000000e+00
 DisplacementGauge LD uy#totalLS	uy	4.000000e-01	1.000000e-01	0.000000e+00	0.000000e+00
+SolverGauge LD iterations iterations
+SolverGauge LD restars restars
+SolverGauge LD error_displacements error_displacements
+SolverGauge LD error_residuals error_residuals
+SolverGauge LD error_energy error_energy
+SolverGauge LD idc_time idc_time
+SolverGauge LD converged converged
+SolverGauge LD simulation_time simulation_time
+SolverGauge LD number_of_dof number_of_dof
+SolverGauge LD elapsed_time elapsed_time

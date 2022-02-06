@@ -57,17 +57,17 @@ int main(int argc, char **argv) {
     GlobPaths :: BASEDIR = input.parent_path();
 
     //initial time
-    auto start = std :: chrono :: system_clock :: now();
-    auto now = start;
+    std::chrono::time_point<std::chrono::system_clock> now;
     std :: chrono :: duration< double >elapsed_seconds;
+    masterModel = new Model(PRINT_TIME);
     if ( PRINT_TIME ) {
-        std :: time_t time_now = std :: chrono :: system_clock :: to_time_t(start);
+        std :: time_t time_now = std :: chrono :: system_clock :: to_time_t(masterModel->giveStartTime());
         string nowstring = ctime(& time_now);
         std :: cout << "######### start of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;
     }
 
 
-    masterModel = new Model(PRINT_TIME);
+
     masterModel->readFromFile( input.string() );
 
     // check if exists or create directory for results
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 
     if ( PRINT_TIME ) {
         now = std :: chrono :: system_clock :: now();
-        elapsed_seconds = now - start;
+        elapsed_seconds = now - masterModel->giveStartTime();
         std :: time_t time_now = std :: chrono :: system_clock :: to_time_t(now);
         string nowstring = ctime(& time_now);
         std :: cout << "######### end of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;

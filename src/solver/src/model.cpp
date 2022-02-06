@@ -16,6 +16,7 @@ Model :: Model(bool pT) {
     solver = nullptr;
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
+    time_of_sim_start = std :: chrono :: system_clock :: now();
 }
 
 //////////////////////////////////////////////////////////
@@ -161,12 +162,14 @@ void Model :: readFromFile(const string filename, const bool &initial) {
         resultDir = baseDir / result_dir_name;
     }
 
-    exporters.setResultDirectory(resultDir);
-
     //here we apply periodic blocks to generate all the necessary objects
     //it was removed from Model initialization, because it had to be called in advance for RVE materials
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
     pblocks.apply();
+
+
+    exporters.setResultDirectory(resultDir);
+    exporters.setSolver(solver);
 }
 
 
