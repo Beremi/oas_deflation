@@ -1282,7 +1282,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
     trsptTopRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
     trsptTopRigidPlate.setDirectNodes(faces2)
-    trsptTopRigidPlateMechBC = np.array([-1,-1])
+    trsptTopRigidPlateMechBC = np.array([0,-1])
     rigidPlatesTrspt.append(trsptTopRigidPlate)
     govNodesTrspt.append(np.array([ -1, 1]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptTopRigidPlateMechBC))
@@ -1297,7 +1297,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
     trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
     trsptRightRigidPlate.setDirectNodes(faces3)
-    trsptRightRigidPlateMechBC = np.array([-1,-1])
+    trsptRightRigidPlateMechBC = np.array([0,-1])
     rigidPlatesTrspt.append(trsptRightRigidPlate)
     govNodesTrspt.append(np.array([ -1, 2]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
@@ -1312,7 +1312,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
     trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
     trsptLeftRigidPlate.setDirectNodes(faces4)
-    trsptLeftRigidPlateMechBC = np.array([-1,-1])
+    trsptLeftRigidPlateMechBC = np.array([0,-1])
     rigidPlatesTrspt.append(trsptLeftRigidPlate)
     govNodesTrspt.append(np.array([ -1, -1]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))

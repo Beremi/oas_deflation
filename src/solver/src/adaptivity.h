@@ -129,6 +129,7 @@ private:
 
     std :: vector< unsigned >nodesToKeep;
     unsigned remesherSeed = 1;
+    bool reseted = true;
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
@@ -448,7 +449,8 @@ private:
             BaseSolver :: dt = BaseSolver :: time - this->time_before_step;
             BaseSolver :: step--;
             BaseSolver :: time = this->time_before_step;
-            BaseSolver :: reset();
+            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku
+            this->reseted = true;
             BaseSolver :: runBeforeEachStep();
 
 
@@ -623,7 +625,11 @@ public:
 
     virtual void runAfterEachStep() {
         if ( PRINT_TEST ) { std :: cout << "adaptivity after each step II" << '\n'; }
-        remeshGeometry();
+        if ( this->reseted ) {
+            this->reseted = false;
+        } else {
+            remeshGeometry();
+        }
 
         BaseSolver :: runAfterEachStep();
         // __lsan_do_leak_check();
