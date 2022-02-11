@@ -23,7 +23,7 @@ class RVEMaterialStatus : public MaterialStatus
 protected:
     Model *RVE;
     fs :: path inputfile;
-    
+
     Matrix transf;   //transformation matrix
     Matrix axDirs;  //directional matrix
 
@@ -38,9 +38,9 @@ public:
     virtual void init();
     virtual void update();
     Model *giveWholeRVE() { return RVE; };
-    virtual void setReferenceSystemDirections(Matrix r) {axDirs = r;};
-    Matrix giveTransformationMatrix() {return transf;};
-    Matrix giveReferenceSystemDirections() {return axDirs;};
+    virtual void setReferenceSystemDirections(Matrix r) { axDirs = r; };
+    Matrix giveTransformationMatrix() { return transf; };
+    Matrix giveReferenceSystemDirections() { return axDirs; };
 };
 
 //////////////////////////////////////////////////////////
@@ -54,16 +54,16 @@ protected:
     bool elastic_sol_is_Voigt;  //distinguish whether the solution in initial precomputed state is really solved elastically or using Voigt constraint
 
 public:
-    RVEMaterial() { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt=false; };
+    RVEMaterial() { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; };
     virtual ~RVEMaterial() {};
     virtual void readFromLine(istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     fs :: path givePathToInputFile() const { return inputfile; };
     unsigned giveNumOfDimensions() const { return ndim; };
     void setNumOfDimensions(unsigned dim) { ndim = dim; };
-    void setPathToInputFolder(string f){ inputfile = GlobPaths :: BASEDIR  / f; };
-    void enforceLinearity() {nonlinear = false;};
-    bool isElasticSolutionVoigt() const { return elastic_sol_is_Voigt;};
+    void setPathToInputFolder(string f) { inputfile = GlobPaths :: BASEDIR  / f; };
+    void enforceLinearity() { nonlinear = false; };
+    bool isElasticSolutionVoigt() const { return elastic_sol_is_Voigt; };
 };
 
 
@@ -174,13 +174,13 @@ public:
 //////////////////////////////////////////////////////////
 class DiscreteMechanicalRVEMaterial : public RVEMaterial
 {
-protected: 
+protected:
     Matrix precompElastic, precompDamping, precompInertia;
     Point centroid;
     vector< vector< Vector > >projectors;
 
 public:
-    DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; precompElastic = Matrix(0, 0);};
+    DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; precompElastic = Matrix(0, 0); };
     virtual ~DiscreteMechanicalRVEMaterial() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; };
@@ -192,7 +192,7 @@ public:
     Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
     Point giveCentroid() { return centroid; };
     vector< vector< Vector > > *giveProjectors() { return & projectors; };
-    bool isNonlinear() const { return nonlinear; }; 
+    bool isNonlinear() const { return nonlinear; };
 };
 
 //////////////////////////////////////////////////////////

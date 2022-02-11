@@ -50,7 +50,7 @@ public:
     void resetTime() { solver->setTime(0); solver->setStep(0); }
 
     void print_res_dir() { std :: cout << "resultdir: " << resultDir.string() << '\n'; }
-    std::chrono::time_point<std::chrono::system_clock> giveStartTime() const {return time_of_sim_start;}
+    std :: chrono :: time_point< std :: chrono :: system_clock >giveStartTime() const { return time_of_sim_start; }
 
     fs :: path baseDir;
     fs :: path resultDir;
@@ -60,7 +60,7 @@ public:
 protected:
     unsigned ndim;
     bool printTime;
-    std::chrono::time_point<std::chrono::system_clock> time_of_sim_start;
+    std :: chrono :: time_point< std :: chrono :: system_clock >time_of_sim_start;
 
     FunctionContainer funcs;
     BCContainer bconds;

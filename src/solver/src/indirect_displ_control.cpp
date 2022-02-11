@@ -131,7 +131,7 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
             dd += ( prev_displ [ c_DoFs [ c ] [ i ] ] ) * c_weights [ c ] [ i ];
             df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
         }
-        if ( abs( ( pdispl - dd ) / df ) < lambdaABS ) {
+        if ( abs( ( pdispl - dd ) / df) < lambdaABS ) {
             lambda = ( pdispl - dd ) / df;
             lambdaABS = abs(lambda);
         }

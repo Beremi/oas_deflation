@@ -46,7 +46,7 @@ class VTKElement2Exporter : public VTKElementExporter
 {
 private:
 public:
-    VTKElement2Exporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKElementExporter( e, n, dimension) {};
+    VTKElement2Exporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKElementExporter(e, n, dimension) {};
     ~VTKElement2Exporter() {};
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:

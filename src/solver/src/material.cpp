@@ -107,7 +107,7 @@ double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pre
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -602,9 +602,9 @@ void DiscreteTrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("biot_coeff") == 0 ) {
             bbiot = true;
             iss >> biotCoeff;
-        } else if ( param.compare("reference_pressure") == 0 )   {
+        } else if ( param.compare("reference_pressure") == 0 ) {
             iss >> refP;
-        } else if ( param.compare("Kw") == 0 )   {
+        } else if ( param.compare("Kw") == 0 ) {
             iss >> Kw;
         }
     }
@@ -661,7 +661,7 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     ( void ) timeStep;
     temp_strain = strain;
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     Vector activeStrain = addEigenStrain(strain);
     temp_stress [ 0 ] = m->giveE0() * activeStrain [ 0 ];
     for ( unsigned i = 1; i < strain.size(); i++ ) {

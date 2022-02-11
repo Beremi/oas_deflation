@@ -79,7 +79,7 @@ class LDPMMaterial;
 class LDPMMaterialStatus : public MarsMaterialStatus
 {
 private:
-    
+
 public:
     LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     virtual ~LDPMMaterialStatus() {};

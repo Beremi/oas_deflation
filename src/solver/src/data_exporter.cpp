@@ -87,7 +87,7 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     vector< Matrix >nodal_stress;
     if ( std :: find(codes.begin(), codes.end(), nds) != codes.end() ) {
         // reserve space only if nodal stresses should be exported
-        nodal_stress.resize( nodes->giveSize(), Matrix(this->dim, this->dim) );
+        nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim) );
         // export nodal stresses:
         ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, this->nodes, this->elems, this->dim);
     }
@@ -234,7 +234,7 @@ void TXTGaussPointExporter :: exportData(unsigned step, const Vector &DoFs, cons
 // GAUGE EXPORTERS
 void Gauge :: giveFileName(unsigned step, char *buffer) const {
     ( void ) step;
-    sprintf( buffer, "%s.out", filename.c_str() );
+    sprintf(buffer, "%s.out", filename.c_str() );
 }
 
 
@@ -275,14 +275,14 @@ void ForceGauge :: readFromLine(istringstream &iss) {
         Block bl;
         bl.readFromLine(iss);
         for ( auto const &nod : * nodes ) {
-            if ( bl.isInside( nod->givePoint() ) ) {
+            if ( bl.isInside(nod->givePoint() ) ) {
                 if ( ( nod->doesMechanics() && mech ) || ( nod->doesTransport() && !mech ) ) {
-                    this->n.push_back( nodes->giveNodeId(nod) );
+                    this->n.push_back(nodes->giveNodeId(nod) );
                 }
             }
         }
     } else {
-        num = std :: stoul( param.c_str() );
+        num = std :: stoul(param.c_str() );
         this->n.resize(num);
         for ( unsigned i = 0; i < num; i++ ) {
             iss >> this->n [ i ];
@@ -306,7 +306,7 @@ ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned >
 void ForceGauge :: init() {
     time_each = 0;
     time_last = 0;
-    DoFs.resize( n.size() );
+    DoFs.resize(n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + nodes->giveNode(n [ i ])->giveOrderOfForceCode(codes [ 0 ]);
     }
@@ -320,7 +320,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -371,8 +371,8 @@ void DoFGauge :: init() {
         if ( dim == 2 ) {
             DoFpos = 2;
         }
-    } else if ( all_of(codes [ 0 ].begin(), codes [ 0 ].end(), ::isdigit) ) {
-        DoFpos = atoi(codes [ 0 ].c_str()); 
+    } else if ( all_of(codes [ 0 ].begin(), codes [ 0 ].end(), :: isdigit) ) {
+        DoFpos = atoi( codes [ 0 ].c_str() );
     } else {
         if ( dim == 3 ) {
             cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;
@@ -383,7 +383,7 @@ void DoFGauge :: init() {
         }
     }
 
-    DoFs.resize( n.size() );
+    DoFs.resize(n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + DoFpos;
     }
@@ -397,7 +397,7 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -443,7 +443,7 @@ void IPGauge :: exportData(unsigned step, const Vector &full_f, const Vector &re
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -516,34 +516,34 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
     double valueB = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         if ( elemA ) {
-            Vector mv = elemA->giveMasterVariables( & natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemA->giveMasterVariables(& natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
             valueA = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueA = mv [ 0 ];
             } else if ( dim > 1 && codes [ 0 ].compare("uy") == 0 ) {
                 valueA = mv [ 1 ];
-            } else if ( dim > 2 && codes [ 0 ].compare("uz") == 0 )                                                                      {
+            } else if ( dim > 2 && codes [ 0 ].compare("uz") == 0 ) {
                 valueA = mv [ 2 ];
             }
-        } else  {
+        } else {
             valueA = nodeA->giveDoFBasedValue(codes [ 0 ], DoFs);
         }
         if ( elemB ) {
-            Vector mv = elemB->giveMasterVariables( & natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemB->giveMasterVariables(& natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
             valueB = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueB = mv [ 0 ];
             } else if ( dim > 1 && codes [ 0 ].compare("uy") == 0 ) {
                 valueB = mv [ 1 ];
-            } else if ( dim > 2 && codes [ 0 ].compare("uz") == 0 )                                                                      {
+            } else if ( dim > 2 && codes [ 0 ].compare("uz") == 0 ) {
                 valueB = mv [ 2 ];
             }
-        } else  {
+        } else {
             valueB = nodeB->giveDoFBasedValue(codes [ 0 ], DoFs);
         }
         outputfile << "\t" << ( valueB - valueA ) * multiplier;
@@ -562,8 +562,7 @@ void SolverGauge :: readFromLine(istringstream &iss) {
     DataExporter :: readFromLine(iss);
 }
 //////////////////////////////////////////////////////////
-void SolverGauge :: init() {
-}
+void SolverGauge :: init() {}
 
 //////////////////////////////////////////////////////////
 void SolverGauge :: setSolverPointer(Solver *s) {
@@ -578,11 +577,11 @@ void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &
     char buffer [ 100 ];
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        outputfile << "\t" << solver->giveValue( codes [ 0 ] );
+        outputfile << "\t" << solver->giveValue(codes [ 0 ]);
     }
     outputfile.close();
 }
@@ -621,7 +620,7 @@ void StructuralExporter :: exportData(unsigned step, const Vector &DoFs, const V
     double value = calcValue();
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -669,7 +668,7 @@ ExporterContainer :: ~ExporterContainer() {
 void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
     size_t origsize = exporters.size();
     string line, exptype;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile, line) ) {
             if ( line.empty() ) {
@@ -761,10 +760,12 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 }
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: setSolver(Solver *s){
+void ExporterContainer :: setSolver(Solver *s) {
     for ( auto &exp : exporters ) {
-        SolverGauge *sg = dynamic_cast< SolverGauge* >(exp);
-        if (sg) sg->setSolverPointer(s);
+        SolverGauge *sg = dynamic_cast< SolverGauge * >( exp );
+        if ( sg ) {
+            sg->setSolverPointer(s);
+        }
     }
 }
 
@@ -807,7 +808,7 @@ void ExporterContainer :: init(const bool &initial) {
             if ( g ) {
                 ( * d )->giveFileName(0, buffer);
                 ofstream outputfile;
-                outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+                outputfile.open( ( resultDir / buffer ).string(), ios :: app );
                 if ( outputfile.good() ) {
                     outputfile << "\t" << g->giveName();
                 }
@@ -818,7 +819,7 @@ void ExporterContainer :: init(const bool &initial) {
         for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
             ( * unique )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
             if ( outputfile.good() ) {
                 outputfile << endl;
             }
@@ -846,7 +847,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << std :: scientific;
             outputfile << step << "\t" << time;
@@ -865,7 +866,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
         if ( outputfile.good() ) {
             outputfile << endl;
         }
@@ -906,7 +907,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
         if ( el->giveName().rfind("LTCB", 0) == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
-            elDoFvalues.resize( elDoFs.size() );
+            elDoFvalues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
             }

@@ -109,7 +109,7 @@ public:
     bool isCompressiveDamageOff() const { return comp_dam; }
     double giveCompressiveThreshold() const { return comp_thresh; }
     double giveDamageResiduum() const { return damage_residuum; };
-    double giveCriticalNormalStrain() const { return this->tauBar / ( this->E0 * this->mT); };
+    double giveCriticalNormalStrain() const { return this->tauBar / ( this->E0 * this->mT ); };
 };
 
 //////////////////////////////////////////////////////////
