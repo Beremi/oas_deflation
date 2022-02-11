@@ -310,7 +310,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
 void SteadyStateLinearSolver :: solve() {
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-    updateFieldVariables();
+    updateFieldVariables();      //with ddr=0
     computeForcesAtIntegrationTime(true);
 
     //solve linear system
@@ -654,6 +654,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: reset(){
     load *= 0.;
+    ddr *=0;
     double reset_time = time;
     if( idc ) reset_time = idc_time;
 
@@ -663,7 +664,7 @@ void SteadyStateNonLinearSolver :: reset(){
     while ( !converged ) {            
         nodes->addRHS_nodalLoad(load, reset_time); //add nodal load
         nodes->updateDirrichletBC(trial_r, reset_time); //give prescribed DoFs
-        updateFieldVariables();
+        updateFieldVariables();     //with ddr=0
         computeForcesAtIntegrationTime(true);
 
         it = 0;
@@ -757,7 +758,7 @@ void SteadyStateNonLinearSolver :: solve() {
         if ( !idc ) {
             nodes->addRHS_nodalLoad(load, time); //add nodal load
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-            updateFieldVariables();
+            updateFieldVariables();      //with ddr=0
             computeForcesAtIntegrationTime(true);
         }
 
@@ -773,6 +774,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 load *= 0.;
                 nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time + idc_dt); //give prescribed DoFs
+                //updateFieldVariables(); //if used ddr needs to be set to zero
                 computeForcesAtIntegrationTime(true);
                 nodes->giveReducedForceArray(residuals, f);
 
@@ -866,12 +868,13 @@ void SteadyStateNonLinearSolver :: solve() {
             f_int = f_int_old;
             f_ext = f_ext_old;
             std::fill(begin(load), end(load), 0);
-            std::fill(begin(ddr), end(ddr), 0);            ddr *= 0;
+            std::fill(begin(ddr), end(ddr), 0);            //ddr *= 0;
             elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
             if ( idc ) { //idc solver needs residuals from last converged step
                 idc_time = idc_time_converged;
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
+                updateFieldVariables();      //with ddr=0
                 computeForcesAtIntegrationTime(true);
             }
 
@@ -952,6 +955,7 @@ void SteadyStateNonLinearSolver :: printAllVectors() {
     }
 }
 
+//////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: checkAllVectorsForNaNs() {
     // JK left for testing
     bool trial_r_nan, r_nan, full_ddr_nan, ddr_nan, f_int_nan, f_ext_nan, load_nan, f_nan;
@@ -1037,7 +1041,6 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 
-    //compute initial presure derivative
     nodes->giveReducedForceArray(residuals, f);
     CoordinateIndexedSparseMatrix Cred(C);
     if ( nodes->giveConstraints()->isActive() ) {
@@ -1049,6 +1052,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
         exit(1);
     }
     v = Vector(totalDoFnum);
+    for(auto k:f) cout << k << endl;
     nodes->giveFullDoFArray(ddr, v);
 }
 
