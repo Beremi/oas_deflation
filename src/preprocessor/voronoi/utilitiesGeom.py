@@ -1914,7 +1914,7 @@ def getRandCoef(integrationPoint):
 
 def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False, mZ=[]):
     print('Creating TRSPRT elements...')
-
+    print(maxLim)
     sys.stdout.flush()
     transportElements = []
     transportElements_dict = {}
@@ -2045,13 +2045,37 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                         for j in range (1, len( elem.connectedNodes )-2, 2) :
                             if (elem.connectedNodes[j] != elem.connectedNodes[j+1]):
                                 restart = True
+
             reorderOk = True
             for i in range (1, len( elem.connectedNodes )-2, 2) :
                 if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
-                    reorderOk = False
-                    print ('!!! %d Reorder not ok %s \n\n\n' %((i), elem.connectedNodes))
-                    allReorderedFine = False
-                    break
+                    #reorderOk = False
+                    print ('\n !!! %d Reorder not ok %s ' %((i), elem.connectedNodes))
+                    #allReorderedFine = False
+
+                    nodesCoords = []
+                    #print(element.connectedNodes)
+                    for n in range(0,len(elem.connectedNodes),2):
+                        nIdx = int(elem.connectedNodes[n])
+
+                        if (nIdx<len(nodes_out)):
+                            nodesCoords.append(nodes_out[nIdx])
+                        else:
+                            nodesCoords.append(aux_nodes[nIdx-len(nodes_out)])
+
+                    nodesCoords = np.asarray(nodesCoords)
+                    allCoplanar, val = checkCoplanarity(nodesCoords, 1e-15)
+
+                    #a = input('').split(" ")[0]
+
+                    if val >1e-10:
+                        reorderOk = False
+                        allReorderedFine = False
+                    else:
+                        print('But nodes are coplanar, ignoring. (err %e)' %val)
+                        retart = False
+
+                    #break
 
 
     if (allReorderedFine == True):

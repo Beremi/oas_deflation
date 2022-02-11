@@ -103,6 +103,10 @@ if __name__ == '__main__':
 
             if (r[0]=='Model'):
                 model = Model(row)
+                if (model.modelType == '3d_notched3pb'):
+                    supportWidth = model.maxLim[0] / 20
+                    model.maxLim[0] = model.maxLim[0] + 2 * 0.5 * supportWidth
+
             if (r[0]=='Solver'):
                 solver = Solver(row)
             if (r[0]=='Material'):
