@@ -33,10 +33,10 @@ void Element :: initIntegration() {
 
 //////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {
-    stats.resize( inttype->giveNumIP() );
+    stats.resize(inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
-        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k) ) );
+        inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian( inttype->giveIPLocationPointer(k) ) );
     }
 };
 
@@ -55,7 +55,6 @@ void Element :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mater
 
 //////////////////////////////////////////////////////////
 void Element :: init() {
-
     //delete possible previous statuses
     for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
         delete * e;
@@ -80,17 +79,17 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
-    Bs.resize( inttype->giveNumIP() );
-    Hs.resize( inttype->giveNumIP() );
+    Bs.resize(inttype->giveNumIP() );
+    Hs.resize(inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        Bs [ k ] = giveBMatrix( inttype->giveIPLocationPointer(k) );
-        Hs [ k ] = giveHMatrix( inttype->giveIPLocationPointer(k) );
+        Bs [ k ] = giveBMatrix(inttype->giveIPLocationPointer(k) );
+        Hs [ k ] = giveHMatrix(inttype->giveIPLocationPointer(k) );
     }
 }
 
 //////////////////////////////////////////////////////////
 vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
-    vector< unsigned >DoFinDir( nodes.size() );
+    vector< unsigned >DoFinDir(nodes.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
     }
@@ -154,7 +153,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF( DoFids.size() );
+    Vector intF(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -178,7 +177,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
 
 //////////////////////////////////////////////////////////
 Vector Element :: integrateInternalSources() {
-    Vector intS( DoFids.size() );
+    Vector intS(DoFids.size() );
     Vector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         intmats = stats [ i ]->giveInternalSource();
@@ -242,7 +241,7 @@ void Element :: changeMaterial(Material *newmat) {
 
 //////////////////////////////////////////////////////////
 bool Element :: giveGlobalCoords(Point *x, const Point *xn) const {
-    Vector phi( nodes.size() );
+    Vector phi(nodes.size() );
     shafunc->giveShapeF(xn, phi);
     * x = Point(0, 0, 0);
     for ( unsigned n = 0; n < nodes.size(); n++ ) {
@@ -261,8 +260,8 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     for ( auto &n: nodes ) {
         p = n->givePointPointer();
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxc.setCoord( c, max( maxc.giveCoord(c), p->giveCoord(c) ) );
-            minc.setCoord( c, min( minc.giveCoord(c), p->giveCoord(c) ) );
+            maxc.setCoord(c, max(maxc.giveCoord(c), p->giveCoord(c) ) );
+            minc.setCoord(c, min(minc.giveCoord(c), p->giveCoord(c) ) );
         }
     }
     for ( unsigned c = 0; c < ndim; c++ ) {
@@ -282,7 +281,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     //initial estimation
     aux = ( ( * x ) - center ) * 2.;
     for ( unsigned c = 0; c < ndim; c++ ) {
-        xn->setCoord( c, aux.giveCoord(c) / size.giveCoord(c) );
+        xn->setCoord(c, aux.giveCoord(c) / size.giveCoord(c) );
     }
     giveGlobalCoords(& aux, xn);
 
@@ -292,13 +291,13 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     diff = aux - ( * x );
     while ( maxerror > 1e-4 && i < max_i ) {
         for ( unsigned c = 0; c < ndim; c++ ) {
-            if ( abs( diff.giveCoord(c) / size.giveCoord(c) ) < 1e-8 ) {
+            if ( abs(diff.giveCoord(c) / size.giveCoord(c) ) < 1e-8 ) {
                 continue;
             }
             if ( diffC.giveCoord(c) > 1e-16 ) {
-                xn->setCoord( c, xn->giveCoord(c) - xn->giveCoord(c) * diff.giveCoord(c) / diffC.giveCoord(c) );
+                xn->setCoord(c, xn->giveCoord(c) - xn->giveCoord(c) * diff.giveCoord(c) / diffC.giveCoord(c) );
             } else {
-                xn->setCoord( c, xn->giveCoord(c) - 2. * diff.giveCoord(c) / size.giveCoord(c) );
+                xn->setCoord(c, xn->giveCoord(c) - 2. * diff.giveCoord(c) / size.giveCoord(c) );
             }
         }
 
@@ -307,7 +306,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
         diffC = aux - center;
         maxerror = 0.;
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxerror = max( maxerror, abs( diff.giveCoord(c) / size.giveCoord(c) ) );
+            maxerror = max(maxerror, abs(diff.giveCoord(c) / size.giveCoord(c) ) );
         }
         i++;
     }
@@ -318,7 +317,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     //check natural coordinates are inside limits
     //TODO: works only for brick and quadrilateral
     for ( unsigned c = 0; c < ndim; c++ ) {
-        if ( abs( xn->giveCoord(c) ) > 1. ) {
+        if ( abs(xn->giveCoord(c) ) > 1. ) {
             return false;
         }
     }
@@ -327,7 +326,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
-    Vector elemDoFs( DoFids.size() );
+    Vector elemDoFs(DoFids.size() );
     for ( unsigned i = 0; i < DoFids.size(); i++ ) {
         elemDoFs [ i ] = FullDoFs [ DoFids [ i ] ];
     }
@@ -336,19 +335,19 @@ Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: extrapolateIPValuesToNodes(string code) const {
-    Vector phi( nodes.size() );
-    Vector res( nodes.size() );
-    Vector rhs( nodes.size() );
-    Matrix M(nodes.size(), nodes.size());
+    Vector phi(nodes.size() );
+    Vector res(nodes.size() );
+    Vector rhs(nodes.size() );
+    Matrix M( nodes.size(), nodes.size() );
     double jacobian, value;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         shafunc->giveShapeF(inttype->giveIPLocationPointer(i), phi);
-        jacobian = shafunc->giveJacobian(inttype->giveIPLocationPointer(i));
+        jacobian = shafunc->giveJacobian( inttype->giveIPLocationPointer(i) );
         value = giveIPValue(code, i);
-        for (unsigned k=0; k<nodes.size(); k++){
-            rhs [ k ] += phi[k]*jacobian*value;
-            for (unsigned l=0; l<nodes.size(); l++){
-                M[k][l] += phi[k]*phi[l]*jacobian;
+        for ( unsigned k = 0; k < nodes.size(); k++ ) {
+            rhs [ k ] += phi [ k ] * jacobian * value;
+            for ( unsigned l = 0; l < nodes.size(); l++ ) {
+                M [ k ] [ l ] += phi [ k ] * phi [ l ] * jacobian;
             }
         }
     }
@@ -356,10 +355,10 @@ Vector Element :: extrapolateIPValuesToNodes(string code) const {
     map< pair< size_t, size_t >, double >indices11;
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         for ( unsigned j = 0; j < nodes.size(); j++ ) {
-            indices11.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M[i][j]) );
+            indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M [ i ] [ j ]) );
         }
     }
-    CoordinateIndexedSparseMatrix Msparse(indices11, nodes.size(), nodes.size());
+    CoordinateIndexedSparseMatrix Msparse( indices11, nodes.size(), nodes.size() );
     LinalgSymmetricSolver(Msparse, res, rhs, res, 1e-15, 1.0, "EigenConj");
 
     return res;

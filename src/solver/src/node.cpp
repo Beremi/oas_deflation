@@ -83,9 +83,9 @@ void MechDoF :: readFromLine(istringstream &iss) {
         point = Point(x, y, z);
     }
     iss >> nDoFs;
-    if (iss.fail()) {
-         cerr << "MechDoF reading failed!" << endl;
-         exit(1);
+    if ( iss.fail() ) {
+        cerr << "MechDoF reading failed!" << endl;
+        exit(1);
     }
 }
 
@@ -172,9 +172,9 @@ void TrsDoF :: readFromLine(istringstream &iss) {
         point = Point(x, y, z);
     }
     iss >> nDoFs;
-    if (iss.fail()) {
-         cerr << "TrsDoF reading failed!" << endl;
-         exit(1);
+    if ( iss.fail() ) {
+        cerr << "TrsDoF reading failed!" << endl;
+        exit(1);
     }
 }
 

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 
+class Solver; //forward declaration
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -168,6 +169,24 @@ protected:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EXPORT OF SOLVER VALUES
+class SolverGauge : public Gauge
+{
+private:
+    Solver *solver;
+public:
+    SolverGauge(unsigned dimension) : Gauge(dimension) {};
+    ~SolverGauge() {};
+    void readFromLine(istringstream &iss);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void init();
+    void setSolverPointer(Solver *s);
+protected:
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // EXPORT OF SUM OF VALUES
 class StructuralExporter : public Gauge
 {
@@ -205,6 +224,7 @@ public:
     void setResultDirectory(fs :: path directory) { resultDir = directory; }
     fs :: path giveDirectoryPath() { return resultDir; }
     void appendToAllNames(string app);
+    void setSolver(Solver *s);
 protected:
 };
 

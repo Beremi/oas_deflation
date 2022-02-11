@@ -298,22 +298,22 @@ public:
 
 
 
-template <typename T>
-std::string to_string_sci(const T a_value)
+template< typename T >
+std :: string to_string_sci(const T a_value)
 {
-    std::ostringstream out;
+    std :: ostringstream out;
     out << std :: scientific;
     out << a_value;
     return out.str();
 }
 
 
-template <typename T>
-std::string to_string_with_precision(const T a_value, const int n = 6)
+template< typename T >
+std :: string to_string_with_precision(const T a_value, const int n = 6)
 {
-    std::ostringstream out;
+    std :: ostringstream out;
     out.precision(n);
-    out << std::fixed << a_value;
+    out << std :: fixed << a_value;
     return out.str();
 }
 template< typename T >int sgn(T &val) {
