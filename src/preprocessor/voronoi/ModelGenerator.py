@@ -398,13 +398,15 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self, node_coords_init=None,modelnr=-1):
+        print('running notched')
         #width of the supports, nemenit, je i v assemble3DSSBeamBending !!!!
         supportWidth = self.maxLim[0] / 20
 
-        if modelnr ==0:
+        if modelnr ==0 :
             # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
             #na kazdou stranu se prida pulka podpory
             self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
+            #print('rozsireni modelu')
 
         #(self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged)
         #(self.node_coords, self.mechBC_merged, self.mechInitC_merged,  self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.trsprtBC_merged)

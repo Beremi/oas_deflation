@@ -2089,7 +2089,7 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 
 
 def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1, activeMechanics = True, activeTransport=False, coupled=False, node_coords_init=None, specifiedNodes=[]):
-
+    print(maxLim)
 
 
 
@@ -2097,6 +2097,10 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     #govNodes, rigidPlates
     node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes);
     node_coords = np.asarray(node_coords)
+
+    #print('nothces')
+    #print(notches)
+    print ('max X = %f' %np.amax(node_coords[:,0]))
     """
     if SHOW_PLOT:
         fig = plt.figure()
@@ -2107,8 +2111,13 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     """
     print('Conducting Voronoi tesselation...', end = '')
     vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
-    print('done.')
 
+
+
+
+    print('done.')
+    print ('max X = %f' %np.amax(node_coords[:,0]))
+    print ('max X = %f' %np.amax(vor.vertices[:,0]))
     ########################################################################
     functions = []
     #### Defining functions
@@ -5479,6 +5488,8 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     #width of the supports
     supportWidth = maxLim[0] / 21
 
+    print(maxLim)
+    print(supportWidth)
 
     #lists for the model
     if node_coords_init is None:
