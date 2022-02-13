@@ -240,16 +240,16 @@ double ElasticMechMaterialStatus :: giveMassConstant() const {
 //////////////////////////////////////////////////////////
 Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    temp_strain = strain;
+    temp_strain = addEigenStrain(strain);
     unsigned dim = 0;
-    if ( strain.size() == 1 ) {
+    if ( temp_strain.size() == 1 ) {
         dim = 1;
-    } else if ( strain.size() == 3 ) {
+    } else if ( temp_strain.size() == 3 ) {
         dim = 2;
-    } else if ( strain.size() == 6 ) {
+    } else if ( temp_strain.size() == 6 ) {
         dim = 3;
     }
-    temp_stress = giveStiffnessTensor("elastic", dim) * addEigenStrain(strain);
+    temp_stress = giveStiffnessTensor("elastic", dim) * temp_strain;
     return temp_stress;
 };
 
@@ -352,19 +352,19 @@ Vector CosseratMechMaterialStatus ::  giveStress(const Vector &strain, double ti
 //////////////////////////////////////////////////////////
 Vector CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    temp_strain = strain;
+    temp_strain = addEigenStrain(strain);
     unsigned dim;
-    if ( strain.size() == 2 ) {
+    if ( temp_strain.size() == 2 ) {
         dim = 1;
-    } else if ( strain.size() == 6 ) {
+    } else if ( temp_strain.size() == 6 ) {
         dim = 2;
-    } else if ( strain.size() == 18 ) {
+    } else if ( temp_strain.size() == 18 ) {
         dim = 3;
     } else {
         cerr << name << " error: unsupported dimension" << endl;
         exit(1);
     }
-    temp_stress = giveStiffnessTensor("elastic", dim) * addEigenStrain(strain);
+    temp_stress = giveStiffnessTensor("elastic", dim) *  temp_strain;
     return temp_stress;
 };
 
@@ -500,11 +500,8 @@ void DiscreteTrsprtCoupledMaterialStatus ::  updateRateVariables(double timeStep
 //////////////////////////////////////////////////////////
 Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     updateRateVariables(timeStep);
-
     effConductivity = updateEffectiveConductivity();
-    temp_strain = strain;
-    temp_stress = -effConductivity *addEigenStrain(temp_strain);
-    return temp_stress;
+    return giveStressWithFrozenIntVars(strain, timeStep);
 };
 
 
@@ -541,8 +538,8 @@ void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, doubl
 //////////////////////////////////////////////////////////
 Vector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     updateRateVariables(timeStep);
-    temp_strain  = strain;
-    temp_stress = -effConductivity *addEigenStrain(strain);
+    temp_strain  = addEigenStrain(strain);
+    temp_stress = -effConductivity * temp_strain;
 
     return temp_stress;
 };
@@ -659,14 +656,14 @@ Vector DisMechMaterialStatus ::  giveStress(const Vector &strain, double timeSte
 //////////////////////////////////////////////////////////
 Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    temp_strain = strain;
+    temp_strain = addEigenStrain(strain);
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
     temp_stress.resize(strain.size() );
-    Vector activeStrain = addEigenStrain(strain);
-    temp_stress [ 0 ] = m->giveE0() * activeStrain [ 0 ];
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
-        temp_stress [ i ] = m->giveAlpha() * m->giveE0() * activeStrain [ i ];
+    temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
+    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+        temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
     }
+
     return temp_stress;
 };
 

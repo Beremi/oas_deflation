@@ -298,11 +298,10 @@ Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );
-    if ( strain [ 0 ] > 0 ) {
-        temp_crackOpening = ( L * temp_damage ) * strain [ 0 ]; //normal opening only
-        //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
+    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
+    if ( temp_strain [ 0 ] > 0 ) {
+        temp_crackOpening = ( L * temp_damage ) * temp_strain [ 0 ]; //normal opening only
+        //temp_crackOpening = l2_norm( ( L * temp_damage ) * temp_strain );  //total opening
     } else {
         temp_crackOpening = 0;
     }

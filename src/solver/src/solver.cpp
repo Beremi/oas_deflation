@@ -1068,9 +1068,6 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
         exit(1);
     }
     v = Vector(totalDoFnum);
-    for ( auto k:f ) {
-        cout << k << endl;
-    }
     nodes->giveFullDoFArray(ddr, v);
 }
 
