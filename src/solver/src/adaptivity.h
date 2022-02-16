@@ -449,8 +449,8 @@ private:
             BaseSolver :: dt = BaseSolver :: time - this->time_before_step;
             BaseSolver :: step--;
             BaseSolver :: time = this->time_before_step;
-            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku
             this->reseted = true;
+            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku
             BaseSolver :: runBeforeEachStep();
 
 
