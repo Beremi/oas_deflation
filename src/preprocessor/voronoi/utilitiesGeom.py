@@ -1540,6 +1540,8 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
 def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, aux_nodes, mZ=None, notches = None, randomizeMaterial = False, coupled = False, auxmechelements=False):
     print('Saving MECH elements...', end ='')
+    print('MZ')
+    print(mZ)
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
     mechElemRidges = []
@@ -1567,20 +1569,27 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
+        print('auxMechElements %s' %auxmechelements)
 
         for i in range (len(mechElemRidges)):
             iNa = int(mechElemRidges[i][0])
-            iNb = int(mechElemRidges[i][0])
+            iNb = int(mechElemRidges[i][1])
 
             if iNa >= node_count and auxmechelements==True:
                 nodeA = aux_nodes[iNa-node_count]
+                #print('auxnodeA %s' %iNa)
             else:
                 nodeA = nodes[iNa]
+                #print('normal nodeA %s' %iNa)
 
             if iNb >= node_count and auxmechelements==True:
                 nodeB = aux_nodes[iNb-node_count]
+                #print('auxnodeB %s' %iNb)
             else:
                 nodeB = nodes[iNb]
+                #print('normal nodeB %s' %iNb)
+
+            print()
 
             if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) and (auxmechelements==False):
                 onlyMechNodesConnected = False
@@ -1623,6 +1632,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 #print (mZ[0][0][0] - mZ[0][1][0])
                 #print (triangle)
 
+                """
                 if ( triangle == False and
                       ((mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
@@ -1639,6 +1649,31 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) ):
                       mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
                 #print('len mz %d' %len(mZ))
+                """
+                if ( triangle == False):
+                    add=False
+                    if (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
+                        mZ[0][0][2] < nodeA[2] < mZ[0][1][2]):
+                        #print('lim %s' %mZ[0])
+                        #print('catched A%s' %nodeA[0:dim])
+                        #print('catch?? B%s' %nodeB[0:dim])
+                        add=True
+                    if ( mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
+                        #print('catched B%s' %nodeB[0:dim])
+                        add=True
+
+                    if add:
+                        #print('adding \n')
+                        mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
+
+                """
+                elif ( triangle == False):
+                    if ( mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
+                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
+                      print('catched B%s' %nodeB)
+                      mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
+                """
 
                 if (  len(mZ)==2 and
                       ((mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and

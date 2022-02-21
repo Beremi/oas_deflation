@@ -415,7 +415,7 @@ class Model:
 
 
 
-        materialZones = None
+        self.materialZones = utilitiesModeling.assembleMaterialZones(0, 2, model='3pb3d', maxLim=self.maxLim, minDist=self.minDist)
 
         if self.elasticZone ==1:
             lim = np.array([
@@ -436,7 +436,7 @@ class Model:
             self.maxLim[2]* 1.1,
             ])
             # print (lim1)
-            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1, maxLim=self.maxLim, minDist=self.minDist)
 
 
 
