@@ -1589,7 +1589,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 nodeB = nodes[iNb]
                 #print('normal nodeB %s' %iNb)
 
-            
+
 
             if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) and (auxmechelements==False):
                 onlyMechNodesConnected = False
@@ -1662,7 +1662,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                         #print('catched B%s' %nodeB[0:dim])
                         add=True
 
-                    if add:
+                    if add and (iNa >= node_count or iNb >= node_count) :
                         #print('adding \n')
                         mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
 
