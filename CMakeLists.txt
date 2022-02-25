@@ -58,7 +58,7 @@ option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" OFF)
-option (USE_EXPRTK "Enable EXPRTK" ON)
+option (USE_EXPRTK "Enable EXPRTK" OFF)
 option (USE_SANITIZERS "Enable sanitizers" OFF)
 option (CHECK_CONVERSION "Enable conversion warnings" OFF)
 
@@ -146,7 +146,7 @@ endif()
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
 
 include_directories ("${PartMod_BINARY_DIR}")
-set (LIB_TYPE OBJECT)
+set (LIB_TYPE OBJECT) # set (LIB_TYPE SHARED)
 
 if (USE_SOLVER)
   include_directories ("${PartMod_SOURCE_DIR}/src/solver/src")
@@ -161,33 +161,39 @@ endif ()
 #add_executable(${TARGETNAME} ${SOURCE})
 #add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
 #add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
-
 add_executable(${TARGETNAME}
                 ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp
                 ${PartMod_SOURCE_DIR}/src/solver/src/version.cpp
                 ${LIBS}
                 )
 
+#add_library (l${TARGETNAME}
+#        SHARED
+#        ${LIBS}
+#        )
+#target_link_libraries (lib${TARGETNAME} ${EXT_LIBS})
+
 if (USE_VTK)
     find_package (VTK REQUIRED NO_MODULE)
     if (NOT VTK_FOUND)
-        message("Skipping WriteVTU: ${VTK_NOT_FOUND_MESSAGE}")
+        message("-- Skipping WriteVTU: ${VTK_NOT_FOUND_MESSAGE}")
     endif()
     if (VTK_VERSION VERSION_LESS "8.90.0")
+        message("-- VTK is older than 8.90.0 (${VTK_VERSION})")
         # old system
         include(${VTK_USE_FILE})
         set (CMAKE_LIBRARY_DIR ${VTK_DIR})
-
-        add_definitions (-D__VTK_MODULE)
+        target_compile_definitions(solver PUBLIC __VTK_MODULE)
         list (APPEND EXT_LIBS ${VTK_LIBRARIES})
         list (APPEND MODULE_LIST "VTK")
     else ()
-        add_definitions (-D__VTK_MODULE)
+        message("-- VTK found: ${VTK_VERSION}")
+        target_compile_definitions(solver PUBLIC __VTK_MODULE)
         list (APPEND EXT_LIBS ${VTK_LIBRARIES})
         list (APPEND MODULE_LIST "VTK")
         # vtk_module_autoinit is needed
         vtk_module_autoinit(
-            TARGETS ${TARGETNAME}
+            TARGETS ${TARGETNAME} solver
             MODULES ${VTK_LIBRARIES}
             )
     endif ()
@@ -195,7 +201,6 @@ endif ()
 
 if (USE_EXPRTK)
     message("-- Adding Exprtk")
-    add_definitions (-D__EXPRTK_MODULE)
     target_compile_definitions (solver PUBLIC -D__EXPRTK_MODULE)
 endif ()
 
@@ -206,7 +211,6 @@ endif ()
 
 #target_link_libraries (${TARGETNAME} libDiscreteModel Eigen3::Eigen)
 #find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
         set(CXX_FILESYSTEM_LIBRARIES stdc++fs) # Boost::filesystem
@@ -219,14 +223,22 @@ if (NOT TARGET Eigen3::Eigen)
   add_dependencies(solver unpack-eigen)
 endif()
 
+target_link_libraries(solver
+                      PRIVATE
+                      ${CXX_FILESYSTEM_LIBRARIES}
+                      ${EXT_LIBS}
+                      #Eigen3::Eigen
+                     )
+
 target_link_libraries(${TARGETNAME}
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
                       ${EXT_LIBS}
                       #Eigen3::Eigen
                      )
+
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(${TARGETNAME} PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(solver PUBLIC OpenMP::OpenMP_CXX)
 endif()
 target_compile_options(${TARGETNAME}
   PRIVATE
