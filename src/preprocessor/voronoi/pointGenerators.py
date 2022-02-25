@@ -1372,80 +1372,72 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     ##########################################################################
     # print(centersPreviouslyRemeshed)
     # remesh the transitional areas - same centers, just different radius and only outer ring
-    ci = 0
-    tr = 0
-    # for center in centersToRemesh:
-    for center in centersPreviouslyRemeshed:
-        # if PRINT_TEST:
-        #     print("generating in transitional area %d" % ci, end='\r' )
+    if radiusTransitional > radiusRemesh:
+        ci = 0
         tr = 0
-        ci += 1
-        while (tr<trials):
+        # for center in centersToRemesh:
+        for center in centersPreviouslyRemeshed:
+            # if PRINT_TEST:
+            #     print("generating in transitional area %d" % ci, end='\r' )
             tr = 0
-            distIsGood = False
-            while (distIsGood == False):
-                if PRINT_TEST:
-                    print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
-                if (tr > trials): break
-                distIsGood = True
+            ci += 1
+            while (tr<trials):
+                tr = 0
+                distIsGood = False
+                while (distIsGood == False):
+                    if PRINT_TEST:
+                        print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
+                    if (tr > trials): break
+                    distIsGood = True
 
-                coords = randPointBetweenSpheres(center, radiusTransitional,
-                            thickness=(radiusTransitional-radiusRemesh))
-                p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
+                    coords = randPointBetweenSpheres(center, radiusTransitional,
+                                thickness=(radiusTransitional-radiusRemesh))
+                    p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
 
-                # check if generated point is not outside the specimen
-                # if rectLims is not None:
-                if not border_block.IsInside(p_coord):
-                    distIsGood = False
-                    tr += 1
-                    continue
-
-                # check distances to already remeshed centers - to prevent putting nodes there centers
-                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
-                                        radiusRemesh,
-                                        centersPreviouslyRemeshed,
-                                        list(coords))
-                if not distIsGood:
-                    tr += 1
-                    continue
-
-
-                # TODO tady neco nesedí: viz obrázek co to exportuje
-                mdt = minDistTrans(minDistRemesh, minDist, distance(coords,
-                                                                    center),
-                             radiusRemesh, radiusTransitional)
-                # mdt = (minDistRemesh + (minDist - minDistRemesh) *
-                #                  ( distance(coords, center) - radiusRemesh ) /
-                #                  (radiusTransitional - radiusRemesh)
-                #                 )
-
-                # print(minDist, minDistRemesh, mdt)
-                # print(minDistTrans(minDistRemesh, minDist, radiusTransitional,
-                #              radiusRemesh, radiusTransitional))
-
-                # check distances to other nodes
-                distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
-                                            mdt,
-                                            node_coords, list(coords))
-                if not distIsGood:
-                    tr += 1
-                    continue
-
-                # check if is not in regions to remesh
-                for reg in regionsToSkip:
-                    if reg.IsInside(p_coord):
+                    # check if generated point is not outside the specimen
+                    # if rectLims is not None:
+                    if not border_block.IsInside(p_coord):
                         distIsGood = False
-                        break
-                if not distIsGood:
-                    tr += 1
-                    continue
+                        tr += 1
+                        continue
 
-            #Adding node coords
-            if (tr < trials):
-                if PRINT_TEST:
-                    print("appending node in transitional area ----------", end=' ' )
-                    print(coords)
-                node_coords.append(coords)
+                    # check distances to already remeshed centers - to prevent putting nodes there centers
+                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                            radiusRemesh,
+                                            centersPreviouslyRemeshed,
+                                            list(coords))
+                    if not distIsGood:
+                        tr += 1
+                        continue
+
+
+                    mdt = minDistTrans(minDistRemesh, minDist, distance(coords,
+                                                                        center),
+                                 radiusRemesh, radiusTransitional)
+
+                    # check distances to other nodes
+                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
+                                                mdt,
+                                                node_coords, list(coords))
+                    if not distIsGood:
+                        tr += 1
+                        continue
+
+                    # check if is not in regions to remesh
+                    for reg in regionsToSkip:
+                        if reg.IsInside(p_coord):
+                            distIsGood = False
+                            break
+                    if not distIsGood:
+                        tr += 1
+                        continue
+
+                #Adding node coords
+                if (tr < trials):
+                    if PRINT_TEST:
+                        print("appending node in transitional area ----------", end=' ' )
+                        print(coords)
+                    node_coords.append(coords)
 
     return node_coords
 

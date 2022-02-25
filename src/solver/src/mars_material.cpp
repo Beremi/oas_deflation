@@ -46,9 +46,9 @@ double MarsMaterialStatus :: giveValue(string code) const {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
         return m->giveE0();
     } else if ( ( code.compare("strainN") == 0 ) || ( code.compare("strain") == 0 ) ) {
-        return temp_strain[0];
+        return temp_strain [ 0 ];
     } else if ( ( code.compare("stressN") == 0 ) || ( code.compare("stress") == 0 ) ) {
-        return temp_stress[0];
+        return temp_stress [ 0 ];
     } else {
         return DisMechMaterialStatus :: giveValue(code);
     }
@@ -80,7 +80,7 @@ void MarsMaterialStatus :: init() {
     MarsMaterial *m = static_cast< MarsMaterial * >( mat );
     Ks = 2 * m->giveAlpha() * m->giveE0() / ( m->giveLcrs() / L - 1 );
     Kt = 2 * m->giveE0() / ( m->giveLcrt() / L - 1 );
-    nt = log( Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
+    nt = log(Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
 
     if ( Ks < 0 || Kt < 0 ) {
         cerr << "Error " << name << ": snap back occured" << endl;
@@ -103,11 +103,11 @@ double MarsMaterialStatus :: giveS0tension(double omega) const {
     double sa = .5 * ft * ( pow(fs / ( m->giveMu() * ft ), 2) - 1. );
 
 
-    if ( omega == atan( sqrt( m->giveAlpha() ) / m->giveMu() ) ) {
+    if ( omega == atan(sqrt(m->giveAlpha() ) / m->giveMu() ) ) {
         // for this anle, the later equation is undetermined, but hyperbola eq. gives this (see Two Scale Study - Cusatis 2007 doi.org/10.1016/j.engfracmech.2006.01.021)
         return .5 * ( ft + 2 * sa ) * ft / ( ( ft + sa ) * s );
     } else {
-        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
+        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
     }
 }
 
@@ -117,7 +117,7 @@ double MarsMaterialStatus :: giveS0compression(double omega) const {
 
     double fc = m->giveFc() * RAND_H;
 
-    return fc / sqrt( pow(sin(omega), 2) + ( m->giveAlpha() * pow(cos(omega), 2) ) / m->giveBeta() );
+    return fc / sqrt(pow(sin(omega), 2) + ( m->giveAlpha() * pow(cos(omega), 2) ) / m->giveBeta() );
 }
 
 //////////////////////////////////////////////////////////
@@ -159,14 +159,14 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     if ( strain.size() == 2 ) {
         epsT = abs(strain [ 1 ]);                //2D
     } else {
-        epsT = sqrt( pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );  //3D
+        epsT = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );   //3D
     }
-    double epsEQ = sqrt( pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );  //equivalent strain
+    double epsEQ = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );   //equivalent strain
 
     if ( epsEQ > 0 && damage < 1.0 ) {
         double omega, S0, chi, K0, strEQ;
         if ( epsT > 0 ) {
-            omega = atan( epsN / ( sqrt( m->giveAlpha() ) * epsT ) );
+            omega = atan(epsN / ( sqrt(m->giveAlpha() ) * epsT ) );
         } else if ( epsN > 0 ) {
             omega = 0.5 * M_PI;
         } else {
@@ -181,7 +181,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
             double emax, f;
             temp_maxEpsN = max(maxEpsN, epsN);
             temp_maxEpsT = max(maxEpsT, epsT);
-            emax = sqrt( pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
+            emax = sqrt(pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
             S0 = giveS0tension(omega);
 
             //confinement not applied
@@ -190,7 +190,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
             f = 1;
 
 
-            K0 = -f * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt) );
+            K0 = -f * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt ) );
             if ( omega < 0.0 ) {
                 chi = epsEQ * omega / omega0 + emax * ( 1. - omega / omega0 );
             } else {
@@ -198,7 +198,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
             }
         }
         if ( chi - S0 / m->giveE0() > 0 ) {
-            strEQ = S0 * exp( K0 / S0 * ( chi - S0 / m->giveE0() ) );
+            strEQ = S0 * exp(K0 / S0 * ( chi - S0 / m->giveE0() ) );
         } else {
             strEQ = S0;
         }
@@ -214,14 +214,6 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     }
 
     //temp_damage = min( temp_damage, m->giveMaxDamage() ); //dangerous, better switched off
-
-    if ( epsN > 0 ) {
-        temp_crackOpening = ( L * temp_damage ) * strain [ 0 ]; //normal opening only
-        //temp_crackOpening = l2_norm( ( L * temp_damage ) * strain );  //total opening
-    } else {
-        temp_crackOpening = 0;
-    }
-
 
     // compression recovery
     //if (temp_damage < damage && epsN>0)  temp_damage = damage;
@@ -258,7 +250,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
     } else if ( type.compare("secant") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
         if ( m->giveDamageResiduum() > 0.0 ) {
-            return stiff * fmax(1 - temp_damage, m->giveDamageResiduum() );
+            return stiff * fmax( 1 - temp_damage, m->giveDamageResiduum() );
         } else if ( m->giveStressResiduum() > 0.0 ) {
             // TODO finish this JK
             // QUESTION is this performed before update?
@@ -269,7 +261,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
                 for ( unsigned i = 1; i < temp_stress.size(); i++ ) {
                     sT += pow(temp_stress [ i ], 2);
                 }
-                double strs = sqrt( pow(sN, 2) + ( sT / m->giveAlpha() ) );
+                double strs = sqrt(pow(sN, 2) + ( sT / m->giveAlpha() ) );
                 if ( strs  < m->giveStressResiduum() ) {
                     double epsN, epsT;
                     epsN = temp_strain [ 0 ];
@@ -277,7 +269,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
                     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
                         epsT += pow(temp_strain [ i ], 2);
                     }
-                    double epsEQ = sqrt( pow(epsN, 2) + epsT * m->giveAlpha() );
+                    double epsEQ = sqrt(pow(epsN, 2) + epsT * m->giveAlpha() );
                     return stiff * ( 1 - m->giveStressResiduum() / ( m->giveE0() * epsEQ ) );
                 } else {
                     return stiff * ( 1 - temp_damage );
@@ -300,17 +292,23 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    computeDamage( addEigenStrain(strain) );
+    computeDamage(addEigenStrain(strain) );
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );
+    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
+    if ( temp_strain [ 0 ] > 0 ) {
+        temp_crackOpening = ( L * temp_damage ) * temp_strain [ 0 ]; //normal opening only
+        //temp_crackOpening = l2_norm( ( L * temp_damage ) * temp_strain );  //total opening
+    } else {
+        temp_crackOpening = 0;
+    }
     return temp_stress;
 }
 
+//////////////////////////////////////////////////////////
 std :: string MarsMaterialStatus :: giveLineToSave() const {
     return "damage " + to_string_sci(this->damage) + " maxEpsN " + to_string_sci(this->maxEpsN) + " maxEpsT " + to_string_sci(this->maxEpsT);
 }
@@ -331,10 +329,13 @@ void MarsMaterialStatus :: readFromLine(istringstream &iss) {
         iss >> param;
         if ( param.compare("damage") == 0 ) {
             iss >> this->damage;
+            temp_damage = damage;
         } else if ( param.compare("maxEpsN") == 0 ) {
             iss >> this->maxEpsN;
+            temp_maxEpsN = maxEpsN;
         } else if ( param.compare("maxEpsT") == 0 ) {
             iss >> this->maxEpsT;
+            temp_maxEpsT = maxEpsT;
         }
     }
 }
@@ -422,6 +423,34 @@ void MarsMaterial :: init() {
     Lcrt = 2 * E0 * Gt / pow(ft, 2);
     Lcrs = 2 * alpha * E0 * Gs / pow(fs, 2);
 };
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// LDPM MATERIAL STATUS (2011)
+//////////////////////////////////////////////////////////
+
+LDPMMaterialStatus :: LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum) : MarsMaterialStatus(m, e, ipnum) {}
+
+//////////////////////////////////////////////////////////
+Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    computeDamage(addEigenStrain(strain) );
+    return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+}
+
+//////////////////////////////////////////////////////////
+void LDPMMaterialStatus :: computeDamage(Vector strain) {}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// LDPM MATERIAL (2011)
+//////////////////////////////////////////////////////////
+void LDPMMaterial :: readFromLine(istringstream &iss) {
+    MarsMaterial :: readFromLine(iss); //read elastic parameters
+};
+
+
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

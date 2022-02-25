@@ -153,7 +153,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
                 for ( unsigned s = 0; s < nIP; s++ ) {
                     ip_locs [ 4 * i + r ] += ( * pp [ s ] ) * phi [ s ];
                 }
-                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian(localINT.giveIPLocationPointer(r) );
+                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian( localINT.giveIPLocationPointer(r) );
             }
             a = c;
         }

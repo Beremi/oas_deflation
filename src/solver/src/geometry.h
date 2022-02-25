@@ -69,6 +69,8 @@ public:
 
 class Circle : public RegularRegion
 {
+private:
+    char along = 'z';
 public:
     Circle() {};
     virtual ~Circle() {};
@@ -85,6 +87,7 @@ public:
     virtual ~Sphere() {};
     Sphere(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
+    virtual void readFromLine(istringstream &iss);
 };
 
 

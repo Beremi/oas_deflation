@@ -11,7 +11,7 @@ void BoundaryCondition :: init(FunctionContainer *funcs) {
     blockedDoFNum = 0;
     loadedDoFNum = 0;
 
-    dirichF.resize( dirichBC.size() );
+    dirichF.resize(dirichBC.size() );
     for ( unsigned i = 0; i < dirichBC.size(); i++ ) {
         if ( dirichBC [ i ] >= 0 ) {
             blockedDoFNum++;
@@ -21,7 +21,7 @@ void BoundaryCondition :: init(FunctionContainer *funcs) {
         }
     }
 
-    neumannF.resize( neumannBC.size() );
+    neumannF.resize(neumannBC.size() );
     for ( unsigned i = 0; i < neumannBC.size(); i++ ) {
         if ( neumannBC [ i ] >= 0 ) {
             loadedDoFNum++;
@@ -171,7 +171,7 @@ vector< double >BodyLoad :: giveBodyForceDoFValues(double t) {
     for ( auto &e: els ) {
         s = load.size();
         elemLoad = e->integrateLoad(this, t);
-        load.resize( s + elemLoad.size() );
+        load.resize(s + elemLoad.size() );
         for ( unsigned i = 0; i < elemLoad.size(); i++ ) {
             load [ s + i ] = elemLoad [ i ];
         }
@@ -184,7 +184,7 @@ vector< unsigned >BodyLoad :: giveArrayOfBodyForceDoFs() const {
     vector< unsigned >DoFs, elemDoFs;
     for ( auto &e: els ) {
         elemDoFs = e->giveDoFsInDirection(dir);
-        DoFs.insert( DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
+        DoFs.insert(DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
     }
     return DoFs;
 }
@@ -224,7 +224,7 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes, El
     size_t origBCsize = BC.size();
     size_t origLoadsize = loads.size();
     string line, aux;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -279,9 +279,9 @@ void BCContainer :: calculateDoFfields() {
     neumannDoFs.clear();
     for ( vector< BoundaryCondition * > :: iterator bc = BC.begin(); bc != BC.end(); ++bc ) {
         help = ( * bc )->giveBlockedDoFs();
-        dirichDoFs.insert( dirichDoFs.end(), help.begin(), help.end() );
+        dirichDoFs.insert(dirichDoFs.end(), help.begin(), help.end() );
         help = ( * bc )->giveLoadedDoFs();
-        neumannDoFs.insert( neumannDoFs.end(), help.begin(), help.end() );
+        neumannDoFs.insert(neumannDoFs.end(), help.begin(), help.end() );
     }
 
     // NOTE know which fns are actually used //JE WHY? What is this information for? Nobody cares. // JK to prevent restricting time step in extreme points of unused fns, it is probably not necessary and if anyone does not comment (or remove fn from fn file) fn that is not used it is his problem, can be removed then
@@ -299,7 +299,7 @@ void BCContainer :: calculateDoFfields() {
 
 //////////////////////////////////////////////////////////
 vector< double >BCContainer :: giveBlockedDoFValues(double t) const {
-    vector< double >blocked( dirichDoFs.size() );
+    vector< double >blocked(dirichDoFs.size() );
     unsigned i, s = 0;
     vector< double >b;
     for ( auto &bc: BC ) {
@@ -313,7 +313,7 @@ vector< double >BCContainer :: giveBlockedDoFValues(double t) const {
 
 //////////////////////////////////////////////////////////
 vector< double >BCContainer :: giveLoadedDoFValues(double t) const {
-    vector< double >loaded( neumannDoFs.size() );
+    vector< double >loaded(neumannDoFs.size() );
     unsigned i, s = 0;
     vector< double >b;
     for ( auto &bc: BC ) {
@@ -330,7 +330,7 @@ vector< unsigned >BCContainer :: giveArrayOfBodyForceDoFs() const {
     vector< unsigned >DoFs, elemDoFs;
     for ( auto &l: loads ) {
         elemDoFs = l->giveArrayOfBodyForceDoFs();
-        DoFs.insert( DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
+        DoFs.insert(DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
     }
     return DoFs;
 }
@@ -340,7 +340,7 @@ vector< double >BCContainer :: giveBodyForceDoFValues(double t) {
     vector< double >structLoads, elemLoads;
     for ( auto &l: loads ) {
         elemLoads = l->giveBodyForceDoFValues(t);
-        structLoads.insert( structLoads.end(), elemLoads.begin(), elemLoads.end() );
+        structLoads.insert(structLoads.end(), elemLoads.begin(), elemLoads.end() );
     }
     return structLoads;
 }

@@ -86,6 +86,7 @@ def copy_data_general_full(data):
 
 
 def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
+    print('shifts %s' %shifts)
     '''Mirror data 2D and 3D'''
     if (dim == 2):
         dataOut= np.vstack((
@@ -107,6 +108,12 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
         ))
 
     dataOut += shifts
+
+
+
+    #"""
+
+
     if weights is not None:
         if dim == 2:
             weightsOut = np.hstack([weights]*5)
@@ -450,7 +457,7 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim, radii
         mirroredOutside = np.zeros( (len(dataOut)*3) )
         mirroredOutside = np.reshape ( mirroredOutside, (len(dataOut),3))
         radiiOutside =  np.zeros( len(mirroredOutside) )
-    
+
         for i in range (len(mirroredOutside)):
             rad0 = scipy.spatial.distance.cdist( np.reshape(np.array([dataOut[i,0], center[1], center[2]]), (1,3)), np.reshape(dataOut[i,:], (1,3)))
             mirroredOutside[i,0] = dataOut[i,0]
@@ -460,7 +467,7 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim, radii
 
         mirroredInside = []
         radiiInside = []
-    
+
         for i in range (len(dataOut)):
             point = dataOut[i]
             rad0  = np.linalg.norm(point[1:3]-center[1:3])
@@ -486,7 +493,7 @@ def mirror_dataTube(data, center, radius, height, thickness, directionDim, radii
         ax.scatter(mirroredInside[:,0], mirroredInside[:,1], mirroredInside[:,2])
         plt.show()
         """
-        
+
     dataOut =  np.vstack((dataOut, mirroredOutside))
     dataOut =  np.vstack((dataOut, mirroredInside))
     radii = np.hstack((radii, radiiOutside, radiiInside))

@@ -21,6 +21,7 @@ SHOW_PLOT = False
 AXIS_ASPECT_EQUAL = False  # True may cause error using newer matplotlib versions
 ##run voronoi, mirrored data
 def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
+    print(maxLim)
     vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts)[:,:dim]) #the last column might be present representing radii
 
     if (dim == 2):
@@ -132,7 +133,7 @@ def runTubeMirroredVoronoi  (node_coords, center, radius, height,thickness, dire
     return vor, volumes
 
 def runTubeMirroredPower  (node_coords, center, radius, height,thickness, directionDim, radii):
-    points, radii = voronoi.mirror_dataTube(node_coords, center, radius, height,  thickness, directionDim, radii) 
+    points, radii = voronoi.mirror_dataTube(node_coords, center, radius, height,  thickness, directionDim, radii)
     vor = PowerTesselation(points, weights=radii, limits='auto')
     volumes = voronoi.volumesCylinder3d (vor, center, radius, height, directionDim )
     return vor, volumes

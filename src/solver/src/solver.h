@@ -56,6 +56,7 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve() {};
+    virtual double giveValue(string code);
 };
 
 //////////////////////////////////////////////////////////
@@ -80,16 +81,19 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve();
+    virtual void reset();
 };
 
 //////////////////////////////////////////////////////////
 class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 {
 protected:
+    unsigned it, restarts; //number of iterations, number of restarts
     double dtmax, dtmin;  // for adaptive step
     double W_ext_oldM, W_int_oldM, W_extM, W_intM, W_kinM; //mechanics
     double W_ext_oldT, W_int_oldT, W_extT, W_intT, W_kinT; //transport
     double disErr, resErr, eneErr;
+    double maxDisErr, maxResErr, maxEneErr;
     double limitDisErr, limitResErr, limitEneErr;
     unsigned maxIt; ///> maximum number of iteration
     unsigned enlargeIt, shortenIt; ///> if lower/higher numIt -> enlarge/shorten time-step
@@ -105,8 +109,10 @@ protected:
     int stiffnessMatrixUpdate, dampingMatrixUpdate, massMatrixUpdate; //update matrices every X iteration
     void printAllVectors();
     void checkAllVectorsForNaNs();
-    void evaluateErrors(double *displa_error, double *energy_error, double *residu_error);
+    void evaluateErrors();
     virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
+    virtual void reset();
+    virtual double giveValue(string code);
 
 public:
     SteadyStateNonLinearSolver();

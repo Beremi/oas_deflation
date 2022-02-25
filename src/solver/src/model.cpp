@@ -16,6 +16,7 @@ Model :: Model(bool pT) {
     solver = nullptr;
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
+    time_of_sim_start = std :: chrono :: system_clock :: now();
 }
 
 //////////////////////////////////////////////////////////
@@ -47,7 +48,7 @@ void Model :: solve() {
     while ( !solver->isTerminated() ) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
+        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
         if ( printTime ) {
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;
@@ -61,15 +62,11 @@ void Model :: solve() {
 void Model :: readFromFile(const string filename, const bool &initial) {
     fs :: path fullPath = fs :: absolute(filename);
     baseDir = fullPath.parent_path();
-    if ( initial ) {
-        resultDir = baseDir / "results";
-    }
-
-    exporters.setResultDirectory(resultDir);
+    std :: string result_dir_name = "results";
 
     string istr, line;
     int iint;
-    ifstream inputfile( fullPath.string() );
+    ifstream inputfile(fullPath.string() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -86,7 +83,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    nodes.readFromFile( ( baseDir / istr ).string(), ndim);
+                    nodes.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( initial && istr.compare("MatFiles") == 0 ) {
                 iss >> iint;
@@ -98,7 +95,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs);
+                    elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs );
                 }
             } else if ( istr.compare("MatStatFiles") == 0 ) {
                 iss >> iint;
@@ -111,13 +108,13 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    constr.readFromFile( ( baseDir / istr ).string(), ndim, & nodes);
+                    constr.readFromFile( ( baseDir / istr ).string(), ndim, & nodes );
                 }
             } else if ( istr.compare("BCFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems);
+                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems );
                 }
             } else if ( initial && istr.compare("FunctionFiles") == 0 ) {  // functions are constant during whole calculation, even in adaptive case
                 iss >> std :: skipws >> iint;
@@ -129,13 +126,13 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim);
+                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim );
                 }
             } else if ( istr.compare("PBlockFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    pblocks.readFromFile( ( baseDir / istr ).string(), ndim);
+                    pblocks.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( initial && istr.compare("Solver") == 0 ) {
                 iss >> istr;
@@ -150,6 +147,8 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> initialFieldFile;
             } else if ( initial && istr.compare("initial_master_time_derivative_field") == 0 ) {
                 iss >> initialTimeDerFieldFile;
+            }  else if ( initial && istr.compare("result_dir") == 0 ) {
+                iss >> result_dir_name;
             }
         }
         inputfile.close();
@@ -159,10 +158,18 @@ void Model :: readFromFile(const string filename, const bool &initial) {
         exit(EXIT_FAILURE);
     }
 
+    if ( initial ) {
+        resultDir = baseDir / result_dir_name;
+    }
+
     //here we apply periodic blocks to generate all the necessary objects
     //it was removed from Model initialization, because it had to be called in advance for RVE materials
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
     pblocks.apply();
+
+
+    exporters.setResultDirectory(resultDir);
+    exporters.setSolver(solver);
 }
 
 

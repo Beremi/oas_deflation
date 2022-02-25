@@ -12,8 +12,9 @@
 // #include "node_container.h"
 // #include "element_container.h"
 #include "data_exporter.h"
+#include "geometry.h"
 
-void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector<bool> &activeDirs, const bool trsp = false);
+void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector< bool > &activeDirs, const bool trsp = false);
 
 void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp = false, Function *fn = nullptr);
 
@@ -35,7 +36,22 @@ public:
 };
 
 // TODO JK: regions with separate material / elastic regions
-
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MaterialRegion
+class MaterialRegion : public PBlock
+{
+private:
+    Region *reg;
+    // Block block;
+    bool transport = false;
+    unsigned material_id;
+public:
+    MaterialRegion() { };
+    virtual ~MaterialRegion() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void readFromLine(istringstream &iss, unsigned d);
+};
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Mechanical Periodic Boundary Condition on prism
@@ -60,7 +76,7 @@ protected:
     virtual void readLoading(istringstream &iss);
     virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
-    MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; nonsymmetric_shear = false;};
+    MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; nonsymmetric_shear = false; };
     virtual ~MechanicalPeriodicBC() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
     virtual void readFromLine(istringstream &iss, unsigned d);
@@ -159,7 +175,7 @@ protected:
     bool transport = false;
     unsigned master_id, ndim;
     std :: string which;  ///< which direction to fix (e.g. to leave expansion in perpendicualr direction)
-    vector< bool > activeDirs;
+    vector< bool >activeDirs;
     void checkMechTransport(Node *master);
     void setDirectionToFix(istringstream &iss);
 };

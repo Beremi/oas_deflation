@@ -1540,6 +1540,8 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
 
 def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, aux_nodes, mZ=None, notches = None, randomizeMaterial = False, coupled = False, auxmechelements=False):
     print('Saving MECH elements...', end ='')
+    print('MZ')
+    print(mZ)
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
     mechElemRidges = []
@@ -1567,20 +1569,27 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
+        print('auxMechElements %s' %auxmechelements)
 
         for i in range (len(mechElemRidges)):
             iNa = int(mechElemRidges[i][0])
-            iNb = int(mechElemRidges[i][0])
+            iNb = int(mechElemRidges[i][1])
 
             if iNa >= node_count and auxmechelements==True:
                 nodeA = aux_nodes[iNa-node_count]
+                #print('auxnodeA %s' %iNa)
             else:
                 nodeA = nodes[iNa]
+                #print('normal nodeA %s' %iNa)
 
             if iNb >= node_count and auxmechelements==True:
                 nodeB = aux_nodes[iNb-node_count]
+                #print('auxnodeB %s' %iNb)
             else:
                 nodeB = nodes[iNb]
+                #print('normal nodeB %s' %iNb)
+
+
 
             if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) and (auxmechelements==False):
                 onlyMechNodesConnected = False
@@ -1623,6 +1632,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 #print (mZ[0][0][0] - mZ[0][1][0])
                 #print (triangle)
 
+                """
                 if ( triangle == False and
                       ((mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and
                       mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
@@ -1639,6 +1649,31 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       mZ[0][2][2] < nodeB[2] < mZ[0][3][2]) ):
                       mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
                 #print('len mz %d' %len(mZ))
+                """
+                if ( triangle == False):
+                    add=False
+                    if (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
+                        mZ[0][0][2] < nodeA[2] < mZ[0][1][2]):
+                        #print('lim %s' %mZ[0])
+                        #print('catched A%s' %nodeA[0:dim])
+                        #print('catch?? B%s' %nodeB[0:dim])
+                        add=True
+                    if ( mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
+                        #print('catched B%s' %nodeB[0:dim])
+                        add=True
+
+                    if add and (iNa >= node_count or iNb >= node_count) :
+                        #print('adding \n')
+                        mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
+
+                """
+                elif ( triangle == False):
+                    if ( mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
+                      mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
+                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
+                      print('catched B%s' %nodeB)
+                      mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
+                """
 
                 if (  len(mZ)==2 and
                       ((mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
@@ -1651,6 +1686,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       print('node in notch')
 
                 if ( triangle == True ):
+                      #print('triangle')
                       isPresentA = False
                       isPresentB = False
 
@@ -1671,6 +1707,12 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
                       #print ('cx %f' %(xmin+xTop*0.5/yTop))
                       #print ('cy %f' %(xmax-yTop*0.05/xTop))
+
+                      if (nodeA[0]==(xmin+xmax)/2 or nodeB[0]==(xmin+xmax)/2 ):
+                          if (nodeA[1]>ymin or nodeB[1]>ymin):
+                              isPresentA = True
+                              isPresentB = True
+                              print ('chycenb')
                       if (nodeA[0] > xmin and nodeA[0]<(xmin+xmax)/2):
                           xMINlim = xmin + xTop * y / yTop
                           yMINlim = ymax - yTop * x / xTop
@@ -1906,11 +1948,8 @@ def getRandCoef(integrationPoint):
 
 
 def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, aux_nodes, maxLim, nodes_out, vertices_out, isTube=False, coupled=False, mZ=[]):
-    print('Creating TRSPRT elements...', end='')
-
-    print ('tube: %s' %isTube)
-
-
+    print('Creating TRSPRT elements...')
+    print(maxLim)
     sys.stdout.flush()
     transportElements = []
     transportElements_dict = {}
@@ -1922,7 +1961,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     aux = len(aux_nodes)
     vrt = vertCount
 
-
+    #tady se kontroluje, jestli transportni prvek spojuje jen vertexy
     if (dim == 2):
         for i in range (len(ridges_out)):
             connNds = []
@@ -2041,15 +2080,37 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                         for j in range (1, len( elem.connectedNodes )-2, 2) :
                             if (elem.connectedNodes[j] != elem.connectedNodes[j+1]):
                                 restart = True
+
             reorderOk = True
             for i in range (1, len( elem.connectedNodes )-2, 2) :
                 if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
-                    reorderOk = False
-                    #print ('!!! %d Reorder not ok %s \n\n\n' %((i), elem.connectedNodes))
-                    allReorderedFine = False
-                    break
-            #if (reorderOk == True):
-            #    print ('Reordered fine: %s' %elem.connectedNodes)
+                    #reorderOk = False
+                    print ('\n !!! %d Reorder not ok %s ' %((i), elem.connectedNodes))
+                    #allReorderedFine = False
+
+                    nodesCoords = []
+                    #print(element.connectedNodes)
+                    for n in range(0,len(elem.connectedNodes),2):
+                        nIdx = int(elem.connectedNodes[n])
+
+                        if (nIdx<len(nodes_out)):
+                            nodesCoords.append(nodes_out[nIdx])
+                        else:
+                            nodesCoords.append(aux_nodes[nIdx-len(nodes_out)])
+
+                    nodesCoords = np.asarray(nodesCoords)
+                    allCoplanar, val = checkCoplanarity(nodesCoords, 1e-15)
+
+                    #a = input('').split(" ")[0]
+
+                    if val >1e-10:
+                        reorderOk = False
+                        allReorderedFine = False
+                    else:
+                        print('But nodes are coplanar, ignoring. (err %e)' %val)
+                        retart = False
+
+                    #break
 
 
     if (allReorderedFine == True):

@@ -67,6 +67,8 @@ class Model:
 
         self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC =self.expansionRings= None
 
+        self.tpbwedgeheight = 0.2
+
         self.functions = []
         self.radii = []
         self.totalNodeCount = -1
@@ -159,6 +161,9 @@ class Model:
                 self.minDist = float(r[i+1])
             if (r[i]=='trials'):
                 self.trials = int(r[i+1])
+
+            if (r[i]=='tpbwedgeheight'):
+                self.tpbwedgeheight = float(r[i+1])
 
             self.randomizeMaterial = False
             if (r[i]=='randomizeMaterial'):
@@ -393,13 +398,15 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self, node_coords_init=None,modelnr=-1):
+        print('running notched')
         #width of the supports, nemenit, je i v assemble3DSSBeamBending !!!!
         supportWidth = self.maxLim[0] / 20
 
-        if modelnr ==0:
+        if modelnr ==0 :
             # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
             #na kazdou stranu se prida pulka podpory
             self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
+            #print('rozsireni modelu')
 
         #(self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged)
         #(self.node_coords, self.mechBC_merged, self.mechInitC_merged,  self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.trsprtBC_merged)
@@ -408,12 +415,12 @@ class Model:
 
 
 
-        materialZones = None
+        self.materialZones = utilitiesModeling.assembleMaterialZones(0, 2, model='3pb3d', maxLim=self.maxLim, minDist=self.minDist)
 
         if self.elasticZone ==1:
             lim = np.array([
             self.maxLim[0]*0.5  + self.maxLim[1] * 0.2,#+ self.maxLim[0]*self.fracZoneWidth*1,
-            self.maxLim[1] * 0.9,
+            self.maxLim[1] * (1-self.tpbwedgeheight),
             -self.maxLim[2]* 0.1,
             self.maxLim[0]*0.5  - self.maxLim[1] * 0.2,#- self.maxLim[0]*self.fracZoneWidth*1,
             self.maxLim[1] * 1.1,
@@ -429,7 +436,7 @@ class Model:
             self.maxLim[2]* 1.1,
             ])
             # print (lim1)
-            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1)
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0,3, model='3pb3d', limits=lim, limits1=lim1, maxLim=self.maxLim, minDist=self.minDist)
 
 
 

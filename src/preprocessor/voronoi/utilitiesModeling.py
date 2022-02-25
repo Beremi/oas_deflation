@@ -163,13 +163,15 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None, expansionRingsProps=[]):
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None, minDist=None):
     #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
     matZ = []
     #matZone 2
     matZ1 = []
+
+    matZ2 = []
     if (model=='box'):
         if (dim==2):
             boundA = np.array(  [ -1e-8             , -1e-8          ] )
@@ -248,17 +250,26 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
     # 3/4 * D - indent -minDist/2]
 
     if (model =='3pb3d'):
-        boundA = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
-        matZ.append (boundA)
-        boundB = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
-        matZ.append (boundB)
-        materialZones.append(matZ)
+        if limits is not None:
+            boundA = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
+            matZ.append (boundA)
+            boundB = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
+            matZ.append (boundB)
+            #materialZones.append(matZ)
 
-        boundA1 = np.array(  [ limits1[0]    ,  limits1[1],  limits1[2]  ] )
-        boundB1 = np.array(  [ limits1[3]    ,  limits1[4],  limits1[5]  ] )
-        matZ1.append(boundA1)
-        matZ1.append(boundB1)
-        #materialZones.append(matZ1)
+            boundA1 = np.array(  [ limits1[0]    ,  limits1[1],  limits1[2]  ] )
+            boundB1 = np.array(  [ limits1[3]    ,  limits1[4],  limits1[5]  ] )
+            matZ1.append(boundA1)
+            matZ1.append(boundB1)
+
+
+        boundA2 = np.array(  [ -100    ,  maxLim[1]-1e-3,  -100  ] )
+        boundB2 = np.array(  [ 100   ,  100,  100  ] )
+        matZ2.append(boundA2)
+        matZ2.append(boundB2)
+        #matZ2.append(boundA2)
+        #matZ2.append(boundB2)
+        materialZones.append(matZ2)
 
     if (model=='3dcylinder'):
         boundA = np.array(  [ -1e-8   -maxLim[0]          , -1e-8    -maxLim[1]         , -1e8 -maxLim[2]] )
@@ -1282,7 +1293,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
     trsptTopRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
     trsptTopRigidPlate.setDirectNodes(faces2)
-    trsptTopRigidPlateMechBC = np.array([-1,-1])
+    trsptTopRigidPlateMechBC = np.array([0,-1])
     rigidPlatesTrspt.append(trsptTopRigidPlate)
     govNodesTrspt.append(np.array([ -1, 1]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptTopRigidPlateMechBC))
@@ -1297,7 +1308,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
     trsptRightRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
     trsptRightRigidPlate.setDirectNodes(faces3)
-    trsptRightRigidPlateMechBC = np.array([-1,-1])
+    trsptRightRigidPlateMechBC = np.array([0,-1])
     rigidPlatesTrspt.append(trsptRightRigidPlate)
     govNodesTrspt.append(np.array([ -1, 2]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptRightRigidPlateMechBC))
@@ -1312,7 +1323,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
 
     trsptLeftRigidPlate = utilitiesMech.RigidPlate(-len(govNodesTrspt)-1, 2, None, directIdcs = True)
     trsptLeftRigidPlate.setDirectNodes(faces4)
-    trsptLeftRigidPlateMechBC = np.array([-1,-1])
+    trsptLeftRigidPlateMechBC = np.array([0,-1])
     rigidPlatesTrspt.append(trsptLeftRigidPlate)
     govNodesTrspt.append(np.array([ -1, -1]))
     govNodesTrsptBC.append(utilitiesMech.transportBC(govNodesTrspt[-1], trsptLeftRigidPlateMechBC))
@@ -1333,7 +1344,7 @@ def create2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, rebarDiameter,
     functions.append (fnTrsprt1)
 
     ### selecting vertices on rebar interfaces
-    clipRadius = rebarDiameter/2 + minDist/3
+    clipRadius = rebarDiameter/2*1.01
     for r in range (rebarCount):
         interfaceVertices = []
         for i in range (len(vor.vertices)):
@@ -2089,7 +2100,7 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 
 
 def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1, activeMechanics = True, activeTransport=False, coupled=False, node_coords_init=None, specifiedNodes=[]):
-
+    print(maxLim)
 
 
 
@@ -2097,6 +2108,10 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     #govNodes, rigidPlates
     node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes);
     node_coords = np.asarray(node_coords)
+
+    #print('nothces')
+    #print(notches)
+    print ('max X = %f' %np.amax(node_coords[:,0]))
     """
     if SHOW_PLOT:
         fig = plt.figure()
@@ -2107,8 +2122,13 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     """
     print('Conducting Voronoi tesselation...', end = '')
     vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
-    print('done.')
 
+
+
+
+    print('done.')
+    print ('max X = %f' %np.amax(node_coords[:,0]))
+    print ('max X = %f' %np.amax(vor.vertices[:,0]))
     ########################################################################
     functions = []
     #### Defining functions
@@ -5479,6 +5499,8 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
     #width of the supports
     supportWidth = maxLim[0] / 21
 
+    print(maxLim)
+    print(supportWidth)
 
     #lists for the model
     if node_coords_init is None:

@@ -57,7 +57,7 @@ public:
     Node *findClosestAuxiliaryNode(const Point A, double *distance) const;
     Node *findClosestTransportNode(const Point A, double *distance) const;
     unsigned giveNodeNumber(const Node *n) const;
-    void addNode(Node *n) { n->setID(nodes.size()); nodes.push_back(n); };
+    void addNode(Node *n) { n->setID( nodes.size() ); nodes.push_back(n); };
     vector< bool >giveMechDoFsIndicator() { return mechDoFs; }
     vector< bool >giveTranspDoFsIndicator() { return transpDoFs; }
     void initSimplices();

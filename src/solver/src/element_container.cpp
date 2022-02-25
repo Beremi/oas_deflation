@@ -3,6 +3,7 @@
 #include "element_continuous.h"
 #include "element_polyhedral.h"
 #include <algorithm>
+#include "model.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     this->materials = matrs;
     size_t origsize = elems.size();
     string line, elemType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -221,13 +222,13 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
         unsigned LD_num = 0;
         std :: string fnm = "LD";
         // NOTE here GlobPaths :: RESULTDIR would be usefull
-        std :: string fnm_ini = ( GlobPaths :: BASEDIR / "results" / ( fnm + ".out" ) ).string();
+        std :: string fnm_ini = ( masterModel->resultDir / ( fnm + ".out" ) ).string();
         std :: string fnm_fin;
         while ( LD_num < 1000 ) {
-            fnm_fin = ( GlobPaths :: BASEDIR / "results" / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
+            fnm_fin = ( masterModel->resultDir / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
             if ( !fs :: exists(fnm_fin) ) {
                 if ( fs :: exists(fnm_ini) ) {
-                    std :: rename( fnm_ini.c_str(), fnm_fin.c_str() );
+                    std :: rename(fnm_ini.c_str(), fnm_fin.c_str() );
                     std :: cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
                     break;
                 } else {
@@ -248,7 +249,7 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
         std :: vector< double >initial_times, ini_time_steps, initial_idc_times;
         std :: vector< unsigned >initial_steps;
         for ( auto const &file_with_stats : this->file_to_load_from ) {
-            ifstream inputfile( file_with_stats.c_str() );
+            ifstream inputfile(file_with_stats.c_str() );
             if ( inputfile.is_open() ) {
                 while ( getline(inputfile >> std :: ws, line) ) {
                     if ( line.at(0) == '#' || line.empty() ) {
@@ -266,7 +267,7 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                         iss >> elem_id >> stat_id >> mat_id;
                         // std::cout << "line: " << line << '\n';
                         // std::cout << "elem name: " << this->giveElement(elem_id)->giveName() << '\n';
-                        this->giveElement(elem_id)->changeMaterial( this->materials->giveMaterial(mat_id) );
+                        this->giveElement(elem_id)->changeMaterial(this->materials->giveMaterial(mat_id) );
                         this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
                     }
                 }
@@ -292,8 +293,8 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
             // and set them accordign to values from files
             ini_step = initial_steps [ 0 ];
             ini_time = initial_times [ 0 ];
-            ini_time_step = ini_time_steps[0];
-            ini_idc_time = initial_idc_times[0];
+            ini_time_step = ini_time_steps [ 0 ];
+            ini_idc_time = initial_idc_times [ 0 ];
         }
     }
 }
@@ -307,7 +308,7 @@ void ElementContainer :: init() {
         ( * e )->setID(num);
         ( * e )->init();
         ( * e )->initMaterialStatuses();
-        max_sol_order = max( max_sol_order, ( * e )->giveSolutionOrder() );
+        max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
     }
 
     //update neighborhood information
@@ -349,13 +350,13 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        indices11.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
+                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
                     }
                 } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        indices11.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
-                        indices11.insert( pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
+                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
+                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
                     }
                 }
             }
@@ -461,7 +462,7 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
                 continue;                                  //correct order must be used;
             }
             elDoFs = ( * e )->giveDoFs();
-            elDoFvalues.resize( elDoFs.size() );
+            elDoFvalues.resize(elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
             }
@@ -481,7 +482,7 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
-        elDoFvalues.resize( elDoFs.size() );
+        elDoFvalues.resize(elDoFs.size() );
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
         }
@@ -528,7 +529,7 @@ void ElementContainer :: findElementFriends() {
 
 //////////////////////////////////////////////////////////
 Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const {
-    std :: sort( node_ids.begin(), node_ids.end() );
+    std :: sort(node_ids.begin(), node_ids.end() );
     // std::cout << "this elem should connect nodes";
     // for ( auto const &nid : node_ids ) {
     //   std::cout << " " << nid;
@@ -543,12 +544,12 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
                     // std::cout << "this elem connects nodes";
                     for ( auto const &n : el->giveNodes() ) {
                         // std::cout << " " << this->nodes->giveNodeId(n);
-                        elem_node_ids.push_back( this->nodes->giveNodeId(n) );
+                        elem_node_ids.push_back(this->nodes->giveNodeId(n) );
                     }
                     // std::cout << '\n';
                     if ( elem_node_ids.size() == node_ids.size() ) { ///< for other than rbc elems
                         // std::cout << "and what about here?" << '\n';
-                        std :: sort( elem_node_ids.begin(), elem_node_ids.end() );
+                        std :: sort(elem_node_ids.begin(), elem_node_ids.end() );
                         for ( unsigned i = 0; i < node_ids.size(); i++ ) {
                             if ( elem_node_ids [ i ] != node_ids [ i ] ) {
                                 break;

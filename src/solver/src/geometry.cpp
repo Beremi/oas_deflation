@@ -39,13 +39,34 @@ Circle :: Circle(const Point &c, const double &r) {
 }
 
 void Circle :: readFromLine(istringstream &iss) {
-    double x, y, z, r;
-    iss >> x >> y >> z >> r;
-    this->mainPoint = Point(x, y, z);
+    double x, y, r;
+    std :: string param;
+    iss >> x >> y >> r >> param;
+    if ( param.compare("along") == 0 ) {
+        iss >> this->along;
+    }
+    if ( this->along == 'x' ) {
+        this->mainPoint = Point(0, x, y);
+    } else if ( this->along == 'x' ) {
+        this->mainPoint = Point(x, 0, y);
+    } else if ( this->along == 'z' ) {
+        this->mainPoint = Point(x, y, 0);
+    }
     this->size = r;
 }
 
 bool Circle :: isInside(const Point &P) const {
+    // JK in 2D circle == sphere
+    // in 3D circle = cylinder with axis along z axis
+    // TODO make this more universal to be able to switch cylinder axis to x or y
+    Point P_to_compare = P;
+    if ( this->along == 'x' ) {
+        P_to_compare.setX(0);
+    } else if ( this->along == 'x' ) {
+        P_to_compare.setY(0);
+    } else if ( this->along == 'z' ) {
+        P_to_compare.setZ(0);
+    }
     if ( ( P - this->mainPoint ).norm() < this->size ) {
         return true;
     }
@@ -56,6 +77,13 @@ bool Circle :: isInside(const Point &P) const {
 ///////////////////////////////////////////////////////////////////////////////
 Sphere :: Sphere(const Point &c, const double &r) {
     this->mainPoint = c;
+    this->size = r;
+}
+
+void Sphere :: readFromLine(istringstream &iss) {
+    double x, y, z, r;
+    iss >> x >> y >> z >> r;
+    this->mainPoint = Point(x, y, z);
     this->size = r;
 }
 
@@ -138,8 +166,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius,
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.getX() <= max( p.getX(), r.getX() ) && q.getX() >= min( p.getX(), r.getX() ) &&
-         q.getY() <= max( p.getY(), r.getY() ) && q.getY() >= min( p.getY(), r.getY() ) ) {
+    if ( q.getX() <= max(p.getX(), r.getX() ) && q.getX() >= min(p.getX(), r.getX() ) &&
+         q.getY() <= max(p.getY(), r.getY() ) && q.getY() >= min(p.getY(), r.getY() ) ) {
         return true;
     }
     return false;
@@ -239,7 +267,7 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -250,15 +278,15 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
             }
             istringstream iss(line);
             iss >> std :: ws >> regionType;
-            if ( !(regionType.rfind("#", 0) == 0) ) {
+            if ( !( regionType.rfind("#", 0) == 0 ) ) {
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
                     Block *newregion = new Block();
                     newregion->readFromLine(iss);
-                    regions.push_back( std :: unique_ptr< Block >(newregion) );
+                    regions.push_back(std :: unique_ptr< Block >(newregion) );
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
                     Sphere *newregion = new Sphere();
                     newregion->readFromLine(iss);
-                    regions.push_back( std :: unique_ptr< Sphere >(newregion) );
+                    regions.push_back(std :: unique_ptr< Sphere >(newregion) );
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -289,7 +317,7 @@ bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside( n->givePoint() ) ) {
+            if ( reg->isInside(n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }

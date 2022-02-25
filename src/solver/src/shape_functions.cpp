@@ -6,7 +6,7 @@
 // SHAPE FUNCTIONS - MASTER CLASS
 //////////////////////////////////////////////////////////
 void ShapeFunc :: init(vector< Node * > &nodes) {
-    points.resize(nodes.size() );
+    points.resize( nodes.size() );
     unsigned k = 0;
     for ( auto &n: nodes ) {
         points [ k ] = n->givePointPointer();
@@ -49,7 +49,7 @@ void ShapeFunc :: giveJacobiM(const Matrix &phiGradNat, Matrix &JacobiM) const {
 
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveJacobiM(const Point *x, Matrix &JacobiM) const {
-    Matrix phiGradNat( ndim, points.size() );
+    Matrix phiGradNat(ndim, points.size() );
     giveShapeFGradNatural(x, phiGradNat);
     JacobiM *= 0;
     Point *n;
@@ -248,11 +248,11 @@ void Linear2DPolygonShapeF :: init(vector< Node * > &nodes) {
     ShapeFunc :: init(nodes);
 
     unsigned n = points.size();
-    angles.resize(points.size() );
+    angles.resize( points.size() );
     for ( unsigned i = 0; i < points.size(); i++ ) {
-        angles [ i ] = atan2( points [ i ]->getY() - centroid.getY(), points [ i ]->getX() - centroid.getX() );
+        angles [ i ] = atan2(points [ i ]->getY() - centroid.getY(), points [ i ]->getX() - centroid.getX() );
     }
-    triangles.resize(faces.size() );
+    triangles.resize( faces.size() );
     vector< Point * >trinodes;
     trinodes.resize(3);
     trinodes [ 2 ] = & centroid;
@@ -279,7 +279,7 @@ void Linear2DPolygonShapeF :: init(vector< Node * > &nodes) {
 
 //////////////////////////////////////////////////////////
 unsigned Linear2DPolygonShapeF :: findFaceNumber(const Point *x) const {
-    double alpha = atan2( x->getY() - centroid.getY(), x->getX() - centroid.getX() );
+    double alpha = atan2(x->getY() - centroid.getY(), x->getX() - centroid.getX() );
     double a, b;
     unsigned face;
     for ( face = 0; face < faces.size(); face++ ) {
@@ -368,7 +368,7 @@ void Wachspress2DShapeF :: giveShapeF(const Point *x, Vector &phi) const {
     Vector h(numOfNodes);
     Point oldNormal = normals [ numOfNodes - 1 ];
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
-        h [ i ] = abs( dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
+        h [ i ] = abs(dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
         phi [ i ] = abs(oldNormal.x * normals [ i ].y - oldNormal.y * normals [ i ].x);
         oldNormal = normals [ i ];
     }
@@ -391,7 +391,7 @@ void Wachspress2DShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) const
 
     Vector h(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
-        h [ i ] = abs( dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
+        h [ i ] = abs(dot(* points [ faces [ i ] [ 0 ] ] - * x, normals [ i ]) );
     }
     unsigned oldi = numOfNodes - 1;
     Vector phiR(2);
