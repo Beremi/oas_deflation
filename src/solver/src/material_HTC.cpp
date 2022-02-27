@@ -10,13 +10,15 @@ HTCMaterialStatus :: HTCMaterialStatus(HTCMaterial *m, Element *e, unsigned ipnu
 }
 
 //////////////////////////////////////////////////////////
-double HTCMaterialStatus :: giveValue(string code) const {
+void HTCMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("alpha_c") == 0 ) {
-        return alphac;
+        result.resize(1);
+        result[0] = alphac;
     } else if ( code.compare("alpha_s") == 0 ) {
-        return alphas;
+        result.resize(1);
+        result[0] =alphas;
     } else {
-        return TrsprtMaterialStatus :: giveValue(code);
+        TrsprtMaterialStatus :: giveValues(code, result);
     }
 }
 

@@ -118,24 +118,27 @@ void Element :: resetMaterialStatuses() {
     }
 }
 
-//////////////////////////////////////////////////////////
-double Element :: giveValue(string code) const {
-    ( void ) code;
-    return 0;
-};
 
 //////////////////////////////////////////////////////////
-double Element :: giveIPValue(string code, unsigned ipnum) const {
+void Element :: giveIPValues(string code, unsigned ipnum, Vector &result) const {
     if ( code.compare("x") == 0 ) {
-        return inttype->giveIPLocationPointer(ipnum)->getX();
+        result.resize(0);
+        result[0] = inttype->giveIPLocationPointer(ipnum)->getX();
     } else if ( code.compare("y") == 0 ) {
-        return inttype->giveIPLocationPointer(ipnum)->getY();
+        result.resize(0);
+        result[0] = inttype->giveIPLocationPointer(ipnum)->getY();
     } else if ( code.compare("z") == 0 ) {
-        return inttype->giveIPLocationPointer(ipnum)->getZ();
+        result.resize(0);
+        result[0] = inttype->giveIPLocationPointer(ipnum)->getZ();
     } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
-        return stats [ ipnum ]->giveMaterial()->giveId();
+        result.resize(0);
+        result[0] = stats [ ipnum ]->giveMaterial()->giveId();
     } else {
-        return stats [ ipnum ]->giveValue(code);
+        if(ipnum >= inttype->giveNumIP() ){
+            cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << endl;
+            exit(1); 
+        }
+        stats [ ipnum ]->giveValues(code, result);
     }
 };
 
@@ -334,20 +337,39 @@ Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: extrapolateIPValuesToNodes(string code) const {
+void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result) const {
     Vector phi(nodes.size() );
     Vector res(nodes.size() );
-    Vector rhs(nodes.size() );
-    Matrix M( nodes.size(), nodes.size() );
-    double jacobian, value;
+    double jacobian;
+    Vector ipres;
+    Matrix M(nodes.size(),nodes.size());        
+
+    if (inttype->giveNumIP()==0){   
+        cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << endl;
+        exit(1);
+    }
+    
+    giveIPValues(code, 0, ipres);
+    unsigned reslen = ipres.size(); 
+    result.resize(reslen);    
+
+    vector< Vector > rhs(reslen);
+    for(unsigned h=0; h<reslen; h++){
+        rhs[h].resize(nodes.size());
+        result[h].resize(nodes.size());
+    }
+
+
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         shafunc->giveShapeF(inttype->giveIPLocationPointer(i), phi);
         jacobian = shafunc->giveJacobian( inttype->giveIPLocationPointer(i) );
-        value = giveIPValue(code, i);
+        giveIPValues(code, i, ipres);
         for ( unsigned k = 0; k < nodes.size(); k++ ) {
-            rhs [ k ] += phi [ k ] * jacobian * value;
+            for(unsigned h=0; h<reslen; h++){ 
+                rhs[h] [ k ] += phi [ k ] * jacobian * ipres[h];
+            }
             for ( unsigned l = 0; l < nodes.size(); l++ ) {
-                M [ k ] [ l ] += phi [ k ] * phi [ l ] * jacobian;
+                    M [ k ] [ l ] += phi [ k ] * phi [ l ] * jacobian;            
             }
         }
     }
@@ -359,7 +381,8 @@ Vector Element :: extrapolateIPValuesToNodes(string code) const {
         }
     }
     CoordinateIndexedSparseMatrix Msparse( indices11, nodes.size(), nodes.size() );
-    LinalgSymmetricSolver(Msparse, res, rhs, res, 1e-15, 1.0, "EigenConj");
 
-    return res;
+    for(unsigned h=0; h<reslen; h++){
+        LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-15, 1.0, "EigenConj");
+    }
 }

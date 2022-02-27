@@ -12,62 +12,74 @@ FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m
 }
 
 //////////////////////////////////////////////////////////
-double FatigueShearMaterialStatus :: giveValue(string code) const {
+void FatigueShearMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ||  ( code.compare("damageT") == 0 ) ) {
         if ( temporarily_killed ) {
-            return -1;
+            result.resize(0);
         }
-        return damageShear;
+        result.resize(1);
+        result[0] = damageShear;
     } else if ( ( code.compare("temp_damage") == 0 ) ||  ( code.compare("temp_damageT") == 0 ) ) {
-        return temp_damageShear;
+        result.resize(1);
+        result[0] = temp_damageShear;
     } else if ( ( code.compare("crack_sliding") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
-        return slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
+        result.resize(1);
+        result[0] = slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
     } else if ( ( code.compare("strainT") == 0 ) ||  ( code.compare("strain") == 0 ) ) {
-        return slip.norm();
+        result.resize(1);
+        result[0] = slip.norm();
     } else if ( ( code.compare("strainYT") == 0 ) ) {
-        return slip.getY();
+        result.resize(1);
+        result[0] = slip.getY();
     } else if ( ( code.compare("strainZT") == 0 ) ) {
-        return slip.getZ();
+        result.resize(1);
+        result[0] = slip.getZ();
     } else if ( ( code.compare("strainPL") == 0 ) ||  ( code.compare("strainPLT") == 0 ) ) {
-        return sPi.norm();
+        result.resize(1);
+        result[0] = sPi.norm();
     } else if ( ( code.compare("strainYPLT") == 0 ) ) {
-        return sPi.getY();
+        result.resize(1);
+        result[0] = sPi.getY();
     } else if ( ( code.compare("strainZPLT") == 0 ) ) {
-        return sPi.getZ();
+        result.resize(1);
+        result[0] = sPi.getZ();
     } else if ( ( code.compare("stressT") == 0 ) ) {
-        return stressT.norm();
+        result.resize(1);
+        result[0] = stressT.norm();
     } else if ( ( code.compare("stressYT") == 0 ) ) {
-        return stressT.getY();
+        result.resize(1);
+        result[0] = stressT.getY();
     } else if ( ( code.compare("stressZT") == 0 ) ) {
-        return stressT.getZ();
+        result.resize(1);
+        result[0] = stressT.getZ();
     } else if ( ( code.compare("energy_totalT") == 0 ) || ( code.compare("energy_total") == 0 ) ) {
-        return
-            energy_PL
-            + energy_D
-            // - energy_Kin
-            // - energy_Iso
+        result.resize(1);
+        result[0] = energy_PL + energy_D // - energy_Kin - energy_Iso
         ;
     } else if ( ( code.compare("energy_PLT") == 0 ) ) {
-        return
-            energy_PL
-            - energy_Kin
-            - energy_Iso
-        ;
+        result.resize(1);
+        result[0] = energy_PL - energy_Kin - energy_Iso;
     } else if ( ( code.compare("energy_DT") == 0 ) ) {
-        return energy_D;
+        result.resize(1);
+        result[0] = energy_D;
     } else if ( ( code.compare("energy_KinT") == 0 ) ) {
-        return energy_Kin;
+        result.resize(1);
+        result[0] = energy_Kin;
     } else if ( ( code.compare("energy_IsoT") == 0 ) ) {
-        return energy_Iso;
+        result.resize(1);
+        result[0] = energy_Iso;
     } else if ( ( code.compare("work_totalT") == 0 ) || ( code.compare("work_total") == 0 ) ) {
-        return work_tot;
+        result.resize(1);
+        result[0] = work_tot;
     } else if ( ( code.compare("work_elaT") == 0 ) || ( code.compare("work_ela") == 0 ) ) {
-        return dot(slip - sPi, stressT) * 0.5;
+        result.resize(1);
+        result[0] = dot(slip - sPi, stressT) * 0.5;
     } else if ( ( code.compare("work_dissipT") == 0 ) || ( code.compare("work_dissip") == 0 ) ) {
-        return work_tot - dot(slip - sPi, stressT) * 0.5;
+        result.resize(1);
+        result[0] = work_tot - dot(slip - sPi, stressT) * 0.5;
     } else {
-        return DisMechMaterialStatus :: giveValue(code);
+        DisMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -557,51 +569,59 @@ DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial
 }
 
 //////////////////////////////////////////////////////////
-double DamagePlasticMaterialStatus :: giveValue(string code) const {
+void DamagePlasticMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) || ( code.compare("damageN") == 0 ) ) {
-        return damage;
+        result.resize(1);
+        result[0] = damage;  
     } else if ( ( code.compare("temp_damage") == 0 ) || ( code.compare("temp_damageN") == 0 ) ) {
-        return temp_damage;
+        result.resize(1);
+        result[0] = temp_damage;
     } else if ( ( code.compare("crack_opening") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
-        return epsN * damage * rbc->giveLength();
+        result.resize(1);
+        result[0] = epsN * damage * rbc->giveLength();
     } else if ( ( code.compare("strainN") == 0 ) || ( code.compare("strain") == 0 ) ) {
-        return epsN;
+        result.resize(1);
+        result[0] = epsN;
     } else if ( ( code.compare("stressN") == 0 ) || ( code.compare("stress") == 0 ) ) {
-        return stressN;
+        result.resize(1);
+        result[0] = stressN;
     } else if ( ( code.compare("strainPL") == 0 ) || ( code.compare("strainPLN") == 0 ) ) {
-        return epsNP;
+        result.resize(1);
+        result[0] = epsNP;
     } else if ( ( code.compare("energy_totalN") == 0 ) || ( code.compare("energy_total") == 0 ) ) {
-        return
-            energy_PL
-            + energy_D
+        result.resize(1);
+        result[0] = energy_PL + energy_D
             // - energy_Kin
             // - energy_Iso
         ;
     } else if ( ( code.compare("energy_PLN") == 0 ) ) {
-        return
-            energy_PL
-            - energy_Kin
-            - energy_Iso
-        ;
+        result.resize(1);
+        result[0] = energy_PL - energy_Kin - energy_Iso;
     } else if ( ( code.compare("energy_DN") == 0 ) ) {
-        return energy_D;
+        result.resize(1);
+        result[0] = energy_D;
     } else if ( ( code.compare("energy_KinN") == 0 ) ) {
-        return energy_Kin;
+        result.resize(1);
+        result[0] = energy_Kin;
     } else if ( ( code.compare("energy_IsoN") == 0 ) ) {
-        return energy_Iso;
+        result.resize(1);
+        result[0] = energy_Iso;
     } else if ( ( code.compare("work_totalN") == 0 ) || ( code.compare("work_total") == 0 ) ) {
-        return work_tot;
+        result.resize(1);
+        result[0] = work_tot;
     } else if ( ( code.compare("work_elaN") == 0 ) || ( code.compare("work_ela") == 0 ) ) {
-        return ( epsN - epsNP ) * stressN * 0.5;
+        result.resize(1);
+        result[0] = ( epsN - epsNP ) * stressN * 0.5;
     } else if ( ( code.compare("work_dissipN") == 0 ) || ( code.compare("work_dissip") == 0 ) ) {
         // if ( (epsN - epsNP) * (prev_epsN - prev_epsNP) < 0 ){
         //   return work_tot - (epsN - epsNP) * stressN * 0.5 - (prev_epsN - prev_epsNP) * prev_stressN * 0.5;
         // } else {
-        return work_tot - ( epsN - epsNP ) * stressN * 0.5;
+        result.resize(1);
+        result[0] = work_tot - ( epsN - epsNP ) * stressN * 0.5;
         // }
     } else {
-        return DisMechMaterialStatus :: giveValue(code);
+        DisMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -1014,22 +1034,34 @@ FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e, u
 }
 
 //////////////////////////////////////////////////////////
-double FatigueMaterialStatus :: giveValue(string code) const {
+void FatigueMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("energy_total") == 0 ) {
-        return DamagePlasticMaterialStatus :: giveValue("energy_totalN") + FatigueShearMaterialStatus :: giveValue("energy_totalT");
+        DamagePlasticMaterialStatus :: giveValues("energy_totalN", result);
+        Vector res2;
+        FatigueShearMaterialStatus :: giveValues("energy_totalT", res2);
+        result += res2;
     } else if  ( code.compare("work_total") == 0 ) {
-        return DamagePlasticMaterialStatus :: giveValue("work_totalN") + FatigueShearMaterialStatus :: giveValue("work_totalT");
+        DamagePlasticMaterialStatus :: giveValues("work_totalN", result);
+        Vector res2;
+        FatigueShearMaterialStatus :: giveValues("work_totalT", res2);
+        result += res2;
     } else if  ( code.compare("work_ela") == 0 ) {
-        return DamagePlasticMaterialStatus :: giveValue("work_elaN") + FatigueShearMaterialStatus :: giveValue("work_elaT");
+        DamagePlasticMaterialStatus :: giveValues("work_elaN", result);
+        Vector res2;
+        FatigueShearMaterialStatus :: giveValues("work_elaT", res2);
+        result += res2;
     } else if  ( code.compare("work_dissip") == 0 ) {
-        return DamagePlasticMaterialStatus :: giveValue("work_dissipN") + FatigueShearMaterialStatus :: giveValue("work_dissipT");
+        DamagePlasticMaterialStatus :: giveValues("work_dissipN", result);
+        Vector res2;
+        FatigueShearMaterialStatus :: giveValues("work_dissipT", res2);
+        result += res2;
     } else if ( code.back() == 'N' || code.compare("crack_opening") == 0 ) {  // last char of string
-        return DamagePlasticMaterialStatus :: giveValue(code);
+        DamagePlasticMaterialStatus :: giveValues(code, result);
     } else if ( code.back() == 'T' || code.compare("crack_sliding") == 0 ) {
-        return FatigueShearMaterialStatus :: giveValue(code);
+        FatigueShearMaterialStatus :: giveValues(code, result);
     } else {
-        return 0;
-        // return DisMechMaterialStatus :: giveValue(code);
+        result.resize(0);
+        //DisMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -1044,16 +1076,18 @@ void FatigueMaterialStatus :: init() {
 Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     Vector stress(strain.size() );
-
+    Vector res;    
     for ( size_t i = 0; i < strain.size(); i++ ) {
         if ( i == 0 ) {//normal direction (damage plastic material)
             if ( fabs(this->coupled_damage) > 0 ) {
-                DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
+                FatigueShearMaterialStatus :: giveValues("damage", res);
+                DamagePlasticMaterialStatus :: setDamage(res[0]);
             }
             stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain, timeStep) [ i ];
         } else {//shear directions (FatigueShearMaterial)
             if ( this->coupled_damage > 0 ) {
-                FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
+                DamagePlasticMaterialStatus :: giveValues("damage", res);
+                FatigueShearMaterialStatus :: setDamage( res[0] );
             }
             stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain, timeStep) [ i ];
         }
@@ -1090,9 +1124,12 @@ Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
 //////////////////////////////////////////////////////////
 void FatigueMaterialStatus :: update() {
     if ( fabs(this->coupled_damage) > 0 ) {
-        DamagePlasticMaterialStatus :: setDamage(FatigueShearMaterialStatus :: giveValue("damage") );
+        Vector res;        
+        FatigueShearMaterialStatus :: giveValues("damage", res);
+        DamagePlasticMaterialStatus :: setDamage(res[0]);
         if ( this->coupled_damage > 0 ) {
-            FatigueShearMaterialStatus :: setDamage(DamagePlasticMaterialStatus :: giveValue("damage") );
+            DamagePlasticMaterialStatus :: giveValues("damage", res);
+            FatigueShearMaterialStatus :: setDamage(res[0]);
         }
     }
     FatigueShearMaterialStatus :: update();
@@ -1162,24 +1199,31 @@ AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e, u
 }
 
 //////////////////////////////////////////////////////////
-double AllicheMaterialStatus :: giveValue(string code) const {
+void AllicheMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ) {
         // damage is different in each local direction
-        return damage.norm();
+        result.resize(1);
+        result[0] = damage.norm();
     } else if ( ( code.compare("damageX") == 0 ) ) {
-        return damage.getX();
+        result.resize(1);
+        result[0] = damage.getX();
     } else if ( ( code.compare("damageY") == 0 ) ) {
-        return damage.getY();
+        result.resize(1);
+        result[0] = damage.getY();
     } else if ( ( code.compare("damageZ") == 0 ) ) {
-        return damage.getZ();
+        result.resize(1);
+        result[0] = damage.getZ();
     } else if ( ( code.compare("stressX") == 0 ) ) {
-        return sigma.getX();
+        result.resize(1);
+        result[0] = sigma.getX();
     } else if ( ( code.compare("stressY") == 0 ) ) {
-        return sigma.getY();
+        result.resize(1);
+        result[0] = sigma.getY();
     } else if ( ( code.compare("stressZ") == 0 ) ) {
-        return sigma.getZ();
+        result.resize(1);
+        result[0] = sigma.getZ();
     } else {
-        return DisMechMaterialStatus :: giveValue(code);
+        DisMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -1515,17 +1559,21 @@ Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strai
 }
 
 //////////////////////////////////////////////////////////
-double DesmoratMaterialStatus :: giveValue(string code) const {
+void DesmoratMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ) {
-        return damage;
+        result.resize(1);
+        result[0] = damage;
     } else if ( ( code.compare("stressX") == 0 ) ) {
-        return sigma.getX();
+        result.resize(1);
+        result[0] = sigma.getX();
     } else if ( ( code.compare("stressY") == 0 ) ) {
-        return sigma.getY();
+        result.resize(1);
+        result[0] = sigma.getY();
     } else if ( ( code.compare("stressZ") == 0 ) ) {
-        return sigma.getZ();
+        result.resize(1);
+        result[0] = sigma.getZ();
     } else {
-        return DisMechMaterialStatus :: giveValue(code);
+        DisMechMaterialStatus :: giveValues(code, result);
     }
 }
 

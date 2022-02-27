@@ -58,7 +58,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
     double isDamageCoupled() const { return coup_dam; }
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(istringstream &iss);
@@ -152,7 +152,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(istringstream &iss);
 protected:
@@ -218,7 +218,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(istringstream &iss);
 };
@@ -266,7 +266,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     // virtual Vector giveStressWrong(const Vector &strain);
     void calculateDamage(const Vector &strain);
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
 };
 
 
@@ -325,7 +325,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
 };
 
 

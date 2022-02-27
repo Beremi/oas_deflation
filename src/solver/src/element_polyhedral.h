@@ -76,7 +76,7 @@ public:
  *  ~PolyhedralFace() {};
  *  void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
  *  void init();
- *  double giveValue(string code) const {return 0;};
+ *  double giveValues(string code, Vector &result) const {result.resize(0);};
  * };
  *
  *

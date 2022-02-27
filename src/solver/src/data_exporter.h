@@ -31,6 +31,7 @@ protected:
     string filename;
     unsigned precision;
     vector< string >codes;
+    vector< size_t > maxsize;
     double time_each, time_last;
 };
 
@@ -45,6 +46,7 @@ private:
 public:
     TXTNodalExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : DataExporter(dimension) { nodes = n; elems = e; };
     ~TXTNodalExporter() {};
+    virtual void init();
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
@@ -60,6 +62,7 @@ private:
 public:
     TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     ~TXTElementExporter() {};
+    virtual void init();
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
@@ -68,13 +71,14 @@ protected:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT FROM GAUSS POINTS TO TXT
-class TXTGaussPointExporter : public DataExporter
+class TXTIntegrationPointExporter : public DataExporter
 {
 private:
     ElementContainer *elems;
 public:
-    TXTGaussPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
-    ~TXTGaussPointExporter() {};
+    TXTIntegrationPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
+    ~TXTIntegrationPointExporter() {};
+    virtual void init();
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
@@ -130,15 +134,15 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF IP VALUES
-class IPGauge : public Gauge
+class IntegrationPointGauge : public Gauge
 {
 protected:
     vector< unsigned >elems;
     vector< unsigned >ipnums;
     ElementContainer *elemcont;
 public:
-    IPGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
-    ~IPGauge() {};
+    IntegrationPointGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    ~IntegrationPointGauge() {};
     void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
@@ -185,6 +189,7 @@ protected:
 };
 
 
+/*
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // EXPORT OF SUM OF VALUES
@@ -202,6 +207,7 @@ public:
     virtual void init();
 protected:
 };
+*/
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

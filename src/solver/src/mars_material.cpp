@@ -11,46 +11,44 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned i
 }
 
 //////////////////////////////////////////////////////////
-double MarsMaterialStatus :: giveValue(string code) const {
+void MarsMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
-        return temp_crackOpening;
+        result.resize(1);
+        result[0] = temp_crackOpening;
     } else if ( code.compare("volumetric_strain") == 0 ) {
-        return volumetricStrain;
+        result.resize(1);
+        result[0] = volumetricStrain;
     } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
-        return temp_damage;
-        // } else  if ( code.compare("stressN") == 0 ) {
-        //     return this->giveNormalShearStiffness("secant")[0] * temp_strain[0];
-        // } else  if ( code.compare("stressT1") == 0 ) {
-        //     return this->giveNormalShearStiffness("secant")[1] * temp_strain[1];
-        // } else  if ( code.compare("stressT2") == 0 ) {
-        //     return this->giveNormalShearStiffness("secant")[2] * temp_strain[2];
-        // } else  if ( code.compare("strainN") == 0 ) {
-        //     return temp_strain[0];
-        // } else  if ( code.compare("strainT1") == 0 ) {
-        //     return temp_strain[1];
-        // } else  if ( code.compare("strainT2") == 0 ) {
-        //     return temp_strain[2];
+        result.resize(1);
+        result[0] = temp_damage;
     } else if ( code.compare("ft") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        return m->giveFt();
+        result.resize(1);
+        result[0] = m->giveFt();
     } else if ( code.compare("Gt") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        return m->giveGt();
+        result.resize(1);
+        result[0] = m->giveGt();
     } else if ( code.compare("fs") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        return m->giveFs();
+        result.resize(1);
+        result[0] = m->giveFs();
     } else if ( code.compare("Gs") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        return m->giveGs();
+        result.resize(1);
+        result[0] = m->giveGs();
     } else if ( code.compare("E0") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        return m->giveE0();
+        result.resize(1);
+        result[0] = m->giveE0();
     } else if ( ( code.compare("strainN") == 0 ) || ( code.compare("strain") == 0 ) ) {
-        return temp_strain [ 0 ];
+        result.resize(1);
+        result[0] = temp_strain [ 0 ];
     } else if ( ( code.compare("stressN") == 0 ) || ( code.compare("stress") == 0 ) ) {
-        return temp_stress [ 0 ];
+        result.resize(1);
+        result[0] = temp_stress [ 0 ];
     } else {
-        return DisMechMaterialStatus :: giveValue(code);
+        DisMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -439,7 +437,9 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 }
 
 //////////////////////////////////////////////////////////
-void LDPMMaterialStatus :: computeDamage(Vector strain) {}
+void LDPMMaterialStatus :: computeDamage(Vector strain) {
+    (void) strain;
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -477,11 +477,12 @@ void CoupledMarsMaterialStatus :: setParameterValue(string code, double value) {
 }
 
 //////////////////////////////////////////////////////////
-double CoupledMarsMaterialStatus :: giveValue(string code) const {
-    if ( code.compare("average_pressure") == 0 ) {
-        return avgPressure;
+void CoupledMarsMaterialStatus :: giveValues(string code, Vector &result) const {
+    if ( code.compare("pressure") == 0 || code.compare("avg_pressure") == 0) {
+        result.resize(1);
+        result[0] = avgPressure;
     }
-    return MarsMaterialStatus :: giveValue(code);
+    return MarsMaterialStatus :: giveValues(code,result);
 }
 
 

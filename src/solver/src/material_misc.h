@@ -29,7 +29,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
 };
 
 
@@ -50,46 +50,6 @@ public:
     virtual void init();
 };
 
-// //////////////////////////////////////////////////////////
-// // PLASTO - BRITTLE MATERIAL
-//
-// class PlastoBrittleMaterial;
-// class PlastoBrittleMaterialStatus : public BrittleMaterialStatus
-// {
-// private:
-//     double plast_strain;
-//     double RAND_H;
-//     double temp_crackOpening;
-//
-//     void calcPlastStrain();
-// public:
-//     PlastoBrittleMaterialStatus(PlastoBrittleMaterial *m, Element *e);
-//     virtual ~PlastoBrittleMaterialStatus() {};
-//     void init();
-//     virtual void update();
-//     virtual Vector giveNormalShearStiffness(string type) const;
-//     virtual Vector giveStress(const Vector &strain, double timeStep);
-//     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-//     virtual double giveValue(string code) const;
-// };
-//
-//
-// class PlastoBrittleMaterial : public BrittleMaterial
-//   // TODO do plasto brittle - can be useful in any way? (well, can be implemented in future)
-//   // plastic strain in compression and brittle in tension/shear with possíbility to calc in equiv. space
-// {
-// private:
-//     double fc;
-// public:
-//     PlastoBrittleMaterial() { name = "PlastoBrittle material"; };
-//     ~PlastoBrittleMaterial() {};
-//     void readFromLine(istringstream &iss);
-//     MaterialStatus *giveNewMaterialStatus(Element *e);
-//     double giveFc() { return fc; }
-//
-//     virtual void init();
-// };
-
 //////////////////////////////////////////////////////////
 // CONTACT SHEAR MATERIAL
 /*
@@ -109,7 +69,7 @@ public:
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    // virtual double giveValue(string code) const;
+    //virtual void giveValues(string code, Vector &result) const;
 };
 
 

@@ -104,13 +104,6 @@ void Solver :: setNextStepTime() {
 void Solver :: runBeforeEachStep() {
     step += 1;
 
-    if ( time + dt > termination_time ) {
-        dt = termination_time - time;
-    }
-    if ( dt < 1e-15 ) {
-        terminated = true;
-    }
-
     setNextStepTime();
 
     load_old = load; //copy old load to be used in generalized alpha method
@@ -125,12 +118,19 @@ void Solver :: runAfterEachStep() {
     f_ext_old = f_ext;
 
     elems->updateMaterialStatuses();
+
+    if ( time + dt > termination_time ) {
+        dt = termination_time - time;
+    }
+    if ( dt < 1e-12 ) {
+        terminated = true;
+    }
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: setTime(double t) {
     time = t;
-    if ( time - 1e-15 > termination_time ) {
+    if ( time + 1e-12 > termination_time ) {
         time = termination_time;
         terminated = true;
     } else {

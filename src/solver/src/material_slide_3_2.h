@@ -61,7 +61,7 @@ public:
     virtual void update();
     virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
 };
 
 

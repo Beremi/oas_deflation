@@ -763,9 +763,11 @@ double DiscreteMechanicalRVEMaterialStatus :: giveCrackVolume() const {
     double crackVolume = 0.;
     RigidBodyContact *e;
     ElementContainer *elems = RVE->giveElements();
+    Vector res;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-        crackVolume += e->giveCrackOpening() * e->giveArea();
+        e->giveIPValues("tempCrackOpening",0, res);
+        if (res.size()>0) crackVolume += res[0] * e->giveArea();
     }
 
     return crackVolume;
@@ -1357,12 +1359,13 @@ Vector DiscreteCoupledRVEMaterialStatus ::  giveStressWithFrozenIntVars(const Ve
 }
 
 //////////////////////////////////////////////////////////
-double DiscreteCoupledRVEMaterialStatus ::  giveValue(string code) const {
+void DiscreteCoupledRVEMaterialStatus ::  giveValues(string code, Vector & result) const {
     if ( code.compare("crack_volume_density") == 0 ) {
         DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
-        return temp_crackVolume / dcm->givePUCVolume();
+        result.resize(1);
+        result[0] = temp_crackVolume / dcm->givePUCVolume();
     } else {
-        return RVEMaterialStatus :: giveValue(code);
+        RVEMaterialStatus :: giveValues(code, result);
     }
 }
 

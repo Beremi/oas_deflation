@@ -61,11 +61,11 @@ public:
     vector< unsigned >giveDoFs() const { return DoFids; };
     vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const { (void) code; result.resize(0);};
     string giveName() const { return name; }
     size_t giveNumIP() const { return inttype->giveNumIP(); };
     Point giveIPLoc(unsigned k) const { return inttype->giveIPLocation(k); };
-    virtual double giveIPValue(string code, unsigned ipnum) const;
+    virtual void giveIPValues(string code, unsigned ipnum, Vector &result) const;
     vector< Node * >giveNodes() const { return nodes; }
     Node *giveNode(unsigned k) const { return nodes [ k ]; }
     Material *giveMaterial() const { return mat; }
@@ -91,7 +91,7 @@ public:
     Vector giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const;
     double giveVolume() const { return volume; };
 
-    Vector extrapolateIPValuesToNodes(string code) const;
+    void extrapolateIPValuesToNodes(string code, vector< Vector > &result) const;
 
     virtual void collectInformationsFromNeigborhood() {};
     virtual bool isPointInside(Point *xn, const Point *x) const;

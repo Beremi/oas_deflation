@@ -494,9 +494,9 @@ Matrix Slide32MaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 }
 
 
-double Slide32MaterialStatus :: giveValue(string code) const {
+void Slide32MaterialStatus :: giveValues(string code, Vector &result) const {
     // TODO
-    return DisMechMaterialStatus :: giveValue(code);
+    DisMechMaterialStatus :: giveValues(code, result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

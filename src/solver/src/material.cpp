@@ -113,16 +113,19 @@ double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pre
 }
 
 //////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: giveValue(string code) const {
+void TrsprtMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("permeability") == 0 ) {
         TrsprtMaterial *m = dynamic_cast< TrsprtMaterial * >( mat );
-        return m->givePermeability();
+        result.resize(1);
+        result[0] =  m->givePermeability();
     } else if ( code.compare("flux") == 0 ) {
-        return abs(temp_stress [ 0 ]);
+        result.resize(1);
+        result[0] =  abs(temp_stress [ 0 ]);
     } else if ( code.compare("pressure_gradient") == 0 ) {
-        return abs(temp_strain [ 0 ]);
+        result.resize(1);
+        result[0] = abs(temp_strain [ 0 ]);
     } else {
-        return MaterialStatus :: giveValue(code);
+        MaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -564,19 +567,23 @@ void DiscreteTrsprtCoupledMaterialStatus ::  resetTemporaryVariables() {
 
 
 //////////////////////////////////////////////////////////
-double DiscreteTrsprtCoupledMaterialStatus ::  giveValue(string code) const {
+void DiscreteTrsprtCoupledMaterialStatus ::  giveValues(string code, Vector &result) const {
     if ( code.compare("volumetric_strain") == 0 ) {
-        return volumetricStrain;
+        result.resize(1);
+        result[0] = volumetricStrain;
     } else if ( code.compare("crack_volume") == 0 ) {
-        return temp_crackVolume;
+        result.resize(1);
+        result[0] = temp_crackVolume;
     } else if ( code.compare("crack_volume_rate") == 0 ) {
-        return crackVolumeRate;
+        result.resize(1);
+        result[0] = crackVolumeRate;
     } else if ( code.compare("rel_crack_volume_rate") == 0 ) {
         Transp1D *trs = static_cast< Transp1D * >( element );
         double vol = trs->giveVolume();
-        return crackVolumeRate / vol;
+        result.resize(1);
+        result[0] = crackVolumeRate / vol;
     } else {
-        return TrsprtMaterialStatus :: giveValue(code);
+        TrsprtMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -668,21 +675,27 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 };
 
 //////////////////////////////////////////////////////////
-double DisMechMaterialStatus ::  giveValue(string code) const {
+void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
     if ( code.compare("s_N") == 0 ) {
-        return temp_stress [ 0 ];
+        result.resize(1);
+        result[0] = temp_stress [ 0 ];
     } else if ( code.compare("s_M") == 0 ) {
-        return temp_stress [ 1 ];
+        result.resize(1);
+        result[0] = temp_stress [ 1 ];
     } else if ( code.compare("s_L") == 0 ) {
-        return temp_stress [ 2 ];
+        result.resize(1);
+        result[0] = temp_stress [ 2 ];
     } else if ( code.compare("e_N") == 0 ) {
-        return temp_strain [ 0 ];
+        result.resize(1);
+        result[0] = temp_strain [ 0 ];
     } else if ( code.compare("e_M") == 0 ) {
-        return temp_strain [ 1 ];
+        result.resize(1);
+        result[0] = temp_strain [ 1 ];
     } else if ( code.compare("e_L") == 0 ) {
-        return temp_strain [ 2 ];
+        result.resize(1);
+        result[0] = temp_strain [ 2 ];
     } else {
-        return MaterialStatus :: giveValue(code);
+        MaterialStatus :: giveValues(code, result);
     }
 }
 

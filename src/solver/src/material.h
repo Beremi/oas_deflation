@@ -29,7 +29,7 @@ public:
     virtual void resetTemporaryVariables();  ///> if step reset applied, reset temprary variables to last converged state
     virtual Vector giveStress(const Vector &strain, double timeStep) { return giveStressWithFrozenIntVars(strain, timeStep); };
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep) { ( void ) strain; ( void ) timeStep; return Vector(0); };
-    virtual double giveValue(string code) const { ( void ) code; return 0; };
+    virtual void giveValues(string code, Vector &result) const { ( void ) code; result.resize(0);};
     virtual Vector giveTempStress() const { return temp_stress; };
     virtual Vector giveUpdatedStress() const { return updt_stress; };
     virtual Vector giveTempStrain() const { return temp_strain; };
@@ -98,7 +98,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
     virtual Matrix giveDampingTensor() const;
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
     virtual double giveEffectiveConductivity(string type) const;
     virtual double updateEffectiveConductivity() const;
     virtual double calculatePressureDependentPermeability(double pressure) const;
@@ -170,7 +170,7 @@ public:
     virtual void resetTemporaryVariables();
     virtual void init() { volumetricStrain = 0; };
     virtual Vector giveInternalSource() const;
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
     virtual void setParameterValue(string code, double value);
     virtual double updateEffectiveConductivity() const;
     void updateRateVariables(double timeStep);
@@ -277,7 +277,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     double giveDensity() const;
     virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
-    virtual double giveValue(string code) const;
+    virtual void giveValues(string code, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////

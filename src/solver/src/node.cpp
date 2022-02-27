@@ -99,16 +99,22 @@ MechDoF :: MechDoF(unsigned dimension, unsigned numDoFs) : MechNode(dimension) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// MECHANICAL NODE - translational DoFs
-double MechNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
-    if ( code.compare("ux") == 0 ) {
-        return DoFs [ firstDoF ];
+// MECHANICAL NODE - translational DoFs 
+void MechNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {    
+    if ( code.compare("displacements") == 0 ) {
+        result.resize(dim);
+        for (unsigned i=0; i<dim; i++) result[i] = DoFs [ firstDoF + i ];    
+    } else if ( code.compare("ux") == 0 ) {
+        result.resize(1);
+        result[0] = DoFs [ firstDoF ];
     } else if ( dim > 1 && code.compare("uy") == 0 ) {
-        return DoFs [ firstDoF + 1 ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF + 1 ];
     } else if ( dim > 2 && code.compare("uz") == 0 ) {
-        return DoFs [ firstDoF + 2 ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF + 2 ];
     } else {
-        return Node :: giveDoFBasedValue(code, DoFs);
+        Node :: giveDoFBasedValues(code, DoFs, result);
     }
 };
 
@@ -129,11 +135,12 @@ unsigned MechNode :: giveOrderOfForceCode(string code) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT NODE - pressure DoF
-double TrsNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
+void TrsNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("pressure") == 0 ) {
-        return DoFs [ firstDoF ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF ];
     } else {
-        return Node :: giveDoFBasedValue(code, DoFs);
+        Node :: giveDoFBasedValues(code, DoFs, result);
     }
 };
 
@@ -149,13 +156,15 @@ unsigned TrsNode :: giveOrderOfForceCode(string code) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT + TEMPERATURE NODE
-double TrsTemprtrCoupledNode :: giveDoFBasedValue(string code, const Vector &DoFs) const {
+void TrsTemprtrCoupledNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("humidity") == 0 ) {
-        return DoFs [ firstDoF ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF ];
     } else if ( code.compare("temperature") == 0 ) {
-        return DoFs [ firstDoF + 1 ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF + 1 ];
     } else {
-        return Node :: giveDoFBasedValue(code, DoFs);
+        Node :: giveDoFBasedValues(code, DoFs, result);
     }
 };
 
@@ -203,15 +212,18 @@ void Particle :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-double Particle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
+void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( dim > 1 && code.compare("rotx") == 0 ) {
-        return DoFs [ firstDoF + 3 ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF + 3 ];
     } else if ( dim > 2 && code.compare("roty") == 0 ) {
-        return DoFs [ firstDoF + 4 ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF + 4 ];
     } else if ( dim > 2 && code.compare("rotz") == 0 ) {
-        return DoFs [ firstDoF + 5 ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF + 5 ];
     } else {
-        return MechNode :: giveDoFBasedValue(code, DoFs);
+        MechNode :: giveDoFBasedValues(code, DoFs, result);
     }
 };
 
@@ -245,11 +257,12 @@ std :: string Particle :: giveLineToSave() const {
 //////////////////////////////////////////////////////////
 // COUPLED PARTICLE - translational and rotational and transport DoFs
 //////////////////////////////////////////////////////////
-double CoupledParticle :: giveDoFBasedValue(string code, const Vector &DoFs) const {
+void CoupledParticle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("pressure") == 0 ) {
-        return DoFs [ firstDoF + 6 ];
+        result.resize(1);
+        result[0] = DoFs [ firstDoF + 6 ];
     } else {
-        return Particle :: giveDoFBasedValue(code, DoFs);
+        Particle :: giveDoFBasedValues(code, DoFs, result);
     }
 };
 

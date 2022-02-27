@@ -16,107 +16,34 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) {
 }
 
 //////////////////////////////////////////////////////////
-double RigidBodyContact :: giveValue(string code) const {
+void RigidBodyContact :: giveValues(string code, Vector &result) const {
     if ( code.compare("damage") == 0 ) {
-        return stats [ 0 ]->giveValue(code);
-    } else {
-        return MechanicalElement :: giveValue(code);
-    }
-}
-
-//////////////////////////////////////////////////////////
-double RigidBodyContact :: giveIPValue(string code, unsigned ipnum) const {
-    if ( code.compare("normal_x") == 0 ) {
-        return normal.getX();
-    } else if ( code.compare("normal_y") == 0 ) {
-        return normal.getY();
-    } else if ( code.compare("normal_z") == 0 ) {
-        return normal.getZ();
-    } else if ( code.compare("t1_x") == 0 ) {
-        return R [ 1 ] [ 0 ];
-    } else if ( code.compare("t1_y") == 0 ) {
-        return R [ 1 ] [ 1 ];
-    } else if ( code.compare("t1_z") == 0 ) {
-        return R [ 1 ] [ 2 ];
-    } else if ( code.compare("t2_x") == 0 ) {
-        return R [ 2 ] [ 0 ];
-    } else if ( code.compare("t2_y") == 0 ) {
-        return R [ 2 ] [ 1 ];
-    } else if ( code.compare("t2_z") == 0 ) {
-        return R [ 2 ] [ 2 ];
+        stats [ 0 ]->giveValues(code, result);
+    } else if ( code.compare("normal") == 0 ) {
+        result.resize(ndim);
+        for (unsigned i=0; i<ndim; i++) result[i] = normal.giveCoord(i);
+    } else if ( code.compare("t1") == 0 ) {
+        result.resize(ndim);
+        for (unsigned i=0; i<ndim; i++) result[i] = R [ 1 ] [ i ];
+    } else if ( code.compare("t2") == 0 ) {
+        result.resize(ndim);
+        for (unsigned i=0; i<ndim; i++) result[i] = R [ 1 ] [ i ];
     } else if ( code.compare("volume") == 0 ) {
-        return area * length / ndim;
+        result.resize(1);
+        result[0] = area * length / ndim;
     } else if ( code.compare("area") == 0 ) {
-        return area;
+        result.resize(1);
+        result[0] = area;
     } else if ( code.compare("length") == 0 ) {
-        return length;
-    } else if ( code.compare("energy_total_elem") == 0 ) {
-        // TODO all following repair in the way that anything ending by _elem would be multiplied by area mat->giveValue(code without '_elem') * ( area * length / ndim )
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_total")  * ( area * length / ndim );
-    } else if ( code.compare("energy_totalT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_totalT")  * ( area * length / ndim );
-    } else if ( code.compare("energy_totalN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_totalN")  * ( area * length / ndim );
-    } else if ( code.compare("energy_PLN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_PLN")  * ( area * length / ndim );
-    } else if ( code.compare("energy_DN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_DN")  * ( area * length / ndim );
-    } else if ( code.compare("energy_KinN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_KinN")  * ( area * length / ndim );
-    } else if ( code.compare("energy_IsoN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_IsoN")  * ( area * length / ndim );
-    } else if ( code.compare("energy_PLT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_PLT")  * ( area * length / ndim );
-    } else if ( code.compare("energy_DT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_DT")  * ( area * length / ndim );
-    } else if ( code.compare("energy_KinT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_KinT")  * ( area * length / ndim );
-    } else if ( code.compare("energy_IsoT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("energy_IsoT")  * ( area * length / ndim );
-    } else if ( code.compare("work_dissip_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_dissip")  * ( area * length / ndim );
-    } else if ( code.compare("work_dissipN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_dissipN")  * ( area * length / ndim );
-    } else if ( code.compare("work_dissipT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_dissipT")  * ( area * length / ndim );
-    } else if ( code.compare("work_total_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_total")  * ( area * length / ndim );
-    } else if ( code.compare("work_ela_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_ela")  * ( area * length / ndim );
-    } else if ( code.compare("work_totalT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_totalT")  * ( area * length / ndim );
-    } else if ( code.compare("work_elaT_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_elaT")  * ( area * length / ndim );
-    } else if ( code.compare("work_totalN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_totalN")  * ( area * length / ndim );
-    } else if ( code.compare("work_elaN_elem") == 0 ) {
-        MaterialStatus *fmstat = static_cast< MaterialStatus * >( stats [ ipnum ] );
-        return fmstat->giveValue("work_elaN")  * ( area * length / ndim );
+        result.resize(1);
+        result[0] = length;
     } else {
-        return MechanicalElement :: giveIPValue(code, ipnum);
+        MechanicalElement :: giveValues(code, result);
     }
 }
 
-//////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////
 void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num, num2;
     iss >> num;
@@ -445,6 +372,11 @@ Matrix RigidBodyContact :: giveDampingMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
+Matrix RigidBodyContact :: giveMassMatrix() const {
+    return Element :: giveMassMatrix();
+}
+
+//////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
 }
@@ -534,6 +466,8 @@ void RigidBodyBoundaryCoupled :: init() {
 Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     // DONE  call only separate fn for update of pressure due to transport
     // Vector dummy = RigidBodyContactCoupled :: giveStrain(i, DoFs);
+    (void) i;
+    (void) DoFs;
     this->extractPressureFromSimplices();
     // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
     return Vector( ( double ) 0, ( this->ndim - 1 ) * 3 );
@@ -908,22 +842,14 @@ void Transp1DCoupled :: init() {
 }
 
 //////////////////////////////////////////////////////////
-double Transp1DCoupled :: giveValue(string code) const {
+void Transp1DCoupled :: giveValues(string code, Vector &result) const {
     if ( code.compare("numOfFriends") == 0 ) {
-        return friends.size();
+        result.resize(0);
+        result[0] = friends.size();
     } else {
-        return Transp1D :: giveValue(code);
+        Transp1D :: giveValues(code, result);
     }
 };
-
-//////////////////////////////////////////////////////////
-double Transp1DCoupled :: giveIPValue(string code, unsigned ipnum) const {
-    if ( code.compare("numOfFriends") == 0 ) {
-        return friends.size();
-    } else {
-        return Transp1D :: giveIPValue(code, ipnum);
-    }
-}
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: addNewFriend(RigidBodyContact *f, double weight) {
@@ -938,10 +864,12 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     double crackVolume = 0.;
     double elem_crack_opening;
     size_t m = 0;
+    Vector res;
     for ( auto &f: friends ) {
         elem_crack_opening = 0.;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
-            elem_crack_opening += abs(f->giveIPValue("tempCrackOpening", k) );
+            f->giveIPValues("tempCrackOpening", k, res);
+            elem_crack_opening += abs(res[0]);
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
         if ( ndim == 3 ) {

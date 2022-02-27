@@ -8,11 +8,12 @@ BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e, u
 }
 
 //////////////////////////////////////////////////////////
-double BrittleMaterialStatus :: giveValue(string code) const {
+void BrittleMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
-        return temp_damage;
+        result.resize(1);
+        result[0] = temp_damage;
     } else {
-        return DisMechMaterialStatus :: giveValue(code);
+        DisMechMaterialStatus :: giveValues(code,result);
     }
 }
 

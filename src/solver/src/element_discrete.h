@@ -39,9 +39,7 @@ public:
     virtual Vector transformToLocal(const Vector &DoFs) const;
     virtual Vector transformToGlobal(const Vector &DoFs) const;
 
-    virtual double giveValue(string code) const;
-    virtual double giveIPValue(string code, unsigned ipnum) const;
-    double giveCrackOpening() { return giveIPValue("tempCrackOpening", 0); };
+    virtual void giveValues(string code, Vector &result) const;
     Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     Point giveNormal() const { return normal; };
     Point giveT1() const { return t1; };
@@ -50,11 +48,11 @@ public:
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual Matrix giveStiffnessMatrix(string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
+    virtual Matrix giveMassMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector integrateInternalSources();
     double givePerimeter()const { return perimeter; };
-
 
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
@@ -180,8 +178,7 @@ private:
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     ~Transp1DCoupled() {};
-    virtual double giveValue(string code) const;
-    virtual double giveIPValue(string code, unsigned ipnum) const;
+    virtual void giveValues(string code, Vector &result) const;
     void init();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     void addNewFriend(RigidBodyContact *f, double weight);

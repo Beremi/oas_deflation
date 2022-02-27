@@ -2,6 +2,42 @@
 #include "element_discrete.h"
 #include "misc.h"
 
+#ifdef __VTK_MODULE
+    #include <vtkCellArray.h>
+    #include <vtkNew.h>
+    #include <vtkPointData.h>
+    #include <vtkProperty.h>
+    #include <vtkPlane.h>
+    #include <vtkBitArray.h>
+    #include <vtkUnstructuredGrid.h>
+    #include <vtkXMLUnstructuredGridWriter.h>
+    #include <vtkPoints.h>
+    #include <vtkIntArray.h>
+    #include <vtkDoubleArray.h>
+    #include <vtkCellData.h>
+    #include <vtkXMLPUnstructuredGridWriter.h>
+    #include <vtkSmartPointer.h>
+    #include <vtkCutter.h>
+    #include <vtkXMLPolyDataWriter.h>
+
+    //#include <vtkActor.h>
+    //#include <vtkDataSetMapper.h>
+    //#include <vtkNamedColors.h>
+    //#include <vtkRenderWindow.h>
+    //#include <vtkRenderWindowInteractor.h>
+    //#include <vtkRenderer.h>
+    //#include <vtkTetra.h>
+    //#include <vtkVertexGlyphFilter.h>
+    //#include <vtkXMLUnstructuredGridReader.h>
+    //#include <vtkPolygon.h>
+    //#include <vtkCamera.h>
+    //#include <vtkPolyData.h>
+    //#include <vtkPolyDataMapper.h>
+    //#include <vtkXMLPolyDataReader.h>
+    //#include <vtkMassProperties.h>
+#endif
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // VTK EXPORTERS
@@ -136,6 +172,7 @@ void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *e
 void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs,
                                const vector< bool > &codes_positions, const vector< string > &codes,
                                vector< vector< double > > &cell_data, bool doubled = false, bool rbcOnly = false) {
+    /*
     Vector elDoFvalues, strainNT;
     vector< unsigned >elDoFs;
     double data;
@@ -223,6 +260,7 @@ void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs
             }
         }
     }
+    */
 }
 
 
@@ -250,13 +288,176 @@ vector< double >MatrixToStdVectForParaview(const Matrix &s, const unsigned &dim)
 //////////////////////////////////////////////////////////
 void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-    // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
     // Point P;
     // Element *ee;
 
     vector< int >points_id;
     vector< vector< int > >all_points_id;
+
+    cout << "INSIDE" << endl;
+    #ifdef __VTK_MODULE
+            cout << "HHHHHHHHHHHH" << endL ggg
+    
+        vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+        vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+        Point *nn;        
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            nn = nodes->giveNode()->giveCoords();
+            points->InsertNextPoint(nn->giveX(), nn->giveY(), nn->giveZ());
+        }
+        unstructuredGrid->SetPoints(points);
+
+        vector <*Node> elnodes;
+        vector <unsigned> elindices;
+                
+        for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
+            elnodes = elems->giveElement(e)->giveNodes();
+            elindices.resize(elnodes.size);
+            for(unsigned p=0; p<elnodes.size(); p++) elindices[p] = elnodes[p]->giveID();
+            unstructuredGrid->InsertNextCell(VTK_POLYGON, elindices );
+
+
+            /* FACES WITH CENTROID
+            vtkSmartPointer<vtkIdList> vtktriangles = vtkSmartPointer<vtkIdList>::New();
+            vtkSmartPointer<vtkIdList> polyPointsIds = vtkSmartPointer<vtkIdList>::New();
+            unsigned vlast = nds.size() - 1;
+            for ( unsigned v = 0; v < nds.size(); v++ ) {
+                vtktriangles->InsertNextId(3);
+                vtktriangles->InsertNextId(nds [ vlast ]->giveID());
+                vtktriangles->InsertNextId(nds [ v ]->giveID());
+                vtktriangles->InsertNextId(ff->giveID() + nodelist->giveLength());
+                polyPointsIds->InsertNextId(nds [ vlast ]->giveID());
+                polyPointsIds->InsertNextId(nds [ v ]->giveID());
+                polyPointsIds->InsertNextId(ff->giveID() + nodelist->giveLength());
+                vlast = v;
+            }
+            // VTK_TRIANGLE_STRIP is not exactly for face, but looks that it's working
+            unstructuredGrid->InsertNextCell(VTK_TRIANGLE_STRIP, nds.size() * 3, polyPointsIds->GetPointer(0), nds.size(), vtktriangles->GetPointer(0) );
+            */
+            //vtkSmartPointer<vtkIdList> vtkpolyon = vtkSmartPointer<vtkIdList>::New();
+            //vtkSmartPointer<vtkIdList> polyPointsIds = vtkSmartPointer<vtkIdList>::New();
+            //vtkpolyon->InsertNextId(nds.size());
+            //for ( unsigned v = 0; v < nds.size(); v++ ) {
+            //    vtkpolyon->InsertNextId(nds [ v ]->giveID());
+            //    polyPointsIds->InsertNextId(nds [ v ]->giveID());
+            //}
+            //unstructuredGrid->InsertNextCell(VTK_POLYGON, nds.size(), polyPointsIds->GetPointer(0), 1, vtkpolyon->GetPointer(0) );
+        }
+
+
+        vtkSmartPointer< vtkIntArray > faceIDArray = vtkSmartPointer< vtkIntArray > :: New();
+        faceIDArray->SetName("displacement");
+        faceIDArray->SetNumberOfComponents(1);
+        faceIDArray->SetNumberOfValues(elems->giveSize());
+        for (unsigned i = 0; i < elems->giveSize(); i++){
+            faceIDArray->SetValue(i, 4);
+        }
+        unstructuredGrid->GetCellData()->AddArray(faceIDArray);
+
+        /*
+        //face type (apical, basal, lateral)
+        vtkSmartPointer< vtkIntArray > FaceTypeArray = vtkSmartPointer< vtkIntArray > :: New();
+        FaceTypeArray->SetName("Face type");
+        FaceTypeArray->SetNumberOfComponents(1);
+        FaceTypeArray->SetNumberOfValues(facelist->giveLength());
+        int val;
+        Face* fff;
+        for (unsigned i = 0; i < facelist->giveLength(); i++){
+            fff = facelist->giveFace(i);
+            val = 1; //(lateral)
+            if (fff->isApical() == true) val = 0;
+            if (fff->isBasal()  == true) val = 2;
+            //if (fff->isBasal() == true && fff->giveCellA()->hasFibroblast()) val = 3;
+            FaceTypeArray->SetValue(i, val);
+        }
+        unstructuredGrid->GetCellData()->AddArray(FaceTypeArray);
+
+
+        //Cell A of a face
+        vtkSmartPointer< vtkIntArray > FaceANeighborArray = vtkSmartPointer< vtkIntArray > ::New();
+        FaceANeighborArray->SetName("Cell A");
+        FaceANeighborArray->SetNumberOfComponents(1);
+        FaceANeighborArray->SetNumberOfValues(facelist->giveLength());
+        for (unsigned i = 0; i < facelist->giveLength(); i++) {
+            FaceANeighborArray->SetValue(i, facelist->giveFace(i)->giveCellA()->giveID());
+        }
+        unstructuredGrid->GetCellData()->AddArray(FaceANeighborArray);
+
+
+        //Cell B of a face
+        vtkSmartPointer< vtkIntArray > FaceBNeighborArray = vtkSmartPointer< vtkIntArray > ::New();
+        FaceBNeighborArray->SetName("Cell B");
+        FaceBNeighborArray->SetNumberOfComponents(1);
+        FaceBNeighborArray->SetNumberOfValues(facelist->giveLength());
+        for (unsigned i = 0; i < facelist->giveLength(); i++) {
+            fff = facelist->giveFace(i);
+            val = -1; //no neighbor
+            if (fff->giveCellB() != 0) val = fff->giveCellB()->giveID();
+            FaceBNeighborArray->SetValue(i, val);
+        }
+        unstructuredGrid->GetCellData()->AddArray(FaceBNeighborArray);
+
+
+        //face Activator (average from up to two cells)
+        vtkSmartPointer< vtkDoubleArray > FaceActivator = vtkSmartPointer< vtkDoubleArray > ::New();
+        FaceActivator->SetName("Activator (avg)");
+        FaceActivator->SetNumberOfComponents(1);
+        FaceActivator->SetNumberOfValues(facelist->giveLength());
+        for (unsigned i = 0; i < facelist->giveLength(); i++) {
+            FaceActivator->SetValue(i, facelist->giveFace(i)->give_Avg_Face_Subs_Conc(0) );
+        }
+        unstructuredGrid->GetCellData()->AddArray(FaceActivator);
+
+
+        //ks (planar stiffnes)
+        vtkSmartPointer< vtkDoubleArray > FaceStifness = vtkSmartPointer< vtkDoubleArray > ::New();
+        FaceStifness->SetName("Face stifness ks");
+        FaceStifness->SetNumberOfComponents(1);
+        FaceStifness->SetNumberOfValues(facelist->giveLength());
+        for (unsigned i = 0; i < facelist->giveLength(); i++) {
+            FaceStifness->SetValue(i, facelist->giveFace(i)->give_ks());
+        }
+        unstructuredGrid->GetCellData()->AddArray(FaceStifness);
+
+        vtkSmartPointer< vtkBitArray > hasSameMasterArray = vtkSmartPointer< vtkBitArray > :: New();
+        hasSameMasterArray->SetName("has_same_master");
+        hasSameMasterArray->SetNumberOfComponents(1);
+        hasSameMasterArray->SetNumberOfValues(facelist->giveLength());
+        for (unsigned i = 0; i < facelist->giveLength(); i++){
+            hasSameMasterArray->SetValue(i, (facelist->giveFace(i)->give_has_same_master() == true) ? 1:0);
+        }
+        unstructuredGrid->GetCellData()->AddArray(hasSameMasterArray);
+        */
+
+        //vtkNew<vtkXMLUnstructuredGridWriter> writer;
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        writer->SetFileName(buffer);
+        writer->SetInputData(unstructuredGrid);
+        //writer->SetDataModeToBinary();
+        writer->SetDataModeToAscii();
+        //writer->SetCompressorType();
+        writer->Write();
+    #endif
+
+
+
+
+
+
+
+
+
+    /*
+
+
+
+
+
+
+
 
     // vector of nodal stresses - Matrices (tensors) dim x dim
     // TODO make this only for particles, now vector nodal_stress has length of all nodes, vertices and auxnodes (then node_id is needed for each matrix of nodal stresss - either pair <unsigned, Matrix> or two vectors - vector<unsigned> + vector<Matrix>) combine it at the beginning in init() - then it will apply also for adaptivity
@@ -404,7 +605,7 @@ void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const 
         // }
         outputfile << "</DataArray>" << "\n";
         outputfile << "</Points>" << "\n";
-        // /*
+        // 
         outputfile << "<Cells>" << '\n';
         outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
         for ( auto const &value : all_points_id ) {
@@ -425,7 +626,7 @@ void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const 
         }
         outputfile << "</DataArray>" << '\n';
         outputfile << "</Cells>" << '\n';
-        // */
+        // 
         outputfile << "<PointData Scalars=\"scalars\">" << "\n";
         outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
         for ( auto const &p : displ ) {
@@ -467,7 +668,6 @@ void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const 
         }
         //////////////////////////////////////////////////////////////////////////
         outputfile << "</PointData>" << '\n';
-        // /*
         outputfile << "<CellData Scalars=\"scalars\">" << "\n";
         unsigned num_vectors = 0;
         for ( unsigned i = 0; i < cell_data.size(); i++ ) {
@@ -491,12 +691,13 @@ void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const 
             }
         }
         outputfile << "</CellData>" << '\n';
-        // */
+        
         outputfile << "</Piece>" << '\n';
         outputfile << "</UnstructuredGrid>" << '\n';
         outputfile << "</VTKFile>" << '\n';
         outputfile.close();
     }
+    */
 }
 
 
@@ -504,6 +705,7 @@ void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const 
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    /*
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
@@ -625,7 +827,6 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         // }
         outputfile << "</DataArray>" << "\n";
         outputfile << "</Points>" << "\n";
-        // /*
         outputfile << "<Cells>" << '\n';
         outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
         for ( auto const &value : all_points_id ) {
@@ -646,7 +847,6 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         }
         outputfile << "</DataArray>" << '\n';
         outputfile << "</Cells>" << '\n';
-        // */
         outputfile << "<PointData Scalars=\"scalars\">" << "\n";
         outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
         for ( auto const &p : displ ) {
@@ -682,7 +882,6 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         }
         //////////////////////////////////////////////////////////////////////////
         outputfile << "</PointData>" << '\n';
-        // /*
         outputfile << "<CellData Scalars=\"scalars\">" << "\n";
         unsigned num_vectors = 0;
         for ( unsigned i = 0; i < cell_data.size(); i++ ) {
@@ -706,12 +905,12 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             }
         }
         outputfile << "</CellData>" << '\n';
-        // */
         outputfile << "</Piece>" << '\n';
         outputfile << "</UnstructuredGrid>" << '\n';
         outputfile << "</VTKFile>" << '\n';
         outputfile.close();
     }
+    */
 }
 
 
@@ -735,6 +934,7 @@ Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node *v, co
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    /*
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
@@ -804,7 +1004,6 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
         // }
         outputfile << "</DataArray>" << "\n";
         outputfile << "</Points>" << "\n";
-        // /*
         outputfile << "<Cells>" << '\n';
         outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
         for ( auto const &value : all_points_id ) {
@@ -825,7 +1024,6 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
         }
         outputfile << "</DataArray>" << '\n';
         outputfile << "</Cells>" << '\n';
-        // */
         outputfile << "<PointData Scalars=\"scalars\">" << "\n";
         outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
         for ( auto const &p : displ ) {
@@ -836,7 +1034,6 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
         }
         outputfile << "</DataArray>" << '\n';
         outputfile << "</PointData>" << '\n';
-        // /*
         outputfile << "<CellData Scalars=\"scalars\">" << "\n";
         outputfile << "<DataArray type=\"Float32\" Name=\"damage\" format=\"ascii\">" << '\n';
         for ( auto const &value : damage ) {
@@ -851,18 +1048,19 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
         outputfile << "</DataArray>" << '\n';
 
         outputfile << "</CellData>" << '\n';
-        // */
         outputfile << "</Piece>" << '\n';
         outputfile << "</UnstructuredGrid>" << '\n';
         outputfile << "</VTKFile>" << '\n';
         outputfile.close();
     }
+    */
 }
 
 
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    /*
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
@@ -993,7 +1191,6 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         // }
         outputfile << "</DataArray>" << "\n";
         outputfile << "</Points>" << "\n";
-        // /*
         outputfile << "<Cells>" << '\n';
         outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
         for ( auto const &value : all_points_id ) {
@@ -1014,7 +1211,6 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         }
         outputfile << "</DataArray>" << '\n';
         outputfile << "</Cells>" << '\n';
-        // */
         outputfile << "<PointData Scalars=\"scalars\">" << "\n";
         outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
         for ( auto const &p : displ ) {
@@ -1055,7 +1251,6 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         ///////////////////////////////////////////////////////////////////////
 
         outputfile << "</PointData>" << '\n';
-        // /*
         unsigned num_vectors = 0;
         outputfile << "<CellData Scalars=\"scalars\">" << "\n";
         for ( unsigned i = 0; i < cell_data.size(); i++ ) {
@@ -1086,10 +1281,10 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         outputfile << "</DataArray>" << '\n';
 
         outputfile << "</CellData>" << '\n';
-        // */
         outputfile << "</Piece>" << '\n';
         outputfile << "</UnstructuredGrid>" << '\n';
         outputfile << "</VTKFile>" << '\n';
         outputfile.close();
     }
+    */
 }
