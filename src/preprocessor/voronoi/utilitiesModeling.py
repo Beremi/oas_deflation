@@ -163,13 +163,15 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None, expansionRingsProps=[]):
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None, minDist=None):
     #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
     matZ = []
     #matZone 2
     matZ1 = []
+
+    matZ2 = []
     if (model=='box'):
         if (dim==2):
             boundA = np.array(  [ -1e-8             , -1e-8          ] )
@@ -248,17 +250,26 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
     # 3/4 * D - indent -minDist/2]
 
     if (model =='3pb3d'):
-        boundA = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
-        matZ.append (boundA)
-        boundB = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
-        matZ.append (boundB)
-        materialZones.append(matZ)
+        if limits is not None:
+            boundA = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
+            matZ.append (boundA)
+            boundB = np.array(  [  limits[3]   ,   limits[4],  limits[5] ] )
+            matZ.append (boundB)
+            #materialZones.append(matZ)
 
-        boundA1 = np.array(  [ limits1[0]    ,  limits1[1],  limits1[2]  ] )
-        boundB1 = np.array(  [ limits1[3]    ,  limits1[4],  limits1[5]  ] )
-        matZ1.append(boundA1)
-        matZ1.append(boundB1)
-        #materialZones.append(matZ1)
+            boundA1 = np.array(  [ limits1[0]    ,  limits1[1],  limits1[2]  ] )
+            boundB1 = np.array(  [ limits1[3]    ,  limits1[4],  limits1[5]  ] )
+            matZ1.append(boundA1)
+            matZ1.append(boundB1)
+
+
+        boundA2 = np.array(  [ -100    ,  maxLim[1]-1e-3,  -100  ] )
+        boundB2 = np.array(  [ 100   ,  100,  100  ] )
+        matZ2.append(boundA2)
+        matZ2.append(boundB2)
+        #matZ2.append(boundA2)
+        #matZ2.append(boundB2)
+        materialZones.append(matZ2)
 
     if (model=='3dcylinder'):
         boundA = np.array(  [ -1e-8   -maxLim[0]          , -1e-8    -maxLim[1]         , -1e8 -maxLim[2]] )
