@@ -74,6 +74,8 @@ void VTKExporter :: readFromLine(istringstream &iss) {
             }
         } else if ( param.compare("binary") == 0 ) {
             binaryswitch = true;
+        } else if ( param.compare("ascii") == 0 ) {
+            binaryswitch = false;
         }
     }
     codes.resize(cellData.size() + pointData.size() + extPointData.size() );
