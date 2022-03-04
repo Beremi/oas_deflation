@@ -304,6 +304,17 @@ ElasticMechMaterialStatus :: ElasticMechMaterialStatus(ElasticMechMaterial *m, E
 }
 
 //////////////////////////////////////////////////////////
+void ElasticMechMaterialStatus :: giveValues(string code, Vector &result) const{
+    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
+        unsigned size = (element->giveDimension()-1)*3;
+        result.resize(size);
+        for (unsigned p=0; p<size; p++) result[p] = temp_stress [ p ];
+    } else {
+        MaterialStatus :: giveValues(code, result);
+    }
+}
+
+//////////////////////////////////////////////////////////
 void ElasticMechMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bE, bnu, bdensity;
@@ -676,7 +687,11 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 
 //////////////////////////////////////////////////////////
 void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
-    if ( code.compare("s_N") == 0 ) {
+    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0) {        
+        unsigned size = element->giveDimension();
+        result.resize(size);
+        for (unsigned p=0; p<size; p++) result[p] = temp_stress [ p ];
+    }else if ( code.compare("s_N") == 0 ) {
         result.resize(1);
         result[0] = temp_stress [ 0 ];
     } else if ( code.compare("s_M") == 0 ) {

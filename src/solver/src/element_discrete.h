@@ -38,6 +38,7 @@ public:
     virtual Vector giveContactStressXYZ();
     virtual Vector transformToLocal(const Vector &DoFs) const;
     virtual Vector transformToGlobal(const Vector &DoFs) const;
+    Vector transformVectorToXYZ(Vector &result) const;
 
     virtual void giveValues(string code, Vector &result) const;
     Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
@@ -54,6 +55,7 @@ public:
     virtual Vector integrateInternalSources();
     double givePerimeter()const { return perimeter; };
 
+    virtual void extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 

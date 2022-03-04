@@ -194,39 +194,74 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
 
 //sorterd eigenvalues and eigenvectors
 bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &eigenvectors) {
-    unsigned size = 3;
 
-    MatrixXd mat = MatrixXd :: Random(size, size);
-    mat(0, 0) = A [ 0 ];
-    mat(1, 1) = A [ 1 ];
-    mat(2, 2) = A [ 2 ];
-    mat(2, 1) = mat(1, 2) = ( A [ 4 ] + A [ 3 ] ) / 2.;
-    mat(2, 0) = mat(0, 2) = ( A [ 6 ] + A [ 5 ] ) / 2.;
-    mat(1, 0) = mat(0, 1) = ( A [ 8 ] + A [ 7 ] ) / 2.;
+    size_t ndim;
+    bool sym;
+    if (A.size()==3){ //2D
+        ndim = 2; sym = true;
+    }else if (A.size()==6){ //3D 
+        ndim =3; sym = true;
+    }else if (A.size()==4){ //2D
+        ndim = 2; sym = false;
+    }else if (A.size()==9){ //3D 
+        ndim =3; sym = false;
+    }else{
+        cerr << "Error: LinalgEigenSolver implemented only for vectorized matrices of size 2 or 3" << endl;
+        exit(1);
+    }
+    MatrixXd mat = MatrixXd :: Random(ndim, ndim);
 
+    if (ndim==2 && sym){
+        mat(0, 0) = A [ 0 ];
+        mat(1, 1) = A [ 1 ];
+        mat(1, 0) = mat(0, 1) = A [ 2 ];        
+    }else if (ndim==2 && !sym){
+        mat(0, 0) = A [ 0 ];
+        mat(1, 1) = A [ 1 ];
+        mat(1, 0) = mat(0, 1) = (A [ 2 ] + A [ 3 ])/2.;        
+    }else if (ndim==3 && sym){
+        mat(0, 0) = A [ 0 ];
+        mat(1, 1) = A [ 1 ];
+        mat(2, 2) = A [ 2 ];
+        mat(2, 1) = mat(1, 2) = A [ 3 ];
+        mat(2, 0) = mat(0, 2) = A [ 4 ];
+        mat(1, 0) = mat(0, 1) = A [ 5 ];       
+    }else if (ndim==3 && !sym){
+        mat(0, 0) = A [ 0 ];
+        mat(1, 1) = A [ 1 ];
+        mat(2, 2) = A [ 2 ];
+        mat(2, 1) = mat(1, 2) = ( A [ 4 ] + A [ 3 ] ) / 2.;
+        mat(2, 0) = mat(0, 2) = ( A [ 6 ] + A [ 5 ] ) / 2.;
+        mat(1, 0) = mat(0, 1) = ( A [ 8 ] + A [ 7 ] ) / 2.;
+    }
 
+   return LinalgEigenSolver(mat, eigenvalues, eigenvectors);
+}
 
+bool LinalgEigenSolver(const MatrixXd &mat, Vector &eigenvalues, vector< Vector > &eigenvectors) {
     EigenSolver< MatrixXd >es(mat);
-    vector< double >eigenvalsvector(size);
-    eigenvalues.resize(size);
-    eigenvectors.resize(size);
 
-    for ( unsigned i = 0; i < size; i++ ) {
+    unsigned ndim = mat.rows();
+    vector< double > eigenvalsvector(ndim);
+    eigenvalues.resize(ndim);
+    eigenvectors.resize(ndim);
+
+    for ( unsigned i = 0; i < ndim; i++ ) {
         eigenvalsvector [ i ] = real(es.eigenvalues() [ i ]);
     }
 
     // initialize original index locations
-    vector< size_t >idx(eigenvalsvector.size() );
+    vector< size_t >idx( ndim );
     iota(idx.begin(), idx.end(), 0);
     stable_sort(idx.begin(), idx.end(), [ & eigenvalsvector ](size_t i1, size_t i2) {
         return eigenvalsvector [ i1 ] > eigenvalsvector [ i2 ];
     });
 
-    for ( unsigned i = 0; i < size; i++ ) {
+    for ( unsigned i = 0; i < ndim; i++ ) {
         eigenvalues [ i ] = eigenvalsvector [ idx [ i ] ];
-        eigenvectors [ i ].resize(size);
+        eigenvectors [ i ].resize(ndim);
         VectorXcd v = es.eigenvectors().col(idx [ i ]);
-        for ( unsigned j = 0; j < size; j++ ) {
+        for ( unsigned j = 0; j < ndim; j++ ) {
             eigenvectors [ i ] [ j ] = real(v [ j ]);
         }
     }

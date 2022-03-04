@@ -208,6 +208,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveMassConstant() const;
+    virtual void giveValues(string code, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////

@@ -5,3 +5,4 @@ tolerance 1e-2
 limit_tolerance 1e-0
 conj_grad_relative_maxit 10
 conj_grad_precission 1e-20
+stiffness_matrix_update 1

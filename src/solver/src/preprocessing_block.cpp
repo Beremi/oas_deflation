@@ -1622,7 +1622,7 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
         z = 0.0;
     }
     this->center = Point(x, y, z);
-    iss >> rI >> rO;
+    iss >> rI >> rO >> this->w0 >> this->w1;
     this->r_inner = rI;
     this->r_outer = rO;
     if ( dim == 3 ) {
@@ -1674,6 +1674,7 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
         node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
             if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
+                if(node_point.giveCoord(direction)<w0 || node_point.giveCoord(direction)>w1) continue;
                 if ( nod == master ) {
                     continue;
                 }

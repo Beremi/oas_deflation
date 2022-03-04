@@ -25,6 +25,7 @@ public:
     virtual void giveFileName(unsigned step, char *buffer) const;
     string giveFileName() const { return filename; };
     virtual void init() {};
+    size_t giveMaxSize(unsigned c) const { return maxsize[c];}
     void appendToName(string app) { filename = filename + app; };
 protected:
     unsigned dim;

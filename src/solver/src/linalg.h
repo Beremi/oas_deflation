@@ -24,12 +24,13 @@
 #include "linear_algebra.h"
 #include "globals.h"
 
-
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit, string solver_type);
 
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
 
 bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &eigevalues);
+
+bool LinalgEigenSolver(const Eigen::MatrixXd &mat, Vector &eigenvalues, vector< Vector > &eigevalues);
 
 #endif

@@ -15,73 +15,6 @@
 
 #define PRINT_TEST false
 
-Vector calcPrincipalStress(const Matrix &stress) {
-    Vector principalStress;
-    principalStress.resize( stress.numCols() );
-    if ( principalStress.size() == 2 ) {
-        // 2d case
-        principalStress [ 0 ] = 0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ) +
-                                sqrt(
-            pow(0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ), 2) +
-            pow(0.5 * ( stress [ 0 ] [ 1 ] + stress [ 1 ] [ 0 ] ), 2)
-            );
-        principalStress [ 1 ] = 0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ) -
-                                sqrt(
-            pow(0.5 * ( stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] ), 2) +
-            pow(0.5 * ( stress [ 0 ] [ 1 ] + stress [ 1 ] [ 0 ] ), 2)
-            );
-    } else if ( principalStress.size() == 3 ) {
-        // http://www.continuummechanics.org/principalstress.html
-        double I1, I2, I3; // invariants
-        double Q, R, theta;
-        // calculate invariants
-        I1 = stress [ 0 ] [ 0 ] + stress [ 1 ] [ 1 ] + stress [ 2 ] [ 2 ];
-        I2 = ( stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] -
-               stress [ 0 ] [ 1 ] * stress [ 1 ] [ 0 ] ) +
-             ( stress [ 0 ] [ 0 ] * stress [ 2 ] [ 2 ] -
-               stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] ) +
-             ( stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] -
-               stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ] );
-
-        I3 = stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] +
-             stress [ 0 ] [ 1 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 0 ] +
-             stress [ 1 ] [ 0 ] * stress [ 2 ] [ 1 ] * stress [ 0 ] [ 2 ] -
-             stress [ 2 ] [ 0 ] * stress [ 1 ] [ 1 ] * stress [ 0 ] [ 2 ] -
-             stress [ 1 ] [ 0 ] * stress [ 0 ] [ 1 ] * stress [ 2 ] [ 2 ] -
-             stress [ 0 ] [ 0 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ];
-        // another possible calculation of I3:
-        // I3 = stress [ 0 ] [ 0 ] * stress [ 1 ] [ 1 ] * stress [ 2 ] [ 2 ] -
-        //      stress [ 0 ] [ 0 ] * stress [ 1 ] [ 2 ] * stress [ 2 ] [ 1 ] -
-        //      stress [ 1 ] [ 1 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] -
-        //      stress [ 2 ] [ 2 ] * stress [ 0 ] [ 2 ] * stress [ 2 ] [ 0 ] +
-        //      stress [ 0 ] [ 1 ] * stress [ 1 ] [ 2 ] * stress [ 0 ] [ 2 ] +
-        //      stress [ 1 ] [ 0 ] * stress [ 2 ] [ 1 ] * stress [ 2 ] [ 0 ]; // last two could be done once and multiplied by 2
-        // calculate intermediate quantities
-        Q = ( 3 * I2 - pow(I1, 2) ) / 9;
-        R = ( 2 * pow(I1, 3) - 9 * I1 * I2 + 27 * I3 ) / 54;
-        if ( Q >= 0 ) {
-            theta = 0;
-        } else {
-            if ( R / sqrt( -pow(Q, 3) ) > 1.0 ) {
-                theta = acos(1.0);
-            } else {
-                theta = acos( R / sqrt( -pow(Q, 3) ) );
-            }
-        }
-        // calculate eigen values
-        principalStress [ 0 ] = 2 * sqrt(-Q) * cos(theta / 3) + I1 / 3;
-        principalStress [ 1 ] = 2 * sqrt(-Q) * cos( ( theta + 2 * M_PI ) / 3) + I1 / 3;
-        principalStress [ 2 ] = 2 * sqrt(-Q) * cos( ( theta + 4 * M_PI ) / 3) + I1 / 3;
-        // stress.print();
-        // std::cout << "principalStress ( " << principalStress[0] << ", " << principalStress[1] << ", " << principalStress[2] << " ), Q = " << Q << ", R = " << R << ", theta = " << theta << ", acos argument = " << R / sqrt( - pow(Q, 3) ) << '\n';
-    }
-    return principalStress;
-}
-
-double calcMaxPrincipalStress(const Matrix &stress) {
-    return calcPrincipalStress(stress).max();
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //// on conditional inheritance:
@@ -90,7 +23,7 @@ double calcMaxPrincipalStress(const Matrix &stress) {
 
 /*
  * NOTE JK:
- * adaptivity is based on maximum principal fabric_stress calculated in nodes - nodal_stress in VTK exporters
+ * adaptivity is based on maximum principal fabric_stress calculated in nodes
  */
 
 
@@ -395,8 +328,14 @@ private:
         nodal_stress.resize( BaseSolver :: nodes->giveSize(), Matrix(this->dim, this->dim) );
         // calculate nodal stresses
         ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
-        // calcuulate principal stresses
+
+        vector< Vector >tensorial_stress;
+        BaseSolver :: elems->extrapolateValuesFromIntegrationPointsToNodes("solid_stress", tensorial_stress);
+        // calculate principal stresses
         Node *n;
+        vector< Vector >eigvecs;
+        Vector eignums;
+
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);
             if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
@@ -406,7 +345,9 @@ private:
                          !isInsideRegions( this->fineRegions, n->givePoint() )
                          )
                       ) {
-                    if ( calcMaxPrincipalStress(nodal_stress [ i ]) > this->adaptThreshold ) {
+                       
+                    LinalgEigenSolver(tensorial_stress[i], eignums, eigvecs);
+                    if ( eignums.max() > this->adaptThreshold ) {
                         nodeCentersToRmesh.push_back( n->givePoint() );
                     }
                 }

@@ -12,13 +12,14 @@ class VTKExporter : public DataExporter
 private:
 
 public:
-    VTKExporter(unsigned dimension) : DataExporter(dimension) {};
+    VTKExporter(unsigned dimension) : DataExporter(dimension) {binaryswitch = false;};
     virtual ~VTKExporter() {};
     virtual void readFromLine(istringstream &iss);
     virtual void giveFileName(unsigned step, char *buffer) const;
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
 protected:
     unsigned cell_data_size, node_data_size;
+    bool binaryswitch;
 };
 
 
@@ -38,19 +39,6 @@ public:
 protected:
 };
 
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// EXPORT ELEMENTS TO VTK (VTU)
-class VTKElement2Exporter : public VTKElementExporter
-{
-private:
-public:
-    VTKElement2Exporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKElementExporter(e, n, dimension) {};
-    ~VTKElement2Exporter() {};
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
-protected:
-};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

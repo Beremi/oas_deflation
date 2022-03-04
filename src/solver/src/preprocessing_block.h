@@ -199,7 +199,7 @@ protected:
 // rigid plate constraining nodes in holow cylindric
 class RingRigidPlate : public RigidPlate
 {
-private:
+private:    
 public:
     RingRigidPlate() {};
     virtual ~RingRigidPlate() {};
@@ -207,7 +207,7 @@ public:
     virtual void readFromLine(istringstream &iss, unsigned d);
 protected:
     Point center, axis;
-    double r_inner, r_outer;
+    double r_inner, r_outer, w0, w1;
     unsigned direction;
 };
 

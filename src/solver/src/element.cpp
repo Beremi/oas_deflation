@@ -122,16 +122,16 @@ void Element :: resetMaterialStatuses() {
 //////////////////////////////////////////////////////////
 void Element :: giveIPValues(string code, unsigned ipnum, Vector &result) const {
     if ( code.compare("x") == 0 ) {
-        result.resize(0);
+        result.resize(1);
         result[0] = inttype->giveIPLocationPointer(ipnum)->getX();
     } else if ( code.compare("y") == 0 ) {
-        result.resize(0);
+        result.resize(1);
         result[0] = inttype->giveIPLocationPointer(ipnum)->getY();
     } else if ( code.compare("z") == 0 ) {
-        result.resize(0);
+        result.resize(1);
         result[0] = inttype->giveIPLocationPointer(ipnum)->getZ();
     } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
-        result.resize(0);
+        result.resize(1);
         result[0] = stats [ ipnum ]->giveMaterial()->giveId();
     } else {
         if(ipnum >= inttype->giveNumIP() ){
@@ -141,6 +141,16 @@ void Element :: giveIPValues(string code, unsigned ipnum, Vector &result) const 
         stats [ ipnum ]->giveValues(code, result);
     }
 };
+
+//////////////////////////////////////////////////////////
+void Element :: giveValues(string code, Vector &result) const{
+    if ( code.compare("id") == 0 ) {
+        result.resize(1);
+        result[0] = idx;
+    } else {
+        result.resize(0);
+    }
+}
 
 //////////////////////////////////////////////////////////
 Matrix Element :: giveStiffnessMatrix(string matrixType) const {
@@ -337,7 +347,7 @@ Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
 }
 
 //////////////////////////////////////////////////////////
-void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result) const {
+void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
     Vector phi(nodes.size() );
     Vector res(nodes.size() );
     double jacobian;
@@ -348,7 +358,7 @@ void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result
         cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << endl;
         exit(1);
     }
-    
+
     giveIPValues(code, 0, ipres);
     unsigned reslen = ipres.size(); 
     result.resize(reslen);    
@@ -358,6 +368,8 @@ void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result
         rhs[h].resize(nodes.size());
         result[h].resize(nodes.size());
     }
+    weights.resize(nodes.size());
+    for(auto &h: weights) h = 1;
 
 
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
@@ -380,9 +392,10 @@ void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result
             indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M [ i ] [ j ]) );
         }
     }
+    //TODO: this must be simplified, ideally save inverse matrix to memory of the element
     CoordinateIndexedSparseMatrix Msparse( indices11, nodes.size(), nodes.size() );
 
     for(unsigned h=0; h<reslen; h++){
-        LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-15, 1.0, "EigenConj");
+        LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-12, 1.0, "EigenConj");
     }
 }

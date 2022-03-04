@@ -41,10 +41,10 @@ void MarsMaterialStatus :: giveValues(string code, Vector &result) const {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
         result.resize(1);
         result[0] = m->giveE0();
-    } else if ( ( code.compare("strainN") == 0 ) || ( code.compare("strain") == 0 ) ) {
+    } else if ( ( code.compare("strainN") == 0 ) ) {
         result.resize(1);
         result[0] = temp_strain [ 0 ];
-    } else if ( ( code.compare("stressN") == 0 ) || ( code.compare("stress") == 0 ) ) {
+    } else if ( ( code.compare("stressN") == 0 ) ) {
         result.resize(1);
         result[0] = temp_stress [ 0 ];
     } else {
@@ -481,6 +481,10 @@ void CoupledMarsMaterialStatus :: giveValues(string code, Vector &result) const 
     if ( code.compare("pressure") == 0 || code.compare("avg_pressure") == 0) {
         result.resize(1);
         result[0] = avgPressure;
+    } else if ( code.compare("solid_stress") == 0) {                
+        MarsMaterialStatus :: giveValues("stress",result); //standard stress including Biot's effect
+        CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
+        result[0] += m->giveBiotCoeff() * avgPressure; //stress without Biot's effect
     }
     return MarsMaterialStatus :: giveValues(code,result);
 }

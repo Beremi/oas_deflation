@@ -72,6 +72,8 @@ void VTKExporter :: readFromLine(istringstream &iss) {
             for ( unsigned i = 0; i < num; i++ ) {
                 iss >> extPointData [ i ];
             }
+        } else if ( param.compare("binary") == 0 ) {
+            binaryswitch = true;
         }
     }
     codes.resize(cellData.size() + pointData.size() + extPointData.size() );
@@ -91,828 +93,130 @@ void VTKExporter :: readFromLine(istringstream &iss) {
     DataExporter :: readFromLine(iss);
 }
 
-bool isAddonCellScalarData(const string &var) {
-    std :: vector< string >addon_list = { "normal_strain", "strainN",
-                                          "sliding_strain", "strainT",
-                                          "strainTY", "strainTZ",
-                                          "strainT1", "strainT2",
-                                          "crack_opening", "crack_sliding",
-                                          "stressN", "stressT",
-                                          "stressTY", "stressTZ"
-                                          "stressT1", "stressT2"
-                                          // "strainXYZ", "stressXYZ"
-    };
-
-    return std :: find(addon_list.begin(), addon_list.end(), var) != addon_list.end();
-}
-
-bool isAddonCellVectorialData(const string &var) {
-    std :: vector< string >addon_list = { "strainXYZ", "stressXYZ" };
-
-    return std :: find(addon_list.begin(), addon_list.end(), var) != addon_list.end();
-}
-
-bool isAddonPointVectorialData(const string &var) {
-    std :: vector< string >addon_list = { "nodal_stress" };
-
-    return std :: find(addon_list.begin(), addon_list.end(), var) != addon_list.end();
-}
-
-void exportAddonVectorialCellData(const unsigned &dim, const ElementContainer *elems, const Vector &DoFs, const vector< string > &codes, vector< unsigned > &indeces, vector< vector< Vector > > &cell_vect_data, bool doubled = false, bool rbcOnly = false) {
-    Vector elDoFvalues, strainNT;
-    vector< unsigned >elDoFs;
-
-    Vector vect_ini(dim);
-    // set all elements of a vector to zero
-    for ( auto &a : vect_ini ) {
-        a = 0;
-    }
-    Vector vect_data = vect_ini;
-    RigidBodyContact *rbc;
-
-    for ( auto const &e : * elems ) {
-        rbc = nullptr;
-        // NOTE do not use this for transport elements
-        if ( e->giveName().compare("LTCBEAM") == 0 ) {
-            elDoFs = e->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
-            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-                elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
-            }
-            rbc = static_cast< RigidBodyContact * >( e );
-
-            strainNT = rbc->giveContactStrainNT();
-            for ( unsigned i = 0; i < indeces.size(); i++ ) {
-                if ( codes [ indeces [ i ] ].compare("strainXYZ") == 0 ) {
-                    vect_data = rbc->giveContactStrainXYZ();
-                    // vect_data = matrix_vector_multiply(rbc->giveRMatrix().transpose(),strainNT);
-                } else if ( codes [ indeces [ i ] ].compare("stressXYZ") == 0 ) {
-                    vect_data = rbc->giveContactStressXYZ();
-                    ;
-                } else {
-                    vect_data = vect_ini;
-                }
-                cell_vect_data [ i ].push_back(vect_data);
-                if ( doubled ) {
-                    cell_vect_data [ i ].push_back(vect_data);
-                }
-            }
-        } else {
-            // for any other element, only one number will be stored
-            if ( !rbcOnly ) {
-                for ( unsigned i = 0; i < indeces.size(); i++ ) {
-                    cell_vect_data [ i ].push_back(vect_ini);
-                }
-            }
-        }
-    }
-}
-
-
-void exportAddonScalarCellData(const ElementContainer *elems, const Vector &DoFs,
-                               const vector< bool > &codes_positions, const vector< string > &codes,
-                               vector< vector< double > > &cell_data, bool doubled = false, bool rbcOnly = false) {
-    /*
-    Vector elDoFvalues, strainNT;
-    vector< unsigned >elDoFs;
-    double data;
-    RigidBodyContact *rbc;
-
-    for ( auto const &e : * elems ) {
-        rbc = nullptr;
-        // NOTE do not use this for transport elements
-        if ( e->giveName().compare("LTCBEAM") == 0 || e->giveName().compare("LTCBEAMCoupled") == 0 ) {
-            elDoFs = e->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
-            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-                elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
-            }
-            rbc = static_cast< RigidBodyContact * >( e );
-            strainNT = rbc->giveContactStrainNT();
-            for ( unsigned i = 0; i < codes.size(); i++ ) {
-                if ( codes_positions [ i ] ) {
-                    if ( codes [ i ].compare("strainN") == 0 ) {
-                        data = strainNT [ 0 ];
-                    } else if ( codes [ i ].compare("strainT") == 0 ) {
-                        double strT = 0;
-                        for ( unsigned j = 1; j < strainNT.size(); j++ ) {
-                            strT += pow(strainNT [ j ], 2);
-                        }
-                        data = sqrt(strT);
-                    } else if ( codes [ i ].compare("strainTY") == 0 ||
-                                codes [ i ].compare("strainT1") == 0 ) {
-                        data = strainNT [ 1 ];
-                    } else if ( codes [ i ].compare("strainTZ") == 0 ||
-                                codes [ i ].compare("strainT2") == 0 ) {
-                        if ( strainNT.size() > 2 ) {
-                            data = strainNT [ 2 ];
-                        } else {
-                            data = 0;
-                        }
-                    } else if ( codes [ i ].rfind("stress", 0) == 0 ) {
-                        MaterialStatus *stats = static_cast< MaterialStatus * >( rbc->giveMaterialStats() [ 0 ] );
-                        Vector stressNT = stats->giveTempStress();
-                        if ( codes [ i ].compare("stressN") == 0 ) {
-                            data = stressNT [ 0 ];
-                        } else if ( codes [ i ].compare("stressT") == 0 ) {
-                            double strT = 0;
-                            for ( unsigned j = 1; j < stressNT.size(); j++ ) {
-                                strT += pow(stressNT [ j ], 2);
-                            }
-                            data = sqrt(strT);
-                        } else if ( codes [ i ].compare("stressTY") == 0 ||
-                                    codes [ i ].compare("stressT1") == 0 ) {
-                            data = stressNT [ 1 ];
-                        } else if ( codes [ i ].compare("stressTZ") == 0 ||
-                                    codes [ i ].compare("stressT2") == 0 ) {
-                            if ( stressNT.size() > 2 ) {
-                                data = stressNT [ 2 ];
-                            } else {
-                                data = 0;
-                            }
-                        }
-                    } else if ( codes [ i ].compare("crack_opening") == 0 ) {
-                        //data = strainNT [ 0 ] * rbc->giveLength() * rbc->giveIPValue("damageN", 0);
-                        data = rbc->giveIPValue("crack_opening", 0);
-                    } else if ( codes [ i ].compare("crack_sliding") == 0 ) {
-                        double strT = 0;
-                        for ( unsigned j = 1; j < strainNT.size(); j++ ) {
-                            strT += pow(strainNT [ j ], 2);
-                        }
-                        data = sqrt(strT) * rbc->giveLength() * rbc->giveIPValue("damageT", 0);
-                    } else {
-                        data = 0;
-                    }
-                    cell_data [ i ].push_back(data);
-                    if ( doubled ) {
-                        cell_data [ i ].push_back(data);
-                    }
-                }
-            }
-        } else {
-            // for any other element, only one number will be stored
-            if ( !rbcOnly ) {
-                for ( unsigned i = 0; i < codes.size(); i++ ) {
-                    if ( codes_positions [ i ] ) {
-                        cell_data [ i ].push_back(0);
-                    }
-                }
-            }
-        }
-    }
-    */
-}
-
-
-vector< double >MatrixToStdVectForParaview(const Matrix &s, const unsigned &dim) {
-    vector< double >data;
-    if ( dim == 2 ) {
-        data.resize(3);
-    } else {
-        data.resize(6);  // NOTE other case than 2D or 3D not considered
-    }
-    for ( unsigned i = 0; i < s.numRows(); i++ ) {
-        data [ i ] = s [ i ] [ i ];
-    }
-    data [ ( dim - 1 ) * 3 - 1 ] = 0.5 * ( s [ dim - 1 ] [ 0 ] + s [ 0 ] [ dim - 1 ] );
-    if ( dim > 2 ) {
-        data [ 3 ] = 0.5 * ( s [ 0 ] [ 1 ] + s [ 1 ] [ 0 ] );
-        data [ 4 ] = 0.5 * ( s [ 2 ] [ 1 ] + s [ 1 ] [ 2 ] );
-    }
-    return data;
-}
-
-
-//////////////////////////////////////////////////////////
-// ELEMENTS TO VTU FILE
-//////////////////////////////////////////////////////////
-void VTKElement2Exporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-    char buffer [ 100 ];
-    // Point P;
-    // Element *ee;
-
-    vector< int >points_id;
-    vector< vector< int > >all_points_id;
-
-    cout << "INSIDE" << endl;
-    #ifdef __VTK_MODULE
-            cout << "HHHHHHHHHHHH" << endL ggg
-    
-        vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-
-        vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-
-        Point *nn;        
-        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-            nn = nodes->giveNode()->giveCoords();
-            points->InsertNextPoint(nn->giveX(), nn->giveY(), nn->giveZ());
-        }
-        unstructuredGrid->SetPoints(points);
-
-        vector <*Node> elnodes;
-        vector <unsigned> elindices;
-                
-        for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
-            elnodes = elems->giveElement(e)->giveNodes();
-            elindices.resize(elnodes.size);
-            for(unsigned p=0; p<elnodes.size(); p++) elindices[p] = elnodes[p]->giveID();
-            unstructuredGrid->InsertNextCell(VTK_POLYGON, elindices );
-
-
-            /* FACES WITH CENTROID
-            vtkSmartPointer<vtkIdList> vtktriangles = vtkSmartPointer<vtkIdList>::New();
-            vtkSmartPointer<vtkIdList> polyPointsIds = vtkSmartPointer<vtkIdList>::New();
-            unsigned vlast = nds.size() - 1;
-            for ( unsigned v = 0; v < nds.size(); v++ ) {
-                vtktriangles->InsertNextId(3);
-                vtktriangles->InsertNextId(nds [ vlast ]->giveID());
-                vtktriangles->InsertNextId(nds [ v ]->giveID());
-                vtktriangles->InsertNextId(ff->giveID() + nodelist->giveLength());
-                polyPointsIds->InsertNextId(nds [ vlast ]->giveID());
-                polyPointsIds->InsertNextId(nds [ v ]->giveID());
-                polyPointsIds->InsertNextId(ff->giveID() + nodelist->giveLength());
-                vlast = v;
-            }
-            // VTK_TRIANGLE_STRIP is not exactly for face, but looks that it's working
-            unstructuredGrid->InsertNextCell(VTK_TRIANGLE_STRIP, nds.size() * 3, polyPointsIds->GetPointer(0), nds.size(), vtktriangles->GetPointer(0) );
-            */
-            //vtkSmartPointer<vtkIdList> vtkpolyon = vtkSmartPointer<vtkIdList>::New();
-            //vtkSmartPointer<vtkIdList> polyPointsIds = vtkSmartPointer<vtkIdList>::New();
-            //vtkpolyon->InsertNextId(nds.size());
-            //for ( unsigned v = 0; v < nds.size(); v++ ) {
-            //    vtkpolyon->InsertNextId(nds [ v ]->giveID());
-            //    polyPointsIds->InsertNextId(nds [ v ]->giveID());
-            //}
-            //unstructuredGrid->InsertNextCell(VTK_POLYGON, nds.size(), polyPointsIds->GetPointer(0), 1, vtkpolyon->GetPointer(0) );
-        }
-
-
-        vtkSmartPointer< vtkIntArray > faceIDArray = vtkSmartPointer< vtkIntArray > :: New();
-        faceIDArray->SetName("displacement");
-        faceIDArray->SetNumberOfComponents(1);
-        faceIDArray->SetNumberOfValues(elems->giveSize());
-        for (unsigned i = 0; i < elems->giveSize(); i++){
-            faceIDArray->SetValue(i, 4);
-        }
-        unstructuredGrid->GetCellData()->AddArray(faceIDArray);
-
-        /*
-        //face type (apical, basal, lateral)
-        vtkSmartPointer< vtkIntArray > FaceTypeArray = vtkSmartPointer< vtkIntArray > :: New();
-        FaceTypeArray->SetName("Face type");
-        FaceTypeArray->SetNumberOfComponents(1);
-        FaceTypeArray->SetNumberOfValues(facelist->giveLength());
-        int val;
-        Face* fff;
-        for (unsigned i = 0; i < facelist->giveLength(); i++){
-            fff = facelist->giveFace(i);
-            val = 1; //(lateral)
-            if (fff->isApical() == true) val = 0;
-            if (fff->isBasal()  == true) val = 2;
-            //if (fff->isBasal() == true && fff->giveCellA()->hasFibroblast()) val = 3;
-            FaceTypeArray->SetValue(i, val);
-        }
-        unstructuredGrid->GetCellData()->AddArray(FaceTypeArray);
-
-
-        //Cell A of a face
-        vtkSmartPointer< vtkIntArray > FaceANeighborArray = vtkSmartPointer< vtkIntArray > ::New();
-        FaceANeighborArray->SetName("Cell A");
-        FaceANeighborArray->SetNumberOfComponents(1);
-        FaceANeighborArray->SetNumberOfValues(facelist->giveLength());
-        for (unsigned i = 0; i < facelist->giveLength(); i++) {
-            FaceANeighborArray->SetValue(i, facelist->giveFace(i)->giveCellA()->giveID());
-        }
-        unstructuredGrid->GetCellData()->AddArray(FaceANeighborArray);
-
-
-        //Cell B of a face
-        vtkSmartPointer< vtkIntArray > FaceBNeighborArray = vtkSmartPointer< vtkIntArray > ::New();
-        FaceBNeighborArray->SetName("Cell B");
-        FaceBNeighborArray->SetNumberOfComponents(1);
-        FaceBNeighborArray->SetNumberOfValues(facelist->giveLength());
-        for (unsigned i = 0; i < facelist->giveLength(); i++) {
-            fff = facelist->giveFace(i);
-            val = -1; //no neighbor
-            if (fff->giveCellB() != 0) val = fff->giveCellB()->giveID();
-            FaceBNeighborArray->SetValue(i, val);
-        }
-        unstructuredGrid->GetCellData()->AddArray(FaceBNeighborArray);
-
-
-        //face Activator (average from up to two cells)
-        vtkSmartPointer< vtkDoubleArray > FaceActivator = vtkSmartPointer< vtkDoubleArray > ::New();
-        FaceActivator->SetName("Activator (avg)");
-        FaceActivator->SetNumberOfComponents(1);
-        FaceActivator->SetNumberOfValues(facelist->giveLength());
-        for (unsigned i = 0; i < facelist->giveLength(); i++) {
-            FaceActivator->SetValue(i, facelist->giveFace(i)->give_Avg_Face_Subs_Conc(0) );
-        }
-        unstructuredGrid->GetCellData()->AddArray(FaceActivator);
-
-
-        //ks (planar stiffnes)
-        vtkSmartPointer< vtkDoubleArray > FaceStifness = vtkSmartPointer< vtkDoubleArray > ::New();
-        FaceStifness->SetName("Face stifness ks");
-        FaceStifness->SetNumberOfComponents(1);
-        FaceStifness->SetNumberOfValues(facelist->giveLength());
-        for (unsigned i = 0; i < facelist->giveLength(); i++) {
-            FaceStifness->SetValue(i, facelist->giveFace(i)->give_ks());
-        }
-        unstructuredGrid->GetCellData()->AddArray(FaceStifness);
-
-        vtkSmartPointer< vtkBitArray > hasSameMasterArray = vtkSmartPointer< vtkBitArray > :: New();
-        hasSameMasterArray->SetName("has_same_master");
-        hasSameMasterArray->SetNumberOfComponents(1);
-        hasSameMasterArray->SetNumberOfValues(facelist->giveLength());
-        for (unsigned i = 0; i < facelist->giveLength(); i++){
-            hasSameMasterArray->SetValue(i, (facelist->giveFace(i)->give_has_same_master() == true) ? 1:0);
-        }
-        unstructuredGrid->GetCellData()->AddArray(hasSameMasterArray);
-        */
-
-        //vtkNew<vtkXMLUnstructuredGridWriter> writer;
-        vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-        writer->SetFileName(buffer);
-        writer->SetInputData(unstructuredGrid);
-        //writer->SetDataModeToBinary();
-        writer->SetDataModeToAscii();
-        //writer->SetCompressorType();
-        writer->Write();
-    #endif
-
-
-
-
-
-
-
-
-
-    /*
-
-
-
-
-
-
-
-
-    // vector of nodal stresses - Matrices (tensors) dim x dim
-    // TODO make this only for particles, now vector nodal_stress has length of all nodes, vertices and auxnodes (then node_id is needed for each matrix of nodal stresss - either pair <unsigned, Matrix> or two vectors - vector<unsigned> + vector<Matrix>) combine it at the beginning in init() - then it will apply also for adaptivity
-    vector< Matrix >nodal_stress;
-    bool export_nodal_stress = isStringInVect("nodal_stress", codes);
-
-    vector< int >cell_types;
-    vector< int >offsets;
-    vector< Point >displ;
-
-    vector< string >materials;
-    unsigned matI;
-
-    vector< Vector >smoothing;
-
-    vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
-    for ( unsigned i = 0; i < cell_data_size; i++ ) {
-        codes_positions [ i ] = isAddonCellScalarData(codes [ i ]);
-    }
-
-    vector< vector< Vector > >cell_vect_data;
-    vector< unsigned >vector_data_code_indeces;  // indeces of data to be exported as vectors
-
-    vector< vector< double > >cell_data;
-    cell_data.resize(cell_data_size);
-
-    vector< vector< double > >point_data;
-    point_data.resize(codes.size() - cell_data_size);
-
-    smoothing.resize(codes.size() - cell_data_size - node_data_size);
-    Vector numOfElements( nodes->giveSize() );
-    for ( auto const &e: * elems ) {
-        vector< Node * >ne = e->giveNodes();
-        for ( auto r: ne ) {
-            numOfElements [ r->giveID() ] += 1;
-        }
-    }
-
-    for ( unsigned k = 0; k < smoothing.size(); k++ ) {
-        smoothing [ k ].resize( nodes->giveSize() );
-
-        for ( auto const &e: * elems ) {
-            Vector dat = e->extrapolateIPValuesToNodes(codes [ k + cell_data_size + node_data_size ]);
-            vector< Node * >ne = e->giveNodes();
-            for ( unsigned r = 0; r < ne.size(); r++ ) {
-                smoothing [ k ] [ ne [ r ]->giveID() ] += dat [ r ];
-            }
-        }
-
-        for ( unsigned rr = 0; rr < nodes->giveSize(); rr++ ) {
-            if ( numOfElements [ rr ] == 0 ) {
-                smoothing [ k ] [ rr ] = 10;
-            } else {
-                smoothing [ k ] [ rr ] /= numOfElements [ rr ];
-            }
-        }
-    }
-
-
-
-
-    size_t offset = 0;
-    for ( auto const &el : * elems ) {
-        for ( auto const &n : el->giveNodes() ) {
-            auto res = std :: find(begin(* nodes), end(* nodes), n);
-            points_id.push_back(std :: distance(begin(* nodes), res) );   //todo warning C4244: 'argument': conversion from '__int64' to '_Ty', possible loss of data
-            // points_id.push_back(n - *nodes->begin());
-        }
-        all_points_id.push_back(points_id);
-        cell_types.push_back(el->giveVTKCellType() );
-        offset += points_id.size();
-        offsets.push_back(offset);
-        for ( unsigned i = 0; i < cell_data_size; i++ ) {
-            if ( isAddonCellScalarData(codes [ i ]) || isAddonPointVectorialData(codes [ i ]) ) {
-                // TODO this needs to be improved, it is duplicated in these two functions
-                continue;
-            } else if ( isAddonCellVectorialData(codes [ i ]) ) {
-                vector_data_code_indeces.push_back(i);
-                continue;
-            } else if ( codes [ i ].compare("material") == 0 ) {
-                matI = 0;
-                while ( true ) {
-                    if ( matI >= materials.size() ) {
-                        materials.push_back(el->giveMaterial()->giveName() );
-                        break;
-                    } else if ( materials.size() > 0 && materials [ matI ].compare(el->giveMaterial()->giveName() ) == 0 ) {
-                        break;
-                    }
-                    matI++;
-                }
-                cell_data [ i ].push_back(matI);
-            } else {
-                cell_data [ i ].push_back(el->giveIPValue(codes [ i ], 0) );   // so far for single IP point
-            }
-        }
-        points_id.clear();
-    }
-    cell_vect_data.resize(vector_data_code_indeces.size() );
-
-    if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
-        // TODO toto je nutný udělat jinak, teď, když jsou tady i jiný sady (vektorový data), není to prostě buď jedno nebo druhý
-        return i == true;
-    }) ) {
-        exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data);
-    }
-    if ( vector_data_code_indeces.size() > 0 ) {
-        exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
-    }
-    if ( export_nodal_stress ) {
-        // reserve space only if nodal stresses should be exported
-        nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim) );
-        // export nodal stresses:
-        ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
-    }
-
-    giveFileName(step, buffer);
-    ofstream outputfile( ( resultDir / buffer ).string() );
-
-    if ( outputfile.is_open() ) {
-        outputfile << std :: scientific;
-        outputfile.precision(precision);
-        outputfile << "<?xml version=\"1.0\"?>\n";
-        outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
-        outputfile << "<UnstructuredGrid>" << '\n';
-        outputfile << "<Piece NumberOfPoints=\"" << nodes->giveSize() << "\" NumberOfCells=\"" << elems->giveSize() << "\">" << '\n';
-
-
-        outputfile << "<Points>" << '\n';
-        outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-        for ( auto const &n : * nodes ) {
-            outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t" << n->givePoint().getZ() << '\n';
-
-            displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
-                                  n->giveDoFBasedValue("uy", DoFs),
-                                  dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
-                                  )
-                            );
-
-            for ( unsigned i = cell_data_size; i < codes.size(); i++ ) {
-                point_data [ i - cell_data_size ].push_back(n->giveDoFBasedValue(codes [ i ], DoFs) );
-            }
-        }
-        // for (unsigned n; n < nodes->giveSize(); n++) {
-        //   P = nodes->giveNode(n)->givePoint();
-        // }
-        outputfile << "</DataArray>" << "\n";
-        outputfile << "</Points>" << "\n";
-        // 
-        outputfile << "<Cells>" << '\n';
-        outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
-        for ( auto const &value : all_points_id ) {
-            for ( auto const &id : value ) {
-                outputfile << "\t" << id;
-            }
-            outputfile << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << '\n';
-        for ( auto const &value : offsets ) {
-            outputfile << value << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << '\n';
-        for ( auto const &value : cell_types ) {
-            outputfile << value << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "</Cells>" << '\n';
-        // 
-        outputfile << "<PointData Scalars=\"scalars\">" << "\n";
-        outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-        for ( auto const &p : displ ) {
-            outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        //////////////////////////////////////////////////////////////////////////
-        if ( export_nodal_stress ) {
-            outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << ( dim - 1 ) * 3 << "\" format=\"ascii\">" << '\n';
-            vector< double >data;
-
-            for ( auto const &s : nodal_stress ) {
-                data = MatrixToStdVectForParaview(s, dim);
-
-                for ( auto const &d : data ) {
-                    outputfile << d << '\t';
-                }
-                outputfile << '\n';
-                // data.clear();
-            }
-            outputfile << "</DataArray>" << '\n';
-        }
-        //////////////////////////////////////////////////////////////////////////
-        for ( unsigned i = 0; i < point_data.size(); i++ ) {
-            if ( codes [ i + cell_data_size ].compare("nodal_stress") == 0 ) {
-                continue;
-            }
-            outputfile << "<DataArray type=\"Float32\" Name=\" " << codes [ i + cell_data_size ] << "\" format=\"ascii\">" << '\n';
-            if ( i < node_data_size ) {
-                for ( auto const &p : point_data [ i ] ) {
-                    outputfile << p << '\n';
-                }
-            } else {
-                for ( auto const &p : smoothing [ i - node_data_size ] ) {
-                    outputfile << p << '\n';
-                }
-            }
-            outputfile << "</DataArray>" << '\n';
-        }
-        //////////////////////////////////////////////////////////////////////////
-        outputfile << "</PointData>" << '\n';
-        outputfile << "<CellData Scalars=\"scalars\">" << "\n";
-        unsigned num_vectors = 0;
-        for ( unsigned i = 0; i < cell_data.size(); i++ ) {
-            if ( isInVect(i, vector_data_code_indeces) ) {
-                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] <<
-                    "\" NumberOfComponents=\"" << dim << "\"  format=\"ascii\">" << '\n';
-                for ( auto const &value : cell_vect_data [ num_vectors ] ) {
-                    for ( auto const &a : value ) {
-                        outputfile << a << '\t';
-                    }
-                    outputfile << '\n';
-                }
-                outputfile << "</DataArray>" << '\n';
-                num_vectors += 1;
-            } else {
-                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
-                for ( auto const &value : cell_data [ i ] ) {
-                    outputfile << value << '\n';
-                }
-                outputfile << "</DataArray>" << '\n';
-            }
-        }
-        outputfile << "</CellData>" << '\n';
-        
-        outputfile << "</Piece>" << '\n';
-        outputfile << "</UnstructuredGrid>" << '\n';
-        outputfile << "</VTKFile>" << '\n';
-        outputfile.close();
-    }
-    */
-}
-
 
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    /*
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-    // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
     char buffer [ 100 ];
+    giveFileName(step, buffer);
     // Point P;
     // Element *ee;
 
     vector< int >points_id;
     vector< vector< int > >all_points_id;
 
-    // vector of nodal stresses - Matrices (tensors) dim x dim
-    // TODO make this only for particles, now vector nodal_stress has length of all nodes, vertices and auxnodes (then node_id is needed for each matrix of nodal stresss - either pair <unsigned, Matrix> or two vectors - vector<unsigned> + vector<Matrix>) combine it at the beginning in init() - then it will apply also for adaptivity
-    vector< Matrix >nodal_stress;
-    bool export_nodal_stress = isStringInVect("nodal_stress", codes);
+    #ifdef __VTK_MODULE
+        vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-    vector< int >cell_types;
-    vector< int >offsets;
-    vector< Point >displ;
+        vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-    vector< string >materials;
-    unsigned matI;
-
-    vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
-    for ( unsigned i = 0; i < cell_data_size; i++ ) {
-        codes_positions [ i ] = isAddonCellScalarData(codes [ i ]);
-    }
-
-    vector< vector< Vector > >cell_vect_data;
-    vector< unsigned >vector_data_code_indeces;  // indeces of data to be exported as vectors
-
-    vector< vector< double > >cell_data;
-    cell_data.resize(cell_data_size);
-
-    vector< vector< double > >point_data;
-    point_data.resize(codes.size() - cell_data_size);
-
-    size_t offset = 0;
-    for ( auto const &el : * elems ) {
-        for ( auto const &n : el->giveNodes() ) {
-            auto res = std :: find(begin(* nodes), end(* nodes), n);
-            points_id.push_back(std :: distance(begin(* nodes), res) );   //todo warning C4244: 'argument': conversion from '__int64' to '_Ty', possible loss of data
-            // points_id.push_back(n - *nodes->begin());
+        Point *pp;       
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            pp = nodes->giveNode(n)->givePointPointer();
+            points->InsertNextPoint(pp->getX(), pp->getY(), pp->getZ());
         }
-        all_points_id.push_back(points_id);
-        cell_types.push_back(el->giveVTKCellType() );
-        offset += points_id.size();
-        offsets.push_back(offset);
-        for ( unsigned i = 0; i < cell_data_size; i++ ) {
-            if ( isAddonCellScalarData(codes [ i ]) || isAddonPointVectorialData(codes [ i ]) ) {
-                // TODO this needs to be improved, it is duplicated in these two functions
-                continue;
-            } else if ( isAddonCellVectorialData(codes [ i ]) ) {
-                vector_data_code_indeces.push_back(i);
-                continue;
-            } else if ( codes [ i ].compare("material") == 0 ) {
-                matI = 0;
-                while ( true ) {
-                    if ( matI >= materials.size() ) {
-                        materials.push_back(el->giveMaterial()->giveName() );
-                        break;
-                    } else if ( materials.size() > 0 && materials [ matI ].compare(el->giveMaterial()->giveName() ) == 0 ) {
-                        break;
-                    }
-                    matI++;
+        unstructuredGrid->SetPoints(points);
+
+        vector <Node*> elnodes;
+        Element *el;  
+        for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
+            el = elems->giveElement(e);
+            elnodes = el->giveNodes();
+            vtkSmartPointer<vtkIdList> elindices = vtkSmartPointer<vtkIdList>::New();
+            for(unsigned p=0; p<elnodes.size(); p++) elindices->InsertNextId(elnodes[p]->giveID());
+            unstructuredGrid->InsertNextCell(el->giveVTKCellType(), elindices );
+        }
+
+        unsigned i,j;
+        size_t msize;
+        vector< Vector > data;
+        unsigned p;
+        // ****************** cell data
+        data.resize(elems->giveSize());
+        for (p = 0; p < cell_data_size; p++){
+            msize = 1;
+            i = 0;
+            for (vector< Element * > :: const_iterator ee = elems->begin(); ee != elems->end(); ++ee , i++){
+                (*ee)->giveValues(codes[p].c_str(),data[i]);
+                msize = max(msize,data[i].size());
+            }
+            vtkSmartPointer< vtkDoubleArray > cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+            cellDataArray->SetName(codes[p].c_str());
+            cellDataArray->SetNumberOfComponents(msize);
+            cellDataArray->SetNumberOfValues(elems->giveSize()*msize);
+            i = 0;
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min(msize,d->size()); j++){
+                    cellDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
-                cell_data [ i ].push_back(matI);
-            } else {
-                cell_data [ i ].push_back(el->giveIPValue(codes [ i ], 0) );   // so far for single IP point
-            }
-        }
-        points_id.clear();
-    }
-    cell_vect_data.resize(vector_data_code_indeces.size() );
-
-    if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
-        // TODO toto je nutný udělat jinak, teď, když jsou tady i jiný sady (vektorový data), není to prostě buď jedno nebo druhý
-        return i == true;
-    }) ) {
-        exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data);
-    }
-    if ( vector_data_code_indeces.size() > 0 ) {
-        exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data);
-    }
-    if ( export_nodal_stress ) {
-        // reserve space only if nodal stresses should be exported
-        nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim) );
-        // export nodal stresses:
-        ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
-    }
-
-    giveFileName(step, buffer);
-    ofstream outputfile( ( resultDir / buffer ).string() );
-
-    if ( outputfile.is_open() ) {
-        outputfile << std :: scientific;
-        outputfile.precision(precision);
-        outputfile << "<?xml version=\"1.0\"?>\n";
-        outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
-        outputfile << "<UnstructuredGrid>" << '\n';
-        outputfile << "<Piece NumberOfPoints=\"" << nodes->giveSize() << "\" NumberOfCells=\"" << elems->giveSize() << "\">" << '\n';
-
-
-        outputfile << "<Points>" << '\n';
-        outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-        for ( auto const &n : * nodes ) {
-            outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t" << n->givePoint().getZ() << '\n';
-
-            displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
-                                  n->giveDoFBasedValue("uy", DoFs),
-                                  dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
-                                  )
-                            );
-
-            for ( unsigned i = cell_data_size; i < codes.size(); i++ ) {
-                point_data [ i - cell_data_size ].push_back(n->giveDoFBasedValue(codes [ i ], DoFs) );
-            }
-        }
-        // for (unsigned n; n < nodes->giveSize(); n++) {
-        //   P = nodes->giveNode(n)->givePoint();
-        // }
-        outputfile << "</DataArray>" << "\n";
-        outputfile << "</Points>" << "\n";
-        outputfile << "<Cells>" << '\n';
-        outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
-        for ( auto const &value : all_points_id ) {
-            for ( auto const &id : value ) {
-                outputfile << "\t" << id;
-            }
-            outputfile << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << '\n';
-        for ( auto const &value : offsets ) {
-            outputfile << value << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << '\n';
-        for ( auto const &value : cell_types ) {
-            outputfile << value << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "</Cells>" << '\n';
-        outputfile << "<PointData Scalars=\"scalars\">" << "\n";
-        outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-        for ( auto const &p : displ ) {
-            outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        //////////////////////////////////////////////////////////////////////////
-        if ( export_nodal_stress ) {
-            outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << ( dim - 1 ) * 3 << "\" format=\"ascii\">" << '\n';
-            vector< double >data;
-
-            for ( auto const &s : nodal_stress ) {
-                data = MatrixToStdVectForParaview(s, dim);
-
-                for ( auto const &d : data ) {
-                    outputfile << d << '\t';
+                for(; j<msize; j++){
+                    cellDataArray->SetValue(msize*i+j, 0);
                 }
-                outputfile << '\n';
-                // data.clear();
             }
-            outputfile << "</DataArray>" << '\n';
+            unstructuredGrid->GetCellData()->AddArray(cellDataArray);
         }
-        //////////////////////////////////////////////////////////////////////////
-        for ( unsigned i = 0; i < point_data.size(); i++ ) {
-            if ( codes [ i + cell_data_size ].compare("nodal_stress") == 0 ) {
-                continue;
+
+
+        // ****************** node data
+        data.resize(nodes->giveSize());
+        for (; p < node_data_size + cell_data_size; p++){
+            msize = 1;
+            i = 0;
+            for (vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn , i++){
+                (*nn)->giveDoFBasedValues(codes[p].c_str(),DoFs,data[i]);
+                msize = max(msize,data[i].size());
             }
-            outputfile << "<DataArray type=\"Float32\" Name=\" " << codes [ i + cell_data_size ] << "\" format=\"ascii\">" << '\n';
-            for ( auto const &p : point_data [ i ] ) {
-                outputfile << p << '\n';
-            }
-            outputfile << "</DataArray>" << '\n';
-        }
-        //////////////////////////////////////////////////////////////////////////
-        outputfile << "</PointData>" << '\n';
-        outputfile << "<CellData Scalars=\"scalars\">" << "\n";
-        unsigned num_vectors = 0;
-        for ( unsigned i = 0; i < cell_data.size(); i++ ) {
-            if ( isInVect(i, vector_data_code_indeces) ) {
-                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] <<
-                    "\" NumberOfComponents=\"" << dim << "\"  format=\"ascii\">" << '\n';
-                for ( auto const &value : cell_vect_data [ num_vectors ] ) {
-                    for ( auto const &a : value ) {
-                        outputfile << a << '\t';
-                    }
-                    outputfile << '\n';
+            vtkSmartPointer< vtkDoubleArray > pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+            pointDataArray->SetName(codes[p].c_str());
+            pointDataArray->SetNumberOfComponents(msize);
+            pointDataArray->SetNumberOfValues(nodes->giveSize()*msize);
+            i = 0;
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min(msize,d->size()); j++){
+                    pointDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
-                outputfile << "</DataArray>" << '\n';
-                num_vectors += 1;
-            } else {
-                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
-                for ( auto const &value : cell_data [ i ] ) {
-                    outputfile << value << '\n';
+                for(; j<msize; j++){
+                    pointDataArray->SetValue(msize*i+j, 0);
                 }
-                outputfile << "</DataArray>" << '\n';
             }
+            unstructuredGrid->GetPointData()->AddArray(pointDataArray);
         }
-        outputfile << "</CellData>" << '\n';
-        outputfile << "</Piece>" << '\n';
-        outputfile << "</UnstructuredGrid>" << '\n';
-        outputfile << "</VTKFile>" << '\n';
-        outputfile.close();
-    }
-    */
+
+        // ****************** extrapolated node data        
+        for (; p < codes.size() ; p++){
+            msize = 1;
+
+            elems->extrapolateValuesFromIntegrationPointsToNodes(codes[p], data);
+            for (auto &v: data) msize = max(msize,v.size());
+
+            vtkSmartPointer< vtkDoubleArray > pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+            pointDataArray->SetName(codes[p].c_str());
+            pointDataArray->SetNumberOfComponents(msize);
+            pointDataArray->SetNumberOfValues(nodes->giveSize()*msize);
+            i = 0;
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min(msize,d->size()); j++){
+                    pointDataArray->SetValue(msize*i+j, (*d)[j]);
+                }
+                for(; j<msize; j++){
+                    pointDataArray->SetValue(msize*i+j, 0);
+                }
+            }
+            unstructuredGrid->GetPointData()->AddArray(pointDataArray);
+        }
+        
+        //vtkNew<vtkXMLUnstructuredGridWriter> writer;
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        writer->SetFileName(  ( resultDir / buffer ).string().c_str() );
+        writer->SetInputData(unstructuredGrid);
+        if (binaryswitch) writer->SetDataModeToBinary();
+        else writer->SetDataModeToAscii();
+        //writer->SetCompressorType();
+        writer->Write();
+    #endif
 }
-
 
 //////////////////////////////////////////////////////////
 // function tahat calculates displacement of any point of rigid body from its rotations and
@@ -934,6 +238,8 @@ Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node *v, co
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+
+    (void) step; (void) DoFs; (void) reactions; (void) resultDir;
     /*
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
@@ -1060,6 +366,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+    (void) step; (void) DoFs; (void) reactions; (void) resultDir;
     /*
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp

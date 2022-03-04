@@ -96,11 +96,18 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     giveFileName(step, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
+    unsigned p;
     if ( outputfile.is_open() ) {
+        outputfile << "#nodeID";
+        for ( unsigned c = 0; c < codes.size(); c++ ) {
+            if (maxsize[c]==1) outputfile << "\t" << codes[c];
+            else for(p = 0; p < maxsize[c]; p++)  outputfile << "\t" << codes[c] << "_" << p;
+        }        
+        outputfile << "\n";
+
         outputfile << std :: scientific;
         outputfile.precision(precision);
         Vector res;
-        unsigned p;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             nn = nodes->giveNode(n);
             outputfile << nn->giveID();
@@ -169,11 +176,18 @@ void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     Vector res;
     unsigned p;
     if ( outputfile.is_open() ) {
+        outputfile << "#elementID";
+        for ( unsigned c = 0; c < codes.size(); c++ ) {
+            if (maxsize[c]==1) outputfile << "\t" << codes[c];
+            else for(p = 0; p < maxsize[c]; p++)  outputfile << "\t" << codes[c] << "_" << p;
+        }        
+        outputfile << "\n";
+
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             ee = elems->giveElement(e);
-            cout << ee->giveID();
+            outputfile << ee->giveID();
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 ee->giveValues(codes[c], res);
                 for( p = 0; p < min(maxsize[c],res.size()); p++){
@@ -244,16 +258,23 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs
     Vector res;
     giveFileName(step, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
-    unsigned p;
 
+    unsigned p;
     if ( outputfile.is_open() ) {
+        outputfile << "#elementID\tintpointID";
+        for ( unsigned c = 0; c < codes.size(); c++ ) {
+            if (maxsize[c]==1) outputfile << "\t" << codes[c];
+            else for(p = 0; p < maxsize[c]; p++)  outputfile << "\t" << codes[c] << "_" << p;
+        }        
+        outputfile << "\n";
+
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             ee = elems->giveElement(e);
             nIP = ee->giveNumIP();
             for ( unsigned k = 0; k < nIP; k++ ) {
-                cout << ee->giveID() << "\t" << k;
+                outputfile << ee->giveID() << "\t" << k;
                 for ( unsigned c = 0; c < codes.size(); c++ ) {
                     ee->giveIPValues( codes[c], k, res);
                     for( p = 0; p < min(maxsize[c],res.size()); p++){
@@ -785,10 +806,6 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     VTKElementExporter *newexp = new VTKElementExporter(e, n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("VTKElement2Exporter") == 0 ) {
-                    VTKElement2Exporter *newexp = new VTKElement2Exporter(e, n, dimension);
-                    newexp->readFromLine(iss);
-                    exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKRBExporter") == 0 ) {
                     if ( dimension == 2 ) {
                         VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n, dimension);
@@ -867,14 +884,17 @@ void ExporterContainer :: init(const bool &initial) {
             outputfile.close();
         }
 
+        size_t p, maxsize;    
         for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
             Gauge *g = dynamic_cast< Gauge * >( * d );
             if ( g ) {
-                ( * d )->giveFileName(0, buffer);
+                g->giveFileName(0, buffer);
                 ofstream outputfile;
                 outputfile.open( ( resultDir / buffer ).string(), ios :: app );
                 if ( outputfile.good() ) {
-                    outputfile << "\t" << g->giveName();
+                    maxsize = g->giveMaxSize(0);
+                    if (maxsize==1) outputfile << "\t" << g->giveName();
+                    else for (p=0; p < maxsize; p++) outputfile << "\t" << g->giveName() << "_" << p; 
                 }
                 outputfile.close();
             }

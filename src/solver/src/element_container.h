@@ -50,6 +50,7 @@ public:
     Element *giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const;
     unsigned giveElemId(const Element *elem) const;
     bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;
+    void extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &results);
 
     vector< Element * > :: iterator begin() { return elems.begin(); }
     vector< Element * > :: iterator end() { return elems.end(); }

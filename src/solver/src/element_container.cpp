@@ -586,3 +586,31 @@ bool ElementContainer :: findElementOwningPoint(Element **elem, Point *xn, const
     }
     return false;
 }
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result){
+    //delete everythink inside
+    size_t p;
+    result.resize(0);
+    result.resize(nodes->giveSize());
+    Vector weights(nodes->giveSize());
+    
+    //fill with data
+    vector<Vector> res;
+    Vector wei;
+    unsigned nodeid;
+    size_t reslen;
+    for (vector<Element*>::iterator ee = elems.begin(); ee!=elems.end(); ++ee){
+        (*ee)->extrapolateIPValuesToNodes(code, res, wei);
+        reslen = res.size();
+        for(p=0; p<(*ee)->giveNumOfNodes(); p++){
+            nodeid = (*ee)->giveNode(p)->giveID();
+            weights[nodeid] += wei[p];
+            if (reslen>result[nodeid].size()) result[nodeid].resize(reslen);
+            for (size_t m=0; m<min(reslen,result[nodeid].size()); m++) {result[nodeid][m] += res[m][p];}
+        }
+    }
+    
+    //normalize by number of attached elements
+    for (p = 0; p<nodes->giveSize(); p++ ) result[p] /= weights[p];
+}
