@@ -713,7 +713,9 @@ bool DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion() {
     double c2 = 7.048 / fc;
     double c3 = 0.88 / pow(fc, 2);
 
-    LinalgEigenSolver(temp_stress, eignums, eigvecs);
+    Vector stress_without_couple(9);
+    for(unsigned p=0; p<9; p++) stress_without_couple[p] = temp_stress[p];
+    LinalgEigenSolver(stress_without_couple, eignums, eigvecs);
     double I1 = eignums [ 0 ] + eignums [ 1 ] + eignums [ 2 ];
     if ( abs(I1) < 1e-10 ) {
         return false;

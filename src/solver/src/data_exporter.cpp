@@ -654,7 +654,15 @@ void SolverGauge :: readFromLine(istringstream &iss) {
     DataExporter :: readFromLine(iss);
 }
 //////////////////////////////////////////////////////////
-void SolverGauge :: init() {}
+void SolverGauge :: init() {
+    time_each = 0;
+    time_last = 0;
+
+    maxsize.resize(1);
+    Vector res;
+    solver->giveValues( codes[0], res);
+    maxsize[0]=res.size();
+}
 
 //////////////////////////////////////////////////////////
 void SolverGauge :: setSolverPointer(Solver *s) {
@@ -666,6 +674,8 @@ void SolverGauge :: setSolverPointer(Solver *s) {
 void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) reactions;
     ( void ) DoFs;
+    Vector res;
+    size_t p;
     char buffer [ 100 ];
     giveFileName(step, buffer);
     ofstream outputfile;
@@ -673,7 +683,13 @@ void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        outputfile << "\t" << solver->giveValue(codes [ 0 ]);
+        solver->giveValues( codes[0], res);
+        for( p = 0; p < min(maxsize[0],res.size()); p++){
+            outputfile << "\t" << res[p];
+        }
+        for( ; p < maxsize[0]; p++){
+            outputfile << "\t" << 0;
+        }
     }
     outputfile.close();
 }

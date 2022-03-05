@@ -56,7 +56,7 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve() {};
-    virtual double giveValue(string code);
+    virtual void giveValues(string code, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -112,7 +112,7 @@ protected:
     void evaluateErrors();
     virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
     virtual void reset();
-    virtual double giveValue(string code);
+    virtual void giveValues(string code, Vector &result) const;
 
 public:
     SteadyStateNonLinearSolver();

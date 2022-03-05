@@ -32,7 +32,6 @@ void Model :: init(const bool &initial) {     //initialization
     constr.init(& nodes, & bconds, solver);
     elems.findElementFriends();
     exporters.init(initial);
-
     if ( initialFieldFile.compare("") != 0 ) {
         initialFieldFile = ( baseDir / initialFieldFile ).string();
     }

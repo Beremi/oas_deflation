@@ -206,7 +206,7 @@ bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &e
     }else if (A.size()==9){ //3D 
         ndim =3; sym = false;
     }else{
-        cerr << "Error: LinalgEigenSolver implemented only for vectorized matrices of size 2 or 3" << endl;
+        cerr << "Error: LinalgEigenSolver implemented only for vectorized matrices of size 2 or 3, submitted size " << A.size() << endl;
         exit(1);
     }
     MatrixXd mat = MatrixXd :: Random(ndim, ndim);

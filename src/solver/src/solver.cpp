@@ -180,15 +180,18 @@ void Solver :: updateFieldVariables() {
 }
 
 //////////////////////////////////////////////////////////
-double Solver :: giveValue(string code) {
+void Solver :: giveValues(string code, Vector &result) const{
     if ( code.compare("simulation_time") == 0 ) {
-        return time;
+        result.resize(1);
+        result[0]=time;
     } else if ( code.compare("elapsed_time") == 0 ) {
-        return chrono :: duration_cast< std :: chrono :: duration< double > >(std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
+        result.resize(1);
+        result[0]=chrono :: duration_cast< std :: chrono :: duration< double > >(std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
     } else if ( code.compare("number_of_dof") == 0 ) {
-        return freeDoFnum;
+        result.resize(1);
+        result[0]=freeDoFnum;
     } else {
-        return 0;
+        result.resize(0);
     }
 }
 
@@ -543,23 +546,30 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
 
 
 //////////////////////////////////////////////////////////
-double SteadyStateNonLinearSolver :: giveValue(string code) {
+void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const {
     if ( code.compare("iterations") == 0 ) {
-        return it;
+        result.resize(1);
+        result[0]=it;
     } else if ( code.compare("restars") == 0 ) {
-        return restarts;
+        result.resize(1);
+        result[0]=restarts;
     } else if ( code.compare("error_displacements") == 0 ) {
-        return disErr;
+        result.resize(1);
+        result[0]=disErr;
     } else if ( code.compare("error_residuals") == 0 ) {
-        return resErr;
+        result.resize(1);
+        result[0]=resErr;
     } else if ( code.compare("error_energy") == 0 ) {
-        return eneErr;
+        result.resize(1);
+        result[0]=eneErr;
     } else if ( code.compare("idc_time") == 0 ) {
-        return idc_time;
+        result.resize(1);
+        result[0]=idc_time;
     } else if ( code.compare("converged") == 0 ) {
-        return fully_converged;
+        result.resize(1);
+        result[0]=fully_converged;
     } else {
-        return SteadyStateLinearSolver :: giveValue(code);
+        SteadyStateLinearSolver :: giveValues(code, result);
     }
 }
 
