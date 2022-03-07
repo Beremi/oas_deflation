@@ -3,7 +3,6 @@ from random import random
 from random import seed
 
 import numpy as np
-from mayavi import mlab
 from scipy.spatial import ConvexHull
 import vtk
 from vtk.util import numpy_support
@@ -110,7 +109,7 @@ def voronoi_plot_3d_vtk(vor):
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
     actor.GetProperty().SetColor(colors.GetColor3d('Silver'))
-    actor.GetProperty().SetOpacity(.5)
+    #actor.GetProperty().SetOpacity(.5)
     #actor.GetProperty().SetColor([1.0, 0.0, 0.0])
     #actor.GetProperty().SetLineWidth(3)
     actor.GetProperty().EdgeVisibilityOn()
@@ -124,11 +123,11 @@ def voronoi_plot_3d_vtk(vor):
     renderer.GetActiveCamera().Elevation(30)
     renderWindow.Render()
 
-    #exporter = vtk.vtkVRMLExporter()
-    #exporter.SetRenderWindow(renderWindow)
-    #exporter.SetFileName("polyhedron.wrl")
-    #exporter.Write()
-    #exporter.Update()
+    exporter = vtk.vtkVRMLExporter()
+    exporter.SetRenderWindow(renderWindow)
+    exporter.SetFileName("polyhedron.wrl")
+    exporter.Write()
+    exporter.Update()
 
     renderWindowInteractor.Start()
 
@@ -179,6 +178,7 @@ def voronoi_plot_3d_mlab(vor, fig=None, **kw):
     ...                 line_width=2, line_alpha=0.6, point_size=2)
     >>> mlab.show()
     """
+    from mayavi import mlab
     if vor.points.shape[1] != 3:
         raise ValueError("Voronoi diagram is not 3-D")
 
@@ -320,6 +320,7 @@ def voronoi_plot_3d_mlab2(vor, fig=None, **kw):
     ...                 line_width=2, line_alpha=0.6, point_size=2)
     >>> mlab.show()
     """
+    from mayavi import mlab
     if vor.points.shape[1] != 3:
         raise ValueError("Voronoi diagram is not 3-D")
 
@@ -406,6 +407,7 @@ def voronoi_plot_3d_mlab2(vor, fig=None, **kw):
 
 
 def tesselation_plot_3d_mlab(tes, animate=False):
+    from mayavi import mlab
     # mlab.options.offscreen = True
     visible = True
 
