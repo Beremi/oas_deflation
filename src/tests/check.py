@@ -4,6 +4,7 @@ import subprocess
 import pathlib
 import glob
 import filecmp
+import numpy as np
 
 def simple_file_compare(dir1, dir2):
     ''' Compare files in dir1 with respect to dir2
@@ -19,7 +20,14 @@ def simple_file_compare(dir1, dir2):
     
     identical = []
     for f in files:
-        identical.append(filecmp.cmp(f, results_dir / f.name, shallow=False))
+        if f == 'version.txt':
+            continue
+        if f.name.startswith('LD'):
+            ld_old = np.loadtxt(f, skiprows=1, delimiter='\t')
+            ld_new = np.loadtxt(results_dir / f.name, skiprows=1, delimiter='\t')
+            identical.append(np.all(np.isclose(ld_old, ld_new)))
+        else:
+            identical.append(filecmp.cmp(f, results_dir / f.name, shallow=False))
     return not all(identical)
     
 
