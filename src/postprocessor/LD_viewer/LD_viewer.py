@@ -7,7 +7,7 @@ from traits.api import HasStrictTraits, Instance, File, List, Enum, Button, Str,
                         Any, Bool, DelegatesTo, Property, Float
 from traitsui.api import Item, Group, View, HSplit, NoButtons, EnumEditor, HGroup,\
                          Handler, VGroup, Tabbed, TextEditor, Label, ListEditor
-from traitsui.message import error
+from traitsui.message import Message
 from traitsui.file_dialog  import open_file, TextInfo, FileInfo, save_file
 from mpl_qt_editor import MPLFigureEditor
 from matplotlib.figure import Figure
@@ -18,6 +18,29 @@ import pandas as pd
 # HGroup Item hack
 def HItem(value=None, **traits):
     return HGroup(Item(value, **traits, springy=True))
+
+
+def error(message="", title="Message", buttons=["OK", "Cancel"], parent=None):
+    """ Displays a message to the user as a modal window with the specified
+    title and buttons.
+
+    If *buttons* is not specified, **OK** and **Cancel** buttons are used,
+    which is appropriate for confirmations, where the user must decide whether
+    to proceed. Be sure to word the message so that it is clear that clicking
+    **OK** continues the operation.
+    """
+    msg = Message(message=message)
+    ui = msg.edit_traits(
+        parent=parent,
+        view=View(
+            ["message~", "|<>"], title=title, buttons=buttons, kind="modal",
+            resizable=True,
+            #height=150,
+            #width=300,
+            scrollable=True
+        ),
+    )
+    return ui.result
 
 
 class LDFile(HasStrictTraits):
