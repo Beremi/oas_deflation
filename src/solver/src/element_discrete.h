@@ -23,7 +23,7 @@ protected:
 
 public:
     RigidBodyContact(const unsigned dim);
-    virtual Matrix giveAMatrix(Point a, Point x) const;
+    virtual Matrix giveAMatrix(unsigned v, Point x) const;
     ~RigidBodyContact() {};
     void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     void init();
@@ -123,7 +123,7 @@ protected:
 public:
     Truss(const unsigned dim) : RigidBodyContact(dim) { name = "Truss"; };
     ~Truss() {};
-    virtual Matrix giveAMatrix(Point a, Point x) const;
+    virtual Matrix giveAMatrix(unsigned v, Point x) const;
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;

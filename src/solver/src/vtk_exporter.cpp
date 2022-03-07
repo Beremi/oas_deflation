@@ -100,14 +100,14 @@ void VTKExporter :: readFromLine(istringstream &iss) {
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+
+    (void) reactions;
+
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     char buffer [ 100 ];
     giveFileName(step, buffer);
     // Point P;
     // Element *ee;
-
-    vector< int >points_id;
-    vector< vector< int > >all_points_id;
 
     #ifdef __VTK_MODULE
         vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -217,23 +217,22 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         else writer->SetDataModeToAscii();
         //writer->SetCompressorType();
         writer->Write();
+    #else
+        cout << "VTK library not install, export of Elements skipped" << endl;
     #endif
 }
 
 //////////////////////////////////////////////////////////
 // function tahat calculates displacement of any point of rigid body from its rotations and
-Point calculateVertexDisplacement(const RigidBodyContact &rbc, const Node *v, const Node *a, const Vector &DoFs, const unsigned &dim) {
-    Matrix A = rbc.giveAMatrix(a->givePoint(), v->givePoint() );
-
+Point calculateVertexDisplacement(const RigidBodyContact *rbc, unsigned v, const Point *x, const Vector &DoFs, const unsigned &dim) {
+    Matrix A = rbc->giveAMatrix(v, *x);
     unsigned DofsPerNode = ( dim - 1 ) * 3;
-    Matrix U(DofsPerNode, 1);
+    Vector U(DofsPerNode);
     for ( unsigned i = 0; i < DofsPerNode; i++ ) {
-        U [ i ] [ 0 ] = DoFs [ a->giveStartingDoF() + i ];
+        U [ i ]  = DoFs [ rbc->giveNode(v)->giveStartingDoF() + i ];
     }
-
-    Matrix P = A * U;
-
-    return Point(P [ 0 ] [ 0 ], P [ 1 ] [ 0 ], P.numRows() > 2 ? P [ 2 ] [ 0 ] : 0);
+    Vector P = A * U;
+    return Point(P [ 0 ] , P [ 1 ], P.size() > 2 ? P [ 2 ] : 0);
 }
 //////////////////////////////////////////////////////////
 
@@ -368,232 +367,154 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    (void) step; (void) DoFs; (void) reactions; (void) resultDir;
-    /*
-    // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-    // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
+    (void) reactions;
+
     char buffer [ 100 ];
-    // Point P;
-    // Element *ee;
-
-    vector< Point >all_vertices_twice; // because the vertices are needed twice (on each side of the contact)
-    vector< Point >vertices_displ; // displaceemnt of the contact
-    vector< int >points_id;
-    vector< int >node_id;
-    vector< vector< int > >all_points_id;
-    vector< int >cell_types;
-    vector< int >offsets;
-    vector< Point >displ;
-
-    // vector of nodal stresses - Matrices (tensors) dim x dim
-    vector< Matrix >nodal_stress;
-    vector< unsigned >vertex_correponding_node_id;
-    bool export_nodal_stress = isStringInVect("nodal_stress", codes);
-
-    vector< bool >codes_positions(cell_data_size); // position indeces of data that cannot be exported from points or elements directly (they are not stored there)
-    for ( unsigned i = 0; i < cell_data_size; i++ ) {
-        codes_positions [ i ] = isAddonCellScalarData(codes [ i ]);
-    }
-
-    vector< vector< Vector > >cell_vect_data;
-    vector< unsigned >vector_data_code_indeces;  // indeces of data to
-
-    vector< vector< double > >cell_data; // test version, this and more will be specified on the exporter input
-    cell_data.resize(cell_data_size);
-
-    // TODO be able to export also point data
-    // vector< vector< double > > point_data;
-    // point_data.resize(codes.size() - cell_data_size);
-    unsigned num_rbcs = 0;
-
-    int offset = 0;
-    unsigned node_id_i;
-    for ( auto const &el : * elems ) {
-        if ( el->giveName().compare("LTCBEAM") != 0 && el->giveName().compare("LTCBEAMCoupled") != 0 ) {
-            continue;
-        }
-        RigidBodyContact *rbc = static_cast< RigidBodyContact * >( el );
-        num_rbcs++;
-        for ( auto const &n : rbc->giveNodes() ) {
-            // Particle *part = static_cast< Particle * >( n );
-            auto nod_id_ptr = std :: find(begin(* nodes), end(* nodes), n);
-            node_id_i = std :: distance(begin(* nodes), nod_id_ptr);// todo warning C4244: '=': conversion from '__int64' to 'unsigned int', possible loss of data
-            for ( auto const &v : rbc->giveVertices() ) {
-                all_vertices_twice.push_back(v->givePoint() );
-                points_id.push_back(nodes->giveSize() + all_vertices_twice.size() - 1); //tofo warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
-                vertices_displ.push_back(calculateVertexDisplacement(* rbc, v, n, DoFs, this->dim) );
-                if ( export_nodal_stress ) {
-                    vertex_correponding_node_id.push_back(node_id_i);
-                }
-            }
-            // points_id.push_back(std::distance(begin(*nodes), nod_id_ptr));
-            node_id.push_back(node_id_i);
-            all_points_id.push_back(points_id);
-            cell_types.push_back( ( points_id.size() > 2 ) ? 7 : points_id.size() * 2 - 1 );
-            // cell_types.push_back(points_id.size()*2 - 1);  // NOTE this works for line (type 3), triangle (type 5), be careful with quad (type 9), but closed polygon is type 7, needs to be enhanced for bricks etc...
-            offset += points_id.size();
-            offsets.push_back(offset);
-
-            for ( unsigned i = 0; i < cell_data_size; i++ ) {
-                if ( isAddonCellScalarData(codes [ i ]) || isAddonPointVectorialData(codes [ i ]) ) {
-                    continue;
-                } else if ( isAddonCellVectorialData(codes [ i ]) ) {
-                    vector_data_code_indeces.push_back(i);
-                    continue;
-                } else {
-                    cell_data [ i ].push_back(el->giveIPValue(codes [ i ], 0) );   // so far for single IP point
-                }
-            }
-            points_id.clear();
-        }
-    }
-    cell_vect_data.resize(vector_data_code_indeces.size() );
-
-    if ( !std :: none_of(codes_positions.begin(), codes_positions.end(), [ ](bool i) {
-        return i == true;
-    }) ) {
-        exportAddonScalarCellData(elems, DoFs, codes_positions, codes, cell_data, true, true);
-    }
-    if ( vector_data_code_indeces.size() > 0 ) {
-        exportAddonVectorialCellData(this->dim, elems, DoFs, codes, vector_data_code_indeces, cell_vect_data, true, true);
-    }
-    if ( export_nodal_stress ) {
-        // reserve space only if nodal stresses should be exported
-        nodal_stress.resize(nodes->giveSize(), Matrix(this->dim, this->dim) );
-        // export nodal stresses:
-        ExportAllElementsNodalStress(nodal_stress, DoFs, reactions, nodes, elems, this->dim);
-    }
-
-    // unsigned iii = 0;
-    // for (auto const &da : cell_data){
-    //   std::cout << "cell_data[" << iii << "] = " << da.size() << '\n';
-    // }
-    // std::cout << "cell_types.size() = " << cell_types.size() << '\n';
-    // std::cout << "offsets.size() = " << offsets.size() << '\n';
-    // std::cout << "all_points_id.size() = " << all_points_id.size() << '\n';
-
     giveFileName(step, buffer);
-    ofstream outputfile( ( resultDir / buffer ).string() );
 
-    if ( outputfile.is_open() ) {
-        outputfile << std :: scientific;
-        outputfile.precision(precision);
-        outputfile << "<?xml version=\"1.0\"?>\n";
-        outputfile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << '\n';
-        outputfile << "<UnstructuredGrid>" << '\n';
-        outputfile << "<Piece NumberOfPoints=\"" << nodes->giveSize() + all_vertices_twice.size() << "\" NumberOfCells=\"" << num_rbcs * 2 << "\">" << '\n';
+    #ifdef __VTK_MODULE
+        vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
+        vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-        outputfile << "<Points>" << '\n';
-        outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-        for ( auto const &n : * nodes ) {
-            displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
-                                  n->giveDoFBasedValue("uy", DoFs),
-                                  0) );  // for 2D this DOF stays for rotation
-            outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t" << n->givePoint().getZ() << '\n';
-        }
-        for ( auto const &p : all_vertices_twice ) {
-            outputfile << p.getX() << "\t" << p.getY() << "\t" << p.getZ() << '\n';
-        }
-        // for (unsigned n; n < nodes->giveSize(); n++) {
-        //   P = nodes->giveNode(n)->givePoint();
-        // }
-        outputfile << "</DataArray>" << "\n";
-        outputfile << "</Points>" << "\n";
-        outputfile << "<Cells>" << '\n';
-        outputfile << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << '\n';
-        for ( auto const &value : all_points_id ) {
-            for ( auto const &id : value ) {
-                outputfile << "\t" << id;
-            }
-            outputfile << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << '\n';
-        for ( auto const &value : offsets ) {
-            outputfile << value << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << '\n';
-        for ( auto const &value : cell_types ) {
-            outputfile << value << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-        outputfile << "</Cells>" << '\n';
-        outputfile << "<PointData Scalars=\"scalars\">" << "\n";
-        outputfile << "<DataArray type=\"Float32\" Name=\"displacement\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
-        for ( auto const &p : displ ) {
-            outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
-        }
-        for ( auto const &p : vertices_displ ) {
-            outputfile << p.getX() << '\t' << p.getY() << '\t' << p.getZ() << '\n';
-        }
-        outputfile << "</DataArray>" << '\n';
-
-        ///////////////////////////////////////////////////////////////////////
-        if ( export_nodal_stress ) {
-            outputfile << "<DataArray type=\"Float32\" Name=\"nodal_stress\" NumberOfComponents=\"" << ( dim - 1 ) * 3 << "\" format=\"ascii\">" << '\n';
-            vector< double >data;
-
-            for ( auto const &s : nodal_stress ) {
-                data = MatrixToStdVectForParaview(s, dim);
-
-                for ( auto const &d : data ) {
-                    outputfile << d << '\t';
-                }
-                outputfile << '\n';
-                // data.clear();
-            }
-            for ( auto const &is : vertex_correponding_node_id ) {
-                data = MatrixToStdVectForParaview(nodal_stress [ is ], dim);
-
-                for ( auto const &d : data ) {
-                    outputfile << d << '\t';
-                }
-                outputfile << '\n';
-                // data.clear();
-            }
-
-
-            outputfile << "</DataArray>" << '\n';
-        }
-        ///////////////////////////////////////////////////////////////////////
-
-        outputfile << "</PointData>" << '\n';
-        unsigned num_vectors = 0;
-        outputfile << "<CellData Scalars=\"scalars\">" << "\n";
-        for ( unsigned i = 0; i < cell_data.size(); i++ ) {
-            if ( isInVect(i, vector_data_code_indeces) ) {
-                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] <<
-                    "\" NumberOfComponents=\"" << dim << "\"  format=\"ascii\">" << '\n';
-                for ( auto const &value : cell_vect_data [ num_vectors ] ) {
-                    for ( auto const &a : value ) {
-                        outputfile << a << '\t';
-                    }
-                    outputfile << '\n';
-                }
-                outputfile << "</DataArray>" << '\n';
-                num_vectors += 1;
-            } else {
-                outputfile << "<DataArray type=\"Float32\" Name=\"" << codes [ i ] << "\" format=\"ascii\">" << '\n';
-                for ( auto const &value : cell_data [ i ] ) {
-                    outputfile << value << '\n';
-                }
-                outputfile << "</DataArray>" << '\n';
+        vector<RigidBodyContact*> exportedElems;
+        vector <Node*> vertices;
+        Point *pp;
+        unsigned pointID=0;
+        RigidBodyContact *rbc;
+        unsigned celtype = 3; //line
+        if(dim==3) celtype = 7; //polygon
+        for ( vector<Element*>::const_iterator ee = elems->begin(); ee != elems->end(); ++ee ) {
+            rbc = dynamic_cast< RigidBodyContact * >( *ee );
+            if(rbc){
+                exportedElems.push_back(rbc);
+                vertices = rbc->giveVertices();
+                vtkSmartPointer<vtkIdList> elindicesA = vtkSmartPointer<vtkIdList>::New();
+                vtkSmartPointer<vtkIdList> elindicesB = vtkSmartPointer<vtkIdList>::New();
+                for(auto &p:vertices) {
+                    pp = p->givePointPointer();
+                    elindicesA->InsertNextId(pointID);
+                    elindicesB->InsertNextId(pointID+1); 
+                    points->InsertNextPoint(pp->getX(), pp->getY(), pp->getZ()); //every node twice
+                    points->InsertNextPoint(pp->getX(), pp->getY(), pp->getZ()); //every node twice
+                    pointID ++;
+                    pointID ++;
+                }                
+                unstructuredGrid->InsertNextCell(celtype, elindicesA );
+                unstructuredGrid->InsertNextCell(celtype, elindicesB );
             }
         }
+        unstructuredGrid->SetPoints(points);
+        unsigned numOfPoints = pointID;
 
-        outputfile << "<DataArray type=\"Float32\" Name=\"node_id\" format=\"ascii\">" << '\n';
-        for ( auto const &value : node_id ) {
-            outputfile << value << '\n';
+        unsigned i,j;
+        size_t msize;
+        vector< Vector > data;
+        unsigned p=0;
+        // ****************** DISPLACEMENTS
+        Vector dataA, dataB;
+        Point A;
+        data.resize(nodes->giveSize());
+        msize = 3;
+        vtkSmartPointer< vtkDoubleArray > pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+        pointDataArray->SetName("displacements");
+        pointDataArray->SetNumberOfComponents(msize);
+        pointDataArray->SetNumberOfValues(numOfPoints*msize);
+        pointID = 0;
+        for (vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee){
+            vertices = (*ee)->giveVertices();
+            for(auto &q:vertices) {
+                pp = q->givePointPointer();
+                for(unsigned k=0; k<2; k++){
+                    A = calculateVertexDisplacement(*ee, k, pp, DoFs, dim);
+                    for(p=0;p<msize; p++) pointDataArray->SetValue(msize*pointID+p,   A.giveCoord(p));
+                    pointID ++;
+                } 
+            }
         }
-        outputfile << "</DataArray>" << '\n';
+        unstructuredGrid->GetPointData()->AddArray(pointDataArray);
 
-        outputfile << "</CellData>" << '\n';
-        outputfile << "</Piece>" << '\n';
-        outputfile << "</UnstructuredGrid>" << '\n';
-        outputfile << "</VTKFile>" << '\n';
-        outputfile.close();
-    }
-    */
+        // ****************** cell data
+        data.resize(elems->giveSize());
+        for (p = 0; p < cell_data_size; p++){
+            msize = 1;
+            i = 0;
+            for (vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee , i++){
+                (*ee)->giveValues(codes[p].c_str(),data[i]);
+                msize = max(msize,data[i].size());
+            }
+            vtkSmartPointer< vtkDoubleArray > cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+            cellDataArray->SetName(codes[p].c_str());
+            cellDataArray->SetNumberOfComponents(msize);
+            cellDataArray->SetNumberOfValues(2*elems->giveSize()*msize);
+            i = 0;
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min(msize,d->size()); j++){
+                    cellDataArray->SetValue(msize*(i*2)+j, (*d)[j]);
+                    cellDataArray->SetValue(msize*(i*2+1)+j, (*d)[j]);
+                }
+                for(; j<msize; j++){
+                    cellDataArray->SetValue(msize*(i*2)+j, 0);
+                    cellDataArray->SetValue(msize*(i*2+1)+j, 0);
+                }
+            }
+            unstructuredGrid->GetCellData()->AddArray(cellDataArray);
+        }
+
+
+        // ****************** node data
+        data.resize(nodes->giveSize());
+        for (; p < node_data_size + cell_data_size; p++){
+            if ( codes[0].compare("displacements")==0) continue;
+            msize = 1;
+            i = 0;
+            for (vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn , i++){
+                if (static_cast<Particle*>(*nn)){
+                    (*nn)->giveDoFBasedValues(codes[p].c_str(),DoFs,data[i]);
+                    msize = max(msize,data[i].size());
+                } else{
+                    data[i].resize(0);
+                }
+            }
+            vtkSmartPointer< vtkDoubleArray > cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+            cellDataArray->SetName(codes[p].c_str());
+            cellDataArray->SetNumberOfComponents(msize);
+            cellDataArray->SetNumberOfValues(2*elems->giveSize()*msize);
+            i = 0;
+            for (vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee , i++){
+                dataA = data[(*ee)->giveNode(0)->giveID()];
+                dataB = data[(*ee)->giveNode(1)->giveID()];
+                for(j=0; j<min(msize,dataA.size()); j++){
+                    pointDataArray->SetValue(msize*(i*2)+j, dataA[j]);
+                }
+                for(; j<msize; j++){
+                    pointDataArray->SetValue(msize*(i*2)+j, 0);
+                }
+                for(j=0; j<min(msize,dataB.size()); j++){
+                    pointDataArray->SetValue(msize*(i*2+1)+j, dataB[j]);
+                }
+                for(; j<msize; j++){
+                    pointDataArray->SetValue(msize*(i*2+1)+j, 0);
+                }
+            }
+            unstructuredGrid->GetCellData()->AddArray(cellDataArray);
+        }
+
+        // ****************** extrapolated node data        
+        for (; p < codes.size() ; p++){
+            cout << "Extrapolated node data not implemented in RC exporter" << endl;
+        }
+
+
+        //vtkNew<vtkXMLUnstructuredGridWriter> writer;
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        writer->SetFileName(  ( resultDir / buffer ).string().c_str() );
+        writer->SetInputData(unstructuredGrid);
+        if (binaryswitch) writer->SetDataModeToBinary();
+        else writer->SetDataModeToAscii();
+        //writer->SetCompressorType();
+        writer->Write();
+    #else
+        cout << "VTK library not install, export of Rigid Contacts skipped" << endl;
+    #endif
 }

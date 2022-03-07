@@ -1,3 +1,4 @@
 TXTNodalExporter translations 2 ux uy
 TXTNodalExporter pressure 1 pressure
-VTKElementExporter out  saveEvery 1e-20 0
+VTKElementExporter elems saveEvery 0.0001 cellData 1 damage pointData 1 displacements extrapolatedNodeData 1 stress
+VTKRCExporter contacts saveEvery 0.0001 cellData 1 damage pointData 0 extrapolatedNodeData 1 stress

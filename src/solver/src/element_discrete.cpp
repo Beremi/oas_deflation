@@ -79,8 +79,8 @@ Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //Matrix B
     Matrix B = Matrix(ndim, 6 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
+    Matrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix(1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B [ i ] [ j ] = Aa [ i ] [ j ];
@@ -267,20 +267,20 @@ Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
 
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveAMatrix(Point a, Point x) const {
+Matrix RigidBodyContact :: giveAMatrix(unsigned v, Point x) const {
     Matrix A(ndim, 3 * ( ndim - 1 ) );
     if ( ndim == 3 ) {
         A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = A [ 2 ] [ 2 ] = 1;
-        A [ 1 ] [ 3 ] = a.z - x.z;
+        A [ 1 ] [ 3 ] = nodes[v]->givePointPointer()->getZ() - x.z;
         A [ 0 ] [ 4 ] = -A [ 1 ] [ 3 ];
-        A [ 2 ] [ 3 ] = x.y - a.y;
+        A [ 2 ] [ 3 ] = x.y - nodes[v]->givePointPointer()->getY();
         A [ 0 ] [ 5 ] = -A [ 2 ] [ 3 ];
-        A [ 2 ] [ 4 ] = a.x - x.x;
+        A [ 2 ] [ 4 ] = nodes[v]->givePointPointer()->getX() - x.x;
         A [ 1 ] [ 5 ] = -A [ 2 ] [ 4 ];
     } else if ( ndim == 2 ) {
         A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = 1;
-        A [ 0 ] [ 2 ] = a.y - x.y;
-        A [ 1 ] [ 2 ] = x.x - a.x;
+        A [ 0 ] [ 2 ] = nodes[v]->givePointPointer()->getY() - x.y;
+        A [ 1 ] [ 2 ] = x.x - nodes[v]->givePointPointer()->getX();
     } else {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
         exit(EXIT_FAILURE);
@@ -560,8 +560,8 @@ Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // Matrix B = Matrix( ndim, 6 * ( ndim - 1 ) );
     Matrix B = Matrix(ndim, 3 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
-    // Matrix Ab = giveAMatrix( nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
+    Matrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
+    // Matrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B [ i ] [ j ] = Aa [ i ] [ j ];
@@ -575,8 +575,8 @@ Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRUSS ELEMENT
-Matrix Truss :: giveAMatrix(Point a, Point x) const {
-    ( void ) a;
+Matrix Truss :: giveAMatrix(unsigned v, Point x) const {
+    ( void ) v;
     ( void ) x;
     Matrix A(ndim, ndim);
     if ( ndim == 3 ) {
@@ -607,8 +607,8 @@ Matrix Truss :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //Matrix B
     Matrix B = Matrix(ndim, 2 * ndim);
-    Matrix Aa = giveAMatrix(nodes [ 0 ]->givePoint(), inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix(nodes [ 1 ]->givePoint(), inttype->giveIPLocation(0) );
+    Matrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix(1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < ndim; j++ ) {
             B [ i ] [ j ] = Aa [ i ] [ j ];

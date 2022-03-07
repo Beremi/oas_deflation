@@ -74,6 +74,4 @@ public:
 protected:
 };
 
-vector< double >MatrixToStdVectForParaview(const Matrix &s, const unsigned &dim);
-
 #endif /* _EXPORTER_C_H */
