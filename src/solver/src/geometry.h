@@ -2,7 +2,7 @@
 #define _GEOMETRY_H
 
 #include <memory>
-#include "linear_algebra.h"
+#include "linalg.h"
 #include "element.h"
 // TODO move all functions regarding geometrical operations etc.
 
@@ -48,7 +48,7 @@ public:
     virtual double giveSize() const { return this->size; };
     virtual void print() const {
         std :: cout << "main point: ";
-        this->mainPoint.print();
+        this->mainPoint.format(SemicolonInitFmt);
         std :: cout << "size = " << this->size << '\n';
     };
 };

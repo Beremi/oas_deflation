@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>      // std::setw
-#include "linear_algebra.h"
+#include "linalg.h"
 #include "element_container.h"
 #include "node_container.h"
 #include "function.h"
@@ -36,8 +36,8 @@ public:
     ~IndirectDC() {};
     void init(NodeContainer *nodes, FunctionContainer *funcs, bool initial = true);
     void readFromStream(unsigned num, ifstream &inputfile);
-    double giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time);
-    double giveControlValue(Vector &displ);
+    double giveMultiplierCorrection(MyVector &prev_displ, MyVector &displ_f, double time);
+    double giveControlValue(MyVector &displ);
 };
 
 #endif

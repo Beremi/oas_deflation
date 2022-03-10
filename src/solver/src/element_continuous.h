@@ -15,9 +15,9 @@ protected:
 public:
     TrsprtQuad();
     virtual ~TrsprtQuad() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual MyMatrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveHMatrix(const Point *x) const;
+    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -43,9 +43,9 @@ protected:
 public:
     TrsprtTemprtrCoupledBrick();
     virtual ~TrsprtTemprtrCoupledBrick() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual MyMatrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveHMatrix(const Point *x) const;
+    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
 };
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -56,8 +56,8 @@ protected:
 public:
     MechanicalQuad();
     virtual ~MechanicalQuad() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual MyMatrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveHMatrix(const Point *x) const;
 };
 
 
@@ -70,7 +70,7 @@ protected:
 public:
     MechanicalBrick();
     virtual ~MechanicalBrick() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveBMatrix(const Point *x) const;
 };
 
 
@@ -84,8 +84,8 @@ protected:
 public:
     CosseratQuad();
     virtual ~CosseratQuad() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual MyMatrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveHMatrix(const Point *x) const;
 };
 
 
@@ -99,8 +99,8 @@ protected:
 public:
     CosseratBrick();
     virtual ~CosseratBrick() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual MyMatrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveHMatrix(const Point *x) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -114,8 +114,8 @@ public:
     CoupledCosseratQuad();
     virtual ~CoupledCosseratQuad() {};
     virtual void init();
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual MyMatrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveHMatrix(const Point *x) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -128,10 +128,10 @@ protected:
 public:
     CoupledCosseratBrick();
     virtual ~CoupledCosseratBrick() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Matrix giveDampingMatrix() const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual MyMatrix giveBMatrix(const Point *x) const;
+    virtual MyMatrix giveHMatrix(const Point *x) const;
+    virtual MyMatrix giveDampingMatrix() const;
+    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -146,11 +146,11 @@ public:
     CoupledCosseratBrickWithDependentUpperZLayer();
     virtual ~CoupledCosseratBrickWithDependentUpperZLayer() {};
     virtual void setIntegrationPointsAndWeights();
-    virtual Matrix giveStiffnessMatrix(string matrixType) const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
-    virtual Vector integrateInternalSources();
-    virtual Matrix giveDampingMatrix() const;
-    virtual Matrix giveMassMatrix() const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual MyMatrix giveStiffnessMatrix(string matrixType) const;
+    virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
+    virtual MyVector integrateInternalSources();
+    virtual MyMatrix giveDampingMatrix() const;
+    virtual MyMatrix giveMassMatrix() const;
+    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
 };
 #endif  /* _ELEMENT_STRUCT_H */

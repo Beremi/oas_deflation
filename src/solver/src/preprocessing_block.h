@@ -1,7 +1,7 @@
 #ifndef _PBLOCK_H
 #define _PBLOCK_H
 
-#include "linear_algebra.h"
+#include "linalg.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -199,7 +199,7 @@ protected:
 // rigid plate constraining nodes in holow cylindric
 class RingRigidPlate : public RigidPlate
 {
-private:    
+private:
 public:
     RingRigidPlate() {};
     virtual ~RingRigidPlate() {};

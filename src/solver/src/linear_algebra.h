@@ -15,7 +15,7 @@ using namespace std;
 
 #define POINT_TOLERANCE 1e-8
 
-typedef valarray< double >Vector;
+typedef valarray< double >MyVector;
 
 
 class Point
@@ -197,10 +197,10 @@ template< class T >bool operator<(const Cslice_iter< T > &p, const Cslice_iter< 
 
 struct MtM;
 
-class Matrix
+class MyMatrix
 {
     size_t r, c;
-    Vector *v;
+    MyVector *v;
 public:
 
 
@@ -212,14 +212,14 @@ public:
      * @param x number of rows
      * @param y number of columns
      */
-    Matrix(size_t x, size_t y);
+    MyMatrix(size_t x, size_t y);
 
     /** Construct a 2x2 matrix
      */
-    Matrix() {
+    MyMatrix() {
         r = 2;
         c = 2;
-        v = new Vector(0., 4);
+        v = new MyVector(0., 4);
     }
 
     /** Construct a square submatrix from a given source matrix.
@@ -229,7 +229,7 @@ public:
      * @param l staring column in the source matrix
      * @param m source matrix
      */
-    Matrix(size_t rl, size_t k, size_t l, const Matrix &m);
+    MyMatrix(size_t rl, size_t k, size_t l, const MyMatrix &m);
 
 
     /** construct a matrix from a given source matrix without specified row and column.
@@ -238,18 +238,18 @@ public:
      * @param j
      * @param m
      */
-    Matrix(size_t i, size_t j, const Matrix &m);
+    MyMatrix(size_t i, size_t j, const MyMatrix &m);
 
 
-    Matrix(const Matrix &);
+    MyMatrix(const MyMatrix &);
 
-    Matrix(const Point &p);
+    MyMatrix(const Point &p);
 
-    virtual ~Matrix() {
+    virtual ~MyMatrix() {
         delete v;
     }
 
-    Matrix &operator=(const Matrix &m);
+    MyMatrix &operator=(const MyMatrix &m);
 
     size_t size() const {
         return r * c;
@@ -279,7 +279,7 @@ public:
         return Cslice_iter< double >(v, slice(i * c, c, 1) );
     }
 
-    Matrix transpose() const;
+    MyMatrix transpose() const;
 
     double &operator()(size_t x, size_t y);
     double operator()(size_t x, size_t y) const;
@@ -300,28 +300,28 @@ public:
         return row(i);
     }
 
-    Matrix &operator*=(double);
-    Matrix operator*(double) const;
-    Matrix operator/(double) const;
-    Matrix &operator/=(double);
-    Matrix &operator*=(const Matrix &m);
-    Vector &operator*=(const Vector &m);
-    //  const Matrix& operator *(const Matrix &m) const ;
-    Matrix &operator+=(const Matrix &m);
-    Matrix &operator+=(const double x);
-    Matrix operator+(const Matrix &m) const;
-    Matrix &operator-=(const Matrix &m);
-    Matrix operator-(const Matrix &m) const;
-    Matrix &operator=(const MtM &m);
+    MyMatrix &operator*=(double);
+    MyMatrix operator*(double) const;
+    MyMatrix operator/(double) const;
+    MyMatrix &operator/=(double);
+    MyMatrix &operator*=(const MyMatrix &m);
+    MyVector &operator*=(const MyVector &m);
+    //  const MyMatrix& operator *(const MyMatrix &m) const ;
+    MyMatrix &operator+=(const MyMatrix &m);
+    MyMatrix &operator+=(const double x);
+    MyMatrix operator+(const MyMatrix &m) const;
+    MyMatrix &operator-=(const MyMatrix &m);
+    MyMatrix operator-(const MyMatrix &m) const;
+    MyMatrix &operator=(const MtM &m);
 
-    bool operator==(const Matrix &m);
-    bool operator!=(const Matrix &m);
+    bool operator==(const MyMatrix &m);
+    bool operator!=(const MyMatrix &m);
 
-    Vector &array() {
+    MyVector &array() {
         return * v;
     }
 
-    Vector array() const {
+    MyVector array() const {
         return * v;
     }
 
@@ -331,39 +331,39 @@ public:
 };
 
 struct MtV {
-    const Matrix &m;
-    const Vector &v;
+    const MyMatrix &m;
+    const MyVector &v;
 
-    MtV(const Matrix &mm, const Vector &vv) : m(mm), v(vv) {}
+    MtV(const MyMatrix &mm, const MyVector &vv) : m(mm), v(vv) {}
 
-    operator const Vector();
+    operator const MyVector();
 };
 
 struct MtM {
-    const Matrix &first;
-    const Matrix &second;
+    const MyMatrix &first;
+    const MyMatrix &second;
 
-    MtM(const Matrix &mm, const Matrix &mmm) : first(mm), second(mmm) {}
+    MtM(const MyMatrix &mm, const MyMatrix &mmm) : first(mm), second(mmm) {}
 
-    operator const Matrix() const;
+    operator const MyMatrix() const;
 };
 
-Matrix dyadicProduct(const Vector &a, const Vector &b);
+MyMatrix dyadicProduct(const MyVector &a, const MyVector &b);
 
-Vector solveSystem(const Matrix &A, const Vector &b, Vector &x);
+MyVector solveSystem(const MyMatrix &A, const MyVector &b, MyVector &x);
 
-inline MtV operator*(const Matrix &mm, const Vector &v) {
+inline MtV operator*(const MyMatrix &mm, const MyVector &v) {
     return MtV(mm, v);
 };
 
-inline MtM operator*(const Matrix &mm, const Matrix &mmm) {
+inline MtM operator*(const MyMatrix &mm, const MyMatrix &mmm) {
     return MtM(mm, mmm);
 };
 
-inline const Matrix matrix_multiply(const Matrix &m0, const Matrix &m1) {
+inline const MyMatrix matrix_multiply(const MyMatrix &m0, const MyMatrix &m1) {
     assert(m0.numCols() == m1.numRows() );
 
-    Matrix ret(m0.numRows(), m1.numCols() );
+    MyMatrix ret(m0.numRows(), m1.numCols() );
 
     for ( size_t i = 0; i < m0.numRows(); i++ ) {
         for ( size_t j = 0; j < m1.numCols(); j++ ) {
@@ -375,10 +375,10 @@ inline const Matrix matrix_multiply(const Matrix &m0, const Matrix &m1) {
     return ret;
 }
 
-inline const Vector matrix_vector_multiply(const Matrix &m, const Vector &v) {
+inline const MyVector matrix_vector_multiply(const MyMatrix &m, const MyVector &v) {
     assert(m.numCols() == v.size() );
 
-    Vector ret(m.numRows() );
+    MyVector ret(m.numRows() );
 
     for ( size_t i = 0; i < m.numRows(); i++ ) {
         const Cslice_iter< double > &ri = m.row(i);
@@ -387,10 +387,10 @@ inline const Vector matrix_vector_multiply(const Matrix &m, const Vector &v) {
     return ret;
 }
 
-inline const Vector operator*(const Vector &v, const Matrix &m) {
+inline const MyVector operator*(const MyVector &v, const MyMatrix &m) {
     assert(m.numRows() == v.size() );
 
-    Vector ret(v.size() );
+    MyVector ret(v.size() );
 
     for ( size_t i = 0; i < m.numCols(); i++ ) {
         const Cslice_iter< double > &ri = m.column(i);
@@ -404,7 +404,7 @@ inline const Vector operator*(const Vector &v, const Matrix &m) {
 struct SparseVector
 {
 public:
-    Vector &val;
+    MyVector &val;
     valarray< unsigned > &idx;
     const size_t length;
     const size_t start;
@@ -412,14 +412,14 @@ public:
     double zero;
 
 public:
-    SparseVector(Vector &v, valarray< unsigned > &idx, const size_t l, const size_t s);
+    SparseVector(MyVector &v, valarray< unsigned > &idx, const size_t l, const size_t s);
 
     double operator[](const size_t) const;
     double &operator[](const size_t);
-    double operator*(const Vector &) const;
+    double operator*(const MyVector &) const;
     SparseVector operator*(const double d) const;
     double operator*(const SparseVector &) const;
-    Vector operator+(const Vector &) const;
+    MyVector operator+(const MyVector &) const;
 
     void print() const;
 };
@@ -429,13 +429,13 @@ public:
 struct ConstSparseVector
 {
 public:
-    const Vector &val;
+    const MyVector &val;
     const valarray< unsigned > &idx;
     const size_t length;
     const size_t start;
 
 public:
-    ConstSparseVector(const Vector &v,  const valarray< unsigned > &idx, const size_t l, const size_t s);
+    ConstSparseVector(const MyVector &v,  const valarray< unsigned > &idx, const size_t l, const size_t s);
 
     inline double operator[](const size_t i) const
     {
@@ -449,10 +449,10 @@ public:
     }
     double vectorMultiply(const double *vecA) const;
 
-    double operator*(const Vector &) const;
+    double operator*(const MyVector &) const;
     double operator*(const SparseVector &) const;
     double operator*(const ConstSparseVector &) const;
-    Vector operator+(const Vector &) const;
+    MyVector operator+(const MyVector &) const;
 
     void print() const;
 };
@@ -460,9 +460,9 @@ public:
 //////////////////////////////////////////////////////////
 
 double innerProduct(const SparseVector &v0, const SparseVector &v1, const size_t end);
-double innerProduct(const SparseVector &v0, const Vector &v1, const size_t end);
-double innerProduct(const ConstSparseVector &v0, const Vector &v1, const size_t end);
-inline void innerProductAssignAndAdd(const ConstSparseVector &v0, Vector &v1, double &t,  double toAdd, size_t end)
+double innerProduct(const SparseVector &v0, const MyVector &v1, const size_t end);
+double innerProduct(const ConstSparseVector &v0, const MyVector &v1, const size_t end);
+inline void innerProductAssignAndAdd(const ConstSparseVector &v0, MyVector &v1, double &t,  double toAdd, size_t end)
 {
     for ( size_t j =  v0.start; v0.idx [ j ] < end; ++j ) {
         t += v1 [ v0.idx [ j ] ] * v0.val [ j ];
@@ -470,9 +470,9 @@ inline void innerProductAssignAndAdd(const ConstSparseVector &v0, Vector &v1, do
     t += toAdd;
 };
 
-double reverseInnerProduct(const SparseVector &v0, const Vector &v1, const size_t start);
-double reverseInnerProduct(const ConstSparseVector &v0, const Vector &v1, const size_t start);
-inline void reverseInnerProductAssignAndAdd(const ConstSparseVector &v0, Vector &v1, double &t,  double toAdd, size_t start)
+double reverseInnerProduct(const SparseVector &v0, const MyVector &v1, const size_t start);
+double reverseInnerProduct(const ConstSparseVector &v0, const MyVector &v1, const size_t start);
+inline void reverseInnerProductAssignAndAdd(const ConstSparseVector &v0, MyVector &v1, double &t,  double toAdd, size_t start)
 {
     for ( size_t j = v0.length + v0.start - 1; v0.idx [ j ] > start; --j ) {
         t += v1 [ v0.idx [ j ] ] * v0.val [ j ];
@@ -485,7 +485,7 @@ inline void reverseInnerProductAssignAndAdd(const ConstSparseVector &v0, Vector 
 class CoordinateIndexedSparseMatrix
 {
 public:
-    Vector array;
+    MyVector array;
     unsigned RowCount;
     unsigned ColumnCount;
     valarray< unsigned >column_index;
@@ -493,7 +493,7 @@ public:
     valarray< unsigned >accumulated_row_size;
 public:
     CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, double > &source, unsigned RowCountI, unsigned ColumnCountI);
-    CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, Matrix > &source, unsigned RowCountI, unsigned ColumnCountI);
+    CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, MyMatrix > &source, unsigned RowCountI, unsigned ColumnCountI);
     CoordinateIndexedSparseMatrix(const valarray< unsigned > &, const valarray< unsigned > &, unsigned RowCountI, unsigned ColumnCountI);
     CoordinateIndexedSparseMatrix(const CoordinateIndexedSparseMatrix &source);
     CoordinateIndexedSparseMatrix();
@@ -507,19 +507,19 @@ public:
 
     void vectorMultiply(const double *vecA, double *vecB) const;
 
-    Vector operator*(const Vector &v) const;
+    MyVector operator*(const MyVector &v) const;
     CoordinateIndexedSparseMatrix operator*(const double d) const;
     CoordinateIndexedSparseMatrix operator*(const CoordinateIndexedSparseMatrix &b) const;
     CoordinateIndexedSparseMatrix operator+(const CoordinateIndexedSparseMatrix &b) const;
     //CoordinateIndexedSparseMatrix operator -(const CoordinateIndexedSparseMatrix & b) const ;
     CoordinateIndexedSparseMatrix &operator=(const CoordinateIndexedSparseMatrix &);
 
-    CoordinateIndexedSparseMatrix ExtendColumn(const Vector &c) const;
-    CoordinateIndexedSparseMatrix ExtendRow(const Vector &c) const;
+    CoordinateIndexedSparseMatrix ExtendColumn(const MyVector &c) const;
+    CoordinateIndexedSparseMatrix ExtendRow(const MyVector &c) const;
 
-    Vector inverseDiagonal() const;
-    Vector inverseDiagonalSquared() const;
-    Vector diagonal() const;
+    MyVector inverseDiagonal() const;
+    MyVector inverseDiagonalSquared() const;
+    MyVector diagonal() const;
     CoordinateIndexedSparseMatrix transpose() const;
 
     double froebeniusNorm() const;
@@ -530,9 +530,9 @@ public:
     void print();
 };
 
-double l2_norm(Vector x);
-bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0);
-bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
+double l2_norm(MyVector x);
+bool ConjGrad(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0);
+bool ConjGrad(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0, double precision, double relmaxit);
 bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A);
 
 

@@ -125,7 +125,7 @@ void NodeContainer :: initSimplices() {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
+void NodeContainer :: updateSimplexVolumetricStrains(const MyVector &fullDoFs) {
     //update valid simplices
     for ( auto &n:nodes ) {
         if ( n->hasValidSimplex() ) {
@@ -235,7 +235,7 @@ void NodeContainer :: establishDoFArray() {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: addRHS_nodalLoad(Vector &f, double time) const {
+void NodeContainer :: addRHS_nodalLoad(MyVector &f, double time) const {
     vector< double >bodyLoad = BC->giveBodyForceDoFValues(time);
     for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
         f [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
@@ -248,7 +248,7 @@ void NodeContainer :: addRHS_nodalLoad(Vector &f, double time) const {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
+void NodeContainer :: updateDirrichletBC(MyVector &r, double time) const {
     vector< double >blocked = BC->giveBlockedDoFValues(time);
     for ( unsigned k = 0; k < blocked.size(); k++ ) {
         r [ blockedDoFid [ k ] ] = blocked [ k ];
@@ -258,7 +258,7 @@ void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
 
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const {
+void NodeContainer :: giveFullDoFArray(const MyVector &fDoFs, MyVector &fullDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
         if ( DoFid [ i ] < freeDoFs ) {
             fullDoFs [ i ] = fDoFs [ DoFid [ i ] ];
@@ -268,13 +268,13 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateFullDoFsByDependenciesOnConjugates(Vector &ddr, const Vector &trial_r, const Vector &f_ext) const { // accounts also for constraints between master and conjugate variables
+void NodeContainer :: updateFullDoFsByDependenciesOnConjugates(MyVector &ddr, const MyVector &trial_r, const MyVector &f_ext) const { // accounts also for constraints between master and conjugate variables
     this->giveConstraints()->calculateDoFsDependentOnConjugates(ddr, trial_r, f_ext);
 }
 
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const {
+void NodeContainer :: giveReducedDoFArray(const MyVector &fullDoFs, MyVector &fDoFs) const {
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
         if ( DoFid [ i ] < freeDoFs ) {
             fDoFs [ DoFid [ i ] ] = fullDoFs [ i ];
@@ -283,7 +283,7 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
+void NodeContainer :: giveReducedForceArray(MyVector &fullf, MyVector &f) const {
     this->giveConstraints()->calculateMasterForces(fullf);
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
@@ -294,7 +294,7 @@ void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
+void NodeContainer :: updateExternalForcesByReactions(MyVector &f_int, const MyVector &load, MyVector &f_dam, MyVector &f_acc, MyVector &f_ext) const {
     // #constr_new
     this->giveConstraints()->calculateMasterForces(f_int);
     this->giveConstraints()->calculateMasterForces(f_dam);
@@ -315,7 +315,7 @@ Node *NodeContainer :: findClosestMechanicalNode(const Point A, double *distance
     double distance2 = 0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         if ( ( * n )->doesMechanics() ) {
-            distance2  = ( ( * n )->givePoint() - A ).sqNorm();
+            distance2  = ( ( * n )->givePoint() - A ).squaredNorm();
             if ( distance2 < minDist ) {
                 minDist = distance2;
                 closest = ( * n );
@@ -333,7 +333,7 @@ Node *NodeContainer :: findClosestAuxiliaryNode(const Point A, double *distance)
     double distance2 = 0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         if ( !( * n )->doesMechanics() && !( * n )->doesTransport() ) {
-            distance2  = ( ( * n )->givePoint() - A ).sqNorm();
+            distance2  = ( ( * n )->givePoint() - A ).squaredNorm();
             if ( distance2 < minDist ) {
                 minDist = distance2;
                 closest = ( * n );
@@ -351,7 +351,7 @@ Node *NodeContainer :: findClosestTransportNode(const Point A, double *distance)
     double distance2 = 0;
     for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         if ( ( * n )->doesTransport() ) {
-            distance2  = ( ( * n )->givePoint() - A ).sqNorm();
+            distance2  = ( ( * n )->givePoint() - A ).squaredNorm();
             if ( distance2 < minDist ) {
                 minDist = distance2;
                 closest = ( * n );
@@ -379,11 +379,11 @@ unsigned NodeContainer :: giveNodeNumber(const Node *n) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector NodeContainer :: readInitialConditions(string initfile) const {
+MyVector NodeContainer :: readInitialConditions(string initfile) const {
     string line;
     unsigned numi, startDoF;
     double numd;
-    Vector initvalues(totalDoFs);
+    MyVector initvalues(totalDoFs);
     ifstream inputfile(initfile.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
@@ -397,7 +397,7 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
         }
         inputfile.close();
 
-        Vector initreduced(freeDoFs);
+        MyVector initreduced(freeDoFs);
         giveReducedDoFArray(initvalues, initreduced);// to propagate intial master field through constraints
         giveFullDoFArray(initreduced, initvalues);
 

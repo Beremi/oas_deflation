@@ -123,7 +123,7 @@ set(TARGETNAME DiscreteModel)
 
 # detect
 find_package(PythonInterp REQUIRED)
-find_package (Eigen3 3.3 NO_MODULE)
+find_package (Eigen3 3.4 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
 if(TARGET Eigen3::Eigen)
@@ -134,13 +134,13 @@ else()
   add_custom_target(unpack-eigen
   ALL
   COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-3.3.7.tar.gz
+    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-3.4.0.tar.gz
   WORKING_DIRECTORY
     ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT
-    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7"
+    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0"
   )
-  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7)
+  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0)
 endif()
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)

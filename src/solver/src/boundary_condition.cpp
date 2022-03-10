@@ -1,7 +1,6 @@
 #include "boundary_condition.h"
 #include "node_container.h"
 #include "element_container.h"
-#include "linear_algebra.h"
 
 
 //////////////////////////////////////////////////////////
@@ -166,7 +165,7 @@ double BodyLoad :: giveValue(const Point *xyz, double t) {
 //////////////////////////////////////////////////////////
 vector< double >BodyLoad :: giveBodyForceDoFValues(double t) {
     vector< double >load;
-    Vector elemLoad;
+    MyVector elemLoad;
     unsigned s = 0;
     for ( auto &e: els ) {
         s = load.size();

@@ -99,7 +99,7 @@ void VTKExporter :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
 
     (void) reactions;
 
@@ -114,15 +114,15 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
         vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-        Point *pp;       
+        Point *pp;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             pp = nodes->giveNode(n)->givePointPointer();
-            points->InsertNextPoint(pp->getX(), pp->getY(), pp->getZ());
+            points->InsertNextPoint(pp->x(), pp->y(), pp->z());
         }
         unstructuredGrid->SetPoints(points);
 
         vector <Node*> elnodes;
-        Element *el;  
+        Element *el;
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             el = elems->giveElement(e);
             elnodes = el->giveNodes();
@@ -133,7 +133,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
         unsigned i,j;
         size_t msize;
-        vector< Vector > data;
+        vector< MyVector > data;
         unsigned p;
         // ****************** cell data
         data.resize(elems->giveSize());
@@ -142,15 +142,15 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             i = 0;
             for (vector< Element * > :: const_iterator ee = elems->begin(); ee != elems->end(); ++ee , i++){
                 (*ee)->giveValues(codes[p].c_str(),data[i]);
-                msize = max(msize,data[i].size());
+                msize = max<size_t>(msize,data[i].size());
             }
             vtkSmartPointer< vtkDoubleArray > cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
             cellDataArray->SetName(codes[p].c_str());
             cellDataArray->SetNumberOfComponents(msize);
             cellDataArray->SetNumberOfValues(elems->giveSize()*msize);
             i = 0;
-            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
-                for(j=0; j<min(msize,d->size()); j++){
+            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min<size_t>(msize,d->size()); j++){
                     cellDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
                 for(; j<msize; j++){
@@ -168,15 +168,15 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             i = 0;
             for (vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn , i++){
                 (*nn)->giveDoFBasedValues(codes[p].c_str(),DoFs,data[i]);
-                msize = max(msize,data[i].size());
+                msize = max<size_t>(msize,data[i].size());
             }
             vtkSmartPointer< vtkDoubleArray > pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
             pointDataArray->SetName(codes[p].c_str());
             pointDataArray->SetNumberOfComponents(msize);
             pointDataArray->SetNumberOfValues(nodes->giveSize()*msize);
             i = 0;
-            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
-                for(j=0; j<min(msize,d->size()); j++){
+            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min<size_t>(msize,d->size()); j++){
                     pointDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
                 for(; j<msize; j++){
@@ -186,20 +186,20 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             unstructuredGrid->GetPointData()->AddArray(pointDataArray);
         }
 
-        // ****************** extrapolated node data        
+        // ****************** extrapolated node data
         for (; p < codes.size() ; p++){
             msize = 1;
 
             elems->extrapolateValuesFromIntegrationPointsToNodes(codes[p], data);
-            for (auto &v: data) msize = max(msize,v.size());
+            for (auto &v: data) msize = max<size_t>(msize,v.size());
 
             vtkSmartPointer< vtkDoubleArray > pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
             pointDataArray->SetName(codes[p].c_str());
             pointDataArray->SetNumberOfComponents(msize);
             pointDataArray->SetNumberOfValues(nodes->giveSize()*msize);
             i = 0;
-            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
-                for(j=0; j<min(msize,d->size()); j++){
+            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min<size_t>(msize,d->size()); j++){
                     pointDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
                 for(; j<msize; j++){
@@ -208,7 +208,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             }
             unstructuredGrid->GetPointData()->AddArray(pointDataArray);
         }
-        
+
         //vtkNew<vtkXMLUnstructuredGridWriter> writer;
         vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
         writer->SetFileName(  ( resultDir / buffer ).string().c_str() );
@@ -224,21 +224,21 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 
 //////////////////////////////////////////////////////////
 // function tahat calculates displacement of any point of rigid body from its rotations and
-Point calculateVertexDisplacement(const RigidBodyContact *rbc, unsigned v, const Point *x, const Vector &DoFs, const unsigned &dim) {
-    Matrix A = rbc->giveAMatrix(v, *x);
+Point calculateVertexDisplacement(const RigidBodyContact *rbc, unsigned v, const Point *x, const MyVector &DoFs, const unsigned &dim) {
+    MyMatrix A = rbc->giveAMatrix(v, *x);
     unsigned DofsPerNode = ( dim - 1 ) * 3;
-    Vector U(DofsPerNode);
+    MyVector U(DofsPerNode);
     for ( unsigned i = 0; i < DofsPerNode; i++ ) {
         U [ i ]  = DoFs [ rbc->giveNode(v)->giveStartingDoF() + i ];
     }
-    Vector P = A * U;
+    MyVector P = A * U;
     return Point(P [ 0 ] , P [ 1 ], P.size() > 2 ? P [ 2 ] : 0);
 }
 //////////////////////////////////////////////////////////
 
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+void VTKRB2DExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
 
     (void) step; (void) DoFs; (void) reactions; (void) resultDir;
     /*
@@ -366,7 +366,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
 
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+void VTKRCExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
     (void) reactions;
 
     char buffer [ 100 ];
@@ -394,12 +394,12 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                 for(auto &p:vertices) {
                     pp = p->givePointPointer();
                     elindicesA->InsertNextId(pointID);
-                    elindicesB->InsertNextId(pointID+1); 
-                    points->InsertNextPoint(pp->getX(), pp->getY(), pp->getZ()); //every node twice
-                    points->InsertNextPoint(pp->getX(), pp->getY(), pp->getZ()); //every node twice
+                    elindicesB->InsertNextId(pointID+1);
+                    points->InsertNextPoint(pp->x(), pp->y(), pp->z()); //every node twice
+                    points->InsertNextPoint(pp->x(), pp->y(), pp->z()); //every node twice
                     pointID ++;
                     pointID ++;
-                }                
+                }
                 unstructuredGrid->InsertNextCell(celtype, elindicesA );
                 unstructuredGrid->InsertNextCell(celtype, elindicesB );
             }
@@ -409,10 +409,10 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
 
         unsigned i,j;
         size_t msize;
-        vector< Vector > data;
+        vector< MyVector > data;
         unsigned p=0;
         // ****************** DISPLACEMENTS
-        Vector dataA, dataB;
+        MyVector dataA, dataB;
         Point A;
         data.resize(nodes->giveSize());
         msize = 3;
@@ -427,9 +427,9 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                 pp = q->givePointPointer();
                 for(unsigned k=0; k<2; k++){
                     A = calculateVertexDisplacement(*ee, k, pp, DoFs, dim);
-                    for(p=0;p<msize; p++) pointDataArray->SetValue(msize*pointID+p,   A.giveCoord(p));
+                    for(p=0;p<msize; p++) pointDataArray->SetValue(msize*pointID+p,   A(p));
                     pointID ++;
-                } 
+                }
             }
         }
         unstructuredGrid->GetPointData()->AddArray(pointDataArray);
@@ -441,15 +441,15 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             i = 0;
             for (vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee , i++){
                 (*ee)->giveValues(codes[p].c_str(),data[i]);
-                msize = max(msize,data[i].size());
+                msize = max<size_t>(msize,data[i].size());
             }
             vtkSmartPointer< vtkDoubleArray > cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
             cellDataArray->SetName(codes[p].c_str());
             cellDataArray->SetNumberOfComponents(msize);
             cellDataArray->SetNumberOfValues(2*elems->giveSize()*msize);
             i = 0;
-            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
-                for(j=0; j<min(msize,d->size()); j++){
+            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+                for(j=0; j<min<size_t>(msize,d->size()); j++){
                     cellDataArray->SetValue(msize*(i*2)+j, (*d)[j]);
                     cellDataArray->SetValue(msize*(i*2+1)+j, (*d)[j]);
                 }
@@ -471,7 +471,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             for (vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn , i++){
                 if (static_cast<Particle*>(*nn)){
                     (*nn)->giveDoFBasedValues(codes[p].c_str(),DoFs,data[i]);
-                    msize = max(msize,data[i].size());
+                    msize = max<size_t>(msize,data[i].size());
                 } else{
                     data[i].resize(0);
                 }
@@ -484,13 +484,13 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             for (vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee , i++){
                 dataA = data[(*ee)->giveNode(0)->giveID()];
                 dataB = data[(*ee)->giveNode(1)->giveID()];
-                for(j=0; j<min(msize,dataA.size()); j++){
+                for(j=0; j<min<size_t>(msize,dataA.size()); j++){
                     pointDataArray->SetValue(msize*(i*2)+j, dataA[j]);
                 }
                 for(; j<msize; j++){
                     pointDataArray->SetValue(msize*(i*2)+j, 0);
                 }
-                for(j=0; j<min(msize,dataB.size()); j++){
+                for(j=0; j<min<size_t>(msize,dataB.size()); j++){
                     pointDataArray->SetValue(msize*(i*2+1)+j, dataB[j]);
                 }
                 for(; j<msize; j++){
@@ -500,7 +500,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             unstructuredGrid->GetCellData()->AddArray(cellDataArray);
         }
 
-        // ****************** extrapolated node data        
+        // ****************** extrapolated node data
         for (; p < codes.size() ; p++){
             cout << "Extrapolated node data not implemented in RC exporter" << endl;
         }

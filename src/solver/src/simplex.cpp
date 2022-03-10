@@ -47,13 +47,13 @@ void Simplex :: init(unsigned ndim) {
             k = ( i + 2 ) % ( ndim + 1 );
             l = ( i + 3 ) % ( ndim + 1 );
             averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
-            volumeChangeWeights = cross(nodes [ j ]->givePoint() - nodes [ l ]->givePoint(), nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
-            volume = dot(nodes [ i ]->givePoint() - nodes [ l ]->givePoint(), volumeChangeWeights);
+            volumeChangeWeights = (nodes [ j ]->givePoint() - nodes [ l ]->givePoint()).cross(nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+            volume = (nodes [ i ]->givePoint() - nodes [ l ]->givePoint()).dot(volumeChangeWeights);
             sign = volume / abs(volume);
             initDoF = nodes [ i ]->giveStartingDoF();
             for ( unsigned v = 0; v < ndim; v++ ) {
                 DoFs [ pos + v ] = initDoF + v;
-                DoFweights [ pos + v ] = sign * volumeChangeWeights.giveCoord(v) / ndim; //divided by ndim, othewise total trace of strain vector would be returned
+                DoFweights [ pos + v ] = sign * volumeChangeWeights(v) / ndim; //divided by ndim, othewise total trace of strain vector would be returned
             }
             pos += ndim;
         }
@@ -87,7 +87,7 @@ void Simplex :: findNeighbors() {
 }
 
 //////////////////////////////////////////////////////////
-void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
+void Simplex :: computeVolumetricStrain(const MyVector &fullDoFs) {
     volstrain = 0;
     if ( valid ) { //valid simplex taking care of its own
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {

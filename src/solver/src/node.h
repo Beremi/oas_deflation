@@ -1,7 +1,7 @@
 #ifndef _NODE_H
 #define _NODE_H
 
-#include "linear_algebra.h"
+#include "linalg.h"
 #include "simplex.h"
 #include <vector>
 #include <iostream>
@@ -46,7 +46,7 @@ public:
 
     Point givePoint() const { return point; };
     Point *givePointPointer() { return & point; };
-    void setPoint(const Point &P) { point.set(P); };
+    void setPoint(const Point &P) { point = P; };
     void setNumberOfDoFs(const int num) { nDoFs = num; };
     unsigned giveNumberOfDoFs() const { return nDoFs; };
     void setStartingDoF(unsigned num) { firstDoF = num; };
@@ -55,14 +55,14 @@ public:
     void setName(const std :: string &newName) { this->name = newName; };
     bool doesMechanics() const { return isMechanical; };
     bool doesTransport() const { return isTransport; };
-    virtual void giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const { ( void ) code; ( void ) DoFs; result.resize(0);};
+    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const { ( void ) code; ( void ) DoFs; result.resize(0);};
     virtual bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
     virtual bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
     void subtructFromPoint(Point *p) { point -= ( * p ); };
     virtual unsigned giveOrderOfForceCode(string code) const;
     Simplex *addElementToSimplex(RigidBodyContact *rbc);
     void initSimplex();
-    void updateSimplexVolumetricStrain(const Vector &fullDoFs);
+    void updateSimplexVolumetricStrain(const MyVector &fullDoFs);
     Simplex *giveSimplex() { return simplex; }
     bool hasSimplex()const { return simplex != nullptr; }
     bool hasValidSimplex() const { if ( !simplex ) { return false; } return simplex->isValid(); }
@@ -93,7 +93,7 @@ protected:
 public:
     MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "MechNode"; isMechanical = true; };
     virtual ~MechNode() {};
-    virtual void giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const;
+    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
 };
 
@@ -122,7 +122,7 @@ protected:
 public:
     TrsNode(unsigned dimension) { dim = dimension; nDoFs = 1; name = "TrsprtNode"; isTransport = true; };
     virtual ~TrsNode() {};
-    virtual void giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const;
+    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
 };
 
@@ -138,7 +138,7 @@ protected:
 public:
     TrsTemprtrCoupledNode(unsigned dimension) : TrsNode(dimension) { nDoFs = 2; name = "TrsTemprtrCoupledNode"; isTransport = true; };
     virtual ~TrsTemprtrCoupledNode() {};
-    virtual void giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const;
+    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
 };
 
 
@@ -172,7 +172,7 @@ public:
     virtual void readFromLine(istringstream &iss);
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
-    virtual void giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const;
+    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
     virtual std :: string giveLineToSave() const;
 };
@@ -188,7 +188,7 @@ protected:
 public:
     CoupledParticle(unsigned dimension) : Particle(dimension) { nDoFs = 3 * ( dim - 1 ) + 1; name = "CoupledParticle";  isTransport = true; };
     virtual ~CoupledParticle() {};
-    virtual void giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const;
+    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
     virtual unsigned giveOrderOfForceCode(string code) const;
     virtual bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) { return true; } else { return false; } };
     virtual bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) { return true; } else { return false; } };

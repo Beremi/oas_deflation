@@ -156,20 +156,20 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     freeDoFnum = nodes->giveNumFreeDoFs();
     totalDoFnum = nodes->giveTotalNumDoFs();
 
-    load = Vector(totalDoFnum);
-    r = Vector(totalDoFnum);
-    f_ext = Vector(totalDoFnum);
-    f_int = Vector(totalDoFnum);
-    f_dam = Vector(totalDoFnum);
-    f_acc = Vector(totalDoFnum);
-    trial_r = Vector(totalDoFnum);
-    pbc = Vector(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
-    f = Vector(freeDoFnum);
-    residuals = Vector(totalDoFnum);
-    ddr = Vector(freeDoFnum);
-    full_ddr = Vector(totalDoFnum);
-    f_int_old = Vector(totalDoFnum);
-    f_ext_old = Vector(totalDoFnum);
+    load = MyVector(totalDoFnum);
+    r = MyVector(totalDoFnum);
+    f_ext = MyVector(totalDoFnum);
+    f_int = MyVector(totalDoFnum);
+    f_dam = MyVector(totalDoFnum);
+    f_acc = MyVector(totalDoFnum);
+    trial_r = MyVector(totalDoFnum);
+    pbc = MyVector(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = MyVector(freeDoFnum);
+    residuals = MyVector(totalDoFnum);
+    ddr = MyVector(freeDoFnum);
+    full_ddr = MyVector(totalDoFnum);
+    f_int_old = MyVector(totalDoFnum);
+    f_ext_old = MyVector(totalDoFnum);
 }
 
 //////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ void Solver :: updateFieldVariables() {
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: giveValues(string code, Vector &result) const{
+void Solver :: giveValues(string code, MyVector &result) const{
     if ( code.compare("simulation_time") == 0 ) {
         result.resize(1);
         result[0]=time;
@@ -249,7 +249,7 @@ void SteadyStateLinearSolver :: reset() {
 
     if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
         std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
-        cerr << "solver restart did not work" << endl;
+        std :: cerr << "solver restart did not work" << endl;
         exit(1);
     }
     updateFieldVariables();
@@ -342,7 +342,7 @@ void SteadyStateLinearSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep) {
+void SteadyStateLinearSolver :: computeInternalExternalForces(const MyVector &rr, const MyVector &ll, const bool frozen, double timeStep) {
     nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
     elems->integrateInternalForces(rr, f_int, frozen, timeStep);
     nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext);     //give prescribed DoFs
@@ -404,9 +404,9 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
     this->fully_converged = false;
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
-        ddf = Vector(freeDoFnum);
-        full_ddf = Vector(totalDoFnum);
-        f_last_iter = Vector(freeDoFnum);
+        ddf = MyVector(freeDoFnum);
+        full_ddf = MyVector(totalDoFnum);
+        f_last_iter = MyVector(freeDoFnum);
         if ( initial ) {
             idc_time = this->init_idc_time;
             idc_dt = 1e-6;
@@ -546,7 +546,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const {
+void SteadyStateNonLinearSolver :: giveValues(string code, MyVector &result) const {
     if ( code.compare("iterations") == 0 ) {
         result.resize(1);
         result[0]=it;
@@ -760,7 +760,7 @@ void SteadyStateNonLinearSolver :: solve() {
     bool restarted = false;
 
     bool restart_now = false;
-    //Vector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
+    //MyVector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
     //JE: no, these are recomputed
     restarts = 0;
     while ( !converged ) {
@@ -1057,7 +1057,7 @@ TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {}
 void TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
     SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
 
-    v_old = Vector(totalDoFnum);
+    v_old = MyVector(totalDoFnum);
     elems->prepareDampingMatrix(C);
     elems->updateDampingMatrix(C);
 }
@@ -1077,7 +1077,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
         cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
         exit(1);
     }
-    v = Vector(totalDoFnum);
+    v = MyVector(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
 }
 
@@ -1222,10 +1222,10 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
     if ( init_v_file.compare("") != 0 ) {
         v = nodes->readInitialConditions(init_r_file);
     } else {
-        v = Vector(totalDoFnum);
+        v = MyVector(totalDoFnum);
     }
-    v_old = Vector(totalDoFnum);
-    a_old = Vector(totalDoFnum);
+    v_old = MyVector(totalDoFnum);
+    a_old = MyVector(totalDoFnum);
     elems->prepareMassMatrix(M);
     elems->updateMassMatrix(M);
 
@@ -1245,10 +1245,10 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
         nodes->giveConstraints()->transformToConstraintSpace(Mred);
     }
-    Vector v_red(freeDoFnum);
+    MyVector v_red(freeDoFnum);
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
-    a = Vector(totalDoFnum);
+    a = MyVector(totalDoFnum);
     nodes->giveFullDoFArray(ddr, a);
 }
 

@@ -1,7 +1,7 @@
 #ifndef _FUNCTION_H
 #define _FUNCTION_H
 
-#include "linear_algebra.h"
+#include "linalg.h"
 #include <vector>
 #include <iostream>
 #include <fstream>

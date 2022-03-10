@@ -6,10 +6,10 @@
 
 std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {
     std :: vector< double >vect;
-    vect.push_back(p.getX() );
-    vect.push_back(p.getY() );
+    vect.push_back(p.x() );
+    vect.push_back(p.y() );
     if ( dim == 3 ) {
-        vect.push_back(p.getZ() );
+        vect.push_back(p.z() );
     }
     return vect;
 }
@@ -166,7 +166,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
                 dirs [ 3 ] = 4; //gamma xz
                 vm [ 2 ] = nodes->giveNode(initalNodeNum);
                 vm [ 3 ] = nodes->giveNode(initalNodeNum); //gamma xz
-                mults [ 3 ] = diff.z / 2;
+                mults [ 3 ] = diff.z() / 2;
             } else if ( dim == 2 ) {
                 vm.resize(3);
                 mults.resize(3);
@@ -179,8 +179,8 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
             vm [ 0 ] = m; //master
             vm [ 1 ] = nodes->giveNode(initalNodeNum);
             mults [ 0 ] = 1;
-            mults [ 1 ] = diff.x;
-            mults [ 2 ] = diff.y / 2;
+            mults [ 1 ] = diff.x();
+            mults [ 2 ] = diff.y() / 2;
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -188,12 +188,12 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
             if ( dim == 3 ) {
                 dirs [ 2 ] = 5; //gamma xy
                 dirs [ 3 ] = 3; //gamma yz
-                mults [ 3 ] = diff.z / 2;
+                mults [ 3 ] = diff.z() / 2;
             }
             dirs [ 0 ] = 1;
             dirs [ 1 ] = 1; //eps y
-            mults [ 1 ] = diff.y;
-            mults [ 2 ] = diff.x / 2;
+            mults [ 1 ] = diff.y();
+            mults [ 2 ] = diff.x() / 2;
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -201,12 +201,12 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
             if ( dim == 3 ) {
                 dirs [ 2 ] = 4; //gamma xz
                 dirs [ 3 ] = 3; //gamma yz
-                mults [ 3 ] = diff.y / 2;
+                mults [ 3 ] = diff.y() / 2;
 
                 dirs [ 0 ] = 2;
                 dirs [ 1 ] = 2; //eps z
-                mults [ 1 ] = diff.z;
-                mults [ 2 ] = diff.x / 2;
+                mults [ 1 ] = diff.z();
+                mults [ 2 ] = diff.x() / 2;
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
@@ -220,7 +220,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
                 dirs [ 3 ] = 4;  //gamma xz
                 vm [ 2 ] = nodes->giveNode(initalNodeNum);
                 vm [ 3 ] = nodes->giveNode(initalNodeNum);
-                mults [ 3 ] = diff.z;
+                mults [ 3 ] = diff.z();
             } else if ( dim == 2 ) {
                 vm.resize(3);
                 mults.resize(3);
@@ -233,8 +233,8 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
             vm [ 0 ] = m; //master
             vm [ 1 ] = nodes->giveNode(initalNodeNum);
             mults [ 0 ] = 1;
-            mults [ 1 ] = diff.x;
-            mults [ 2 ] = diff.y;
+            mults [ 1 ] = diff.x();
+            mults [ 2 ] = diff.y();
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -245,7 +245,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
                 dirs.resize(3, 0);
                 dirs [ 2 ] = 3; //gamma yz
                 vm [ 2 ] = nodes->giveNode(initalNodeNum);
-                mults [ 2 ] = diff.z;
+                mults [ 2 ] = diff.z();
             } else if ( dim == 2 ) {
                 vm.resize(2);
                 mults.resize(2);
@@ -256,7 +256,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
             vm [ 0 ] = m; //master
             vm [ 1 ] = nodes->giveNode(initalNodeNum);
             mults [ 0 ] = 1;
-            mults [ 1 ] = diff.y;
+            mults [ 1 ] = diff.y();
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -270,7 +270,7 @@ void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, Constrain
                 vm [ 0 ] = m; //master
                 vm [ 1 ] = nodes->giveNode(initalNodeNum);
                 mults [ 0 ] = 1;
-                mults [ 1 ] = diff.z;
+                mults [ 1 ] = diff.z();
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
@@ -589,7 +589,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                     dirs [ 2 ] = 4; //gamma xz
                     vm [ 1 ] = nodes->giveNode(initalNodeNum);
                     vm [ 2 ] = nodes->giveNode(initalNodeNum); //gamma xz
-                    mults [ 2 ] = diff.z / 2;
+                    mults [ 2 ] = diff.z() / 2;
                 } else if ( dim == 2 ) {
                     vm.resize(2);
                     mults.resize(2);
@@ -599,8 +599,8 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                 }
                 dirs [ 0 ] = 0; //eps x
                 vm [ 0 ] = nodes->giveNode(initalNodeNum);
-                mults [ 0 ] = diff.x;
-                mults [ 1 ] = diff.y / 2;
+                mults [ 0 ] = diff.x();
+                mults [ 1 ] = diff.y() / 2;
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
 
@@ -608,11 +608,11 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                 if ( dim == 3 ) {
                     dirs [ 1 ] = 5; //gamma xy
                     dirs [ 2 ] = 3; //gamma yz
-                    mults [ 2 ] = diff.z / 2;
+                    mults [ 2 ] = diff.z() / 2;
                 }
                 dirs [ 0 ] = 1; //eps y
-                mults [ 0 ] = diff.y;
-                mults [ 1 ] = diff.x / 2;
+                mults [ 0 ] = diff.y();
+                mults [ 1 ] = diff.x() / 2;
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
 
@@ -620,11 +620,11 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                 if ( dim == 3 ) {
                     dirs [ 1 ] = 4; //gamma xz
                     dirs [ 2 ] = 3; //gamma yz
-                    mults [ 2 ] = diff.y / 2;
+                    mults [ 2 ] = diff.y() / 2;
 
                     dirs [ 0 ] = 2; //eps z
-                    mults [ 0 ] = diff.z;
-                    mults [ 1 ] = diff.x / 2;
+                    mults [ 0 ] = diff.z();
+                    mults [ 1 ] = diff.x() / 2;
                     jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                     constrs->addConstraint(jd);
                 }
@@ -638,7 +638,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                     dirs [ 2 ] = 4;  //gamma xz
                     vm [ 1 ] = nodes->giveNode(initalNodeNum);
                     vm [ 2 ] = nodes->giveNode(initalNodeNum);
-                    mults [ 2 ] = diff.z;
+                    mults [ 2 ] = diff.z();
                 } else if ( dim == 2 ) {
                     vm.resize(2);
                     mults.resize(2);
@@ -648,8 +648,8 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                 }
                 dirs [ 0 ] = 0; //eps x
                 vm [ 0 ] = nodes->giveNode(initalNodeNum);
-                mults [ 0 ] = diff.x;
-                mults [ 1 ] = diff.y;
+                mults [ 0 ] = diff.x();
+                mults [ 1 ] = diff.y();
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
 
@@ -660,7 +660,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                     dirs.resize(2, 0);
                     dirs [ 1 ] = 3; //gamma yz
                     vm [ 1 ] = nodes->giveNode(initalNodeNum);
-                    mults [ 1 ] = diff.z;
+                    mults [ 1 ] = diff.z();
                 } else if ( dim == 2 ) {
                     vm.resize(1);
                     mults.resize(1);
@@ -668,7 +668,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                 }
                 dirs [ 0 ] = 1; //eps y
                 vm [ 0 ] = nodes->giveNode(initalNodeNum);
-                mults [ 0 ] = diff.y;
+                mults [ 0 ] = diff.y();
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
 
@@ -679,7 +679,7 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateConstraints(NodeContaine
                     dirs.resize(1, 0);
                     dirs [ 0 ] = 2;  //eps z
                     vm [ 0 ] = nodes->giveNode(initalNodeNum);
-                    mults [ 0 ] = diff.z;
+                    mults [ 0 ] = diff.z();
                     jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                     constrs->addConstraint(jd);
                 }
@@ -843,7 +843,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     linS->setTimeStep(dt);
     linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);
-    vector< Vector >elastSol(n);
+    vector< MyVector >elastSol(n);
     for ( unsigned i = 0; i < n; i++ ) {
         dBC [ i ] = lfunc;
         bc->replaceDirichBC(dBC);
@@ -962,7 +962,7 @@ void TransportPeriodicBC :: generateConstraints(NodeContainer *nodes, Constraint
             mults.resize(4);
             dirs.resize(4, 0);
             dirs [ 3 ] = 2;
-            mults [ 3 ] = diff.z;
+            mults [ 3 ] = diff.z();
             vm [ 3 ] = nodes->giveNode(initalNodeNum);
         } else if ( dim == 2 ) {
             vm.resize(3);
@@ -976,8 +976,8 @@ void TransportPeriodicBC :: generateConstraints(NodeContainer *nodes, Constraint
         vm [ 1 ] = nodes->giveNode(initalNodeNum);
         vm [ 2 ] = nodes->giveNode(initalNodeNum);
         mults [ 0 ] = 1;
-        mults [ 1 ] = diff.x;
-        mults [ 2 ] = diff.y;
+        mults [ 1 ] = diff.x();
+        mults [ 2 ] = diff.y();
         jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
         constrs->addConstraint(jd);
     }
@@ -1247,7 +1247,7 @@ void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
                 dirs [ 2 ] = 4; //gamma xz
                 vm [ 1 ] = nodes->giveNode(masterNodeNum);
                 vm [ 2 ] = nodes->giveNode(masterNodeNum); //gamma xz
-                mults [ 2 ] = diff.z / 2;
+                mults [ 2 ] = diff.z() / 2;
             } else if ( dim == 2 ) {
                 vm.resize(2);
                 mults.resize(2);
@@ -1257,8 +1257,8 @@ void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
             }
             dirs [ 0 ] = 0; //eps x
             vm [ 0 ] = nodes->giveNode(masterNodeNum);
-            mults [ 0 ] = diff.x;
-            mults [ 1 ] = diff.y / 2;
+            mults [ 0 ] = diff.x();
+            mults [ 1 ] = diff.y() / 2;
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -1266,11 +1266,11 @@ void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
             if ( dim == 3 ) {
                 dirs [ 1 ] = 5; //gamma xy
                 dirs [ 2 ] = 3; //gamma yz
-                mults [ 2 ] = diff.z / 2;
+                mults [ 2 ] = diff.z() / 2;
             }
             dirs [ 0 ] = 1; //eps y
-            mults [ 0 ] = diff.y;
-            mults [ 1 ] = diff.x / 2;
+            mults [ 0 ] = diff.y();
+            mults [ 1 ] = diff.x() / 2;
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -1278,11 +1278,11 @@ void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
             if ( dim == 3 ) {
                 dirs [ 1 ] = 4; //gamma xz
                 dirs [ 2 ] = 3; //gamma yz
-                mults [ 2 ] = diff.y / 2;
+                mults [ 2 ] = diff.y() / 2;
 
                 dirs [ 0 ] = 2; //eps z
-                mults [ 0 ] = diff.z;
-                mults [ 1 ] = diff.x / 2;
+                mults [ 0 ] = diff.z();
+                mults [ 1 ] = diff.x() / 2;
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
                 constrs->addConstraint(jd);
             }
@@ -1669,12 +1669,12 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
     } else if ( direction == 2 ) {
         zm = 0;
     }
-    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    this->center = Point(this->center.x() * xm, this->center.y() * ym, this->center.z() * zm);
     for ( auto const &nod : * nodes ) {
-        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+        node_point = Point(nod->givePoint().x() * xm, nod->givePoint().y() * ym, nod->givePoint().z() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
             if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
-                if(node_point.giveCoord(direction)<w0 || node_point.giveCoord(direction)>w1) continue;
+                if(node_point(direction)<w0 || node_point(direction)>w1) continue;
                 if ( nod == master ) {
                     continue;
                 }
@@ -1737,9 +1737,9 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *e, BCContain
     } else if ( direction == 2 ) {
         zm = 0;
     }
-    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    this->center = Point(this->center.x() * xm, this->center.y() * ym, this->center.z() * zm);
     for ( auto const &nod : * nodes ) {
-        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+        node_point = Point(nod->givePoint().x() * xm, nod->givePoint().y() * ym, nod->givePoint().z() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
             if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
                 if ( nod == master || !dynamic_cast< MechNode * >( nod ) || dynamic_cast< MechDoF * >( nod ) ) {
@@ -1805,9 +1805,9 @@ void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *e, BC
     } else if ( direction == 2 ) {
         zm = 0;
     }
-    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    this->center = Point(this->center.x() * xm, this->center.y() * ym, this->center.z() * zm);
     for ( auto const &nod : * nodes ) {
-        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+        node_point = Point(nod->givePoint().x() * xm, nod->givePoint().y() * ym, nod->givePoint().z() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
             if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
                 if ( nod == master ) {
@@ -1876,7 +1876,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
 
     MechNode *mn;
     MechDoF *md;
-    this->center = Point(this->center.getX() * xm, this->center.getY() * ym, this->center.getZ() * zm);
+    this->center = Point(this->center.x() * xm, this->center.y() * ym, this->center.z() * zm);
 
     for ( auto const &nod : * nodes ) {
         mn = dynamic_cast< MechNode * >( nod );
@@ -1891,7 +1891,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
             continue;
         }
 
-        node_point = Point(nod->givePoint().getX() * xm, nod->givePoint().getY() * ym, nod->givePoint().getZ() * zm);
+        node_point = Point(nod->givePoint().x() * xm, nod->givePoint().y() * ym, nod->givePoint().z() * zm);
         if ( isInCircle(node_point, this->center, this->r_outer, this->direction) ) {
             if ( !isInCircle(node_point, this->center, this->r_inner, this->direction) ) {
                 // if ( nod == expMaster ) {
@@ -1900,12 +1900,12 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
                 num_nodes++;
                 // std::cout << "nod name = " << nod->giveName() << '\n';
 
-                // n_i = ( Point((this->direction == 0) ? 0 : nod->givePoint().getX(),
-                //               (this->direction == 1) ? 0 : nod->givePoint().getY(),
-                //               (this->direction == 2) ? 0 : nod->givePoint().getZ()) -
-                //       Point((this->direction == 0) ? 0 : this->center.getX(),
-                //                     (this->direction == 1) ? 0 : this->center.getY(),
-                //                     (this->direction == 2) ? 0 : this->center.getZ())
+                // n_i = ( Point((this->direction == 0) ? 0 : nod->givePoint().x(),
+                //               (this->direction == 1) ? 0 : nod->givePoint().y(),
+                //               (this->direction == 2) ? 0 : nod->givePoint().z()) -
+                //       Point((this->direction == 0) ? 0 : this->center.x(),
+                //                     (this->direction == 1) ? 0 : this->center.y(),
+                //                     (this->direction == 2) ? 0 : this->center.z())
                 //         );
                 n_i = ( node_point - this->center );
                 l_i = n_i.norm();
@@ -1966,7 +1966,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
     masterNodes.clear();
     multipliers.clear();
     directions.clear();
-    std :: cout << "Expansion volumetric load applied: center(" << this->center.getX() << ", " << this->center.getY() << ", " << this->center.getZ() << ") rI = " << this->r_inner << ", rO = " << this->r_outer << ", direction: " << this->direction <<  '\n';
+    std :: cout << "Expansion volumetric load applied: center(" << this->center.x() << ", " << this->center.y() << ", " << this->center.z() << ") rI = " << this->r_inner << ", rO = " << this->r_outer << ", direction: " << this->direction <<  '\n';
     // exit(0);
 }
 
@@ -2128,17 +2128,17 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
             if ( i == j ) {
                 tableOfMultipliers [ j ] [ i ] = 1;
             } else if ( i == 0 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getY() - master->givePoint().getY() );
+                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().y() - master->givePoint().y() );
             } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
+                tableOfMultipliers [ j ] [ i ] = slave->givePoint().x() - master->givePoint().x();
             } else if ( i == 0 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
+                tableOfMultipliers [ j ] [ i ] = slave->givePoint().z() - master->givePoint().z();
             } else if ( i == 1 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getZ() - master->givePoint().getZ() );
+                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().z() - master->givePoint().z() );
             } else if ( i == 2 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
+                tableOfMultipliers [ j ] [ i ] = slave->givePoint().y() - master->givePoint().y();
             } else if ( i == 2 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().getX() - master->givePoint().getX() );
+                tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().x() - master->givePoint().x() );
             } else {
                 tableOfMultipliers [ j ] [ i ] =  0;
             }
@@ -2360,27 +2360,27 @@ void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node
 //                 tableOfMultipliers [ j ] [ i ] = 1;
 //                 if ( j == 0 ){
 //                   // std::cout << "push_back_X" << '\n';
-//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
+//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().x() - master->givePoint().x();
 //                 } else if ( j == 1 ){
 //                   // std::cout << "push_back_Y" << '\n';
-//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
+//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().y() - master->givePoint().y();
 //                 } else if ( j == 2 && j != nDoFsPerNode - 1){
 //                   // std::cout << "push_back_Z" << '\n';
-//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
+//                   tableOfTimeDepMultipliers [ j ] [ i ] = slave->givePoint().z() - master->givePoint().z();
 //                 }
 //             }
 //             // else if ( i == 0 && j == nDoFsPerNode - 1 ) {
-//             //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getY() - master->givePoint().getY() );
+//             //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().y() - master->givePoint().y() );
 //             // } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
-//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getX() - master->givePoint().getX();
+//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().x() - master->givePoint().x();
 //             // } else if ( i == 0 && j == 4 ) {
-//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getZ() - master->givePoint().getZ();
+//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().z() - master->givePoint().z();
 //             // } else if ( i == 1 && j == 3 ) {
-//             //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().getZ() - master->givePoint().getZ() );
+//             //     tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().z() - master->givePoint().z() );
 //             // } else if ( i == 2 && j == 3 ) {
-//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().getY() - master->givePoint().getY();
+//             //     tableOfMultipliers [ j ] [ i ] = slave->givePoint().y() - master->givePoint().y();
 //             // } else if ( i == 2 && j == 4 ) {
-//             //     tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().getX() - master->givePoint().getX() );
+//             //     tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().x() - master->givePoint().x() );
 //             // }
 //             else {
 //                 tableOfMultipliers [ j ] [ i ] =  0;

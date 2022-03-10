@@ -120,30 +120,30 @@ void Element :: resetMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void Element :: giveIPValues(string code, unsigned ipnum, Vector &result) const {
+void Element :: giveIPValues(string code, unsigned ipnum, MyVector &result) const {
     if ( code.compare("x") == 0 ) {
         result.resize(1);
-        result[0] = inttype->giveIPLocationPointer(ipnum)->getX();
+        result[0] = inttype->giveIPLocationPointer(ipnum)->x();
     } else if ( code.compare("y") == 0 ) {
         result.resize(1);
-        result[0] = inttype->giveIPLocationPointer(ipnum)->getY();
+        result[0] = inttype->giveIPLocationPointer(ipnum)->y();
     } else if ( code.compare("z") == 0 ) {
         result.resize(1);
-        result[0] = inttype->giveIPLocationPointer(ipnum)->getZ();
+        result[0] = inttype->giveIPLocationPointer(ipnum)->z();
     } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
         result[0] = stats [ ipnum ]->giveMaterial()->giveId();
     } else {
         if(ipnum >= inttype->giveNumIP() ){
             cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << endl;
-            exit(1); 
+            exit(1);
         }
         stats [ ipnum ]->giveValues(code, result);
     }
 };
 
 //////////////////////////////////////////////////////////
-void Element :: giveValues(string code, Vector &result) const{
+void Element :: giveValues(string code, MyVector &result) const{
     if ( code.compare("id") == 0 ) {
         result.resize(1);
         result[0] = idx;
@@ -153,10 +153,10 @@ void Element :: giveValues(string code, Vector &result) const{
 }
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveStiffnessMatrix(string matrixType) const {
+MyMatrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
-    Matrix K(nDoFs, nDoFs);
-    Matrix D(0, 0);
+    MyMatrix K(nDoFs, nDoFs);
+    MyMatrix D(0, 0);
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight(i) );
@@ -165,9 +165,9 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF(DoFids.size() );
-    Vector stress;
+MyVector Element :: giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep) {
+    MyVector intF(DoFids.size() );
+    MyVector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
             stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
@@ -179,7 +179,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
 
     //add internal sources
     if ( mat->isProducingInternalSources() ) {
-        Vector intS = integrateInternalSources();
+        MyVector intS = integrateInternalSources();
         for ( unsigned i = 0; i < intF.size(); i++ ) {
             intF [ i ] += intS [ i ];
         }
@@ -189,9 +189,9 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: integrateInternalSources() {
-    Vector intS(DoFids.size() );
-    Vector intmats;
+MyVector Element :: integrateInternalSources() {
+    MyVector intS(DoFids.size() );
+    MyVector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         intmats = stats [ i ]->giveInternalSource();
         intS += Hs [ i ].transpose() * ( intmats * inttype->giveIPWeight(i) );
@@ -202,10 +202,10 @@ Vector Element :: integrateInternalSources() {
 
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveDampingMatrix() const {
+MyMatrix Element :: giveDampingMatrix() const {
     unsigned nDoFs = DoFids.size();
-    Matrix M(nDoFs, nDoFs);
-    Matrix c;
+    MyMatrix M(nDoFs, nDoFs);
+    MyMatrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveDampingTensor();
         M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
@@ -214,10 +214,10 @@ Matrix Element :: giveDampingMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveMassMatrix() const {
+MyMatrix Element :: giveMassMatrix() const {
     unsigned nDoFs = DoFids.size();
-    Matrix M(nDoFs, nDoFs);
-    Matrix c;
+    MyMatrix M(nDoFs, nDoFs);
+    MyMatrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveMassTensor();
         M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
@@ -226,15 +226,15 @@ Matrix Element :: giveMassMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: integrateLoad(BodyLoad *vl, double time) const {
+MyVector Element :: integrateLoad(BodyLoad *vl, double time) const {
     unsigned nDoFs = DoFids.size();
-    Vector load(nDoFs);
+    MyVector load(nDoFs);
     double fvalue;
     unsigned dir = vl->giveDirection();
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         fvalue = vl->giveValue(inttype->giveIPLocationPointer(i), time);
         for ( unsigned j = 0; j < nDoFs; j++ ) {
-            load [ j ] += Hs [ i ] [ dir ] [ j ] *fvalue *inttype->giveIPWeight(i);
+            load [ j ] += Hs[ i ](dir, j) *fvalue *inttype->giveIPWeight(i);
         }
     }
     return load;
@@ -254,7 +254,7 @@ void Element :: changeMaterial(Material *newmat) {
 
 //////////////////////////////////////////////////////////
 bool Element :: giveGlobalCoords(Point *x, const Point *xn) const {
-    Vector phi(nodes.size() );
+    MyVector phi(nodes.size() );
     shafunc->giveShapeF(xn, phi);
     * x = Point(0, 0, 0);
     for ( unsigned n = 0; n < nodes.size(); n++ ) {
@@ -273,12 +273,12 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     for ( auto &n: nodes ) {
         p = n->givePointPointer();
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxc.setCoord(c, max(maxc.giveCoord(c), p->giveCoord(c) ) );
-            minc.setCoord(c, min(minc.giveCoord(c), p->giveCoord(c) ) );
+            maxc(c) = max(maxc(c), p->operator()(c) );
+            minc(c) = min(minc(c), p->operator()(c) );
         }
     }
     for ( unsigned c = 0; c < ndim; c++ ) {
-        if ( x->giveCoord(c) > maxc.giveCoord(c) || x->giveCoord(c) < minc.giveCoord(c) ) {
+        if ( x->operator()(c) > maxc(c) || x->operator()(c) < minc(c) ) {
             return false;
         }
     }
@@ -294,7 +294,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     //initial estimation
     aux = ( ( * x ) - center ) * 2.;
     for ( unsigned c = 0; c < ndim; c++ ) {
-        xn->setCoord(c, aux.giveCoord(c) / size.giveCoord(c) );
+        xn->operator()(c) = aux(c) / size(c);
     }
     giveGlobalCoords(& aux, xn);
 
@@ -304,13 +304,13 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     diff = aux - ( * x );
     while ( maxerror > 1e-4 && i < max_i ) {
         for ( unsigned c = 0; c < ndim; c++ ) {
-            if ( abs(diff.giveCoord(c) / size.giveCoord(c) ) < 1e-8 ) {
+            if ( abs(diff(c) / size(c) ) < 1e-8 ) {
                 continue;
             }
-            if ( diffC.giveCoord(c) > 1e-16 ) {
-                xn->setCoord(c, xn->giveCoord(c) - xn->giveCoord(c) * diff.giveCoord(c) / diffC.giveCoord(c) );
+            if ( diffC(c) > 1e-16 ) {
+                xn->operator()(c) =  xn->operator()(c) - xn->operator()(c) * diff(c) / diffC(c);
             } else {
-                xn->setCoord(c, xn->giveCoord(c) - 2. * diff.giveCoord(c) / size.giveCoord(c) );
+                xn->operator()(c) = xn->operator()(c) - 2. * diff(c) / size(c);
             }
         }
 
@@ -319,7 +319,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
         diffC = aux - center;
         maxerror = 0.;
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxerror = max(maxerror, abs(diff.giveCoord(c) / size.giveCoord(c) ) );
+            maxerror = max(maxerror, abs(diff(c) / size(c) ) );
         }
         i++;
     }
@@ -330,7 +330,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     //check natural coordinates are inside limits
     //TODO: works only for brick and quadrilateral
     for ( unsigned c = 0; c < ndim; c++ ) {
-        if ( abs(xn->giveCoord(c) ) > 1. ) {
+        if ( abs(xn->operator()(c) ) > 1. ) {
             return false;
         }
     }
@@ -338,8 +338,8 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
-    Vector elemDoFs(DoFids.size() );
+MyVector Element :: giveElemDoFsFromFullDoFs(const MyVector &FullDoFs) const {
+    MyVector elemDoFs(DoFids.size() );
     for ( unsigned i = 0; i < DoFids.size(); i++ ) {
         elemDoFs [ i ] = FullDoFs [ DoFids [ i ] ];
     }
@@ -347,23 +347,23 @@ Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
 }
 
 //////////////////////////////////////////////////////////
-void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
-    Vector phi(nodes.size() );
-    Vector res(nodes.size() );
+void Element :: extrapolateIPValuesToNodes(string code, vector< MyVector > &result, MyVector &weights) const {
+    MyVector phi(nodes.size() );
+    MyVector res(nodes.size() );
     double jacobian;
-    Vector ipres;
-    Matrix M(nodes.size(),nodes.size());        
+    MyVector ipres;
+    MyMatrix M(nodes.size(),nodes.size());
 
-    if (inttype->giveNumIP()==0){   
+    if (inttype->giveNumIP()==0){
         cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << endl;
         exit(1);
     }
 
     giveIPValues(code, 0, ipres);
-    unsigned reslen = ipres.size(); 
-    result.resize(reslen);    
+    unsigned reslen = ipres.size();
+    result.resize(reslen);
 
-    vector< Vector > rhs(reslen);
+    vector< MyVector > rhs(reslen);
     for(unsigned h=0; h<reslen; h++){
         rhs[h].resize(nodes.size());
         result[h].resize(nodes.size());
@@ -377,25 +377,31 @@ void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result
         jacobian = shafunc->giveJacobian( inttype->giveIPLocationPointer(i) );
         giveIPValues(code, i, ipres);
         for ( unsigned k = 0; k < nodes.size(); k++ ) {
-            for(unsigned h=0; h<reslen; h++){ 
+            for(unsigned h=0; h<reslen; h++){
                 rhs[h] [ k ] += phi [ k ] * jacobian * ipres[h];
             }
             for ( unsigned l = 0; l < nodes.size(); l++ ) {
-                    M [ k ] [ l ] += phi [ k ] * phi [ l ] * jacobian;            
+                    M(k, l) += phi [ k ] * phi [ l ] * jacobian;
             }
         }
     }
 
-    map< pair< size_t, size_t >, double >indices11;
+    //map< pair< size_t, size_t >, double >indices11;
+    std :: vector< Ttripletd >tripletList;
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         for ( unsigned j = 0; j < nodes.size(); j++ ) {
-            indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M [ i ] [ j ]) );
+            //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M(i, j)) );
+            tripletList.push_back(Ttripletd(i, j, M(i, j)) );
         }
     }
     //TODO: this must be simplified, ideally save inverse matrix to memory of the element
-    CoordinateIndexedSparseMatrix Msparse( indices11, nodes.size(), nodes.size() );
+    CoordinateIndexedSparseMatrix Msparse;
+    Msparse.resize(nodes.size(), nodes.size());
+    Msparse.setFromTriplets(tripletList.begin(), tripletList.end() );
+    Msparse.makeCompressed();
 
     for(unsigned h=0; h<reslen; h++){
-        LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-12, 1.0, "EigenConj");
+        string soltype = "EigenConj";
+        //LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-12, 1.0, soltype);
     }
 }

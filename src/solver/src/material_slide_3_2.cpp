@@ -415,9 +415,9 @@ void Slide32MaterialStatus :: check_state_variable_ranges() {
 }
 
 
-Vector Slide32MaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+MyVector Slide32MaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
     ( void ) timeStep;
-    Vector stress(strain.size() );
+    MyVector stress(strain.size() );
 
     double s_x_n1, s_y_n1, w_n1;
     w_n1 = strain [ 0 ] * strain_slip_multiplier;
@@ -476,9 +476,9 @@ Vector Slide32MaterialStatus :: giveStress(const Vector &strain, double timeStep
 
 
 
-Matrix Slide32MaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+MyMatrix Slide32MaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     // TODO
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+    MyMatrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
@@ -494,7 +494,7 @@ Matrix Slide32MaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 }
 
 
-void Slide32MaterialStatus :: giveValues(string code, Vector &result) const {
+void Slide32MaterialStatus :: giveValues(string code, MyVector &result) const {
     // TODO
     DisMechMaterialStatus :: giveValues(code, result);
 }

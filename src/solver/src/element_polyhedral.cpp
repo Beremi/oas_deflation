@@ -43,7 +43,7 @@ void TranspPolygonal :: prepareGeometry() {
     angles.resize(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         angles [ i ].second = i;
-        angles [ i ].first = atan2(nodes [ i ]->givePoint().getY() - cpoint.getY(), nodes [ i ]->givePoint().getX() - cpoint.getX() );
+        angles [ i ].first = atan2(nodes [ i ]->givePoint().y() - cpoint.y(), nodes [ i ]->givePoint().x() - cpoint.x() );
     }
 
     //sort to have counterclockwise direction
@@ -74,7 +74,7 @@ void TranspPolygonal :: prepareGeometry() {
         }
         diff = nodes [ faces [ i ] [ 1 ] ]->givePoint() - nodes [ faces [ i ] [ 0 ] ]->givePoint();
         surfaces [ i ] = diff.norm();
-        normals [ i ] = Point(diff.y / surfaces [ i ], -diff.x / surfaces [ i ], 0);
+        normals [ i ] = Point(diff.y() / surfaces [ i ], -diff.x() / surfaces [ i ], 0);
         triVolume = triArea2D(nodes [ faces [ i ] [ 0 ] ]->givePointPointer(), nodes [ faces [ i ] [ 1 ] ]->givePointPointer(), & cpoint);
         centroid += ( nodes [ faces [ i ] [ 0 ] ]->givePoint() + nodes [ faces [ i ] [ 1 ] ]->givePoint() + cpoint ) * triVolume;
         volume += triVolume;
@@ -122,19 +122,19 @@ void TranspPolygonal :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspPolygonal :: giveBMatrix(const Point *x) const {
-    Matrix B(ndim, nodes.size() );
+MyMatrix TranspPolygonal :: giveBMatrix(const Point *x) const {
+    MyMatrix B(ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, B);
     return B;
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspPolygonal :: giveHMatrix(const Point *x) const {
-    Vector X(numOfNodes);
+MyMatrix TranspPolygonal :: giveHMatrix(const Point *x) const {
+    MyVector X(numOfNodes);
     shafunc->giveShapeF(x, X);
-    Matrix H(1, numOfNodes);
+    MyMatrix H(1, numOfNodes);
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
-        H [ 0 ] [ k ] = X [ k ];
+        H(0, k) = X [ k ];
     }
     return H;
 }
@@ -165,107 +165,107 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
         }
         diff = nodes [ j ]->givePoint() - nodes [ i ]->givePoint();
         surfaces [ i ] = diff.norm();
-        normals [ i ] = Point(diff.y / surfaces [ i ], -diff.x / surfaces [ i ], 0);
+        normals [ i ] = Point(diff.y() / surfaces [ i ], -diff.x() / surfaces [ i ], 0);
     }
 
     double radius = pow(volume / M_PI, 0.5);
-    Matrix D(numOfNodes, ndim + 1);
+    MyMatrix D(numOfNodes, ndim + 1);
     Point x;
     for ( i = 0; i < numOfNodes; i++ ) {
-        D [ i ] [ 0 ] = 1.;
+        D(i, 0) = 1.;
         x = nodes [ i ]->givePoint();
         for ( v = 0; v < ndim; v++ ) {
-            D [ i ] [ v + 1 ] = ( x.giveCoord(v) - centroid.giveCoord(v) ) / radius;
+            D(i, v + 1) = ( x(v) - centroid(v) ) / radius;
         }
     }
 
-    Matrix B(ndim + 1, numOfNodes);
+    MyMatrix B(ndim + 1, numOfNodes);
     j = numOfNodes - 1;
     for (  i = 0; i < numOfNodes; i++ ) {
-        B [ 0 ] [ i ] = 1. / numOfNodes;
+        B(0, i) = 1. / numOfNodes;
         for ( v = 0; v < ndim; v++ ) {
-            B [ v + 1 ] [ i ] = ( normals [ i ].giveCoord(v) * surfaces [ i ] + normals [ j ].giveCoord(v) * surfaces [ j ] );
+            B(v + 1, i) = ( normals [ i ](v) * surfaces [ i ] + normals [ j ](v) * surfaces [ j ] );
         }
         j = i;
     }
     B /= 2. * radius;
 
-    Matrix G = matrix_multiply(B, D);
-    Matrix Gtilde = G;
+    MyMatrix G = B * D;
+    MyMatrix Gtilde = G;
     for ( i = 0; i < ndim + 1; i++ ) {
-        Gtilde [ 0 ] [ i ] = 0.;
+        Gtilde(0, i) = 0.;
     }
 
-    double Gdet = G [ 0 ] [ 0 ] * G [ 1 ] [ 1 ] * G [ 2 ] [ 2 ] + G [ 0 ] [ 2 ] * G [ 1 ] [ 0 ] * G [ 2 ] [ 1 ] + G [ 2 ] [ 0 ] * G [ 0 ] [ 1 ] * G [ 1 ] [ 2 ] - G [ 0 ] [ 0 ] * G [ 2 ] [ 1 ] * G [ 1 ] [ 2 ] - G [ 0 ] [ 1 ] * G [ 1 ] [ 0 ] * G [ 2 ] [ 2 ] - G [ 0 ] [ 2 ] * G [ 1 ] [ 1 ] * G [ 2 ] [ 0 ];
-    Matrix Ginv(ndim + 1, ndim + 1);
-    Ginv [ 0 ] [ 0 ] = G [ 1 ] [ 1 ] * G [ 2 ] [ 2 ] - G [ 1 ] [ 2 ] * G [ 2 ] [ 1 ];
-    Ginv [ 1 ] [ 0 ] = -G [ 1 ] [ 0 ] * G [ 2 ] [ 2 ] - G [ 1 ] [ 2 ] * G [ 2 ] [ 0 ];
-    Ginv [ 2 ] [ 0 ] = G [ 1 ] [ 0 ] * G [ 2 ] [ 1 ] - G [ 1 ] [ 1 ] * G [ 2 ] [ 0 ];
-    Ginv [ 0 ] [ 1 ] = -G [ 0 ] [ 1 ] * G [ 2 ] [ 2 ] - G [ 0 ] [ 2 ] * G [ 2 ] [ 1 ];
-    Ginv [ 1 ] [ 1 ] = G [ 0 ] [ 0 ] * G [ 2 ] [ 2 ] - G [ 0 ] [ 2 ] * G [ 2 ] [ 0 ];
-    Ginv [ 2 ] [ 1 ] = -G [ 0 ] [ 0 ] * G [ 2 ] [ 1 ] - G [ 0 ] [ 1 ] * G [ 2 ] [ 0 ];
-    Ginv [ 0 ] [ 2 ] = G [ 0 ] [ 1 ] * G [ 1 ] [ 2 ] - G [ 0 ] [ 2 ] * G [ 1 ] [ 1 ];
-    Ginv [ 1 ] [ 2 ] = -G [ 0 ] [ 0 ] * G [ 1 ] [ 2 ] - G [ 0 ] [ 2 ] * G [ 1 ] [ 0 ];
-    Ginv [ 2 ] [ 2 ] = G [ 0 ] [ 0 ] * G [ 1 ] [ 1 ] - G [ 0 ] [ 1 ] * G [ 1 ] [ 0 ];
+    double Gdet = G(0, 0) * G(1, 1) * G(2, 2) + G(0, 2) * G(1, 0) * G(2, 1) + G(2, 0) * G(0, 1) * G(1, 2) - G(0, 0) * G(2, 1) * G(1, 2) - G(0, 1) * G(1, 0) * G(2, 2) - G(0, 2) * G(1, 1) * G(2, 0);
+    MyMatrix Ginv(ndim + 1, ndim + 1);
+    Ginv(0, 0) = G(1, 1) * G(2, 2) - G(1, 2) * G(2, 1);
+    Ginv(1, 0) = -G(1, 0) * G(2, 2) - G(1, 2) * G(2, 0);
+    Ginv(2, 0) = G(1, 0) * G(2, 1) - G(1, 1) * G(2, 0);
+    Ginv(0, 1) = -G(0, 1) * G(2, 2) - G(0, 2) * G(2, 1);
+    Ginv(1, 1) = G(0, 0) * G(2, 2) - G(0, 2) * G(2, 0);
+    Ginv(2, 1) = -G(0, 0) * G(2, 1) - G(0, 1) * G(2, 0);
+    Ginv(0, 2) = G(0, 1) * G(1, 2) - G(0, 2) * G(1, 1);
+    Ginv(1, 2) = -G(0, 0) * G(1, 2) - G(0, 2) * G(1, 0);
+    Ginv(2, 2) = G(0, 0) * G(1, 1) - G(0, 1) * G(1, 0);
     Ginv /= Gdet;
 
-    V1 = matrix_multiply(Ginv, B);
-    V2 = matrix_multiply(D, V1) * ( -1. );
+    V1 = Ginv * B;
+    V2 = D * V1 * ( -1. );
     for ( i = 0; i < numOfNodes; i++ ) {
-        V2 [ i ] [ i ] += 1.;
+        V2(i, i) += 1.;
     }
-    V1 = matrix_multiply(matrix_multiply(V1.transpose(), Gtilde), V1);
+    V1 = (V1.transpose() * Gtilde) * V1;
 
-    Matrix H(ndim + 1, ndim + 1);
-    Vector m(ndim + 1);
+    MyMatrix H(ndim + 1, ndim + 1);
+    MyVector m(ndim + 1);
     m [ 0 ] = 1;
     for ( i = 0; i < inttype->giveNumIP(); i++ ) {
         for ( v = 0; v < ndim; v++ ) {
-            m [ v + 1 ] = ( inttype->giveIPLocation(i).giveCoord(v) - centroid.giveCoord(v) ) / radius;
+            m [ v + 1 ] = ( inttype->giveIPLocation(i)(v) - centroid(v) ) / radius;
         }
         H += dyadicProduct( m, m * inttype->giveIPWeight(i) );
     }
 
-    double Hdet = H [ 0 ] [ 0 ] * H [ 1 ] [ 1 ] * H [ 2 ] [ 2 ] + H [ 0 ] [ 2 ] * H [ 1 ] [ 0 ] * H [ 2 ] [ 1 ] + H [ 2 ] [ 0 ] * H [ 0 ] [ 1 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 0 ] * H [ 2 ] [ 1 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 1 ] * H [ 1 ] [ 0 ] * H [ 2 ] [ 2 ] - H [ 0 ] [ 2 ] * H [ 1 ] [ 1 ] * H [ 2 ] [ 0 ];
-    Matrix Hinv(ndim + 1, ndim + 1);
-    Hinv [ 0 ] [ 0 ] = H [ 1 ] [ 1 ] * H [ 2 ] [ 2 ] - H [ 1 ] [ 2 ] * H [ 2 ] [ 1 ];
-    Hinv [ 1 ] [ 0 ] = -H [ 1 ] [ 0 ] * H [ 2 ] [ 2 ] - H [ 1 ] [ 2 ] * H [ 2 ] [ 0 ];
-    Hinv [ 2 ] [ 0 ] = H [ 1 ] [ 0 ] * H [ 2 ] [ 1 ] - H [ 1 ] [ 1 ] * H [ 2 ] [ 0 ];
-    Hinv [ 0 ] [ 1 ] = -H [ 0 ] [ 1 ] * H [ 2 ] [ 2 ] - H [ 0 ] [ 2 ] * H [ 2 ] [ 1 ];
-    Hinv [ 1 ] [ 1 ] = H [ 0 ] [ 0 ] * H [ 2 ] [ 2 ] - H [ 0 ] [ 2 ] * H [ 2 ] [ 0 ];
-    Hinv [ 2 ] [ 1 ] = -H [ 0 ] [ 0 ] * H [ 2 ] [ 1 ] - H [ 0 ] [ 1 ] * H [ 2 ] [ 0 ];
-    Hinv [ 0 ] [ 2 ] = H [ 0 ] [ 1 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 2 ] * H [ 1 ] [ 1 ];
-    Hinv [ 1 ] [ 2 ] = -H [ 0 ] [ 0 ] * H [ 1 ] [ 2 ] - H [ 0 ] [ 2 ] * H [ 1 ] [ 0 ];
-    Hinv [ 2 ] [ 2 ] = H [ 0 ] [ 0 ] * H [ 1 ] [ 1 ] - H [ 0 ] [ 1 ] * H [ 1 ] [ 0 ];
+    double Hdet = H(0, 0) * H(1, 1) * H(2, 2) + H(0, 2) * H(1, 0) * H(2, 1) + H(2, 0) * H(0, 1) * H(1, 2) - H(0, 0) * H(2, 1) * H(1, 2) - H(0, 1) * H(1, 0) * H(2, 2) - H(0, 2) * H(1, 1) * H(2, 0);
+    MyMatrix Hinv(ndim + 1, ndim + 1);
+    Hinv(0, 0) = H(1, 1) * H(2, 2) - H(1, 2) * H(2, 1);
+    Hinv(1, 0) = -H(1, 0) * H(2, 2) - H(1, 2) * H(2, 0);
+    Hinv(2, 0) = H(1, 0) * H(2, 1) - H(1, 1) * H(2, 0);
+    Hinv(0, 1) = -H(0, 1) * H(2, 2) - H(0, 2) * H(2, 1);
+    Hinv(1, 1) = H(0, 0) * H(2, 2) - H(0, 2) * H(2, 0);
+    Hinv(2, 1) = -H(0, 0) * H(2, 1) - H(0, 1) * H(2, 0);
+    Hinv(0, 2) = H(0, 1) * H(1, 2) - H(0, 2) * H(1, 1);
+    Hinv(1, 2) = -H(0, 0) * H(1, 2) - H(0, 2) * H(1, 0);
+    Hinv(2, 2) = H(0, 0) * H(1, 1) - H(0, 1) * H(1, 0);
     Hinv /= Hdet;
 
-    W2 = matrix_multiply(Ginv, B);
-    Matrix C = matrix_multiply(H, W2);
-    W2 = matrix_multiply(D, W2) * ( -1. );
+    W2 = Ginv * B;
+    MyMatrix C = H * W2;
+    W2 = (D * W2) * ( -1. );
     for ( i = 0; i < numOfNodes; i++ ) {
-        W2 [ i ] [ i ] += 1.;
+        W2(i, i) += 1.;
     }
-    W1 = matrix_multiply(matrix_multiply(C.transpose(), Hinv), C);
+    W1 = (C.transpose() * Hinv) * C;
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
-    Matrix C = TranspPolygonal :: giveStiffnessMatrix(matrixType);
+MyMatrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
+    MyMatrix C = TranspPolygonal :: giveStiffnessMatrix(matrixType);
     double cond = 0;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        cond += inttype->giveIPWeight(i) * stats [ i ]->giveStiffnessTensor("elastic", ndim) [ 0 ] [ 0 ];
+        cond += inttype->giveIPWeight(i) * stats [ i ]->giveStiffnessTensor("elastic", ndim)(0, 0);
     }
     cond /= volume;
 
-    return V1 * cond + matrix_multiply(matrix_multiply(V2.transpose(), C), V2);
+    return V1 * cond + ((V2.transpose() * C) * V2);
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
-    Matrix M = TranspPolygonal :: giveDampingMatrix();
+MyMatrix TranspVirtPolygonal :: giveDampingMatrix() const {
+    MyMatrix M = TranspPolygonal :: giveDampingMatrix();
     double cap = 0;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        cap += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor() [ 0 ] [ 0 ];
+        cap += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor()(0, 0);
     }
     cap /= volume;
 
@@ -282,11 +282,11 @@ Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
      * return M;
      */
 
-    return ( W1 + matrix_multiply(W2.transpose(), W2) * volume ) * cap;
+    return ( W1 + (W2.transpose() * W2) * volume ) * cap;
 }
 
 //////////////////////////////////////////////////////////
-Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
+MyVector TranspVirtPolygonal :: giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep) {
     ( void ) frozen;
     ( void ) timeStep;
     //return Element::giveInternalForces(DoFs, frozen); //incorrect integration
@@ -411,9 +411,9 @@ void TranspCondensedPolygonal :: initIntegration() {
  *
  *
  * //////////////////////////////////////////////////////////
- * void TranspPolyhedral :: WachspressShapeF(const Point x, Matrix phi) const {
+ * void TranspPolyhedral :: WachspressShapeF(const Point x, MyMatrix phi) const {
  *  //compute hf
- *  Vector h(nfaces);
+ *  MyVector h(nfaces);
  *  for ( unsigned i = 0; i < nfaces; i++ ) {
  *      h [ i ] = dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - x, normals [ i ]);
  *  }
@@ -433,18 +433,18 @@ void TranspCondensedPolygonal :: initIntegration() {
  * }
  *
  * //////////////////////////////////////////////////////////
- * double TranspPolyhedral :: WachspressShapeFGrad(const Point x, Matrix phiGrad) const {
- *  Vector phi(numOfNodes);
+ * double TranspPolyhedral :: WachspressShapeFGrad(const Point x, MyMatrix phiGrad) const {
+ *  MyVector phi(numOfNodes);
  *  WachspressShapeF(x, phi);
- *  Matrix R(numOfNodes, 3);
+ *  MyMatrix R(numOfNodes, 3);
  *
- *  Vector h(nfaces);
+ *  MyVector h(nfaces);
  *  for ( unsigned i = 0; i < nfaces; i++ ) {
  *      h [ i ] = dot(nodes [ faces [ i ] [ 0 ] ]->givePoint() - x, normals [ i ]);
  *  }
  *
  *  unsigned n;
- *  Vector phiR(3);
+ *  MyVector phiR(3);
  *  phiR [ 0 ] = 0;
  *  phiR [ 1 ] = 0;
  *  phiR [ 2 ] = 0;
@@ -657,7 +657,7 @@ void TranspCondensedPolygonal :: initIntegration() {
  * void TranspVirtPolyhedral :: init() {
  *  TranspPolyhedral :: init(); //calling base class method;
  *
- *  Matrix R(numOfNodes, ndim);
+ *  MyMatrix R(numOfNodes, ndim);
  *  unsigned j = numOfNodes - 1;
  *  for ( unsigned i = 0; i < numOfNodes; i++ ) {
  *      R [ i ] [ 0 ] = ( normals [ i ].x * surfaces [ i ] + normals [ j ].x * surfaces [ j ] ) / 2.;
@@ -665,7 +665,7 @@ void TranspCondensedPolygonal :: initIntegration() {
  *      j = i;
  *  }
  *
- *  Matrix N(numOfNodes, ndim);
+ *  MyMatrix N(numOfNodes, ndim);
  *  Point x;
  *  for ( unsigned i = 0; i < numOfNodes; i++ ) {
  *      x = nodes [ i ]->givePoint();
@@ -673,28 +673,28 @@ void TranspCondensedPolygonal :: initIntegration() {
  *      N [ i ] [ 1 ] = x.y;
  *  }
  *
- *  Matrix I(numOfNodes, numOfNodes);
+ *  MyMatrix I(numOfNodes, numOfNodes);
  *  for ( unsigned i = 0; i < numOfNodes; i++ ) {
  *      I [ i ] [ i ] = 1.;
  *  }
  *
- *  Matrix P0(numOfNodes, numOfNodes);
+ *  MyMatrix P0(numOfNodes, numOfNodes);
  *  for ( unsigned i = 0; i < numOfNodes; i++ ) {
  *      for ( unsigned j = 0; j < numOfNodes; j++ ) {
  *          P0 [ i ] [ j ] = 1. / numOfNodes;
  *      }
  *  }
  *
- *  Matrix H = matrix_multiply(N, R.transpose() ) / volume;
- *  Matrix P =  H +  matrix_multiply(P0, I - H);
+ *  MyMatrix H = matrix_multiply(N, R.transpose() ) / volume;
+ *  MyMatrix P =  H +  matrix_multiply(P0, I - H);
  *
  *  V1 = matrix_multiply(R, R.transpose() ) / volume;
  *  V2 = I - P;
  * }
  *
  * //////////////////////////////////////////////////////////
- * Matrix TranspVirtPolyhedral :: giveConductivityMatrix(string matrixType) const {
- *  Matrix C = TranspPolyhedral :: giveConductivityMatrix(matrixType);
+ * MyMatrix TranspVirtPolyhedral :: giveConductivityMatrix(string matrixType) const {
+ *  MyMatrix C = TranspPolyhedral :: giveConductivityMatrix(matrixType);
  *  TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
  *  return V1 * tmat->giveConductivity() + matrix_multiply(matrix_multiply(V2.transpose(), C), V2);
  * }
@@ -710,9 +710,9 @@ void TranspCondensedPolygonal :: initIntegration() {
  * }
  *
  * //////////////////////////////////////////////////////////
- * Vector TranspCondensedPolyhedral :: fullTriShapeF(Point x) const {
+ * MyVector TranspCondensedPolyhedral :: fullTriShapeF(Point x) const {
  *  unsigned face = findFaceNumber(x);
- *  Vector phi(0., numOfNodes + 1); //include the centroid
+ *  MyVector phi(0., numOfNodes + 1); //include the centroid
  *  double tarea = triArea2D(centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
  *  phi [ faces [ face ] [ 1 ] ] = triArea2D(x, centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint() ) / tarea;
  *  phi [ faces [ face ] [ 0 ] ] = triArea2D(x, nodes [ faces [ face ] [ 1 ] ]->givePoint(), centroid) / tarea;
@@ -721,9 +721,9 @@ void TranspCondensedPolygonal :: initIntegration() {
  * }
  *
  * //////////////////////////////////////////////////////////
- * Matrix TranspCondensedPolyhedral :: fullTriShapeFGrad(Point x) const {
+ * MyMatrix TranspCondensedPolyhedral :: fullTriShapeFGrad(Point x) const {
  *  unsigned face = findFaceNumber(x);
- *  Matrix phiGrad(ndim, numOfNodes + 1); //include the centroid
+ *  MyMatrix phiGrad(ndim, numOfNodes + 1); //include the centroid
  *  double tarea = triArea2D(centroid, nodes [ faces [ face ] [ 0 ] ]->givePoint(), nodes [ faces [ face ] [ 1 ] ]->givePoint() );
  *  phiGrad [ 0 ] [ faces [ face ] [ 1 ] ] = 0.5 * ( centroid.getY() - nodes [ faces [ face ] [ 0 ] ]->givePoint().getY() ) / tarea;
  *  phiGrad [ 1 ] [ faces [ face ] [ 1 ] ] = 0.5 * ( nodes [ faces [ face ] [ 0 ] ]->givePoint().getX() - centroid.getX() ) / tarea;
@@ -747,9 +747,9 @@ void TranspCondensedPolygonal :: initIntegration() {
  * }
  *
  * //////////////////////////////////////////////////////////
- * Vector TranspCondensedPolyhedral :: condTriShapeF(Point x) const {
- *  Vector full = fullTriShapeF(x);
- *  Vector reduced(numOfNodes);
+ * MyVector TranspCondensedPolyhedral :: condTriShapeF(Point x) const {
+ *  MyVector full = fullTriShapeF(x);
+ *  MyVector reduced(numOfNodes);
  *  for ( unsigned i = 0; i < numOfNodes; i++ ) {
  *      reduced [ i ] = full [ i ] + full [ numOfNodes ] * red2full [ i ];
  *  }
@@ -757,9 +757,9 @@ void TranspCondensedPolygonal :: initIntegration() {
  * }
  *
  * //////////////////////////////////////////////////////////
- * Matrix TranspCondensedPolyhedral :: condTriShapeFGrad(Point x) const {
- *  Matrix full = fullTriShapeFGrad(x);
- *  Matrix reduced(ndim, numOfNodes);
+ * MyMatrix TranspCondensedPolyhedral :: condTriShapeFGrad(Point x) const {
+ *  MyMatrix full = fullTriShapeFGrad(x);
+ *  MyMatrix reduced(ndim, numOfNodes);
  *  for ( unsigned d = 0; d < ndim; d++ ) {
  *      for ( unsigned i = 0; i < numOfNodes; i++ ) {
  *          reduced [ d ] [ i ] = full [ d ] [ i ] + full [ d ] [ numOfNodes ] * red2full [ i ];
@@ -784,8 +784,8 @@ void TranspCondensedPolygonal :: initIntegration() {
  *  }
  *
  *  //build transformation matrix allowing to calculate inner degree of freedom
- *  Matrix FullK(numOfNodes + 1, numOfNodes + 1);
- *  Matrix phiGrad;
+ *  MyMatrix FullK(numOfNodes + 1, numOfNodes + 1);
+ *  MyMatrix phiGrad;
  *  for ( size_t i = 0; i < ip_weights.size(); i++ ) {
  *      phiGrad = fullTriShapeFGrad(ip_locs [ i ]);
  *      FullK += matrix_multiply(phiGrad.transpose(), phiGrad) * ip_weights [ i ];

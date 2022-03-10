@@ -9,7 +9,7 @@
 #include <typeinfo>
 
 #include "function.h"
-#include "linear_algebra.h"
+#include "linalg.h"
 
 class Node; //forward declaration
 class NodeContainer; //forward declaration

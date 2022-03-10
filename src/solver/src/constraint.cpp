@@ -319,7 +319,8 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
         }
     }
 
-    map< pair< size_t, size_t >, double >indeces11;
+    //map< pair< size_t, size_t >, double >indeces11;
+    std :: vector< Ttripletd >tripletList;
     // map<pair<size_t, size_t>, double> indeces12;
     // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
     // // map<pair<size_t, size_t>, double> indeces21;
@@ -356,9 +357,10 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
             j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
-                indeces11.insert(pair< pair< size_t, size_t >, double >
-                                     (pair< size_t, size_t >(i, j),
-                                     jD->giveMasterMultiplier(ind) ) );
+                //indeces11.insert(pair< pair< size_t, size_t >, double >
+                //                     (pair< size_t, size_t >(i, j),
+                //                     jD->giveMasterMultiplier(ind) ) );
+                tripletList.push_back(Ttripletd(i, j, jD->giveMasterMultiplier(ind)) );
             }
         }
     }
@@ -367,10 +369,13 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     ///////////////////////////////////////////////////
     for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
         // fill the matrix with 1 for each unrestrained DoF (diagonal)
-        indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
+        //indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
+        tripletList.push_back(Ttripletd(i, i, 1) );
     }
-    X = CoordinateIndexedSparseMatrix(indeces11, numFreeDoFs, numFreeDoFs - constraints.size() );
-
+    //X = CoordinateIndexedSparseMatrix(indeces11, numFreeDoFs, numFreeDoFs - constraints.size() );
+    X.resize(numFreeDoFs, numFreeDoFs - constraints.size());
+    X.setFromTriplets(tripletList.begin(), tripletList.end() );
+    X.makeCompressed();
     // // JK - left for testing:
     // for ( auto const &cn : this->constraints ){
     //     cn->print();
@@ -385,19 +390,23 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
     //   this->init(this->nodes, this->bconds);
     // }
     ( void ) time_now;
-    if ( X.ColumnCount > 0 ) {
+    if ( X.cols() > 0 ) {
         CoordinateIndexedSparseMatrix Knew;
         Knew = X.transpose() * K * X;
         K = Knew;
     } else {
-        map< pair< size_t, size_t >, double >indices11;
-        K = CoordinateIndexedSparseMatrix(indices11, 0, 0);
+        //map< pair< size_t, size_t >, double >indices11;
+        //K = CoordinateIndexedSparseMatrix(indices11, 0, 0);
+        //Ttripletd tripletList;
+        // TODO: nechápu dřív se tu nic vlastně neprovádělo
+        //K.setFromTriplets(tripletList.begin(), tripletList.end() );
+        //K.makeCompressed();
     }
 }
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) const {
+void ConstraintContainer :: calculateDependentDoFs(MyVector &fullDoFs, const double time_now, const bool all) const {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
     if ( this->isActive() ) {
         for ( auto const &jD : constraints ) {
@@ -411,7 +420,7 @@ void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const doubl
 }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDoFsDependentOnConjugates(Vector &full_ddr, const Vector &trial_r, const Vector &fullFExt) const {
+void ConstraintContainer :: calculateDoFsDependentOnConjugates(MyVector &full_ddr, const MyVector &trial_r, const MyVector &fullFExt) const {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
     if ( this->isActive() ) {
         for ( auto const &jD : constraints ) {
@@ -428,7 +437,7 @@ void ConstraintContainer :: calculateDoFsDependentOnConjugates(Vector &full_ddr,
 }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
+void ConstraintContainer :: calculateMasterForces(MyVector &fullForces) {
     if ( this->isActive() ) {
         // std::cout << "calculateMasterForces, time = " << time_now << '\n';
         for ( auto const &jD : constraints ) {

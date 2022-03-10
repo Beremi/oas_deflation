@@ -123,7 +123,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
+double IndirectDC :: giveMultiplierCorrection(MyVector &prev_displ, MyVector &displ_f, double time) {
     double lambdaABS = INFINITY;
     double df, dd;
     double pdispl = givePrescribedDisplacement(time);
@@ -145,7 +145,7 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveControlValue(Vector &displ) {
+double IndirectDC :: giveControlValue(MyVector &displ) {
     double dd = -INFINITY;
     double m;
     for ( unsigned c = 0; c < nummaxunit; c++ ) {

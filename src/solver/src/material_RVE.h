@@ -23,8 +23,8 @@ protected:
     Model *RVE;
     fs :: path inputfile;
 
-    Matrix transf;   //transformation matrix
-    Matrix axDirs;  //directional matrix
+    MyMatrix transf;   //transformation matrix
+    MyMatrix axDirs;  //directional matrix
 
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
@@ -37,9 +37,9 @@ public:
     virtual void init();
     virtual void update();
     Model *giveWholeRVE() { return RVE; };
-    virtual void setReferenceSystemDirections(Matrix r) { axDirs = r; };
-    Matrix giveTransformationMatrix() { return transf; };
-    Matrix giveReferenceSystemDirections() { return axDirs; };
+    virtual void setReferenceSystemDirections(MyMatrix r) { axDirs = r; };
+    MyMatrix giveTransformationMatrix() { return transf; };
+    MyMatrix giveReferenceSystemDirections() { return axDirs; };
 };
 
 //////////////////////////////////////////////////////////
@@ -80,17 +80,17 @@ protected:
     bool is_master_status;
     bool is_precomputed;
 
-    Vector local_strain, local_stress;
+    MyVector local_strain, local_stress;
 
     virtual void generateRandomFixedBC();
     virtual void generateVolumetricAverageBC();
     virtual void applyEigenStrains();
     virtual void collectStresses();
     virtual unsigned giveStrainSize(unsigned rdim) const;
-    virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
-    virtual Matrix giveStiffnessTensorLocal(string type, unsigned dimension) const;
-    virtual Matrix giveStiffnessTensorPrecomputedLocal(string type, unsigned dimension) const;
-    virtual Matrix giveDampingTensorPrecomputed() const;
+    virtual MyVector giveStressPrecomputed(const MyVector &strain, double timeStep);
+    virtual MyMatrix giveStiffnessTensorLocal(string type, unsigned dimension) const;
+    virtual MyMatrix giveStiffnessTensorPrecomputedLocal(string type, unsigned dimension) const;
+    virtual MyMatrix giveDampingTensorPrecomputed() const;
 
     virtual void transformStrain();
     virtual void transformStress();
@@ -100,10 +100,10 @@ public:
     DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteTransportRVEMaterialStatus() {};
     virtual void init();
-    virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual Matrix giveDampingTensor() const;
+    virtual MyVector giveStress(const MyVector &strain, double timeStep);//terminology from mechanics, it returns flux
+    virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
+    virtual MyMatrix giveStiffnessTensor(string type, unsigned dimension) const;
+    virtual MyMatrix giveDampingTensor() const;
     virtual unsigned giveStrainSize() const;
     virtual void update();
     void setFromPrecomputedToFullModel();
@@ -119,18 +119,18 @@ class DiscreteTransportRVEMaterial : public RVEMaterial
 protected:
     TrsprtMaterialStatus *masterStatus;
     TrsprtMaterial *masterMaterial;
-    Matrix conductivity; // precomputed form one integration point, then used everywhere
+    MyMatrix conductivity; // precomputed form one integration point, then used everywhere
     double capacity;
 
 public:
-    DiscreteTransportRVEMaterial() { name = "transport RVE material";  conductivity = Matrix(0, 0); };
+    DiscreteTransportRVEMaterial() { name = "transport RVE material";  conductivity = MyMatrix(0, 0); };
     virtual ~DiscreteTransportRVEMaterial() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    Matrix givePrecomputedConductivity() const { return conductivity; };
+    MyMatrix givePrecomputedConductivity() const { return conductivity; };
     double givePrecomputedCapacity() const { return capacity; };
     TrsprtMaterialStatus *giveMasterStatus() { return masterStatus; };
     TrsprtMaterial *giveMasterMaterial() { return masterMaterial; };
-    void setPrecomputedConductivityAndCapacityAndMasterMaterial(Matrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM);
+    void setPrecomputedConductivityAndCapacityAndMasterMaterial(MyMatrix lam, double c, TrsprtMaterialStatus *masterS,  TrsprtMaterial *masterM);
 };
 
 //////////////////////////////////////////////////////////
@@ -147,9 +147,9 @@ protected:
     bool checkOttosenCriterion();
 
     Point calculateCentroid();
-    vector< vector< Vector > >calculateProjectors(const Point centroid);
-    virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
-    virtual Matrix giveStiffnessTensorLocal(string type, unsigned dimension) const;
+    vector< vector< MyVector > >calculateProjectors(const Point centroid);
+    virtual MyVector giveStressPrecomputed(const MyVector &strain, double timeStep);
+    virtual MyMatrix giveStiffnessTensorLocal(string type, unsigned dimension) const;
 
     virtual void transformStrain();
     virtual void transformStress();
@@ -159,11 +159,11 @@ public:
     DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
     virtual void init();
-    virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual Matrix giveDampingTensor() const;
-    virtual Matrix giveInertiaTensor() const;
+    virtual MyVector giveStress(const MyVector &strain, double timeStep);//terminology from mechanics, it returns flux
+    virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
+    virtual MyMatrix giveStiffnessTensor(string type, unsigned dimension) const;
+    virtual MyMatrix giveDampingTensor() const;
+    virtual MyMatrix giveInertiaTensor() const;
     virtual unsigned giveStrainSize() const;
     virtual double giveCrackVolume() const;
     void setFromPrecomputedToFullModel();
@@ -174,23 +174,23 @@ public:
 class DiscreteMechanicalRVEMaterial : public RVEMaterial
 {
 protected:
-    Matrix precompElastic, precompDamping, precompInertia;
+    MyMatrix precompElastic, precompDamping, precompInertia;
     Point centroid;
-    vector< vector< Vector > >projectors;
+    vector< vector< MyVector > >projectors;
 
 public:
-    DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; precompElastic = Matrix(0, 0); };
+    DiscreteMechanicalRVEMaterial() { name = "mechanical RVE material"; precompElastic = MyMatrix(0, 0); };
     virtual ~DiscreteMechanicalRVEMaterial() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; };
-    void setPrecomputedDampingTensor(Matrix dam) { precompDamping = dam; };
-    void setPrecomputedInertiaTensor(Matrix ine) { precompInertia = ine; };
-    void setCentroidAndProjectors(Point c, vector< vector< Vector > >p);
-    Matrix givePrecomputedElasticTensor() const { return precompElastic; };
-    Matrix givePrecomputedDampingTensor() const { return precompDamping; };
-    Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
+    void setPrecomputedElasticTensor(MyMatrix ela) { precompElastic = ela; };
+    void setPrecomputedDampingTensor(MyMatrix dam) { precompDamping = dam; };
+    void setPrecomputedInertiaTensor(MyMatrix ine) { precompInertia = ine; };
+    void setCentroidAndProjectors(Point c, vector< vector< MyVector > >p);
+    MyMatrix givePrecomputedElasticTensor() const { return precompElastic; };
+    MyMatrix givePrecomputedDampingTensor() const { return precompDamping; };
+    MyMatrix givePrecomputedInertiaTensor() const { return precompInertia; };
     Point giveCentroid() { return centroid; };
-    vector< vector< Vector > > *giveProjectors() { return & projectors; };
+    vector< vector< MyVector > > *giveProjectors() { return & projectors; };
     bool isNonlinear() const { return nonlinear; };
 };
 
@@ -222,19 +222,19 @@ public:
     virtual void init();
     virtual void update();
 
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(string code, Vector & result) const;
-    virtual Matrix giveStiffnessTensor(string type, unsigned dimension) const;
-    virtual Matrix giveDampingTensor() const;
-    virtual Matrix giveInertiaTensor() const;
-    virtual void setEigenStrain(Vector &x);
+    virtual MyVector giveStress(const MyVector &strain, double timeStep);
+    virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
+    virtual void giveValues(string code, MyVector & result) const;
+    virtual MyMatrix giveStiffnessTensor(string type, unsigned dimension) const;
+    virtual MyMatrix giveDampingTensor() const;
+    virtual MyMatrix giveInertiaTensor() const;
+    virtual void setEigenStrain(MyVector &x);
     virtual std :: string giveLineToSave() const;
-    virtual Vector giveInternalSource() const;
+    virtual MyVector giveInternalSource() const;
     virtual void setParameterValue(string code, double value);
     virtual void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; mechRVEstat->setToPrecomputed(); trspRVEstat->setToPrecomputed(); };
-    virtual void setReferenceSystemDirections(Matrix r);
+    virtual void setReferenceSystemDirections(MyMatrix r);
 };
 
 //////////////////////////////////////////////////////////
@@ -243,22 +243,22 @@ class DiscreteCoupledRVEMaterial : public RVEMaterial
 protected:
     DiscreteMechanicalRVEMaterial *mechRVEmat;
     DiscreteTransportRVEMaterial *trspRVEmat;
-    Matrix precompElastic, precompDamping, precompInertia;
+    MyMatrix precompElastic, precompDamping, precompInertia;
     double biotCoeff, PUCVolume;
     DiscreteTrsprtCoupledMaterial *masterMaterial;
 
 public:
-    DiscreteCoupledRVEMaterial() { name = "coupled RVE material";  precompElastic = Matrix(0, 0); produceInternalSources = true; PUCVolume = 0; };
+    DiscreteCoupledRVEMaterial() { name = "coupled RVE material";  precompElastic = MyMatrix(0, 0); produceInternalSources = true; PUCVolume = 0; };
     virtual ~DiscreteCoupledRVEMaterial();
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void readFromLine(istringstream &iss);
     DiscreteMechanicalRVEMaterial *giveMechanicalRVEmat() { return mechRVEmat; }
     DiscreteTransportRVEMaterial *giveTransportRVEmat() { return trspRVEmat; }
     double giveBiotCoefficient() const { return biotCoeff; };
-    void setPrecomputedElasticDampingAndInertiaTensors(Matrix ela, Matrix dam, Matrix ine);
-    Matrix givePrecomputedElasticTensor() const { return precompElastic; };
-    Matrix givePrecomputedDampingTensor() const { return precompDamping; };
-    Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
+    void setPrecomputedElasticDampingAndInertiaTensors(MyMatrix ela, MyMatrix dam, MyMatrix ine);
+    MyMatrix givePrecomputedElasticTensor() const { return precompElastic; };
+    MyMatrix givePrecomputedDampingTensor() const { return precompDamping; };
+    MyMatrix givePrecomputedInertiaTensor() const { return precompInertia; };
     DiscreteTrsprtCoupledMaterial *giveMasterMaterial() { return masterMaterial; };
     void setMasterMaterial(DiscreteTrsprtCoupledMaterial *masterM) { masterMaterial = masterM; };
     void setPUCVolume(double vol) { PUCVolume = vol; };

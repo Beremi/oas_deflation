@@ -24,12 +24,12 @@ std :: string Node :: giveLineToSave() const {
     out.precision(10);
     out << this->name << '\t';
 
-    out << std :: fixed << this->point.getX();
+    out << std :: fixed << this->point.x();
     out << '\t';
-    out << std :: fixed << this->point.getY();
+    out << std :: fixed << this->point.y();
     if ( this->dim == 3 ) {
         out << '\t';
-        out << std :: fixed << this->point.getZ();
+        out << std :: fixed << this->point.z();
     }
     return out.str();
 }
@@ -64,7 +64,7 @@ void Node :: initSimplex() {
 }
 
 //////////////////////////////////////////////////////////
-void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
+void Node :: updateSimplexVolumetricStrain(const MyVector &fullDoFs) {
     if ( simplex ) {
         simplex->computeVolumetricStrain(fullDoFs);
     }
@@ -99,11 +99,11 @@ MechDoF :: MechDoF(unsigned dimension, unsigned numDoFs) : MechNode(dimension) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// MECHANICAL NODE - translational DoFs 
-void MechNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {    
+// MECHANICAL NODE - translational DoFs
+void MechNode :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
     if ( code.compare("displacements") == 0 ) {
         result.resize(dim);
-        for (unsigned i=0; i<dim; i++) result[i] = DoFs [ firstDoF + i ];    
+        for (unsigned i=0; i<dim; i++) result[i] = DoFs [ firstDoF + i ];
     } else if ( code.compare("ux") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF ];
@@ -135,7 +135,7 @@ unsigned MechNode :: giveOrderOfForceCode(string code) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT NODE - pressure DoF
-void TrsNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+void TrsNode :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
     if ( code.compare("pressure") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF ];
@@ -156,7 +156,7 @@ unsigned TrsNode :: giveOrderOfForceCode(string code) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT + TEMPERATURE NODE
-void TrsTemprtrCoupledNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+void TrsTemprtrCoupledNode :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
     if ( code.compare("humidity") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF ];
@@ -212,7 +212,7 @@ void Particle :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+void Particle :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
     if ( dim > 1 && code.compare("rotx") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF + 3 ];
@@ -257,7 +257,7 @@ std :: string Particle :: giveLineToSave() const {
 //////////////////////////////////////////////////////////
 // COUPLED PARTICLE - translational and rotational and transport DoFs
 //////////////////////////////////////////////////////////
-void CoupledParticle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+void CoupledParticle :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
     if ( code.compare("pressure") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF + 6 ];

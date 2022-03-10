@@ -3,7 +3,11 @@
 using namespace std;
 using namespace Eigen;
 
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit, string solver_type) {
+bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, string solver_type) {
+    cout << "A: " << A << endl;
+    cout << "b: " << b << endl;
+    cout << "x0: " << x0 << endl;
+
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -11,63 +15,10 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         return true;                   // when problem is completely constrained (e.g. single facet)
     }
 
-    if ( solver_type == "ConjGrad" ) {
-        //old solver, in-house
-        bool result = ConjGrad(A, x, b, x0, precision, relmaxit);
-
-#if PRINT_DEBUG_TIME
-        auto now = std :: chrono :: system_clock :: now();
-
-        auto elapsed_seconds = now - start;
-        std :: cout << "linalg solver preprocessing: " << convertTimeToString_(elapsed_seconds) << endl;
-        cout.flush();
-#endif
-        return result;
-    }
-
     size_t Maxit = fmax(b.size() * relmaxit, 1);
 
-    auto rowsize = A.row_size.size();
-    Eigen :: SparseMatrix< double, RowMajor >mat(rowsize, rowsize);
-
-    typedef Eigen :: Triplet< double >T;
-    std :: vector< T >tripletList;
-    //tripletList.reserve(data.size());
-    size_t idx = 0;
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        for ( size_t c = 0; c < A.row_size [ i ]; c++ ) {
-            //cout<<i << "--" <<  col[c]<<endl;
-            //mat.insert(i, A.xx[idx]) = data[idx];
-            tripletList.push_back(T(i, A.column_index [ idx ], A.array [ idx ]) );
-            idx++;
-        }
-        ;
-    }
-    ;
-    mat.setFromTriplets(tripletList.begin(), tripletList.end() );
-    mat.makeCompressed();
-
-    VectorXd cgb(rowsize);
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        cgb [ i ] = b [ i ];
-    }
-
-#if PRINT_DEBUG_TIME
-    auto now = std :: chrono :: system_clock :: now();
-    auto elapsed_seconds = now - start;
-    std :: cout << "linalg solver preprocessing: " << convertTimeToString_(elapsed_seconds) << endl;
-    cout.flush();
-#endif
-
     bool result = false;
-    VectorXd cgx;
     if ( solver_type == "EigenConj" ) {
-        VectorXd cgx0(rowsize);
-        for ( size_t i = 0; i < rowsize; i++ ) {
-            cgx0 [ i ] = x0 [ i ];
-        }
-
-
         //JacobiSVD<MatrixXd> svd(cgb);
         //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
         //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
@@ -77,9 +28,9 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         cgK.setMaxIterations(Maxit);
         cgK.setTolerance(precision);
 
-        cgK.compute(mat);
+        cgK.compute(A);
 
-        cgx = cgK.solveWithGuess(cgb, cgx0);
+        x = cgK.solveWithGuess(b, x0);
         //VectorXd cgx = cgK.solve(cgb);
         result = size_t(cgK.iterations() ) < Maxit;
         if ( !result ) {
@@ -87,25 +38,22 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         }
     } else if ( solver_type == "EigenLDLT" ) {
         SimplicialLDLT< SparseMatrix< double > >simplicial_ldlt_solver;
-        cgx = simplicial_ldlt_solver.compute(mat).solve(cgb);
-        cout << "error " << ( mat * cgx - cgb ).lpNorm< Infinity >() << endl;
-        result = ( mat * cgx - cgb ).lpNorm< Infinity >() < precision;
+        x = simplicial_ldlt_solver.compute(A).solve(b);
+        cout << "error " << ( A * x - b ).lpNorm< Infinity >() << endl;
+        result = ( A * x - b ).lpNorm< Infinity >() < precision;
     } else if ( solver_type == "EigenLLT" ) {
         SimplicialLLT< SparseMatrix< double > >simplicial_llt_solver;
-        cgx = simplicial_llt_solver.compute(mat).solve(cgb);
-        result = ( mat * cgx - cgb ).lpNorm< Infinity >() < precision;
+        x = simplicial_llt_solver.compute(A).solve(b);
+        //result = ( A * x - b ).lpNorm< Infinity >() < precision;
     } else if ( solver_type == "EigenSparseLU" ) {
         SparseLU< SparseMatrix< double >, COLAMDOrdering< int > >sparseLU_solver;
-        sparseLU_solver.analyzePattern(mat);
-        sparseLU_solver.factorize(mat);
+        sparseLU_solver.analyzePattern(A);
+        sparseLU_solver.factorize(A);
 
-        cgx = sparseLU_solver.solve(cgb);
-        result = ( mat * cgx - cgb ).lpNorm< Infinity >() < precision;
+        x = sparseLU_solver.solve(b);
+        //result = ( A * x - b ).lpNorm< Infinity >() < precision;
     }
-
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        x [ i ] = cgx [ i ];
-    }
+    cout << "x: " << x << endl;
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -120,7 +68,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
 }
 
 
-bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit) {
+bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, VectorXd &x, const VectorXd &b, const VectorXd x0, double precision, double relmaxit) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -129,52 +77,14 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
 
     size_t Maxit = b.size() * relmaxit;
 
-    auto rowsize = A.row_size.size();
-    Eigen :: SparseMatrix< double, RowMajor >mat(rowsize, rowsize);
-
-    typedef Eigen :: Triplet< double >T;
-    std :: vector< T >tripletList;
-    //tripletList.reserve(data.size());
-    size_t idx = 0;
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        for ( size_t c = 0; c < A.row_size [ i ]; c++ ) {
-            //cout<<i << "--" <<  col[c]<<endl;
-            //mat.insert(i, A.xx[idx]) = data[idx];
-            tripletList.push_back(T(i, A.column_index [ idx ], A.array [ idx ]) );
-            idx++;
-        }
-        ;
-    }
-    ;
-    mat.setFromTriplets(tripletList.begin(), tripletList.end() );
-    mat.makeCompressed();
-
-    VectorXd cgb(rowsize);
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        cgb [ i ] = b [ i ];
-    }
-
-    VectorXd cgx0(rowsize);
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        cgx0 [ i ] = x0 [ i ];
-    }
-
-#if PRINT_DEBUG_TIME
-    auto now = std :: chrono :: system_clock :: now();
-
-    auto elapsed_seconds = now - start;
-    std :: cout << "linalg solver preprocessing: " << convertTimeToString(elapsed_seconds) << endl;
-    cout.flush();
-#endif
-
     //BiCGSTAB<SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     BiCGSTAB< SparseMatrix< double > >bicg;
     bicg.setMaxIterations(Maxit);
     bicg.setTolerance(precision);
 
-    bicg.compute(mat);
+    bicg.compute(A);
 
-    VectorXd cgx = bicg.solveWithGuess(cgb, cgx0);
+    x = bicg.solveWithGuess(b, x0);
     //VectorXd cgx = bicg.solve(cgb);
 
 #if PRINT_DEBUG_TIME
@@ -185,25 +95,22 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
     cout.flush();
 #endif
 
-    for ( size_t i = 0; i < rowsize; i++ ) {
-        x [ i ] = cgx [ i ];
-    }
     bool result = size_t(bicg.iterations() ) < Maxit;
     return result;
 }
 
 //sorterd eigenvalues and eigenvectors
-bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &eigenvectors) {
+bool LinalgEigenSolver(const VectorXd &A, VectorXd &eigenvalues, vector< VectorXd > &eigenvectors) {
 
     size_t ndim;
     bool sym;
     if (A.size()==3){ //2D
         ndim = 2; sym = true;
-    }else if (A.size()==6){ //3D 
+    }else if (A.size()==6){ //3D
         ndim =3; sym = true;
     }else if (A.size()==4){ //2D
         ndim = 2; sym = false;
-    }else if (A.size()==9){ //3D 
+    }else if (A.size()==9){ //3D
         ndim =3; sym = false;
     }else{
         cerr << "Error: LinalgEigenSolver implemented only for vectorized matrices of size 2 or 3, submitted size " << A.size() << endl;
@@ -214,18 +121,18 @@ bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &e
     if (ndim==2 && sym){
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
-        mat(1, 0) = mat(0, 1) = A [ 2 ];        
+        mat(1, 0) = mat(0, 1) = A [ 2 ];
     }else if (ndim==2 && !sym){
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
-        mat(1, 0) = mat(0, 1) = (A [ 2 ] + A [ 3 ])/2.;        
+        mat(1, 0) = mat(0, 1) = (A [ 2 ] + A [ 3 ])/2.;
     }else if (ndim==3 && sym){
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
         mat(2, 2) = A [ 2 ];
         mat(2, 1) = mat(1, 2) = A [ 3 ];
         mat(2, 0) = mat(0, 2) = A [ 4 ];
-        mat(1, 0) = mat(0, 1) = A [ 5 ];       
+        mat(1, 0) = mat(0, 1) = A [ 5 ];
     }else if (ndim==3 && !sym){
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
@@ -238,7 +145,7 @@ bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &e
    return LinalgEigenSolver(mat, eigenvalues, eigenvectors);
 }
 
-bool LinalgEigenSolver(const MatrixXd &mat, Vector &eigenvalues, vector< Vector > &eigenvectors) {
+bool LinalgEigenSolver(const MatrixXd &mat, VectorXd &eigenvalues, vector< VectorXd > &eigenvectors) {
     EigenSolver< MatrixXd >es(mat);
 
     unsigned ndim = mat.rows();
@@ -262,9 +169,34 @@ bool LinalgEigenSolver(const MatrixXd &mat, Vector &eigenvalues, vector< Vector 
         eigenvectors [ i ].resize(ndim);
         VectorXcd v = es.eigenvectors().col(idx [ i ]);
         for ( unsigned j = 0; j < ndim; j++ ) {
-            eigenvectors [ i ] [ j ] = real(v [ j ]);
+            eigenvectors[i] [j] = real(v [ j ]);
         }
     }
 
     return true;
+}
+
+
+
+//JM: Coplanarity check of 4 points (for 3d faces)
+double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD) {
+    Point AB = ptB - ptA;
+    Point AC = ptC - ptA;
+    Point AD = ptD - ptA;
+    //triple scalar product AB*(ACxAD) =>0
+    double coplanarityError = AB.dot(AC.cross(AD) );
+    return coplanarityError;
+}
+
+
+MatrixXd dyadicProduct(const VectorXd &a, const VectorXd &b) {
+    return a * b.transpose();
+}
+
+double triArea2D(const Point *a, const Point *b, const Point *c) { //points in counter clockwise direction
+    return 0.5 * ( a->x() * ( b->y() - c->y() ) + b->x() * ( c->y() - a->y() ) + c->x() * ( a->y() - b->y() ) );
+}
+
+double triArea3D(const Point *a, const Point *b, const Point *c) { //points
+    return abs(0.5 * pow(pow( ( b->y() - a->y() ) * ( c->z() - a->z() ) - ( b->z() - a->z() ) * ( c->y() - a->y() ), 2 ) + pow( ( b->z() - a->z() ) * ( c->x() - a->x() ) - ( b->x() - a->x() ) * ( c->z() - a->z() ), 2 ) + pow( ( b->x() - a->x() ) * ( c->y() - a->y() ) - ( b->y() - a->y() ) * ( c->x() - a->x() ), 2 ), 0.5) );
 }

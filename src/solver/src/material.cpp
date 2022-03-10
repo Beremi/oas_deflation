@@ -5,13 +5,13 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC MATERIAL
-Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
+MyVector MaterialStatus :: addEigenStrain(const MyVector &totalStrain) const {
     if ( eigenstrain.size() > 0 ) {
         if ( eigenstrain.size() != totalStrain.size() ) {
             cerr << "Material status error: cannot apply eigenstrain of size " << eigenstrain.size() << " to  total strain of size " << totalStrain.size() << endl;
             exit(1);
         }
-        Vector activeStrain = totalStrain - eigenstrain;
+        MyVector activeStrain = totalStrain - eigenstrain;
         return activeStrain;
     } else {
         return totalStrain;
@@ -33,7 +33,7 @@ void MaterialStatus :: resetTemporaryVariables() {
 
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: setEigenStrain(Vector &x) {
+void MaterialStatus :: setEigenStrain(MyVector &x) {
     eigenstrain = x;
 }
 
@@ -59,13 +59,13 @@ TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsi
 
 
 //////////////////////////////////////////////////////////
-Vector TrsprtMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+MyVector TrsprtMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
     effConductivity = updateEffectiveConductivity(); //nonlinear effecto of pressure
     return giveStressWithFrozenIntVars(strain, timeStep);
 };
 
 //////////////////////////////////////////////////////////
-Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+MyVector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
@@ -73,20 +73,20 @@ Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain,
 };
 
 //////////////////////////////////////////////////////////
-Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+MyMatrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
-    Matrix T(dimension, dimension);
+    MyMatrix T(dimension, dimension);
     for ( unsigned i = 0; i < dimension; i++ ) {
-        T [ i ] [ i ] = -giveEffectiveConductivity(type);
+        T(i, i) = -giveEffectiveConductivity(type);
     }
     return T;
 };
 
 //////////////////////////////////////////////////////////
-Matrix TrsprtMaterialStatus :: giveDampingTensor() const {
+MyMatrix TrsprtMaterialStatus :: giveDampingTensor() const {
     TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-    Matrix M(1, 1);
-    M [ 0 ] [ 0 ] = -m->giveCapacity() * m->giveDensity();
+    MyMatrix M(1, 1);
+    M(0, 0) = -m->giveCapacity() * m->giveDensity();
     return M;
 }
 
@@ -113,7 +113,7 @@ double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pre
 }
 
 //////////////////////////////////////////////////////////
-void TrsprtMaterialStatus :: giveValues(string code, Vector &result) const {
+void TrsprtMaterialStatus :: giveValues(string code, MyVector &result) const {
     if ( code.compare("permeability") == 0 ) {
         TrsprtMaterial *m = dynamic_cast< TrsprtMaterial * >( mat );
         result.resize(1);
@@ -211,11 +211,11 @@ DiscreteTrsprtMaterialStatus :: DiscreteTrsprtMaterialStatus(TrsprtMaterial *m, 
 }
 
 //////////////////////////////////////////////////////////
-Matrix DiscreteTrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+MyMatrix DiscreteTrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
     ( void ) dimension;
-    Matrix T(1, 1); //discrete material, only one direction in any dimension
-    T [ 0 ] [ 0 ] = -giveEffectiveConductivity(type);
+    MyMatrix T(1, 1); //discrete material, only one direction in any dimension
+    T(0, 0) = -giveEffectiveConductivity(type);
     return T;
 };
 
@@ -229,7 +229,7 @@ MaterialStatus *DiscreteTrsprtMaterial :: giveNewMaterialStatus(Element *e, unsi
 //////////////////////////////////////////////////////////
 // ELASTIC TENSORIAL MECHANICAL MATERIAL
 
-Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+MyVector ElasticMechMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
     return ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 };
 
@@ -241,7 +241,7 @@ double ElasticMechMaterialStatus :: giveMassConstant() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+MyVector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     unsigned dim = 0;
@@ -257,7 +257,7 @@ Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &st
 };
 
 //////////////////////////////////////////////////////////
-Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+MyMatrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
     unsigned size = 1;
     if ( dimension == 1 ) {
@@ -270,27 +270,27 @@ Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned di
         cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
-    Matrix D(size, size);
+    MyMatrix D(size, size);
     ElasticMechMaterial *m = static_cast< ElasticMechMaterial * >( mat );
     if ( dimension == 1 ) {
-        D [ 0 ] [ 0 ] = m->giveElasticModulus();
+        D(0, 0) = m->giveElasticModulus();
     } else if ( dimension == 2 ) {
         if ( m->isPlaneStress() ) {
             double factor = m->giveElasticModulus() / ( 1. - pow(m->givePoissonsRatio(), 2) );
-            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = factor;
-            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = m->givePoissonsRatio() * factor;
-            D [ 2 ] [ 2 ] = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
+            D(0, 0) = D(1, 1) = factor;
+            D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
+            D(2, 2) = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
         } else {  //plane strain
             double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
-            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = factor * ( 1. - m->givePoissonsRatio() );
-            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = m->givePoissonsRatio() * factor;
-            D [ 2 ] [ 2 ] = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
+            D(0, 0) = D(1, 1) = factor * ( 1. - m->givePoissonsRatio() );
+            D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
+            D(2, 2) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
         }
     } else if ( dimension == 3 ) {
         double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
-        D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = D [ 2 ] [ 2 ] = factor * ( 1. - m->givePoissonsRatio() );
-        D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = D [ 0 ] [ 2 ] = D [ 2 ] [ 0 ] = D [ 2 ] [ 1 ] = D [ 1 ] [ 2 ] = m->givePoissonsRatio() * factor;
-        D [ 3 ] [ 3 ] = D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
+        D(0, 0) = D(1, 1) = D(2, 2) = factor * ( 1. - m->givePoissonsRatio() );
+        D(0, 1) = D(1, 0) = D(0, 2) = D(2, 0) = D(2, 1) = D(1, 2) = m->givePoissonsRatio() * factor;
+        D(3, 3) = D(4, 4) = D(5, 5) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
     } else {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
         exit(1);
@@ -304,7 +304,7 @@ ElasticMechMaterialStatus :: ElasticMechMaterialStatus(ElasticMechMaterial *m, E
 }
 
 //////////////////////////////////////////////////////////
-void ElasticMechMaterialStatus :: giveValues(string code, Vector &result) const{
+void ElasticMechMaterialStatus :: giveValues(string code, MyVector &result) const{
     if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
         unsigned size = (element->giveDimension()-1)*3;
         result.resize(size);
@@ -359,12 +359,12 @@ MaterialStatus *ElasticMechMaterial :: giveNewMaterialStatus(Element *e, unsigne
 //////////////////////////////////////////////////////////
 // ELASTIC COSSERAT MECHANICAL MATERIAL
 
-Vector CosseratMechMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
+MyVector CosseratMechMaterialStatus ::  giveStress(const MyVector &strain, double timeStep) {
     return CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(strain, timeStep);
 };
 
 //////////////////////////////////////////////////////////
-Vector CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+MyVector CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     unsigned dim;
@@ -383,7 +383,7 @@ Vector CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &
 };
 
 //////////////////////////////////////////////////////////
-Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+MyMatrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
     unsigned size;
     if ( dimension == 1 ) {
@@ -396,23 +396,23 @@ Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned d
         cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
-    Matrix D(size, size);
+    MyMatrix D(size, size);
     CosseratMechMaterial *m = static_cast< CosseratMechMaterial * >( mat );
     double lammeL = m->giveElasticModulus() * m->givePoissonsRatio() / ( ( 1. + m->givePoissonsRatio() ) * ( 1. - 2 * m->givePoissonsRatio() ) );
     double lammeM = m->giveElasticModulus() / ( 2. * ( 1. + m->givePoissonsRatio() ) );
     if ( dimension == 1 ) {
-        D [ 0 ] [ 0 ] = m->giveElasticModulus();
-        D [ 1 ] [ 1 ] = 4. * m->giveCosseratShearParam() * pow(m->giveCharacteristicLength(), 2);
+        D(0, 0) = m->giveElasticModulus();
+        D(1, 1) = 4. * m->giveCosseratShearParam() * pow(m->giveCharacteristicLength(), 2);
     } else if ( dimension == 2 ) {
         if ( m->isPlaneStress() ) {
             cerr << name << " error: dimension " << dimension << ", Cosserat plane stress not implemented" << endl;
             exit(1);
         } else {  //plane strain ACTUALLY NOT IMPLEMENTED YET
-            D [ 0 ] [ 0 ] = D [ 1 ] [ 1 ] = lammeL + 2. * lammeM;
-            D [ 0 ] [ 1 ] = D [ 1 ] [ 0 ] = lammeL;
-            D [ 2 ] [ 2 ] = D [ 3 ] [ 3 ] = lammeM + m->giveCosseratShearParam();
-            D [ 2 ] [ 3 ] = D [ 3 ] [ 2 ] = lammeM - m->giveCosseratShearParam();
-            D [ 4 ] [ 4 ] = D [ 5 ] [ 5 ] = lammeM * 4. * m->giveCharacteristicLength();
+            D(0, 0) = D(1, 1) = lammeL + 2. * lammeM;
+            D(0, 1) = D(1, 0) = lammeL;
+            D(2, 2) = D(3, 3) = lammeM + m->giveCosseratShearParam();
+            D(2, 3) = D(3, 2) = lammeM - m->giveCosseratShearParam();
+            D(4, 4) = D(5, 5) = lammeM * 4. * m->giveCharacteristicLength();
         }
     } else {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
@@ -512,7 +512,7 @@ void DiscreteTrsprtCoupledMaterialStatus ::  updateRateVariables(double timeStep
 }
 
 //////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+MyVector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
     updateRateVariables(timeStep);
     effConductivity = updateEffectiveConductivity();
     return giveStressWithFrozenIntVars(strain, timeStep);
@@ -520,8 +520,8 @@ Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, d
 
 
 //////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const {
-    Vector ints(1);
+MyVector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const {
+    MyVector ints(1);
     DiscreteTrsprtCoupledMaterial *m = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
 
     ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
@@ -550,7 +550,7 @@ void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, doubl
 
 
 //////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+MyVector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
     updateRateVariables(timeStep);
     temp_strain  = addEigenStrain(strain);
     temp_stress = -effConductivity * temp_strain;
@@ -578,7 +578,7 @@ void DiscreteTrsprtCoupledMaterialStatus ::  resetTemporaryVariables() {
 
 
 //////////////////////////////////////////////////////////
-void DiscreteTrsprtCoupledMaterialStatus ::  giveValues(string code, Vector &result) const {
+void DiscreteTrsprtCoupledMaterialStatus ::  giveValues(string code, MyVector &result) const {
     if ( code.compare("volumetric_strain") == 0 ) {
         result.resize(1);
         result[0] = volumetricStrain;
@@ -649,13 +649,13 @@ DisMechMaterialStatus :: DisMechMaterialStatus(DisMechMaterial *m, Element *e, u
 }
 
 //////////////////////////////////////////////////////////
-Matrix DisMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
+MyMatrix DisMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    Matrix D(dimension, dimension);
-    D [ 0 ] [ 0 ] = m->giveE0();
+    MyMatrix D(dimension, dimension);
+    D(0, 0) = m->giveE0();
     for ( size_t i = 1; i < dimension; i++ ) {
-        D [ i ] [ i ] =  m->giveAlpha() * m->giveE0();
+        D(i, i) =  m->giveAlpha() * m->giveE0();
     }
     return D;
 }
@@ -667,12 +667,12 @@ double DisMechMaterialStatus :: giveDensity() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector DisMechMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
+MyVector DisMechMaterialStatus ::  giveStress(const MyVector &strain, double timeStep) {
     return DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 };
 
 //////////////////////////////////////////////////////////
-Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+MyVector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
@@ -686,8 +686,8 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 };
 
 //////////////////////////////////////////////////////////
-void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
-    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0) {        
+void DisMechMaterialStatus ::  giveValues(string code, MyVector &result) const {
+    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0) {
         unsigned size = element->giveDimension();
         result.resize(size);
         for (unsigned p=0; p<size; p++) result[p] = temp_stress [ p ];

@@ -1,7 +1,7 @@
 #ifndef _SIMPLEX_H
 #define _SIMPLEX_H
 
-#include "linear_algebra.h"
+#include "linalg.h"
 #include <vector>
 #include <iostream>
 #include <unordered_set>
@@ -33,7 +33,7 @@ public:
     void findNeighbors();
     double giveVolumetricStrain() const;
     double givePressure() const;
-    void computeVolumetricStrain(const Vector &DoFs);
+    void computeVolumetricStrain(const MyVector &DoFs);
     bool isValid() const { return valid; }
     bool hasPressure() const { return transport; }
     vector< RigidBodyContact * >giveElements() { return elems; }

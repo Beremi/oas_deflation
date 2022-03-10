@@ -334,7 +334,8 @@ void ElementContainer :: resetMaterialStatuses() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const {
-    map< pair< size_t, size_t >, double >indices11;
+    //map< pair< size_t, size_t >, double >indices11;
+    std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
 
@@ -350,20 +351,27 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
+                        //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
+                        tripletList.push_back(Ttripletd(DoFi, DoFi, 0.0) );
                     }
                 } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
-                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
+                        //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
+                        tripletList.push_back(Ttripletd(DoFi, DoFj, 0.0) );
+                        //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
+                        tripletList.push_back(Ttripletd(DoFj, DoFi, 0.0) );
                     }
                 }
             }
         }
     }
+
     if ( nfreeDoFs > 0 ) {
-        K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
+        //K = CoordinateIndexedSparseMatrix(indices11); //, nfreeDoFs, nfreeDoFs);
+        K.resize(nfreeDoFs, nfreeDoFs);
+        K.setFromTriplets(tripletList.begin(), tripletList.end() );
+        K.makeCompressed();
     }
 }
 
@@ -389,8 +397,8 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
-    Vector elDoFValues;
-    Matrix k;
+    MyVector elDoFValues;
+    MyMatrix k;
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {
@@ -412,13 +420,13 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        K [ DoFi ] [ DoFi ] += k [ i ] [ i ];
+                        K.coeffRef(DoFi, DoFi) += k(i, j);
                     }
                 } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        K [ DoFi ] [ DoFj ] += k [ i ] [ j ];
-                        K [ DoFj ] [ DoFi ] += k [ j ] [ i ];
+                        K.coeffRef( DoFi, DoFj) += k(i, j);
+                        K.coeffRef(DoFj, DoFi) += k(j, i);
                     }
                 }
             }
@@ -451,8 +459,8 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) cons
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep) {
-    Vector elDoFvalues, elForces;
+void ElementContainer :: integrateInternalForces(const MyVector &full_r, MyVector &full_f, bool frozen, double timeStep) {
+    MyVector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f *= 0;  // clear array
 
@@ -475,8 +483,8 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const {
-    Vector elDoFvalues, elForces;
+void ElementContainer :: integrateDampingOrInertiaForces(const MyVector &full_v, MyVector &full_f, unsigned diffType) const {
+    MyVector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f *= 0; //clear array
 
@@ -501,22 +509,22 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateDampingForces(const Vector &full_v, Vector &full_f) const {
+void ElementContainer :: integrateDampingForces(const MyVector &full_v, MyVector &full_f) const {
     integrateDampingOrInertiaForces(full_v, full_f, 1);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInertiaForces(const Vector &full_a, Vector &full_f) const {
+void ElementContainer :: integrateInertiaForces(const MyVector &full_a, MyVector &full_f) const {
     integrateDampingOrInertiaForces(full_a, full_f, 2);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep) {
+void ElementContainer :: integrateInternalForces(MyVector &full_r, MyVector &full_f, double timeStep) {
     integrateInternalForces(full_r, full_f, false, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep) {
+void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(MyVector &full_r, MyVector &full_f, double timeStep) {
     integrateInternalForces(full_r, full_f, true, timeStep);
 }
 
@@ -588,29 +596,28 @@ bool ElementContainer :: findElementOwningPoint(Element **elem, Point *xn, const
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result){
+void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< MyVector > &result){
     //delete everythink inside
     size_t p;
     result.resize(0);
     result.resize(nodes->giveSize());
-    Vector weights(nodes->giveSize());
-    
+    MyVector weights(nodes->giveSize());
+
     //fill with data
-    vector<Vector> res;
-    Vector wei;
+    vector<MyVector> res;
+    MyVector wei;
     unsigned nodeid;
-    size_t reslen;
     for (vector<Element*>::iterator ee = elems.begin(); ee!=elems.end(); ++ee){
         (*ee)->extrapolateIPValuesToNodes(code, res, wei);
-        reslen = res.size();
+        auto reslen = res.size();
         for(p=0; p<(*ee)->giveNumOfNodes(); p++){
             nodeid = (*ee)->giveNode(p)->giveID();
             weights[nodeid] += wei[p];
-            if (reslen>result[nodeid].size()) result[nodeid].resize(reslen);
-            for (size_t m=0; m<min(reslen,result[nodeid].size()); m++) {result[nodeid][m] += res[m][p];}
+            if ( reslen > result[nodeid].size() ) result[nodeid].resize(reslen);
+            for (size_t m=0; m<min<size_t>(reslen,result[nodeid].size()); m++) {result[nodeid][m] += res[m][p];}
         }
     }
-    
+
     //normalize by number of attached elements
     for (p = 0; p<nodes->giveSize(); p++ ) result[p] /= weights[p];
 }

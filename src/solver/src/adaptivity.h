@@ -72,7 +72,7 @@ private:
             outputfile.precision(6);
             outputfile << "#nodeCentersToRemesh";
             for ( auto const &c : centersPoints ) {
-                outputfile << "\ncenter\t" << c.getX() << '\t' << c.getY() << '\t' << c.getZ();
+                outputfile << "\ncenter\t" << c.x() << '\t' << c.y() << '\t' << c.z();
             }
             outputfile.close();
         }
@@ -324,17 +324,17 @@ private:
     //////////////////////////////////////////////////////////////////////////////
     bool checkNodes() {
         if ( PRINT_TEST ) { std :: cout << "adaptivity check nodes II b" << '\n'; }
-        std :: vector< Matrix >nodal_stress;
-        nodal_stress.resize( BaseSolver :: nodes->giveSize(), Matrix(this->dim, this->dim) );
+        std :: vector< MyMatrix >nodal_stress;
+        nodal_stress.resize( BaseSolver :: nodes->giveSize(), MyMatrix(this->dim, this->dim) );
         // calculate nodal stresses
         ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
 
-        vector< Vector >tensorial_stress;
+        vector< MyVector >tensorial_stress;
         BaseSolver :: elems->extrapolateValuesFromIntegrationPointsToNodes("solid_stress", tensorial_stress);
         // calculate principal stresses
         Node *n;
-        vector< Vector >eigvecs;
-        Vector eignums;
+        vector< MyVector >eigvecs;
+        MyVector eignums;
 
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);
@@ -345,9 +345,9 @@ private:
                          !isInsideRegions( this->fineRegions, n->givePoint() )
                          )
                       ) {
-                       
+
                     LinalgEigenSolver(tensorial_stress[i], eignums, eigvecs);
-                    if ( eignums.max() > this->adaptThreshold ) {
+                    if ( eignums.maxCoeff() > this->adaptThreshold ) {
                         nodeCentersToRmesh.push_back( n->givePoint() );
                     }
                 }

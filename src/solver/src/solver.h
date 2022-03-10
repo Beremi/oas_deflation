@@ -20,8 +20,8 @@ protected:
     FunctionContainer *funcs;
     double time, dt, initdt, termination_time;
     double init_time = 0.0;  ///> when starting from previously calculated results
-    Vector f_ext, load, load_old, f_int, pbc, r, f, full_ddr, ddr, residuals;
-    Vector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
+    MyVector f_ext, load, load_old, f_int, pbc, r, f, full_ddr, ddr, residuals;
+    MyVector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
     unsigned freeDoFnum, totalDoFnum;
     int step;
     unsigned init_step = 0;  ///> when starting from previously calculated results
@@ -40,9 +40,9 @@ public:
     string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     bool convergedToTolerance() const { return fully_converged; };
-    Vector giveDoFValues() const { return r; }
-    Vector giveTrialDoFValues() const { return trial_r; }
-    Vector giveNodalForces() { return f_ext; }
+    MyVector giveDoFValues() const { return r; }
+    MyVector giveTrialDoFValues() const { return trial_r; }
+    MyVector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
@@ -56,7 +56,7 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve() {};
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(string code, MyVector &result) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -69,7 +69,7 @@ protected:
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, -1); };
-    virtual void computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep);
+    virtual void computeInternalExternalForces(const MyVector &rr, const MyVector &ll, const bool frozen, double timeStep);
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial);
 private:
@@ -103,7 +103,7 @@ protected:
     double critical_step_decrease;  ///> decreased in case of step restart (not satisfying tolerance)
 
     IndirectDC *idc;        //indirect displacement control
-    Vector ddf, full_ddf, f_last_iter;
+    MyVector ddf, full_ddf, f_last_iter;
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
     double init_idc_time = 0.0;  ///> when starting from previously calculated results
     int stiffnessMatrixUpdate, dampingMatrixUpdate, massMatrixUpdate; //update matrices every X iteration
@@ -112,14 +112,14 @@ protected:
     void evaluateErrors();
     virtual bool updateSystemMatrices(string matrixType, unsigned iteration);
     virtual void reset();
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(string code, MyVector &result) const;
 
 public:
     SteadyStateNonLinearSolver();
     virtual ~SteadyStateNonLinearSolver();     //destructor
     virtual void init(string init_r_file, string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const string filename);
-    virtual Vector giveNodalForces() { return f_ext_old; };
+    virtual MyVector giveNodalForces() { return f_ext_old; };
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual void solve();
@@ -132,7 +132,7 @@ class TransientLinearTransportSolver : public SteadyStateNonLinearSolver /// sol
 protected:
     double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
-    Vector v, v_old;
+    MyVector v, v_old;
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void computeKeff();
@@ -171,7 +171,7 @@ class TransientLinearMechanicalSolver : public TransientNonLinearTransportSolver
 {
 protected:
     CoordinateIndexedSparseMatrix M;
-    Vector a, a_old;
+    MyVector a, a_old;
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void computeKeff();
