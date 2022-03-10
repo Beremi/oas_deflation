@@ -108,8 +108,8 @@ public:
 
     void init();
 
-    virtual MyMatrix giveStiffnessMatrix(string matrixType) const { ( void ) matrixType; return MyMatrix( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
-    virtual MyMatrix giveDampingMatrix() const { return MyMatrix( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual MyMatrix giveStiffnessMatrix(string matrixType) const { ( void ) matrixType; return MyMatrix::Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual MyMatrix giveDampingMatrix() const { return MyMatrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
 };

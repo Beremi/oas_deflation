@@ -107,8 +107,8 @@ void Solver :: runBeforeEachStep() {
     setNextStepTime();
 
     load_old = load; //copy old load to be used in generalized alpha method
-    load *= 0;  //clear nodal load
-    ddr *= 0; //clear step contribution;
+    load.setZero();  //clear nodal load
+    ddr.setZero(); //clear step contribution;
 }
 
 //////////////////////////////////////////////////////////
@@ -156,20 +156,20 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     freeDoFnum = nodes->giveNumFreeDoFs();
     totalDoFnum = nodes->giveTotalNumDoFs();
 
-    load = MyVector(totalDoFnum);
-    r = MyVector(totalDoFnum);
-    f_ext = MyVector(totalDoFnum);
-    f_int = MyVector(totalDoFnum);
-    f_dam = MyVector(totalDoFnum);
-    f_acc = MyVector(totalDoFnum);
-    trial_r = MyVector(totalDoFnum);
-    pbc = MyVector(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
-    f = MyVector(freeDoFnum);
-    residuals = MyVector(totalDoFnum);
-    ddr = MyVector(freeDoFnum);
-    full_ddr = MyVector(totalDoFnum);
-    f_int_old = MyVector(totalDoFnum);
-    f_ext_old = MyVector(totalDoFnum);
+    load = MyVector :: Zero(totalDoFnum);
+    r = MyVector :: Zero(totalDoFnum);
+    f_ext = MyVector :: Zero(totalDoFnum);
+    f_int = MyVector :: Zero(totalDoFnum);
+    f_dam = MyVector :: Zero(totalDoFnum);
+    f_acc = MyVector :: Zero(totalDoFnum);
+    trial_r = MyVector :: Zero(totalDoFnum);
+    pbc = MyVector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = MyVector :: Zero(freeDoFnum);
+    residuals = MyVector :: Zero(totalDoFnum);
+    ddr = MyVector :: Zero(freeDoFnum);
+    full_ddr = MyVector :: Zero(totalDoFnum);
+    f_int_old = MyVector :: Zero(totalDoFnum);
+    f_ext_old = MyVector :: Zero(totalDoFnum);
 }
 
 //////////////////////////////////////////////////////////
@@ -404,9 +404,9 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
     this->fully_converged = false;
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
-        ddf = MyVector(freeDoFnum);
-        full_ddf = MyVector(totalDoFnum);
-        f_last_iter = MyVector(freeDoFnum);
+        ddf = MyVector :: Zero(freeDoFnum);
+        full_ddf = MyVector :: Zero(totalDoFnum);
+        f_last_iter = MyVector :: Zero(freeDoFnum);
         if ( initial ) {
             idc_time = this->init_idc_time;
             idc_dt = 1e-6;
@@ -1057,7 +1057,7 @@ TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {}
 void TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
     SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
 
-    v_old = MyVector(totalDoFnum);
+    v_old = MyVector :: Zero(totalDoFnum);
     elems->prepareDampingMatrix(C);
     elems->updateDampingMatrix(C);
 }
@@ -1077,7 +1077,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
         cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
         exit(1);
     }
-    v = MyVector(totalDoFnum);
+    v = MyVector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
 }
 
@@ -1222,10 +1222,10 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
     if ( init_v_file.compare("") != 0 ) {
         v = nodes->readInitialConditions(init_r_file);
     } else {
-        v = MyVector(totalDoFnum);
+        v = MyVector :: Zero(totalDoFnum);
     }
-    v_old = MyVector(totalDoFnum);
-    a_old = MyVector(totalDoFnum);
+    v_old = MyVector :: Zero(totalDoFnum);
+    a_old = MyVector :: Zero(totalDoFnum);
     elems->prepareMassMatrix(M);
     elems->updateMassMatrix(M);
 
@@ -1245,10 +1245,10 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
         nodes->giveConstraints()->transformToConstraintSpace(Mred);
     }
-    MyVector v_red(freeDoFnum);
+    MyVector v_red = MyVector :: Zero(freeDoFnum);
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
-    a = MyVector(totalDoFnum);
+    a = MyVector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, a);
 }
 

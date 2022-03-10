@@ -188,10 +188,10 @@ Point Point :: operator*(const double p) const {
     ret.z *= p;
     return ret;
 }
-
+/*
 double Point :: operator*(const Point &p) const {
     return x * p.x + y * p.y + z * p.z;
-}
+}*/
 
 Point Point :: normalized() const {
     Point ret( ( * this ) );
@@ -267,16 +267,16 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
 
 
 
-MyMatrix :: MyMatrix(size_t x, size_t y) {
+Matrix :: Matrix(size_t x, size_t y) {
     r = x;
     c = y;
-    v = new MyVector(0., x * y);
+    v = new Vector(0., x * y);
 }
 
-MyMatrix :: MyMatrix(size_t rl, size_t k, size_t l, const MyMatrix &m) {
+Matrix :: Matrix(size_t rl, size_t k, size_t l, const Matrix &m) {
     r = rl;
     c = rl;
-    v = new MyVector(rl * rl);
+    v = new Vector(rl * rl);
     for ( size_t i = 0; i < rl; i++ ) {
         for ( size_t j = 0; j < rl; j++ ) {
             ( * v ) [ i * rl + j ] = m [ k + i ] [ l + j ];
@@ -284,10 +284,10 @@ MyMatrix :: MyMatrix(size_t rl, size_t k, size_t l, const MyMatrix &m) {
     }
 }
 
-MyMatrix :: MyMatrix(size_t i, size_t j, const MyMatrix &m) {
+Matrix :: Matrix(size_t i, size_t j, const Matrix &m) {
     r = m.numRows() - 1;
     c = m.numCols() - 1;
-    v = new MyVector(r * c);
+    v = new Vector(r * c);
     for ( size_t l = 0; l < m.numRows(); l++ ) {
         if ( l != i ) {
             for ( size_t k = 0; k < m.numCols(); k++ ) {
@@ -308,25 +308,25 @@ MyMatrix :: MyMatrix(size_t i, size_t j, const MyMatrix &m) {
     }
 }
 
-MyMatrix :: MyMatrix(const Point &p) {
+Matrix :: Matrix(const Point &p) {
     r = 3;
     c = 1;
-    v = new MyVector(3);
+    v = new Vector(3);
     ( * v ) [ 0 ] = p.getX();
     ( * v ) [ 1 ] = p.getY();
     ( * v ) [ 2 ] = p.getZ();
 }
 
-double &MyMatrix :: operator()(size_t x, size_t y) {
+double &Matrix :: operator()(size_t x, size_t y) {
     return row(x) [ y ];
 }
 
-double MyMatrix :: operator()(size_t x, size_t y) const {
+double Matrix :: operator()(size_t x, size_t y) const {
     return row(x) [ y ];
 }
 
-MyMatrix MyMatrix :: transpose() const {
-    MyMatrix ret(c, r);
+Matrix Matrix :: transpose() const {
+    Matrix ret(c, r);
     for ( size_t i = 0; i < r; i++ ) {
         for ( size_t j = 0; j < c; j++ ) {
             ret [ j ] [ i ] = ( * this ) [ i ] [ j ];
@@ -336,39 +336,39 @@ MyMatrix MyMatrix :: transpose() const {
     return ret;
 }
 
-MyMatrix &MyMatrix :: operator*=(double d) {
+Matrix &Matrix :: operator*=(double d) {
     ( * v ) *= d;
     return * this;
 }
 
-MyMatrix MyMatrix :: operator*(double d) const {
-    MyMatrix ret(* this);
+Matrix Matrix :: operator*(double d) const {
+    Matrix ret(* this);
     ret *= d;
 
     return ret;
 }
 
-MyMatrix MyMatrix :: operator/(double d) const {
-    MyMatrix ret(* this);
+Matrix Matrix :: operator/(double d) const {
+    Matrix ret(* this);
     ret /= d;
     return ret;
 }
 
-MyMatrix &MyMatrix :: operator/=(double d) {
+Matrix &Matrix :: operator/=(double d) {
     ( * v ) /= d;
     return * this;
 }
 
-MyMatrix &MyMatrix :: operator=(const MtM &m) {
-    ( * this ) = ( MyMatrix ) m;
+Matrix &Matrix :: operator=(const MtM &m) {
+    ( * this ) = ( Matrix ) m;
 
     return * this;
 }
 
-MyMatrix &MyMatrix :: operator*=(const MyMatrix &m) {
+Matrix &Matrix :: operator*=(const Matrix &m) {
     assert(m.numRows() == this->numCols() );
 
-    MyMatrix ret = matrix_multiply( ( * this ), m );
+    Matrix ret = matrix_multiply( ( * this ), m );
 
     ( * v ) = ret.array();
     r = ret.numRows();
@@ -377,44 +377,44 @@ MyMatrix &MyMatrix :: operator*=(const MyMatrix &m) {
     return * this;
 }
 
-MyMatrix &MyMatrix :: operator+=(const MyMatrix &m) {
+Matrix &Matrix :: operator+=(const Matrix &m) {
     assert(m.numRows() == this->numRows() );
     assert(m.numCols() == this->numCols() );
     ( * v ) += ( m.array() );
     return * this;
 }
 
-MyMatrix MyMatrix :: operator+(const MyMatrix &m) const {
+Matrix Matrix :: operator+(const Matrix &m) const {
     assert(m.numRows() == this->numRows() );
     assert(m.numCols() == this->numCols() );
-    MyMatrix ret(* this);
+    Matrix ret(* this);
     ret += m;
     ;
     return ret;
 }
 
-MyMatrix &MyMatrix :: operator+=(const double x) {
+Matrix &Matrix :: operator+=(const double x) {
     ( * v ) += x;
     return * this;
 }
 
-MyMatrix &MyMatrix :: operator-=(const MyMatrix &m) {
+Matrix &Matrix :: operator-=(const Matrix &m) {
     assert(m.numRows() == this->numRows() );
     assert(m.numCols() == this->numCols() );
     ( * v ) -= ( m.array() );
     return * this;
 }
 
-MyMatrix MyMatrix :: operator-(const MyMatrix &m) const {
+Matrix Matrix :: operator-(const Matrix &m) const {
     assert(m.numRows() == this->numRows() );
     assert(m.numCols() == this->numCols() );
-    MyMatrix ret(* this);
+    Matrix ret(* this);
     ret -= m;
     ;
     return ret;
 }
 
-bool MyMatrix :: operator==(const MyMatrix &m) {
+bool Matrix :: operator==(const Matrix &m) {
     if ( v->size() != m.array().size() ) {
         return false;
     }
@@ -428,7 +428,7 @@ bool MyMatrix :: operator==(const MyMatrix &m) {
     return true;
 }
 
-bool MyMatrix :: operator!=(const MyMatrix &m) {
+bool Matrix :: operator!=(const Matrix &m) {
     if ( v->size() != m.array().size() ) {
         return true;
     } else {
@@ -442,19 +442,19 @@ bool MyMatrix :: operator!=(const MyMatrix &m) {
     return false;
 }
 
-MyMatrix :: MyMatrix(const MyMatrix &m) : r(m.numRows() ), c(m.numCols() ) {
-    v = new MyVector(m.array() );
+Matrix :: Matrix(const Matrix &m) : r(m.numRows() ), c(m.numCols() ) {
+    v = new Vector(m.array() );
 }
 
-MyMatrix &MyMatrix :: operator=(const MyMatrix &m) {
+Matrix &Matrix :: operator=(const Matrix &m) {
     delete v;
-    v = new MyVector(m.array() );
+    v = new Vector(m.array() );
     r = m.numRows();
     c = m.numCols();
     return * this;
 }
 
-void MyMatrix :: print() const {
+void Matrix :: print() const {
     for ( size_t i = 0; i < numRows(); i++ ) {
         for ( size_t j = 0; j < numCols(); j++ ) {
             cout << ( * this ) [ i ] [ j ] << " " << flush;
@@ -464,21 +464,21 @@ void MyMatrix :: print() const {
     }
 }
 
-double *MyMatrix :: GetArray() const {
+double *Matrix :: GetArray() const {
     return & ( ( * v ) [ 0 ] );
 }
 
 
-MtM :: operator const MyMatrix() const {
+MtM :: operator const Matrix() const {
     return matrix_multiply(first, second);
 }
 
-MtV :: operator const MyVector() {
+MtV :: operator const Vector() {
     return matrix_vector_multiply(m, v);
 }
 
 
-SparseVector :: SparseVector(MyVector &v, valarray< unsigned > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
+SparseVector :: SparseVector(Vector &v, valarray< unsigned > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
 {
     zero = 0;
 }
@@ -513,10 +513,10 @@ double &SparseVector :: operator[](const size_t i)
 }
 
 
-double SparseVector :: operator*(const MyVector &v) const
+double SparseVector :: operator*(const Vector &v) const
 {
     if ( length != v.size() ) {
-        cerr << "Sparse vector size does not match for multiplication with MyVector" << endl;
+        cerr << "Sparse vector size does not match for multiplication with Vector" << endl;
     }
     double ret = 0;
     for ( size_t j = start; j < length + start; j++ ) {
@@ -603,7 +603,7 @@ double innerProduct(const SparseVector &v0, const SparseVector &v1, const size_t
     return ret;
 }
 
-double innerProduct(const SparseVector &v0, const MyVector &v1, const size_t end)
+double innerProduct(const SparseVector &v0, const Vector &v1, const size_t end)
 {
     double ret = 0;
     for ( size_t j = v0.start; v0.idx [ j ] < end /*&& j < v0.length*/; ++j ) {
@@ -612,7 +612,7 @@ double innerProduct(const SparseVector &v0, const MyVector &v1, const size_t end
     return ret;
 }
 
-double innerProduct(const ConstSparseVector &v0, const MyVector &v1, const size_t end)
+double innerProduct(const ConstSparseVector &v0, const Vector &v1, const size_t end)
 {
     double ret = 0;
     for ( size_t j =  v0.start; v0.idx [ j ] < end /*&& j < v0.length*/; ++j ) {
@@ -622,7 +622,7 @@ double innerProduct(const ConstSparseVector &v0, const MyVector &v1, const size_
     return ret;
 }
 
-// inline void innerProductAssignAndAdd(const Mu::ConstSparseVector & v0, MyVector & v1, double &t,  double toAdd, size_t end)
+// inline void innerProductAssignAndAdd(const Mu::ConstSparseVector & v0, Vector & v1, double &t,  double toAdd, size_t end)
 // {
 //  for(size_t j =  v0.start; v0.idx[j] < end ; ++j)
 //  {
@@ -631,7 +631,7 @@ double innerProduct(const ConstSparseVector &v0, const MyVector &v1, const size_
 //  t+=toAdd ;
 // }
 
-double reverseInnerProduct(const SparseVector &v0, const MyVector &v1, const size_t s)
+double reverseInnerProduct(const SparseVector &v0, const Vector &v1, const size_t s)
 {
     double ret = 0;
     for ( size_t j = v0.length + v0.start - 1; /*j >0 && */ v0.idx [ j ] > s; --j ) {
@@ -640,7 +640,7 @@ double reverseInnerProduct(const SparseVector &v0, const MyVector &v1, const siz
     return ret;
 }
 
-// inline void reverseInnerProductAssignAndAdd(const Mu::ConstSparseVector & v0, MyVector & v1, double &t,  double toAdd, size_t start)
+// inline void reverseInnerProductAssignAndAdd(const Mu::ConstSparseVector & v0, Vector & v1, double &t,  double toAdd, size_t start)
 // {
 //  for(size_t j = v0.length+v0.start-1 ; v0.idx[j] > start   ; --j)
 //  {
@@ -649,7 +649,7 @@ double reverseInnerProduct(const SparseVector &v0, const MyVector &v1, const siz
 //  t+=toAdd ;
 // }
 
-double reverseInnerProduct(const ConstSparseVector &v0, const MyVector &v1, const size_t s)
+double reverseInnerProduct(const ConstSparseVector &v0, const Vector &v1, const size_t s)
 {
     double ret = 0;
 
@@ -660,9 +660,9 @@ double reverseInnerProduct(const ConstSparseVector &v0, const MyVector &v1, cons
     return ret;
 }
 
-MyVector SparseVector :: operator+(const MyVector &v) const
+Vector SparseVector :: operator+(const Vector &v) const
 {
-    MyVector ret(v);
+    Vector ret(v);
 
     for ( size_t j = 0; j < length; j++ ) {
         ret [ idx [ start + j ] ] += val [ start + j ];
@@ -672,7 +672,7 @@ MyVector SparseVector :: operator+(const MyVector &v) const
 }
 
 
-ConstSparseVector :: ConstSparseVector(const MyVector &v, const valarray< unsigned > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
+ConstSparseVector :: ConstSparseVector(const Vector &v, const valarray< unsigned > &i, const size_t l, const size_t s) : val(v), idx(i), length(l), start(s)
 {}
 
 // double ConstSparseVector::operator [](const size_t i) const
@@ -705,7 +705,7 @@ double ConstSparseVector :: vectorMultiply(const double *vecA) const
 }
 
 
-double ConstSparseVector :: operator*(const MyVector &v) const
+double ConstSparseVector :: operator*(const Vector &v) const
 {
     double ret = 0;
 
@@ -774,9 +774,9 @@ void ConstSparseVector :: print() const
     }
 }
 
-MyVector ConstSparseVector :: operator+(const MyVector &v) const
+Vector ConstSparseVector :: operator+(const Vector &v) const
 {
-    MyVector ret(v);
+    Vector ret(v);
 
     for ( size_t j = start; j < length + start; j++ ) {
         size_t index = idx [ j ];
@@ -784,7 +784,7 @@ MyVector ConstSparseVector :: operator+(const MyVector &v) const
     }
 
     return ret;
-    //  MyVector ret(v) ;
+    //  Vector ret(v) ;
     //
     //  for(size_t j = 0 ; j < length ; j++)
     //  {
@@ -798,20 +798,20 @@ MyVector ConstSparseVector :: operator+(const MyVector &v) const
 // struct BandSparseVector
 // {
 // public:
-//  MyVector & val ;
+//  Vector & val ;
 //  const size_t length ;
 //  const size_t start ;
 //
 //  double zero ;
 //
 // public:
-//  BandSparseVector(MyVector & v , const size_t l , const size_t s) ;
+//  BandSparseVector(Vector & v , const size_t l , const size_t s) ;
 //
 //  double operator [](const size_t) const ;
 //  double & operator [](const size_t) ;
-//  double operator *(const MyVector&) const ;
+//  double operator *(const Vector&) const ;
 //  double operator *(const SparseVector&) const ;
-//  MyVector operator +(const MyVector&) const ;
+//  Vector operator +(const Vector&) const ;
 //
 // } ;
 
@@ -883,18 +883,18 @@ CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t
     }
 }
 
-CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, MyMatrix > &source, unsigned RowCountI, unsigned ColumnCountI) :
+CoordinateIndexedSparseMatrix :: CoordinateIndexedSparseMatrix(map< pair< size_t, size_t >, Matrix > &source, unsigned RowCountI, unsigned ColumnCountI) :
     row_size( ( source.rbegin()->first.first + 1 ) * source.begin()->second.numRows() ) {
     size_t ddl = source.begin()->second.numRows();
 
     vector< double >temp_array;
     vector< unsigned >temp_column_index;
-    map< pair< size_t, size_t >, MyMatrix > :: const_iterator previous = source.begin();
+    map< pair< size_t, size_t >, Matrix > :: const_iterator previous = source.begin();
     vector< vector< double > >to_linerarise(ddl);
     vector< vector< unsigned > >col_to_linerarise(ddl);
 
 
-    for ( map< pair< size_t, size_t >, MyMatrix > :: const_iterator ij = source.begin(); ij != source.end(); ) {
+    for ( map< pair< size_t, size_t >, Matrix > :: const_iterator ij = source.begin(); ij != source.end(); ) {
         size_t offset = ij->first.first * ddl;
         for ( size_t i = offset; i < ddl + offset; i++ ) {
             row_size [ i ] += ddl;
@@ -1064,12 +1064,12 @@ double CoordinateIndexedSparseMatrix :: operator()(const size_t i, const size_t 
 }
 
 
-MyVector CoordinateIndexedSparseMatrix :: operator*(const MyVector &v) const {
+Vector CoordinateIndexedSparseMatrix :: operator*(const Vector &v) const {
     if ( v.size() != ColumnCount ) {
         cerr << "Size of sparse matrix did not match the size of the vector" << endl;
     }
 
-    MyVector ret(0., RowCount);
+    Vector ret(0., RowCount);
 
     for ( size_t i = 0; i < row_size.size(); i++ ) {
         ret [ i ] += ( * this ) [ i ] * v;
@@ -1092,8 +1092,8 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator*(const d
     return ret;
 }
 
-MyVector CoordinateIndexedSparseMatrix :: inverseDiagonal() const {
-    MyVector ret(0., min(RowCount, ColumnCount) );
+Vector CoordinateIndexedSparseMatrix :: inverseDiagonal() const {
+    Vector ret(0., min(RowCount, ColumnCount) );
 
     for ( size_t i = 0; i < min(RowCount, ColumnCount); i++ ) {
         //      double v = (*this)[i][i] ;
@@ -1108,8 +1108,8 @@ MyVector CoordinateIndexedSparseMatrix :: inverseDiagonal() const {
     return ret;
 }
 
-MyVector CoordinateIndexedSparseMatrix :: inverseDiagonalSquared() const {
-    MyVector ret(0., min(RowCount, ColumnCount) );
+Vector CoordinateIndexedSparseMatrix :: inverseDiagonalSquared() const {
+    Vector ret(0., min(RowCount, ColumnCount) );
 
     for ( size_t i = 0; i < min(RowCount, ColumnCount); i++ ) {
         ret [ i ] = 1. / ( ( * this ) [ i ] * ( * this ) [ i ] );
@@ -1120,8 +1120,8 @@ MyVector CoordinateIndexedSparseMatrix :: inverseDiagonalSquared() const {
     return ret;
 }
 
-MyVector CoordinateIndexedSparseMatrix :: diagonal() const {
-    MyVector ret(0., min(RowCount, ColumnCount) );
+Vector CoordinateIndexedSparseMatrix :: diagonal() const {
+    Vector ret(0., min(RowCount, ColumnCount) );
 
     for ( size_t i = 0; i < min(RowCount, ColumnCount); i++ ) {
         ret [ i ] = ( * this ) [ i ] [ i ];
@@ -1150,7 +1150,7 @@ CoordinateIndexedSparseMatrix &CoordinateIndexedSparseMatrix :: operator=(const 
 
 CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator*(const CoordinateIndexedSparseMatrix &b) const {
     if ( this->ColumnCount != b.RowCount ) {
-        cerr << "MyMatrix sizes did not match for multiplication" << endl;
+        cerr << "Matrix sizes did not match for multiplication" << endl;
     }
     const CoordinateIndexedSparseMatrix *A = this;
     const CoordinateIndexedSparseMatrix *B = & b;
@@ -1206,10 +1206,10 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator*(const C
 
 CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: operator+(const CoordinateIndexedSparseMatrix &b) const {
     if ( this->ColumnCount != b.ColumnCount ) {
-        cerr << "MyMatrix sizes did not match for summation" << endl;
+        cerr << "Matrix sizes did not match for summation" << endl;
     }
     if ( this->RowCount != b.RowCount ) {
-        cerr << "MyMatrix sizes did not match for summation" << endl;
+        cerr << "Matrix sizes did not match for summation" << endl;
     }
     const CoordinateIndexedSparseMatrix *A = this;
     const CoordinateIndexedSparseMatrix *B = & b;
@@ -1276,9 +1276,9 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: transpose() const
     return CoordinateIndexedSparseMatrix(indeces, this->ColumnCount, this->RowCount);
 }
 
-CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendColumn(const MyVector &c) const {
+CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendColumn(const Vector &c) const {
     if ( this->RowCount != c.size() ) {
-        cerr << "MyMatrix and vector sizes did not match" << endl;
+        cerr << "Matrix and vector sizes did not match" << endl;
     }
     const CoordinateIndexedSparseMatrix *A = this;
 
@@ -1302,9 +1302,9 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendColumn(cons
     return CoordinateIndexedSparseMatrix(indeces, this->RowCount, this->ColumnCount + 1);
 }
 
-CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const MyVector &c) const {
+CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const Vector &c) const {
     if ( this->ColumnCount != c.size() ) {
-        cerr << "MyMatrix and vector sizes did not match" << endl;
+        cerr << "Matrix and vector sizes did not match" << endl;
     }
     const CoordinateIndexedSparseMatrix *A = this;
 
@@ -1328,7 +1328,7 @@ CoordinateIndexedSparseMatrix CoordinateIndexedSparseMatrix :: ExtendRow(const M
     return CoordinateIndexedSparseMatrix(indeces, this->RowCount + 1, this->ColumnCount);
 }
 
-bool ConjGrad(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0, double precision, double relmaxit) {
+bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit) {
     size_t nit = 0;
     size_t Maxit;
     double eps = precision;
@@ -1348,21 +1348,21 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVecto
     }
 
     //Inverse Diagonal Preconditioner
-    MyVector preconditioner(A.inverseDiagonal() );
+    Vector preconditioner(A.inverseDiagonal() );
 
-    MyVector r = b - A * x;
+    Vector r = b - A * x;
     double err = l2_norm(r) / bnorm;
     if ( err < eps ) {
         //std::cerr << "b in : " << b.min() << ", " << b.max() << ", err = " << err << std::endl;
         return true;
     }
 
-    MyVector z(r);
+    Vector z(r);
     for ( size_t i = 0; i < b.size(); i++ ) {
         z [ i ] = r [ i ] * preconditioner [ i ];
     }
-    MyVector p = z;
-    MyVector q = A * p;
+    Vector p = z;
+    Vector q = A * p;
 
     double last_rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
     double alpha = last_rho / std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
@@ -1410,7 +1410,7 @@ bool ConjGrad(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVecto
 }
 
 
-bool ConjGrad(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0) {
+bool ConjGrad(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0) {
     double precision = 1e-16;
     double relmaxit = 0.9;
     if ( b.size() < 50 ) {
@@ -1435,23 +1435,23 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
         }
     }
 
-    MyVector b, x;
+    Vector b, x;
     b.resize(size, 1.e6);
     x.resize(size, 0.);
     double bnorm = l2_norm(b);
 
     //Inverse Diagonal Preconditioner
-    MyVector preconditioner(A.inverseDiagonal() );
+    Vector preconditioner(A.inverseDiagonal() );
 
-    MyVector r = b - A * x;
+    Vector r = b - A * x;
     double err = l2_norm(r) / bnorm;
 
-    MyVector z(r);
+    Vector z(r);
     for ( size_t i = 0; i < b.size(); i++ ) {
         z [ i ] = r [ i ] * preconditioner [ i ];
     }
-    MyVector p = z;
-    MyVector q = A * p;
+    Vector p = z;
+    Vector q = A * p;
 
     double last_rho = std :: inner_product(& r [ 0 ], & r [ r.size() ], & z [ 0 ], ( double ) ( 0 ) );
     double alpha = last_rho / std :: inner_product(& q [ 0 ], & q [ q.size() ], & p [ 0 ], ( double ) ( 0 ) );
@@ -1488,8 +1488,8 @@ bool isMatrixSingular(const CoordinateIndexedSparseMatrix &A) {
 }
 
 
-MyMatrix dyadicProduct(const MyVector &a, const MyVector &b) {
-    MyMatrix X(a.size(), b.size() );
+Matrix dyadicProduct(const Vector &a, const Vector &b) {
+    Matrix X(a.size(), b.size() );
     for ( unsigned i = 0; i < a.size(); i++ ) {
         for ( unsigned j = 0; j < b.size(); j++ ) {
             X [ i ] [ j ] = a [ i ] * b [ j ];
@@ -1498,7 +1498,7 @@ MyMatrix dyadicProduct(const MyVector &a, const MyVector &b) {
     return X;
 }
 
-double l2_norm(MyVector x) {
+double l2_norm(Vector x) {
     return pow(inner_product(& x [ 0 ], & x [ x.size() ], & x [ 0 ], ( double ) ( 0 ) ), 0.5);
 }
 

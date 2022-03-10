@@ -75,7 +75,7 @@ MyVector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &str
 //////////////////////////////////////////////////////////
 MyMatrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
-    MyMatrix T(dimension, dimension);
+    MyMatrix T = MyMatrix :: Zero(dimension, dimension);
     for ( unsigned i = 0; i < dimension; i++ ) {
         T(i, i) = -giveEffectiveConductivity(type);
     }
@@ -85,7 +85,7 @@ MyMatrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimen
 //////////////////////////////////////////////////////////
 MyMatrix TrsprtMaterialStatus :: giveDampingTensor() const {
     TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-    MyMatrix M(1, 1);
+    MyMatrix M = MyMatrix :: Zero(1, 1);
     M(0, 0) = -m->giveCapacity() * m->giveDensity();
     return M;
 }
@@ -214,7 +214,7 @@ DiscreteTrsprtMaterialStatus :: DiscreteTrsprtMaterialStatus(TrsprtMaterial *m, 
 MyMatrix DiscreteTrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
     ( void ) dimension;
-    MyMatrix T(1, 1); //discrete material, only one direction in any dimension
+    MyMatrix T = MyMatrix :: Zero(1, 1); //discrete material, only one direction in any dimension
     T(0, 0) = -giveEffectiveConductivity(type);
     return T;
 };
@@ -270,7 +270,7 @@ MyMatrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned 
         cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
-    MyMatrix D(size, size);
+    MyMatrix D = MyMatrix :: Zero(size, size);
     ElasticMechMaterial *m = static_cast< ElasticMechMaterial * >( mat );
     if ( dimension == 1 ) {
         D(0, 0) = m->giveElasticModulus();
@@ -396,7 +396,7 @@ MyMatrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned
         cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
     }
-    MyMatrix D(size, size);
+    MyMatrix D = MyMatrix :: Zero(size, size);
     CosseratMechMaterial *m = static_cast< CosseratMechMaterial * >( mat );
     double lammeL = m->giveElasticModulus() * m->givePoissonsRatio() / ( ( 1. + m->givePoissonsRatio() ) * ( 1. - 2 * m->givePoissonsRatio() ) );
     double lammeM = m->giveElasticModulus() / ( 2. * ( 1. + m->givePoissonsRatio() ) );
@@ -521,7 +521,7 @@ MyVector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const MyVector &strai
 
 //////////////////////////////////////////////////////////
 MyVector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const {
-    MyVector ints(1);
+    MyVector ints = MyVector :: Zero(1);
     DiscreteTrsprtCoupledMaterial *m = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
 
     ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
@@ -652,7 +652,7 @@ DisMechMaterialStatus :: DisMechMaterialStatus(DisMechMaterial *m, Element *e, u
 MyMatrix DisMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
     ( void ) type;
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    MyMatrix D(dimension, dimension);
+    MyMatrix D = MyMatrix :: Zero(dimension, dimension);
     D(0, 0) = m->giveE0();
     for ( size_t i = 1; i < dimension; i++ ) {
         D(i, i) =  m->giveAlpha() * m->giveE0();

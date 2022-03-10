@@ -383,7 +383,7 @@ MyVector NodeContainer :: readInitialConditions(string initfile) const {
     string line;
     unsigned numi, startDoF;
     double numd;
-    MyVector initvalues(totalDoFs);
+    MyVector initvalues = MyVector :: Zero(totalDoFs);
     ifstream inputfile(initfile.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
@@ -397,7 +397,7 @@ MyVector NodeContainer :: readInitialConditions(string initfile) const {
         }
         inputfile.close();
 
-        MyVector initreduced(freeDoFs);
+        MyVector initreduced = MyVector :: Zero(freeDoFs);
         giveReducedDoFArray(initvalues, initreduced);// to propagate intial master field through constraints
         giveFullDoFArray(initreduced, initvalues);
 

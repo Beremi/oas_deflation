@@ -123,16 +123,16 @@ void TranspPolygonal :: init() {
 
 //////////////////////////////////////////////////////////
 MyMatrix TranspPolygonal :: giveBMatrix(const Point *x) const {
-    MyMatrix B(ndim, nodes.size() );
+    MyMatrix B = MyMatrix :: Zero(ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, B);
     return B;
 }
 
 //////////////////////////////////////////////////////////
 MyMatrix TranspPolygonal :: giveHMatrix(const Point *x) const {
-    MyVector X(numOfNodes);
+    MyVector X = MyVector :: Zero(numOfNodes);
     shafunc->giveShapeF(x, X);
-    MyMatrix H(1, numOfNodes);
+    MyMatrix H = MyMatrix :: Zero(1, numOfNodes);
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
         H(0, k) = X [ k ];
     }
@@ -169,7 +169,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
 
     double radius = pow(volume / M_PI, 0.5);
-    MyMatrix D(numOfNodes, ndim + 1);
+    MyMatrix D = MyMatrix :: Zero(numOfNodes, ndim + 1);
     Point x;
     for ( i = 0; i < numOfNodes; i++ ) {
         D(i, 0) = 1.;
@@ -179,7 +179,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
         }
     }
 
-    MyMatrix B(ndim + 1, numOfNodes);
+    MyMatrix B = MyMatrix :: Zero(ndim + 1, numOfNodes);
     j = numOfNodes - 1;
     for (  i = 0; i < numOfNodes; i++ ) {
         B(0, i) = 1. / numOfNodes;
@@ -197,7 +197,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
 
     double Gdet = G(0, 0) * G(1, 1) * G(2, 2) + G(0, 2) * G(1, 0) * G(2, 1) + G(2, 0) * G(0, 1) * G(1, 2) - G(0, 0) * G(2, 1) * G(1, 2) - G(0, 1) * G(1, 0) * G(2, 2) - G(0, 2) * G(1, 1) * G(2, 0);
-    MyMatrix Ginv(ndim + 1, ndim + 1);
+    MyMatrix Ginv = MyMatrix :: Zero(ndim + 1, ndim + 1);
     Ginv(0, 0) = G(1, 1) * G(2, 2) - G(1, 2) * G(2, 1);
     Ginv(1, 0) = -G(1, 0) * G(2, 2) - G(1, 2) * G(2, 0);
     Ginv(2, 0) = G(1, 0) * G(2, 1) - G(1, 1) * G(2, 0);
@@ -216,8 +216,8 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
     V1 = (V1.transpose() * Gtilde) * V1;
 
-    MyMatrix H(ndim + 1, ndim + 1);
-    MyVector m(ndim + 1);
+    MyMatrix H = MyMatrix :: Zero(ndim + 1, ndim + 1);
+    MyVector m = MyVector :: Zero(ndim + 1);
     m [ 0 ] = 1;
     for ( i = 0; i < inttype->giveNumIP(); i++ ) {
         for ( v = 0; v < ndim; v++ ) {
@@ -227,7 +227,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
 
     double Hdet = H(0, 0) * H(1, 1) * H(2, 2) + H(0, 2) * H(1, 0) * H(2, 1) + H(2, 0) * H(0, 1) * H(1, 2) - H(0, 0) * H(2, 1) * H(1, 2) - H(0, 1) * H(1, 0) * H(2, 2) - H(0, 2) * H(1, 1) * H(2, 0);
-    MyMatrix Hinv(ndim + 1, ndim + 1);
+    MyMatrix Hinv = MyMatrix :: Zero(ndim + 1, ndim + 1);
     Hinv(0, 0) = H(1, 1) * H(2, 2) - H(1, 2) * H(2, 1);
     Hinv(1, 0) = -H(1, 0) * H(2, 2) - H(1, 2) * H(2, 0);
     Hinv(2, 0) = H(1, 0) * H(2, 1) - H(1, 1) * H(2, 0);

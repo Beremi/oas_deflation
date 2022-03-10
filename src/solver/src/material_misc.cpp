@@ -186,7 +186,7 @@ MyMatrix ContactMaterialStatus :: giveStiffnessTensor(string type, unsigned dim)
 MyVector ContactMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
     ( void ) timeStep;
     temp_normal_strain = strain [ 0 ];
-    MyVector stress(strain.size());
+    MyVector stress = MyVector :: Zero(strain.size());
     if ( temp_normal_strain < 0 ) {
         ContactMaterial *m = static_cast< ContactMaterial * >( mat );
         stress [ 0 ] = strain [ 0 ] * m->giveE0();

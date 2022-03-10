@@ -4,9 +4,6 @@ using namespace std;
 using namespace Eigen;
 
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, string solver_type) {
-    cout << "A: " << A << endl;
-    cout << "b: " << b << endl;
-    cout << "x0: " << x0 << endl;
 
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
@@ -53,7 +50,6 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, 
         x = sparseLU_solver.solve(b);
         //result = ( A * x - b ).lpNorm< Infinity >() < precision;
     }
-    cout << "x: " << x << endl;
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();

@@ -227,7 +227,7 @@ void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const
 Point calculateVertexDisplacement(const RigidBodyContact *rbc, unsigned v, const Point *x, const MyVector &DoFs, const unsigned &dim) {
     MyMatrix A = rbc->giveAMatrix(v, *x);
     unsigned DofsPerNode = ( dim - 1 ) * 3;
-    MyVector U(DofsPerNode);
+    MyVector U = MyVector :: Zero(DofsPerNode);
     for ( unsigned i = 0; i < DofsPerNode; i++ ) {
         U [ i ]  = DoFs [ rbc->giveNode(v)->giveStartingDoF() + i ];
     }

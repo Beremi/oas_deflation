@@ -79,7 +79,7 @@ void TXTNodalExporter :: init() {
     unsigned ncod = codes.size();
     maxsize.resize(ncod);
     MyVector res;
-    MyVector fakeDoFs(nodes->giveTotalNumDoFs());
+    MyVector fakeDoFs = MyVector :: Zero(nodes->giveTotalNumDoFs());
     for (unsigned i=0; i<ncod; i++){
         maxsize[i]=0;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ){
@@ -991,9 +991,9 @@ void ExportAllElementsNodalStress(std :: vector< MyMatrix > &stress, const MyVec
 
     unsigned node_id, ni;
     double first;
-    MyVector intF0(2 * dim);
-    MyVector intF1(dim);
-    MyVector intF2(dim);
+    MyVector intF0 = MyVector :: Zero(2 * dim);
+    MyVector intF1 = MyVector :: Zero(dim);
+    MyVector intF2 = MyVector :: Zero(dim);
     MyVector elDoFvalues, strainNT;
     vector< unsigned >elDoFs;
 

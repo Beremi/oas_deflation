@@ -462,7 +462,7 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) cons
 void ElementContainer :: integrateInternalForces(const MyVector &full_r, MyVector &full_f, bool frozen, double timeStep) {
     MyVector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
-    full_f *= 0;  // clear array
+    full_f.setZero();  // clear array
 
     for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
@@ -471,6 +471,7 @@ void ElementContainer :: integrateInternalForces(const MyVector &full_r, MyVecto
             }
             elDoFs = ( * e )->giveDoFs();
             elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.setZero();
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
             }
@@ -491,6 +492,7 @@ void ElementContainer :: integrateDampingOrInertiaForces(const MyVector &full_v,
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
         elDoFvalues.resize(elDoFs.size() );
+        elDoFvalues.setZero();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
         }
@@ -599,9 +601,9 @@ bool ElementContainer :: findElementOwningPoint(Element **elem, Point *xn, const
 void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< MyVector > &result){
     //delete everythink inside
     size_t p;
-    result.resize(0);
+    result.clear(); // result.resize(0);
     result.resize(nodes->giveSize());
-    MyVector weights(nodes->giveSize());
+    MyVector weights = MyVector :: Zero(nodes->giveSize());
 
     //fill with data
     vector<MyVector> res;
@@ -613,7 +615,10 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
         for(p=0; p<(*ee)->giveNumOfNodes(); p++){
             nodeid = (*ee)->giveNode(p)->giveID();
             weights[nodeid] += wei[p];
-            if ( reslen > result[nodeid].size() ) result[nodeid].resize(reslen);
+            if ( reslen > result[nodeid].size() ) {
+                result[nodeid].resize(reslen);
+                result[nodeid].setZero();
+            }
             for (size_t m=0; m<min<size_t>(reslen,result[nodeid].size()); m++) {result[nodeid][m] += res[m][p];}
         }
     }

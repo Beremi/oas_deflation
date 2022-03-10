@@ -96,7 +96,7 @@ private:
     bool time_dependent = false;
 
 public:
-    ConstraintContainer() {};
+    ConstraintContainer() = default;
     ~ConstraintContainer();
     void readFromFile(const string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);

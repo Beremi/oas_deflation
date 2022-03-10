@@ -417,7 +417,7 @@ void Slide32MaterialStatus :: check_state_variable_ranges() {
 
 MyVector Slide32MaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
     ( void ) timeStep;
-    MyVector stress(strain.size() );
+    MyVector stress = MyVector :: Zero(strain.size() );
 
     double s_x_n1, s_y_n1, w_n1;
     w_n1 = strain [ 0 ] * strain_slip_multiplier;

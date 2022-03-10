@@ -78,7 +78,7 @@ void RigidBodyContact :: checkNodeType() const {
 MyMatrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
-    MyMatrix B = MyMatrix(ndim, 6 * ( ndim - 1 ) );
+    MyMatrix B = MyMatrix :: Zero(ndim, 6 * ( ndim - 1 ) );
     MyMatrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
     MyMatrix Ab = giveAMatrix(1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -87,7 +87,7 @@ MyMatrix RigidBodyContact :: giveBMatrix(const Point *x) const {
             B(i, j + 3 * ( ndim - 1 )) = Ab(i, j);
         }
     }
-    return (R * B) / length;//matrix_multiply(R, B) / length;
+    return (R * B) / length;
 }
 
 
@@ -95,7 +95,7 @@ MyMatrix RigidBodyContact :: giveBMatrix(const Point *x) const {
 void RigidBodyContact :: setIntegrationPointsAndWeights() {
     stats.resize(1);
 
-    Point t;
+    Point t(0, 0, 0);
     if ( ndim == 2 ) {
         // NOTE the following taken from few lines upper
         if ( !( vert.size() == 2 ) ) {
@@ -195,7 +195,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     // MyMatrix R;
     if ( ndim == 2 ) {
         t1 = Point(-normal.y(), normal.x(), 0.0);
-        R = MyMatrix(2, 2);
+        R = MyMatrix :: Zero(2, 2);
         R(0, 0) = normal.x();
         R(0, 1) = normal.y();
         R(1, 0) = t1.x();
@@ -220,7 +220,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
         t1 = t1 / t1.norm();
         t2 = normal.cross(t1);
-        R = MyMatrix(3, 3);
+        R = MyMatrix :: Zero(3, 3);
         R(0, 0) = normal.x();
         R(0, 1) = normal.y();
         R(0, 2) = normal.z();
@@ -263,13 +263,13 @@ void RigidBodyContact :: init() {
 //////////////////////////////////////////////////////////
 MyMatrix RigidBodyContact :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return MyMatrix(12, 12);  // NOTE JK: this should be based on ndim
+    return MyMatrix :: Zero(12, 12);  // NOTE JK: this should be based on ndim
 }
 
 
 //////////////////////////////////////////////////////////
 MyMatrix RigidBodyContact :: giveAMatrix(unsigned v, Point x) const {
-    MyMatrix A(ndim, 3 * ( ndim - 1 ) );
+    MyMatrix A = MyMatrix :: Zero(ndim, 3 * ( ndim - 1 ) );
     if ( ndim == 3 ) {
         A(0, 0) = A(1, 1) = A(2, 2) = 1;
         A(1, 3) = nodes[v]->givePointPointer()->z() - x.z();
@@ -323,7 +323,7 @@ MyVector RigidBodyContact :: transformToGlobal(const MyVector &DoFs) const {
 MyVector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
     ( void ) ip_id;
     Point distance = inttype->giveIPLocation(0) - nodes [ node_i ]->givePoint();
-    MyVector dst(ndim);
+    MyVector dst = MyVector :: Zero(ndim);
     for ( unsigned i = 0; i < ndim; i++ ) {
         if ( i == 0 ) {
             dst [ i ] = distance.x();
@@ -379,7 +379,7 @@ MyMatrix RigidBodyContact :: giveDampingMatrix() const {
 
 //////////////////////////////////////////////////////////
 MyMatrix RigidBodyContact :: giveMassMatrix() const {
-    MyMatrix M(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+    MyMatrix M = MyMatrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
     if (ndim==2){
 
     }else if (ndim==3){
@@ -553,14 +553,14 @@ MyVector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const MyVector &DoFs
 //////////////////////////////////////////////////////////
 MyMatrix RigidBodyBoundaryCoupled :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return MyMatrix( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
+    return MyMatrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
 }
 
 //////////////////////////////////////////////////////////
 MyMatrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
-    MyMatrix B = MyMatrix(ndim, 3 * ( ndim - 1 ) );
+    MyMatrix B = MyMatrix :: Zero(ndim, 3 * ( ndim - 1 ) );
     MyMatrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
     // MyMatrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -579,7 +579,7 @@ MyMatrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
 MyMatrix Truss :: giveAMatrix(unsigned v, Point x) const {
     ( void ) v;
     ( void ) x;
-    MyMatrix A(ndim, ndim);
+    MyMatrix A = MyMatrix :: Zero(ndim, ndim);
     if ( ndim == 3 ) {
         A(0, 0) = A(1, 1) = A(2, 2) = 1;
     } else if ( ndim == 2 ) {
@@ -607,7 +607,7 @@ void Truss :: checkNodeType() const {
 MyMatrix Truss :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
-    MyMatrix B = MyMatrix(ndim, 2 * ndim);
+    MyMatrix B = MyMatrix :: Zero(ndim, 2 * ndim);
     MyMatrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
     MyMatrix Ab = giveAMatrix(1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -833,7 +833,7 @@ void Transp1D :: checkNodeType() const {
 //////////////////////////////////////////////////////////
 MyMatrix Transp1D :: giveBMatrix(const Point *x) const {
     ( void ) x;
-    MyMatrix B(1, 2);
+    MyMatrix B = MyMatrix :: Zero(1, 2);
     B(0, 0) = -1. / length;
     B(0, 1) = 1. / length;
     return B;
@@ -842,7 +842,7 @@ MyMatrix Transp1D :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 MyMatrix Transp1D :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    MyMatrix H(1, 2);
+    MyMatrix H = MyMatrix :: Zero(1, 2);
     //double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
     //double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
     //H(0, 0) = l1 / length;
@@ -856,7 +856,7 @@ MyMatrix Transp1D :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 MyMatrix Transp1D :: giveDampingMatrix() const {
-    MyMatrix S(2, 2);
+    MyMatrix S = MyMatrix :: Zero(2, 2);
     double s = area * stats [ 0 ]->giveDampingTensor()(0, 0) * length /  ( 2. * ndim );
 
     S(0, 0) = S(1, 1) = s; //finite volume

@@ -103,7 +103,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
         localINT.init();
         Linear2DTriShapeF localSF; //shape functions
         unsigned nIP = localINT.giveNumIP();
-        MyVector phi(nIP);
+        MyVector phi = MyVector :: Zero(nIP);
         ip_locs.resize(nIP * nnodes);
         ip_weights.resize(nIP * nnodes);
         Point a, b, c;
@@ -130,7 +130,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
         Linear2DQuadShapeF localSF; //shape functions
         unsigned nIP = localINT.giveNumIP();
 
-        MyVector phi(nIP);
+        MyVector phi = MyVector :: Zero(nIP);
         ip_locs.resize(nIP * nnodes);
         ip_weights.resize(nIP * nnodes);
         Point a = ( nodes [ faces [ nnodes - 1 ] [ 0 ] ]->givePoint() + nodes [ faces [ nnodes - 1 ] [ 1 ] ]->givePoint() ) / 2;

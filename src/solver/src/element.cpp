@@ -155,8 +155,8 @@ void Element :: giveValues(string code, MyVector &result) const{
 //////////////////////////////////////////////////////////
 MyMatrix Element :: giveStiffnessMatrix(string matrixType) const {
     unsigned nDoFs = DoFids.size();
-    MyMatrix K(nDoFs, nDoFs);
-    MyMatrix D(0, 0);
+    MyMatrix K = MyMatrix :: Zero(nDoFs, nDoFs);
+    MyMatrix D;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight(i) );
@@ -166,7 +166,7 @@ MyMatrix Element :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 MyVector Element :: giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep) {
-    MyVector intF(DoFids.size() );
+    MyVector intF = MyVector :: Zero(DoFids.size() );
     MyVector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -190,7 +190,7 @@ MyVector Element :: giveInternalForces(const MyVector &DoFs, bool frozen, double
 
 //////////////////////////////////////////////////////////
 MyVector Element :: integrateInternalSources() {
-    MyVector intS(DoFids.size() );
+    MyVector intS = MyVector :: Zero(DoFids.size() );
     MyVector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         intmats = stats [ i ]->giveInternalSource();
@@ -204,7 +204,7 @@ MyVector Element :: integrateInternalSources() {
 //////////////////////////////////////////////////////////
 MyMatrix Element :: giveDampingMatrix() const {
     unsigned nDoFs = DoFids.size();
-    MyMatrix M(nDoFs, nDoFs);
+    MyMatrix M = MyMatrix :: Zero(nDoFs, nDoFs);
     MyMatrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveDampingTensor();
@@ -216,7 +216,7 @@ MyMatrix Element :: giveDampingMatrix() const {
 //////////////////////////////////////////////////////////
 MyMatrix Element :: giveMassMatrix() const {
     unsigned nDoFs = DoFids.size();
-    MyMatrix M(nDoFs, nDoFs);
+    MyMatrix M = MyMatrix :: Zero(nDoFs, nDoFs);
     MyMatrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveMassTensor();
@@ -228,7 +228,7 @@ MyMatrix Element :: giveMassMatrix() const {
 //////////////////////////////////////////////////////////
 MyVector Element :: integrateLoad(BodyLoad *vl, double time) const {
     unsigned nDoFs = DoFids.size();
-    MyVector load(nDoFs);
+    MyVector load = MyVector :: Zero(nDoFs);
     double fvalue;
     unsigned dir = vl->giveDirection();
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
@@ -254,7 +254,7 @@ void Element :: changeMaterial(Material *newmat) {
 
 //////////////////////////////////////////////////////////
 bool Element :: giveGlobalCoords(Point *x, const Point *xn) const {
-    MyVector phi(nodes.size() );
+    MyVector phi = MyVector :: Zero(nodes.size() );
     shafunc->giveShapeF(xn, phi);
     * x = Point(0, 0, 0);
     for ( unsigned n = 0; n < nodes.size(); n++ ) {
@@ -285,9 +285,9 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
 
     //find natural coordinates
     //initial estimation
-    Point center;
+    Point center(0, 0, 0);
     * xn = Point(0, 0, 0);
-    Point aux, diff, diffC;
+    Point aux(0, 0, 0), diff(0, 0, 0), diffC(0, 0, 0);
     Point size = maxc - minc;
     giveGlobalCoords(& center, xn);
 
@@ -339,7 +339,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
 
 //////////////////////////////////////////////////////////
 MyVector Element :: giveElemDoFsFromFullDoFs(const MyVector &FullDoFs) const {
-    MyVector elemDoFs(DoFids.size() );
+    MyVector elemDoFs = MyVector :: Zero(DoFids.size() );
     for ( unsigned i = 0; i < DoFids.size(); i++ ) {
         elemDoFs [ i ] = FullDoFs [ DoFids [ i ] ];
     }
@@ -348,11 +348,11 @@ MyVector Element :: giveElemDoFsFromFullDoFs(const MyVector &FullDoFs) const {
 
 //////////////////////////////////////////////////////////
 void Element :: extrapolateIPValuesToNodes(string code, vector< MyVector > &result, MyVector &weights) const {
-    MyVector phi(nodes.size() );
-    MyVector res(nodes.size() );
+    MyVector phi = MyVector :: Zero(nodes.size() );
+    MyVector res = MyVector :: Zero(nodes.size() );
     double jacobian;
     MyVector ipres;
-    MyMatrix M(nodes.size(),nodes.size());
+    MyMatrix M = MyMatrix :: Zero(nodes.size(),nodes.size());
 
     if (inttype->giveNumIP()==0){
         cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << endl;

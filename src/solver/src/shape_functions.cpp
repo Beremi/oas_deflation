@@ -22,7 +22,7 @@ void ShapeFunc :: init(vector< Point * >pp) {
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const {
     giveShapeFGradNatural(x, phiGrad);
-    MyMatrix JacobiMInverse(ndim, ndim);
+    MyMatrix JacobiMInverse = MyMatrix :: Zero(ndim, ndim);
     giveJacobiMInverse(x, JacobiMInverse);
     phiGrad = JacobiMInverse * phiGrad;
 }
@@ -49,7 +49,7 @@ void ShapeFunc :: giveJacobiM(const MyMatrix &phiGradNat, MyMatrix &JacobiM) con
 
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveJacobiM(const Point *x, MyMatrix &JacobiM) const {
-    MyMatrix phiGradNat(ndim, points.size() );
+    MyMatrix phiGradNat = MyMatrix :: Zero(ndim, points.size() );
     giveShapeFGradNatural(x, phiGradNat);
     JacobiM *= 0;
     Point *n;
@@ -65,7 +65,7 @@ void ShapeFunc :: giveJacobiM(const Point *x, MyMatrix &JacobiM) const {
 
 //////////////////////////////////////////////////////////
 double ShapeFunc :: giveJacobian(const Point *x) const {
-    MyMatrix JacobiM(ndim, ndim);
+    MyMatrix JacobiM = MyMatrix :: Zero(ndim, ndim);
     giveJacobiM(x, JacobiM);
     return giveJacobian(JacobiM);
 }
@@ -108,7 +108,7 @@ void ShapeFunc :: giveJacobiMInverse(const MyMatrix &JacobiM, MyMatrix &JacobiMI
 
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveJacobiMInverse(const Point *x, MyMatrix &JacobiMInverse) const {
-    MyMatrix JacobiM(ndim, ndim);
+    MyMatrix JacobiM = MyMatrix :: Zero(ndim, ndim);
     giveJacobiM(x, JacobiM);
     giveJacobiMInverse(JacobiM, JacobiMInverse);
 }
@@ -263,8 +263,8 @@ void Linear2DPolygonShapeF :: init(vector< Node * > &nodes) {
     }
 
 
-    MyMatrix FullK(n + 1, n + 1);
-    MyMatrix phiFullGrad(2, n + 1);
+    MyMatrix FullK = MyMatrix :: Zero(n + 1, n + 1);
+    MyMatrix phiFullGrad = MyMatrix :: Zero(2, n + 1);
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         giveFullShapeFGrad(inttype->giveIPLocationPointer(i), phiFullGrad);
         FullK += (phiFullGrad.transpose() * phiFullGrad) * inttype->giveIPWeight(i);
@@ -306,7 +306,7 @@ void Linear2DPolygonShapeF :: setFacesCentroidAndIntegration(vector< vector< uns
 //////////////////////////////////////////////////////////
 void Linear2DPolygonShapeF :: giveFullShapeF(const Point *x, MyVector &phi) const {
     unsigned t = findFaceNumber(x);
-    MyVector triphi(3);
+    MyVector triphi = MyVector :: Zero(3);
     triangles [ t ].giveShapeF(x, triphi);
     phi *= 0;
     phi [ faces [ t ] [ 0 ] ]  = triphi [ 0 ];
@@ -317,7 +317,7 @@ void Linear2DPolygonShapeF :: giveFullShapeF(const Point *x, MyVector &phi) cons
 //////////////////////////////////////////////////////////
 void Linear2DPolygonShapeF :: giveFullShapeFGrad(const Point *x, MyMatrix &phiGrad) const {
     unsigned t = findFaceNumber(x);
-    MyMatrix triphiGrad(2, 3);
+    MyMatrix triphiGrad = MyMatrix :: Zero(2, 3);
     triangles [ t ].giveShapeFGrad(x, triphiGrad);
     phiGrad *= 0;
     for ( unsigned i = 0; i < 2; i++ ) {
@@ -331,7 +331,7 @@ void Linear2DPolygonShapeF :: giveFullShapeFGrad(const Point *x, MyMatrix &phiGr
 //////////////////////////////////////////////////////////
 void Linear2DPolygonShapeF :: giveShapeF(const Point *x, MyVector &phi) const {
     unsigned t = findFaceNumber(x);
-    MyVector triphi(3);
+    MyVector triphi = MyVector :: Zero(3);
     triangles [ t ].giveShapeF(x, triphi);
     phi *= 0;
     phi [ faces [ t ] [ 0 ] ]  = triphi [ 0 ];
@@ -344,7 +344,7 @@ void Linear2DPolygonShapeF :: giveShapeF(const Point *x, MyVector &phi) const {
 //////////////////////////////////////////////////////////
 void Linear2DPolygonShapeF :: giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const {
     unsigned t = findFaceNumber(x);
-    MyMatrix triphiGrad(2, 3);
+    MyMatrix triphiGrad = MyMatrix :: Zero(2, 3);
     triangles [ t ].giveShapeFGrad(x, triphiGrad);
     phiGrad *= 0;
     for ( unsigned i = 0; i < 2; i++ ) {
@@ -365,7 +365,7 @@ void Linear2DPolygonShapeF :: giveShapeFGrad(const Point *x, MyMatrix &phiGrad) 
 //////////////////////////////////////////////////////////
 void Wachspress2DShapeF :: giveShapeF(const Point *x, MyVector &phi) const {
     unsigned numOfNodes = points.size();
-    MyVector h(numOfNodes);
+    MyVector h = MyVector :: Zero(numOfNodes);
     Point oldNormal = normals [ numOfNodes - 1 ];
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         h [ i ] = abs((* points [ faces [ i ] [ 0 ] ] - * x).dot(normals [ i ]) );
@@ -385,16 +385,16 @@ void Wachspress2DShapeF :: giveShapeF(const Point *x, MyVector &phi) const {
 //////////////////////////////////////////////////////////
 void Wachspress2DShapeF :: giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const {
     unsigned numOfNodes = points.size();
-    MyVector phi(numOfNodes);
+    MyVector phi = MyVector :: Zero(numOfNodes);
     giveShapeF(x, phi);
-    MyMatrix R(numOfNodes, 2);
+    MyMatrix R = MyMatrix :: Zero(numOfNodes, 2);
 
-    MyVector h(numOfNodes);
+    MyVector h = MyVector :: Zero(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         h [ i ] = abs((* points [ faces [ i ] [ 0 ] ] - * x).dot(normals [ i ]) );
     }
     unsigned oldi = numOfNodes - 1;
-    MyVector phiR(2);
+    MyVector phiR = MyVector :: Zero(2);
     phiR [ 0 ] = 0;
     phiR [ 1 ] = 0;
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
