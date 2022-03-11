@@ -371,7 +371,7 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< MyVector 
         result[h].resize(nodes.size());
     }
     weights.resize(nodes.size());
-    for(auto &h: weights) h = 1;
+    weights.setOnes(); //for(auto &h: weights) h = 1;
 
 
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {

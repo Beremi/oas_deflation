@@ -489,7 +489,7 @@ void ElementContainer :: integrateInternalForces(const MyVector &full_r, MyVecto
 void ElementContainer :: integrateDampingOrInertiaForces(const MyVector &full_v, MyVector &full_f, unsigned diffType) const {
     MyVector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
-    full_f *= 0; //clear array
+    full_f.setZero(); // *= 0; //clear array
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();

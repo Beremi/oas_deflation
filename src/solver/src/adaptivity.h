@@ -94,7 +94,7 @@ private:
         //     regionsToRemove [ rr++ ] = new Sphere(cent, this->radius2);
         // }
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove.push_back(std :: unique_ptr< Sphere >(new Sphere(cent, this->radius2) ) );
+            regionsToRemove.push_back(std :: make_unique< Sphere >(cent, this->radius2) );
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -133,7 +133,7 @@ private:
         // }
         std :: vector< std :: unique_ptr< Region > >regionsToRemove;
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove.push_back(std :: unique_ptr< Sphere >(new Sphere(cent, this->radius2) ) );
+            regionsToRemove.push_back(std :: make_unique< Sphere >(cent, this->radius2) );
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -376,7 +376,7 @@ private:
             this->updateGeometry(); // run python preprocessor
 
             for ( auto const &p : nodeCentersToRmesh ) {
-                this->fineRegions.push_back( std :: unique_ptr< Sphere >( new Sphere(p, this->radius) ) );
+                this->fineRegions.push_back( std :: make_unique< Sphere >(p, this->radius) );
             }
 
             this->loadRemeshData(); // load updated geometry

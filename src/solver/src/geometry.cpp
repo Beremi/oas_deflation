@@ -283,13 +283,13 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
             iss >> std :: ws >> regionType;
             if ( !( regionType.rfind("#", 0) == 0 ) ) {
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
-                    Block *newregion = new Block();
+                    auto newregion = std :: make_unique<Block>();
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: unique_ptr< Block >(newregion) );
+                    regions.push_back(std :: move(newregion));
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
-                    Sphere *newregion = new Sphere();
+                    auto newregion = std :: make_unique<Sphere>();
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: unique_ptr< Sphere >(newregion) );
+                    regions.push_back(std :: move(newregion));
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);

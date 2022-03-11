@@ -27,7 +27,7 @@ public:
     ShapeFunc() { name = "basic shape functions"; is_natural = true; }
     virtual ~ShapeFunc() {};
     virtual void init(std :: vector< Node * > &nodes);
-    virtual void init(std :: vector< Point * >points);
+    virtual void init(std :: vector< Point * > &points);
     unsigned giveDimension() const { return ndim; }
     virtual void giveShapeF(const Point *x, MyVector &phi) const { ( void ) x; ( void ) phi; };
     virtual void giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const;

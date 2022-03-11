@@ -1043,7 +1043,7 @@ void ExportAllElementsNodalStress(std :: vector< MyMatrix > &stress, const MyVec
     }
     for ( unsigned si = 0; si < stress.size(); si++ ) {
         if ( Volume [ si ] <= 0 ) {
-            stress [ si ] *= 0;
+            stress [ si ].setZero();
         } else {
             stress [ si ] /= Volume [ si ];
         }

@@ -17,7 +17,7 @@ void ShapeFunc :: init(vector< Node * > &nodes) {
 }
 
 //////////////////////////////////////////////////////////
-void ShapeFunc :: init(vector< Point * >pp) {
+void ShapeFunc :: init(vector< Point * > &pp) {
     points = pp;
 }
 
@@ -37,7 +37,7 @@ void ShapeFunc :: giveShapeFGrad(const Point *x, const MyMatrix &JacobiMInverse,
 
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveJacobiM(const MyMatrix &phiGradNat, MyMatrix &JacobiM) const {
-    JacobiM *= 0;
+    JacobiM.setZero();
     Point *n;
     for ( unsigned i = 0; i < points.size(); i++ ) {
         n = points [ i ];
@@ -53,7 +53,7 @@ void ShapeFunc :: giveJacobiM(const MyMatrix &phiGradNat, MyMatrix &JacobiM) con
 void ShapeFunc :: giveJacobiM(const Point *x, MyMatrix &JacobiM) const {
     MyMatrix phiGradNat = MyMatrix :: Zero(ndim, points.size() );
     giveShapeFGradNatural(x, phiGradNat);
-    JacobiM *= 0;
+    JacobiM.setZero();
     Point *n;
     for ( unsigned i = 0; i < points.size(); i++ ) {
         n = points [ i ];
@@ -310,7 +310,7 @@ void Linear2DPolygonShapeF :: giveFullShapeF(const Point *x, MyVector &phi) cons
     unsigned t = findFaceNumber(x);
     MyVector triphi = MyVector :: Zero(3);
     triangles [ t ].giveShapeF(x, triphi);
-    phi *= 0;
+    phi.setZero();
     phi [ faces [ t ] [ 0 ] ]  = triphi [ 0 ];
     phi [ faces [ t ] [ 1 ] ]  = triphi [ 1 ];
     phi [ faces.size() ] = triphi [ 2 ]; //centroid
@@ -321,7 +321,7 @@ void Linear2DPolygonShapeF :: giveFullShapeFGrad(const Point *x, MyMatrix &phiGr
     unsigned t = findFaceNumber(x);
     MyMatrix triphiGrad = MyMatrix :: Zero(2, 3);
     triangles [ t ].giveShapeFGrad(x, triphiGrad);
-    phiGrad *= 0;
+    phiGrad.setZero();
     for ( unsigned i = 0; i < 2; i++ ) {
         phiGrad(i, faces [ t ] [ 0 ])  = triphiGrad(i, 0);
         phiGrad(i, faces [ t ] [ 1 ])  = triphiGrad(i, 1);
@@ -335,7 +335,7 @@ void Linear2DPolygonShapeF :: giveShapeF(const Point *x, MyVector &phi) const {
     unsigned t = findFaceNumber(x);
     MyVector triphi = MyVector :: Zero(3);
     triangles [ t ].giveShapeF(x, triphi);
-    phi *= 0;
+    phi.setZero();
     phi [ faces [ t ] [ 0 ] ]  = triphi [ 0 ];
     phi [ faces [ t ] [ 1 ] ]  = triphi [ 1 ];
     for ( unsigned r = 0; r < red2full.size(); r++ ) {
@@ -348,7 +348,7 @@ void Linear2DPolygonShapeF :: giveShapeFGrad(const Point *x, MyMatrix &phiGrad) 
     unsigned t = findFaceNumber(x);
     MyMatrix triphiGrad = MyMatrix :: Zero(2, 3);
     triangles [ t ].giveShapeFGrad(x, triphiGrad);
-    phiGrad *= 0;
+    phiGrad.setZero();
     for ( unsigned i = 0; i < 2; i++ ) {
         phiGrad(i, faces [ t ] [ 0 ])  = triphiGrad(i, 0);
         phiGrad(i, faces [ t ] [ 1 ])  = triphiGrad(i, 1);

@@ -243,7 +243,7 @@ void SteadyStateLinearSolver :: computeKeff() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: reset() {
-    load *= 0.;
+    load.setZero();
     nodes->addRHS_nodalLoad(load, time); //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     computeForcesAtIntegrationTime(true);
@@ -664,8 +664,8 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: reset() {
-    load *= 0.;
-    ddr *= 0;
+    load.setZero();
+    ddr.setZero();
     double reset_time = time;
     if ( idc ) {
         reset_time = idc_time;
@@ -784,7 +784,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
             if ( idc ) {      //indirect displacement control
                 f_last_iter = f;
-                load *= 0.;
+                load.setZero();
                 nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time + idc_dt); //give prescribed DoFs
                 //updateFieldVariables(); //if used ddr needs to be set to zero
@@ -813,7 +813,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     ddr += load_mult * ddf;
                     idc_time += idc_dt * load_mult;
 
-                    load *= 0;
+                    load.setZero();
                     nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
                 }
@@ -880,8 +880,8 @@ void SteadyStateNonLinearSolver :: solve() {
             trial_r = r;
             f_int = f_int_old;
             f_ext = f_ext_old;
-            std :: fill(begin(load), end(load), 0);
-            std :: fill(begin(ddr), end(ddr), 0);            //ddr *= 0;
+            load.setZero(); // std :: fill(begin(load), end(load), 0);
+            ddr.setZero(); // std :: fill(begin(ddr), end(ddr), 0);            //ddr *= 0;
             elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
             if ( idc ) { //idc solver needs residuals from last converged step
                 idc_time = idc_time_converged;

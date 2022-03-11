@@ -124,7 +124,7 @@ void DiscreteTransportRVEMaterialStatus :: applyEigenStrains() {
     TrsprtMaterial *m;
     TrsprtMaterialStatus *s;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        eigstr *= 0.;
+        eigstr.setZero();
         e = static_cast< Transp1D * >( elems->giveElement(i) );
         s = static_cast< TrsprtMaterialStatus * >( e->giveMatStatus(0) );
         m = static_cast< TrsprtMaterial * >( s->giveMaterial() );
@@ -151,7 +151,7 @@ void DiscreteTransportRVEMaterialStatus :: collectStresses() {
     Transp1D *e;
     TrsprtMaterial *m;
     Point normal;
-    local_stress *= 0.;
+    local_stress.setZero();
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = static_cast< Transp1D * >( elems->giveElement(i) );
         m = static_cast< TrsprtMaterial * >( e->giveMatStatus(0)->giveMaterial() );
@@ -211,7 +211,7 @@ MyVector DiscreteTransportRVEMaterialStatus :: giveStress(const MyVector &strain
 
     //collect results
     local_stress.resize( temp_strain.size() );
-    local_stress *= 0;
+    local_stress.setZero();
     collectStresses();
 
     transformStress();
@@ -576,7 +576,7 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
     MyVector eigstr = MyVector :: Zero(ndim);
     unsigned num = 0;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        eigstr *= 0.;
+        eigstr.setZero();
         for ( unsigned v = 0; v < ndim; v++ ) {
             for ( unsigned r = 0; r < local_strain.size(); r++ ) {
                 eigstr [ v ] -= local_strain [ r ] * ( * projectors ) [ v ] [ num ] [ r ];
@@ -658,7 +658,7 @@ MyVector DiscreteMechanicalRVEMaterialStatus :: giveStress(const MyVector &strai
 
     //collect results
     local_stress.resize(temp_strain.size() );
-    local_stress *= 0;
+    local_stress.setZero();
     collectStresses();
 
     transformStress();

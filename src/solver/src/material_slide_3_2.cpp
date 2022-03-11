@@ -382,7 +382,7 @@ void Slide32MaterialStatus :: get_Eps_k1(const double &s_x_n1, const double &s_y
     for ( unsigned i = 0; i < 8; i++ ) {
         temp_Eps [ i ] = Eps [ i ] + lam_k * Phi_k [ i ];
     }
-    delete Phi_k;
+    delete [] Phi_k;
     // check_state_variable_ranges();
 }
 
