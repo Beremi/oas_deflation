@@ -1,7 +1,6 @@
 #include "linalg.h"
 
 using namespace std;
-using namespace Eigen;
 
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, string solver_type) {
 
@@ -20,7 +19,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, 
         //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
         //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
 
-        ConjugateGradient< SparseMatrix< double >, Lower | Upper >cgK;
+        Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper >cgK;
         //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
         cgK.setMaxIterations(Maxit);
         cgK.setTolerance(precision);
@@ -34,21 +33,21 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, 
             cout << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
         }
     } else if ( solver_type == "EigenLDLT" ) {
-        SimplicialLDLT< SparseMatrix< double > >simplicial_ldlt_solver;
+        Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > > simplicial_ldlt_solver;
         x = simplicial_ldlt_solver.compute(A).solve(b);
-        cout << "error " << ( A * x - b ).lpNorm< Infinity >() << endl;
-        result = ( A * x - b ).lpNorm< Infinity >() < precision;
+        cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
+        result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
     } else if ( solver_type == "EigenLLT" ) {
-        SimplicialLLT< SparseMatrix< double > >simplicial_llt_solver;
+        Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
         x = simplicial_llt_solver.compute(A).solve(b);
         //result = ( A * x - b ).lpNorm< Infinity >() < precision;
     } else if ( solver_type == "EigenSparseLU" ) {
-        SparseLU< SparseMatrix< double >, COLAMDOrdering< int > >sparseLU_solver;
+        Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
         sparseLU_solver.analyzePattern(A);
         sparseLU_solver.factorize(A);
 
         x = sparseLU_solver.solve(b);
-        //result = ( A * x - b ).lpNorm< Infinity >() < precision;
+        result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
     }
 
 #if PRINT_DEBUG_TIME
@@ -64,7 +63,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, 
 }
 
 
-bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, VectorXd &x, const VectorXd &b, const VectorXd x0, double precision, double relmaxit) {
+bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0, double precision, double relmaxit) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -74,7 +73,7 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, VectorXd &
     size_t Maxit = b.size() * relmaxit;
 
     //BiCGSTAB<SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
-    BiCGSTAB< SparseMatrix< double > >bicg;
+    Eigen :: BiCGSTAB< Eigen :: SparseMatrix< double > >bicg;
     bicg.setMaxIterations(Maxit);
     bicg.setTolerance(precision);
 
@@ -96,7 +95,7 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, VectorXd &
 }
 
 //sorterd eigenvalues and eigenvectors
-bool LinalgEigenSolver(const VectorXd &A, VectorXd &eigenvalues, vector< VectorXd > &eigenvectors) {
+bool LinalgEigenSolver(const MyVector &A, MyVector &eigenvalues, vector< MyVector > &eigenvectors) {
 
     size_t ndim;
     bool sym;
@@ -112,7 +111,7 @@ bool LinalgEigenSolver(const VectorXd &A, VectorXd &eigenvalues, vector< VectorX
         cerr << "Error: LinalgEigenSolver implemented only for vectorized matrices of size 2 or 3, submitted size " << A.size() << endl;
         exit(1);
     }
-    MatrixXd mat = MatrixXd :: Random(ndim, ndim);
+    Eigen :: MatrixXd mat = Eigen :: MatrixXd :: Random(ndim, ndim); // TODO: proč random??
 
     if (ndim==2 && sym){
         mat(0, 0) = A [ 0 ];
@@ -141,8 +140,8 @@ bool LinalgEigenSolver(const VectorXd &A, VectorXd &eigenvalues, vector< VectorX
    return LinalgEigenSolver(mat, eigenvalues, eigenvectors);
 }
 
-bool LinalgEigenSolver(const MatrixXd &mat, VectorXd &eigenvalues, vector< VectorXd > &eigenvectors) {
-    EigenSolver< MatrixXd >es(mat);
+bool LinalgEigenSolver(const MyMatrix &mat, MyVector &eigenvalues, vector< MyVector > &eigenvectors) {
+    Eigen :: EigenSolver< MyMatrix > es(mat);
 
     unsigned ndim = mat.rows();
     vector< double > eigenvalsvector(ndim);
@@ -163,7 +162,7 @@ bool LinalgEigenSolver(const MatrixXd &mat, VectorXd &eigenvalues, vector< Vecto
     for ( unsigned i = 0; i < ndim; i++ ) {
         eigenvalues [ i ] = eigenvalsvector [ idx [ i ] ];
         eigenvectors [ i ].resize(ndim);
-        VectorXcd v = es.eigenvectors().col(idx [ i ]);
+        Eigen :: VectorXcd v = es.eigenvectors().col(idx [ i ]);
         for ( unsigned j = 0; j < ndim; j++ ) {
             eigenvectors[i] [j] = real(v [ j ]);
         }
@@ -185,12 +184,15 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
 }
 
 
-MatrixXd dyadicProduct(const VectorXd &a, const VectorXd &b) {
+MyMatrix dyadicProduct(const MyVector &a, const MyVector &b) {
     return a * b.transpose();
 }
 
 double triArea2D(const Point *a, const Point *b, const Point *c) { //points in counter clockwise direction
-    return 0.5 * ( a->x() * ( b->y() - c->y() ) + b->x() * ( c->y() - a->y() ) + c->x() * ( a->y() - b->y() ) );
+    //Point AB = ptB - ptA;
+    //Point AC = ptC - ptA;
+    //return abs(AB.cross(AC));
+    return 0.5 * ( a->x() * ( b->y() - c->y() ) + b->x() * ( c->y() - a->y() ) + c->x() * ( a->y() - b->y() ) ); // TODO: neměla by tu být také abs?
 }
 
 double triArea3D(const Point *a, const Point *b, const Point *c) { //points

@@ -43,15 +43,15 @@ const static Eigen :: IOFormat SemicolonInitFmt(Eigen :: FullPrecision, Eigen ::
 //bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Eigen :: Ref<MyVector> x, const Eigen::Ref<const MyVector> b, const Eigen::Ref<const MyVector> x0, double precision, double relmaxit, string solver_type);
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, std :: string solver_type);
 
-bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Eigen :: VectorXd &x, const Eigen :: VectorXd &b, const Eigen :: VectorXd x0, double precision, double relmaxit);
+bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0, double precision, double relmaxit);
 
-bool LinalgEigenSolver(const Eigen :: VectorXd &A, Eigen :: VectorXd &eigenvalues, std :: vector< Eigen :: VectorXd > &eigevalues);
+bool LinalgEigenSolver(const MyVector &A, MyVector &eigenvalues, std :: vector< MyVector > &eigevalues);
 
-bool LinalgEigenSolver(const Eigen::MatrixXd& mat, Eigen::VectorXd& eigenvalues, std::vector< Eigen::VectorXd >& eigevalues);
+bool LinalgEigenSolver(const MyMatrix& mat, MyVector& eigenvalues, std::vector< MyVector > &eigevalues);
 
 double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD);
 
-Eigen::MatrixXd dyadicProduct(const Eigen::VectorXd &a, const Eigen::VectorXd &b);
+MyMatrix dyadicProduct(const MyVector &a, const MyVector &b);
 
 double triArea2D(const Point *a, const Point *b, const Point *c);
 
