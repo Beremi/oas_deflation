@@ -25,7 +25,7 @@ protected:
     unsigned dim; /// number of dimensions
     unsigned nDoFs; //
     unsigned firstDoF;
-    string name;
+    std :: string name;
     bool isMechanical;
     bool isTransport;
     unsigned id;
@@ -41,7 +41,7 @@ public:
      * \param c1 the first argument.
      * \param c2 the second argument.
      */
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual std :: string giveLineToSave() const;
 
     Point givePoint() const { return point; };
@@ -51,15 +51,15 @@ public:
     unsigned giveNumberOfDoFs() const { return nDoFs; };
     void setStartingDoF(unsigned num) { firstDoF = num; };
     unsigned giveStartingDoF() const { return firstDoF; };
-    string giveName() const { return name; }
+    std :: string giveName() const { return name; }
     void setName(const std :: string &newName) { this->name = newName; };
     bool doesMechanics() const { return isMechanical; };
     bool doesTransport() const { return isTransport; };
-    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const { ( void ) code; ( void ) DoFs; result.resize(0);};
+    virtual void giveDoFBasedValues(std :: string code, const MyVector &DoFs, MyVector &result) const { ( void ) code; ( void ) DoFs; result.resize(0);};
     virtual bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
     virtual bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
     void subtructFromPoint(Point *p) { point -= ( * p ); };
-    virtual unsigned giveOrderOfForceCode(string code) const;
+    virtual unsigned giveOrderOfForceCode(std :: string code) const;
     Simplex *addElementToSimplex(RigidBodyContact *rbc);
     void initSimplex();
     void updateSimplexVolumetricStrain(const MyVector &fullDoFs);
@@ -93,8 +93,8 @@ protected:
 public:
     MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "MechNode"; isMechanical = true; };
     virtual ~MechNode() {};
-    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
-    virtual unsigned giveOrderOfForceCode(string code) const;
+    virtual void giveDoFBasedValues(std :: string code, const MyVector &DoFs, MyVector &result) const;
+    virtual unsigned giveOrderOfForceCode(std :: string code) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -108,7 +108,7 @@ protected:
 public:
     MechDoF(unsigned dimension, unsigned numDoFs);
     virtual ~MechDoF() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
 };
 
 //////////////////////////////////////////////////////////
@@ -122,8 +122,8 @@ protected:
 public:
     TrsNode(unsigned dimension) { dim = dimension; nDoFs = 1; name = "TrsprtNode"; isTransport = true; };
     virtual ~TrsNode() {};
-    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
-    virtual unsigned giveOrderOfForceCode(string code) const;
+    virtual void giveDoFBasedValues(std :: string code, const MyVector &DoFs, MyVector &result) const;
+    virtual unsigned giveOrderOfForceCode(std :: string code) const;
 };
 
 
@@ -138,7 +138,7 @@ protected:
 public:
     TrsTemprtrCoupledNode(unsigned dimension) : TrsNode(dimension) { nDoFs = 2; name = "TrsTemprtrCoupledNode"; isTransport = true; };
     virtual ~TrsTemprtrCoupledNode() {};
-    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
+    virtual void giveDoFBasedValues(std :: string code, const MyVector &DoFs, MyVector &result) const;
 };
 
 
@@ -153,7 +153,7 @@ protected:
 public:
     TrsDoF(unsigned dimension, unsigned numDoFs);
     virtual ~TrsDoF() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
 };
 
 
@@ -169,11 +169,11 @@ public:
     Particle(unsigned dimension) : MechNode(dimension) { nDoFs = 3 * ( dim - 1 ); name = "Particle"; };
     virtual ~Particle() {};
 
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
-    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
-    virtual unsigned giveOrderOfForceCode(string code) const;
+    virtual void giveDoFBasedValues(std :: string code, const MyVector &DoFs, MyVector &result) const;
+    virtual unsigned giveOrderOfForceCode(std :: string code) const;
     virtual std :: string giveLineToSave() const;
 };
 
@@ -188,8 +188,8 @@ protected:
 public:
     CoupledParticle(unsigned dimension) : Particle(dimension) { nDoFs = 3 * ( dim - 1 ) + 1; name = "CoupledParticle";  isTransport = true; };
     virtual ~CoupledParticle() {};
-    virtual void giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const;
-    virtual unsigned giveOrderOfForceCode(string code) const;
+    virtual void giveDoFBasedValues(std :: string code, const MyVector &DoFs, MyVector &result) const;
+    virtual unsigned giveOrderOfForceCode(std :: string code) const;
     virtual bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) { return true; } else { return false; } };
     virtual bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) { return true; } else { return false; } };
 };

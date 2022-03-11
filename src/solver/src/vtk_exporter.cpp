@@ -2,6 +2,8 @@
 #include "element_discrete.h"
 #include "misc.h"
 
+using namespace std;
+
 #ifdef __VTK_MODULE
     #include <vtkCellArray.h>
     #include <vtkNew.h>

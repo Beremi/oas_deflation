@@ -29,7 +29,7 @@ public:
     virtual ~Function() {};
     virtual double giveY(double t) const { ( void ) t; return 0; };
     virtual double giveY(const Point *t) { ( void ) t; return 0; }
-    virtual void readFromLine(istringstream &iss) = 0;
+    virtual void readFromLine(std :: istringstream &iss) = 0;
     virtual double giveNextEtreme(const double &t) const = 0;
     virtual void setActive() { active = true; };
     virtual bool isActive() const { return active; };
@@ -63,13 +63,13 @@ protected:
 class PieceWiseLinearFunction : public Function
 {
 protected:
-    vector< double >x;
-    vector< double >y;
+    std :: vector< double >x;
+    std :: vector< double >y;
 public:
     PieceWiseLinearFunction() {};
-    PieceWiseLinearFunction(vector< double >nx, vector< double >ny) { x = nx; y = ny; };
+    PieceWiseLinearFunction(std :: vector< double >nx, std :: vector< double >ny) { x = nx; y = ny; };
     virtual ~PieceWiseLinearFunction() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
     void setYValue(double yv, unsigned i) { y [ i ] = yv; };
@@ -82,7 +82,7 @@ class PieceWiseLinearFunctionWithExtremes : public PieceWiseLinearFunction
 {
 public:
     PieceWiseLinearFunctionWithExtremes() {};
-    PieceWiseLinearFunctionWithExtremes(vector< double >nx, vector< double >ny) : PieceWiseLinearFunction(nx, ny) {};
+    PieceWiseLinearFunctionWithExtremes(std :: vector< double >nx, std :: vector< double >ny) : PieceWiseLinearFunction(nx, ny) {};
     virtual double giveNextEtreme(const double &t) const;
 };
 //////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ private:
 public:
     ConstSawToothFunction() {};
     virtual ~ConstSawToothFunction() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
 protected:
@@ -113,7 +113,7 @@ private:
 public:
     LinSawToothFunction() {};
     virtual ~LinSawToothFunction() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     double giveY(double t) const;
 protected:
 };
@@ -130,7 +130,7 @@ private:
 public:
     VaryingSawToothFunction() {};
     virtual ~VaryingSawToothFunction() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     double giveY(double t) const;
 protected:
 };
@@ -150,7 +150,7 @@ private:
 public:
     ConstSawToothShearFunction() {};
     virtual ~ConstSawToothShearFunction() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     double giveY(double t) const;
     void setCurrentTime(double t);
 protected:
@@ -167,7 +167,7 @@ private:
 public:
     SinusFunction() {};
     virtual ~SinusFunction() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     double giveY(double t) const;
     virtual double giveNextEtreme(const double &t) const;
 protected:
@@ -179,11 +179,11 @@ protected:
 class FunctionContainer
 {
 private:
-    vector< Function * >functions;
+    std :: vector< Function * >functions;
 public:
     FunctionContainer() {};
     virtual ~FunctionContainer();
-    void readFromFile(const string filename);
+    void readFromFile(const std :: string filename);
     double giveTimeOfNextExtreme(const double &t) const;
     void setActive(const unsigned &fid) { functions [ fid ]->setActive(); };
     bool isActive(const unsigned &fid) const { return functions [ fid ]->isActive(); };

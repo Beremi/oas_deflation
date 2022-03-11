@@ -24,7 +24,7 @@ JointDoF :: JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * >
 }
 
 //////////////////////////////////////////////////////////
-void JointDoF :: readFromLine(istringstream &iss, NodeContainer *nodes) {
+void JointDoF :: readFromLine(std :: istringstream &iss, NodeContainer *nodes) {
     // # type      node    direction   numMasters master1 multiplier1 master2...
     unsigned intn, intmas;
     double mult;
@@ -82,7 +82,7 @@ void JointDoF :: init(Solver *solver) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Volumetric Average
-VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc) {
+VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc) {
     nodes = n;
     dirs = d;
     masternode = mn;
@@ -92,10 +92,10 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
 
 
     //collect all slaves from other joint DoFs and also all involved DOFs
-    vector< Node * >excludedNodes;
-    vector< unsigned >excudedDirs;
-    vector< Node * >jdm;
-    vector< unsigned >jdd;
+    std :: vector< Node * >excludedNodes;
+    std :: vector< unsigned >excudedDirs;
+    std :: vector< Node * >jdm;
+    std :: vector< unsigned >jdd;
     JointDoF *jd;
     VolumetricAverage *va;
     for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
@@ -128,7 +128,7 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
         }
     }
     if ( found ) { //Todo potentially uninitialized variable 'found' used!
-        cerr << "volumetric average didn't find any suitable slave DoF" << endl;
+        std :: cerr << "volumetric average didn't find any suitable slave DoF" << std :: endl;
         exit(1);
     }
     slaveNode = nodes [ k ];
@@ -138,7 +138,7 @@ VolumetricAverage :: VolumetricAverage(vector< Node * > &n, std :: vector< unsig
 //////////////////////////////////////////////////////////
 void VolumetricAverage :: init(Solver *solver) {
     //collect all slaves from other joint DoFs
-    vector< unsigned >otherslaves;
+    std :: vector< unsigned >otherslaves;
     otherslaves.resize(constraints->giveSize() );
     JointDoF *jd;
     for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
@@ -149,14 +149,14 @@ void VolumetricAverage :: init(Solver *solver) {
     //find slave position in array
     unsigned slaveid = find(nodes.begin(), nodes.end(), slaveNode) - nodes.begin();
     if ( slaveid == nodes.size() ) {
-        cerr << "Volumetric average Error: slave node not included in node list" << endl;
+        std :: cerr << "Volumetric average Error: slave node not included in node list" << std :: endl;
         exit(1);
     }
 
     // calculate volumes associated with nodes
     unsigned r;
     unsigned s = nodes.size();
-    vector< double >m;
+    std :: vector< double >m;
     m.resize(nodes.size() );
     Transp1D *et;
     RigidBodyContact *em;
@@ -182,20 +182,20 @@ void VolumetricAverage :: init(Solver *solver) {
 
     //rearange everything and update weights
     double factor = m [ slaveid ];
-    cout << slaveid << " " << factor << m.size() << endl;
+    std :: cout << slaveid << " " << factor << m.size() << std :: endl;
     double fullVolume = 0;
     for ( auto &ss: m ) {
         fullVolume += ss;
         ss /= -factor;
     }
-    cout << "volumetric Average: check of volume " << fullVolume << endl;
+    std :: cout << "volumetric Average: check of volume " << fullVolume << std :: endl;
     m [ slaveid ] = fullVolume / factor;
     nodes [ slaveid ] = masternode;
     dirs [ slaveid ] = masterdir;
 
-    vector< Node * >jdmasters;
-    vector< unsigned >jddirs;
-    vector< double >jdmults;
+    std :: vector< Node * >jdmasters;
+    std :: vector< unsigned >jddirs;
+    std :: vector< double >jdmults;
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         r = ( std :: find(otherslaves.begin(), otherslaves.end(), nodes [ i ]->giveStartingDoF() + dirs [ i ]) - otherslaves.begin() );
         if ( r == otherslaves.size() ) { //true masters
@@ -230,9 +230,9 @@ void DoFDependentOnConjugates :: init(Solver *solver) {
     JointDoF :: init(solver);
     TransientLinearTransportSolver *ts = dynamic_cast< TransientLinearTransportSolver * >( solver );
     if ( ts ) {
-        cerr << "*******************************" << endl;
-        cerr << "Warning: using DoFDependentOnConjugates is strongly discouraged as the time integration might not take place at the end of time step so the update of primary variables at the end will be incorrect" << endl;
-        cerr << "*******************************" << endl;
+        std :: cerr << "*******************************" << std :: endl;
+        std :: cerr << "Warning: using DoFDependentOnConjugates is strongly discouraged as the time integration might not take place at the end of time step so the update of primary variables at the end will be incorrect" << std :: endl;
+        std :: cerr << "*******************************" << std :: endl;
     }
 }
 
@@ -240,11 +240,11 @@ void DoFDependentOnConjugates :: init(Solver *solver) {
 //////////////////////////////////////////////////////////
 // Container
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: readFromFile(const string filename, const unsigned ndim, NodeContainer *nodecont) {
+void ConstraintContainer :: readFromFile(const std :: string filename, const unsigned ndim, NodeContainer *nodecont) {
     ( void ) ndim;
     unsigned origsize = constraints.size();
-    string line, ConstrType;
-    ifstream inputfile(filename.c_str() );
+    std :: string line, ConstrType;
+    std :: ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -253,7 +253,7 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
             if ( line.at(0) == '#' ) {
                 continue;
             }
-            istringstream iss(line);
+            std :: istringstream iss(line);
             iss >> std :: ws >> ConstrType;
             if ( !( ConstrType.rfind("#", 0) == 0 ) ) {
                 if ( ConstrType.compare("jointDoF") == 0 ) {
@@ -261,13 +261,13 @@ void ConstraintContainer :: readFromFile(const string filename, const unsigned n
                     newJD->readFromLine(iss, nodecont);
                     constraints.push_back(newJD);
                 } else {
-                    cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << endl;
+                    std :: cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << std :: endl;
                     exit(EXIT_FAILURE);
                 }
                 inputfile.close();
-                cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << endl;
+                std :: cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << std :: endl;
             } else {
-                cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
+                std :: cerr << "Error: unable to open input file '" <<  filename <<  "'" << std :: endl;
                 exit(1);
             }
         }
@@ -342,8 +342,8 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
         // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
 
         if ( i < numFreeDoFs - constraints.size() ) {
-            std :: cerr << "CONSTRAINT error: should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << endl;
-            cout << i << " " << jD->giveSlaveDoF() << " " <<  numFreeDoFs << " " << numFreeDoFs - constraints.size() << endl;
+            std :: cerr << "CONSTRAINT error: should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << std :: endl;
+            std :: cout << i << " " << jD->giveSlaveDoF() << " " <<  numFreeDoFs << " " << numFreeDoFs - constraints.size() << std :: endl;
             exit(1);
         } else if ( i >= numFreeDoFs ) {
             // Point A = jD->giveSlaveNode()->givePoint();
@@ -455,7 +455,7 @@ void ConstraintContainer :: calculateMasterForces(MyVector &fullForces) {
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: removeConstraint(unsigned i) {
     if ( i > constraints.size() - 1 ) {
-        cerr << "ConstraintContainer Error: requester constraint number " << i << " out of " << constraints.size() << endl;
+        std :: cerr << "ConstraintContainer Error: requester constraint number " << i << " out of " << constraints.size() << std :: endl;
         exit(1);
     }
     delete constraints [ i ];

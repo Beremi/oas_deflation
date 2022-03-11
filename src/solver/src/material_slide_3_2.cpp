@@ -2,6 +2,8 @@
 #include "element_discrete.h"
 #include <algorithm>
 
+using namespace std;
+
 /******************************************************************************
 *                       Code generated with sympy 1.4                        *
 *                                                                            *

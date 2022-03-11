@@ -2,11 +2,13 @@
 #include "element_container.h"
 #include "boundary_condition.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC ELEMENT - MASTER CLASS
 Element :: ~Element() {
-    for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
+    for ( std :: vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
         delete * e;
     }
     delete shafunc;
@@ -42,7 +44,7 @@ void Element :: setIntegrationPointsAndWeights() {
 
 
 //////////////////////////////////////////////////////////
-void Element :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+void Element :: readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num;
     nodes.resize(numOfNodes);
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
@@ -56,12 +58,12 @@ void Element :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mater
 //////////////////////////////////////////////////////////
 void Element :: init() {
     //delete possible previous statuses
-    for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
+    for ( std :: vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
         delete * e;
     }
 
     unsigned totalDoFs = 0;
-    for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+    for ( std :: vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         totalDoFs += ( * n )->giveNumberOfDoFs();
     }
 
@@ -71,7 +73,7 @@ void Element :: init() {
     DoFids.resize(totalDoFs);
     unsigned i = 0;
     unsigned k;
-    for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+    for ( std :: vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         k = ( * n )->giveStartingDoF();
         for ( unsigned s = 0; s < ( * n )->giveNumberOfDoFs(); s++, i++ ) {
             DoFids [ i ] = k + s;
@@ -88,8 +90,8 @@ void Element :: init() {
 }
 
 //////////////////////////////////////////////////////////
-vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
-    vector< unsigned >DoFinDir(nodes.size() );
+std :: vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
+    std :: vector< unsigned >DoFinDir(nodes.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
     }
@@ -99,28 +101,28 @@ vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
 //////////////////////////////////////////////////////////
 void Element :: initMaterialStatuses() {
     unsigned num = 0;
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num++ ) {
+    for ( std :: vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num++ ) {
         ( * m )->init();
     }
 }
 
 //////////////////////////////////////////////////////////
 void Element :: updateMaterialStatuses() {
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
+    for ( std :: vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
         ( * m )->update();
     }
 }
 
 //////////////////////////////////////////////////////////
 void Element :: resetMaterialStatuses() {
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
+    for ( std :: vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
         ( * m )->resetTemporaryVariables();
     }
 }
 
 
 //////////////////////////////////////////////////////////
-void Element :: giveIPValues(string code, unsigned ipnum, MyVector &result) const {
+void Element :: giveIPValues(std :: string code, unsigned ipnum, MyVector &result) const {
     if ( code.compare("x") == 0 ) {
         result.resize(1);
         result[0] = inttype->giveIPLocationPointer(ipnum)->x();
@@ -135,7 +137,7 @@ void Element :: giveIPValues(string code, unsigned ipnum, MyVector &result) cons
         result[0] = stats [ ipnum ]->giveMaterial()->giveId();
     } else {
         if(ipnum >= inttype->giveNumIP() ){
-            cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << endl;
+            std :: cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << std :: endl;
             exit(1);
         }
         stats [ ipnum ]->giveValues(code, result);
@@ -143,7 +145,7 @@ void Element :: giveIPValues(string code, unsigned ipnum, MyVector &result) cons
 };
 
 //////////////////////////////////////////////////////////
-void Element :: giveValues(string code, MyVector &result) const{
+void Element :: giveValues(std :: string code, MyVector &result) const{
     if ( code.compare("id") == 0 ) {
         result.resize(1);
         result[0] = idx;
@@ -153,7 +155,7 @@ void Element :: giveValues(string code, MyVector &result) const{
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix Element :: giveStiffnessMatrix(string matrixType) const {
+MyMatrix Element :: giveStiffnessMatrix(std :: string matrixType) const {
     unsigned nDoFs = DoFids.size();
     MyMatrix K = MyMatrix :: Zero(nDoFs, nDoFs);
     MyMatrix D;
@@ -273,8 +275,8 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     for ( auto &n: nodes ) {
         p = n->givePointPointer();
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxc(c) = max(maxc(c), p->operator()(c) );
-            minc(c) = min(minc(c), p->operator()(c) );
+            maxc(c) = std :: max(maxc(c), p->operator()(c) );
+            minc(c) = std :: min(minc(c), p->operator()(c) );
         }
     }
     for ( unsigned c = 0; c < ndim; c++ ) {
@@ -319,7 +321,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
         diffC = aux - center;
         maxerror = 0.;
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxerror = max(maxerror, abs(diff(c) / size(c) ) );
+            maxerror = std :: max(maxerror, abs(diff(c) / size(c) ) );
         }
         i++;
     }
@@ -347,7 +349,7 @@ MyVector Element :: giveElemDoFsFromFullDoFs(const MyVector &FullDoFs) const {
 }
 
 //////////////////////////////////////////////////////////
-void Element :: extrapolateIPValuesToNodes(string code, vector< MyVector > &result, MyVector &weights) const {
+void Element :: extrapolateIPValuesToNodes(std :: string code, vector< MyVector > &result, MyVector &weights) const {
     MyVector phi = MyVector :: Zero(nodes.size() );
     MyVector res = MyVector :: Zero(nodes.size() );
     double jacobian;
@@ -355,7 +357,7 @@ void Element :: extrapolateIPValuesToNodes(string code, vector< MyVector > &resu
     MyMatrix M = MyMatrix :: Zero(nodes.size(),nodes.size());
 
     if (inttype->giveNumIP()==0){
-        cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << endl;
+        std :: cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << std :: endl;
         exit(1);
     }
 
@@ -363,7 +365,7 @@ void Element :: extrapolateIPValuesToNodes(string code, vector< MyVector > &resu
     unsigned reslen = ipres.size();
     result.resize(reslen);
 
-    vector< MyVector > rhs(reslen);
+    std :: vector< MyVector > rhs(reslen);
     for(unsigned h=0; h<reslen; h++){
         rhs[h].resize(nodes.size());
         result[h].resize(nodes.size());
@@ -401,7 +403,7 @@ void Element :: extrapolateIPValuesToNodes(string code, vector< MyVector > &resu
     Msparse.makeCompressed();
 
     for(unsigned h=0; h<reslen; h++){
-        string soltype = "EigenConj";
+        std :: string soltype = "EigenConj";
         //LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-12, 1.0, soltype);
     }
 }

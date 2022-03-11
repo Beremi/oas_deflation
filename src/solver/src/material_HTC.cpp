@@ -1,6 +1,7 @@
 #include "material_HTC.h"
 #include "element_continuous.h"
 
+using namespace std;
 
 //////////////////////////////////////////////////////////
 // HTC MATERIAL STATUS

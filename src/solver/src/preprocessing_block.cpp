@@ -2,6 +2,7 @@
 #include "geometry.h"
 #include "model.h"
 // #include "misc.h"  // TODO JK: this include causes linking error
+using namespace std;
 
 
 std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {

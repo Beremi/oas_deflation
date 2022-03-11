@@ -7,6 +7,8 @@
 #include "material_slide_3_2.h"
 #include "material_HTC.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 MaterialContainer :: ~MaterialContainer() {
     for ( vector< Material * > :: iterator m = matrs.begin(); m != matrs.end(); ++m ) {

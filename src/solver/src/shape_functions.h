@@ -13,9 +13,9 @@ private:
 
 protected:
     unsigned ndim;
-    string name;
+    std :: string name;
     bool is_natural; //boolean determining if shape functions are computed in natural or real coordinates
-    vector< Point * >points;
+    std :: vector< Point * >points;
 
     virtual void giveShapeFGradNatural(const Point *x, MyMatrix &phiGradNat) const { ( void ) x; ( void ) phiGradNat; }; //without Jacobi transformation, natural coordinates
     void giveShapeFGrad(const Point *x, const MyMatrix &JacobiMInverse, MyMatrix &phiGrad) const;
@@ -26,8 +26,8 @@ protected:
 public:
     ShapeFunc() { name = "basic shape functions"; is_natural = true; }
     virtual ~ShapeFunc() {};
-    virtual void init(vector< Node * > &nodes);
-    virtual void init(vector< Point * >points);
+    virtual void init(std :: vector< Node * > &nodes);
+    virtual void init(std :: vector< Point * >points);
     unsigned giveDimension() const { return ndim; }
     virtual void giveShapeF(const Point *x, MyVector &phi) const { ( void ) x; ( void ) phi; };
     virtual void giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const;
@@ -73,8 +73,8 @@ class Linear2DTriShapeF : public ShapeFunc
 public:
     Linear2DTriShapeF() { name = "2D linear shape functions for Triangle"; ndim = 2;  is_natural = false; };
     virtual ~Linear2DTriShapeF() {};
-    virtual void init(vector< Node * > &nodes);
-    virtual void init(vector< Point * > &points);
+    virtual void init(std :: vector< Node * > &nodes);
+    virtual void init(std :: vector< Point * > &points);
     virtual void giveShapeF(const Point *x, MyVector &phi) const;
     virtual void giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const;
     double giveArea()const { return area; };
@@ -87,9 +87,9 @@ class Linear2DPolygonShapeF : public ShapeFunc
 {
 protected:
     Point centroid;
-    vector< vector< unsigned > >faces;
-    vector< double >angles;
-    vector< Linear2DTriShapeF >triangles;
+    std :: vector< std :: vector< unsigned > >faces;
+    std :: vector< double >angles;
+    std :: vector< Linear2DTriShapeF >triangles;
     IntegrationType *inttype;
     MyVector red2full;
 
@@ -98,10 +98,10 @@ protected:
 public:
     Linear2DPolygonShapeF() { name = "2D linear shape functions for Polygon"; ndim = 2;  is_natural = false; };
     virtual ~Linear2DPolygonShapeF() {};
-    virtual void init(vector< Node * > &nodes);
+    virtual void init(std :: vector< Node * > &nodes);
     virtual void giveShapeF(const Point *x, MyVector &phi) const;
     virtual void giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const;
-    void setFacesCentroidAndIntegration(vector< vector< unsigned > > &f, Point c, IntegrationType *it);
+    void setFacesCentroidAndIntegration(std :: vector< std :: vector< unsigned > > &f, Point c, IntegrationType *it);
     unsigned findFaceNumber(const Point *x) const;
 };
 
@@ -113,15 +113,15 @@ class Wachspress2DShapeF : public ShapeFunc
 {
 protected:
     unsigned nfaces;
-    vector< vector< unsigned > >faces;
-    vector< Point >normals;
+    std :: vector< std :: vector< unsigned > >faces;
+    std :: vector< Point >normals;
 
 public:
     Wachspress2DShapeF() { name = "2D Wachspress shape functions"; ndim = 2;  is_natural = false; };
     virtual ~Wachspress2DShapeF() {};
     virtual void giveShapeF(const Point *x, MyVector &phi) const;
     virtual void giveShapeFGrad(const Point *x, MyMatrix &phiGrad) const;
-    void setFacesAndNormals(vector< vector< unsigned > > &f, vector< Point >n) { normals = n; faces = f; nfaces = faces.size(); }
+    void setFacesAndNormals(std :: vector< std :: vector< unsigned > > &f, std :: vector< Point >n) { normals = n; faces = f; nfaces = faces.size(); }
 };
 
 

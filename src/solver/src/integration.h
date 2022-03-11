@@ -12,9 +12,9 @@ class IntegrationType
 private:
 
 protected:
-    string name;
-    vector< Point >ip_locs;
-    vector< double >ip_weights;
+    std :: string name;
+    std :: vector< Point >ip_locs;
+    std :: vector< double >ip_weights;
 
 public:
     IntegrationType() { name = "basic integration type"; }
@@ -26,8 +26,8 @@ public:
     Point giveIPLocation(unsigned i) const { return ip_locs [ i ]; };
     Point *giveIPLocationPointer(unsigned i) { return & ( ip_locs [ i ] ); };
     virtual void init();
-    virtual void init(const vector< Node * > &nodes);
-    virtual void init(const vector< Node * > &nodes, const vector< vector< unsigned > > &faces, Point *centroid);
+    virtual void init(const std :: vector< Node * > &nodes);
+    virtual void init(const std :: vector< Node * > &nodes, const std :: vector< std :: vector< unsigned > > &faces, Point *centroid);
 };
 
 //////////////////////////////////////////////////////////
@@ -70,11 +70,11 @@ public:
 // INTEGRATION IN POLYGON
 class IntegrPolygon : public IntegrationType
 {
-    string ip_type;
+    std :: string ip_type;
 public:
-    IntegrPolygon(string type) { name = "IntegrPolygon"; ip_type = type; };
+    IntegrPolygon(std :: string type) { name = "IntegrPolygon"; ip_type = type; };
     virtual ~IntegrPolygon() {};
-    virtual void init(const vector< Node * > &nodes, const vector< vector< unsigned > > &faces, Point *centroid);
+    virtual void init(const std :: vector< Node * > &nodes, const std :: vector< std :: vector< unsigned > > &faces, Point *centroid);
 };
 
 

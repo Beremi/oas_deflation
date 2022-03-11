@@ -26,10 +26,10 @@ public:
     virtual ~BrittleMaterialStatus() {};
     void init();
     virtual void update();
-    virtual MyMatrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual MyVector giveStress(const MyVector &strain, double timeStep);
     virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
-    virtual void giveValues(string code, MyVector &result) const;
+    virtual void giveValues(std :: string code, MyVector &result) const;
 };
 
 
@@ -42,7 +42,7 @@ protected:
 public:
     BrittleMaterial() { name = "Brittle material"; };
     ~BrittleMaterial() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
     double giveFs() { return fs; }
@@ -66,7 +66,7 @@ public:
     virtual ~ContactMaterialStatus() {};
     void init();
     virtual void update();
-    virtual MyMatrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual MyVector giveStress(const MyVector &strain, double timeStep);
     virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
     //virtual void giveValues(string code, MyVector &result) const;
@@ -81,7 +81,7 @@ private:
 public:
     ContactMaterial() { name = "Contact material"; };
     ~ContactMaterial() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFrictionCoef() const { return friction_coef; };
 

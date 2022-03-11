@@ -21,12 +21,8 @@
 #include <Eigen/SparseLU>
 #include <Eigen/SparseCholesky>
 
-//#include "linear_algebra.h"
 //  \[ ([\w\s\+\*]*) \] \[ ([\w\s\+\*]*) \]
 #include "globals.h"
-
-using namespace std;
-
 
 using Ttripletd = Eigen :: Triplet< double >;
 
@@ -45,7 +41,7 @@ const static Eigen :: IOFormat SemicolonInitFmt(Eigen :: FullPrecision, Eigen ::
 //Eigen :: IOFormat HeavyFmt(Eigen :: FullPrecision, 0, ", ", ";\n", "[", "]", "[", "]");
 
 //bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Eigen :: Ref<MyVector> x, const Eigen::Ref<const MyVector> b, const Eigen::Ref<const MyVector> x0, double precision, double relmaxit, string solver_type);
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, string solver_type);
+bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, std :: string solver_type);
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Eigen :: VectorXd &x, const Eigen :: VectorXd &b, const Eigen :: VectorXd x0, double precision, double relmaxit);
 

@@ -20,14 +20,14 @@ public:
     virtual ~HTCMaterialStatus() {};
     virtual void init();
     virtual void update();
-    virtual MyMatrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual MyVector giveStress(const MyVector &strain, double timeStep);
     virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
-    virtual void giveValues(string code, MyVector &result) const;
+    virtual void giveValues(std :: string code, MyVector &result) const;
     virtual MyVector giveInternalSource() const;
     virtual MyMatrix giveDampingTensor() const;
     virtual MyMatrix giveMassTensor() const;
-    virtual void setParameterValue(string code, double value);
+    virtual void setParameterValue(std :: string code, double value);
 };
 
 
@@ -41,7 +41,7 @@ private:
 public:
     HTCMaterial() { name = "Mars material"; produceInternalSources = true; };
     virtual ~HTCMaterial() {};
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void init();
     MyMatrix givePermeabilityTensor() const { return permeabilityTensor; };

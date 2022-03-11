@@ -31,14 +31,14 @@ public:
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual MyMatrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual MyVector giveStress(const MyVector &strain, double timeStep);
     virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
-    virtual void giveValues(string code, MyVector &result) const;
+    virtual void giveValues(std :: string code, MyVector &result) const;
     virtual std :: string giveLineToSave() const;
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
-    virtual void setParameterValue(string code, double value);
+    virtual void setParameterValue(std :: string code, double value);
 };
 
 
@@ -53,7 +53,7 @@ private:
 public:
     MarsMaterial() { name = "Mars material"; };
     virtual ~MarsMaterial() {};
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
     double giveGt() { return Gt; }
@@ -95,7 +95,7 @@ private:
 public:
     LDPMMaterial() { name = "LDPM material"; };
     virtual ~LDPMMaterial() {};
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
 };
 
 //////////////////////////////////////////////////////////
@@ -112,11 +112,11 @@ public:
     ~CoupledMarsMaterialStatus() {};
     virtual MyVector giveStress(const MyVector &strain, double timeStep);
     virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
-    virtual void giveValues(string code, MyVector &result) const;
+    virtual void giveValues(std :: string code, MyVector &result) const;
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual void setParameterValue(string code, double value);
+    virtual void setParameterValue(std :: string code, double value);
 };
 
 class CoupledMarsMaterial : public MarsMaterial
@@ -126,7 +126,7 @@ private:
 public:
     CoupledMarsMaterial() { name = "Coupled Mars material"; };
     virtual ~CoupledMarsMaterial() {};
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void init();
     double giveBiotCoeff() const { return biotCoeff; };

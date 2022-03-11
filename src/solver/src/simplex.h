@@ -15,15 +15,15 @@ class Simplex
 {
 protected:
     Node *center;
-    vector< Particle * >nodes; ///list of nodes
+    std :: vector< Particle * >nodes; ///list of nodes
     bool valid, transport;
     double volume, volstrain;
     double pressure;
     unsigned pressureDoF;
-    vector< unsigned >DoFs;  ///corresponding degrees of freedom
-    vector< double >DoFweights;  ///corresponding weights
-    vector< RigidBodyContact * >elems;
-    unordered_set< Simplex * >neighbors;  //neighboring simplexes used to steal volumetric strain
+    std :: vector< unsigned >DoFs;  ///corresponding degrees of freedom
+    std :: vector< double >DoFweights;  ///corresponding weights
+    std :: vector< RigidBodyContact * >elems;
+    std :: unordered_set< Simplex * >neighbors;  //neighboring simplexes used to steal volumetric strain
 
 public:
     Simplex(Node *c) { center = c; valid = false; transport = false; volstrain = 0; };
@@ -36,7 +36,7 @@ public:
     void computeVolumetricStrain(const MyVector &DoFs);
     bool isValid() const { return valid; }
     bool hasPressure() const { return transport; }
-    vector< RigidBodyContact * >giveElements() { return elems; }
+    std :: vector< RigidBodyContact * >giveElements() { return elems; }
 };
 
 

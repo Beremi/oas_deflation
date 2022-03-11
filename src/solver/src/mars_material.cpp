@@ -1,6 +1,7 @@
 #include "mars_material.h"
 #include "element_discrete.h"
 
+using namespace std;
 
 //////////////////////////////////////////////////////////
 // CUSATIS MATERIAL STATUS
@@ -481,7 +482,7 @@ void CoupledMarsMaterialStatus :: giveValues(string code, MyVector &result) cons
     if ( code.compare("pressure") == 0 || code.compare("avg_pressure") == 0) {
         result.resize(1);
         result[0] = avgPressure;
-    } else if ( code.compare("solid_stress") == 0) {                
+    } else if ( code.compare("solid_stress") == 0) {
         MarsMaterialStatus :: giveValues("stress",result); //standard stress including Biot's effect
         CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
         result[0] += m->giveBiotCoeff() * avgPressure; //stress without Biot's effect

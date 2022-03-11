@@ -11,12 +11,12 @@
 class MaterialContainer
 {
 private:
-    vector< Material * >matrs;
+    std :: vector< Material * >matrs;
 public:
     MaterialContainer() {};
     ~MaterialContainer();
 
-    void readFromFile(const string filename);
+    void readFromFile(const std :: string filename);
     void init();
     Material *giveMaterial(unsigned const mat);
 protected:

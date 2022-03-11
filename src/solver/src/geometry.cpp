@@ -3,6 +3,9 @@
 #include "geometry.h"
 #include <fstream>
 #include <memory>
+
+using namespace std;
+
 // Define Infinite (Using INT_MAX caused overflow problems)
 #define INF 10000.0
 #define TOL 1e-9

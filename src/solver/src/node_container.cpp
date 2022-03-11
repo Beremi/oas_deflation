@@ -1,6 +1,8 @@
 #include "node_container.h"
 #include "solver.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 NodeContainer :: ~NodeContainer() {
     for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {

@@ -3,6 +3,8 @@
 #include "solver.h"
 #include <cstdio>
 
+using namespace std;
+
 void ElementStatsExporter :: giveFileName(unsigned step, char *buffer) const {
     sprintf(buffer, "%s_%05d.dat", filename.c_str(), step);
 }

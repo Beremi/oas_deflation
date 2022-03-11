@@ -1,6 +1,7 @@
 #include "material_misc.h"
 #include "element_discrete.h"
 
+using namespace std;
 
 BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "BRITTLE mat. status";

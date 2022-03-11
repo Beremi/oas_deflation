@@ -1,5 +1,6 @@
 #include "indirect_displ_control.h"
 
+using namespace std;
 
 //////////////////////////////////////////////////////////
 IndirectDC :: IndirectDC() {

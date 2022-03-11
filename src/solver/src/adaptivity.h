@@ -66,7 +66,7 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
-        ofstream outputfile(fs :: path(this->remeshDir) / centersFName);
+        std :: ofstream outputfile(fs :: path(this->remeshDir) / centersFName);
         if ( outputfile.is_open() ) {
             outputfile << std :: scientific;
             outputfile.precision(6);
@@ -260,19 +260,19 @@ private:
     }
 
     void readElemStatuses() {
-        string line, param;
+        std :: string line, param;
         unsigned elem_id, stat_id, mat_id, num, node_id;
-        vector< unsigned >node_ids;
+        std :: vector< unsigned >node_ids;
         Element *el;
         std :: string node_ids_string;
 
-        ifstream inputfile( this->elemStatuses.string().c_str() );
+        std :: ifstream inputfile( this->elemStatuses.string().c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.at(0) == '#' || line.empty() ) {
                     continue;
                 }
-                istringstream iss(line);
+                std :: istringstream iss(line);
                 iss >> param;
                 if ( param.compare("matStat") == 0 ) {
                     iss >> elem_id >> stat_id >> mat_id >> num;
@@ -329,11 +329,11 @@ private:
         // calculate nodal stresses
         ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
 
-        vector< MyVector >tensorial_stress;
+        std :: vector< MyVector >tensorial_stress;
         BaseSolver :: elems->extrapolateValuesFromIntegrationPointsToNodes("solid_stress", tensorial_stress);
         // calculate principal stresses
         Node *n;
-        vector< MyVector >eigvecs;
+        std :: vector< MyVector >eigvecs;
         MyVector eignums;
 
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
@@ -410,11 +410,11 @@ private:
 
 
 
-    void readAdaptivity(const string filename) {
-        string param, path, line;
+    void readAdaptivity(const std :: string filename) {
+        std :: string param, path, line;
         bool bat, br, br2, bptp, bmn, brl;
         bat = br = br2 = bptp = bmn = brl = false;
-        ifstream inputfile( filename.c_str() );
+        std :: ifstream inputfile( filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() ) {
@@ -423,7 +423,7 @@ private:
                 if ( line.at(0) == '#' ) {
                     continue;
                 }
-                istringstream iss(line);
+                std :: istringstream iss(line);
                 iss >> param;
                 if ( param.compare("adaptThreshold") == 0 ) {
                     iss >> this->adaptThreshold;
@@ -502,7 +502,7 @@ public:
     AdaptiveSolver() { BaseSolver :: name.append("-Adaptive"); };
     virtual ~AdaptiveSolver() {};
 
-    virtual void init(string init_r_file, string init_v_file, const bool initial = true) {
+    virtual void init(std :: string init_r_file, std :: string init_v_file, const bool initial = true) {
         unsigned numParticles = 0;
         Node *n;
         // NOTE JK this is intended for field of nodes to keep
@@ -525,12 +525,12 @@ public:
     };
 
 
-    virtual Solver *readFromFile(const string filename) {
+    virtual Solver *readFromFile(const std :: string filename) {
         BaseSolver :: readFromFile(filename);
 
-        string param, path, line;
+        std :: string param, path, line;
         bool bfa = false;
-        ifstream inputfile( filename.c_str() );
+        std :: ifstream inputfile( filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() ) {
@@ -539,7 +539,7 @@ public:
                 if ( line.at(0) == '#' ) {
                     continue;
                 }
-                istringstream iss(line);
+                std :: istringstream iss(line);
                 iss >> param;
                 if ( param.compare("Adaptivity") == 0 || param.compare("adaptivity") == 0 ) {
                     iss >> path;

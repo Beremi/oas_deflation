@@ -1,6 +1,7 @@
 #include "fatigue_material.h"
 #include "element_discrete.h"
 
+using namespace std;
 
 double get_Lambda(const double &E_b, const double &K, const double &alpha, const double &gamma, const double &omega, const double &s, const double &sPi);
 

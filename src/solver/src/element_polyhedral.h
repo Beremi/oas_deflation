@@ -13,10 +13,10 @@ class TranspPolygonal : public TransportElement
 protected:
     double volume;
     Point centroid;
-    string ip_type;
-    vector< vector< unsigned > >faces;
-    vector< Point >normals;
-    vector< double >surfaces;
+    std :: string ip_type;
+    std :: vector< std :: vector< unsigned > >faces;
+    std :: vector< Point >normals;
+    std :: vector< double >surfaces;
 
     void prepareGeometry();
     virtual void initIntegration();
@@ -24,7 +24,7 @@ protected:
 public:
     TranspPolygonal(const unsigned dim);
     ~TranspPolygonal() {};
-    void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
     virtual MyMatrix giveBMatrix(const Point *x) const;
     virtual MyMatrix giveHMatrix(const Point *x) const;
@@ -42,7 +42,7 @@ public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
     virtual void setIntegrationPointsAndWeights();
-    virtual MyMatrix giveStiffnessMatrix(string matrixType) const;
+    virtual MyMatrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual MyMatrix giveDampingMatrix() const;
     virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
 };
