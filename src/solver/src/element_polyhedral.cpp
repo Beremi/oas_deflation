@@ -124,17 +124,17 @@ void TranspPolygonal :: init() {
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix TranspPolygonal :: giveBMatrix(const Point *x) const {
-    MyMatrix B = MyMatrix :: Zero(ndim, nodes.size() );
+Matrix TranspPolygonal :: giveBMatrix(const Point *x) const {
+    Matrix B = Matrix :: Zero(ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, B);
     return B;
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix TranspPolygonal :: giveHMatrix(const Point *x) const {
-    MyVector X = MyVector :: Zero(numOfNodes);
+Matrix TranspPolygonal :: giveHMatrix(const Point *x) const {
+    Vector X = Vector :: Zero(numOfNodes);
     shafunc->giveShapeF(x, X);
-    MyMatrix H = MyMatrix :: Zero(1, numOfNodes);
+    Matrix H = Matrix :: Zero(1, numOfNodes);
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
         H(0, k) = X [ k ];
     }
@@ -171,7 +171,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
 
     double radius = pow(volume / M_PI, 0.5);
-    MyMatrix D = MyMatrix :: Zero(numOfNodes, ndim + 1);
+    Matrix D = Matrix :: Zero(numOfNodes, ndim + 1);
     Point x;
     for ( i = 0; i < numOfNodes; i++ ) {
         D(i, 0) = 1.;
@@ -181,7 +181,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
         }
     }
 
-    MyMatrix B = MyMatrix :: Zero(ndim + 1, numOfNodes);
+    Matrix B = Matrix :: Zero(ndim + 1, numOfNodes);
     j = numOfNodes - 1;
     for (  i = 0; i < numOfNodes; i++ ) {
         B(0, i) = 1. / numOfNodes;
@@ -192,14 +192,14 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
     B /= 2. * radius;
 
-    MyMatrix G = B * D;
-    MyMatrix Gtilde = G;
+    Matrix G = B * D;
+    Matrix Gtilde = G;
     for ( i = 0; i < ndim + 1; i++ ) {
         Gtilde(0, i) = 0.;
     }
 
     double Gdet = G(0, 0) * G(1, 1) * G(2, 2) + G(0, 2) * G(1, 0) * G(2, 1) + G(2, 0) * G(0, 1) * G(1, 2) - G(0, 0) * G(2, 1) * G(1, 2) - G(0, 1) * G(1, 0) * G(2, 2) - G(0, 2) * G(1, 1) * G(2, 0);
-    MyMatrix Ginv = MyMatrix :: Zero(ndim + 1, ndim + 1);
+    Matrix Ginv = Matrix :: Zero(ndim + 1, ndim + 1);
     Ginv(0, 0) = G(1, 1) * G(2, 2) - G(1, 2) * G(2, 1);
     Ginv(1, 0) = -G(1, 0) * G(2, 2) - G(1, 2) * G(2, 0);
     Ginv(2, 0) = G(1, 0) * G(2, 1) - G(1, 1) * G(2, 0);
@@ -218,8 +218,8 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
     V1 = (V1.transpose() * Gtilde) * V1;
 
-    MyMatrix H = MyMatrix :: Zero(ndim + 1, ndim + 1);
-    MyVector m = MyVector :: Zero(ndim + 1);
+    Matrix H = Matrix :: Zero(ndim + 1, ndim + 1);
+    Vector m = Vector :: Zero(ndim + 1);
     m [ 0 ] = 1;
     for ( i = 0; i < inttype->giveNumIP(); i++ ) {
         for ( v = 0; v < ndim; v++ ) {
@@ -229,7 +229,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     }
 
     double Hdet = H(0, 0) * H(1, 1) * H(2, 2) + H(0, 2) * H(1, 0) * H(2, 1) + H(2, 0) * H(0, 1) * H(1, 2) - H(0, 0) * H(2, 1) * H(1, 2) - H(0, 1) * H(1, 0) * H(2, 2) - H(0, 2) * H(1, 1) * H(2, 0);
-    MyMatrix Hinv = MyMatrix :: Zero(ndim + 1, ndim + 1);
+    Matrix Hinv = Matrix :: Zero(ndim + 1, ndim + 1);
     Hinv(0, 0) = H(1, 1) * H(2, 2) - H(1, 2) * H(2, 1);
     Hinv(1, 0) = -H(1, 0) * H(2, 2) - H(1, 2) * H(2, 0);
     Hinv(2, 0) = H(1, 0) * H(2, 1) - H(1, 1) * H(2, 0);
@@ -242,7 +242,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     Hinv /= Hdet;
 
     W2 = Ginv * B;
-    MyMatrix C = H * W2;
+    Matrix C = H * W2;
     W2 = (D * W2) * ( -1. );
     for ( i = 0; i < numOfNodes; i++ ) {
         W2(i, i) += 1.;
@@ -251,8 +251,8 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
-    MyMatrix C = TranspPolygonal :: giveStiffnessMatrix(matrixType);
+Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
+    Matrix C = TranspPolygonal :: giveStiffnessMatrix(matrixType);
     double cond = 0;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         cond += inttype->giveIPWeight(i) * stats [ i ]->giveStiffnessTensor("elastic", ndim)(0, 0);
@@ -263,8 +263,8 @@ MyMatrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix TranspVirtPolygonal :: giveDampingMatrix() const {
-    MyMatrix M = TranspPolygonal :: giveDampingMatrix();
+Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
+    Matrix M = TranspPolygonal :: giveDampingMatrix();
     double cap = 0;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         cap += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor()(0, 0);
@@ -288,7 +288,7 @@ MyMatrix TranspVirtPolygonal :: giveDampingMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-MyVector TranspVirtPolygonal :: giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep) {
+Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     ( void ) frozen;
     ( void ) timeStep;
     //return Element::giveInternalForces(DoFs, frozen); //incorrect integration

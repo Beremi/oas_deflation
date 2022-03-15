@@ -28,9 +28,9 @@ using Ttripletd = Eigen :: Triplet< double >;
 
 //typedef typename Eigen :: Matrix<double, Eigen :: Dynamic, 1> MyVector;
 //typedef Eigen :: MyMatrix<double, 3, 1> Point;
-using MyVector = Eigen :: VectorXd;
+using Vector = Eigen :: VectorXd;
 using Point = Eigen :: Vector3d;
-using MyMatrix = Eigen :: MatrixXd;
+using Matrix = Eigen :: MatrixXd;
 //typedef typename Eigen :: MyMatrix<double, Eigen :: Dynamic, Eigen :: Dynamic> MyMatrix;
 typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor > CoordinateIndexedSparseMatrix;
 
@@ -41,17 +41,17 @@ const static Eigen :: IOFormat SemicolonInitFmt(Eigen :: FullPrecision, Eigen ::
 //Eigen :: IOFormat HeavyFmt(Eigen :: FullPrecision, 0, ", ", ";\n", "[", "]", "[", "]");
 
 //bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Eigen :: Ref<MyVector> x, const Eigen::Ref<const MyVector> b, const Eigen::Ref<const MyVector> x0, double precision, double relmaxit, string solver_type);
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, std :: string solver_type);
+bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, std :: string solver_type);
 
-bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0, double precision, double relmaxit);
+bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
 
-bool LinalgEigenSolver(const MyVector &A, MyVector &eigenvalues, std :: vector< MyVector > &eigevalues);
+bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
 
-bool LinalgEigenSolver(const MyMatrix& mat, MyVector& eigenvalues, std::vector< MyVector > &eigevalues);
+bool LinalgEigenSolver(const Matrix& mat, Vector& eigenvalues, std::vector< Vector > &eigevalues);
 
 double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD);
 
-MyMatrix dyadicProduct(const MyVector &a, const MyVector &b);
+Matrix dyadicProduct(const Vector &a, const Vector &b);
 
 double triArea2D(const Point *a, const Point *b, const Point *c);
 

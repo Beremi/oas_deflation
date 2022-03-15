@@ -165,7 +165,7 @@ double BodyLoad :: giveValue(const Point *xyz, double t) {
 //////////////////////////////////////////////////////////
 vector< double >BodyLoad :: giveBodyForceDoFValues(double t) {
     vector< double >load;
-    MyVector elemLoad;
+    Vector elemLoad;
     unsigned s = 0;
     for ( auto &e: els ) {
         s = load.size();

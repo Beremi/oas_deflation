@@ -101,7 +101,7 @@ void VTKExporter :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
+void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
 
     (void) reactions;
 
@@ -135,7 +135,7 @@ void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const
 
         unsigned i,j;
         size_t msize;
-        vector< MyVector > data;
+        vector< Vector > data;
         unsigned p;
         // ****************** cell data
         data.resize(elems->giveSize());
@@ -151,7 +151,7 @@ void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const
             cellDataArray->SetNumberOfComponents(msize);
             cellDataArray->SetNumberOfValues(elems->giveSize()*msize);
             i = 0;
-            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
                 for(j=0; j<min<size_t>(msize,d->size()); j++){
                     cellDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
@@ -177,7 +177,7 @@ void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const
             pointDataArray->SetNumberOfComponents(msize);
             pointDataArray->SetNumberOfValues(nodes->giveSize()*msize);
             i = 0;
-            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
                 for(j=0; j<min<size_t>(msize,d->size()); j++){
                     pointDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
@@ -200,7 +200,7 @@ void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const
             pointDataArray->SetNumberOfComponents(msize);
             pointDataArray->SetNumberOfValues(nodes->giveSize()*msize);
             i = 0;
-            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
                 for(j=0; j<min<size_t>(msize,d->size()); j++){
                     pointDataArray->SetValue(msize*i+j, (*d)[j]);
                 }
@@ -226,21 +226,21 @@ void VTKElementExporter :: exportData(unsigned step, const MyVector &DoFs, const
 
 //////////////////////////////////////////////////////////
 // function tahat calculates displacement of any point of rigid body from its rotations and
-Point calculateVertexDisplacement(const RigidBodyContact *rbc, unsigned v, const Point *x, const MyVector &DoFs, const unsigned &dim) {
-    MyMatrix A = rbc->giveAMatrix(v, *x);
+Point calculateVertexDisplacement(const RigidBodyContact *rbc, unsigned v, const Point *x, const Vector &DoFs, const unsigned &dim) {
+    Matrix A = rbc->giveAMatrix(v, *x);
     unsigned DofsPerNode = ( dim - 1 ) * 3;
-    MyVector U = MyVector :: Zero(DofsPerNode);
+    Vector U = Vector :: Zero(DofsPerNode);
     for ( unsigned i = 0; i < DofsPerNode; i++ ) {
         U [ i ]  = DoFs [ rbc->giveNode(v)->giveStartingDoF() + i ];
     }
-    MyVector P = A * U;
+    Vector P = A * U;
     return Point(P [ 0 ] , P [ 1 ], P.size() > 2 ? P [ 2 ] : 0);
 }
 //////////////////////////////////////////////////////////
 
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRB2DExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
+void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
 
     (void) step; (void) DoFs; (void) reactions; (void) resultDir;
     /*
@@ -368,7 +368,7 @@ void VTKRB2DExporter :: exportData(unsigned step, const MyVector &DoFs, const My
 
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRCExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
+void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     (void) reactions;
 
     char buffer [ 100 ];
@@ -411,10 +411,10 @@ void VTKRCExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVe
 
         unsigned i,j;
         size_t msize;
-        vector< MyVector > data;
+        vector< Vector > data;
         unsigned p=0;
         // ****************** DISPLACEMENTS
-        MyVector dataA, dataB;
+        Vector dataA, dataB;
         Point A;
         data.resize(nodes->giveSize());
         msize = 3;
@@ -450,7 +450,7 @@ void VTKRCExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVe
             cellDataArray->SetNumberOfComponents(msize);
             cellDataArray->SetNumberOfValues(2*elems->giveSize()*msize);
             i = 0;
-            for(vector< MyVector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
+            for(vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d , i++){
                 for(j=0; j<min<size_t>(msize,d->size()); j++){
                     cellDataArray->SetValue(msize*(i*2)+j, (*d)[j]);
                     cellDataArray->SetValue(msize*(i*2+1)+j, (*d)[j]);

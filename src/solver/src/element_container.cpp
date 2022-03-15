@@ -399,8 +399,8 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
-    MyVector elDoFValues;
-    MyMatrix k;
+    Vector elDoFValues;
+    Matrix k;
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {
@@ -461,8 +461,8 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) cons
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(const MyVector &full_r, MyVector &full_f, bool frozen, double timeStep) {
-    MyVector elDoFvalues, elForces;
+void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep) {
+    Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f.setZero();  // clear array
 
@@ -486,8 +486,8 @@ void ElementContainer :: integrateInternalForces(const MyVector &full_r, MyVecto
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateDampingOrInertiaForces(const MyVector &full_v, MyVector &full_f, unsigned diffType) const {
-    MyVector elDoFvalues, elForces;
+void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const {
+    Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f.setZero(); // *= 0; //clear array
 
@@ -513,22 +513,22 @@ void ElementContainer :: integrateDampingOrInertiaForces(const MyVector &full_v,
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateDampingForces(const MyVector &full_v, MyVector &full_f) const {
+void ElementContainer :: integrateDampingForces(const Vector &full_v, Vector &full_f) const {
     integrateDampingOrInertiaForces(full_v, full_f, 1);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInertiaForces(const MyVector &full_a, MyVector &full_f) const {
+void ElementContainer :: integrateInertiaForces(const Vector &full_a, Vector &full_f) const {
     integrateDampingOrInertiaForces(full_a, full_f, 2);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(MyVector &full_r, MyVector &full_f, double timeStep) {
+void ElementContainer :: integrateInternalForces( Vector &full_r, Vector &full_f, double timeStep) {
     integrateInternalForces(full_r, full_f, false, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(MyVector &full_r, MyVector &full_f, double timeStep) {
+void ElementContainer :: integrateInternalForcesWithFrozenIntVariables( Vector &full_r, Vector &full_f, double timeStep) {
     integrateInternalForces(full_r, full_f, true, timeStep);
 }
 
@@ -600,16 +600,16 @@ bool ElementContainer :: findElementOwningPoint(Element **elem, Point *xn, const
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< MyVector > &result){
+void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result){
     //delete everythink inside
     size_t p;
     result.clear(); // result.resize(0);
     result.resize(nodes->giveSize());
-    MyVector weights = MyVector :: Zero(nodes->giveSize());
+    Vector weights = Vector :: Zero(nodes->giveSize());
 
     //fill with data
-    vector<MyVector> res;
-    MyVector wei;
+    vector<Vector> res;
+    Vector wei;
     unsigned nodeid;
     for (vector<Element*>::iterator ee = elems.begin(); ee!=elems.end(); ++ee){
         (*ee)->extrapolateIPValuesToNodes(code, res, wei);

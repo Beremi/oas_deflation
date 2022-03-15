@@ -31,7 +31,7 @@ void ElementStatsExporter :: readFromLine(istringstream &iss) {
 }
 
 
-void ElementStatsExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
+void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) DoFs;
     ( void ) reactions;
     char buffer [ 100 ];

@@ -17,7 +17,7 @@ private:
     unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType) const;
-    void integrateDampingOrInertiaForces(const MyVector &full_v, MyVector &full_f, unsigned diffType) const;
+    void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
     std :: vector< std :: string >file_to_load_from;
 
 public:
@@ -41,16 +41,16 @@ public:
     void updateDampingMatrix(CoordinateIndexedSparseMatrix &C) const;
     void prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const;
     void updateMassMatrix(CoordinateIndexedSparseMatrix &M) const;
-    void integrateInternalForces(MyVector &full_r, MyVector &full_f, double timeStep);                       ///< return internal forces with temporary update of internal variables
-    void integrateInternalForcesWithFrozenIntVariables(MyVector &full_r, MyVector &full_f, double timeStep); ///< return internal forces based on current state of internal variables
-    void integrateInternalForces(const MyVector &full_r, MyVector &full_f, bool frozen, double timeStep);          ///< return internal forces with or without frozen internal variables
-    void integrateDampingForces(const MyVector &full_v, MyVector &full_f) const;
-    void integrateInertiaForces(const MyVector &full_a, MyVector &full_f) const;
+    void integrateInternalForces( Vector &full_r, Vector &full_f, double timeStep);                       ///< return internal forces with temporary update of internal variables
+    void integrateInternalForcesWithFrozenIntVariables( Vector &full_r, Vector &full_f, double timeStep); ///< return internal forces based on current state of internal variables
+    void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep);          ///< return internal forces with or without frozen internal variables
+    void integrateDampingForces(const Vector &full_v, Vector &full_f) const;
+    void integrateInertiaForces(const Vector &full_a, Vector &full_f) const;
     Element *giveElement(unsigned const num) const { return elems [ num ]; }
     Element *giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const;
     unsigned giveElemId(const Element *elem) const;
     bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;
-    void extrapolateValuesFromIntegrationPointsToNodes(std :: string code, std :: vector< MyVector > &results);
+    void extrapolateValuesFromIntegrationPointsToNodes(std :: string code, std :: vector< Vector > &results);
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }

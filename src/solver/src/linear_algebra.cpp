@@ -188,10 +188,10 @@ Point Point :: operator*(const double p) const {
     ret.z *= p;
     return ret;
 }
-/*
+
 double Point :: operator*(const Point &p) const {
     return x * p.x + y * p.y + z * p.z;
-}*/
+}
 
 Point Point :: normalized() const {
     Point ret( ( * this ) );

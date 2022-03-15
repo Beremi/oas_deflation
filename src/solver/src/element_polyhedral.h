@@ -26,8 +26,8 @@ public:
     ~TranspPolygonal() {};
     void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
-    virtual MyMatrix giveBMatrix(const Point *x) const;
-    virtual MyMatrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
     virtual void setIntegrationPointsAndWeights();
 };
 
@@ -37,14 +37,14 @@ public:
 class TranspVirtPolygonal : public TranspPolygonal
 {
 protected:
-    MyMatrix V1, V2, W1, W2;
+    Matrix V1, V2, W1, W2;
 public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
     virtual void setIntegrationPointsAndWeights();
-    virtual MyMatrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual MyMatrix giveDampingMatrix() const;
-    virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
 };
 
 

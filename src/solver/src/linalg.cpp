@@ -2,7 +2,7 @@
 
 using namespace std;
 
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector &x0, double precision, double relmaxit, string solver_type) {
+bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, string solver_type) {
 
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
@@ -63,7 +63,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, 
 }
 
 
-bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &x, const MyVector &b, const MyVector x0, double precision, double relmaxit) {
+bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -95,7 +95,7 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, MyVector &
 }
 
 //sorterd eigenvalues and eigenvectors
-bool LinalgEigenSolver(const MyVector &A, MyVector &eigenvalues, vector< MyVector > &eigenvectors) {
+bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &eigenvectors) {
 
     size_t ndim;
     bool sym;
@@ -140,8 +140,8 @@ bool LinalgEigenSolver(const MyVector &A, MyVector &eigenvalues, vector< MyVecto
    return LinalgEigenSolver(mat, eigenvalues, eigenvectors);
 }
 
-bool LinalgEigenSolver(const MyMatrix &mat, MyVector &eigenvalues, vector< MyVector > &eigenvectors) {
-    Eigen :: EigenSolver< MyMatrix > es(mat);
+bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > &eigenvectors) {
+    Eigen :: EigenSolver< Matrix > es(mat);
 
     unsigned ndim = mat.rows();
     vector< double > eigenvalsvector(ndim);
@@ -184,7 +184,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
 }
 
 
-MyMatrix dyadicProduct(const MyVector &a, const MyVector &b) {
+Matrix dyadicProduct(const Vector &a, const Vector &b) {
     return a * b.transpose();
 }
 

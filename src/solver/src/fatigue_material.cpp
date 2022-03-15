@@ -13,7 +13,7 @@ FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m
 }
 
 //////////////////////////////////////////////////////////
-void FatigueShearMaterialStatus :: giveValues(string code, MyVector &result) const {
+void FatigueShearMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ||  ( code.compare("damageT") == 0 ) ) {
         if ( temporarily_killed ) {
             result.resize(0);
@@ -121,12 +121,12 @@ double get_Lambda(const double &E_b, const double &K, const double &alpha, const
 
 
 //////////////////////////////////////////////////////////
-MyVector FatigueShearMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
 
-    MyVector stress = MyVector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -266,12 +266,12 @@ MyVector FatigueShearMaterialStatus :: giveStress(const MyVector &strain, double
 
 
 //////////////////////////////////////////////////////////
-MyVector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
+Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
 
-    MyVector stress = MyVector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -378,8 +378,8 @@ void FatigueShearMaterialStatus :: print() const {
 
 
 //////////////////////////////////////////////////////////
-MyMatrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    MyMatrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim) * strain_slip_multiplier;
+Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim) * strain_slip_multiplier;
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {     //not implemented, used unloading
@@ -570,7 +570,7 @@ DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial
 }
 
 //////////////////////////////////////////////////////////
-void DamagePlasticMaterialStatus :: giveValues(string code, MyVector &result) const {
+void DamagePlasticMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) || ( code.compare("damageN") == 0 ) ) {
         result.resize(1);
         result[0] = damage;
@@ -663,10 +663,10 @@ void DamagePlasticMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-MyVector DamagePlasticMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     ( void ) timeStep;
-    MyVector stress = MyVector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
@@ -771,9 +771,9 @@ MyVector DamagePlasticMaterialStatus :: giveStress(const MyVector &strain, doubl
 
 
 //////////////////////////////////////////////////////////
-MyVector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
+Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    MyVector stress = MyVector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
@@ -868,8 +868,8 @@ void DamagePlasticMaterialStatus :: print() const {
 
 
 //////////////////////////////////////////////////////////
-MyMatrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    MyMatrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim) * strain_displ_multiplier;
+Matrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim) * strain_displ_multiplier;
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {  //not implemented, used unloading
@@ -1035,25 +1035,25 @@ FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e, u
 }
 
 //////////////////////////////////////////////////////////
-void FatigueMaterialStatus :: giveValues(string code, MyVector &result) const {
+void FatigueMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("energy_total") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("energy_totalN", result);
-        MyVector res2;
+        Vector res2;
         FatigueShearMaterialStatus :: giveValues("energy_totalT", res2);
         result += res2;
     } else if  ( code.compare("work_total") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("work_totalN", result);
-        MyVector res2;
+        Vector res2;
         FatigueShearMaterialStatus :: giveValues("work_totalT", res2);
         result += res2;
     } else if  ( code.compare("work_ela") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("work_elaN", result);
-        MyVector res2;
+        Vector res2;
         FatigueShearMaterialStatus :: giveValues("work_elaT", res2);
         result += res2;
     } else if  ( code.compare("work_dissip") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("work_dissipN", result);
-        MyVector res2;
+        Vector res2;
         FatigueShearMaterialStatus :: giveValues("work_dissipT", res2);
         result += res2;
     } else if ( code.back() == 'N' || code.compare("crack_opening") == 0 ) {  // last char of string
@@ -1074,10 +1074,10 @@ void FatigueMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-MyVector FatigueMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
-    MyVector stress = MyVector :: Zero(strain.size() );
-    MyVector res;
+    Vector stress = Vector :: Zero(strain.size() );
+    Vector res;
     for ( size_t i = 0; i < strain.size(); i++ ) {
         if ( i == 0 ) {//normal direction (damage plastic material)
             if ( fabs(this->coupled_damage) > 0 ) {
@@ -1103,8 +1103,8 @@ MyVector FatigueMaterialStatus :: giveStress(const MyVector &strain, double time
 }
 
 //////////////////////////////////////////////////////////
-MyVector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
-    MyVector stress = MyVector :: Zero(strain.size() );
+Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    Vector stress = Vector :: Zero(strain.size() );
 
     //Normal stress
     stress [ 0 ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ 0 ];
@@ -1125,7 +1125,7 @@ MyVector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &st
 //////////////////////////////////////////////////////////
 void FatigueMaterialStatus :: update() {
     if ( fabs(this->coupled_damage) > 0 ) {
-        MyVector res;
+        Vector res;
         FatigueShearMaterialStatus :: giveValues("damage", res);
         DamagePlasticMaterialStatus :: setDamage(res[0]);
         if ( this->coupled_damage > 0 ) {
@@ -1144,13 +1144,13 @@ void FatigueMaterialStatus :: resetTemporaryVariables() {
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix FatigueMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+Matrix FatigueMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     if ( type.compare("elastic") == 0 ) {
-        MyMatrix stiff = FatigueShearMaterialStatus :: giveStiffnessTensor("elastic", dim);
+        Matrix stiff = FatigueShearMaterialStatus :: giveStiffnessTensor("elastic", dim);
         return stiff;
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 ) {    //not implemented, used unloading
-        MyMatrix stiffF = FatigueShearMaterialStatus :: giveStiffnessTensor(type, dim);
-        MyMatrix stiffD = DamagePlasticMaterialStatus :: giveStiffnessTensor(type, dim);
+        Matrix stiffF = FatigueShearMaterialStatus :: giveStiffnessTensor(type, dim);
+        Matrix stiffD = DamagePlasticMaterialStatus :: giveStiffnessTensor(type, dim);
         stiffF(0, 0) = stiffD(0, 0);
         return stiffF;
     } else {
@@ -1200,7 +1200,7 @@ AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e, u
 }
 
 //////////////////////////////////////////////////////////
-void AllicheMaterialStatus :: giveValues(string code, MyVector &result) const {
+void AllicheMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ) {
         // damage is different in each local direction
         result.resize(1);
@@ -1238,7 +1238,7 @@ void AllicheMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void AllicheMaterialStatus :: calculateDamage(const MyVector &strain) {
+void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
     // std::cout << "strain inside = (" << strain[ 0 ] << ", " << strain[ 1 ] << ", " << strain[ 2 ] << ")" << '\n';
@@ -1298,11 +1298,11 @@ void AllicheMaterialStatus :: calculateDamage(const MyVector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-MyVector AllicheMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector AllicheMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    MyVector stress = MyVector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     calculateDamage(strain);
 
     // NOTE use of damage as Point makes its calclulation more simple, but here it becomes quite messy
@@ -1315,11 +1315,11 @@ MyVector AllicheMaterialStatus :: giveStress(const MyVector &strain, double time
 }
 
 //////////////////////////////////////////////////////////
-MyVector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
+Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    MyVector stress = MyVector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     stress [ 0 ] = ( 1 - temp_damage.x() ) * m->giveE0() * strain [ 0 ];
     for ( unsigned i = 1; i < strain.size(); i++ ) {
@@ -1331,8 +1331,8 @@ MyVector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const MyVector &s
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix AllicheMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    MyMatrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix AllicheMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) { //not implemented, used unloading
@@ -1480,8 +1480,8 @@ void DesmoratMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    MyMatrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
@@ -1497,9 +1497,9 @@ MyMatrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim
 }
 
 //////////////////////////////////////////////////////////
-MyVector DesmoratMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    MyVector stress = MyVector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
     for ( unsigned i = 0; i < strain.size(); i++ ) {
@@ -1542,9 +1542,9 @@ MyVector DesmoratMaterialStatus :: giveStress(const MyVector &strain, double tim
 }
 
 //////////////////////////////////////////////////////////
-MyVector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
+Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    MyVector stress = MyVector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
 
@@ -1560,7 +1560,7 @@ MyVector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &s
 }
 
 //////////////////////////////////////////////////////////
-void DesmoratMaterialStatus :: giveValues(string code, MyVector &result) const {
+void DesmoratMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ) {
         result.resize(1);
         result[0] = damage;

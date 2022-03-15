@@ -158,20 +158,20 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     freeDoFnum = nodes->giveNumFreeDoFs();
     totalDoFnum = nodes->giveTotalNumDoFs();
 
-    load = MyVector :: Zero(totalDoFnum);
-    r = MyVector :: Zero(totalDoFnum);
-    f_ext = MyVector :: Zero(totalDoFnum);
-    f_int = MyVector :: Zero(totalDoFnum);
-    f_dam = MyVector :: Zero(totalDoFnum);
-    f_acc = MyVector :: Zero(totalDoFnum);
-    trial_r = MyVector :: Zero(totalDoFnum);
-    pbc = MyVector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
-    f = MyVector :: Zero(freeDoFnum);
-    residuals = MyVector :: Zero(totalDoFnum);
-    ddr = MyVector :: Zero(freeDoFnum);
-    full_ddr = MyVector :: Zero(totalDoFnum);
-    f_int_old = MyVector :: Zero(totalDoFnum);
-    f_ext_old = MyVector :: Zero(totalDoFnum);
+    load = Vector :: Zero(totalDoFnum);
+    r = Vector :: Zero(totalDoFnum);
+    f_ext = Vector :: Zero(totalDoFnum);
+    f_int = Vector :: Zero(totalDoFnum);
+    f_dam = Vector :: Zero(totalDoFnum);
+    f_acc = Vector :: Zero(totalDoFnum);
+    trial_r = Vector :: Zero(totalDoFnum);
+    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = Vector :: Zero(freeDoFnum);
+    residuals = Vector :: Zero(totalDoFnum);
+    ddr = Vector :: Zero(freeDoFnum);
+    full_ddr = Vector :: Zero(totalDoFnum);
+    f_int_old = Vector :: Zero(totalDoFnum);
+    f_ext_old = Vector :: Zero(totalDoFnum);
 }
 
 //////////////////////////////////////////////////////////
@@ -182,7 +182,7 @@ void Solver :: updateFieldVariables() {
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: giveValues(string code, MyVector &result) const{
+void Solver :: giveValues(string code, Vector &result) const{
     if ( code.compare("simulation_time") == 0 ) {
         result.resize(1);
         result[0]=time;
@@ -344,7 +344,7 @@ void SteadyStateLinearSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: computeInternalExternalForces(const MyVector &rr, const MyVector &ll, const bool frozen, double timeStep) {
+void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep) {
     nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
     elems->integrateInternalForces(rr, f_int, frozen, timeStep);
     nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext);     //give prescribed DoFs
@@ -406,9 +406,9 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
     this->fully_converged = false;
     if ( idc ) {
         idc->init(nodes, funcs, initial);   //indirect displacement control
-        ddf = MyVector :: Zero(freeDoFnum);
-        full_ddf = MyVector :: Zero(totalDoFnum);
-        f_last_iter = MyVector :: Zero(freeDoFnum);
+        ddf = Vector :: Zero(freeDoFnum);
+        full_ddf = Vector :: Zero(totalDoFnum);
+        f_last_iter = Vector :: Zero(freeDoFnum);
         if ( initial ) {
             idc_time = this->init_idc_time;
             idc_dt = 1e-6;
@@ -548,7 +548,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: giveValues(string code, MyVector &result) const {
+void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const {
     if ( code.compare("iterations") == 0 ) {
         result.resize(1);
         result[0]=it;
@@ -1059,7 +1059,7 @@ TransientLinearTransportSolver :: ~TransientLinearTransportSolver() {}
 void TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
     SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
 
-    v_old = MyVector :: Zero(totalDoFnum);
+    v_old = Vector :: Zero(totalDoFnum);
     elems->prepareDampingMatrix(C);
     elems->updateDampingMatrix(C);
 }
@@ -1079,7 +1079,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
         cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
         exit(1);
     }
-    v = MyVector :: Zero(totalDoFnum);
+    v = Vector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
 }
 
@@ -1224,10 +1224,10 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
     if ( init_v_file.compare("") != 0 ) {
         v = nodes->readInitialConditions(init_r_file);
     } else {
-        v = MyVector :: Zero(totalDoFnum);
+        v = Vector :: Zero(totalDoFnum);
     }
-    v_old = MyVector :: Zero(totalDoFnum);
-    a_old = MyVector :: Zero(totalDoFnum);
+    v_old = Vector :: Zero(totalDoFnum);
+    a_old = Vector :: Zero(totalDoFnum);
     elems->prepareMassMatrix(M);
     elems->updateMassMatrix(M);
 
@@ -1247,10 +1247,10 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
         nodes->giveConstraints()->transformToConstraintSpace(Mred);
     }
-    MyVector v_red = MyVector :: Zero(freeDoFnum);
+    Vector v_red = Vector :: Zero(freeDoFnum);
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
-    a = MyVector :: Zero(totalDoFnum);
+    a = Vector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, a);
 }
 

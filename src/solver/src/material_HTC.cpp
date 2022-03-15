@@ -11,7 +11,7 @@ HTCMaterialStatus :: HTCMaterialStatus(HTCMaterial *m, Element *e, unsigned ipnu
 }
 
 //////////////////////////////////////////////////////////
-void HTCMaterialStatus :: giveValues(string code, MyVector &result) const {
+void HTCMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("alpha_c") == 0 ) {
         result.resize(1);
         result[0] = alphac;
@@ -40,13 +40,13 @@ void HTCMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix HTCMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+Matrix HTCMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     ( void ) type;
     HTCMaterial *htc = static_cast< HTCMaterial * >( mat );
-    MyMatrix P = htc->givePermeabilityTensor();
+    Matrix P = htc->givePermeabilityTensor();
     double kappa = htc->giveKappa();
 
-    MyMatrix s = MyMatrix :: Zero(2 * dim, 2 * dim);
+    Matrix s = Matrix :: Zero(2 * dim, 2 * dim);
     for ( unsigned i = 0; i < dim; i++ ) {
         for ( unsigned j = 0; j < dim; j++ ) {
             s(i, j) = -Dh * P(i, j);
@@ -133,28 +133,28 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
 }
 
 //////////////////////////////////////////////////////////
-MyVector HTCMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector HTCMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     updateMaterialParameters(timeStep);
     return HTCMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-MyVector HTCMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
+Vector HTCMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = strain;
 
-    MyVector hstrain = MyVector :: Zero(3);
-    MyVector tstrain = MyVector :: Zero(3);
+    Vector hstrain = Vector :: Zero(3);
+    Vector tstrain = Vector :: Zero(3);
     for ( unsigned i = 0; i < 3; i++ ) {
         hstrain [ i ] = strain [ i ];
         tstrain [ i ] = strain [ 3 + i ];
     }
 
     HTCMaterial *htc = static_cast< HTCMaterial * >( mat );
-    MyMatrix P = htc->givePermeabilityTensor();
+    Matrix P = htc->givePermeabilityTensor();
 
-    MyVector hstress = -Dh *(P * hstrain);
-    MyVector tstress = -htc->giveKappa() * (P * tstrain);
+    Vector hstress = -Dh *(P * hstrain);
+    Vector tstress = -htc->giveKappa() * (P * tstrain);
     temp_stress.resize(6);
     for ( unsigned i = 0; i < 3; i++ ) {
         temp_stress [ i ] = hstress [ i ];
@@ -165,24 +165,24 @@ MyVector HTCMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain
 }
 
 //////////////////////////////////////////////////////////
-MyVector HTCMaterialStatus :: giveInternalSource() const {
-    MyVector ints = MyVector :: Zero(2);
+Vector HTCMaterialStatus :: giveInternalSource() const {
+    Vector ints = Vector :: Zero(2);
     ints [ 0 ] = -qh;
     ints [ 1 ] = qT;
     return ints;
 }
 
 //////////////////////////////////////////////////////////
-MyMatrix HTCMaterialStatus :: giveDampingTensor() const {
+Matrix HTCMaterialStatus :: giveDampingTensor() const {
     HTCMaterial *htc = static_cast< HTCMaterial * >( mat );
-    MyMatrix S = MyMatrix :: Zero(2, 2);
+    Matrix S = Matrix :: Zero(2, 2);
     S(0, 0) = -dwe_dh;
     S(1, 1) = -htc->giveRho() * htc->giveCt();
     return S;
 }
 //////////////////////////////////////////////////////////
-MyMatrix HTCMaterialStatus :: giveMassTensor() const {
-    return MyMatrix :: Zero(2, 2);
+Matrix HTCMaterialStatus :: giveMassTensor() const {
+    return Matrix :: Zero(2, 2);
 }
 
 //////////////////////////////////////////////////////////
@@ -281,7 +281,7 @@ MaterialStatus *HTCMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum)
 
 //////////////////////////////////////////////////////////
 void HTCMaterial :: init() {
-    permeabilityTensor  = MyMatrix :: Zero(3, 3);
+    permeabilityTensor  = Matrix :: Zero(3, 3);
 
     permeabilityTensor(0, 0) = permeabilityTensor(1, 1) = permeabilityTensor(2, 2) = 0.90020548;
 };

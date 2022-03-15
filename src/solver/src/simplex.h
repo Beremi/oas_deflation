@@ -33,7 +33,7 @@ public:
     void findNeighbors();
     double giveVolumetricStrain() const;
     double givePressure() const;
-    void computeVolumetricStrain(const MyVector &DoFs);
+    void computeVolumetricStrain(const Vector &DoFs);
     bool isValid() const { return valid; }
     bool hasPressure() const { return transport; }
     std :: vector< RigidBodyContact * >giveElements() { return elems; }

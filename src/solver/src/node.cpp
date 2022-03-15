@@ -66,7 +66,7 @@ void Node :: initSimplex() {
 }
 
 //////////////////////////////////////////////////////////
-void Node :: updateSimplexVolumetricStrain(const MyVector &fullDoFs) {
+void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
     if ( simplex ) {
         simplex->computeVolumetricStrain(fullDoFs);
     }
@@ -102,7 +102,7 @@ MechDoF :: MechDoF(unsigned dimension, unsigned numDoFs) : MechNode(dimension) {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational DoFs
-void MechNode :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
+void MechNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("displacements") == 0 ) {
         result.resize(dim);
         for (unsigned i=0; i<dim; i++) result[i] = DoFs [ firstDoF + i ];
@@ -137,7 +137,7 @@ unsigned MechNode :: giveOrderOfForceCode(string code) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT NODE - pressure DoF
-void TrsNode :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
+void TrsNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("pressure") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF ];
@@ -158,7 +158,7 @@ unsigned TrsNode :: giveOrderOfForceCode(string code) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT + TEMPERATURE NODE
-void TrsTemprtrCoupledNode :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
+void TrsTemprtrCoupledNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("humidity") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF ];
@@ -214,7 +214,7 @@ void Particle :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-void Particle :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
+void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( dim > 1 && code.compare("rotx") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF + 3 ];
@@ -259,7 +259,7 @@ std :: string Particle :: giveLineToSave() const {
 //////////////////////////////////////////////////////////
 // COUPLED PARTICLE - translational and rotational and transport DoFs
 //////////////////////////////////////////////////////////
-void CoupledParticle :: giveDoFBasedValues(string code, const MyVector &DoFs, MyVector &result) const {
+void CoupledParticle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("pressure") == 0 ) {
         result.resize(1);
         result[0] = DoFs [ firstDoF + 6 ];

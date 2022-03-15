@@ -844,7 +844,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     linS->setTimeStep(dt);
     linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);
-    vector< MyVector >elastSol(n);
+    vector< Vector >elastSol(n);
     for ( unsigned i = 0; i < n; i++ ) {
         dBC [ i ] = lfunc;
         bc->replaceDirichBC(dBC);

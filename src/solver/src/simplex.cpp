@@ -89,7 +89,7 @@ void Simplex :: findNeighbors() {
 }
 
 //////////////////////////////////////////////////////////
-void Simplex :: computeVolumetricStrain(const MyVector &fullDoFs) {
+void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
     volstrain = 0;
     if ( valid ) { //valid simplex taking care of its own
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {

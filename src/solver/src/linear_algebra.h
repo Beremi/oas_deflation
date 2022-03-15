@@ -51,7 +51,7 @@ public:
     Point operator+(const Point &p) const;
     Point operator/(const double p) const;
     Point operator*(const double p) const;
-    //double operator*(const Point &p) const;
+    double operator*(const Point &p) const;
     Point normalized() const;
     void normalize();
 

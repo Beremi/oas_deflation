@@ -21,7 +21,7 @@ private:
     double giveS0tension(double omega) const;
     double giveS0compression(double omega) const;
     void computeOmega0();
-    void computeDamage(MyVector strain);
+    void computeDamage( Vector strain);
     void computeKsAnsKt();
 
     double crackOpening;
@@ -31,10 +31,10 @@ public:
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
-    virtual MyVector giveStress(const MyVector &strain, double timeStep);
-    virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
-    virtual void giveValues(std :: string code, MyVector &result) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
@@ -83,8 +83,8 @@ private:
 public:
     LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     virtual ~LDPMMaterialStatus() {};
-    void computeDamage(MyVector strain);
-    virtual MyVector giveStress(const MyVector &strain, double timeStep);
+    void computeDamage( Vector strain);
+    virtual Vector giveStress(const Vector &strain, double timeStep);
 };
 
 
@@ -110,9 +110,9 @@ private:
 public:
     CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
     ~CoupledMarsMaterialStatus() {};
-    virtual MyVector giveStress(const MyVector &strain, double timeStep);
-    virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
-    virtual void giveValues(std :: string code, MyVector &result) const;
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void giveValues(std :: string code, Vector &result) const;
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();

@@ -406,7 +406,7 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
 
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDependentDoFs(MyVector &fullDoFs, const double time_now, const bool all) const {
+void ConstraintContainer :: calculateDependentDoFs( Vector &fullDoFs, const double time_now, const bool all) const {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
     if ( this->isActive() ) {
         for ( auto const &jD : constraints ) {
@@ -420,7 +420,7 @@ void ConstraintContainer :: calculateDependentDoFs(MyVector &fullDoFs, const dou
 }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateDoFsDependentOnConjugates(MyVector &full_ddr, const MyVector &trial_r, const MyVector &fullFExt) const {
+void ConstraintContainer :: calculateDoFsDependentOnConjugates( Vector &full_ddr, const Vector &trial_r, const Vector &fullFExt) const {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
     if ( this->isActive() ) {
         for ( auto const &jD : constraints ) {
@@ -437,7 +437,7 @@ void ConstraintContainer :: calculateDoFsDependentOnConjugates(MyVector &full_dd
 }
 
 //////////////////////////////////////////////////////////
-void ConstraintContainer :: calculateMasterForces(MyVector &fullForces) {
+void ConstraintContainer :: calculateMasterForces( Vector &fullForces) {
     if ( this->isActive() ) {
         // std::cout << "calculateMasterForces, time = " << time_now << '\n';
         for ( auto const &jD : constraints ) {

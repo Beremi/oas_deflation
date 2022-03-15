@@ -21,7 +21,7 @@ public:
     virtual ~DataExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool doExportNow(const double &time);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const = 0;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
     virtual void giveFileName(unsigned step, char *buffer) const;
     std :: string giveFileName() const { return filename; };
     virtual void init() {};
@@ -49,7 +49,7 @@ public:
     ~TXTNodalExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
 };
 
@@ -65,7 +65,7 @@ public:
     ~TXTElementExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
 };
 
@@ -81,7 +81,7 @@ public:
     ~TXTIntegrationPointExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
 };
 
@@ -114,7 +114,7 @@ public:
     ForceGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 };
 
@@ -128,7 +128,7 @@ public:
     DoFGauge(NodeContainer *nc, unsigned dimension) : ForceGauge(nc, dimension) {};
     DoFGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~DoFGauge() {};
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 };
 
@@ -145,7 +145,7 @@ public:
     IntegrationPointGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
     ~IntegrationPointGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 };
 
@@ -167,7 +167,7 @@ public:
     DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; elemA = nullptr; elemB = nullptr; };
     ~DisplacementGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
 protected:
 };
@@ -183,7 +183,7 @@ public:
     SolverGauge(unsigned dimension) : Gauge(dimension) {};
     ~SolverGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
     virtual void init();
     void setSolverPointer(Solver *s);
 protected:
@@ -223,7 +223,7 @@ public:
     ExporterContainer() {};
     ~ExporterContainer();
     void readFromFile(const std :: string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
-    void exportData(unsigned step, double time, const MyVector &DoFs, const MyVector &reactions, const bool &exportAll) const;
+    void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const;
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
     void init(const bool &initial = true);
@@ -235,7 +235,7 @@ public:
 protected:
 };
 
-void ExportAllElementsNodalStress(std :: vector< MyMatrix > &stress, const MyVector &DoFs, const MyVector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
+void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector &DoFs, const Vector &reactions, const NodeContainer *nodes, const ElementContainer *elems, const unsigned &dim);
 
 void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > &NodeTypes, fs :: path resultDir);
 

@@ -20,16 +20,16 @@ protected:
     double L;
     double temp_crackOpening, temp_normal_strain;
 private:
-    void computeDamage(const MyVector &strain);
+    void computeDamage(const Vector &strain);
 public:
     BrittleMaterialStatus(BrittleMaterial *m, Element *e, unsigned ipnum);
     virtual ~BrittleMaterialStatus() {};
     void init();
     virtual void update();
-    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
-    virtual MyVector giveStress(const MyVector &strain, double timeStep);
-    virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
-    virtual void giveValues(std :: string code, MyVector &result) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 
@@ -66,9 +66,9 @@ public:
     virtual ~ContactMaterialStatus() {};
     void init();
     virtual void update();
-    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
-    virtual MyVector giveStress(const MyVector &strain, double timeStep);
-    virtual MyVector giveStressWithFrozenIntVars(const MyVector &strain, double timeStep);
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     //virtual void giveValues(string code, MyVector &result) const;
 };
 

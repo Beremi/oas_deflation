@@ -12,7 +12,7 @@ MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned i
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: giveValues(string code, MyVector &result) const {
+void MarsMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
         result.resize(1);
         result[0] = temp_crackOpening;
@@ -151,7 +151,7 @@ void MarsMaterialStatus :: computeOmega0() {
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: computeDamage(MyVector strain) {
+void MarsMaterialStatus :: computeDamage( Vector strain) {
     MarsMaterial *m = static_cast< MarsMaterial * >( mat );
     double epsN = strain [ 0 ];
     double epsT;
@@ -242,8 +242,8 @@ void MarsMaterialStatus :: resetTemporaryVariables() {
 
 
 //////////////////////////////////////////////////////////
-MyMatrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    MyMatrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
@@ -290,13 +290,13 @@ MyMatrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) co
 }
 
 //////////////////////////////////////////////////////////
-MyVector MarsMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(addEigenStrain(strain) );
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-MyVector MarsMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
+Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
     if ( temp_strain [ 0 ] > 0 ) {
         temp_crackOpening = ( L * temp_damage ) * temp_strain [ 0 ]; //normal opening only
@@ -432,13 +432,13 @@ void MarsMaterial :: init() {
 LDPMMaterialStatus :: LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum) : MarsMaterialStatus(m, e, ipnum) {}
 
 //////////////////////////////////////////////////////////
-MyVector LDPMMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(addEigenStrain(strain) );
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void LDPMMaterialStatus :: computeDamage(MyVector strain) {
+void LDPMMaterialStatus :: computeDamage( Vector strain) {
     (void) strain;
 }
 
@@ -478,7 +478,7 @@ void CoupledMarsMaterialStatus :: setParameterValue(string code, double value) {
 }
 
 //////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: giveValues(string code, MyVector &result) const {
+void CoupledMarsMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("pressure") == 0 || code.compare("avg_pressure") == 0) {
         result.resize(1);
         result[0] = avgPressure;
@@ -500,14 +500,14 @@ void CoupledMarsMaterialStatus :: updateStressByBiotEffect(double timeStep) {
 }
 
 //////////////////////////////////////////////////////////
-MyVector CoupledMarsMaterialStatus :: giveStress(const MyVector &strain, double timeStep) {
+Vector CoupledMarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     MarsMaterialStatus :: giveStress(strain, timeStep);
     updateStressByBiotEffect(timeStep);
     return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
-MyVector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const MyVector &strain, double timeStep) {
+Vector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
     updateStressByBiotEffect(timeStep);
     return temp_stress;

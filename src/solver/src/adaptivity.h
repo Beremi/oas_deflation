@@ -324,17 +324,17 @@ private:
     //////////////////////////////////////////////////////////////////////////////
     bool checkNodes() {
         if ( PRINT_TEST ) { std :: cout << "adaptivity check nodes II b" << '\n'; }
-        std :: vector< MyMatrix >nodal_stress;
-        nodal_stress.resize( BaseSolver :: nodes->giveSize(), MyMatrix :: Zero(this->dim, this->dim) );
+        std :: vector< Matrix >nodal_stress;
+        nodal_stress.resize( BaseSolver :: nodes->giveSize(), Matrix :: Zero(this->dim, this->dim) );
         // calculate nodal stresses
         ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
 
-        std :: vector< MyVector >tensorial_stress;
+        std :: vector< Vector >tensorial_stress;
         BaseSolver :: elems->extrapolateValuesFromIntegrationPointsToNodes("solid_stress", tensorial_stress);
         // calculate principal stresses
         Node *n;
-        std :: vector< MyVector >eigvecs;
-        MyVector eignums;
+        std :: vector< Vector >eigvecs;
+        Vector eignums;
 
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);

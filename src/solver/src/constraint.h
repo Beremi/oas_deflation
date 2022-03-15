@@ -103,9 +103,9 @@ public:
     void init(NodeContainer *nodes, BCContainer *bconds, Solver *solver); // here matrix X will be created
     void clear();
     void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now = 0);
-    void calculateDependentDoFs(MyVector &fullDoFs, const double time_now = 0.0, const bool all = false) const;
-    void calculateDoFsDependentOnConjugates(MyVector &full_ddr, const MyVector &fullDoFs, const MyVector &fullFExt) const;
-    void calculateMasterForces(MyVector &fullForces);
+    void calculateDependentDoFs( Vector &fullDoFs, const double time_now = 0.0, const bool all = false) const;
+    void calculateDoFsDependentOnConjugates( Vector &full_ddr, const Vector &fullDoFs, const Vector &fullFExt) const;
+    void calculateMasterForces( Vector &fullForces);
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };
     size_t giveSize() { return constraints.size(); };

@@ -46,13 +46,13 @@ public:
     unsigned giveNumConstrDoFs() const { return constrDoFs; };
     void init();
     void clear();
-    void addRHS_nodalLoad(MyVector &f, double time) const;
-    void updateDirrichletBC(MyVector &r, double time) const;
-    void giveFullDoFArray(const MyVector &fDoFs, MyVector &fullDoFs) const;
-    void updateFullDoFsByDependenciesOnConjugates(MyVector &ddr, const MyVector &trial_r, const MyVector &f_ext) const; // accounts also for constraints between master and conjugate variables
-    void giveReducedForceArray(MyVector &fullDoFs, MyVector &fDoFs) const;
-    void giveReducedDoFArray(const MyVector &fullDoFs, MyVector &fDoFs) const;
-    void updateExternalForcesByReactions(MyVector &f_int, const MyVector &load, MyVector &f_dam, MyVector &f_acc, MyVector &f_ext) const;
+    void addRHS_nodalLoad( Vector &f, double time) const;
+    void updateDirrichletBC( Vector &r, double time) const;
+    void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
+    void updateFullDoFsByDependenciesOnConjugates( Vector &ddr, const Vector &trial_r, const Vector &f_ext) const; // accounts also for constraints between master and conjugate variables
+    void giveReducedForceArray( Vector &fullDoFs, Vector &fDoFs) const;
+    void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
+    void updateExternalForcesByReactions( Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const;
     Node *findClosestMechanicalNode(const Point A, double *distance) const;
     Node *findClosestAuxiliaryNode(const Point A, double *distance) const;
     Node *findClosestTransportNode(const Point A, double *distance) const;
@@ -61,10 +61,10 @@ public:
     std :: vector< bool >giveMechDoFsIndicator() { return mechDoFs; }
     std :: vector< bool >giveTranspDoFsIndicator() { return transpDoFs; }
     void initSimplices();
-    void updateSimplexVolumetricStrains(const MyVector &fullDoFs);
+    void updateSimplexVolumetricStrains(const Vector &fullDoFs);
 
     ConstraintContainer *giveConstraints() const { return constr; };
-    MyVector readInitialConditions(std :: string initfile) const;
+    Vector readInitialConditions(std :: string initfile) const;
 
     std :: vector< Node * > :: iterator begin() { return nodes.begin(); }
     std :: vector< Node * > :: iterator end() { return nodes.end(); }

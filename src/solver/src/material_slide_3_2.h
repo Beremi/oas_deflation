@@ -59,9 +59,9 @@ public:
     virtual ~Slide32MaterialStatus() {};
     void init();
     virtual void update();
-    virtual MyMatrix giveStiffnessTensor(std :: string type, unsigned dim) const;
-    virtual MyVector giveStress(const MyVector &strain, double timeStep);
-    virtual void giveValues(std :: string code, MyVector &result) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 

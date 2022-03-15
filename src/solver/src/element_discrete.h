@@ -14,9 +14,9 @@ protected:
     double length, area, perimeter;
     Point normal;
     Point t1, t2;
-    MyMatrix R;
+    Matrix R;
 
-    MyMatrix giveRMatrix() const { return R; };
+    Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;
     virtual void setIntegrationPointsAndWeights();
 
@@ -24,39 +24,39 @@ protected:
 
 public:
     RigidBodyContact(const unsigned dim);
-    virtual MyMatrix giveAMatrix(unsigned v, Point x) const;
+    virtual Matrix giveAMatrix(unsigned v, Point x) const;
     ~RigidBodyContact() {};
     void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     void init();
-    virtual MyMatrix giveBMatrix(const Point *x) const;
-    virtual MyMatrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
     std :: vector< Node * >giveVertices() const { return vert; };
     unsigned giveNumOfVertices() const { return vert.size(); };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
-    virtual MyVector giveContactStrainNT() const;
-    virtual MyVector giveContactStrainXYZ() const;
-    virtual MyVector giveContactStressXYZ();
-    virtual MyVector transformToLocal(const MyVector &DoFs) const;
-    virtual MyVector transformToGlobal(const MyVector &DoFs) const;
-    MyVector transformVectorToXYZ(MyVector &result) const;
+    virtual Vector giveContactStrainNT() const;
+    virtual Vector giveContactStrainXYZ() const;
+    virtual Vector giveContactStressXYZ();
+    virtual Vector transformToLocal(const Vector &DoFs) const;
+    virtual Vector transformToGlobal(const Vector &DoFs) const;
+    Vector transformVectorToXYZ( Vector &result) const;
 
-    virtual void giveValues(std :: string code, MyVector &result) const;
-    MyVector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
+    Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     Point giveNormal() const { return normal; };
     Point giveT1() const { return t1; };
     Point giveT2() const { return t2; };
     double giveVolumeAssociatedWithNode(unsigned nodenum) const;
-    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
-    virtual MyMatrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual MyMatrix giveDampingMatrix() const;
-    virtual MyMatrix giveMassMatrix() const;
-    virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
-    virtual MyVector integrateLoad(BodyLoad *vl, double time) const;
-    virtual MyVector integrateInternalSources();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
+    virtual Matrix giveMassMatrix() const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector integrateLoad(BodyLoad *vl, double time) const;
+    virtual Vector integrateInternalSources();
     double givePerimeter()const { return perimeter; };
 
-    virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< MyVector > &result, MyVector &weights) const;
+    virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 
@@ -88,7 +88,7 @@ protected:
 public:
     RigidBodyContactCoupled(const unsigned dim);
     ~RigidBodyContactCoupled() {};
-    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -103,15 +103,15 @@ public:
     RigidBodyBoundaryCoupled(const unsigned dim);
     ~RigidBodyBoundaryCoupled() {};
 
-    virtual MyMatrix giveBMatrix(const Point *x) const;
-    virtual MyMatrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
 
     void init();
 
-    virtual MyMatrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return MyMatrix::Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
-    virtual MyMatrix giveDampingMatrix() const { return MyMatrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix::Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
-    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -124,10 +124,10 @@ protected:
 public:
     Truss(const unsigned dim) : RigidBodyContact(dim) { name = "Truss"; };
     ~Truss() {};
-    virtual MyMatrix giveAMatrix(unsigned v, Point x) const;
-    virtual MyVector giveContactStrainNT(const MyVector &DoFs) const;
-    virtual MyMatrix giveBMatrix(const Point *x) const;
-    virtual MyMatrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveAMatrix(unsigned v, Point x) const;
+    virtual Vector giveContactStrainNT(const Vector &DoFs) const;
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
 };
 
 
@@ -155,14 +155,14 @@ public:
     double giveLength() const { return length; }
     double giveVolumeAssociatedWithNode(unsigned nodenum) const;
     void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    virtual MyMatrix giveBMatrix(const Point *x) const;
-    virtual MyMatrix giveHMatrix(const Point *x) const;
-    virtual MyMatrix giveDampingMatrix() const;
-    virtual MyMatrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
-    virtual MyVector integrateLoad(BodyLoad *vl, double time) const;
-    virtual MyVector integrateInternalSources();
-    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveDampingMatrix() const;
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
+    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector integrateLoad(BodyLoad *vl, double time) const;
+    virtual Vector integrateInternalSources();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     std :: vector< Node * >giveVertices() const { return vert; };
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
@@ -181,9 +181,9 @@ private:
 public:
     Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
     ~Transp1DCoupled() {};
-    virtual void giveValues(std :: string code, MyVector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
     void init();
-    virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     void addNewFriend(RigidBodyContact *f, double weight);
     unsigned giveNumOfFriends() const { return friends.size(); };
     virtual void collectInformationsFromNeigborhood();
