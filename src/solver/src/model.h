@@ -1,5 +1,5 @@
-#ifndef MODEL_H
-#define MODEL_H
+#ifndef _MODEL_H
+#define _MODEL_H
 
 #include <iostream>
 #include <fstream>
@@ -74,4 +74,4 @@ protected:
 };
 
 
-#endif
+#endif /* _MODEL_H */

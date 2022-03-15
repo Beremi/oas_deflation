@@ -1,5 +1,5 @@
-#ifndef _MATERIAL_HTC
-#define _MATERIAL_HTC
+#ifndef _MATERIAL_HTC_H
+#define _MATERIAL_HTC_H
 
 #include "material.h"
 
@@ -77,4 +77,4 @@ public:
     double giveInitAlphac()const { return init_alphac; };
     double giveInitAlphas()const { return init_alphas; };
 };
-#endif /* _MATERIAL_HTC */
+#endif /* _MATERIAL_HTC_H */

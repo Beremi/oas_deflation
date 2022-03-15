@@ -1,5 +1,5 @@
-#ifndef _MAT_RVE_H
-#define _MAT_RVE_H
+#ifndef _MATERIAL_RVE_H
+#define _MATERIAL_RVE_H
 
 #include "material.h"
 #include "globals.h"
@@ -265,4 +265,4 @@ public:
     double givePUCVolume() const { return PUCVolume; };
 };
 
-#endif /* _MAT_RVE_H */
+#endif /* _MATERIAL_RVE_H */

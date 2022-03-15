@@ -1,5 +1,5 @@
-#ifndef _ELEMENT_C_H
-#define _ELEMENT_C_H
+#ifndef _ELEMENT_CONTAINER_H
+#define _ELEMENT_CONTAINER_H
 
 #include "globals.h"
 #include "element.h"
@@ -60,4 +60,4 @@ public:
 
 
 
-#endif  /* _ELEMENT_STRUCT_C_H */
+#endif  /* _ELEMENT_CONTAINER_H */

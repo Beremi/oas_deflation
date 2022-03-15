@@ -1,5 +1,5 @@
-#ifndef _SHAPE_F_H
-#define _SHAPE_F_H
+#ifndef _SHAPE_FUNCTIONS_H
+#define _SHAPE_FUNCTIONS_H
 
 #include "node_container.h"
 class IntegrationType; //forward declaration
@@ -139,4 +139,4 @@ public:
     virtual void giveShapeF(const Point *x, Vector &phi) const;
 };
 
-#endif  /* _SHAPE_F_H */
+#endif  /* _SHAPE_FUNCTIONS_H */

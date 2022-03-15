@@ -124,4 +124,4 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p);
 
 
 
-#endif
+#endif /* _GEOMETRY_H */

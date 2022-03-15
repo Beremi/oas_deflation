@@ -88,4 +88,4 @@ public:
     virtual void init();
 };
 
-#endif
+#endif /* _MATERIAL_MISC_H */

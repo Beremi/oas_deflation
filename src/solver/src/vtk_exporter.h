@@ -74,4 +74,4 @@ public:
 protected:
 };
 
-#endif /* _EXPORTER_C_H */
+#endif /* _VTK_EXPORTER_H */

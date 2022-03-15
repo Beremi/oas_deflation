@@ -1,5 +1,5 @@
-#ifndef SOLVER_ADAPTIVE_H
-#define SOLVER_ADAPTIVE_H
+#ifndef _ADAPTIVITY_H
+#define _ADAPTIVITY_H
 
 #include <vector>
 #include <iostream>
@@ -588,4 +588,4 @@ public:
 // Foo<Basic>     fooWithBasic;
 // Foo<OtherBase> fooWithOtherSolver;
 
-#endif
+#endif /* _ADAPTIVITY_H */

@@ -1,5 +1,5 @@
-#ifndef _PBLOCK_H
-#define _PBLOCK_H
+#ifndef _PREPROCESSING_BLOCK_H
+#define _PREPROCESSING_BLOCK_H
 
 #include "linalg.h"
 #include <vector>
@@ -280,4 +280,4 @@ protected:
 };
 
 
-#endif /* _PBLOCK_H */
+#endif /* _PREPROCESSING_BLOCK_H */

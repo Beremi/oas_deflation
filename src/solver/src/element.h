@@ -137,4 +137,4 @@ public:
     ~MechanicalElement() {};
 };
 
-#endif  /* _ELEMENT_STRUCT_H */
+#endif  /* _ELEMENT_H */

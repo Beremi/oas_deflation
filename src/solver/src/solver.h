@@ -1,5 +1,5 @@
-#ifndef SOLVER_H
-#define SOLVER_H
+#ifndef _SOLVER_H
+#define _SOLVER_H
 
 #include <vector>
 #include <iostream>
@@ -204,4 +204,4 @@ public:
 };
 
 
-#endif
+#endif /* _SOLVER_H */

@@ -1,5 +1,5 @@
-#ifndef _EXPORTER_C_H
-#define _EXPORTER_C_H
+#ifndef _DATA_EXPORTER_H
+#define _DATA_EXPORTER_H
 
 #include "globals.h"
 #include "node_container.h"
@@ -241,4 +241,4 @@ void saveNodes(const NodeContainer &nodes, const std :: vector< std :: string > 
 
 void saveElems(const ElementContainer &elems, const std :: vector< std :: string > &ElemTypes, fs :: path resultDir);
 
-#endif /* _EXPORTER_C_H */
+#endif /* _DATA_EXPORTER_H */

@@ -1,5 +1,5 @@
-#ifndef _BC_H
-#define _BC_H
+#ifndef _BOUNDARY_CONDITION_H
+#define _BOUNDARY_CONDITION_H
 
 
 #include <vector>
@@ -110,4 +110,4 @@ protected:
 };
 
 
-#endif /* _BC_H */
+#endif /* _BOUNDARY_CONDITION_H */

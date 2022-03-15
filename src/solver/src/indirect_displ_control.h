@@ -1,5 +1,5 @@
-#ifndef IDC_H
-#define IDC_H
+#ifndef _INDIRECT_DISPL_CONTROL_H
+#define _INDIRECT_DISPL_CONTROL_H
 
 #include <vector>
 #include <iostream>
@@ -40,4 +40,4 @@ public:
     double giveControlValue( Vector &displ);
 };
 
-#endif
+#endif /* _INDIRECT_DISPL_CONTROL_H */

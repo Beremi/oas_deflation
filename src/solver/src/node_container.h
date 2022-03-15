@@ -1,5 +1,5 @@
-#ifndef _NODE_C_H
-#define _NODE_C_H
+#ifndef _NODE_CONTAINER_H
+#define _NODE_CONTAINER_H
 
 #include "node.h"
 #include <vector>
@@ -74,4 +74,4 @@ public:
 protected:
 };
 
-#endif /* _NODE_C_H */
+#endif /* _NODE_CONTAINER_H */

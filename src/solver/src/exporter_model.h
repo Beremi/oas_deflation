@@ -1,5 +1,5 @@
-#ifndef _EXPORTER_M_H
-#define _EXPORTER_M_H
+#ifndef _EXPORTER_MODEL_H
+#define _EXPORTER_MODEL_H
 
 #include "data_exporter.h"
 
@@ -21,4 +21,4 @@ protected:
 
 
 
-#endif /* _EXPORTER_M_H */
+#endif /* _EXPORTER_MODEL_H */

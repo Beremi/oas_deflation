@@ -153,4 +153,4 @@ public:
     virtual Matrix giveMassMatrix() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
-#endif  /* _ELEMENT_STRUCT_H */
+#endif  /* _ELEMENT_CONTINUOUS_H */

@@ -1,6 +1,5 @@
-
-#ifndef LINALG_H
-#define LINALG_H
+#ifndef _LINALG_H
+#define _LINALG_H
 
 #include <valarray>
 #include <map>
@@ -59,4 +58,4 @@ double triArea3D(const Point *a, const Point *b, const Point *c);
 
 
 
-#endif
+#endif /* _LINALG_H */

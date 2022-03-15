@@ -1,5 +1,5 @@
-#ifndef _MATERIAL_C_H
-#define _MATERIAL_C_H
+#ifndef _MATERIAL_CONTAINER_H
+#define _MATERIAL_CONTAINER_H
 
 #include "material.h"
 #include <vector>
@@ -22,4 +22,4 @@ public:
 protected:
 };
 
-#endif /* _MATERIAL_C_H */
+#endif /* _MATERIAL_CONTAINER_H */
