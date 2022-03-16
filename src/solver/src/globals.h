@@ -1,5 +1,5 @@
-#ifndef GLOBAL_H
- #define GLOBAL_H
+#ifndef _GLOBALS_H
+ #define _GLOBALS_H
 
  #include <iostream>
  #include <fstream>
@@ -55,4 +55,4 @@ extern Model* masterModel;
 
 std :: string convertTimeToString(std :: chrono :: duration< double >);
 
-#endif
+#endif /* _GLOBALS_H */

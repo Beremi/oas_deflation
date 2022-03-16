@@ -1,5 +1,5 @@
-#ifndef MODEL_H
-#define MODEL_H
+#ifndef _MODEL_H
+#define _MODEL_H
 
 #include <iostream>
 #include <fstream>
@@ -28,7 +28,7 @@ public:
     Model(bool pT);
     ~Model();
     // JK: different read for reloading the geometry (e.g. after adaptive remesh)
-    void readFromFile(const string filename, const bool &initial = true);
+    void readFromFile(const std :: string filename, const bool &initial = true);
     void init(const bool &initial = true);
     void solve();
 
@@ -55,7 +55,7 @@ public:
     fs :: path baseDir;
     fs :: path resultDir;
 
-    string initialFieldFile, initialTimeDerFieldFile; //files with initial conditions
+    std :: string initialFieldFile, initialTimeDerFieldFile; //files with initial conditions
 
 protected:
     unsigned ndim;
@@ -74,4 +74,4 @@ protected:
 };
 
 
-#endif
+#endif /* _MODEL_H */

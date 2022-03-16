@@ -1,5 +1,5 @@
-#ifndef _MATERIAL_HTC
-#define _MATERIAL_HTC
+#ifndef _MATERIAL_HTC_H
+#define _MATERIAL_HTC_H
 
 #include "material.h"
 
@@ -20,14 +20,14 @@ public:
     virtual ~HTCMaterialStatus() {};
     virtual void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
     virtual Vector giveInternalSource() const;
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveMassTensor() const;
-    virtual void setParameterValue(string code, double value);
+    virtual void setParameterValue(std :: string code, double value);
 };
 
 
@@ -41,7 +41,7 @@ private:
 public:
     HTCMaterial() { name = "Mars material"; produceInternalSources = true; };
     virtual ~HTCMaterial() {};
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void init();
     Matrix givePermeabilityTensor() const { return permeabilityTensor; };
@@ -77,4 +77,4 @@ public:
     double giveInitAlphac()const { return init_alphac; };
     double giveInitAlphas()const { return init_alphas; };
 };
-#endif /* _MATERIAL_HTC */
+#endif /* _MATERIAL_HTC_H */

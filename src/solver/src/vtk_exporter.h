@@ -12,9 +12,9 @@ class VTKExporter : public DataExporter
 private:
 
 public:
-    VTKExporter(unsigned dimension) : DataExporter(dimension) {binaryswitch = true;};
+    VTKExporter(unsigned dimension) : DataExporter(dimension) { binaryswitch = true; };
     virtual ~VTKExporter() {};
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual void giveFileName(unsigned step, char *buffer) const;
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
 protected:
@@ -74,4 +74,4 @@ public:
 protected:
 };
 
-#endif /* _EXPORTER_C_H */
+#endif /* _VTK_EXPORTER_H */

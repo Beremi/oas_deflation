@@ -1,7 +1,7 @@
 #ifndef _ELEMENT_H
 #define _ELEMENT_H
 
-#include "linear_algebra.h"
+#include "linalg.h"
 #include "linalg.h"
 #include "node_container.h"
 #include "material_container.h"
@@ -23,15 +23,15 @@ protected:
     unsigned idx;
     unsigned solution_order;
     double volume;
-    vector< Node * >nodes;
-    string name;
+    std :: vector< Node * >nodes;
+    std :: string name;
     Material *mat;
     //vector< Point >ip_locs;
     //vector< double >ip_weights;
-    vector< Matrix >Bs;     //stored B matrices
-    vector< Matrix >Hs;     //stored H matrices
-    vector< MaterialStatus * >stats;
-    vector< unsigned >DoFids;
+    std :: vector< Matrix >Bs;     //stored B matrices
+    std :: vector< Matrix >Hs;     //stored H matrices
+    std :: vector< MaterialStatus * >stats;
+    std :: vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
     virtual void setIntegrationPointsAndWeights();
     virtual void initIntegration();
@@ -48,29 +48,29 @@ public:
     virtual ~Element();
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
-    virtual void readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     // virtual std :: string giveLineToSave(NodeContainer * nodes) const;
     virtual void init();
     void initMaterialStatuses();
     void updateMaterialStatuses();
     void resetMaterialStatuses();
-    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
-    vector< unsigned >giveDoFs() const { return DoFids; };
-    vector< unsigned >giveDoFsInDirection(unsigned dir) const;
+    std :: vector< unsigned >giveDoFs() const { return DoFids; };
+    std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
-    virtual void giveValues(string code, Vector &result) const;
-    string giveName() const { return name; }
+    virtual void giveValues(std :: string code, Vector &result) const;
+    std :: string giveName() const { return name; }
     size_t giveNumIP() const { return inttype->giveNumIP(); };
     Point giveIPLoc(unsigned k) const { return inttype->giveIPLocation(k); };
-    virtual void giveIPValues(string code, unsigned ipnum, Vector &result) const;
-    vector< Node * >giveNodes() const { return nodes; }
+    virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
+    std :: vector< Node * >giveNodes() const { return nodes; }
     Node *giveNode(unsigned k) const { return nodes [ k ]; }
     size_t giveNumOfNodes() const { return nodes.size(); }
     Material *giveMaterial() const { return mat; }
-    vector< MaterialStatus * >giveMaterialStats() const { return stats; };
+    std :: vector< MaterialStatus * >giveMaterialStats() const { return stats; };
     MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
@@ -85,14 +85,14 @@ public:
     unsigned giveVTKCellType() const { return vtk_cell_type; };
     virtual void changeMaterial(Material *newmat);
     virtual Vector integrateInternalSources();
-    //virtual void shapeF(const Point *x, Vector &phi) const { ( void ) x; ( void ) phi; };
-    //virtual double shapeFGrad(const Point *x, Matrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
+    //virtual void shapeF(const Point *x, MyVector &phi) const { ( void ) x; ( void ) phi; };
+    //virtual double shapeFGrad(const Point *x, MyMatrix &phiGrad) const { ( void ) x; ( void ) phiGrad; return 0; };
     virtual bool giveGlobalCoords(Point *x, const Point *xn) const;
     virtual Vector giveMasterVariables(const Point *x, const Vector &DoFs) const { return giveHMatrix(x) * DoFs; };
     Vector giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const;
     double giveVolume() const { return volume; };
 
-    virtual void extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const;
+    virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
 
     virtual void collectInformationsFromNeigborhood() {};
     virtual bool isPointInside(Point *xn, const Point *x) const;
@@ -109,7 +109,7 @@ protected:
 public:
     GeometricalElement() { mat = nullptr; }
     ~GeometricalElement() {};
-    double giveIPValue(string code, unsigned ipnum) const { ( void ) code; ( void ) ipnum; return 0; }
+    double giveIPValue(std :: string code, unsigned ipnum) const { ( void ) code; ( void ) ipnum; return 0; }
 };
 
 //////////////////////////////////////////////////////////
@@ -137,4 +137,4 @@ public:
     ~MechanicalElement() {};
 };
 
-#endif  /* _ELEMENT_STRUCT_H */
+#endif  /* _ELEMENT_H */

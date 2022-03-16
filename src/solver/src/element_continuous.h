@@ -146,11 +146,11 @@ public:
     CoupledCosseratBrickWithDependentUpperZLayer();
     virtual ~CoupledCosseratBrickWithDependentUpperZLayer() {};
     virtual void setIntegrationPointsAndWeights();
-    virtual Matrix giveStiffnessMatrix(string matrixType) const;
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual Vector integrateInternalSources();
     virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
-#endif  /* _ELEMENT_STRUCT_H */
+#endif  /* _ELEMENT_CONTINUOUS_H */

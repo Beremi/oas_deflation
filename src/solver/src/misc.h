@@ -20,4 +20,4 @@ bool isStringInVect(const std :: string &val, const std :: vector< std :: string
 
 
 
-#endif
+#endif /* _MISC_H */

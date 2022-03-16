@@ -3,8 +3,11 @@
 #include "geometry.h"
 #include <fstream>
 #include <memory>
+
+using namespace std;
+
 // Define Infinite (Using INT_MAX caused overflow problems)
-#define INF 10000
+#define INF 10000.0
 #define TOL 1e-9
 
 
@@ -22,9 +25,9 @@ void Block :: readFromLine(istringstream &iss) {
 }
 
 bool Block :: isInside(const Point &P) const {
-    if ( ( this->mainPoint.getX() - P.getX() ) < TOL && ( P.getX() - this->rightTop.getX() ) < TOL ) {
-        if ( ( this->mainPoint.getY() - P.getY() ) < TOL && ( P.getY() - this->rightTop.getY() ) < TOL ) {
-            if ( ( this->mainPoint.getZ() - P.getZ() ) < TOL && ( P.getZ() - this->rightTop.getZ() ) < TOL ) {
+    if ( ( this->mainPoint.x() - P.x() ) < TOL && ( P.x() - this->rightTop.x() ) < TOL ) {
+        if ( ( this->mainPoint.y() - P.y() ) < TOL && ( P.y() - this->rightTop.y() ) < TOL ) {
+            if ( ( this->mainPoint.z() - P.z() ) < TOL && ( P.z() - this->rightTop.z() ) < TOL ) {
                 return true;
             }
         }
@@ -61,11 +64,11 @@ bool Circle :: isInside(const Point &P) const {
     // TODO make this more universal to be able to switch cylinder axis to x or y
     Point P_to_compare = P;
     if ( this->along == 'x' ) {
-        P_to_compare.setX(0);
+        P_to_compare.x() = 0;
     } else if ( this->along == 'x' ) {
-        P_to_compare.setY(0);
+        P_to_compare.y() = 0;
     } else if ( this->along == 'z' ) {
-        P_to_compare.setZ(0);
+        P_to_compare.z() = 0;
     }
     if ( ( P - this->mainPoint ).norm() < this->size ) {
         return true;
@@ -110,7 +113,7 @@ void Polygon :: addVertex(const Point &P) {
 
 bool Polygon :: isInside(const Point &P) const {
     // Create a point for line segment from p to infinite (ray)
-    Point extreme = { INF, P.getY() };
+    Point extreme(INF, P.y(), 0.0);
 
     // Count intersections of the above line with sides of polygon
     int count = 0;
@@ -140,9 +143,9 @@ bool Polygon :: isInside(const Point &P) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
-    if ( ( leftBottom.getX() - P.getX() ) < TOL && ( P.getX() - rightTop.getX() ) < TOL ) {
-        if ( ( leftBottom.getY() - P.getY() ) < TOL && ( P.getY() - rightTop.getY() ) < TOL ) {
-            if ( ( leftBottom.getZ() - P.getZ() ) < TOL && ( P.getZ() - rightTop.getZ() ) < TOL ) {
+    if ( ( leftBottom.x() - P.x() ) < TOL && ( P.x() - rightTop.x() ) < TOL ) {
+        if ( ( leftBottom.y() - P.y() ) < TOL && ( P.y() - rightTop.y() ) < TOL ) {
+            if ( ( leftBottom.z() - P.z() ) < TOL && ( P.z() - rightTop.z() ) < TOL ) {
                 return true;
             }
         }
@@ -153,8 +156,8 @@ bool isInBlock(const Point &P, const Point &leftBottom, const Point &rightTop) {
 bool isInCircle(const Point &P, const Point &center, const double &radius,
                 const unsigned &dir) {
     Point P1, C1;
-    P1 = Point( ( dir == 0 ) ? 0 : P.getX(), ( dir == 1 ) ? 0 : P.getY(), ( dir == 2 ) ? 0 : P.getZ() );
-    C1 = Point( ( dir == 0 ) ? 0 : center.getX(), ( dir == 1 ) ? 0 : center.getY(), ( dir == 2 ) ? 0 : center.getZ() );
+    P1 = Point( ( dir == 0 ) ? 0 : P.x(), ( dir == 1 ) ? 0 : P.y(), ( dir == 2 ) ? 0 : P.z() );
+    C1 = Point( ( dir == 0 ) ? 0 : center.x(), ( dir == 1 ) ? 0 : center.y(), ( dir == 2 ) ? 0 : center.z() );
     if ( ( P1 - C1 ).norm() < radius ) {
         return true;
     }
@@ -166,8 +169,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius,
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.getX() <= max(p.getX(), r.getX() ) && q.getX() >= min(p.getX(), r.getX() ) &&
-         q.getY() <= max(p.getY(), r.getY() ) && q.getY() >= min(p.getY(), r.getY() ) ) {
+    if ( q.x() <= max( p.x(), r.x() ) && q.x() >= min( p.x(), r.x() ) &&
+         q.y() <= max( p.y(), r.y() ) && q.y() >= min( p.y(), r.y() ) ) {
         return true;
     }
     return false;
@@ -180,8 +183,8 @@ bool onSegment(const Point &p, const Point &q, const Point &r)
 // 2 --> Counterclockwise
 int orientation(const Point &p, const Point &q, const Point &r)
 {
-    double val = ( q.getY() - p.getY() ) * ( r.getX() - q.getX() ) -
-                 ( q.getX() - p.getX() ) * ( r.getY() - q.getY() );
+    double val = ( q.y() - p.y() ) * ( r.x() - q.x() ) -
+                 ( q.x() - p.x() ) * ( r.y() - q.y() );
 
     if ( val == 0 ) {
         return 0;            // colinear
@@ -238,7 +241,7 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
     }
 
     // Create a point for line segment from p to infinite (ray)
-    Point extreme = { INF, p.getY() };
+    Point extreme = { INF, p.y(), 0.0 };
 
     // Count intersections of the above line with sides of polygon
     int count = 0;
@@ -267,7 +270,7 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -280,13 +283,13 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
             iss >> std :: ws >> regionType;
             if ( !( regionType.rfind("#", 0) == 0 ) ) {
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
-                    Block *newregion = new Block();
+                    auto newregion = std :: make_unique< Block >();
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: unique_ptr< Block >(newregion) );
+                    regions.push_back( std :: move(newregion) );
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
-                    Sphere *newregion = new Sphere();
+                    auto newregion = std :: make_unique< Sphere >();
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: unique_ptr< Sphere >(newregion) );
+                    regions.push_back( std :: move(newregion) );
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -317,7 +320,7 @@ bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside(n->givePoint() ) ) {
+            if ( reg->isInside( n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }

@@ -223,6 +223,7 @@ docker run a992 (first 3 characters are enough)
                 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
                 cmake --build . --parallel 4
             \endcode
+        - to enable GUI -DVTK_MODULE_ENABLE_VTK_RenderingContextOpenGL2=YES
 - enable VTK in current build configuration
   \code{.sh}
     cmake -DUSE_VTK=ON .

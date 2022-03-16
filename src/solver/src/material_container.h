@@ -1,5 +1,5 @@
-#ifndef _MATERIAL_C_H
-#define _MATERIAL_C_H
+#ifndef _MATERIAL_CONTAINER_H
+#define _MATERIAL_CONTAINER_H
 
 #include "material.h"
 #include <vector>
@@ -11,15 +11,15 @@
 class MaterialContainer
 {
 private:
-    vector< Material * >matrs;
+    std :: vector< Material * >matrs;
 public:
     MaterialContainer() {};
     ~MaterialContainer();
 
-    void readFromFile(const string filename);
+    void readFromFile(const std :: string filename);
     void init();
     Material *giveMaterial(unsigned const mat);
 protected:
 };
 
-#endif /* _MATERIAL_C_H */
+#endif /* _MATERIAL_CONTAINER_H */

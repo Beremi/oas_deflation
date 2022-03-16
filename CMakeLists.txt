@@ -91,7 +91,7 @@ if (MSVC)
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -fPIC -Wall -Wextra  -Wshadow") # -Wsign-conversion -Wconversion  -pedantic-errorsc -ggdb
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -ffast-math -fno-math-errno -march=native -DNDEBUG") # -pedantic-errorsc -ggdb
     if (CHECK_CONVERSION)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion -Wconversion")
     endif()
@@ -115,7 +115,7 @@ else()
   message(STATUS "No suitable compiler flag found for vectorization")
 endif()
 
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 #set (CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O2 -pg")
@@ -123,7 +123,7 @@ set(TARGETNAME DiscreteModel)
 
 # detect
 find_package(PythonInterp REQUIRED)
-find_package (Eigen3 3.3 NO_MODULE)
+find_package (Eigen3 3.3.9 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
 if(TARGET Eigen3::Eigen)
@@ -134,13 +134,13 @@ else()
   add_custom_target(unpack-eigen
   ALL
   COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-3.3.7.tar.gz
+    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-3.4.0.tar.gz
   WORKING_DIRECTORY
     ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT
-    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7"
+    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0"
   )
-  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.3.7)
+  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0)
 endif()
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)

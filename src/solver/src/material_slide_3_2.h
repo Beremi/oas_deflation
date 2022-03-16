@@ -59,9 +59,9 @@ public:
     virtual ~Slide32MaterialStatus() {};
     void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 
@@ -93,7 +93,7 @@ private:
 public:
     Slide32Material() { name = "Slide32 material"; };
     ~Slide32Material() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
 
     double giveE_s() const { return E0 * alpha; }

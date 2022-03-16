@@ -1,6 +1,5 @@
-
-#ifndef LINALG_H
-#define LINALG_H
+#ifndef _LINALG_H
+#define _LINALG_H
 
 #include <valarray>
 #include <map>
@@ -20,17 +19,36 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseLU>
 #include <Eigen/SparseCholesky>
+#include <Eigen/Eigenvalues>
 
-#include "linear_algebra.h"
+//  \[ ([\w\s\+\*]*) \] \[ ([\w\s\+\*]*) \]
 #include "globals.h"
 
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit, string solver_type);
+using Ttripletd = Eigen :: Triplet< double >;
 
+using Vector = Eigen :: VectorXd;
+using Point = Eigen :: Vector3d;
+using Matrix = Eigen :: MatrixXd;
+typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor >CoordinateIndexedSparseMatrix;  // row-major-sparse * dense vector/matrix products - multi-threading
+
+const static Eigen :: IOFormat VectorSemicolonFmt(Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
+
+bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, std :: string solver_type);
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
 
-bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &eigevalues);
+bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
 
-bool LinalgEigenSolver(const Eigen::MatrixXd &mat, Vector &eigenvalues, vector< Vector > &eigevalues);
+bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
 
-#endif
+double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD);
+
+Matrix dyadicProduct(const Vector &a, const Vector &b);
+
+double triArea2D(const Point *a, const Point *b, const Point *c);
+
+double triArea3D(const Point *a, const Point *b, const Point *c);
+
+
+
+#endif /* _LINALG_H */

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include "model.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // ELEMENT CONATINER
@@ -29,7 +31,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     this->materials = matrs;
     size_t origsize = elems.size();
     string line, elemType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -228,7 +230,7 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
             fnm_fin = ( masterModel->resultDir / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
             if ( !fs :: exists(fnm_fin) ) {
                 if ( fs :: exists(fnm_ini) ) {
-                    std :: rename(fnm_ini.c_str(), fnm_fin.c_str() );
+                    std :: rename( fnm_ini.c_str(), fnm_fin.c_str() );
                     std :: cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
                     break;
                 } else {
@@ -249,7 +251,7 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
         std :: vector< double >initial_times, ini_time_steps, initial_idc_times;
         std :: vector< unsigned >initial_steps;
         for ( auto const &file_with_stats : this->file_to_load_from ) {
-            ifstream inputfile(file_with_stats.c_str() );
+            ifstream inputfile( file_with_stats.c_str() );
             if ( inputfile.is_open() ) {
                 while ( getline(inputfile >> std :: ws, line) ) {
                     if ( line.at(0) == '#' || line.empty() ) {
@@ -267,7 +269,7 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                         iss >> elem_id >> stat_id >> mat_id;
                         // std::cout << "line: " << line << '\n';
                         // std::cout << "elem name: " << this->giveElement(elem_id)->giveName() << '\n';
-                        this->giveElement(elem_id)->changeMaterial(this->materials->giveMaterial(mat_id) );
+                        this->giveElement(elem_id)->changeMaterial( this->materials->giveMaterial(mat_id) );
                         this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
                     }
                 }
@@ -308,7 +310,7 @@ void ElementContainer :: init() {
         ( * e )->setID(num);
         ( * e )->init();
         ( * e )->initMaterialStatuses();
-        max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
+        max_sol_order = max( max_sol_order, ( * e )->giveSolutionOrder() );
     }
 
     //update neighborhood information
@@ -334,7 +336,7 @@ void ElementContainer :: resetMaterialStatuses() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const {
-    map< pair< size_t, size_t >, double >indices11;
+    std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
 
@@ -350,20 +352,23 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
+                        tripletList.push_back( Ttripletd(DoFi, DoFi, 0.0) );
                     }
                 } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
-                        indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
+                        tripletList.push_back( Ttripletd(DoFi, DoFj, 0.0) );
+                        tripletList.push_back( Ttripletd(DoFj, DoFi, 0.0) );
                     }
                 }
             }
         }
     }
+
     if ( nfreeDoFs > 0 ) {
-        K = CoordinateIndexedSparseMatrix(indices11, nfreeDoFs, nfreeDoFs);
+        K.resize(nfreeDoFs, nfreeDoFs);
+        K.setFromTriplets( tripletList.begin(), tripletList.end() );
+        K.makeCompressed();
     }
 }
 
@@ -412,13 +417,13 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        K [ DoFi ] [ DoFi ] += k [ i ] [ i ];
+                        K.coeffRef(DoFi, DoFi) += k(i, j);
                     }
                 } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        K [ DoFi ] [ DoFj ] += k [ i ] [ j ];
-                        K [ DoFj ] [ DoFi ] += k [ j ] [ i ];
+                        K.coeffRef(DoFi, DoFj) += k(i, j);
+                        K.coeffRef(DoFj, DoFi) += k(j, i);
                     }
                 }
             }
@@ -454,7 +459,7 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) cons
 void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
-    full_f *= 0;  // clear array
+    full_f.setZero();  // clear array
 
     for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
@@ -462,7 +467,8 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
                 continue;                                  //correct order must be used;
             }
             elDoFs = ( * e )->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.resize( elDoFs.size() );
+            elDoFvalues.setZero();
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
             }
@@ -478,11 +484,12 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
 void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
-    full_f *= 0; //clear array
+    full_f.setZero(); // *= 0; //clear array
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
-        elDoFvalues.resize(elDoFs.size() );
+        elDoFvalues.resize( elDoFs.size() );
+        elDoFvalues.setZero();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
         }
@@ -529,7 +536,7 @@ void ElementContainer :: findElementFriends() {
 
 //////////////////////////////////////////////////////////
 Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const {
-    std :: sort(node_ids.begin(), node_ids.end() );
+    std :: sort( node_ids.begin(), node_ids.end() );
     // std::cout << "this elem should connect nodes";
     // for ( auto const &nid : node_ids ) {
     //   std::cout << " " << nid;
@@ -544,12 +551,12 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
                     // std::cout << "this elem connects nodes";
                     for ( auto const &n : el->giveNodes() ) {
                         // std::cout << " " << this->nodes->giveNodeId(n);
-                        elem_node_ids.push_back(this->nodes->giveNodeId(n) );
+                        elem_node_ids.push_back( this->nodes->giveNodeId(n) );
                     }
                     // std::cout << '\n';
                     if ( elem_node_ids.size() == node_ids.size() ) { ///< for other than rbc elems
                         // std::cout << "and what about here?" << '\n';
-                        std :: sort(elem_node_ids.begin(), elem_node_ids.end() );
+                        std :: sort( elem_node_ids.begin(), elem_node_ids.end() );
                         for ( unsigned i = 0; i < node_ids.size(); i++ ) {
                             if ( elem_node_ids [ i ] != node_ids [ i ] ) {
                                 break;
@@ -588,29 +595,35 @@ bool ElementContainer :: findElementOwningPoint(Element **elem, Point *xn, const
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result){
+void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result) {
     //delete everythink inside
     size_t p;
-    result.resize(0);
-    result.resize(nodes->giveSize());
-    Vector weights(nodes->giveSize());
-    
+    result.clear(); // result.resize(0);
+    result.resize( nodes->giveSize() );
+    Vector weights = Vector :: Zero( nodes->giveSize() );
+
     //fill with data
-    vector<Vector> res;
+    vector< Vector >res;
     Vector wei;
     unsigned nodeid;
-    size_t reslen;
-    for (vector<Element*>::iterator ee = elems.begin(); ee!=elems.end(); ++ee){
-        (*ee)->extrapolateIPValuesToNodes(code, res, wei);
-        reslen = res.size();
-        for(p=0; p<(*ee)->giveNumOfNodes(); p++){
-            nodeid = (*ee)->giveNode(p)->giveID();
-            weights[nodeid] += wei[p];
-            if (reslen>result[nodeid].size()) result[nodeid].resize(reslen);
-            for (size_t m=0; m<min(reslen,result[nodeid].size()); m++) {result[nodeid][m] += res[m][p];}
+    for ( vector< Element * > :: iterator ee = elems.begin(); ee != elems.end(); ++ee ) {
+        ( * ee )->extrapolateIPValuesToNodes(code, res, wei);
+        auto reslen = res.size();
+        for ( p = 0; p < ( * ee )->giveNumOfNodes(); p++ ) {
+            nodeid = ( * ee )->giveNode(p)->giveID();
+            weights [ nodeid ] += wei [ p ];
+            if ( reslen > result [ nodeid ].size() ) {
+                result [ nodeid ].resize(reslen);
+                result [ nodeid ].setZero();
+            }
+            for ( size_t m = 0; m < min< size_t >( reslen, result [ nodeid ].size() ); m++ ) {
+                result [ nodeid ] [ m ] += res [ m ] [ p ];
+            }
         }
     }
-    
+
     //normalize by number of attached elements
-    for (p = 0; p<nodes->giveSize(); p++ ) result[p] /= weights[p];
+    for ( p = 0; p < nodes->giveSize(); p++ ) {
+        result [ p ] /= weights [ p ];
+    }
 }
