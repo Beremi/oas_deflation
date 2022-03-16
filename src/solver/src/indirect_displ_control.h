@@ -36,8 +36,8 @@ public:
     ~IndirectDC() {};
     void init(NodeContainer *nodes, FunctionContainer *funcs, bool initial = true);
     void readFromStream(unsigned num, std :: ifstream &inputfile);
-    double giveMultiplierCorrection( Vector &prev_displ, Vector &displ_f, double time);
-    double giveControlValue( Vector &displ);
+    double giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time);
+    double giveControlValue(Vector &displ);
 };
 
 #endif /* _INDIRECT_DISPL_CONTROL_H */

@@ -169,8 +169,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius,
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.x() <= max(p.x(), r.x() ) && q.x() >= min(p.x(), r.x() ) &&
-         q.y() <= max(p.y(), r.y() ) && q.y() >= min(p.y(), r.y() ) ) {
+    if ( q.x() <= max( p.x(), r.x() ) && q.x() >= min( p.x(), r.x() ) &&
+         q.y() <= max( p.y(), r.y() ) && q.y() >= min( p.y(), r.y() ) ) {
         return true;
     }
     return false;
@@ -270,7 +270,7 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -283,13 +283,13 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
             iss >> std :: ws >> regionType;
             if ( !( regionType.rfind("#", 0) == 0 ) ) {
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
-                    auto newregion = std :: make_unique<Block>();
+                    auto newregion = std :: make_unique< Block >();
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: move(newregion));
+                    regions.push_back( std :: move(newregion) );
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
-                    auto newregion = std :: make_unique<Sphere>();
+                    auto newregion = std :: make_unique< Sphere >();
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: move(newregion));
+                    regions.push_back( std :: move(newregion) );
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -320,7 +320,7 @@ bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside(n->givePoint() ) ) {
+            if ( reg->isInside( n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }

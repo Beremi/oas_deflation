@@ -12,9 +12,9 @@ BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e, u
 void BrittleMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         result.resize(1);
-        result[0] = temp_damage;
+        result [ 0 ] = temp_damage;
     } else {
-        DisMechMaterialStatus :: giveValues(code,result);
+        DisMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -82,7 +82,7 @@ Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(strain);
     if ( damage ) {
-        Matrix stiff = giveStiffnessTensor("secant", strain.size() );
+        Matrix stiff = giveStiffnessTensor( "secant", strain.size() );
         return stiff * strain;
     } else {
         return DisMechMaterialStatus :: giveStress(strain, timeStep);
@@ -94,7 +94,7 @@ Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep
 Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     ( void ) strain;
-    return Vector (0); //TOTO: FIX
+    return Vector(0);  //TOTO: FIX
 }
 
 //////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ Matrix ContactMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 Vector ContactMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_normal_strain = strain [ 0 ];
-    Vector stress = Vector :: Zero(strain.size());
+    Vector stress = Vector :: Zero( strain.size() );
     if ( temp_normal_strain < 0 ) {
         ContactMaterial *m = static_cast< ContactMaterial * >( mat );
         stress [ 0 ] = strain [ 0 ] * m->giveE0();
@@ -204,7 +204,7 @@ Vector ContactMaterialStatus :: giveStress(const Vector &strain, double timeStep
 Vector ContactMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     ( void ) strain;
-    return Vector (0); //TOTO: FIX
+    return Vector(0);  //TOTO: FIX
 }
 
 //////////////////////////////////////////////////////////

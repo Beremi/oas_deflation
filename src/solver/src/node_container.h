@@ -46,18 +46,18 @@ public:
     unsigned giveNumConstrDoFs() const { return constrDoFs; };
     void init();
     void clear();
-    void addRHS_nodalLoad( Vector &f, double time) const;
-    void updateDirrichletBC( Vector &r, double time) const;
+    void addRHS_nodalLoad(Vector &f, double time) const;
+    void updateDirrichletBC(Vector &r, double time) const;
     void giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) const;
-    void updateFullDoFsByDependenciesOnConjugates( Vector &ddr, const Vector &trial_r, const Vector &f_ext) const; // accounts also for constraints between master and conjugate variables
-    void giveReducedForceArray( Vector &fullDoFs, Vector &fDoFs) const;
+    void updateFullDoFsByDependenciesOnConjugates(Vector &ddr, const Vector &trial_r, const Vector &f_ext) const;  // accounts also for constraints between master and conjugate variables
+    void giveReducedForceArray(Vector &fullDoFs, Vector &fDoFs) const;
     void giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs) const;
-    void updateExternalForcesByReactions( Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const;
+    void updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const;
     Node *findClosestMechanicalNode(const Point A, double *distance) const;
     Node *findClosestAuxiliaryNode(const Point A, double *distance) const;
     Node *findClosestTransportNode(const Point A, double *distance) const;
     unsigned giveNodeNumber(const Node *n) const;
-    void addNode(Node *n) { n->setID( nodes.size() ); nodes.push_back(n); };
+    void addNode(Node *n) { n->setID(nodes.size() ); nodes.push_back(n); };
     std :: vector< bool >giveMechDoFsIndicator() { return mechDoFs; }
     std :: vector< bool >giveTranspDoFsIndicator() { return transpDoFs; }
     void initSimplices();

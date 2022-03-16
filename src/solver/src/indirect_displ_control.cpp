@@ -55,12 +55,12 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
             coords_active [ nummaxunit - 1 ] = true;
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> xcoords [ nummaxunit - 1 ] [ j ];
-                cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ]<< endl;
+                cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
         } else if ( param.compare("idc_ycoords") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> ycoords [ nummaxunit - 1 ] [ j ];
-                cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ]<< endl;
+                cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
         } else if ( param.compare("idc_zcoords") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
@@ -69,7 +69,6 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
         } else if ( param.compare("idc_directions") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> c_dirs [ nummaxunit - 1 ] [ j ];
-
             }
         } else if ( param.compare("idc_weights") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
@@ -124,7 +123,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveMultiplierCorrection( Vector &prev_displ, Vector &displ_f, double time) {
+double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
     double lambdaABS = INFINITY;
     double df, dd;
     double pdispl = givePrescribedDisplacement(time);
@@ -136,7 +135,7 @@ double IndirectDC :: giveMultiplierCorrection( Vector &prev_displ, Vector &displ
             dd += ( prev_displ [ c_DoFs [ c ] [ i ] ] ) * c_weights [ c ] [ i ];
             df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
         }
-        if ( abs( ( pdispl - dd ) / df) < lambdaABS ) {
+        if ( abs( ( pdispl - dd ) / df ) < lambdaABS ) {
             lambda = ( pdispl - dd ) / df;
             lambdaABS = abs(lambda);
         }
@@ -146,7 +145,7 @@ double IndirectDC :: giveMultiplierCorrection( Vector &prev_displ, Vector &displ
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveControlValue( Vector &displ) {
+double IndirectDC :: giveControlValue(Vector &displ) {
     double dd = -INFINITY;
     double m;
     for ( unsigned c = 0; c < nummaxunit; c++ ) {

@@ -29,9 +29,9 @@ using Ttripletd = Eigen :: Triplet< double >;
 using Vector = Eigen :: VectorXd;
 using Point = Eigen :: Vector3d;
 using Matrix = Eigen :: MatrixXd;
-typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor > CoordinateIndexedSparseMatrix; // row-major-sparse * dense vector/matrix products - multi-threading
+typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor >CoordinateIndexedSparseMatrix;  // row-major-sparse * dense vector/matrix products - multi-threading
 
-const static Eigen :: IOFormat VectorSemicolonFmt (Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
+const static Eigen :: IOFormat VectorSemicolonFmt(Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
 
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, std :: string solver_type);
 
@@ -39,7 +39,7 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
 
 bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
 
-bool LinalgEigenSolver(const Matrix& mat, Vector& eigenvalues, std::vector< Vector > &eigevalues);
+bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
 
 double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD);
 

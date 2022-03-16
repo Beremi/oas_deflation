@@ -25,14 +25,14 @@ public:
     virtual void giveFileName(unsigned step, char *buffer) const;
     std :: string giveFileName() const { return filename; };
     virtual void init() {};
-    size_t giveMaxSize(unsigned c) const { return maxsize[c];}
+    size_t giveMaxSize(unsigned c) const { return maxsize [ c ]; }
     void appendToName(std :: string app) { filename = filename + app; };
 protected:
     unsigned dim;
     std :: string filename;
     unsigned precision;
     std :: vector< std :: string >codes;
-    std :: vector< size_t > maxsize;
+    std :: vector< size_t >maxsize;
     double time_each, time_last;
 };
 
@@ -191,24 +191,24 @@ protected:
 
 
 /*
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// EXPORT OF SUM OF VALUES
-class StructuralExporter : public Gauge
-{
-private:
-    NodeContainer *nodes;
-    ElementContainer *elems;
-    double calcValue() const;
-public:
-    StructuralExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
-    ~StructuralExporter() {};
-    void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
-    virtual void init();
-protected:
-};
-*/
+ * //////////////////////////////////////////////////////////
+ * //////////////////////////////////////////////////////////
+ * // EXPORT OF SUM OF VALUES
+ * class StructuralExporter : public Gauge
+ * {
+ * private:
+ *  NodeContainer *nodes;
+ *  ElementContainer *elems;
+ *  double calcValue() const;
+ * public:
+ *  StructuralExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; };
+ *  ~StructuralExporter() {};
+ *  void readFromLine(istringstream &iss);
+ *  virtual void exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const;
+ *  virtual void init();
+ * protected:
+ * };
+ */
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

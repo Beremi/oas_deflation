@@ -45,11 +45,11 @@ void TranspPolygonal :: prepareGeometry() {
     angles.resize(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         angles [ i ].second = i;
-        angles [ i ].first = atan2(nodes [ i ]->givePoint().y() - cpoint.y(), nodes [ i ]->givePoint().x() - cpoint.x() );
+        angles [ i ].first = atan2( nodes [ i ]->givePoint().y() - cpoint.y(), nodes [ i ]->givePoint().x() - cpoint.x() );
     }
 
     //sort to have counterclockwise direction
-    sort(angles.begin(), angles.end() );
+    sort( angles.begin(), angles.end() );
     vector< Node * >newnodes;
     newnodes.resize(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
@@ -97,7 +97,7 @@ void TranspPolygonal :: initIntegration() {
 
 //////////////////////////////////////////////////////////
 void TranspPolygonal :: setIntegrationPointsAndWeights() {
-    stats.resize(inttype->giveNumIP() );
+    stats.resize( inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
     }
@@ -125,7 +125,7 @@ void TranspPolygonal :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix TranspPolygonal :: giveBMatrix(const Point *x) const {
-    Matrix B = Matrix :: Zero(ndim, nodes.size() );
+    Matrix B = Matrix :: Zero( ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, B);
     return B;
 }
@@ -216,7 +216,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
     for ( i = 0; i < numOfNodes; i++ ) {
         V2(i, i) += 1.;
     }
-    V1 = (V1.transpose() * Gtilde) * V1;
+    V1 = ( V1.transpose() * Gtilde ) * V1;
 
     Matrix H = Matrix :: Zero(ndim + 1, ndim + 1);
     Vector m = Vector :: Zero(ndim + 1);
@@ -225,7 +225,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
         for ( v = 0; v < ndim; v++ ) {
             m [ v + 1 ] = ( inttype->giveIPLocation(i)(v) - centroid(v) ) / radius;
         }
-        H += dyadicProduct( m, m * inttype->giveIPWeight(i) );
+        H += dyadicProduct(m, m * inttype->giveIPWeight(i) );
     }
 
     double Hdet = H(0, 0) * H(1, 1) * H(2, 2) + H(0, 2) * H(1, 0) * H(2, 1) + H(2, 0) * H(0, 1) * H(1, 2) - H(0, 0) * H(2, 1) * H(1, 2) - H(0, 1) * H(1, 0) * H(2, 2) - H(0, 2) * H(1, 1) * H(2, 0);
@@ -243,11 +243,11 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
 
     W2 = Ginv * B;
     Matrix C = H * W2;
-    W2 = (D * W2) * ( -1. );
+    W2 = ( D * W2 ) * ( -1. );
     for ( i = 0; i < numOfNodes; i++ ) {
         W2(i, i) += 1.;
     }
-    W1 = (C.transpose() * Hinv) * C;
+    W1 = ( C.transpose() * Hinv ) * C;
 }
 
 //////////////////////////////////////////////////////////
@@ -259,7 +259,7 @@ Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
     }
     cond /= volume;
 
-    return V1 * cond + ((V2.transpose() * C) * V2);
+    return V1 * cond + ( ( V2.transpose() * C ) * V2 );
 }
 
 //////////////////////////////////////////////////////////
@@ -284,7 +284,7 @@ Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
      * return M;
      */
 
-    return ( W1 + (W2.transpose() * W2) * volume ) * cap;
+    return ( W1 + ( W2.transpose() * W2 ) * volume ) * cap;
 }
 
 //////////////////////////////////////////////////////////

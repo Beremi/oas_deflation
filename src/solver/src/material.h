@@ -28,23 +28,23 @@ public:
     virtual void update();
     virtual void resetTemporaryVariables();  ///> if step reset applied, reset temprary variables to last converged state
     virtual Vector giveStress(const Vector &strain, double timeStep) { return giveStressWithFrozenIntVars(strain, timeStep); };
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep) { ( void ) strain; ( void ) timeStep; return Vector (0); };
-    virtual void giveValues(std :: string code, Vector &result) const { ( void ) code; result.resize(0);};
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep) { ( void ) strain; ( void ) timeStep; return Vector(0); };
+    virtual void giveValues(std :: string code, Vector &result) const { ( void ) code; result.resize(0); };
     virtual Vector giveTempStress() const { return temp_stress; };
     virtual Vector giveUpdatedStress() const { return updt_stress; };
     virtual Vector giveTempStrain() const { return temp_strain; };
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dimension) const { ( void ) dimension; ( void ) type; return Matrix (0, 0); };
-    virtual Matrix giveMassTensor() const { return Matrix (0, 0); };
-    virtual Matrix giveDampingTensor() const { return Matrix (0, 0); };
-    virtual void setEigenStrain( Vector &x);
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dimension) const { ( void ) dimension; ( void ) type; return Matrix(0, 0); };
+    virtual Matrix giveMassTensor() const { return Matrix(0, 0); };
+    virtual Matrix giveDampingTensor() const { return Matrix(0, 0); };
+    virtual void setEigenStrain(Vector &x);
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(std :: istringstream &iss) {
         ( void ) iss;
         std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
     };
-    virtual Vector giveInternalSource()const { return Vector (0); };
+    virtual Vector giveInternalSource()const { return Vector(0); };
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value) { ( void ) code; ( void ) value; };
 

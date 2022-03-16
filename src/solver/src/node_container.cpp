@@ -25,7 +25,7 @@ void NodeContainer :: clear() {
 void NodeContainer :: readFromFile(const string filename, const int dim) {
     size_t origsize = nodes.size();
     string line, nodeType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -156,7 +156,7 @@ void NodeContainer :: establishDoFArray() {
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
     loadedDoFs = BC->giveArrayOfLoadedDoFs();
     bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
-    blockedDoFid.resize(blocked.size() );
+    blockedDoFid.resize( blocked.size() );
 
     /////////////////////////////////////////////////////////////////
     // #constraint
@@ -164,24 +164,24 @@ void NodeContainer :: establishDoFArray() {
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-    cstr.resize(constr->giveSize() );
+    cstr.resize( constr->giveSize() );
     for ( unsigned j = 0; j < constr->giveSize(); j++ ) {
         cstr [ j ].first = constr->giveConstraint(j)->giveSlaveDoF();
         cstr [ j ].second = j;
     }
-    sort(cstr.begin(), cstr.end() );
+    sort( cstr.begin(), cstr.end() );
 
     /////////////////////////////////////////////////////////////////
     freeDoFs = totalDoFs - constrDoFs - blocked.size();
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
-    a.resize(blocked.size() );
+    a.resize( blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
-    sort(a.begin(), a.end() );
+    sort( a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
     if ( a.size() > 0 ) {
@@ -237,7 +237,7 @@ void NodeContainer :: establishDoFArray() {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: addRHS_nodalLoad( Vector &f, double time) const {
+void NodeContainer :: addRHS_nodalLoad(Vector &f, double time) const {
     vector< double >bodyLoad = BC->giveBodyForceDoFValues(time);
     for ( unsigned k = 0; k < bodyLoad.size(); k++ ) {
         f [ bodyForceDoFs [ k ] ] += bodyLoad [ k ];
@@ -250,7 +250,7 @@ void NodeContainer :: addRHS_nodalLoad( Vector &f, double time) const {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateDirrichletBC( Vector &r, double time) const {
+void NodeContainer :: updateDirrichletBC(Vector &r, double time) const {
     vector< double >blocked = BC->giveBlockedDoFValues(time);
     for ( unsigned k = 0; k < blocked.size(); k++ ) {
         r [ blockedDoFid [ k ] ] = blocked [ k ];
@@ -270,7 +270,7 @@ void NodeContainer :: giveFullDoFArray(const Vector &fDoFs, Vector &fullDoFs) co
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateFullDoFsByDependenciesOnConjugates( Vector &ddr, const Vector &trial_r, const Vector &f_ext) const { // accounts also for constraints between master and conjugate variables
+void NodeContainer :: updateFullDoFsByDependenciesOnConjugates(Vector &ddr, const Vector &trial_r, const Vector &f_ext) const {  // accounts also for constraints between master and conjugate variables
     this->giveConstraints()->calculateDoFsDependentOnConjugates(ddr, trial_r, f_ext);
 }
 
@@ -285,7 +285,7 @@ void NodeContainer :: giveReducedDoFArray(const Vector &fullDoFs, Vector &fDoFs)
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: giveReducedForceArray( Vector &fullf, Vector &f) const {
+void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
     this->giveConstraints()->calculateMasterForces(fullf);
 
     for ( unsigned i = 0; i < totalDoFs; i++ ) {
@@ -296,7 +296,7 @@ void NodeContainer :: giveReducedForceArray( Vector &fullf, Vector &f) const {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExternalForcesByReactions( Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
+void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
     // #constr_new
     this->giveConstraints()->calculateMasterForces(f_int);
     this->giveConstraints()->calculateMasterForces(f_dam);
@@ -386,7 +386,7 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
     unsigned numi, startDoF;
     double numd;
     Vector initvalues = Vector :: Zero(totalDoFs);
-    ifstream inputfile(initfile.c_str() );
+    ifstream inputfile( initfile.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             istringstream iss(line);

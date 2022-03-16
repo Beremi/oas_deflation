@@ -3,7 +3,6 @@
 using namespace std;
 
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, string solver_type) {
-
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -28,12 +27,12 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
 
         x = cgK.solveWithGuess(b, x0);
 
-        result = size_t(cgK.iterations() ) < Maxit;
+        result = size_t( cgK.iterations() ) < Maxit;
         if ( !result ) {
             cout << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
         }
     } else if ( solver_type == "EigenLDLT" ) {
-        Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > > simplicial_ldlt_solver;
+        Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >simplicial_ldlt_solver;
         x = simplicial_ldlt_solver.compute(A).solve(b);
         cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
         result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
@@ -88,45 +87,48 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
     cout.flush();
 #endif
 
-    bool result = size_t(bicg.iterations() ) < Maxit;
+    bool result = size_t( bicg.iterations() ) < Maxit;
     return result;
 }
 
 //sorterd eigenvalues and eigenvectors
 bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &eigenvectors) {
-
     size_t ndim;
     bool sym;
-    if (A.size()==3){ //2D
-        ndim = 2; sym = true;
-    }else if (A.size()==6){ //3D
-        ndim =3; sym = true;
-    }else if (A.size()==4){ //2D
-        ndim = 2; sym = false;
-    }else if (A.size()==9){ //3D
-        ndim =3; sym = false;
-    }else{
+    if ( A.size() == 3 ) { //2D
+        ndim = 2;
+        sym = true;
+    } else if ( A.size() == 6 )      { //3D
+        ndim = 3;
+        sym = true;
+    } else if ( A.size() == 4 )      { //2D
+        ndim = 2;
+        sym = false;
+    } else if ( A.size() == 9 )      { //3D
+        ndim = 3;
+        sym = false;
+    } else  {
         cerr << "Error: LinalgEigenSolver implemented only for vectorized matrices of size 2 or 3, submitted size " << A.size() << endl;
         exit(1);
     }
     Eigen :: MatrixXd mat = Eigen :: MatrixXd :: Zero(ndim, ndim);
 
-    if (ndim==2 && sym){
+    if ( ndim == 2 && sym ) {
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
         mat(1, 0) = mat(0, 1) = A [ 2 ];
-    }else if (ndim==2 && !sym){
+    } else if ( ndim == 2 && !sym )      {
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
-        mat(1, 0) = mat(0, 1) = (A [ 2 ] + A [ 3 ])/2.;
-    }else if (ndim==3 && sym){
+        mat(1, 0) = mat(0, 1) = ( A [ 2 ] + A [ 3 ] ) / 2.;
+    } else if ( ndim == 3 && sym )      {
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
         mat(2, 2) = A [ 2 ];
         mat(2, 1) = mat(1, 2) = A [ 3 ];
         mat(2, 0) = mat(0, 2) = A [ 4 ];
         mat(1, 0) = mat(0, 1) = A [ 5 ];
-    }else if (ndim==3 && !sym){
+    } else if ( ndim == 3 && !sym )      {
         mat(0, 0) = A [ 0 ];
         mat(1, 1) = A [ 1 ];
         mat(2, 2) = A [ 2 ];
@@ -135,24 +137,24 @@ bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &e
         mat(1, 0) = mat(0, 1) = ( A [ 8 ] + A [ 7 ] ) / 2.;
     }
 
-   return LinalgEigenSolver(mat, eigenvalues, eigenvectors);
+    return LinalgEigenSolver(mat, eigenvalues, eigenvectors);
 }
 
 bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > &eigenvectors) {
-    Eigen :: EigenSolver< Matrix > es;
+    Eigen :: EigenSolver< Matrix >es;
     es.compute(mat, /* computeEigenvectors = */ true);
 
     unsigned ndim = mat.rows();
-    vector< double > eigenvalsvector(ndim);
+    vector< double >eigenvalsvector(ndim);
     eigenvalues.resize(ndim);
     eigenvectors.resize(ndim);
 
     for ( unsigned i = 0; i < ndim; i++ ) {
-        eigenvalsvector [ i ] = (es.eigenvalues() [ i ]).real();
+        eigenvalsvector [ i ] = ( es.eigenvalues() [ i ] ).real();
     }
 
     // initialize original index locations
-    vector< size_t >idx( ndim );
+    vector< size_t >idx(ndim);
     iota(idx.begin(), idx.end(), 0);
     stable_sort(idx.begin(), idx.end(), [ & eigenvalsvector ](size_t i1, size_t i2) {
         return eigenvalsvector [ i1 ] > eigenvalsvector [ i2 ];
@@ -163,7 +165,7 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
         eigenvectors [ i ].resize(ndim);
         Eigen :: VectorXcd v = es.eigenvectors().col(idx [ i ]);
         for ( unsigned j = 0; j < ndim; j++ ) {
-            eigenvectors[i] [j] = (v [ j ]).real();
+            eigenvectors [ i ] [ j ] = ( v [ j ] ).real();
         }
     }
 
@@ -178,7 +180,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot(AC.cross(AD) );
+    double coplanarityError = AB.dot( AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -192,8 +194,8 @@ double triArea2D(const Point *a, const Point *b, const Point *c) { //points in c
 }
 
 double triArea3D(const Point *a, const Point *b, const Point *c) { //points
-    Point AB = (*b) - (*a);
-    Point AC = (*c) - (*a);
+    Point AB = ( * b ) - ( * a );
+    Point AC = ( * c ) - ( * a );
     return AB.cross(AC).norm() * 0.5;
 
     //return abs(0.5 * pow(pow( ( b->y() - a->y() ) * ( c->z() - a->z() ) - ( b->z() - a->z() ) * ( c->y() - a->y() ), 2 ) + pow( ( b->z() - a->z() ) * ( c->x() - a->x() ) - ( b->x() - a->x() ) * ( c->z() - a->z() ), 2 ) + pow( ( b->x() - a->x() ) * ( c->y() - a->y() ) - ( b->y() - a->y() ) * ( c->x() - a->x() ), 2 ), 0.5) );

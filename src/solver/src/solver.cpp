@@ -22,7 +22,7 @@ void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionCont
 //////////////////////////////////////////////////////////
 Solver *Solver :: readFromFile(const string filename) {
     string param, paramA, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -165,7 +165,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     f_dam = Vector :: Zero(totalDoFnum);
     f_acc = Vector :: Zero(totalDoFnum);
     trial_r = Vector :: Zero(totalDoFnum);
-    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
     residuals = Vector :: Zero(totalDoFnum);
     ddr = Vector :: Zero(freeDoFnum);
@@ -182,16 +182,16 @@ void Solver :: updateFieldVariables() {
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: giveValues(string code, Vector &result) const{
+void Solver :: giveValues(string code, Vector &result) const {
     if ( code.compare("simulation_time") == 0 ) {
         result.resize(1);
-        result[0]=time;
+        result [ 0 ] = time;
     } else if ( code.compare("elapsed_time") == 0 ) {
         result.resize(1);
-        result[0]=chrono :: duration_cast< std :: chrono :: duration< double > >(std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
+        result [ 0 ] = chrono :: duration_cast< std :: chrono :: duration< double > >( std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
     } else if ( code.compare("number_of_dof") == 0 ) {
         result.resize(1);
-        result[0]=freeDoFnum;
+        result [ 0 ] = freeDoFnum;
     } else {
         result.resize(0);
     }
@@ -265,7 +265,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -432,7 +432,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     bool bsh = false;
     unsigned helpuint;
     double valueIN;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -551,25 +551,25 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
 void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const {
     if ( code.compare("iterations") == 0 ) {
         result.resize(1);
-        result[0]=it;
+        result [ 0 ] = it;
     } else if ( code.compare("restars") == 0 ) {
         result.resize(1);
-        result[0]=restarts;
+        result [ 0 ] = restarts;
     } else if ( code.compare("error_displacements") == 0 ) {
         result.resize(1);
-        result[0]=disErr;
+        result [ 0 ] = disErr;
     } else if ( code.compare("error_residuals") == 0 ) {
         result.resize(1);
-        result[0]=resErr;
+        result [ 0 ] = resErr;
     } else if ( code.compare("error_energy") == 0 ) {
         result.resize(1);
-        result[0]=eneErr;
+        result [ 0 ] = eneErr;
     } else if ( code.compare("idc_time") == 0 ) {
         result.resize(1);
-        result[0]=idc_time;
+        result [ 0 ] = idc_time;
     } else if ( code.compare("converged") == 0 ) {
         result.resize(1);
-        result[0]=fully_converged;
+        result [ 0 ] = fully_converged;
     } else {
         SteadyStateLinearSolver :: giveValues(code, result);
     }
@@ -623,8 +623,8 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
             full_ddrM += pow(full_ddr [ i ], 2);
             trial_rM += pow(trial_r [ i ], 2);
             energyM += abs(residuals [ i ] * full_ddr [ i ]);
-            W_intM += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_extM += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_intM += abs( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_extM += abs( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
             W_kinM += 0.; //TODO: correct kinetic energy
         }
         if ( transpDoFs [ i ] ) {
@@ -636,13 +636,13 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
             full_ddrT += pow(full_ddr [ i ], 2);
             trial_rT += pow(trial_r [ i ], 2);
             energyT += abs(residuals [ i ] * full_ddr [ i ]);
-            W_intT += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_extT += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_intT += abs( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+            W_extT += abs( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
             W_kinT += 0.; //TODO: correct kinetic energy
         }
     }
-    resErr = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
-    disErr = sqrt(full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
+    resErr = sqrt( residualM / max(max( max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max( max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
+    disErr = sqrt( full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
     eneErr = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
 
     /*
@@ -1086,7 +1086,7 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1139,7 +1139,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 
     double num;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() ) {
@@ -1293,7 +1293,7 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 

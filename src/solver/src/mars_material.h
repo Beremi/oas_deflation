@@ -21,7 +21,7 @@ private:
     double giveS0tension(double omega) const;
     double giveS0compression(double omega) const;
     void computeOmega0();
-    void computeDamage( Vector strain);
+    void computeDamage(Vector strain);
     void computeKsAnsKt();
 
     double crackOpening;
@@ -83,7 +83,7 @@ private:
 public:
     LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     virtual ~LDPMMaterialStatus() {};
-    void computeDamage( Vector strain);
+    void computeDamage(Vector strain);
     virtual Vector giveStress(const Vector &strain, double timeStep);
 };
 

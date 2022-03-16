@@ -81,12 +81,12 @@ void TXTNodalExporter :: init() {
     unsigned ncod = codes.size();
     maxsize.resize(ncod);
     Vector res;
-    Vector fakeDoFs = Vector :: Zero(nodes->giveTotalNumDoFs());
-    for (unsigned i=0; i<ncod; i++){
-        maxsize[i]=0;
-        for ( unsigned n = 0; n < nodes->giveSize(); n++ ){
-            nodes->giveNode(n)->giveDoFBasedValues( codes[i], fakeDoFs, res);
-            maxsize[i] = max<size_t>(maxsize[i], res.size()); // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
+    Vector fakeDoFs = Vector :: Zero( nodes->giveTotalNumDoFs() );
+    for ( unsigned i = 0; i < ncod; i++ ) {
+        maxsize [ i ] = 0;
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], fakeDoFs, res);
+            maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() ); // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
         }
     }
 }
@@ -103,8 +103,13 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
     if ( outputfile.is_open() ) {
         outputfile << "#nodeID";
         for ( unsigned c = 0; c < codes.size(); c++ ) {
-            if (maxsize[c]==1) outputfile << "\t" << codes[c];
-            else for(p = 0; p < maxsize[c]; p++)  outputfile << "\t" << codes[c] << "_" << p;
+            if ( maxsize [ c ] == 1 ) {
+                outputfile << "\t" << codes [ c ];
+            } else {
+                for ( p = 0; p < maxsize [ c ]; p++ ) {
+                    outputfile << "\t" << codes [ c ] << "_" << p;
+                }
+            }
         }
         outputfile << "\n";
 
@@ -115,11 +120,11 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
             nn = nodes->giveNode(n);
             outputfile << nn->giveID();
             for ( unsigned c = 0; c < codes.size(); c++ ) {
-                nn->giveDoFBasedValues(codes[c], DoFs, res);
-                for( p = 0; p < min<size_t>(maxsize[c], res.size()); p++){
-                    outputfile << "\t" << res[p];
+                nn->giveDoFBasedValues(codes [ c ], DoFs, res);
+                for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
+                    outputfile << "\t" << res [ p ];
                 }
-                for( ; p < maxsize[c]; p++){
+                for ( ; p < maxsize [ c ]; p++ ) {
                     outputfile <<  "\t" << 0;
                 }
             }
@@ -158,14 +163,13 @@ void TXTElementExporter :: init() {
     unsigned ncod = codes.size();
     maxsize.resize(ncod);
     Vector res;
-    for (unsigned i=0; i<ncod; i++){
-        maxsize[i]=0;
+    for ( unsigned i = 0; i < ncod; i++ ) {
+        maxsize [ i ] = 0;
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
-            elems->giveElement(e)->giveValues(codes[i], res);
-            maxsize[i] = max<size_t>(maxsize[i],res.size());
+            elems->giveElement(e)->giveValues(codes [ i ], res);
+            maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );
         }
     }
-
 }
 
 //////////////////////////////////////////////////////////
@@ -181,8 +185,13 @@ void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     if ( outputfile.is_open() ) {
         outputfile << "#elementID";
         for ( unsigned c = 0; c < codes.size(); c++ ) {
-            if (maxsize[c]==1) outputfile << "\t" << codes[c];
-            else for(p = 0; p < maxsize[c]; p++)  outputfile << "\t" << codes[c] << "_" << p;
+            if ( maxsize [ c ] == 1 ) {
+                outputfile << "\t" << codes [ c ];
+            } else {
+                for ( p = 0; p < maxsize [ c ]; p++ ) {
+                    outputfile << "\t" << codes [ c ] << "_" << p;
+                }
+            }
         }
         outputfile << "\n";
 
@@ -192,11 +201,11 @@ void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             ee = elems->giveElement(e);
             outputfile << ee->giveID();
             for ( unsigned c = 0; c < codes.size(); c++ ) {
-                ee->giveValues(codes[c], res);
-                for( p = 0; p < min<size_t>(maxsize[c],res.size()); p++){
-                    outputfile << "\t" << res[p];
+                ee->giveValues(codes [ c ], res);
+                for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
+                    outputfile << "\t" << res [ p ];
                 }
-                for( ; p < maxsize[c]; p++){
+                for ( ; p < maxsize [ c ]; p++ ) {
                     outputfile << "\t" << 0;
                 }
             }
@@ -237,18 +246,17 @@ void TXTIntegrationPointExporter :: init() {
     Vector res;
     Element *ee;
     size_t nIP;
-    for (unsigned i=0; i<ncod; i++){
-        maxsize[i]=0;
+    for ( unsigned i = 0; i < ncod; i++ ) {
+        maxsize [ i ] = 0;
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             ee = elems->giveElement(e);
             nIP = ee->giveNumIP();
             for ( unsigned k = 0; k < nIP; k++ ) {
-                ee->giveIPValues(codes[i], k, res);
-                maxsize[i] = max<size_t>(maxsize[i],res.size());
+                ee->giveIPValues(codes [ i ], k, res);
+                maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );
             }
         }
     }
-
 }
 
 //////////////////////////////////////////////////////////
@@ -266,8 +274,13 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs
     if ( outputfile.is_open() ) {
         outputfile << "#elementID\tintpointID";
         for ( unsigned c = 0; c < codes.size(); c++ ) {
-            if (maxsize[c]==1) outputfile << "\t" << codes[c];
-            else for(p = 0; p < maxsize[c]; p++)  outputfile << "\t" << codes[c] << "_" << p;
+            if ( maxsize [ c ] == 1 ) {
+                outputfile << "\t" << codes [ c ];
+            } else {
+                for ( p = 0; p < maxsize [ c ]; p++ ) {
+                    outputfile << "\t" << codes [ c ] << "_" << p;
+                }
+            }
         }
         outputfile << "\n";
 
@@ -279,11 +292,11 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs
             for ( unsigned k = 0; k < nIP; k++ ) {
                 outputfile << ee->giveID() << "\t" << k;
                 for ( unsigned c = 0; c < codes.size(); c++ ) {
-                    ee->giveIPValues( codes[c], k, res);
-                    for( p = 0; p < min<size_t>(maxsize[c],res.size()); p++){
-                        outputfile << "\t" << res[p];
+                    ee->giveIPValues(codes [ c ], k, res);
+                    for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
+                        outputfile << "\t" << res [ p ];
                     }
-                    for( ; p < maxsize[c]; p++){
+                    for ( ; p < maxsize [ c ]; p++ ) {
                         outputfile << "\t" << 0;
                     }
                 }
@@ -299,7 +312,7 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs
 // GAUGE EXPORTERS
 void Gauge :: giveFileName(unsigned step, char *buffer) const {
     ( void ) step;
-    sprintf(buffer, "%s.out", filename.c_str() );
+    sprintf( buffer, "%s.out", filename.c_str() );
 }
 
 
@@ -340,14 +353,14 @@ void ForceGauge :: readFromLine(istringstream &iss) {
         Block bl;
         bl.readFromLine(iss);
         for ( auto const &nod : * nodes ) {
-            if ( bl.isInside(nod->givePoint() ) ) {
+            if ( bl.isInside( nod->givePoint() ) ) {
                 if ( ( nod->doesMechanics() && mech ) || ( nod->doesTransport() && !mech ) ) {
-                    this->n.push_back(nodes->giveNodeId(nod) );
+                    this->n.push_back( nodes->giveNodeId(nod) );
                 }
             }
         }
     } else {
-        num = std :: stoul(param.c_str() );
+        num = std :: stoul( param.c_str() );
         this->n.resize(num);
         for ( unsigned i = 0; i < num; i++ ) {
             iss >> this->n [ i ];
@@ -371,12 +384,12 @@ ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned >
 void ForceGauge :: init() {
     time_each = 0;
     time_last = 0;
-    DoFs.resize(n.size() );
+    DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + nodes->giveNode(n [ i ])->giveOrderOfForceCode(codes [ 0 ]);
     }
     maxsize.resize(1);
-    maxsize[0] = 1;
+    maxsize [ 0 ] = 1;
 }
 
 
@@ -387,7 +400,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -439,7 +452,7 @@ void DoFGauge :: init() {
             DoFpos = 2;
         }
     } else if ( all_of(codes [ 0 ].begin(), codes [ 0 ].end(), :: isdigit) ) {
-        DoFpos = atoi( codes [ 0 ].c_str() );
+        DoFpos = atoi(codes [ 0 ].c_str() );
     } else {
         if ( dim == 3 ) {
             cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;
@@ -450,13 +463,12 @@ void DoFGauge :: init() {
         }
     }
 
-    DoFs.resize(n.size() );
+    DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + DoFpos;
     }
     maxsize.resize(1);
-    maxsize[0] = 1;
-
+    maxsize [ 0 ] = 1;
 }
 
 
@@ -467,7 +479,7 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -506,11 +518,11 @@ void IntegrationPointGauge :: init() {
     maxsize.resize(1);
     Vector res;
     Element *ee;
-    maxsize[0]=0;
+    maxsize [ 0 ] = 0;
     for ( unsigned e = 0; e < elems.size(); e++ ) {
         ee = elemcont->giveElement(e);
-        ee->giveIPValues(codes[0], e, res);
-        maxsize[0] = max<size_t>(maxsize[0],res.size());
+        ee->giveIPValues(codes [ 0 ], e, res);
+        maxsize [ 0 ] = max< size_t >( maxsize [ 0 ], res.size() );
     }
 }
 
@@ -523,9 +535,9 @@ void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, co
     Vector values;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector res, sum;
-    sum.resize(maxsize[0]);
+    sum.resize(maxsize [ 0 ]);
 
     Element *e;
     if ( outputfile.good() ) {
@@ -534,15 +546,19 @@ void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, co
         for ( unsigned i = 0; i < elems.size(); i++ ) {
             e = elemcont->giveElement(elems [ i ]);
             e->giveIPValues(codes [ 0 ], i, res);
-            for( unsigned p = 0; p < min<size_t>(maxsize[0],res.size()); p++){
-                sum[p] += res[p];
+            for ( unsigned p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
+                sum [ p ] += res [ p ];
             }
         }
-        #if EIGEN_VERSION_AT_LEAST(3,4,0)
-            for( auto &p: sum) outputfile <<  "\t" << p * multiplier;
-        #else
-            for (long i = 0; i < sum.size();i++) outputfile <<  "\t" << sum[i] * multiplier;
-        #endif
+#if EIGEN_VERSION_AT_LEAST(3, 4, 0)
+        for ( auto &p: sum ) {
+            outputfile <<  "\t" << p * multiplier;
+        }
+#else
+        for ( long i = 0; i < sum.size(); i++ ) {
+            outputfile <<  "\t" << sum [ i ] * multiplier;
+        }
+#endif
     }
     outputfile.close();
 }
@@ -599,7 +615,7 @@ void DisplacementGauge :: init() {
         nodeB = nodes->findClosestMechanicalNode(pointB, & dist);
     }
     maxsize.resize(1);
-    maxsize[0] = 1;
+    maxsize [ 0 ] = 1;
 }
 
 //////////////////////////////////////////////////////////
@@ -611,12 +627,12 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
     double valueB = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         if ( elemA ) {
-            Vector mv = elemA->giveMasterVariables(& natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemA->giveMasterVariables( & natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
             valueA = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueA = mv [ 0 ];
@@ -627,11 +643,14 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
             }
         } else {
             nodeA->giveDoFBasedValues(codes [ 0 ], DoFs, res);
-            if (res.size()>0) valueA = res[0];
-            else valueA = 0;
+            if ( res.size() > 0 ) {
+                valueA = res [ 0 ];
+            } else {
+                valueA = 0;
+            }
         }
         if ( elemB ) {
-            Vector mv = elemB->giveMasterVariables(& natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemB->giveMasterVariables( & natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
             valueB = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueB = mv [ 0 ];
@@ -642,8 +661,11 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
             }
         } else {
             nodeB->giveDoFBasedValues(codes [ 0 ], DoFs, res);
-            if (res.size()>0) valueB = res[0];
-            else valueB = 0;
+            if ( res.size() > 0 ) {
+                valueB = res [ 0 ];
+            } else {
+                valueB = 0;
+            }
         }
         outputfile << "\t" << ( valueB - valueA ) * multiplier;
     }
@@ -667,8 +689,8 @@ void SolverGauge :: init() {
 
     maxsize.resize(1);
     Vector res;
-    solver->giveValues( codes[0], res);
-    maxsize[0]=res.size();
+    solver->giveValues(codes [ 0 ], res);
+    maxsize [ 0 ] = res.size();
 }
 
 //////////////////////////////////////////////////////////
@@ -686,15 +708,15 @@ void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &
     char buffer [ 100 ];
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
-        solver->giveValues( codes[0], res);
-        for( p = 0; p < min<size_t>(maxsize[0],res.size()); p++){
-            outputfile << "\t" << res[p];
+        solver->giveValues(codes [ 0 ], res);
+        for ( p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
+            outputfile << "\t" << res [ p ];
         }
-        for( ; p < maxsize[0]; p++){
+        for ( ; p < maxsize [ 0 ]; p++ ) {
             outputfile << "\t" << 0;
         }
     }
@@ -704,46 +726,46 @@ void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 /*
-void StructuralExporter :: readFromLine(istringstream &iss) {
-    iss >> filename;
-    iss >> name;
-    codes.resize(1);
-    iss >> codes [ 0 ];
-    DataExporter :: readFromLine(iss);
-}
-//////////////////////////////////////////////////////////
-void StructuralExporter :: init() {
-    time_each = 0;
-    time_last = 0;
-}
-
-//////////////////////////////////////////////////////////
-void StructuralExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
-    ( void ) DoFs;
-    ( void ) reactions;
-    char buffer [ 100 ];
-    double value = calcValue();
-    giveFileName(step, buffer);
-    ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
-    if ( outputfile.good() ) {
-        outputfile << std :: scientific;
-        outputfile.precision(precision);
-        outputfile << "\t" << value * multiplier;
-    }
-    outputfile.close();
-}
-
-double StructuralExporter :: calcValue() const {
-    double value = 0;
-    for ( auto const &e : * elems ) {
-        for ( unsigned i = 0; i < e->giveNumIP(); i++ ) {
-            value += e->giveIPValue(codes [ 0 ], i);
-        }
-    }
-    return value;
-}
-*/
+ * void StructuralExporter :: readFromLine(istringstream &iss) {
+ *  iss >> filename;
+ *  iss >> name;
+ *  codes.resize(1);
+ *  iss >> codes [ 0 ];
+ *  DataExporter :: readFromLine(iss);
+ * }
+ * //////////////////////////////////////////////////////////
+ * void StructuralExporter :: init() {
+ *  time_each = 0;
+ *  time_last = 0;
+ * }
+ *
+ * //////////////////////////////////////////////////////////
+ * void StructuralExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
+ *  ( void ) DoFs;
+ *  ( void ) reactions;
+ *  char buffer [ 100 ];
+ *  double value = calcValue();
+ *  giveFileName(step, buffer);
+ *  ofstream outputfile;
+ *  outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+ *  if ( outputfile.good() ) {
+ *      outputfile << std :: scientific;
+ *      outputfile.precision(precision);
+ *      outputfile << "\t" << value * multiplier;
+ *  }
+ *  outputfile.close();
+ * }
+ *
+ * double StructuralExporter :: calcValue() const {
+ *  double value = 0;
+ *  for ( auto const &e : * elems ) {
+ *      for ( unsigned i = 0; i < e->giveNumIP(); i++ ) {
+ *          value += e->giveIPValue(codes [ 0 ], i);
+ *      }
+ *  }
+ *  return value;
+ * }
+ */
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -775,7 +797,7 @@ ExporterContainer :: ~ExporterContainer() {
 void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
     size_t origsize = exporters.size();
     string line, exptype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile, line) ) {
             if ( line.empty() ) {
@@ -803,12 +825,12 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     DisplacementGauge *newexp = new DisplacementGauge(n, e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                /*} else if ( exptype.compare("ValueGauge") == 0 ||
-                            exptype.compare("StructuralExporter") == 0 ) {
-                    StructuralExporter *newexp = new StructuralExporter(n, e, dimension);
-                    newexp->readFromLine(iss);
-                    exporters.push_back(newexp);
-                */
+                    /*} else if ( exptype.compare("ValueGauge") == 0 ||
+                     *          exptype.compare("StructuralExporter") == 0 ) {
+                     *  StructuralExporter *newexp = new StructuralExporter(n, e, dimension);
+                     *  newexp->readFromLine(iss);
+                     *  exporters.push_back(newexp);
+                     */
                 } else if ( exptype.compare("DoFGauge") == 0 ) {
                     DoFGauge *newexp = new DoFGauge(n, dimension);
                     newexp->readFromLine(iss);
@@ -913,11 +935,16 @@ void ExporterContainer :: init(const bool &initial) {
             if ( g ) {
                 g->giveFileName(0, buffer);
                 ofstream outputfile;
-                outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+                outputfile.open( ( resultDir / buffer ).string(), ios :: app);
                 if ( outputfile.good() ) {
                     maxsize = g->giveMaxSize(0);
-                    if (maxsize==1) outputfile << "\t" << g->giveName();
-                    else for (p=0; p < maxsize; p++) outputfile << "\t" << g->giveName() << "_" << p;
+                    if ( maxsize == 1 ) {
+                        outputfile << "\t" << g->giveName();
+                    } else {
+                        for ( p = 0; p < maxsize; p++ ) {
+                            outputfile << "\t" << g->giveName() << "_" << p;
+                        }
+                    }
                 }
                 outputfile.close();
             }
@@ -926,7 +953,7 @@ void ExporterContainer :: init(const bool &initial) {
         for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
             ( * unique )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app);
             if ( outputfile.good() ) {
                 outputfile << endl;
             }
@@ -954,7 +981,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app);
         if ( outputfile.good() ) {
             outputfile << std :: scientific;
             outputfile << step << "\t" << time;
@@ -973,7 +1000,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app);
         if ( outputfile.good() ) {
             outputfile << endl;
         }
@@ -1014,7 +1041,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
         if ( el->giveName().rfind("LTCB", 0) == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.resize( elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
             }

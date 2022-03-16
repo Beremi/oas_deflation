@@ -105,16 +105,18 @@ MechDoF :: MechDoF(unsigned dimension, unsigned numDoFs) : MechNode(dimension) {
 void MechNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("displacements") == 0 ) {
         result.resize(dim);
-        for (unsigned i=0; i<dim; i++) result[i] = DoFs [ firstDoF + i ];
+        for ( unsigned i = 0; i < dim; i++ ) {
+            result [ i ] = DoFs [ firstDoF + i ];
+        }
     } else if ( code.compare("ux") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF ];
+        result [ 0 ] = DoFs [ firstDoF ];
     } else if ( dim > 1 && code.compare("uy") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF + 1 ];
+        result [ 0 ] = DoFs [ firstDoF + 1 ];
     } else if ( dim > 2 && code.compare("uz") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF + 2 ];
+        result [ 0 ] = DoFs [ firstDoF + 2 ];
     } else {
         Node :: giveDoFBasedValues(code, DoFs, result);
     }
@@ -140,7 +142,7 @@ unsigned MechNode :: giveOrderOfForceCode(string code) const {
 void TrsNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("pressure") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF ];
+        result [ 0 ] = DoFs [ firstDoF ];
     } else {
         Node :: giveDoFBasedValues(code, DoFs, result);
     }
@@ -161,10 +163,10 @@ unsigned TrsNode :: giveOrderOfForceCode(string code) const {
 void TrsTemprtrCoupledNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("humidity") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF ];
+        result [ 0 ] = DoFs [ firstDoF ];
     } else if ( code.compare("temperature") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF + 1 ];
+        result [ 0 ] = DoFs [ firstDoF + 1 ];
     } else {
         Node :: giveDoFBasedValues(code, DoFs, result);
     }
@@ -217,13 +219,13 @@ void Particle :: readFromLine(istringstream &iss) {
 void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( dim > 1 && code.compare("rotx") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF + 3 ];
+        result [ 0 ] = DoFs [ firstDoF + 3 ];
     } else if ( dim > 2 && code.compare("roty") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF + 4 ];
+        result [ 0 ] = DoFs [ firstDoF + 4 ];
     } else if ( dim > 2 && code.compare("rotz") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF + 5 ];
+        result [ 0 ] = DoFs [ firstDoF + 5 ];
     } else {
         MechNode :: giveDoFBasedValues(code, DoFs, result);
     }
@@ -262,7 +264,7 @@ std :: string Particle :: giveLineToSave() const {
 void CoupledParticle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("pressure") == 0 ) {
         result.resize(1);
-        result[0] = DoFs [ firstDoF + 6 ];
+        result [ 0 ] = DoFs [ firstDoF + 6 ];
     } else {
         Particle :: giveDoFBasedValues(code, DoFs, result);
     }
