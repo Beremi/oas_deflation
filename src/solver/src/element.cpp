@@ -147,8 +147,19 @@ void Element :: giveValues(string code, Vector &result) const{
     if ( code.compare("id") == 0 ) {
         result.resize(1);
         result[0] = idx;
-    } else {
-        result.resize(0);
+    } else {    
+        //average values from IP
+        if (inttype->giveNumIP()>0) {
+            stats [ 0 ] -> giveValues(code, result);
+            Vector res2(result.size());
+            for ( unsigned i = 1; i < inttype->giveNumIP(); i++ ) {
+                stats [ i ] -> giveValues(code, res2);
+                result += res2;
+            }
+            result /= inttype->giveNumIP();
+        } else {   
+           result.resize(0); 
+        }
     }
 }
 
