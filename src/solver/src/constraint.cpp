@@ -319,9 +319,7 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
         }
     }
 
-    //map< pair< size_t, size_t >, double >indeces11;
     std :: vector< Ttripletd >tripletList;
-    // map<pair<size_t, size_t>, double> indeces12;
     // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
     // // map<pair<size_t, size_t>, double> indeces21;
     // map<pair<size_t, size_t>, double> indeces22;
@@ -357,9 +355,6 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
             j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
-                //indeces11.insert(pair< pair< size_t, size_t >, double >
-                //                     (pair< size_t, size_t >(i, j),
-                //                     jD->giveMasterMultiplier(ind) ) );
                 tripletList.push_back(Ttripletd(i, j, jD->giveMasterMultiplier(ind)) );
             }
         }
@@ -369,10 +364,9 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     ///////////////////////////////////////////////////
     for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
         // fill the matrix with 1 for each unrestrained DoF (diagonal)
-        //indeces11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, i), 1) );
         tripletList.push_back(Ttripletd(i, i, 1) );
     }
-    //X = CoordinateIndexedSparseMatrix(indeces11, numFreeDoFs, numFreeDoFs - constraints.size() );
+
     X.resize(numFreeDoFs, numFreeDoFs - constraints.size());
     X.setFromTriplets(tripletList.begin(), tripletList.end() );
     X.makeCompressed();
@@ -390,6 +384,11 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
     //   this->init(this->nodes, this->bconds);
     // }
     ( void ) time_now;
+    // TODO: its possible that it will work
+    CoordinateIndexedSparseMatrix Knew;
+    Knew = X.transpose() * K * X;
+    K = Knew;
+    /*
     if ( X.cols() > 0 ) {
         CoordinateIndexedSparseMatrix Knew;
         Knew = X.transpose() * K * X;
@@ -398,10 +397,9 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
         //map< pair< size_t, size_t >, double >indices11;
         //K = CoordinateIndexedSparseMatrix(indices11, 0, 0);
         //Ttripletd tripletList;
-        // TODO: nechápu dřív se tu nic vlastně neprovádělo
         //K.setFromTriplets(tripletList.begin(), tripletList.end() );
         //K.makeCompressed();
-    }
+    }*/
 }
 
 

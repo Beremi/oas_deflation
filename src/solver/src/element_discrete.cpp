@@ -139,10 +139,9 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
-        // TODO: tohle je divné - kde se bere t a má to být cross (byl tam i předtím?)
-        Point prp = ( nodes[ 1 ]->givePoint() - nodes[ 0 ]->givePoint() ).cross(t);
-        if ( prp.norm() > 1e-8 ) {
-            cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+        double prp = ( nodes[ 1 ]->givePoint() - nodes[ 0 ]->givePoint() ).dot(t);
+        if ( prp > 1e-8 ) {
+            cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
             //  exit(1);
         }
 
@@ -387,7 +386,7 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
     }else if (ndim==3){
 
     }
-    M.format(SemicolonInitFmt);
+    cout << M << endl;
     exit(1);
     return M;
 }
@@ -743,10 +742,9 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
-        // TODO: nemá tu být cross?
-        Point prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).cross(t);
-        if ( prp.norm() > 1e-8 ) {
-            cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+        double prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(t);
+        if ( prp > 1e-8 ) {
+            cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
             //  exit(1);
         }
 

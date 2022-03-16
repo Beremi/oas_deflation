@@ -27,7 +27,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         cgK.compute(A);
 
         x = cgK.solveWithGuess(b, x0);
-        //VectorXd cgx = cgK.solve(cgb);
+
         result = size_t(cgK.iterations() ) < Maxit;
         if ( !result ) {
             cout << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
@@ -40,7 +40,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     } else if ( solver_type == "EigenLLT" ) {
         Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
         x = simplicial_llt_solver.compute(A).solve(b);
-        //result = ( A * x - b ).lpNorm< Infinity >() < precision;
+        result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
     } else if ( solver_type == "EigenSparseLU" ) {
         Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
         sparseLU_solver.analyzePattern(A);
@@ -67,8 +67,6 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
-
-    //return ConjGrad(A, x, b, x0, precision, relmaxit);
 
     size_t Maxit = b.size() * relmaxit;
 
@@ -111,7 +109,7 @@ bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &e
         cerr << "Error: LinalgEigenSolver implemented only for vectorized matrices of size 2 or 3, submitted size " << A.size() << endl;
         exit(1);
     }
-    Eigen :: MatrixXd mat = Eigen :: MatrixXd :: Random(ndim, ndim); // TODO: proč random??
+    Eigen :: MatrixXd mat = Eigen :: MatrixXd :: Zero(ndim, ndim);
 
     if (ndim==2 && sym){
         mat(0, 0) = A [ 0 ];
@@ -141,7 +139,8 @@ bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, vector< Vector > &e
 }
 
 bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > &eigenvectors) {
-    Eigen :: EigenSolver< Matrix > es(mat);
+    Eigen :: EigenSolver< Matrix > es;
+    es.compute(mat, /* computeEigenvectors = */ true);
 
     unsigned ndim = mat.rows();
     vector< double > eigenvalsvector(ndim);
@@ -149,7 +148,7 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
     eigenvectors.resize(ndim);
 
     for ( unsigned i = 0; i < ndim; i++ ) {
-        eigenvalsvector [ i ] = real(es.eigenvalues() [ i ]);
+        eigenvalsvector [ i ] = (es.eigenvalues() [ i ]).real();
     }
 
     // initialize original index locations
@@ -164,7 +163,7 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
         eigenvectors [ i ].resize(ndim);
         Eigen :: VectorXcd v = es.eigenvectors().col(idx [ i ]);
         for ( unsigned j = 0; j < ndim; j++ ) {
-            eigenvectors[i] [j] = real(v [ j ]);
+            eigenvectors[i] [j] = (v [ j ]).real();
         }
     }
 
@@ -189,12 +188,13 @@ Matrix dyadicProduct(const Vector &a, const Vector &b) {
 }
 
 double triArea2D(const Point *a, const Point *b, const Point *c) { //points in counter clockwise direction
-    //Point AB = ptB - ptA;
-    //Point AC = ptC - ptA;
-    //return abs(AB.cross(AC));
-    return 0.5 * ( a->x() * ( b->y() - c->y() ) + b->x() * ( c->y() - a->y() ) + c->x() * ( a->y() - b->y() ) ); // TODO: neměla by tu být také abs?
+    return 0.5 * ( a->x() * ( b->y() - c->y() ) + b->x() * ( c->y() - a->y() ) + c->x() * ( a->y() - b->y() ) );
 }
 
 double triArea3D(const Point *a, const Point *b, const Point *c) { //points
-    return abs(0.5 * pow(pow( ( b->y() - a->y() ) * ( c->z() - a->z() ) - ( b->z() - a->z() ) * ( c->y() - a->y() ), 2 ) + pow( ( b->z() - a->z() ) * ( c->x() - a->x() ) - ( b->x() - a->x() ) * ( c->z() - a->z() ), 2 ) + pow( ( b->x() - a->x() ) * ( c->y() - a->y() ) - ( b->y() - a->y() ) * ( c->x() - a->x() ), 2 ), 0.5) );
+    Point AB = (*b) - (*a);
+    Point AC = (*c) - (*a);
+    return AB.cross(AC).norm() * 0.5;
+
+    //return abs(0.5 * pow(pow( ( b->y() - a->y() ) * ( c->z() - a->z() ) - ( b->z() - a->z() ) * ( c->y() - a->y() ), 2 ) + pow( ( b->z() - a->z() ) * ( c->x() - a->x() ) - ( b->x() - a->x() ) * ( c->z() - a->z() ), 2 ) + pow( ( b->x() - a->x() ) * ( c->y() - a->y() ) - ( b->y() - a->y() ) * ( c->x() - a->x() ), 2 ), 0.5) );
 }

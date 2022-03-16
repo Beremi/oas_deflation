@@ -48,7 +48,7 @@ public:
     virtual double giveSize() const { return this->size; };
     virtual void print() const {
         std :: cout << "main point: ";
-        this->mainPoint.format(SemicolonInitFmt);
+        std :: cout << this->mainPoint.format(VectorSemicolonFmt) << "\n";
         std :: cout << "size = " << this->size << '\n';
     };
 };

@@ -336,7 +336,6 @@ void ElementContainer :: resetMaterialStatuses() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const {
-    //map< pair< size_t, size_t >, double >indices11;
     std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
@@ -353,15 +352,12 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFi), 0.0) );
                         tripletList.push_back(Ttripletd(DoFi, DoFi, 0.0) );
                     }
                 } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFi, DoFj), 0.0) );
                         tripletList.push_back(Ttripletd(DoFi, DoFj, 0.0) );
-                        //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(DoFj, DoFi), 0.0) );
                         tripletList.push_back(Ttripletd(DoFj, DoFi, 0.0) );
                     }
                 }
@@ -370,7 +366,6 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
     }
 
     if ( nfreeDoFs > 0 ) {
-        //K = CoordinateIndexedSparseMatrix(indices11); //, nfreeDoFs, nfreeDoFs);
         K.resize(nfreeDoFs, nfreeDoFs);
         K.setFromTriplets(tripletList.begin(), tripletList.end() );
         K.makeCompressed();

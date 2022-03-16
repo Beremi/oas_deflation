@@ -275,12 +275,12 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     for ( auto &n: nodes ) {
         p = n->givePointPointer();
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxc(c) = std :: max(maxc(c), p->operator()(c) );
-            minc(c) = std :: min(minc(c), p->operator()(c) );
+            maxc(c) = std :: max(maxc(c), (*p)(c) );
+            minc(c) = std :: min(minc(c), (*p)(c) );
         }
     }
     for ( unsigned c = 0; c < ndim; c++ ) {
-        if ( x->operator()(c) > maxc(c) || x->operator()(c) < minc(c) ) {
+        if ( (*x)(c) > maxc(c) || (*x)(c) < minc(c) ) {
             return false;
         }
     }
@@ -296,7 +296,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     //initial estimation
     aux = ( ( * x ) - center ) * 2.;
     for ( unsigned c = 0; c < ndim; c++ ) {
-        xn->operator()(c) = aux(c) / size(c);
+        (*xn)(c) = aux(c) / size(c);
     }
     giveGlobalCoords(& aux, xn);
 
@@ -310,9 +310,9 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
                 continue;
             }
             if ( diffC(c) > 1e-16 ) {
-                xn->operator()(c) =  xn->operator()(c) - xn->operator()(c) * diff(c) / diffC(c);
+                (*xn)(c) = (*xn)(c) - (*xn)(c) * diff(c) / diffC(c);
             } else {
-                xn->operator()(c) = xn->operator()(c) - 2. * diff(c) / size(c);
+                (*xn)(c) = (*xn)(c) - 2. * diff(c) / size(c);
             }
         }
 
@@ -332,7 +332,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     //check natural coordinates are inside limits
     //TODO: works only for brick and quadrilateral
     for ( unsigned c = 0; c < ndim; c++ ) {
-        if ( abs(xn->operator()(c) ) > 1. ) {
+        if ( abs((*xn)(c) ) > 1. ) {
             return false;
         }
     }
@@ -388,22 +388,10 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > 
         }
     }
 
-    //map< pair< size_t, size_t >, double >indices11;
-    std :: vector< Ttripletd >tripletList;
-    for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        for ( unsigned j = 0; j < nodes.size(); j++ ) {
-            //indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M(i, j)) );
-            tripletList.push_back(Ttripletd(i, j, M(i, j)) );
-        }
-    }
-    //TODO: this must be simplified, ideally save inverse matrix to memory of the element
-    CoordinateIndexedSparseMatrix Msparse;
-    Msparse.resize(nodes.size(), nodes.size());
-    Msparse.setFromTriplets(tripletList.begin(), tripletList.end() );
-    Msparse.makeCompressed();
+    Matrix M_inv = M.inverse();
 
     for(unsigned h=0; h<reslen; h++){
-        std :: string soltype = "EigenConj";
-        //LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-12, 1.0, soltype);
+        result[h] = M_inv * rhs[h];
     }
+
 }

@@ -19,27 +19,20 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseLU>
 #include <Eigen/SparseCholesky>
+#include <Eigen/Eigenvalues>
 
 //  \[ ([\w\s\+\*]*) \] \[ ([\w\s\+\*]*) \]
 #include "globals.h"
 
 using Ttripletd = Eigen :: Triplet< double >;
 
-//typedef typename Eigen :: Matrix<double, Eigen :: Dynamic, 1> MyVector;
-//typedef Eigen :: MyMatrix<double, 3, 1> Point;
 using Vector = Eigen :: VectorXd;
 using Point = Eigen :: Vector3d;
 using Matrix = Eigen :: MatrixXd;
-//typedef typename Eigen :: MyMatrix<double, Eigen :: Dynamic, Eigen :: Dynamic> MyMatrix;
-typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor > CoordinateIndexedSparseMatrix;
+typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor > CoordinateIndexedSparseMatrix; // row-major-sparse * dense vector/matrix products - multi-threading
 
-//Eigen :: IOFormat CommaInitFmt(Eigen :: StreamPrecision, Eigen :: DontAlignCols, ", ", ", ", "", "", " << ", "");
-const static Eigen :: IOFormat SemicolonInitFmt(Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
-//Eigen :: IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-//Eigen :: IOFormat OctaveFmt(Eigen :: StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
-//Eigen :: IOFormat HeavyFmt(Eigen :: FullPrecision, 0, ", ", ";\n", "[", "]", "[", "]");
+const static Eigen :: IOFormat VectorSemicolonFmt (Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
 
-//bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Eigen :: Ref<MyVector> x, const Eigen::Ref<const MyVector> b, const Eigen::Ref<const MyVector> x0, double precision, double relmaxit, string solver_type);
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, std :: string solver_type);
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);

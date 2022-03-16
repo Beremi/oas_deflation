@@ -43,7 +43,7 @@ void ShapeFunc :: giveJacobiM(const Matrix &phiGradNat, Matrix &JacobiM) const {
         n = points [ i ];
         for ( unsigned v1 = 0; v1 < ndim; v1++ ) {
             for ( unsigned v2 = 0; v2 < ndim; v2++ ) {
-                JacobiM(v1, v2) += phiGradNat(v1, i) * n->operator()(v2);
+                JacobiM(v1, v2) += phiGradNat(v1, i) * (*n)(v2);
             }
         }
     }
@@ -59,7 +59,7 @@ void ShapeFunc :: giveJacobiM(const Point *x, Matrix &JacobiM) const {
         n = points [ i ];
         for ( unsigned v1 = 0; v1 < ndim; v1++ ) {
             for ( unsigned v2 = 0; v2 < ndim; v2++ ) {
-                JacobiM(v1, v2) += phiGradNat(v1, i) * n->operator()(v2);
+                JacobiM(v1, v2) += phiGradNat(v1, i) * (*n)(v2);
             }
         }
     }
@@ -79,7 +79,10 @@ double ShapeFunc :: giveJacobian(const Matrix &JacobiM) const {
     } else if ( ndim == 2 ) {
         return JacobiM(0, 0) * JacobiM(1, 1) - JacobiM(0, 1) * JacobiM(1, 0);
     } else if ( ndim == 3 ) {
-        return JacobiM(0, 0) * JacobiM(1, 1) * JacobiM(2, 2) - JacobiM(0, 0) * JacobiM(1, 2) * JacobiM(2, 1) + JacobiM(0, 1) * JacobiM(1, 2) * JacobiM(2, 0) - JacobiM(0, 1) * JacobiM(1, 0) * JacobiM(2, 2) + JacobiM(0, 2) * JacobiM(1, 0) * JacobiM(2, 1) - JacobiM(0, 2) * JacobiM(1, 1) * JacobiM(2, 0);
+        return JacobiM(0, 0) * JacobiM(1, 1) * JacobiM(2, 2) - JacobiM(0, 0) * JacobiM(1, 2) *
+               JacobiM(2, 1) + JacobiM(0, 1) * JacobiM(1, 2) * JacobiM(2, 0) - JacobiM(0, 1) *
+               JacobiM(1, 0) * JacobiM(2, 2) + JacobiM(0, 2) * JacobiM(1, 0) * JacobiM(2, 1) -
+               JacobiM(0, 2) * JacobiM(1, 1) * JacobiM(2, 0);
     } else {
         return 0;
     }
