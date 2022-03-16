@@ -2,6 +2,8 @@
 #include "element_container.h"
 #include "boundary_condition.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
@@ -21,22 +23,28 @@ void RigidBodyContact :: giveValues(string code, Vector &result) const {
         stats [ 0 ]->giveValues(code, result);
     } else if ( code.compare("normal") == 0 ) {
         result.resize(ndim);
-        for (unsigned i=0; i<ndim; i++) result[i] = normal.giveCoord(i);
+        for ( unsigned i = 0; i < ndim; i++ ) {
+            result [ i ] = normal(i);
+        }
     } else if ( code.compare("t1") == 0 ) {
         result.resize(ndim);
-        for (unsigned i=0; i<ndim; i++) result[i] = R [ 1 ] [ i ];
+        for ( unsigned i = 0; i < ndim; i++ ) {
+            result [ i ] = R(1, i);
+        }
     } else if ( code.compare("t2") == 0 ) {
         result.resize(ndim);
-        for (unsigned i=0; i<ndim; i++) result[i] = R [ 1 ] [ i ];
+        for ( unsigned i = 0; i < ndim; i++ ) {
+            result [ i ] = R(1, i);
+        }
     } else if ( code.compare("volume") == 0 ) {
         result.resize(1);
-        result[0] = area * length / ndim;
+        result [ 0 ] = area * length / ndim;
     } else if ( code.compare("area") == 0 ) {
         result.resize(1);
-        result[0] = area;
+        result [ 0 ] = area;
     } else if ( code.compare("length") == 0 ) {
         result.resize(1);
-        result[0] = length;
+        result [ 0 ] = length;
     } else {
         MechanicalElement :: giveValues(code, result);
     }
@@ -77,17 +85,17 @@ void RigidBodyContact :: checkNodeType() const {
 
 Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
-    //Matrix B
-    Matrix B = Matrix(ndim, 6 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix(1, inttype->giveIPLocation(0) );
+    //MyMatrix B
+    Matrix B = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );
+    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
-            B [ i ] [ j ] = Aa [ i ] [ j ];
-            B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab [ i ] [ j ];
+            B(i, j) = Aa(i, j);
+            B( i, j + 3 * ( ndim - 1 ) ) = Ab(i, j);
         }
     }
-    return matrix_multiply(R, B) / length;
+    return ( R * B ) / length;
 }
 
 
@@ -95,7 +103,7 @@ Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
 void RigidBodyContact :: setIntegrationPointsAndWeights() {
     stats.resize(1);
 
-    Point t;
+    Point t(0, 0, 0);
     if ( ndim == 2 ) {
         // NOTE the following taken from few lines upper
         if ( !( vert.size() == 2 ) ) {
@@ -113,7 +121,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         double currErr = 0.0;
         //
         for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
-            currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+            currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
             if ( abs(currErr) > maxErr ) {
                 maxErr = abs(currErr);
             }
@@ -131,15 +139,15 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        Point n = cross(vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
-        Point prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ) * t;
-        if ( prp.norm() > 1e-8 ) {
-            cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+        double prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(t);
+        if ( prp > 1e-8 ) {
+            cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
             //  exit(1);
         }
 
@@ -163,7 +171,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
+            ai = ( ( vert [ i ]->givePoint() - avgPoint ).cross(vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
             area += ai;
             perimeter += ( vert [ i ]->givePoint() - vert [ j ]->givePoint() ).norm();
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
@@ -173,7 +181,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-6 ) {
             cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
@@ -183,52 +191,52 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-    if ( abs(normal * t) > 1e-8 ) {
-        cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
-        cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
-        cerr << "Error: normal and contact vector are not parallel, error " << normal * t << " normal v." << normal.x << " " << normal.y << " contact v. " << t.x << " " << t.y << endl;
+    if ( abs( normal.dot(t) ) > 1e-8 ) {
+        cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
+        cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
+        cerr << "Error: normal and contact vector are not parallel, error " << normal.dot(t) << " normal v." << normal.x() << " " << normal.y() << " contact v. " << t.x() << " " << t.y() << endl;
         // exit(1);
     }
 
     // Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
-    // Matrix R;
+    // MyMatrix R;
     if ( ndim == 2 ) {
-        t1 = Point(-normal.y, normal.x);
-        R = Matrix(2, 2);
-        R [ 0 ] [ 0 ] = normal.x;
-        R [ 0 ] [ 1 ] = normal.y;
-        R [ 1 ] [ 0 ] = t1.x;
-        R [ 1 ] [ 1 ] = t1.y;
+        t1 = Point(-normal.y(), normal.x(), 0.0);
+        R = Matrix :: Zero(2, 2);
+        R(0, 0) = normal.x();
+        R(0, 1) = normal.y();
+        R(1, 0) = t1.x();
+        R(1, 1) = t1.y();
     } else if ( ndim == 3 ) {
         // coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
         if ( ( normal - arbit ).norm() < 1e-3 ) {
-            t1 = cross(arbit, normal);
+            t1 = arbit.cross(normal);
             t1.normalize();
-            t2 = cross(normal, t1);
+            t2 = normal.cross(t1);
             t2.normalize();
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs(normal.x) > 1e-3 ) {
-                t1 = Point(-normal.y / normal.x, 1, 0);
-            } else if ( abs(normal.y) > 1e-3 ) {
-                t1 = Point(0, -normal.z / normal.y, 1);
+            if ( abs( normal.x() ) > 1e-3 ) {
+                t1 = Point(-normal.y() / normal.x(), 1, 0);
+            } else if ( abs( normal.y() ) > 1e-3 ) {
+                t1 = Point(0, -normal.z() / normal.y(), 1);
             } else {
-                t1 = Point(1, 0, -normal.x / normal.z);
+                t1 = Point( 1, 0, -normal.x() / normal.z() );
             }
         }
         t1 = t1 / t1.norm();
-        t2 = cross(normal, t1);
-        R = Matrix(3, 3);
-        R [ 0 ] [ 0 ] = normal.x;
-        R [ 0 ] [ 1 ] = normal.y;
-        R [ 0 ] [ 2 ] = normal.z;
-        R [ 1 ] [ 0 ] = t1.x;
-        R [ 1 ] [ 1 ] = t1.y;
-        R [ 1 ] [ 2 ] = t1.z;
-        R [ 2 ] [ 0 ] = t2.x;
-        R [ 2 ] [ 1 ] = t2.y;
-        R [ 2 ] [ 2 ] = t2.z;
+        t2 = normal.cross(t1);
+        R = Matrix :: Zero(3, 3);
+        R(0, 0) = normal.x();
+        R(0, 1) = normal.y();
+        R(0, 2) = normal.z();
+        R(1, 0) = t1.x();
+        R(1, 1) = t1.y();
+        R(1, 2) = t1.z();
+        R(2, 0) = t2.x();
+        R(2, 1) = t2.y();
+        R(2, 2) = t2.z();
     } else {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
         exit(EXIT_FAILURE);
@@ -248,7 +256,7 @@ void RigidBodyContact :: init() {
 
     //create simplices
     for ( auto &v: vert ) {
-        simplices.push_back(v->addElementToSimplex(this) );
+        simplices.push_back( v->addElementToSimplex(this) );
     }
 
     //check that material is DisMechMat
@@ -262,25 +270,25 @@ void RigidBodyContact :: init() {
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix(12, 12);  // NOTE JK: this should be based on ndim
+    return Matrix :: Zero(12, 12);  // NOTE JK: this should be based on ndim
 }
 
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveAMatrix(unsigned v, Point x) const {
-    Matrix A(ndim, 3 * ( ndim - 1 ) );
+    Matrix A = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
     if ( ndim == 3 ) {
-        A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = A [ 2 ] [ 2 ] = 1;
-        A [ 1 ] [ 3 ] = nodes[v]->givePointPointer()->getZ() - x.z;
-        A [ 0 ] [ 4 ] = -A [ 1 ] [ 3 ];
-        A [ 2 ] [ 3 ] = x.y - nodes[v]->givePointPointer()->getY();
-        A [ 0 ] [ 5 ] = -A [ 2 ] [ 3 ];
-        A [ 2 ] [ 4 ] = nodes[v]->givePointPointer()->getX() - x.x;
-        A [ 1 ] [ 5 ] = -A [ 2 ] [ 4 ];
+        A(0, 0) = A(1, 1) = A(2, 2) = 1;
+        A(1, 3) = nodes [ v ]->givePointPointer()->z() - x.z();
+        A(0, 4) = -A(1, 3);
+        A(2, 3) = x.y() - nodes [ v ]->givePointPointer()->y();
+        A(0, 5) = -A(2, 3);
+        A(2, 4) = nodes [ v ]->givePointPointer()->x() - x.x();
+        A(1, 5) = -A(2, 4);
     } else if ( ndim == 2 ) {
-        A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = 1;
-        A [ 0 ] [ 2 ] = nodes[v]->givePointPointer()->getY() - x.y;
-        A [ 1 ] [ 2 ] = x.x - nodes[v]->givePointPointer()->getX();
+        A(0, 0) = A(1, 1) = 1;
+        A(0, 2) = nodes [ v ]->givePointPointer()->y() - x.y();
+        A(1, 2) = x.x() - nodes [ v ]->givePointPointer()->x();
     } else {
         cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
         exit(EXIT_FAILURE);
@@ -322,14 +330,14 @@ Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
 Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
     ( void ) ip_id;
     Point distance = inttype->giveIPLocation(0) - nodes [ node_i ]->givePoint();
-    Vector dst( ( double ) 0, ndim );
+    Vector dst = Vector :: Zero(ndim);
     for ( unsigned i = 0; i < ndim; i++ ) {
         if ( i == 0 ) {
-            dst [ i ] = distance.getX();
+            dst [ i ] = distance.x();
         } else if ( i == 1 ) {
-            dst [ i ] = distance.getY();
+            dst [ i ] = distance.y();
         } else if ( i == 2 ) {
-            dst [ i ] = distance.getZ();
+            dst [ i ] = distance.z();
         }
     }
     return dst;
@@ -338,9 +346,9 @@ Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsign
 //////////////////////////////////////////////////////////
 double RigidBodyContact :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
     if ( nodenum == 0 ) {
-        return dot(vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint(), normal) * area / ndim;
+        return ( vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(normal) * area / ndim;
     } else if ( nodenum == 1 ) {
-        return -dot(vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint(), normal) * area / ndim;
+        return -( vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint() ).dot(normal) * area / ndim;
     } else {
         cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
         exit(1);
@@ -378,13 +386,9 @@ Matrix RigidBodyContact :: giveDampingMatrix() const {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveMassMatrix() const {
-    Matrix M(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
-    if (ndim==2){
-    
-    }else if (ndim==3){
-
-    }
-    M.print();
+    Matrix M = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+    if ( ndim == 2 ) {} else if ( ndim == 3 )      {}
+    cout << M << endl;
     exit(1);
     return M;
 }
@@ -412,51 +416,51 @@ Vector RigidBodyContact :: integrateInternalSources() {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
-
     Vector ipres;
-    giveIPValues(code, 0, ipres); 
+    giveIPValues(code, 0, ipres);
     Vector A = giveVectorToNode(0, 0);
     Vector B = giveVectorToNode(1, 0);
     size_t d;
 
     weights.resize(2);
-    weights[0] = giveVolumeAssociatedWithNode(0);
-    weights[1] = giveVolumeAssociatedWithNode(1);
+    weights [ 0 ] = giveVolumeAssociatedWithNode(0);
+    weights [ 1 ] = giveVolumeAssociatedWithNode(1);
 
-    if(ipres.size()==0){    //empty answer
+    if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
-    } else if(ipres.size()==1){    //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize(A.size());
-        for(d=0; d<A.size(); d++){
-            result[d].resize(2);
-            result[d][0] =  area*ipres[0]*abs(A[d]);
-            result[d][1] =  area*ipres[0]*abs(B[d]);
-        }   
-    } else if(ipres.size()==A.size()){ //vector times vector of same length, symmetrization
-
+    } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
+        result.resize( A.size() );
+        for ( d = 0; d < A.size(); d++ ) {
+            result [ d ].resize(2);
+            result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
+            result [ d ] [ 1 ] =  area * ipres [ 0 ] * abs(B [ d ]);
+        }
+    } else if ( ipres.size() == A.size() ) { //vector times vector of same length, symmetrization
         //transform result to xyz
         Vector ipresglobal = transformVectorToXYZ(ipres);
 
         //dyadic product
         unsigned k = A.size();
-        result.resize((k*(k-1))/2+k);
-        for(d=0; d<(k*(k-1))/2+k; d++) result[d].resize(2);
+        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
+            result [ d ].resize(2);
+        }
         //diagonal
-        for(d=0; d<k; d++){
-            result[d][0] =  area*ipresglobal[d]*A[d];
-            result[d][1] =  -area*ipresglobal[d]*B[d]; 
+        for ( d = 0; d < k; d++ ) {
+            result [ d ] [ 0 ] =  area * ipresglobal [ d ] * A [ d ];
+            result [ d ] [ 1 ] =  -area * ipresglobal [ d ] * B [ d ];
         }
         //off diagonal
-        if (k==2){
-            result[2][0] =  area*(ipresglobal[1]*A[0]+ipresglobal[0]*A[1])/2.;
-            result[2][1] = -area*(ipresglobal[1]*B[0]+ipresglobal[0]*B[1])/2.;
-        } else if(k==3){
-            result[3][0] =  area*(ipresglobal[1]*A[2]+ipresglobal[2]*A[1])/2.;
-            result[3][1] = -area*(ipresglobal[1]*B[2]+ipresglobal[2]*B[1])/2.;  
-            result[4][0] =  area*(ipresglobal[2]*A[0]+ipresglobal[0]*A[2])/2.;
-            result[4][1] = -area*(ipresglobal[2]*B[0]+ipresglobal[0]*B[2])/2.;  
-            result[5][0] =  area*(ipresglobal[1]*A[0]+ipresglobal[0]*A[1])/2.;
-            result[5][1] = -area*(ipresglobal[1]*B[0]+ipresglobal[0]*B[1])/2.;            
+        if ( k == 2 ) {
+            result [ 2 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 1 ] ) / 2.;
+            result [ 2 ] [ 1 ] = -area * ( ipresglobal [ 1 ] * B [ 0 ] + ipresglobal [ 0 ] * B [ 1 ] ) / 2.;
+        } else if ( k == 3 ) {
+            result [ 3 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 2 ] + ipresglobal [ 2 ] * A [ 1 ] ) / 2.;
+            result [ 3 ] [ 1 ] = -area * ( ipresglobal [ 1 ] * B [ 2 ] + ipresglobal [ 2 ] * B [ 1 ] ) / 2.;
+            result [ 4 ] [ 0 ] =  area * ( ipresglobal [ 2 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 2 ] ) / 2.;
+            result [ 4 ] [ 1 ] = -area * ( ipresglobal [ 2 ] * B [ 0 ] + ipresglobal [ 0 ] * B [ 2 ] ) / 2.;
+            result [ 5 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 1 ] ) / 2.;
+            result [ 5 ] [ 1 ] = -area * ( ipresglobal [ 1 ] * B [ 0 ] + ipresglobal [ 0 ] * B [ 1 ] ) / 2.;
         } else {
             cerr << "Error in " << name << ": transformation of matrix of size " << k << " to vector not implemented" << endl;
             exit(1);
@@ -515,8 +519,8 @@ void RigidBodyBoundaryCoupled :: init() {
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
         // this is fine, do nothing, just use it to check if particle and auxnode is there
     } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
-        std :: reverse( this->nodes.begin(), this->nodes.end() );
-        std :: reverse( this->vert.begin(), this->vert.end() );
+        std :: reverse(this->nodes.begin(), this->nodes.end() );
+        std :: reverse(this->vert.begin(), this->vert.end() );
     } else {
         cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
     }
@@ -525,8 +529,8 @@ void RigidBodyBoundaryCoupled :: init() {
 }
 
 // //////////////////////////////////////////////////////////
-// Vector RigidBodyBoundaryCoupled :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
-//     Vector innttff = RigidBodyContactCoupled :: giveInternalForces(DoFs, frozen, timeStep);
+// MyVector RigidBodyBoundaryCoupled :: giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep){
+//     MyVector innttff = RigidBodyContactCoupled :: giveInternalForces(DoFs, frozen, timeStep);
 //
 //     // std::cout << "Boundary int F:" << '\t';
 //     // for ( auto const &cc : innttff ) {
@@ -534,41 +538,41 @@ void RigidBodyBoundaryCoupled :: init() {
 //     // }
 //     // std::cout << '\n';
 //
-//     // return Vector((double)0, (this->ndim - 1) * 3);
+//     // return MyVector((double)0, (this->ndim - 1) * 3);
 //     return innttff;
 // };
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     // DONE  call only separate fn for update of pressure due to transport
-    // Vector dummy = RigidBodyContactCoupled :: giveStrain(i, DoFs);
-    (void) i;
-    (void) DoFs;
+    // MyVector dummy = RigidBodyContactCoupled :: giveStrain(i, DoFs);
+    ( void ) i;
+    ( void ) DoFs;
     this->extractPressureFromSimplices();
     // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
-    return Vector( ( double ) 0, ( this->ndim - 1 ) * 3 );
+    return Vector( ( this->ndim - 1 ) * 3);
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
 }
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
     ( void ) x;
-    // Matrix B = Matrix( ndim, 6 * ( ndim - 1 ) );
-    Matrix B = Matrix(ndim, 3 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
-    // Matrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
+    // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
+    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
+    // MyMatrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
-            B [ i ] [ j ] = Aa [ i ] [ j ];
-            // B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab [ i ] [ j ];
+            B(i, j) = Aa(i, j);
+            // B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab(i, j);
         }
     }
-    return matrix_multiply(R, B) / length;
+    return ( R * B ) / length;
 }
 
 
@@ -578,11 +582,11 @@ Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
 Matrix Truss :: giveAMatrix(unsigned v, Point x) const {
     ( void ) v;
     ( void ) x;
-    Matrix A(ndim, ndim);
+    Matrix A = Matrix :: Zero(ndim, ndim);
     if ( ndim == 3 ) {
-        A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = A [ 2 ] [ 2 ] = 1;
+        A(0, 0) = A(1, 1) = A(2, 2) = 1;
     } else if ( ndim == 2 ) {
-        A [ 0 ] [ 0 ] = A [ 1 ] [ 1 ] = 1;
+        A(0, 0) = A(1, 1) = 1;
     } else {
         cerr << "Error - Truss: dimension " << ndim << "not implemented" << endl;
         exit(EXIT_FAILURE);
@@ -605,17 +609,17 @@ void Truss :: checkNodeType() const {
 //////////////////////////////////////////////////////////
 Matrix Truss :: giveBMatrix(const Point *x) const {
     ( void ) x;
-    //Matrix B
-    Matrix B = Matrix(ndim, 2 * ndim);
-    Matrix Aa = giveAMatrix(0, inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix(1, inttype->giveIPLocation(0) );
+    //MyMatrix B
+    Matrix B = Matrix :: Zero(ndim, 2 * ndim);
+    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
+    Matrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < ndim; j++ ) {
-            B [ i ] [ j ] = Aa [ i ] [ j ];
-            B [ i ] [ j + ndim ] = Ab [ i ] [ j ];
+            B(i, j) = Aa(i, j);
+            B(i, j + ndim) = Ab(i, j);
         }
     }
-    return matrix_multiply(R, B) / length;
+    return ( R * B ) / length;
 }
 
 //////////////////////////////////////////////////////////
@@ -686,7 +690,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
     if ( length < 1e-8 ) {
         length = 1e-8;           //artificial increase of length in case of extremely short voronoi edge
     }
-    Point t;
+    Point t = Point :: Zero();
     if ( ndim == 2 ) {
         if ( !( vert.size() == 2 ) ) {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
@@ -712,7 +716,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         if ( vert.size() > 3 ) {
             for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
                 // JM Zakomentoval cout << i <<  " " << endl;
-                currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+                currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
                 if ( abs(currErr) > maxErr ) {
                     maxErr = abs(currErr);
                 }
@@ -726,23 +730,23 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
         //JM: face normal vector made from first 3 vertices
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-        Point n = cross(vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint(), vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
         Point t2;
-        if ( fabs(n.x) > fabs(n.z) ) {
-            t2 = Point(-n.y, n.x, 0.0f);
+        if ( fabs( n.x() ) > fabs( n.z() ) ) {
+            t2 = Point(-n.y(), n.x(), 0.0f);
         } else {
-            t2 = Point(0.0f, -n.z, n.y);
+            t2 = Point( 0.0f, -n.z(), n.y() );
         }
-        t = cross(t2, n);
+        t = t2.cross(n);
         t /= t.norm();
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
-        Point prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ) * t;
-        if ( prp.norm() > 1e-8 ) {
-            cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp.norm() << endl;
+        double prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(t);
+        if ( prp > 1e-8 ) {
+            cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
             //  exit(1);
         }
 
@@ -765,7 +769,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( cross(vert [ i ]->givePoint() - avgPoint,   vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
+            ai = ( ( vert [ i ]->givePoint() - avgPoint ).cross(vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
@@ -774,25 +778,25 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-10 ) {
             cerr << "TRSPRT: Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
         }
     }
 
-    if ( abs(normal * t) > 1e-5 ) {
-        cout << vert [ 0 ]->givePoint().x << " " <<  vert [ 0 ]->givePoint().y <<  " X " << vert [ 1 ]->givePoint().x << " " <<  vert [ 1 ]->givePoint().y << endl;
-        cout << nodes [ 0 ]->givePoint().x << " " <<  nodes [ 0 ]->givePoint().y <<  " X " << nodes [ 1 ]->givePoint().x << " " <<  nodes [ 1 ]->givePoint().y << endl;
-        cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal * t << endl;
+    if ( abs( normal.dot(t) ) > 1e-5 ) {
+        cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
+        cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
+        cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal.dot(t) << endl;
         cout << " normal v.:";
         for ( unsigned p = 0; p < ndim; p++ ) {
-            cout << "\t" << normal.giveCoord(p);
+            cout << "\t" << normal(p);
         }
         cout << endl;
         cout << " contact v.:";
         for ( unsigned p = 0; p < ndim; p++ ) {
-            cout << "\t" << t.giveCoord(p);
+            cout << "\t" << t(p);
         }
         cout << endl;
         //exit(1);
@@ -831,22 +835,22 @@ void Transp1D :: checkNodeType() const {
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveBMatrix(const Point *x) const {
     ( void ) x;
-    Matrix B(1, 2);
-    B [ 0 ] [ 0 ] = -1. / length;
-    B [ 0 ] [ 1 ] = 1. / length;
+    Matrix B = Matrix :: Zero(1, 2);
+    B(0, 0) = -1. / length;
+    B(0, 1) = 1. / length;
     return B;
 }
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    Matrix H(1, 2);
+    Matrix H = Matrix :: Zero(1, 2);
     //double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
     //double l2 = dot(nodes [ 1 ]->givePoint() - * x, normal);
-    //H [ 0 ] [ 0 ] = l1 / length;
-    //H [ 0 ] [ 1 ] = l2 / length;
-    H [ 0 ] [ 0 ] = giveVolumeAssociatedWithNode(0) / volume;
-    H [ 0 ] [ 1 ] = giveVolumeAssociatedWithNode(1) / volume;
+    //H(0, 0) = l1 / length;
+    //H(0, 1) = l2 / length;
+    H(0, 0) = giveVolumeAssociatedWithNode(0) / volume;
+    H(0, 1) = giveVolumeAssociatedWithNode(1) / volume;
 
 
     return H;
@@ -854,13 +858,13 @@ Matrix Transp1D :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix Transp1D :: giveDampingMatrix() const {
-    Matrix S(2, 2);
-    double s = area * stats [ 0 ]->giveDampingTensor() [ 0 ] [ 0 ] * length /  ( 2. * ndim );
+    Matrix S = Matrix :: Zero(2, 2);
+    double s = area * stats [ 0 ]->giveDampingTensor()(0, 0) * length /  ( 2. * ndim );
 
-    S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = s; //finite volume
+    S(0, 0) = S(1, 1) = s; //finite volume
     if ( BolanderCapacityMatrix ) { //from Bolander's papers
-        S [ 0 ] [ 0 ] = S [ 1 ] [ 1 ] = 2. / 3. * s;
-        S [ 1 ] [ 0 ] = S [ 0 ] [ 1 ] = s / 3.;
+        S(0, 0) = S(1, 1) = 2. / 3. * s;
+        S(1, 0) = S(0, 1) = s / 3.;
     }
     return S;
 }
@@ -868,9 +872,9 @@ Matrix Transp1D :: giveDampingMatrix() const {
 //////////////////////////////////////////////////////////
 double Transp1D :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
     if ( nodenum == 0 ) {
-        return dot(vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint(), normal) * area / ndim;
+        return ( vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(normal) * area / ndim;
     } else if ( nodenum == 1 ) {
-        return -dot(vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint(), normal) * area / ndim;
+        return -( vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint() ).dot(normal) * area / ndim;
     } else {
         cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
         exit(1);
@@ -893,7 +897,7 @@ Matrix Transp1D :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    //Vector Q = Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
+    //MyVector Q = Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
     //for (auto p:Q) cout << " " << p;
     return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
 }
@@ -921,7 +925,7 @@ void Transp1DCoupled :: init() {
 void Transp1DCoupled :: giveValues(string code, Vector &result) const {
     if ( code.compare("numOfFriends") == 0 ) {
         result.resize(0);
-        result[0] = friends.size();
+        result [ 0 ] = friends.size();
     } else {
         Transp1D :: giveValues(code, result);
     }
@@ -945,7 +949,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
         elem_crack_opening = 0.;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
             f->giveIPValues("tempCrackOpening", k, res);
-            elem_crack_opening += abs(res[0]);
+            elem_crack_opening += abs(res [ 0 ]);
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
         if ( ndim == 3 ) {

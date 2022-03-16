@@ -1,5 +1,5 @@
-#ifndef _EXPORTER_M_H
-#define _EXPORTER_M_H
+#ifndef _EXPORTER_MODEL_H
+#define _EXPORTER_MODEL_H
 
 #include "data_exporter.h"
 
@@ -13,7 +13,7 @@ private:
 public:
     ElementStatsExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     virtual ~ElementStatsExporter() {};
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
     virtual void giveFileName(unsigned step, char *buffer) const;
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:
@@ -21,4 +21,4 @@ protected:
 
 
 
-#endif /* _EXPORTER_M_H */
+#endif /* _EXPORTER_MODEL_H */

@@ -2,11 +2,13 @@
 #include "element_container.h"
 #include "boundary_condition.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC ELEMENT - MASTER CLASS
 Element :: ~Element() {
-    for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
+    for ( std :: vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
         delete * e;
     }
     delete shafunc;
@@ -33,16 +35,16 @@ void Element :: initIntegration() {
 
 //////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {
-    stats.resize(inttype->giveNumIP() );
+    stats.resize( inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
-        inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian( inttype->giveIPLocationPointer(k) ) );
+        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k) ) );
     }
 };
 
 
 //////////////////////////////////////////////////////////
-void Element :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+void Element :: readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num;
     nodes.resize(numOfNodes);
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
@@ -56,12 +58,12 @@ void Element :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mater
 //////////////////////////////////////////////////////////
 void Element :: init() {
     //delete possible previous statuses
-    for ( vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
+    for ( std :: vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
         delete * e;
     }
 
     unsigned totalDoFs = 0;
-    for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+    for ( std :: vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         totalDoFs += ( * n )->giveNumberOfDoFs();
     }
 
@@ -71,7 +73,7 @@ void Element :: init() {
     DoFids.resize(totalDoFs);
     unsigned i = 0;
     unsigned k;
-    for ( vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
+    for ( std :: vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         k = ( * n )->giveStartingDoF();
         for ( unsigned s = 0; s < ( * n )->giveNumberOfDoFs(); s++, i++ ) {
             DoFids [ i ] = k + s;
@@ -79,17 +81,17 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
-    Bs.resize(inttype->giveNumIP() );
-    Hs.resize(inttype->giveNumIP() );
+    Bs.resize( inttype->giveNumIP() );
+    Hs.resize( inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        Bs [ k ] = giveBMatrix(inttype->giveIPLocationPointer(k) );
-        Hs [ k ] = giveHMatrix(inttype->giveIPLocationPointer(k) );
+        Bs [ k ] = giveBMatrix( inttype->giveIPLocationPointer(k) );
+        Hs [ k ] = giveHMatrix( inttype->giveIPLocationPointer(k) );
     }
 }
 
 //////////////////////////////////////////////////////////
-vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
-    vector< unsigned >DoFinDir(nodes.size() );
+std :: vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
+    std :: vector< unsigned >DoFinDir( nodes.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
     }
@@ -99,64 +101,64 @@ vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
 //////////////////////////////////////////////////////////
 void Element :: initMaterialStatuses() {
     unsigned num = 0;
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num++ ) {
+    for ( std :: vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m, num++ ) {
         ( * m )->init();
     }
 }
 
 //////////////////////////////////////////////////////////
 void Element :: updateMaterialStatuses() {
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
+    for ( std :: vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
         ( * m )->update();
     }
 }
 
 //////////////////////////////////////////////////////////
 void Element :: resetMaterialStatuses() {
-    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
+    for ( std :: vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
         ( * m )->resetTemporaryVariables();
     }
 }
 
 
 //////////////////////////////////////////////////////////
-void Element :: giveIPValues(string code, unsigned ipnum, Vector &result) const {
+void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result) const {
     if ( code.compare("x") == 0 ) {
         result.resize(1);
-        result[0] = inttype->giveIPLocationPointer(ipnum)->getX();
+        result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->x();
     } else if ( code.compare("y") == 0 ) {
         result.resize(1);
-        result[0] = inttype->giveIPLocationPointer(ipnum)->getY();
+        result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->y();
     } else if ( code.compare("z") == 0 ) {
         result.resize(1);
-        result[0] = inttype->giveIPLocationPointer(ipnum)->getZ();
+        result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->z();
     } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
-        result[0] = stats [ ipnum ]->giveMaterial()->giveId();
+        result [ 0 ] = stats [ ipnum ]->giveMaterial()->giveId();
     } else {
-        if(ipnum >= inttype->giveNumIP() ){
-            cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << endl;
-            exit(1); 
+        if ( ipnum >= inttype->giveNumIP() ) {
+            std :: cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << std :: endl;
+            exit(1);
         }
         stats [ ipnum ]->giveValues(code, result);
     }
 };
 
 //////////////////////////////////////////////////////////
-void Element :: giveValues(string code, Vector &result) const{
+void Element :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("id") == 0 ) {
         result.resize(1);
-        result[0] = idx;
+        result [ 0 ] = idx;
     } else {
         result.resize(0);
     }
 }
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveStiffnessMatrix(string matrixType) const {
+Matrix Element :: giveStiffnessMatrix(std :: string matrixType) const {
     unsigned nDoFs = DoFids.size();
-    Matrix K(nDoFs, nDoFs);
-    Matrix D(0, 0);
+    Matrix K = Matrix :: Zero(nDoFs, nDoFs);
+    Matrix D;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         D = stats [ i ]->giveStiffnessTensor(matrixType, ndim);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight(i) );
@@ -166,7 +168,7 @@ Matrix Element :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF(DoFids.size() );
+    Vector intF = Vector :: Zero( DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -190,7 +192,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
 
 //////////////////////////////////////////////////////////
 Vector Element :: integrateInternalSources() {
-    Vector intS(DoFids.size() );
+    Vector intS = Vector :: Zero( DoFids.size() );
     Vector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         intmats = stats [ i ]->giveInternalSource();
@@ -204,7 +206,7 @@ Vector Element :: integrateInternalSources() {
 //////////////////////////////////////////////////////////
 Matrix Element :: giveDampingMatrix() const {
     unsigned nDoFs = DoFids.size();
-    Matrix M(nDoFs, nDoFs);
+    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveDampingTensor();
@@ -216,7 +218,7 @@ Matrix Element :: giveDampingMatrix() const {
 //////////////////////////////////////////////////////////
 Matrix Element :: giveMassMatrix() const {
     unsigned nDoFs = DoFids.size();
-    Matrix M(nDoFs, nDoFs);
+    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveMassTensor();
@@ -228,13 +230,13 @@ Matrix Element :: giveMassMatrix() const {
 //////////////////////////////////////////////////////////
 Vector Element :: integrateLoad(BodyLoad *vl, double time) const {
     unsigned nDoFs = DoFids.size();
-    Vector load(nDoFs);
+    Vector load = Vector :: Zero(nDoFs);
     double fvalue;
     unsigned dir = vl->giveDirection();
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         fvalue = vl->giveValue(inttype->giveIPLocationPointer(i), time);
         for ( unsigned j = 0; j < nDoFs; j++ ) {
-            load [ j ] += Hs [ i ] [ dir ] [ j ] *fvalue *inttype->giveIPWeight(i);
+            load [ j ] += Hs [ i ](dir, j) * fvalue * inttype->giveIPWeight(i);
         }
     }
     return load;
@@ -254,7 +256,7 @@ void Element :: changeMaterial(Material *newmat) {
 
 //////////////////////////////////////////////////////////
 bool Element :: giveGlobalCoords(Point *x, const Point *xn) const {
-    Vector phi(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(xn, phi);
     * x = Point(0, 0, 0);
     for ( unsigned n = 0; n < nodes.size(); n++ ) {
@@ -273,28 +275,28 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     for ( auto &n: nodes ) {
         p = n->givePointPointer();
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxc.setCoord(c, max(maxc.giveCoord(c), p->giveCoord(c) ) );
-            minc.setCoord(c, min(minc.giveCoord(c), p->giveCoord(c) ) );
+            maxc(c) = std :: max( maxc(c), ( * p )(c) );
+            minc(c) = std :: min( minc(c), ( * p )(c) );
         }
     }
     for ( unsigned c = 0; c < ndim; c++ ) {
-        if ( x->giveCoord(c) > maxc.giveCoord(c) || x->giveCoord(c) < minc.giveCoord(c) ) {
+        if ( ( * x )(c) > maxc(c) || ( * x )(c) < minc(c) ) {
             return false;
         }
     }
 
     //find natural coordinates
     //initial estimation
-    Point center;
+    Point center(0, 0, 0);
     * xn = Point(0, 0, 0);
-    Point aux, diff, diffC;
+    Point aux(0, 0, 0), diff(0, 0, 0), diffC(0, 0, 0);
     Point size = maxc - minc;
     giveGlobalCoords(& center, xn);
 
     //initial estimation
     aux = ( ( * x ) - center ) * 2.;
     for ( unsigned c = 0; c < ndim; c++ ) {
-        xn->setCoord(c, aux.giveCoord(c) / size.giveCoord(c) );
+        ( * xn )(c) = aux(c) / size(c);
     }
     giveGlobalCoords(& aux, xn);
 
@@ -304,13 +306,13 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     diff = aux - ( * x );
     while ( maxerror > 1e-4 && i < max_i ) {
         for ( unsigned c = 0; c < ndim; c++ ) {
-            if ( abs(diff.giveCoord(c) / size.giveCoord(c) ) < 1e-8 ) {
+            if ( abs( diff(c) / size(c) ) < 1e-8 ) {
                 continue;
             }
-            if ( diffC.giveCoord(c) > 1e-16 ) {
-                xn->setCoord(c, xn->giveCoord(c) - xn->giveCoord(c) * diff.giveCoord(c) / diffC.giveCoord(c) );
+            if ( diffC(c) > 1e-16 ) {
+                ( * xn )(c) = ( * xn )(c) - ( * xn )(c) * diff(c) / diffC(c);
             } else {
-                xn->setCoord(c, xn->giveCoord(c) - 2. * diff.giveCoord(c) / size.giveCoord(c) );
+                ( * xn )(c) = ( * xn )(c) - 2. * diff(c) / size(c);
             }
         }
 
@@ -319,7 +321,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
         diffC = aux - center;
         maxerror = 0.;
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxerror = max(maxerror, abs(diff.giveCoord(c) / size.giveCoord(c) ) );
+            maxerror = std :: max( maxerror, abs( diff(c) / size(c) ) );
         }
         i++;
     }
@@ -330,7 +332,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     //check natural coordinates are inside limits
     //TODO: works only for brick and quadrilateral
     for ( unsigned c = 0; c < ndim; c++ ) {
-        if ( abs(xn->giveCoord(c) ) > 1. ) {
+        if ( abs( ( * xn )(c) ) > 1. ) {
             return false;
         }
     }
@@ -339,7 +341,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
-    Vector elemDoFs(DoFids.size() );
+    Vector elemDoFs = Vector :: Zero( DoFids.size() );
     for ( unsigned i = 0; i < DoFids.size(); i++ ) {
         elemDoFs [ i ] = FullDoFs [ DoFids [ i ] ];
     }
@@ -347,55 +349,48 @@ Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
 }
 
 //////////////////////////////////////////////////////////
-void Element :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
-    Vector phi(nodes.size() );
-    Vector res(nodes.size() );
+void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > &result, Vector &weights) const {
+    Vector phi = Vector :: Zero( nodes.size() );
+    Vector res = Vector :: Zero( nodes.size() );
     double jacobian;
     Vector ipres;
-    Matrix M(nodes.size(),nodes.size());        
+    Matrix M = Matrix :: Zero( nodes.size(), nodes.size() );
 
-    if (inttype->giveNumIP()==0){   
-        cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << endl;
+    if ( inttype->giveNumIP() == 0 ) {
+        std :: cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << std :: endl;
         exit(1);
     }
 
     giveIPValues(code, 0, ipres);
-    unsigned reslen = ipres.size(); 
-    result.resize(reslen);    
+    unsigned reslen = ipres.size();
+    result.resize(reslen);
 
-    vector< Vector > rhs(reslen);
-    for(unsigned h=0; h<reslen; h++){
-        rhs[h].resize(nodes.size());
-        result[h].resize(nodes.size());
+    std :: vector< Vector >rhs(reslen);
+    for ( unsigned h = 0; h < reslen; h++ ) {
+        rhs [ h ].resize( nodes.size() );
+        result [ h ].resize( nodes.size() );
     }
-    weights.resize(nodes.size());
-    for(auto &h: weights) h = 1;
+    weights.resize( nodes.size() );
+    weights.setOnes(); //for(auto &h: weights) h = 1;
 
 
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         shafunc->giveShapeF(inttype->giveIPLocationPointer(i), phi);
-        jacobian = shafunc->giveJacobian( inttype->giveIPLocationPointer(i) );
+        jacobian = shafunc->giveJacobian(inttype->giveIPLocationPointer(i) );
         giveIPValues(code, i, ipres);
         for ( unsigned k = 0; k < nodes.size(); k++ ) {
-            for(unsigned h=0; h<reslen; h++){ 
-                rhs[h] [ k ] += phi [ k ] * jacobian * ipres[h];
+            for ( unsigned h = 0; h < reslen; h++ ) {
+                rhs [ h ] [ k ] += phi [ k ] * jacobian * ipres [ h ];
             }
             for ( unsigned l = 0; l < nodes.size(); l++ ) {
-                    M [ k ] [ l ] += phi [ k ] * phi [ l ] * jacobian;            
+                M(k, l) += phi [ k ] * phi [ l ] * jacobian;
             }
         }
     }
 
-    map< pair< size_t, size_t >, double >indices11;
-    for ( unsigned i = 0; i < nodes.size(); i++ ) {
-        for ( unsigned j = 0; j < nodes.size(); j++ ) {
-            indices11.insert(pair< pair< size_t, size_t >, double >(pair< size_t, size_t >(i, j), M [ i ] [ j ]) );
-        }
-    }
-    //TODO: this must be simplified, ideally save inverse matrix to memory of the element
-    CoordinateIndexedSparseMatrix Msparse( indices11, nodes.size(), nodes.size() );
+    Matrix M_inv = M.inverse();
 
-    for(unsigned h=0; h<reslen; h++){
-        LinalgSymmetricSolver(Msparse, result[h], rhs[h], result[h], 1e-12, 1.0, "EigenConj");
+    for ( unsigned h = 0; h < reslen; h++ ) {
+        result [ h ] = M_inv * rhs [ h ];
     }
 }

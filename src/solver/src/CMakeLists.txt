@@ -11,7 +11,7 @@ set (solver_files
     geometry.cpp
     globals.cpp
     linalg.cpp
-    linear_algebra.cpp
+    #linear_algebra.cpp
     #main.cpp
     material_container.cpp
     material.cpp

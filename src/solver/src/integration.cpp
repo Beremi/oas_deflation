@@ -1,5 +1,7 @@
 #include "integration.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // INTEGRATION POINTS - MASTER CLASS
@@ -103,7 +105,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
         localINT.init();
         Linear2DTriShapeF localSF; //shape functions
         unsigned nIP = localINT.giveNumIP();
-        Vector phi(nIP);
+        Vector phi = Vector :: Zero(nIP);
         ip_locs.resize(nIP * nnodes);
         ip_weights.resize(nIP * nnodes);
         Point a, b, c;
@@ -130,7 +132,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
         Linear2DQuadShapeF localSF; //shape functions
         unsigned nIP = localINT.giveNumIP();
 
-        Vector phi(nIP);
+        Vector phi = Vector :: Zero(nIP);
         ip_locs.resize(nIP * nnodes);
         ip_weights.resize(nIP * nnodes);
         Point a = ( nodes [ faces [ nnodes - 1 ] [ 0 ] ]->givePoint() + nodes [ faces [ nnodes - 1 ] [ 1 ] ]->givePoint() ) / 2;
@@ -153,7 +155,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
                 for ( unsigned s = 0; s < nIP; s++ ) {
                     ip_locs [ 4 * i + r ] += ( * pp [ s ] ) * phi [ s ];
                 }
-                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian( localINT.giveIPLocationPointer(r) );
+                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian(localINT.giveIPLocationPointer(r) );
             }
             a = c;
         }

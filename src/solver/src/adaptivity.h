@@ -1,5 +1,5 @@
-#ifndef SOLVER_ADAPTIVE_H
-#define SOLVER_ADAPTIVE_H
+#ifndef _ADAPTIVITY_H
+#define _ADAPTIVITY_H
 
 #include <vector>
 #include <iostream>
@@ -66,13 +66,13 @@ private:
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
-        ofstream outputfile(fs :: path(this->remeshDir) / centersFName);
+        std :: ofstream outputfile(fs :: path(this->remeshDir) / centersFName);
         if ( outputfile.is_open() ) {
             outputfile << std :: scientific;
             outputfile.precision(6);
             outputfile << "#nodeCentersToRemesh";
             for ( auto const &c : centersPoints ) {
-                outputfile << "\ncenter\t" << c.getX() << '\t' << c.getY() << '\t' << c.getZ();
+                outputfile << "\ncenter\t" << c.x() << '\t' << c.y() << '\t' << c.z();
             }
             outputfile.close();
         }
@@ -94,7 +94,7 @@ private:
         //     regionsToRemove [ rr++ ] = new Sphere(cent, this->radius2);
         // }
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove.push_back(std :: unique_ptr< Sphere >(new Sphere(cent, this->radius2) ) );
+            regionsToRemove.push_back( std :: make_unique< Sphere >(cent, this->radius2) );
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -133,7 +133,7 @@ private:
         // }
         std :: vector< std :: unique_ptr< Region > >regionsToRemove;
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove.push_back(std :: unique_ptr< Sphere >(new Sphere(cent, this->radius2) ) );
+            regionsToRemove.push_back( std :: make_unique< Sphere >(cent, this->radius2) );
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -168,7 +168,7 @@ private:
             if ( isInsideRegions(this->fineRegions, el) ) {
                 for ( auto const &mstat : el->giveMaterialStats() ) {
                     if ( !mstat->isElastic(false) ) { // save elems that were already damaged (in past) now=false checks damage (true checks temp_damage)
-                        elems_to_save.push_back( el->giveID() );
+                        elems_to_save.push_back(el->giveID() );
                         break;
                     }
                 }
@@ -185,7 +185,7 @@ private:
         this->saveCenters(); // save centersToRemesh
         std :: vector< Point >fine_centers;
         for ( auto const &reg : this->fineRegions ) {
-            fine_centers.push_back( reg->giveMainPoint() );
+            fine_centers.push_back(reg->giveMainPoint() );
         }
         this->saveCenters("centersFine.out", fine_centers);   // save any specified vector of points
 
@@ -213,7 +213,7 @@ private:
                                   std :: to_string(this->radius) + " " +
                                   std :: to_string(this->radius2)
                                   + " " +
-                                  std :: to_string( int( this->nodesFine != nullptr ) );
+                                  std :: to_string(int( this->nodesFine != nullptr ) );
         ;
         remeshCmd = remeshCmd + " " + std :: to_string(this->remesherSeed);
         // regionsNotToRemesh
@@ -227,7 +227,7 @@ private:
 
         std :: cout << "system cmd " << remeshCmd << '\n';
 
-        if ( system( remeshCmd.c_str() ) != 0 ) {
+        if ( system(remeshCmd.c_str() ) != 0 ) {
             std :: cerr << "something went wrong during remesher run" << '\n';
             exit(EXIT_FAILURE);
         }
@@ -254,25 +254,25 @@ private:
             if ( el->giveNode(0)->doesMechanics() && // NOTE JK: adaptivity is based on mechanical stress only
                  isInsideRegions(this->fineRegions, el) ) {
                 if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II g - setMaterialInFineRegions " << change++ << ", " << el->giveName() << '\n'; }
-                el->changeMaterial( masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
+                el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
             }
         }
     }
 
     void readElemStatuses() {
-        string line, param;
+        std :: string line, param;
         unsigned elem_id, stat_id, mat_id, num, node_id;
-        vector< unsigned >node_ids;
+        std :: vector< unsigned >node_ids;
         Element *el;
         std :: string node_ids_string;
 
-        ifstream inputfile( this->elemStatuses.string().c_str() );
+        std :: ifstream inputfile(this->elemStatuses.string().c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.at(0) == '#' || line.empty() ) {
                     continue;
                 }
-                istringstream iss(line);
+                std :: istringstream iss(line);
                 iss >> param;
                 if ( param.compare("matStat") == 0 ) {
                     iss >> elem_id >> stat_id >> mat_id >> num;
@@ -281,7 +281,7 @@ private:
                         iss >> node_id;
                         node_ids_string += "\t" + std :: to_string(node_id);
                         // map old nodes to new
-                        node_ids.push_back( this->giveNewNodeId(node_id) );
+                        node_ids.push_back(this->giveNewNodeId(node_id) );
                     }
                     // find element connecting these nodes
                     el = BaseSolver :: elems->giveElementConnectingNodes(node_ids);
@@ -309,7 +309,7 @@ private:
         if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II f - loadRemeshData" << '\n'; }
         masterModel->clear();
 
-        masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false);
+        masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false );
 
         // update the dof fields etc
         std :: cout << "updated model initialization ..." << '\n';
@@ -325,15 +325,15 @@ private:
     bool checkNodes() {
         if ( PRINT_TEST ) { std :: cout << "adaptivity check nodes II b" << '\n'; }
         std :: vector< Matrix >nodal_stress;
-        nodal_stress.resize( BaseSolver :: nodes->giveSize(), Matrix(this->dim, this->dim) );
+        nodal_stress.resize(BaseSolver :: nodes->giveSize(), Matrix :: Zero(this->dim, this->dim) );
         // calculate nodal stresses
         ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
 
-        vector< Vector >tensorial_stress;
+        std :: vector< Vector >tensorial_stress;
         BaseSolver :: elems->extrapolateValuesFromIntegrationPointsToNodes("solid_stress", tensorial_stress);
         // calculate principal stresses
         Node *n;
-        vector< Vector >eigvecs;
+        std :: vector< Vector >eigvecs;
         Vector eignums;
 
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
@@ -342,13 +342,12 @@ private:
                 if ( (
                          // JK check point from regions not to remesh, only do not remesh nodes inside of it, that't why the following line commented
                          // !isInsideRegions( this->regionsNotToRemesh, n->givePoint() ) &&
-                         !isInsideRegions( this->fineRegions, n->givePoint() )
+                         !isInsideRegions(this->fineRegions, n->givePoint() )
                          )
                       ) {
-                       
-                    LinalgEigenSolver(tensorial_stress[i], eignums, eigvecs);
-                    if ( eignums.max() > this->adaptThreshold ) {
-                        nodeCentersToRmesh.push_back( n->givePoint() );
+                    LinalgEigenSolver(tensorial_stress [ i ], eignums, eigvecs);
+                    if ( eignums.maxCoeff() > this->adaptThreshold ) {
+                        nodeCentersToRmesh.push_back(n->givePoint() );
                     }
                 }
             }
@@ -376,7 +375,7 @@ private:
             this->updateGeometry(); // run python preprocessor
 
             for ( auto const &p : nodeCentersToRmesh ) {
-                this->fineRegions.push_back( std :: unique_ptr< Sphere >( new Sphere(p, this->radius) ) );
+                this->fineRegions.push_back(std :: make_unique< Sphere >(p, this->radius) );
             }
 
             this->loadRemeshData(); // load updated geometry
@@ -410,11 +409,11 @@ private:
 
 
 
-    void readAdaptivity(const string filename) {
-        string param, path, line;
+    void readAdaptivity(const std :: string filename) {
+        std :: string param, path, line;
         bool bat, br, br2, bptp, bmn, brl;
         bat = br = br2 = bptp = bmn = brl = false;
-        ifstream inputfile( filename.c_str() );
+        std :: ifstream inputfile(filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() ) {
@@ -423,7 +422,7 @@ private:
                 if ( line.at(0) == '#' ) {
                     continue;
                 }
-                istringstream iss(line);
+                std :: istringstream iss(line);
                 iss >> param;
                 if ( param.compare("adaptThreshold") == 0 ) {
                     iss >> this->adaptThreshold;
@@ -502,7 +501,7 @@ public:
     AdaptiveSolver() { BaseSolver :: name.append("-Adaptive"); };
     virtual ~AdaptiveSolver() {};
 
-    virtual void init(string init_r_file, string init_v_file, const bool initial = true) {
+    virtual void init(std :: string init_r_file, std :: string init_v_file, const bool initial = true) {
         unsigned numParticles = 0;
         Node *n;
         // NOTE JK this is intended for field of nodes to keep
@@ -518,19 +517,19 @@ public:
 
         if ( initial && this->nodesFine ) {
             std :: cout << "Adaptivity: loading fine geometry ..." << '\n';
-            this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim);
+            this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim );
         }
 
         BaseSolver :: init(init_r_file, init_v_file, initial);
     };
 
 
-    virtual Solver *readFromFile(const string filename) {
+    virtual Solver *readFromFile(const std :: string filename) {
         BaseSolver :: readFromFile(filename);
 
-        string param, path, line;
+        std :: string param, path, line;
         bool bfa = false;
-        ifstream inputfile( filename.c_str() );
+        std :: ifstream inputfile(filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() ) {
@@ -539,7 +538,7 @@ public:
                 if ( line.at(0) == '#' ) {
                     continue;
                 }
-                istringstream iss(line);
+                std :: istringstream iss(line);
                 iss >> param;
                 if ( param.compare("Adaptivity") == 0 || param.compare("adaptivity") == 0 ) {
                     iss >> path;
@@ -588,4 +587,4 @@ public:
 // Foo<Basic>     fooWithBasic;
 // Foo<OtherBase> fooWithOtherSolver;
 
-#endif
+#endif /* _ADAPTIVITY_H */

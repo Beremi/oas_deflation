@@ -7,6 +7,8 @@
 #include "material_slide_3_2.h"
 #include "material_HTC.h"
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 MaterialContainer :: ~MaterialContainer() {
     for ( vector< Material * > :: iterator m = matrs.begin(); m != matrs.end(); ++m ) {
@@ -36,7 +38,7 @@ Material *MaterialContainer :: giveMaterial(unsigned const mat) {
 void MaterialContainer :: readFromFile(const string filename) {
     size_t origsize = matrs.size();
     string line, matType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     unsigned id = 0;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
@@ -108,7 +110,7 @@ void MaterialContainer :: readFromFile(const string filename) {
                 } else if ( matType.compare("FatigueMaterial") == 0 ) {
                     FatigueMaterial *newmat = new FatigueMaterial();
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( FatigueShearMaterial * ) newmat );
+                    matrs.push_back( ( FatigueShearMaterial * ) newmat);
                 } else if ( matType.compare("Slide32Material") == 0 ) {
                     Slide32Material *newmat = new Slide32Material();
                     newmat->readFromLine(iss);

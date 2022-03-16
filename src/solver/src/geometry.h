@@ -2,7 +2,7 @@
 #define _GEOMETRY_H
 
 #include <memory>
-#include "linear_algebra.h"
+#include "linalg.h"
 #include "element.h"
 // TODO move all functions regarding geometrical operations etc.
 
@@ -15,14 +15,14 @@ class Region
 private:
 
 protected:
-    string name;
+    std :: string name;
     unsigned dim;
 
 public:
     Region() {};
     virtual ~Region() {};
     virtual bool isInside(const Point &P) const = 0;
-    virtual void readFromLine(istringstream &iss) = 0;
+    virtual void readFromLine(std :: istringstream &iss) = 0;
     virtual void setMainPoint(const Point &P) = 0;
     virtual void setSize(const double &size) = 0;
     virtual Point giveMainPoint() const = 0;
@@ -48,7 +48,7 @@ public:
     virtual double giveSize() const { return this->size; };
     virtual void print() const {
         std :: cout << "main point: ";
-        this->mainPoint.print();
+        std :: cout << this->mainPoint.format(VectorSemicolonFmt) << "\n";
         std :: cout << "size = " << this->size << '\n';
     };
 };
@@ -64,7 +64,7 @@ public:
     virtual ~Block() {};
     Block(const Point &lB, const Point &rT);
     virtual bool isInside(const Point &P) const;
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
 };
 
 class Circle : public RegularRegion
@@ -76,7 +76,7 @@ public:
     virtual ~Circle() {};
     Circle(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
 };
 
 
@@ -87,7 +87,7 @@ public:
     virtual ~Sphere() {};
     Sphere(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
 };
 
 
@@ -124,4 +124,4 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p);
 
 
 
-#endif
+#endif /* _GEOMETRY_H */

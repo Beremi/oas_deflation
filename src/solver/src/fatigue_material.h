@@ -55,13 +55,13 @@ public:
     void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
     double isDamageCoupled() const { return coup_dam; }
     virtual std :: string giveLineToSave() const;
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
 protected:
     void setDamage(const double &new_damage) {
         if ( new_damage > this->temp_damageShear ) {
@@ -88,7 +88,7 @@ private:
 public:
     FatigueShearMaterial() { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveTauBar() const { return tauBar; }
     double giveKin() const { return Kin; }
@@ -149,12 +149,12 @@ public:
     void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
 protected:
     void setDamage(const double &new_damage) {
         if ( new_damage > this->temp_damage ) {
@@ -184,7 +184,7 @@ private:
 public:
     DamagePlasticMaterial() { name = "Damage Plastic material"; };
     ~DamagePlasticMaterial() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveYieldStress() const { return fc; }
     double giveTensileStrength() const { return ft; }
@@ -215,12 +215,12 @@ public:
     void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
-    virtual void readFromLine(istringstream &iss);
+    virtual void readFromLine(std :: istringstream &iss);
 };
 
 
@@ -231,7 +231,7 @@ private:
 public:
     FatigueMaterial() { FatigueShearMaterial :: name = "Fatigue material"; DamagePlasticMaterial :: name = "Fatigue material"; };
     ~FatigueMaterial() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void init();
 };
@@ -261,12 +261,12 @@ public:
     virtual ~AllicheMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    // virtual Vector giveStressWrong(const Vector &strain);
+    // virtual MyVector giveStressWrong(const MyVector &strain);
     void calculateDamage(const Vector &strain);
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 
@@ -282,7 +282,7 @@ private:
 public:
     AllicheMaterial() { name = "Alliche material"; };
     ~AllicheMaterial() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveLambda() const { return lambda; }
     double giveMu() const { return mu; }
@@ -322,10 +322,10 @@ public:
     virtual ~DesmoratMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(string code, Vector &result) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 
@@ -340,7 +340,7 @@ private:
 public:
     DesmoratMaterial() { name = "Desmorat material"; };
     ~DesmoratMaterial() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveE2() const { return E0 * alpha; }
     double giveSigma0() const { return Sigma0; }
