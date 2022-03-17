@@ -1335,8 +1335,7 @@ Vector DiscreteCoupledRVEMaterialStatus :: giveInternalSource() const {
     DiscreteTrsprtCoupledMaterial *dtcm = dcRVEmat->giveMasterMaterial();
 
     double PUCVolume = dcm->givePUCVolume();
-    Vector intS;
-    intS.resize(3 * ( ndim - 1 ) + 1);
+    Vector intS = Vector::Zero(3 * ( ndim - 1 ) + 1);
     unsigned TDoF = 3 * ( ndim - 1 );
 
     intS [ TDoF ] = -dcm->giveBiotCoefficient() * volStrainRate * 3.;
