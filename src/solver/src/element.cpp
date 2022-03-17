@@ -378,8 +378,8 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > 
 
     std :: vector< Vector >rhs(reslen);
     for ( unsigned h = 0; h < reslen; h++ ) {
-        rhs [ h ].resize( nodes.size() );
-        result [ h ].resize( nodes.size() );
+        rhs[h] = Vector::Zero(nodes.size());
+        result[h] = Vector::Zero(nodes.size());
     }
     weights.resize( nodes.size() );
     weights.setOnes(); //for(auto &h: weights) h = 1;
@@ -404,4 +404,5 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > 
     for ( unsigned h = 0; h < reslen; h++ ) {
         result [ h ] = M_inv * rhs [ h ];
     }
+
 }
