@@ -528,6 +528,56 @@ void RigidBodyBoundaryCoupled :: init() {
     RigidBodyContact :: init();
 }
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+void RigidBodyBoundaryCoupled :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
+    Vector ipres;
+    giveIPValues(code, 0, ipres);
+    Vector A = giveVectorToNode(0, 0);
+    size_t d;
+
+    weights.resize(2);
+    weights [ 0 ] = giveVolumeAssociatedWithNode(0);
+
+    if ( ipres.size() == 0 ) {   //empty answer
+        result.resize(0);
+    } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
+        result.resize( A.size() );
+        for ( d = 0; d < A.size(); d++ ) {
+            result [ d ].resize(1);
+            result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
+        }
+    } else if ( ipres.size() == A.size() ) { //vector times vector of same length, symmetrization
+        //transform result to xyz
+        Vector ipresglobal = transformVectorToXYZ(ipres);
+
+        //dyadic product
+        unsigned k = A.size();
+        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
+            result [ d ].resize(1);
+        }
+        //diagonal
+        for ( d = 0; d < k; d++ ) {
+            result [ d ] [ 0 ] =  area * ipresglobal [ d ] * A [ d ];
+        }
+        //off diagonal
+        if ( k == 2 ) {
+            result [ 2 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 1 ] ) / 2.;
+        } else if ( k == 3 ) {
+            result [ 3 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 2 ] + ipresglobal [ 2 ] * A [ 1 ] ) / 2.;
+            result [ 4 ] [ 0 ] =  area * ( ipresglobal [ 2 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 2 ] ) / 2.;
+            result [ 5 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 1 ] ) / 2.;
+        } else {
+            cerr << "Error in " << name << ": transformation of matrix of size " << k << " to vector not implemented" << endl;
+            exit(1);
+        }
+    } else {
+        cerr << "Error in " << name << ": dyadic product of vectors of different length in function extrapolateIPValuesToNodes" << endl;
+        exit(1);
+    }
+}
+
 // //////////////////////////////////////////////////////////
 // MyVector RigidBodyBoundaryCoupled :: giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep){
 //     MyVector innttff = RigidBodyContactCoupled :: giveInternalForces(DoFs, frozen, timeStep);
@@ -550,7 +600,7 @@ Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     ( void ) DoFs;
     this->extractPressureFromSimplices();
     // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
-    return Vector( ( this->ndim - 1 ) * 3);
+    return Vector::Zero( ( this->ndim - 1 ) * 3);
 };
 
 //////////////////////////////////////////////////////////
