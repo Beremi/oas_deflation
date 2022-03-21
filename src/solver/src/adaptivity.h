@@ -63,6 +63,7 @@ private:
     std :: vector< unsigned >nodesToKeep;
     unsigned remesherSeed = 1;
     bool reseted = true;
+    std :: string additional_procedures = "none";
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
@@ -231,6 +232,20 @@ private:
             std :: cerr << "something went wrong during remesher run" << '\n';
             exit(EXIT_FAILURE);
         }
+
+        if ( this->additional_procedures != "none" ) {
+            remeshCmd = "python " + this->additional_procedures +
+            " " + this->remeshDir;
+
+            std :: cout << "additional_python_script cmd " << remeshCmd << '\n';
+
+            if ( system(remeshCmd.c_str() ) != 0 ) {
+                std :: cerr << "something went wrong during remesher additional procedures" << '\n';
+                exit(EXIT_FAILURE);
+            }
+            std::cout << "\n\n" << '\n';
+        }
+
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -456,6 +471,8 @@ private:
                 } else if ( param.compare("remeshMaterialId") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> this->remeshMaterialId;
+                } else if ( param.compare("additional_python_script") == 0 ) {
+                    iss >> this->additional_procedures;
                 } else if ( param.compare("pathToFineNodes") == 0 ) {
                     iss >> path;
                     this->pathToFineNodes = GlobPaths :: BASEDIR / path;
