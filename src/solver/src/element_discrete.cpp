@@ -962,6 +962,49 @@ Vector Transp1D :: integrateInternalSources() {
     return Element :: integrateInternalSources() / ndim;
 }
 
+//////////////////////////////////////////////////////////
+Vector Transp1D :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
+    ( void ) ip_id;
+    Point distance = inttype->giveIPLocation(0) - nodes [ node_i ]->givePoint();
+    Vector dst = Vector :: Zero(ndim);
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        if ( i == 0 ) {
+            dst [ i ] = distance.x();
+        } else if ( i == 1 ) {
+            dst [ i ] = distance.y();
+        } else if ( i == 2 ) {
+            dst [ i ] = distance.z();
+        }
+    }
+    return dst;
+}
+
+//////////////////////////////////////////////////////////
+void Transp1D :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
+    Vector ipres;
+    giveIPValues(code, 0, ipres);
+    Vector A = giveVectorToNode(0, 0);
+    Vector B = giveVectorToNode(1, 0);
+    size_t d;
+
+    weights.resize(2);
+    weights [ 0 ] = giveVolumeAssociatedWithNode(0);
+    weights [ 1 ] = giveVolumeAssociatedWithNode(1);
+
+    if ( ipres.size() == 0 ) {   //empty answer
+        result.resize(0);
+    } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
+        result.resize( A.size() );
+        for ( d = 0; d < A.size(); d++ ) {
+            result [ d ].resize(2);
+            result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
+            result [ d ] [ 1 ] =  area * ipres [ 0 ] * abs(B [ d ]);
+        }
+    } else {
+        cerr << "Error in " << name << ": dyadic product of vectors in function extrapolateIPValuesToNodes from transport 1D element" << endl;
+        exit(1);
+    }
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

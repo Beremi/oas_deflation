@@ -132,9 +132,6 @@ void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result)
     } else if ( code.compare("z") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->z();
-    } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = stats [ ipnum ]->giveMaterial()->giveId();
     } else {
         if ( ipnum >= inttype->giveNumIP() ) {
             std :: cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << std :: endl;

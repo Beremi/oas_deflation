@@ -338,7 +338,7 @@ private:
 
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);
-            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
+            if ( ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) && (tensorial_stress [ i ].size()>0) ) {
                 if ( (
                          // JK check point from regions not to remesh, only do not remesh nodes inside of it, that't why the following line commented
                          // !isInsideRegions( this->regionsNotToRemesh, n->givePoint() ) &&
@@ -390,7 +390,7 @@ private:
             BaseSolver :: step--;
             BaseSolver :: time = this->time_before_step;
             this->reseted = true;
-            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku
+            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku            
             BaseSolver :: runBeforeEachStep();
 
 
