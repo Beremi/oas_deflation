@@ -1,5 +1,5 @@
 SteadyStateNonLinearSolver
 time_step	0.1
-total_time	16
+total_time	10
 tolerance 1e-3
 limit_tolerance 1e-0
