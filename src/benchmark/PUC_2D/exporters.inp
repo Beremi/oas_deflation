@@ -1,1 +1,1 @@
-VTKElementExporter out  saveEvery 1e-20 0
+VTKElementExporter elems saveEvery 0.0001 cellData 3 materialID damage crack_opening pointData 1 displacements

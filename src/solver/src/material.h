@@ -29,7 +29,7 @@ public:
     virtual void resetTemporaryVariables();  ///> if step reset applied, reset temprary variables to last converged state
     virtual Vector giveStress(const Vector &strain, double timeStep) { return giveStressWithFrozenIntVars(strain, timeStep); };
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep) { ( void ) strain; ( void ) timeStep; return Vector(0); };
-    virtual void giveValues(std :: string code, Vector &result) const { ( void ) code; result.resize(0); };
+    virtual void giveValues(std :: string code, Vector &result) const;
     virtual Vector giveTempStress() const { return temp_stress; };
     virtual Vector giveUpdatedStress() const { return updt_stress; };
     virtual Vector giveTempStrain() const { return temp_strain; };

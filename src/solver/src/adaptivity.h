@@ -63,6 +63,7 @@ private:
     std :: vector< unsigned >nodesToKeep;
     unsigned remesherSeed = 1;
     bool reseted = true;
+    std :: string additional_procedures = "none";
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
@@ -231,6 +232,20 @@ private:
             std :: cerr << "something went wrong during remesher run" << '\n';
             exit(EXIT_FAILURE);
         }
+
+        if ( this->additional_procedures != "none" ) {
+            remeshCmd = "python " + this->additional_procedures +
+            " " + this->remeshDir;
+
+            std :: cout << "additional_python_script cmd " << remeshCmd << '\n';
+
+            if ( system(remeshCmd.c_str() ) != 0 ) {
+                std :: cerr << "something went wrong during remesher additional procedures" << '\n';
+                exit(EXIT_FAILURE);
+            }
+            std::cout << "\n\n" << '\n';
+        }
+
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -338,7 +353,7 @@ private:
 
         for ( unsigned i = 0; i < BaseSolver :: nodes->giveSize(); i++ ) { // foreach loop does not work here
             n = BaseSolver :: nodes->giveNode(i);
-            if ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) {
+            if ( ( n->giveName().compare("particle") == 0 || n->giveName().compare("Particle") == 0 ) && (tensorial_stress [ i ].size()>0) ) {
                 if ( (
                          // JK check point from regions not to remesh, only do not remesh nodes inside of it, that't why the following line commented
                          // !isInsideRegions( this->regionsNotToRemesh, n->givePoint() ) &&
@@ -390,7 +405,7 @@ private:
             BaseSolver :: step--;
             BaseSolver :: time = this->time_before_step;
             this->reseted = true;
-            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku
+            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku            
             BaseSolver :: runBeforeEachStep();
 
 
@@ -456,6 +471,8 @@ private:
                 } else if ( param.compare("remeshMaterialId") == 0 ) {
                     // std::cout << "reading regions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << '\n';
                     iss >> this->remeshMaterialId;
+                } else if ( param.compare("additional_python_script") == 0 ) {
+                    iss >> this->additional_procedures;
                 } else if ( param.compare("pathToFineNodes") == 0 ) {
                     iss >> path;
                     this->pathToFineNodes = GlobPaths :: BASEDIR / path;

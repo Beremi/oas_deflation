@@ -112,6 +112,7 @@ public:
     virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
 };
 
 //////////////////////////////////////////////////////////
@@ -155,6 +156,7 @@ public:
     double giveLength() const { return length; }
     double giveVolumeAssociatedWithNode(unsigned nodenum) const;
     void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveDampingMatrix() const;
@@ -164,6 +166,7 @@ public:
     virtual Vector integrateInternalSources();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     std :: vector< Node * >giveVertices() const { return vert; };
+    virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 

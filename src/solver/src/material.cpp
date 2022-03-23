@@ -32,8 +32,6 @@ void MaterialStatus :: resetTemporaryVariables() {
     temp_stress = updt_stress;
 }
 
-
-
 //////////////////////////////////////////////////////////
 void MaterialStatus :: setEigenStrain(Vector &x) {
     eigenstrain = x;
@@ -48,6 +46,13 @@ bool MaterialStatus :: isElastic(const bool &now) const {
     return true;
 }
 
+//////////////////////////////////////////////////////////
+void MaterialStatus :: giveValues(std :: string code, Vector &result) const { 
+    if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = mat->giveId();
+    } else result.resize(0);
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
