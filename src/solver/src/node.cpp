@@ -103,10 +103,14 @@ MechDoF :: MechDoF(unsigned dimension, unsigned numDoFs) : MechNode(dimension) {
 //////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational DoFs
 void MechNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
-    if ( code.compare("displacements") == 0 ) {
-        result.resize(dim);
-        for ( unsigned i = 0; i < dim; i++ ) {
+    if ( code.compare("displacements") == 0  || code.compare("displacement") == 0  ) {
+        result.resize(3);
+        unsigned i=0;
+        for (; i < dim; i++ ) {
             result [ i ] = DoFs [ firstDoF + i ];
+        }
+        for (; i < 3; i++ ) {
+            result [ i ] = 0;
         }
     } else if ( code.compare("ux") == 0 ) {
         result.resize(1);
