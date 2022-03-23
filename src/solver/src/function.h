@@ -45,13 +45,21 @@ protected:
 class GeneralSpatialFunction : public Function
 {
 private:
+<<<<<<< HEAD
+    std :: string expression_string;
+=======
     std::string expression_string;
+>>>>>>> b46b6a980b6b383b08e7cea07976ca30c07c5da9
     double x, y, z;
     expression_t expression;
 public:
     GeneralSpatialFunction() {};
     virtual ~GeneralSpatialFunction() {};
+<<<<<<< HEAD
+    void readFromLine(std :: istringstream &iss);
+=======
     void readFromLine(std::istringstream &iss);
+>>>>>>> b46b6a980b6b383b08e7cea07976ca30c07c5da9
     double giveY(const Point *xyz);
     virtual double giveNextEtreme(const double &t) const;
 protected:
