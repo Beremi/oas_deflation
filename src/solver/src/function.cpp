@@ -21,9 +21,9 @@ void GeneralSpatialFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double GeneralSpatialFunction :: giveY(const Point *xyz) {
-    x = xyz->getX();
-    y = xyz->getY();
-    z = xyz->getZ();
+    x = xyz->x();
+    y = xyz->y();
+    z = xyz->z();
 
     return expression.value();
 }

@@ -44,13 +44,13 @@ protected:
 class GeneralSpatialFunction : public Function
 {
 private:
-    string expression_string;
+    std :: string expression_string;
     double x, y, z;
     expression_t expression;
 public:
     GeneralSpatialFunction() {};
     virtual ~GeneralSpatialFunction() {};
-    void readFromLine(istringstream &iss);
+    void readFromLine(std :: istringstream &iss);
     double giveY(const Point *xyz);
     virtual double giveNextEtreme(const double &t) const;
 protected:
