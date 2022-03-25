@@ -418,6 +418,7 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
             idc_time = idc_time_converged;
         }
     }
+    computeForcesAtIntegrationTime(true); //to initialize all fields in the model
 }
 
 //////////////////////////////////////////////////////////

@@ -33,7 +33,6 @@ void Model :: init(const bool &initial) {     //initialization
     nodes.initSimplices();
     constr.init(& nodes, & bconds, solver);
     elems.findElementFriends();
-    exporters.init(initial);
     if ( initialFieldFile.compare("") != 0 ) {
         initialFieldFile = ( baseDir / initialFieldFile ).string();
     }
@@ -41,6 +40,7 @@ void Model :: init(const bool &initial) {     //initialization
         initialTimeDerFieldFile = ( baseDir / initialTimeDerFieldFile ).string();
     }
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
+    exporters.init(initial);
 }
 
 //////////////////////////////////////////////////////////
