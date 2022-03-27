@@ -1,5 +1,6 @@
 # the name of the target operating system
 set(CMAKE_SYSTEM_NAME Windows)
+set(CMAKE_MODULE_PATH "")
 
 # which compilers to use
 set(CMAKE_C_COMPILER x86_64-w64-mingw32.static-gcc)
