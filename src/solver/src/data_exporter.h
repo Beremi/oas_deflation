@@ -20,7 +20,7 @@ public:
     DataExporter(unsigned dimension) { dim = dimension; precision = 6; };
     virtual ~DataExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
-    virtual bool doExportNow(const double &time);
+    virtual bool doExportNow(const double &time, const unsigned &step);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
     virtual void giveFileName(unsigned step, char *buffer) const;
     std :: string giveFileName() const { return filename; };

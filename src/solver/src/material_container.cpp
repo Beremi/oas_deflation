@@ -42,10 +42,7 @@ void MaterialContainer :: readFromFile(const string filename) {
     unsigned id = 0;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);

@@ -273,10 +273,7 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);
