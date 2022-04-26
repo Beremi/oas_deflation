@@ -72,6 +72,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
             saveTimeStepWasConfigured = true;
         } else if ( param.compare("timeShift") == 0 ) {
             iss >> saveTime_last;
+        } else if ( param.compare("stepShift") == 0 ) {
+            iss >> saveStep_last;
         } else if ( param.compare("precision") == 0 ) {
             iss >> precision;
         } else if ( param.compare("multiplier") == 0 ) {
