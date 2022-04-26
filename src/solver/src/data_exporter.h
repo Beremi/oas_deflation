@@ -21,6 +21,8 @@ public:
     virtual ~DataExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool doExportNow(const double &time, const unsigned &step);
+    virtual void updateNextTimeToSave(const double &time);
+    virtual void updateNextStepToSave(const unsigned &step);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
     virtual void giveFileName(unsigned step, char *buffer) const;
     std :: string giveFileName() const { return filename; };
@@ -31,9 +33,22 @@ protected:
     unsigned dim;
     std :: string filename;
     unsigned precision;
-    std :: vector< std :: string >codes;
-    std :: vector< size_t >maxsize;
-    double time_each, time_last;
+    std :: vector< std :: string > codes;
+    std :: vector< size_t > maxsize;
+
+    std :: vector< double > times_to_save; // vector to store times for export
+    double saveTime_each; // time period
+    double saveTime_last; // last saved time using time period
+    double time_last; // time of the last export
+    double next_time_to_save; // time to perform the next export
+    unsigned saveTimes_idx; // possition in vector of times_to_save
+
+    std :: vector< unsigned > steps_to_save; // vector to store steps for export
+    unsigned saveStep_each; // step period
+    unsigned saveStep_last; // last saved step using step period
+    unsigned step_last; // step of the last export
+    unsigned next_step_to_save; // step to perform the next export
+    unsigned saveSteps_idx; // possition in vector of steps_to_save
 };
 
 //////////////////////////////////////////////////////////

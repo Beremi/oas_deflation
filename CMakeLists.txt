@@ -26,7 +26,7 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
-project(PartMod CXX)
+project(PartMod C CXX)
 set (PartMod_VERSION_MAJOR 0)
 set (PartMod_VERSION_MINOR 1)
 set (PartMod_VERSION_PATCH 0) # Unused

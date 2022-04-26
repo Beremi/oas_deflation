@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iterator>
 #include "data_exporter.h"
 #include "vtk_exporter.h"
 #include "exporter_model.h"
@@ -19,8 +20,11 @@ void DataExporter :: giveFileName(unsigned step, char *buffer) const {
 /*!
  *  DataExporter optional parameters.
  *  Keywords:
- *  - timeEach [float] - time each (TODO: better description)
- *  - time_last [float] - time shift (TODO: better description)
+ *  - saveEveryTime [float] - save each nth time (TODO: better description)
+ *  - saveEveryStep [int] - save each nth step (TODO: better description)
+ *  - saveTimes [count] [floats] - save in specified times
+ *  - saveSteps [count] [ints] - save in specified steps
+ *  - timeShift [float] - time shift (TODO: better description)
  *  - precision [float] - precision of stored values
  */
 void DataExporter :: readFromLine(istringstream &iss) {
@@ -28,27 +32,103 @@ void DataExporter :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
     string param;
     // initiate variables in case they are not specified
-    time_each = 0;
-    time_last = 0;
+    saveTime_each = numeric_limits<double>::max();
+    saveTime_last = 0;
+    saveStep_each = numeric_limits<unsigned>::max();
+    saveStep_last = 0;
+    saveSteps_idx = 0;
+    saveTimes_idx = 0;
+    next_time_to_save = 0;
+    next_step_to_save = 0;
+    int num = 0;
+    bool saveTimeStepWasConfigured = false;
     while ( !iss.eof() ) {
         iss >> param;
-        if ( param.compare("saveEvery") == 0 || param.compare("timeEach") == 0 ) {
-            iss >> time_each;
+        if ( param.compare("saveEveryTime") == 0 || param.compare("saveEvery") == 0 || param.compare("timeEach") == 0 ) {
+            iss >> saveTime_each;
+            saveTimeStepWasConfigured = true;
+        } else if ( param.compare("saveEveryStep") == 0 ) {
+            iss >> saveStep_each;
+            saveTimeStepWasConfigured = true;
+        } else if ( param.compare("saveTimes") == 0 ) {
+            iss >> num;
+            double val = 0;
+            for (int i = 0; i < num; i++ ) {
+                iss >> val;
+                times_to_save.push_back(val);
+            }
+            sort(times_to_save.begin(), times_to_save.end()); // sort times
+            times_to_save.erase(std::unique(times_to_save.begin(), times_to_save.end()), times_to_save.end()); // store only unique values
+            saveTimeStepWasConfigured = true;
+        } else if ( param.compare("saveSteps") == 0 ) {
+            iss >> num;
+            unsigned val = 0;
+            for (int i = 0; i < num; i++ ) {
+                iss >> val;
+                steps_to_save.push_back(val);
+            }
+            sort(steps_to_save.begin(), steps_to_save.end()); // sort steps
+            steps_to_save.erase(std::unique(steps_to_save.begin(), steps_to_save.end()), steps_to_save.end()); // store only unique values
+            saveTimeStepWasConfigured = true;
         } else if ( param.compare("timeShift") == 0 ) {
-            iss >> time_last;
+            iss >> saveTime_last;
         } else if ( param.compare("precision") == 0 ) {
             iss >> precision;
         }
     }
+    if (!saveTimeStepWasConfigured) saveStep_each = 1; // save in each step because no export frequency was set
+    updateNextTimeToSave(0);
+    updateNextStepToSave(0);
 }
 
 //////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
-    if ( time < time_last + time_each - 1e-12) {
-        return false;
-    } else {
-        time_last = time;
+    cout << "Time a step: " << time << " : " << next_time_to_save << " : " << step<< " : " << next_step_to_save  << endl;
+    if ( (time > next_time_to_save) || (step == next_step_to_save) ) {
+        updateNextTimeToSave(time);
+        updateNextStepToSave(step);
         return true;
+    } else {
+        return false;
+    }
+}
+
+void DataExporter::updateNextTimeToSave(const double &time)
+{
+    if (time > next_time_to_save) {
+        double t = saveTime_last + saveTime_each;
+        if (saveTimes_idx < times_to_save.size()){
+            if (t > times_to_save[saveTimes_idx]){
+                t = times_to_save[saveTimes_idx];
+                saveTimes_idx++;
+            } else {
+                saveTime_last = t;
+            }
+        } else {
+            saveTime_last = t;
+        }
+        next_time_to_save = t - 1e-12;
+        time_last = time;
+    }
+}
+
+
+void DataExporter::updateNextStepToSave(const unsigned &step)
+{
+    if (step == next_step_to_save) {
+        unsigned s = saveStep_last + saveStep_each;
+        if (saveSteps_idx < steps_to_save.size()){
+            if (s > steps_to_save[saveSteps_idx]){
+                s = steps_to_save[saveSteps_idx];
+                saveSteps_idx++;
+            } else {
+                saveStep_last = s;
+            }
+        } else {
+            saveStep_last = s;
+        }
+        next_step_to_save = s;
+        step_last = step;
     }
 }
 
@@ -382,8 +462,8 @@ ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned >
 
 //////////////////////////////////////////////////////////
 void ForceGauge :: init() {
-    time_each = 0;
-    time_last = 0;
+    saveTime_each = 0;
+    saveTime_last = 0;
     DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + nodes->giveNode(n [ i ])->giveOrderOfForceCode(codes [ 0 ]);
@@ -433,8 +513,8 @@ DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
-    time_each = 0;
-    time_last = 0;
+    saveTime_each = 0;
+    saveTime_last = 0;
     unsigned DoFpos = 0;
     if ( codes [ 0 ].compare("ux") == 0 ) {
         DoFpos = 0;
@@ -512,8 +592,8 @@ void IntegrationPointGauge :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void IntegrationPointGauge :: init() {
-    time_each = 0;
-    time_last = 0;
+    saveTime_each = 0;
+    saveTime_last = 0;
 
     maxsize.resize(1);
     Vector res;
@@ -600,8 +680,8 @@ void DisplacementGauge :: readFromLine(istringstream &iss) {
 }
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: init() {
-    time_each = 0;
-    time_last = 0;
+    saveTime_each = 0;
+    saveTime_last = 0;
     //find element or closest point
     double dist;
     bool foundA = elems->findElementOwningPoint(& elemA, & natCoordsA, & pointA);
@@ -684,8 +764,8 @@ void SolverGauge :: readFromLine(istringstream &iss) {
 }
 //////////////////////////////////////////////////////////
 void SolverGauge :: init() {
-    time_each = 0;
-    time_last = 0;
+    saveTime_each = 0;
+    saveTime_last = 0;
 
     maxsize.resize(1);
     Vector res;
