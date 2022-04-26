@@ -85,7 +85,7 @@ Recommended structure
 Build Windows binary under Linux
 - build mxe
   \code{.sh}
-    make MXE_TARGETS=x86_64-w64-mingw32.static MXE_PLUGIN_DIRS=plugins/gcc9 gcc
+    make MXE_TARGETS=x86_64-w64-mingw32.static MXE_PLUGIN_DIRS=plugins/gcc9 gcc blas cblas lapack vtk
     make cc
     make cmake
   \endcode
@@ -95,7 +95,8 @@ Build Windows binary under Linux
   \endcode
 - using mxe cmake wrapper
 \code{.sh}
-  i686-w64-mingw32.static-cmake ../partmod
+  x86_64-w64-mingw32.static-cmake ../partmod
+  /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake -D CMAKE_TOOLCHAIN_FILE=../partmod/toolchain_mxe.cmake -DBLAS_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/cblas-3.8.0 -DLAPACK_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapack-3.8.0 -DLAPACKE_DIR=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapacke-3.8.0 ../partmod
 \endcode
 
 

@@ -47,7 +47,7 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 }
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: giveValues(std :: string code, Vector &result) const { 
+void MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
@@ -702,6 +702,10 @@ void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
         }
+    }else if ( code.compare("E0") == 0 )  {
+        result.resize(1);
+        DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
+        result [ 0 ] = m->giveE0();
     } else if ( code.compare("s_N") == 0 )  {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];

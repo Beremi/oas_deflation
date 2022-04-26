@@ -45,8 +45,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-bool DataExporter :: doExportNow(const double &time) {
-    if ( time < time_last + time_each - 1e-12 ) {
+bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
+    if ( time < time_last + time_each - 1e-12) {
         return false;
     } else {
         time_last = time;
@@ -801,15 +801,13 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
     string line, exptype;
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
-        while ( getline(inputfile, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);
             iss >> exptype;
+
             if ( !( exptype.rfind("#", 0) == 0 ) ) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {
                     TXTNodalExporter *newexp = new TXTNodalExporter(n, e, dimension);
@@ -993,7 +991,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 
     // export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        if ( ( * d )->doExportNow(time) || exportAll ) {
+        if ( ( * d )->doExportNow(time, step) || exportAll ) {
             ( * d )->exportData(step, DoFs, reactions, resultDir);
         }
     }

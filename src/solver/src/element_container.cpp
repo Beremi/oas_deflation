@@ -34,10 +34,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);
@@ -254,7 +251,7 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
             ifstream inputfile( file_with_stats.c_str() );
             if ( inputfile.is_open() ) {
                 while ( getline(inputfile >> std :: ws, line) ) {
-                    if ( line.at(0) == '#' || line.empty() ) {
+                    if ( line.empty() || (line.at(0) == '#') ) {
                         continue;
                     }
                     istringstream iss(line);

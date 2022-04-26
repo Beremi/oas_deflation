@@ -25,10 +25,7 @@ Solver *Solver :: readFromFile(const string filename) {
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);
@@ -268,10 +265,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);
@@ -436,10 +430,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);
@@ -1150,10 +1141,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);

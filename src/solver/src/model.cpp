@@ -70,10 +70,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
     ifstream inputfile( fullPath.string() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);

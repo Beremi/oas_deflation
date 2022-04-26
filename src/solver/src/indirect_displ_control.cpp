@@ -37,10 +37,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
 
     streampos oldpos = inputfile.tellg();  // stores the position
     while ( getline(inputfile >> std :: ws, line) ) {
-        if ( line.empty() ) {
-            continue;
-        }
-        if ( line.at(0) == '#' ) {
+        if ( line.empty() || (line.at(0) == '#') ) {
             continue;
         }
         istringstream iss(line);
@@ -53,15 +50,19 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
             }
         } else if ( param.compare("idc_xcoords") == 0 ) {
             coords_active [ nummaxunit - 1 ] = true;
+            cout << "IDC xcoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> xcoords [ nummaxunit - 1 ] [ j ];
                 //cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
+            cout << endl;
         } else if ( param.compare("idc_ycoords") == 0 ) {
+            cout << "IDC ycoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> ycoords [ nummaxunit - 1 ] [ j ];
                 //cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
+            cout << endl;
         } else if ( param.compare("idc_zcoords") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> zcoords [ nummaxunit - 1 ] [ j ];
@@ -140,7 +141,6 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
             lambdaABS = abs(lambda);
         }
     }
-
     return lambda;
 }
 

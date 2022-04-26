@@ -405,7 +405,7 @@ private:
             BaseSolver :: step--;
             BaseSolver :: time = this->time_before_step;
             this->reseted = true;
-            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku            
+            BaseSolver :: reset();  // zakázat další adaptivitu v resetovaném kroku
             BaseSolver :: runBeforeEachStep();
 
 
@@ -431,10 +431,7 @@ private:
         std :: ifstream inputfile(filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
-                if ( line.empty() ) {
-                    continue;
-                }
-                if ( line.at(0) == '#' ) {
+                if ( line.empty() || (line.at(0) == '#') ) {
                     continue;
                 }
                 std :: istringstream iss(line);
@@ -549,10 +546,7 @@ public:
         std :: ifstream inputfile(filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
-                if ( line.empty() ) {
-                    continue;
-                }
-                if ( line.at(0) == '#' ) {
+                if ( line.empty() || (line.at(0) == '#') ) {
                     continue;
                 }
                 std :: istringstream iss(line);
