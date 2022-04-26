@@ -46,21 +46,21 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
             nodes_active [ nummaxunit - 1 ] = true;
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> c_nodes [ nummaxunit - 1 ] [ j ];
-                cout << "IDC node " << j << c_nodes [ nummaxunit - 1 ] [ j ] << endl;
+                //cout << "IDC node " << j << c_nodes [ nummaxunit - 1 ] [ j ] << endl;
             }
         } else if ( param.compare("idc_xcoords") == 0 ) {
             coords_active [ nummaxunit - 1 ] = true;
             cout << "IDC xcoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> xcoords [ nummaxunit - 1 ] [ j ];
-                cout << xcoords [ nummaxunit - 1 ] [ j ] << "; ";
+                //cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
             cout << endl;
         } else if ( param.compare("idc_ycoords") == 0 ) {
             cout << "IDC ycoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> ycoords [ nummaxunit - 1 ] [ j ];
-                cout << ycoords [ nummaxunit - 1 ] [ j ] << "; ";
+                //cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
             cout << endl;
         } else if ( param.compare("idc_zcoords") == 0 ) {

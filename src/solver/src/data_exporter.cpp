@@ -74,6 +74,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
             iss >> saveTime_last;
         } else if ( param.compare("precision") == 0 ) {
             iss >> precision;
+        } else if ( param.compare("multiplier") == 0 ) {
+            iss >> multiplier;
         }
     }
     if (!saveTimeStepWasConfigured) saveStep_each = 1; // save in each step because no export frequency was set
@@ -202,7 +204,7 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 nn->giveDoFBasedValues(codes [ c ], DoFs, res);
                 for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
-                    outputfile << "\t" << res [ p ];
+                    outputfile << "\t" << res [ p ]*multiplier;
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
                     outputfile <<  "\t" << 0;
@@ -283,7 +285,7 @@ void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 ee->giveValues(codes [ c ], res);
                 for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
-                    outputfile << "\t" << res [ p ];
+                    outputfile << "\t" << res [ p ]*multiplier;
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
                     outputfile << "\t" << 0;
@@ -374,7 +376,7 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs
                 for ( unsigned c = 0; c < codes.size(); c++ ) {
                     ee->giveIPValues(codes [ c ], k, res);
                     for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
-                        outputfile << "\t" << res [ p ];
+                        outputfile << "\t" << res [ p ]*multiplier;
                     }
                     for ( ; p < maxsize [ c ]; p++ ) {
                         outputfile << "\t" << 0;
@@ -794,7 +796,7 @@ void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &
         outputfile.precision(precision);
         solver->giveValues(codes [ 0 ], res);
         for ( p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
-            outputfile << "\t" << res [ p ];
+            outputfile << "\t" << res [ p ]*multiplier;
         }
         for ( ; p < maxsize [ 0 ]; p++ ) {
             outputfile << "\t" << 0;

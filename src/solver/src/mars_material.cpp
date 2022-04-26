@@ -82,7 +82,6 @@ void MarsMaterialStatus :: init() {
         exit(1);
     }
 
-    volumetricStrain = 0;
 }
 
 //////////////////////////////////////////////////////////
