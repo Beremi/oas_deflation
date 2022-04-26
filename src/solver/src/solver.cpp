@@ -761,8 +761,9 @@ void SteadyStateNonLinearSolver :: solve() {
     double load_mult;
     bool converged = false;
     bool restarted = false;
-
     bool restart_now = false;
+    Vector help_idc_r, help_idc_f;
+
     //MyVector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
     //JE: no, these are recomputed
     restarts = 0;
@@ -774,6 +775,9 @@ void SteadyStateNonLinearSolver :: solve() {
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
             updateFieldVariables();      //with ddr=0
             computeForcesAtIntegrationTime(true);
+        } else {
+            help_idc_r =  Vector::Zero(totalDoFnum);
+            help_idc_f =  Vector::Zero(totalDoFnum);
         }
 
         it = 0;
@@ -806,10 +810,13 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
 
                 if ( !restart_now ) {
-                    //nodes->giveFullDoFArray(ddr, full_ddr);
+                    nodes->giveFullDoFArray(ddr, full_ddr);
                     nodes->giveFullDoFArray(ddf, full_ddf);
-                    //load_mult = idc->giveMultiplierCorrection(trial_r, full_ddr, full_ddf, time);
-                    load_mult = idc->giveMultiplierCorrection(trial_r, full_ddf, time);
+                    nodes->updateDirrichletBC(full_ddf, idc_time + idc_dt); //give prescribed DoFs, BC are driven by time
+                    nodes->updateDirrichletBC(help_idc_f, idc_time); //give prescribed DoFs, BC are driven by time
+                    full_ddf = full_ddf - help_idc_f;
+                    help_idc_r = trial_r + full_ddr;
+                    load_mult = idc->giveMultiplierCorrection(help_idc_r, full_ddf, time);
 
                     ddr += load_mult * ddf;
                     idc_time += idc_dt * load_mult;

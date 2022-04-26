@@ -72,6 +72,16 @@ void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
     }
 }
 
+void Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+    if ( code.compare("ID") == 0  || code.compare("nodeID") == 0  ) {
+        result.resize(1);
+        result[0] = id;
+    } else {
+         result.resize(0);
+    }
+};
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs

@@ -55,7 +55,7 @@ public:
     void setName(const std :: string &newName) { this->name = newName; };
     bool doesMechanics() const { return isMechanical; };
     bool doesTransport() const { return isTransport; };
-    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const { ( void ) code; ( void ) DoFs; result.resize(0); };
+    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
     virtual bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
     virtual bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
     void subtructFromPoint(Point *p) { point -= ( * p ); };

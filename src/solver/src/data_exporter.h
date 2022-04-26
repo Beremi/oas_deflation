@@ -17,7 +17,7 @@ class DataExporter
 {
 private:
 public:
-    DataExporter(unsigned dimension) { dim = dimension; precision = 6; };
+    DataExporter(unsigned dimension) { dim = dimension; precision = 6; multiplier=1.;};
     virtual ~DataExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool doExportNow(const double &time);
@@ -34,6 +34,7 @@ protected:
     std :: vector< std :: string >codes;
     std :: vector< size_t >maxsize;
     double time_each, time_last;
+    double multiplier;
 };
 
 //////////////////////////////////////////////////////////
@@ -92,7 +93,6 @@ class Gauge : public DataExporter
 {
 protected:
     std :: string name;
-    double multiplier;
 public:
     Gauge(unsigned dimension) : DataExporter(dimension) {};
     ~Gauge() {};
@@ -110,7 +110,7 @@ protected:
     std :: vector< unsigned >DoFs;
     std :: vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc; multiplier = 1; };
+    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc;};
     ForceGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(std :: istringstream &iss);
