@@ -87,7 +87,6 @@ void DataExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
-    cout << "Time a step: " << time << " : " << next_time_to_save << " : " << step<< " : " << next_step_to_save  << endl;
     if ( (time > next_time_to_save) || (step == next_step_to_save) ) {
         updateNextTimeToSave(time);
         updateNextStepToSave(step);
