@@ -281,8 +281,9 @@ void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
             if ( dynamic_cast< MechDoF * >( masternode ) == nullptr && dynamic_cast< TrsDoF * >( masternode ) == nullptr ) {
                 BoundaryCondition *bc;
                 vector< int >dBC, nBC;
-                dBC.resize( masternode->giveNumberOfDoFs(), funcs->giveSize() );   //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+                dBC.resize( masternode->giveNumberOfDoFs(), -1 );   //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
                 nBC.resize(masternode->giveNumberOfDoFs(), -1);
+                dBC[0] = dBC[1] = dBC[2] = funcs->giveSize();
                 bc = new BoundaryCondition(masternode, dBC, nBC);
                 bconds->addBoundaryCondition(bc);
 
@@ -631,6 +632,8 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+
+
     ( void ) timeStep;
 
     //cout << "strain " << endl;
@@ -663,42 +666,19 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
 
     transformStress();
 
-    /*
-     * cout << "STRAIN MECH";
-     * cout << endl;
-     * for ( unsigned v = 0; v < 6; v++ ) {
-     * cout << " " << local_strain [ v ];
-     * }
-     * cout << endl;
-     * for ( unsigned v = 0; v < 6; v++ ) {
-     * cout << " " << temp_strain [ v ];
-     * }
-     * cout << endl;
-     *
-     * cout << "STRESS MECH";
-     * cout << endl;
-     * for ( unsigned v = 0; v < 6; v++ ) {
-     * cout << " " << local_stress [ v ];
-     * }
-     * cout << endl;
-     * for ( unsigned v = 0; v < 6; v++ ) {
-     * cout << " " << temp_stress [ v ];
-     * }
-     * cout << endl;
-     */
-    /*
-     * cout << "STRAIN MECH";
-     * for ( unsigned v = 0; v < temp_strain.size(); v++ ) {
-     *  cout << " " << temp_strain [ v ];
-     * }
-     * cout << endl;
-     *
-     * cout << "STRESS MECH";
-     * for ( unsigned v = 0; v < temp_strain.size(); v++ ) {
-     *  cout << " " << temp_stress [ v ];
-     * }
-     * cout << endl;
-     */
+    
+    cout << "STRAIN MECH";
+    for ( unsigned v = 0; v < temp_strain.size(); v++ ) {
+      cout << " " << temp_strain [ v ];
+    }
+    cout << endl;
+    
+    cout << "STRESS MECH";
+    for ( unsigned v = 0; v < temp_strain.size(); v++ ) {
+      cout << " " << temp_stress [ v ];
+    }
+    cout << endl;
+    
 
     return temp_stress;
 }
@@ -994,6 +974,8 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
         }
 
         macromaterial->setPrecomputedElasticTensor(Keff);
+        cout << Keff << endl;
+        exit(1);
         macromaterial->setPrecomputedDampingTensor( giveDampingTensor() );
         macromaterial->setPrecomputedInertiaTensor( giveInertiaTensor() );
 
