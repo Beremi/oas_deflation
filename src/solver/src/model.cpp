@@ -1,6 +1,14 @@
 #include "model.h"
+#include <signal.h>
 
 using namespace std;
+
+volatile sig_atomic_t TERMINATED = 0;
+
+void my_handler(int s){
+    if (TERMINATED) exit(EXIT_FAILURE);
+    TERMINATED = 1;
+}
 
 //////////////////////////////////////////////////////////
 Model :: ~Model() {
@@ -46,8 +54,9 @@ void Model :: init(const bool &initial) {     //initialization
 //////////////////////////////////////////////////////////
 void Model :: solve() {
     //solution
+    signal (SIGINT, my_handler);
     exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
-    while ( !solver->isTerminated() ) {
+    while ( !solver->isTerminated() && TERMINATED==0) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
         exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
