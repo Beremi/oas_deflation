@@ -1,5 +1,5 @@
 # Get the base Ubuntu image from Docker Hub
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ENV TZ=Europe/Prague
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -25,7 +25,10 @@ RUN apt-get -y install valgrind\
 RUN apt-get -y install libblas-dev\
                     liblapack-dev\
                     liblapacke-dev\
-                    libvtk7-dev
+                    libvtk9-dev\
+                    qtbase5-dev\
+                    qtdeclarative5-dev\
+		    freeglut3-dev
 
 RUN apt-get autoclean
 

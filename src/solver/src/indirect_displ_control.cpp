@@ -50,19 +50,19 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
             }
         } else if ( param.compare("idc_xcoords") == 0 ) {
             coords_active [ nummaxunit - 1 ] = true;
-            cout << "IDC xcoords: ";
+            //cout << "IDC xcoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> xcoords [ nummaxunit - 1 ] [ j ];
                 //cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
-            cout << endl;
+            //cout << endl;
         } else if ( param.compare("idc_ycoords") == 0 ) {
-            cout << "IDC ycoords: ";
+            //cout << "IDC ycoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> ycoords [ nummaxunit - 1 ] [ j ];
                 //cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
-            cout << endl;
+            //cout << endl;
         } else if ( param.compare("idc_zcoords") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> zcoords [ nummaxunit - 1 ] [ j ];
