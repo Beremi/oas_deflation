@@ -127,7 +127,7 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
 double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
     double df, dd;
     double pdispl = givePrescribedDisplacement(time);
-    double lambda = -INFINITY;
+    double lambda = INFINITY;
     double lambda_temp;
     for ( unsigned c = 0; c < nummaxunit; c++ ) {
         dd = 0;
@@ -137,10 +137,7 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
             df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
         }
         lambda_temp = ( pdispl - dd ) / df;
-
-        if ( (lambda_temp > 0. && (lambda < 0 ||  lambda_temp < lambda) ) || (lambda_temp < 0 && lambda_temp>lambda) ){
-            lambda = lambda_temp;
-        }
+        if (lambda_temp<lambda) lambda = lambda_temp;
     }
     return lambda;
 }
