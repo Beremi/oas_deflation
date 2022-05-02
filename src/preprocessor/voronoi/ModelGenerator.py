@@ -784,11 +784,26 @@ class Model:
             copyfile(master_file, dst_file)
         """
 
-        if self.defaultFilesFolder != None:
-            files=os.listdir(self.defaultFilesFolder )
-            for fname in files:
-                 shutil.copy2(os.path.join(self.defaultFilesFolder ,fname), self.master_folder)
+        print('master %s' %self.master_folder)
+        print('cwd %s' %os.getcwd())
 
+        oneup = os.path.abspath(os.path.join(self.master_folder , '..'  ))
+        #oneup = os.path.abspath(os.path.join(oneup, '..'  ))
+        oneup = os.path.abspath(os.path.join(oneup, '..'  ))
+        df = os.path.abspath(os.path.join(oneup, self.defaultFilesFolder))
+
+        df = self.defaultFilesFolder
+        print('df %s' %df)
+
+        if df != None:
+
+            files=os.listdir(df)
+            print('files: %s' %files)
+            for fname in files:
+                if os.path.isfile(os.path.join(self.defaultFilesFolder ,fname)):
+                   shutil.copy2(os.path.join(self.defaultFilesFolder ,fname), self.master_folder)
+                else:
+                   shutil.copytree(df+'/'+fname,  './'+self.master_folder+'/'+fname)
 
         print ('done.')
 
