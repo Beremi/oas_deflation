@@ -1016,7 +1016,7 @@ void Transp1DCoupled :: init() {
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: giveValues(string code, Vector &result) const {
-    if ( code.compare("numOfFriends") == 0 ) {
+    if ( code.compare("number_of_friends") == 0 ) {
         result.resize(0);
         result [ 0 ] = friends.size();
     } else {

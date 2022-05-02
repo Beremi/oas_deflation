@@ -11,7 +11,7 @@ class RigidBodyContact : public MechanicalElement
 {
 protected:
     std :: vector< Node * >vert;
-    double length, area, perimeter;
+    double length, area, perimeter, volumStrain;
     Point normal;
     Point t1, t2;
     Matrix R;

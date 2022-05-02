@@ -38,10 +38,6 @@ void MarsMaterialStatus :: giveValues(string code, Vector &result) const {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveGs();
-    } else if ( code.compare("E0") == 0 ) {
-        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
-        result.resize(1);
-        result [ 0 ] = m->giveE0();
     } else if ( ( code.compare("strainN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = temp_strain [ 0 ];
@@ -86,7 +82,6 @@ void MarsMaterialStatus :: init() {
         exit(1);
     }
 
-    volumetricStrain = 0;
 }
 
 //////////////////////////////////////////////////////////

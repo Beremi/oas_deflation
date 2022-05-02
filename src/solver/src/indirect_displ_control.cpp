@@ -37,10 +37,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
 
     streampos oldpos = inputfile.tellg();  // stores the position
     while ( getline(inputfile >> std :: ws, line) ) {
-        if ( line.empty() ) {
-            continue;
-        }
-        if ( line.at(0) == '#' ) {
+        if ( line.empty() || (line.at(0) == '#') ) {
             continue;
         }
         istringstream iss(line);
@@ -49,19 +46,23 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
             nodes_active [ nummaxunit - 1 ] = true;
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> c_nodes [ nummaxunit - 1 ] [ j ];
-                cout << "IDC node " << j << c_nodes [ nummaxunit - 1 ] [ j ] << endl;
+                //cout << "IDC node " << j << c_nodes [ nummaxunit - 1 ] [ j ] << endl;
             }
         } else if ( param.compare("idc_xcoords") == 0 ) {
             coords_active [ nummaxunit - 1 ] = true;
+            //cout << "IDC xcoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> xcoords [ nummaxunit - 1 ] [ j ];
-                cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
+                //cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
+            //cout << endl;
         } else if ( param.compare("idc_ycoords") == 0 ) {
+            //cout << "IDC ycoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> ycoords [ nummaxunit - 1 ] [ j ];
-                cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
+                //cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
+            //cout << endl;
         } else if ( param.compare("idc_zcoords") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> zcoords [ nummaxunit - 1 ] [ j ];
@@ -124,10 +125,10 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
 
 //////////////////////////////////////////////////////////
 double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
-    double lambdaABS = INFINITY;
     double df, dd;
     double pdispl = givePrescribedDisplacement(time);
-    double lambda = 0;
+    double lambda = INFINITY;
+    double lambda_temp;
     for ( unsigned c = 0; c < nummaxunit; c++ ) {
         dd = 0;
         df = 0;
@@ -135,12 +136,9 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
             dd += ( prev_displ [ c_DoFs [ c ] [ i ] ] ) * c_weights [ c ] [ i ];
             df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
         }
-        if ( abs( ( pdispl - dd ) / df ) < lambdaABS ) {
-            lambda = ( pdispl - dd ) / df;
-            lambdaABS = abs(lambda);
-        }
+        lambda_temp = ( pdispl - dd ) / df;
+        if (lambda_temp<lambda) lambda = lambda_temp;
     }
-
     return lambda;
 }
 

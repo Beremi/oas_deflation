@@ -36,6 +36,16 @@ double GeneralSpatialFunction :: giveNextEtreme(const double &t) const {
 #endif
 
 //////////////////////////////////////////////////////////
+double Function :: checkTimeBellowZero(double t) const {
+    if (!(t>=0)){
+        cerr << "Warning in Function: asking for value at time bellow zero (t=" << t << "), returning value at t=0" << endl;
+        return 0;  
+    }
+    return t;
+}
+
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // PIECE-WISE LINEAR FUNCTION
 void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
@@ -53,6 +63,8 @@ void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveY(double t) const {
+    t = Function::checkTimeBellowZero(t);
+
     if ( x.size() <= 0 ) {
         return 0;
     }
@@ -162,6 +174,8 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double ConstSawToothFunction :: giveY(double t) const {
+    t = Function::checkTimeBellowZero(t);
+
     if ( lower > 0 && t < abs(time_shift) ) {
         return multip * t * lower / ( abs(time_shift) );
     } else {
@@ -247,6 +261,8 @@ void VaryingSawToothFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double VaryingSawToothFunction :: giveY(double t) const {
+    t = PieceWiseLinearFunction::checkTimeBellowZero(t);
+
     // only multiply result of the constant saw tooth function by linearly increasing time function SawToot(t) * (t_m * t)
     double value = ConstSawToothFunction :: giveY(t);
     double value2 = PieceWiseLinearFunction :: giveY(t);
@@ -291,6 +307,8 @@ void SinusFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double SinusFunction :: giveY(double t) const {
+    t = Function::checkTimeBellowZero(t);
+
     return amplitude * sin(2 * M_PI * t / period) + shift;
 }
 
@@ -317,10 +335,7 @@ void FunctionContainer :: readFromFile(const string filename) {
     ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() ) {
-                continue;
-            }
-            if ( line.at(0) == '#' ) {
+            if ( line.empty() || (line.at(0) == '#') ) {
                 continue;
             }
             istringstream iss(line);
