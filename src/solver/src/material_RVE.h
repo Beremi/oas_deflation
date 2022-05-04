@@ -135,7 +135,7 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// DISCRETE MECHANICAL RVE
+// DISCRETE MECHANICAL COSSERAT RVE
 
 class DiscreteMechanicalRVEMaterial;
 class DiscreteMechanicalRVEMaterialStatus : public DiscreteTransportRVEMaterialStatus
@@ -171,7 +171,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////
-class DiscreteMechanicalRVEMaterial : public RVEMaterial
+class DiscreteMechanicalRVEMaterial : public DiscreteTransportRVEMaterial
 {
 protected:
     Matrix precompElastic, precompDamping, precompInertia;

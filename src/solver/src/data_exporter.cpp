@@ -38,8 +38,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
     saveStep_last = 0;
     saveSteps_idx = 0;
     saveTimes_idx = 0;
-    next_time_to_save = 0;
-    next_step_to_save = 0;
+    next_time_to_save = numeric_limits<double>::max();
+    next_step_to_save = numeric_limits<unsigned>::max();
     int num = 0;
     bool saveTimeStepWasConfigured = false;
     while ( !iss.eof() ) {
@@ -81,15 +81,31 @@ void DataExporter :: readFromLine(istringstream &iss) {
         }
     }
     if (!saveTimeStepWasConfigured) saveStep_each = 1; // save in each step because no export frequency was set
-    updateNextTimeToSave(0);
-    updateNextStepToSave(0);
+    next_time_to_save = saveTime_last + saveTime_each - 1e-12;
+    if (times_to_save.size() > 0) {
+        if (times_to_save[0] < next_time_to_save){
+            next_time_to_save = times_to_save[0] - 1e-12;
+            saveTimes_idx++;
+        }
+    } else {
+        saveTime_last = next_time_to_save;
+    }
+    next_step_to_save = saveStep_last + saveStep_each;
+    if (steps_to_save.size() > 0) {
+        if (steps_to_save[0] < next_step_to_save){
+            next_step_to_save = steps_to_save[0];
+            saveSteps_idx++;
+        }
+    } else {
+        saveStep_last = next_step_to_save;
+    }
 }
 
 //////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
-    if ( (time > next_time_to_save) || (step == next_step_to_save) ) {
-        updateNextTimeToSave(time);
-        updateNextStepToSave(step);
+    if ( (time >= next_time_to_save) || (step == next_step_to_save) ) {
+        step_last = step;
+        time_last = time;
         return true;
     } else {
         return false;
@@ -98,7 +114,7 @@ bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
 
 void DataExporter::updateNextTimeToSave(const double &time)
 {
-    if (time > next_time_to_save) {
+    if ((time > next_time_to_save)) {
         double t = saveTime_last + saveTime_each;
         if (saveTimes_idx < times_to_save.size()){
             if (t > times_to_save[saveTimes_idx]){
@@ -111,14 +127,13 @@ void DataExporter::updateNextTimeToSave(const double &time)
             saveTime_last = t;
         }
         next_time_to_save = t - 1e-12;
-        time_last = time;
     }
 }
 
 
 void DataExporter::updateNextStepToSave(const unsigned &step)
 {
-    if (step == next_step_to_save) {
+    if ((step == next_step_to_save)) {
         unsigned s = saveStep_last + saveStep_each;
         if (saveSteps_idx < steps_to_save.size()){
             if (s > steps_to_save[saveSteps_idx]){
@@ -131,7 +146,6 @@ void DataExporter::updateNextStepToSave(const unsigned &step)
             saveStep_last = s;
         }
         next_step_to_save = s;
-        step_last = step;
     }
 }
 
@@ -516,8 +530,15 @@ DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
-    saveTime_each = 0;
+    saveTime_each = numeric_limits<double>::max();
     saveTime_last = 0;
+    saveStep_each = numeric_limits<unsigned>::max();
+    saveStep_last = 0;
+    saveSteps_idx = 0;
+    saveTimes_idx = 0;
+    next_time_to_save = numeric_limits<double>::max();
+    next_step_to_save = numeric_limits<unsigned>::max();
+    saveStep_each = 1;
     unsigned DoFpos = 0;
     if ( codes [ 0 ].compare("ux") == 0 ) {
         DoFpos = 0;
@@ -1061,13 +1082,15 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
     char buffer [ 100 ];
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
-        ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app);
-        if ( outputfile.good() ) {
-            outputfile << std :: scientific;
-            outputfile << step << "\t" << time;
+        if ( ( * unique )->doExportNow(time, step) || exportAll ) {
+            ofstream outputfile;
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+            if ( outputfile.good() ){
+                outputfile << std :: scientific;
+                outputfile << step << "\t" << time;
+            }
+            outputfile.close();
         }
-        outputfile.close();
     }
 
     // export
@@ -1082,10 +1105,15 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
         outputfile.open( ( resultDir / buffer ).string(), ios :: app);
-        if ( outputfile.good() ) {
+        if ( outputfile.good() && (( * unique )->doExportNow(time, step) || exportAll) ) {
             outputfile << endl;
         }
         outputfile.close();
+    }
+
+    for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
+        (*d)->updateNextTimeToSave(time);
+        (*d)->updateNextStepToSave(step);
     }
 };
 

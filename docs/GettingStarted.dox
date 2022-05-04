@@ -205,7 +205,10 @@ runing container will perform tests:
 \code
 docker run a992 (first 3 characters are enough)
 \endcode
-
+connect to docker image bash
+\code
+docker run -it --entrypoint /bin/bash a992
+\endcode
 
 
 

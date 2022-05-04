@@ -267,6 +267,9 @@ void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
     FunctionContainer *funcs = RVE->giveFunctions();
     ConstraintContainer *constrs = RVE->giveConstraints();
 
+    RVEMaterial *macromat = static_cast< RVEMaterial * >( mat );
+    size_t ndim = macromat->giveNumOfDimensions();
+
     //mechanics
     JointDoF *jd;
     Node *masternode;
@@ -283,7 +286,7 @@ void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
                 vector< int >dBC, nBC;
                 dBC.resize( masternode->giveNumberOfDoFs(), -1 );   //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
                 nBC.resize(masternode->giveNumberOfDoFs(), -1);
-                dBC[0] = dBC[1] = dBC[2] = funcs->giveSize();
+                for(unsigned p=0; p<min(dBC.size(),ndim); p++) dBC[p] = funcs->giveSize(); //only pressure and translations
                 bc = new BoundaryCondition(masternode, dBC, nBC);
                 bconds->addBoundaryCondition(bc);
 
@@ -633,6 +636,8 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
+    //delete curvatutures according to an updated homogenization theory
+
 
     ( void ) timeStep;
 
@@ -666,7 +671,7 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
 
     transformStress();
 
-    
+    /*
     cout << "STRAIN MECH";
     for ( unsigned v = 0; v < temp_strain.size(); v++ ) {
       cout << " " << temp_strain [ v ];
@@ -678,7 +683,7 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
       cout << " " << temp_stress [ v ];
     }
     cout << endl;
-    
+    */
 
     return temp_stress;
 }
@@ -974,8 +979,6 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
         }
 
         macromaterial->setPrecomputedElasticTensor(Keff);
-        cout << Keff << endl;
-        exit(1);
         macromaterial->setPrecomputedDampingTensor( giveDampingTensor() );
         macromaterial->setPrecomputedInertiaTensor( giveInertiaTensor() );
 
@@ -989,6 +992,10 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: transformStrain() {
     local_strain = transf * temp_strain;
+    //also remove curvature because of update in homogenization procedure
+    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    unsigned ndim = macromat->giveNumOfDimensions();
+    for(unsigned i=ndim*ndim; i<local_strain.size(); i++) local_strain[i] = 0.;
 }
 
 //////////////////////////////////////////////////////////
