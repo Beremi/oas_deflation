@@ -479,8 +479,17 @@ ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned >
 
 //////////////////////////////////////////////////////////
 void ForceGauge :: init() {
-    saveTime_each = 0;
+    saveTime_each = numeric_limits<double>::max();
     saveTime_last = 0;
+    saveStep_each = numeric_limits<unsigned>::max();
+    saveStep_last = 0;
+    saveSteps_idx = 0;
+    saveTimes_idx = 0;
+    next_time_to_save = numeric_limits<double>::max();
+    next_step_to_save = 1;
+    saveStep_each = 1;
+    saveStep_last = 1;
+
     DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + nodes->giveNode(n [ i ])->giveOrderOfForceCode(codes [ 0 ]);
@@ -537,8 +546,10 @@ void DoFGauge :: init() {
     saveSteps_idx = 0;
     saveTimes_idx = 0;
     next_time_to_save = numeric_limits<double>::max();
-    next_step_to_save = numeric_limits<unsigned>::max();
+    next_step_to_save = 1;
     saveStep_each = 1;
+    saveStep_last = 1;
+
     unsigned DoFpos = 0;
     if ( codes [ 0 ].compare("ux") == 0 ) {
         DoFpos = 0;
@@ -616,8 +627,16 @@ void IntegrationPointGauge :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void IntegrationPointGauge :: init() {
-    saveTime_each = 0;
+    saveTime_each = numeric_limits<double>::max();
     saveTime_last = 0;
+    saveStep_each = numeric_limits<unsigned>::max();
+    saveStep_last = 0;
+    saveSteps_idx = 0;
+    saveTimes_idx = 0;
+    next_time_to_save = numeric_limits<double>::max();
+    next_step_to_save = 1;
+    saveStep_each = 1;
+    saveStep_last = 1;
 
     maxsize.resize(1);
     Vector res;
@@ -704,8 +723,17 @@ void DisplacementGauge :: readFromLine(istringstream &iss) {
 }
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: init() {
-    saveTime_each = 0;
+    saveTime_each = numeric_limits<double>::max();
     saveTime_last = 0;
+    saveStep_each = numeric_limits<unsigned>::max();
+    saveStep_last = 0;
+    saveSteps_idx = 0;
+    saveTimes_idx = 0;
+    next_time_to_save = numeric_limits<double>::max();
+    next_step_to_save = 1;
+    saveStep_each = 1;
+    saveStep_last = 1;
+
     //find element or closest point
     double dist;
     bool foundA = elems->findElementOwningPoint(& elemA, & natCoordsA, & pointA);
@@ -788,8 +816,16 @@ void SolverGauge :: readFromLine(istringstream &iss) {
 }
 //////////////////////////////////////////////////////////
 void SolverGauge :: init() {
-    saveTime_each = 0;
+    saveTime_each = numeric_limits<double>::max();
     saveTime_last = 0;
+    saveStep_each = numeric_limits<unsigned>::max();
+    saveStep_last = 0;
+    saveSteps_idx = 0;
+    saveTimes_idx = 0;
+    next_time_to_save = numeric_limits<double>::max();
+    next_step_to_save = 1;
+    saveStep_each = 1;
+    saveStep_last = 1;
 
     maxsize.resize(1);
     Vector res;
