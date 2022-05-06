@@ -482,7 +482,7 @@ void CoupledMarsMaterialStatus :: giveValues(string code, Vector &result) const 
         CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
         result [ 0 ] += m->giveBiotCoeff() * avgPressure; //stress without Biot's effect
     }
-    return MarsMaterialStatus :: giveValues(code, result);
+    else return MarsMaterialStatus :: giveValues(code, result);
 }
 
 
