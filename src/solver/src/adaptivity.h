@@ -64,6 +64,7 @@ private:
     unsigned remesherSeed = 1;
     bool reseted = true;
     std :: string additional_procedures = "none";
+    std :: vector< unsigned >materialsToSkip;
 
     //////////////////////////////////////////////////////////////////////////////
     void saveCenters(const std :: string &centersFName, const std :: vector< Point > &centersPoints) {
@@ -263,13 +264,22 @@ private:
         // only the elements in fine regions have nonlinear material
         Element *el;
         unsigned change = 0;
+        bool change_mat = true;
         for ( unsigned i = 0; i < BaseSolver :: elems->giveSize(); i++ ) {
-            // change = 0;
+            change_mat = true;
             el = BaseSolver :: elems->giveElement(i);
             if ( el->giveNode(0)->doesMechanics() && // NOTE JK: adaptivity is based on mechanical stress only
-                 isInsideRegions(this->fineRegions, el) ) {
-                if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II g - setMaterialInFineRegions " << change++ << ", " << el->giveName() << '\n'; }
-                el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
+                isInsideRegions(this->fineRegions, el) ) {
+                for ( auto const &mat_to_skip : this->materialsToSkip) {
+                    if ( el->giveMaterial() == masterModel->giveMaterials()->giveMaterial(mat_to_skip) ) {
+                        change_mat = false;
+                        break;
+                    }
+                }
+                if ( change_mat ) {
+                    if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II g - setMaterialInFineRegions " << change++ << ", " << el->giveName() << '\n'; }
+                    el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
+                }
             }
         }
     }
@@ -470,6 +480,13 @@ private:
                     iss >> this->remeshMaterialId;
                 } else if ( param.compare("additional_python_script") == 0 ) {
                     iss >> this->additional_procedures;
+                } else if ( param.compare("materialsToSkip") == 0 ) {
+                    unsigned num_mats, mat_id;
+                    iss >> num_mats;
+                    for ( unsigned im = 0; im < num_mats; im++ ) {
+                        iss >> mat_id;
+                        materialsToSkip.push_back(mat_id);
+                    }
                 } else if ( param.compare("pathToFineNodes") == 0 ) {
                     iss >> path;
                     this->pathToFineNodes = GlobPaths :: BASEDIR / path;
