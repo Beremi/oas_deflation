@@ -339,10 +339,10 @@ private:
     //////////////////////////////////////////////////////////////////////////////
     bool checkNodes() {
         if ( PRINT_TEST ) { std :: cout << "adaptivity check nodes II b" << '\n'; }
-        std :: vector< Matrix >nodal_stress;
-        nodal_stress.resize(BaseSolver :: nodes->giveSize(), Matrix :: Zero(this->dim, this->dim) );
+        //std :: vector< Matrix >nodal_stress;
+        //nodal_stress.resize(BaseSolver :: nodes->giveSize(), Matrix :: Zero(this->dim, this->dim) );
         // calculate nodal stresses
-        ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
+        //ExportAllElementsNodalStress(nodal_stress, BaseSolver :: giveDoFValues(), BaseSolver :: giveNodalForces(), BaseSolver :: nodes, BaseSolver :: elems, this->dim);
 
         std :: vector< Vector >tensorial_stress;
         BaseSolver :: elems->extrapolateValuesFromIntegrationPointsToNodes("solid_stress", tensorial_stress);
