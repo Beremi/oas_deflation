@@ -134,7 +134,7 @@ private:
         // }
         std :: vector< std :: unique_ptr< Region > >regionsToRemove;
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove.push_back( std :: make_unique< Sphere >(cent, this->radius2) );
+            regionsToRemove.push_back( std :: make_unique< Sphere >(cent, this->radius) );
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones

@@ -2389,7 +2389,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     #print('Updated elems: %d' %updatedElems)
     print('Wrong elems: %d' %wrongRidges)
 
-
+    """
     if len(mZ)>0:
         print ('Material zones detected for transport')
         if dim == 2:
@@ -2410,7 +2410,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                         elem.material = 3
                         #print(elem.material)
 
-
+    """
 
 
 
