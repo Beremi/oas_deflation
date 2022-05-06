@@ -247,6 +247,7 @@ public:
     fs :: path giveDirectoryPath() { return resultDir; }
     void appendToAllNames(std :: string app);
     void setSolver(Solver *s);
+    void updateAllTimeAndStepToSave(unsigned step, double time);
 protected:
 };
 
