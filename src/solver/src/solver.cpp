@@ -1243,6 +1243,7 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
         nodes->giveConstraints()->transformToConstraintSpace(Mred);
     }
+    v = Vector :: Zero(totalDoFnum);
     Vector v_red = Vector :: Zero(freeDoFnum);
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
