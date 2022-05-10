@@ -150,6 +150,11 @@ if __name__ == '__main__':
     radiusTransitional = float(sys.argv[5])
     useExistingFineNodes = bool(int(sys.argv[6]))
 
+    print ('Fine remesh radius: %s' %radiusRemesh)
+    print ('Gradient remesh radius: %s' %radiusTransitional)
+    print ('Fine remesh radius: %s' %radiusRemesh)
+    print ('Remesh mindist: %s' %float(sys.argv[9]))
+
     if useExistingFineNodes:
         # print("loading existing fine geoemtry <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
         # print("len nodes before: %d" % (len(node_coords_ini)))

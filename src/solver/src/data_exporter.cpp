@@ -103,7 +103,7 @@ void DataExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
-    if ( (time >= next_time_to_save) || (step == next_step_to_save) ) {
+    if ( (time >= next_time_to_save) || (step >= next_step_to_save) ) {
         step_last = step;
         time_last = time;
         return true;
@@ -1152,6 +1152,15 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
         (*d)->updateNextStepToSave(step);
     }
 };
+
+
+void ExporterContainer :: updateAllTimeAndStepToSave(unsigned step, double time){
+    std :: cout << "update time and step: " << time << " " << step << std :: endl;
+    for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
+        (*d)->updateNextTimeToSave(time);
+        (*d)->updateNextStepToSave(step);
+    }
+}
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: appendToAllNames(string app) {

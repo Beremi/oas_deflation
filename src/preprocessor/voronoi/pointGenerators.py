@@ -1313,7 +1313,8 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     for center in centersToRemesh:
         if not useExistingFineNodes:
             tr = 0
-            # print("generating in remesh area %d - " % (ci), end=' ' )
+            print("generating in remesh area %d - radius %s" %(ci,radiusRemesh), end=' ' )
+
             # print(center)
             ci += 1
             while (tr<trials):
@@ -1377,6 +1378,7 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
         tr = 0
         # for center in centersToRemesh:
         for center in centersPreviouslyRemeshed:
+            print("generating in transitional area %d - radius %s" %(ci,radiusTransitional), end=' ' )
             # if PRINT_TEST:
             #     print("generating in transitional area %d" % ci, end='\r' )
             tr = 0
@@ -1385,8 +1387,8 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                 tr = 0
                 distIsGood = False
                 while (distIsGood == False):
-                    if PRINT_TEST:
-                        print("generating tansitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
+                    #if PRINT_TEST:
+                        #print("generating transitional node %d, trials: %d/%d" % (len(node_coords), tr, trials), end='\r')
                     if (tr > trials): break
                     distIsGood = True
 
