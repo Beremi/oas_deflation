@@ -297,6 +297,40 @@ Matrix RigidBodyContact :: giveAMatrix(unsigned v, Point x) const {
 }
 
 //////////////////////////////////////////////////////////
+Matrix RigidBodyContact::giveMassMatrix() const {
+    Matrix M = Matrix::Zero(6 * (ndim - 1), 6 * (ndim - 1));
+    DisMechMaterialStatus *mechstat = static_cast<DisMechMaterialStatus *>(stats[0]);
+    double density = mechstat->giveDensity();
+    double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
+    double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
+    if (ndim == 2) {
+            /////INERTIA
+	    Point *A = nodes[0]->givePointPointer();
+	    Point *B = nodes[1]->givePointPointer();
+	    Point *C = vert[0]->givePointPointer();		
+            Point *D = vert[1]->givePointPointer();
+            /////MassMatrix
+            M(0, 0) = M(1, 1) = m0;
+            M(3, 3) = M(4, 4) = m1;
+            M(2, 2) = triInertia2D(A, C, D) * density;
+            M(5, 5) = triInertia2D(B, C, D) * density;
+            M(0, 2) = M(2, 0) = - m0 * ( ( A->y() + C->y() + D->y() ) / 3. - A->y() );
+            M(1, 2) = M(2, 1) = + m0 * ( ( A->x() + C->x() + D->x() ) / 3. - A->x() );
+            M(3, 5) = M(5, 3) = - m1 * ( ( B->y() + C->y() + D->y() ) / 3. - B->y() ); 
+            M(4, 5) = M(5, 4) = + m1 * ( ( B->x() + C->x() + D->x() ) / 3. - B->x() );
+    }
+    else if (ndim == 3) {
+	    /////MassMatrix
+            M(0, 0) = M(1, 1) = M(2, 2) = m0;
+            M(6, 6) = M(7, 7) = M(8, 8) = m1;
+            
+    }
+    ///cout << M << endl;
+    //exit(1);
+    return M;
+}
+
+//////////////////////////////////////////////////////////
 Vector RigidBodyContact :: giveContactStrainNT() const {
     return stats [ 0 ]->giveTempStrain();
 };
@@ -382,15 +416,6 @@ Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveDampingMatrix() const {
     return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
-}
-
-//////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveMassMatrix() const {
-    Matrix M = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
-    if ( ndim == 2 ) {} else if ( ndim == 3 )      {}
-    cout << M << endl;
-    exit(1);
-    return M;
 }
 
 //////////////////////////////////////////////////////////
@@ -1016,7 +1041,7 @@ void Transp1DCoupled :: init() {
 
 //////////////////////////////////////////////////////////
 void Transp1DCoupled :: giveValues(string code, Vector &result) const {
-    if ( code.compare("number_of_friends") == 0 ) {
+    if ( code.compare("numOfFriends") == 0 ) {
         result.resize(0);
         result [ 0 ] = friends.size();
     } else {

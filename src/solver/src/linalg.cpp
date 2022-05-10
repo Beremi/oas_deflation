@@ -200,3 +200,61 @@ double triArea3D(const Point *a, const Point *b, const Point *c) { //points
 
     //return abs(0.5 * pow(pow( ( b->y() - a->y() ) * ( c->z() - a->z() ) - ( b->z() - a->z() ) * ( c->y() - a->y() ), 2 ) + pow( ( b->z() - a->z() ) * ( c->x() - a->x() ) - ( b->x() - a->x() ) * ( c->z() - a->z() ), 2 ) + pow( ( b->x() - a->x() ) * ( c->y() - a->y() ) - ( b->y() - a->y() ) * ( c->x() - a->x() ), 2 ), 0.5) );
 }
+
+double triInertia2D(const Point *a, const Point *b, const Point *c) { 
+    double Ix; double Iy;
+    if (a->y() == b->y() && a->y() == c->y()) {
+        Ix = 0;
+    } else if (a->x() == b->x() && a->x() == c->x()) {
+        Ix = 0;
+    } else if (b->y() == c->y()) {
+        Ix = ( ( b->x() - a->x() ) / ( b->y() - a->y() ) * ( pow(b->y(),4) - pow(a->y(),4) ) / 4 ) - 	( a->y() * ( b->x() - a->x() ) / ( b->y() - a->y() ) * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 ) - ( ( c->x() - a->x() ) / ( c->y() - a->y() ) * ( pow(b->y(),4) - pow(a->y(),4) ) / 4 ) + ( a->y() * ( c->x() - a->x() ) / ( c->y() - a->y() ) * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 );
+    } else if (a->y() == b->y()) {
+        Ix = ( ( b->x() - c->x() ) / ( b->y() - c->y() ) * ( pow(c->y(),4) - pow(a->y(),4) ) / 4 ) - ( c->y() * ( b->x() - c->x() ) / ( b->y() - c->y() ) * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 ) + ( c->x() * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 ) - ( ( c->x() - a->x() ) / ( c->y() - a->y() ) * ( pow(c->y(),4) - pow(a->y(),4) ) / 4 ) + ( a->y() * ( c->x() - a->x() ) / ( c->y() - a->y() ) * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 ) - ( a->x() * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 );
+    } else if (a->y() == c->y()) {
+        Ix = ( ( c->x() - b->x() ) / ( c->y() - b->y() ) * ( pow(b->y(),4) - pow(a->y(),4) ) / 4 ) - ( b->y() * ( c->x() - b->x() ) / ( c->y() - b->y() ) * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 ) + ( b->x() * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 ) - ( ( b->x() - a->x() ) / ( b->y() - a->y() ) * ( pow(b->y(),4) - pow(a->y(),4) ) / 4 ) + ( a->y() * ( b->x() - a->x() ) / ( b->y() - a->y() ) * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 ) - ( a->x() * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 );
+    } else
+        Ix = ( ( b->x() - c->x() ) / ( b->y() - c->y() ) * ( pow(c->y(),4) - pow(a->y(),4) ) / 4 ) - ( c->y() * ( b->x() - c->x() ) / ( b->y() - c->y() ) * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 ) + ( c->x() * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 ) - ( ( c->x() - a->x() ) / ( c->y() - a->y() ) * ( pow(c->y(),4) - pow(a->y(),4) ) / 4 ) + ( a->y() * ( c->x() - a->x() ) / ( c->y() - a->y() ) * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 ) - ( a->x() * ( pow(c->y(),3) - pow(a->y(),3) ) / 3 ) - ( ( b->x() - c->x() ) / ( b->y() - c->y() ) * ( pow(b->y(),4) - pow(a->y(),4) ) / 4 ) + ( c->y() * ( b->x() - c->x() ) / ( b->y() - c->y() ) * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 ) - ( c->x() * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 ) + ( ( b->x() - a->x() ) / ( b->y() - a->y() ) * ( pow(b->y(),4) - pow(a->y(),4) ) / 4 ) - ( a->y() * ( b->x() - a->x() ) / ( b->y() - a->y() ) * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 ) + ( a->x() * ( pow(b->y(),3) - pow(a->y(),3) ) / 3 );
+
+    if (a->y() == b->y() && a->y() == c->y()) {
+        Iy = 0;
+    } else if (a->x() == b->x() && a->x() == c->x()) {
+        Iy = 0;
+    } else if (b->x() == c->x()) {
+        Iy = ( ( b->y() - a->y() ) / ( b->x() - a->x() ) * ( pow(b->x(),4) - pow(a->x(),4) ) / 4 ) - ( a->x() * ( b->y() - a->y() ) / ( b->x() - a->x() ) * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 ) - ( ( c->y() - a->y() ) / ( c->x() - a->x() ) * ( pow(b->x(),4) - pow(a->x(),4) ) / 4 ) + ( a->x() * ( c->y() - a->y() ) / ( c->x() - a->x() ) * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 );
+    } else if ( a->x() == b->x() ) {
+        Iy = ( ( b->y() - c->y() ) / ( b->x() - c->x() ) * ( pow(c->x(),4) - pow(a->x(),4) ) / 4 ) - ( c->x() * ( b->y() - c->y() ) / ( b->x() - c->x() ) * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 ) + ( c->y() * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 ) - ( ( c->y() - a->y() ) / ( c->x() - a->x() ) * ( pow(c->x(),4) - pow(a->x(),4) ) / 4 ) + ( a->x() * ( c->y() - a->y() ) / ( c->x() - a->x() ) * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 ) - ( a->y() * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 );                                                                                       
+    } else if ( a->x() == c->x() ) {
+        Iy = ( ( c->y() - b->y() ) / ( c->x() - b->x() ) * ( pow(b->x(),4) - pow(a->x(),4) ) / 4 ) - ( b->x() * ( c->y() - b->y() ) / ( c->x() - b->x() ) * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 ) + ( b->y() * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 ) - ( ( b->y() - a->y() ) / ( b->x() - a->x() ) * ( pow(b->x(),4) - pow(a->x(),4) ) / 4 ) + ( a->x() * ( b->y() - a->y() ) / ( b->x() - a->x() ) * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 ) - ( a->y() * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 );                                                                                       
+    } else
+        Iy = ( ( b->y() - c->y() ) / ( b->x() - c->x() ) * ( pow(c->x(),4) - pow(a->x(),4) ) / 4 ) - ( c->x() * ( b->y() - c->y() ) / ( b->x() - c->x() ) * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 ) + ( c->y() * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 ) - ( ( c->y() - a->y() ) / ( c->x() - a->x() ) * ( pow(c->x(),4) - pow(a->x(),4) ) / 4 ) + ( a->x() * ( c->y() - a->y() ) / ( c->x() - a->x() ) * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 ) - ( a->y() * ( pow(c->x(),3) - pow(a->x(),3) ) / 3 ) - ( (b->y() - c->y() ) / ( b->x() - c->x() ) * ( pow(b->x(),4) - pow(a->x(),4) ) / 4 ) + ( c->x() * ( b->y() - c->y() ) / ( b->x() - c->x() ) * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 ) - ( c->y() * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 ) + ( (b->y() - a->y() ) / ( b->x() - a->x() ) * ( pow(b->x(),4) - pow(a->x(),4) ) / 4 ) - ( a->x() * ( b->y() - a->y() ) / ( b->x() - a->x() ) * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 ) + ( a->y() * ( pow(b->x(),3) - pow(a->x(),3) ) / 3 );
+
+    double Iz = abs(Ix) + abs(Iy);
+    return Iz;
+}
+
+double tetraInertia3D(const Point *a, const Point *b, const Point *c, const Point *d) {
+    double Ixx; double Iyy; double Izz; double Ixy; double Ixz; double Iyz;
+    
+    return Ixx;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
