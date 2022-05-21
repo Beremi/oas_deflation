@@ -786,7 +786,7 @@ class Model:
 
         print('master %s' %self.master_folder)
         print('cwd %s' %os.getcwd())
-
+        """
         oneup = os.path.abspath(os.path.join(self.master_folder , '..'  ))
         #oneup = os.path.abspath(os.path.join(oneup, '..'  ))
         oneup = os.path.abspath(os.path.join(oneup, '..'  ))
@@ -804,7 +804,7 @@ class Model:
                    shutil.copy2(os.path.join(self.defaultFilesFolder ,fname), self.master_folder)
                 else:
                    shutil.copytree(df+'/'+fname,  './'+self.master_folder+'/'+fname)
-
+        """
         print ('done.')
 
         utilitiesGeom.checkSavedModel(self.master_folder, self.dimension, self.activeMechanics, self.activeTransport)

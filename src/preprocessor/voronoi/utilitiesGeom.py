@@ -430,11 +430,15 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     #if auxmechelements:
     #    saveNodes(master_folder, aux_nodes, "Particle", dim, auxNodesFile)
     #else:
-    saveNodes(master_folder, aux_nodes, "AuxNode", dim, auxNodesFile)
+
 
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
-        saveMechanicalElements(master_folder, ridges_out, old_node_count, dim, nodes_out, aux_nodes,mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled, auxmechelements=auxmechelements)
+        notchAuxNodes = saveMechanicalElements(master_folder, ridges_out, old_node_count, dim, nodes_out, aux_nodes,mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled, auxmechelements=auxmechelements)
+        for an in notchAuxNodes:
+            aux_nodes.append(an)
+        print('new aux nodes %s' %len(notchAuxNodes))
+        saveNodes(master_folder, aux_nodes, "AuxNode", dim, auxNodesFile)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
 
@@ -700,23 +704,51 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
             ridges_out[i][l] += vertIdxStart
 
 
-
-
     newAuxNodes = 0
-    if (activeTransport):
-        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
-    vertIdxStart += newAuxNodes
+
+    notchAuxNodes, notchAuxRidges = createNotchAuxNodes(ridges_out,nodes_out,aux_nodes, dim,notches=notches, auxmechelements=auxmechelements)
+    #notchAuxNodes = notchAuxRidges = []
+    for a in notchAuxNodes:
+        aux_nodes.append(a)
+        newAuxNodes +=1
+        vertIdxStart +=1
+
 
     for i in range (len(ridges_out)):
         ln = len(np.asarray(ridges_out[i]) )
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
 
+    for i in range (len(notchAuxRidges)):
+        ln = len(np.asarray(notchAuxRidges[i]) )
+        for l in range (3, ln):
+            notchAuxRidges[i][l] += newAuxNodes
+
+    #print(notchAuxRidges)
+
+
+    if (activeTransport):
+        newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
+    vertIdxStart += newAuxNodes
+
+
+
+    for i in range (len(ridges_out)):
+        ln = len(np.asarray(ridges_out[i]) )
+        for l in range (3, ln):
+            ridges_out[i][l] += newAuxNodes
+
+    for i in range (len(notchAuxRidges)):
+        ln = len(np.asarray(notchAuxRidges[i]) )
+        for l in range (3, ln):
+            notchAuxRidges[i][l] += newAuxNodes
 
     if activeMechanics:
         saveNodes(master_folder, nodes_out, "Particle",dim, nodesFile)
+
+        notchAuxNodes = saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, aux_nodes,mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled, auxmechelements=auxmechelements, notchAuxRidges=notchAuxRidges)
+
         saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
-        saveMechanicalElements(master_folder, ridges_out, node_count, dim, nodes_out, aux_nodes,mZ=mZ, notches = notches, randomizeMaterial=randomizeMaterial, coupled=coupled, auxmechelements=auxmechelements)
     else:
         saveNodes(master_folder, nodes_out, "AuxNode",dim, nodesFile)
 
@@ -730,7 +762,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
-
+    print('total pc %s' %totalPointCount)
 
     checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
@@ -1536,12 +1568,54 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
     print('done.')
     sys.stdout.flush()
 
+def createNotchAuxNodes(ridges_out,nodes,aux_nodes,dim,notches=None,auxmechelements=False):
+    if (notches!=None):
+        notchAuxNodes = []
+        aux_mechElemRidges = []
+        print('Creating notch aux nodes...' )
+
+        elementsWithoutNotch = []
+        newnotchridges = 0
+        for i in range (len(ridges_out)):
+            nA = int(ridges_out[i][0])
+            nB = int(ridges_out[i][1])
+
+            addElem = True
+            for notch in notches:
+                if ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
+
+                    if auxmechelements == True:
+                        delta = nodes[nB,:dim] - nodes[nA,:dim]
+                        middlenode = (nodes[nB,:dim] + nodes[nA,:dim])/2
+
+                        auxNodeA = nodes[nA,:dim] + delta * 0.5
+                        auxNodeB = nodes[nB,:dim] - delta * 0.5
 
 
-def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, aux_nodes, mZ=None, notches = None, randomizeMaterial = False, coupled = False, auxmechelements=False):
+                        newAuxMechElemA = ridges_out[i].copy()
+                        newAuxMechElemA[1] = len(nodes)+len(aux_nodes)+len(notchAuxNodes)
+                        aux_mechElemRidges.append( newAuxMechElemA.copy())
+                        newnotchridges +=1
+                        notchAuxNodes.append(auxNodeA)
+
+                        newAuxMechElemB = ridges_out[i].copy()
+                        newAuxMechElemB[0] = newAuxMechElemB[1]
+                        newAuxMechElemB[1] = len(nodes)+len(aux_nodes)+len(notchAuxNodes)
+                        aux_mechElemRidges.append( newAuxMechElemB.copy())
+                        newnotchridges +=1
+                        notchAuxNodes.append(auxNodeB)
+
+
+    print('created %s new notch aux nodes' %len(notchAuxNodes))
+    print('created %s new notch aux ridges' %len(aux_mechElemRidges))
+    return notchAuxNodes,aux_mechElemRidges
+
+
+
+
+
+def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, aux_nodes, mZ=None, notches = None, randomizeMaterial = False, coupled = False, auxmechelements=False, notchAuxRidges=[]):
     print('Saving MECH elements...', end ='')
-    print('MZ')
-    print(mZ)
     sys.stdout.flush()
     #filtering ridges to ridges with both nodes in sample -> mech elements
     mechElemRidges = []
@@ -1549,19 +1623,21 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
     for m in range (len(ridges_out)):
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
+
             mechElemRidges.append( ridges_out[m].copy() )
+            print('idx %s %s' %(len(mechElemRidges), ridges_out[m]))
+            print(node_count)
         #auxmech elements
         elif auxmechelements == True and (ridges_out[m][0] < node_count+len(aux_nodes) and ridges_out[m][1] < node_count+len(aux_nodes) and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
             aux_mechElemRidges.append( ridges_out[m].copy() )
-            #print( ridges_out[m])
+
+    for n in notchAuxRidges:
+        aux_mechElemRidges.append(n)
 
     print ('Mech elements: %d, aux_mechElemRidges: %d' %(len(mechElemRidges), len(aux_mechElemRidges)))
 
     trueMechElements = len(mechElemRidges)
-    auxMechElements = len(aux_mechElemRidges)
-
-    for r in aux_mechElemRidges:
-        mechElemRidges.append(r)
+    print('true mech %s' %trueMechElements)
 
     onlyMechNodesConnected = True
     elaElems = []
@@ -1591,7 +1667,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
 
 
-            if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) and (auxmechelements==False):
+            if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) :
                 onlyMechNodesConnected = False
 
             if (dim==2 or mZ[0][0]=='circle'):
@@ -1797,24 +1873,38 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
 
     if (notches!=None ):
+        notchAuxNodes = []
         print('Filtering out elements connecting notches...' )
+
         elementsWithoutNotch = []
+
         for i in range (len(mechElemRidges)):
-            nA = mechElemRidges[i][0]
-            nB = mechElemRidges[i][1]
+            nA = int(mechElemRidges[i][0])
+            nB = int(mechElemRidges[i][1])
 
             addElem = True
             for notch in notches:
                 if ((nA in notch[0] and nB in notch[1]) or ((nB in notch[0] and nA in notch[1]))):
                     addElem = False
+                    #mechElemRidges[i][-1] = 2
                     break
 
             if addElem == True:
                 elementsWithoutNotch.append(mechElemRidges[i])
 
         mechElemRidges = elementsWithoutNotch
+        trueMechElements = len(mechElemRidges)
+        print('true mech %s' %trueMechElements)
+
 
         print('done.')
+
+    auxMechElements = len(aux_mechElemRidges)
+
+    for r in aux_mechElemRidges:
+
+        mechElemRidges.append(r)
+
 
 
     if randomizeMaterial == True:
@@ -1850,9 +1940,9 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
             fl=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
             if coupled == False:
-                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='LTCBoundary\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+                np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundary\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             if coupled == True:
-                np.savetxt(fl, mechElemRidges[trueMechElements:0], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
+                np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             fl.close()
 
 
@@ -1887,6 +1977,8 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
 
     sys.stdout.flush()
+
+    return notchAuxNodes
 
 
 def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType='mars'):
@@ -2674,7 +2766,7 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
     print('\t\t %d vertices loaded.' %len(test_verticesCoords))
 
     test_solverNodeArray = np.vstack((test_nodeCoords, test_auxNodeCoords, test_verticesCoords))
-
+    print('total point count %s' %len(test_solverNodeArray))
     if (activeMechanics):
         print('Loading back mechanical elements...', end='')
         test_mechElems = []
