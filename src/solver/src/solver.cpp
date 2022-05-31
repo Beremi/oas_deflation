@@ -1232,6 +1232,7 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 
@@ -1259,10 +1260,16 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
         exit(1);
     }
 
-    alpha_m = 0.5 * ( 3. - rhoinfty ) / ( 1. + rhoinfty );
-    alpha_f = 1. / ( 1. + rhoinfty );
+    //alpha_m = 0.5 * ( 3. - rhoinfty ) / ( 1. + rhoinfty );
+    //alpha_f = 1. / ( 1. + rhoinfty );
+    //gamma = 1. / 2. - alpha_m + alpha_f;
+    //beta = 0.25 * pow(1. + alpha_m - alpha_f, 2);
+
+    //according to Chung and Hulbert, 1993, JAM
+    alpha_m = ( 2. * rhoinfty - 1. ) / ( 1. + rhoinfty );
+    alpha_f = rhoinfty / ( 1. + rhoinfty );
     gamma = 1. / 2. - alpha_m + alpha_f;
-    beta = 0.25 * pow(1. + alpha_m - alpha_f, 2);
+    beta = 1./4.*pow(1- alpha_m + alpha_f,2);
 }
 
 //////////////////////////////////////////////////////////

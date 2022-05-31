@@ -699,6 +699,7 @@ void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
     if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {
         unsigned size = element->giveDimension();
         result.resize(size);
+        if (size>temp_stress.size()) size = temp_stress.size();
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
         }
