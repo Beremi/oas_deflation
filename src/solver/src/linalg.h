@@ -51,6 +51,6 @@ double triArea3D(const Point *a, const Point *b, const Point *c);
 
 double triInertia2D(const Point *a, const Point *b, const Point *c);
 
-double tetraInertia3D(const Point *a, const Point *b, const Point *c, const Point *d);
+Matrix tetraInertia3D(const Point *a, const Point *b, const Point *c, const Point *d);
 
 #endif /* _LINALG_H */

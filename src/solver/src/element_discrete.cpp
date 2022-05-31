@@ -304,29 +304,99 @@ Matrix RigidBodyContact::giveMassMatrix() const {
     double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
     double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
     if (ndim == 2) {
-            /////INERTIA
+            // Define points
 	    Point *A = nodes[0]->givePointPointer();
 	    Point *B = nodes[1]->givePointPointer();
 	    Point *C = vert[0]->givePointPointer();		
             Point *D = vert[1]->givePointPointer();
-            /////MassMatrix
+            Point cg0 = ( (*A) + (*C) + (*D) ) / 3.;
+            Point cg1 = ( (*B) + (*C) + (*D) ) / 3.;
+            Point null(0,0,0);
+            Point C_ = (*C) - (*A);
+            Point D_ = (*D) - (*A);
+            Point C__ = (*C) - (*B);
+            Point D__ = (*D) - (*B);
+            // MassMatrix
             M(0, 0) = M(1, 1) = m0;
             M(3, 3) = M(4, 4) = m1;
-            M(2, 2) = triInertia2D(A, C, D) * density;
-            M(5, 5) = triInertia2D(B, C, D) * density;
-            M(0, 2) = M(2, 0) = - m0 * ( ( A->y() + C->y() + D->y() ) / 3. - A->y() );
-            M(1, 2) = M(2, 1) = + m0 * ( ( A->x() + C->x() + D->x() ) / 3. - A->x() );
-            M(3, 5) = M(5, 3) = - m1 * ( ( B->y() + C->y() + D->y() ) / 3. - B->y() ); 
-            M(4, 5) = M(5, 4) = + m1 * ( ( B->x() + C->x() + D->x() ) / 3. - B->x() );
+            M(2, 2) = density * ( triInertia2D(&null, &C_, &D_) ); // Inertia relative to the node A[0,0]
+            M(5, 5) = density * ( triInertia2D(&null, &C__, &D__) ); // Inertia relative to the node B[0,0]
+            M(0, 2) = M(2, 0) = - m0 * ( cg0.y() - A->y() );
+            M(1, 2) = M(2, 1) = + m0 * ( cg0.x() - A->x() );
+            M(3, 5) = M(5, 3) = - m1 * ( cg1.y() - B->y() ); 
+            M(4, 5) = M(5, 4) = + m1 * ( cg1.x() - B->x() );
     }
     else if (ndim == 3) {
-	    /////MassMatrix
-            M(0, 0) = M(1, 1) = M(2, 2) = m0;
-            M(6, 6) = M(7, 7) = M(8, 8) = m1;
+            // Define points
+	    Point *A = nodes[0]->givePointPointer();
+	    Point *B = nodes[1]->givePointPointer();
+	    Point *FaceCentroid = inttype->giveIPLocationPointer(0);
+	    // Mass
+	    M(0, 0) = M(1, 1) = M(2, 2) = m0;
+	    M(6, 6) = M(7, 7) = M(8, 8) = m1;
+	    int n = vert.size();
+	    for ( unsigned i = 0 ; i < n ; i++ ) {	
+            	Point *C = vert[i]->givePointPointer();
+           	Point *D;
+            	if (i == 0) {
+            	D = vert[n-1]->givePointPointer();
+            	} else {
+            	D = vert[i-1]->givePointPointer();
+            	}    
+                Point cg0 = ( (*A) + (*C) + (*D) + (*FaceCentroid) ) / 4.;
+                Point cg1 = ( (*B) + (*C) + (*D) + (*FaceCentroid) ) / 4.;
+            // Volume of tetrahedron 
+                Point A_ = (*A) - (*FaceCentroid);
+                Point B_ = (*B) - (*FaceCentroid);
+                Point C_ = (*C) - (*FaceCentroid);
+                Point D_ = (*D) - (*FaceCentroid);
+     	        double tetraVolume0 = A_.dot( C_.cross( D_ ) ) / 6.;
+    	        double tetraVolume1 = B_.dot( C_.cross( D_ ) ) / 6.;   
+//cout << tetraVolume0 << endl; 	    
+    	    // Inertia matrix relative to the centroid [0,0,0]	
+    	        Point A__ = (*A) - cg0;
+    	        Point C__ = (*C) - cg0;
+    	        Point D__ = (*D) - cg0;
+    	        Point FaceCentroid__ = (*FaceCentroid) - cg0;
+    	        Point B___ = (*B) - cg1;
+    	        Point C___ = (*C) - cg1;
+    	        Point D___ = (*D) - cg1;
+    	        Point FaceCentroid___ = (*FaceCentroid) - cg1;
+   	        Matrix Icg0 = tetraInertia3D(&A__, &C__, &D__, &FaceCentroid__);
+    	        Matrix Icg1 = tetraInertia3D(&B___, &C___, &D___, &FaceCentroid___);
+    	    
+	    // MassMatrix
+   	        M(3, 3) += density * ( Icg0(0, 0) + tetraVolume0 * ( pow((cg0.y() - A->y()),2) + pow((cg0.z() - A->z()),2) ) );
+    	        M(4, 4) += density * ( Icg0(1, 1) + tetraVolume0 * ( pow((cg0.x() - A->x()),2) + pow((cg0.z() - A->z()),2) ) );
+                M(5, 5) += density * ( Icg0(2, 2) + tetraVolume0 * ( pow((cg0.x() - A->x()),2) + pow((cg0.y() - A->y()),2) ) ); 
+                M(3, 4) = M(4, 3) += density * ( Icg0(0, 1) - tetraVolume0 * ( (cg0.x() - A->x()) * (cg0.y() - A->y()) ) );
+                M(3, 5) = M(5, 3) += density * ( Icg0(0, 2) - tetraVolume0 * ( (cg0.x() - A->x()) * (cg0.z() - A->z()) ) );
+                M(4, 5) = M(5, 4) += density * ( Icg0(1, 2) - tetraVolume0 * ( (cg0.y() - A->y()) * (cg0.z() - A->z()) ) ); 
             
+                M(9, 9) += density * ( Icg1(0, 0) + tetraVolume1 * ( pow((cg1.y() - B->y()),2) + pow((cg1.z() - B->z()),2) ) );
+                M(10, 10) += density * ( Icg1(1, 1) + tetraVolume1 * ( pow((cg1.x() - B->x()),2) + pow((cg1.z() - B->z()),2) ) );
+                M(11, 11) += density * ( Icg1(2, 2) + tetraVolume1 * ( pow((cg1.x() - B->x()),2) + pow((cg1.y() - B->y()),2) ) ); 
+                M(9, 10) = M(10, 9) += density * ( Icg1(0, 1) - tetraVolume1 * ( (cg1.x() - B->x()) * (cg1.y() - B->y()) ) );
+                M(9, 11) = M(11, 9) += density * ( Icg1(0, 2) - tetraVolume1 * ( (cg1.x() - B->x()) * (cg1.z() - B->z()) ) );
+                M(10, 11) = M(11, 10) += density * ( Icg1(1, 2) - tetraVolume1 * ( (cg1.y() - B->y()) * (cg1.z() - B->z()) ) ); 
+
+                M(0, 4) = M(4, 0) += + ( tetraVolume0 * density ) * ( cg0.z() - A->z() );
+                M(0, 5) = M(5, 0) += - ( tetraVolume0 * density ) * ( cg0.y() - A->y() );
+                M(1, 3) = M(3, 1) += - ( tetraVolume0 * density ) * ( cg0.z() - A->z() );
+                M(1, 5) = M(5, 1) += + ( tetraVolume0 * density ) * ( cg0.x() - A->x() );
+                M(2, 3) = M(3, 2) += + ( tetraVolume0 * density ) * ( cg0.y() - A->y() );
+                M(2, 4) = M(4, 2) += - ( tetraVolume0 * density ) * ( cg0.x() - A->x() );
+            
+                M(6, 10) = M(10, 6) += + ( tetraVolume1 * density ) * ( cg0.z() - B->z() );	
+                M(6, 11) = M(11, 6) += - ( tetraVolume1 * density ) * ( cg0.y() - B->y() );
+                M(7, 9) = M(9, 7) += - ( tetraVolume1 * density ) * ( cg0.z() - B->z() );
+                M(7, 11) = M(11, 7) += + ( tetraVolume1 * density ) * ( cg0.x() - B->x() );
+                M(8, 9) = M(9, 8) += + ( tetraVolume1 * density ) * ( cg0.y() - B->y() );
+                M(8, 10) = M(10, 8) += - ( tetraVolume1 * density ) * ( cg0.x() - B->x() );
+            }  
     }
-    ///cout << M << endl;
-    //exit(1);
+//    cout << M << endl;
+//    exit(1);
     return M;
 }
 
