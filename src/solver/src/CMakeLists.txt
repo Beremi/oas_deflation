@@ -18,7 +18,8 @@ set (solver_files
     material_misc.cpp
     material_slide_3_2.cpp
     material_RVE.cpp
-    mars_material.cpp
+    material_mars.cpp
+    material_ldpm.cpp
     fatigue_material.cpp
     node_container.cpp
     node.cpp

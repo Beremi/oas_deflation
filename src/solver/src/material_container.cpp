@@ -1,7 +1,8 @@
 #include "material_container.h"
 
 #include "material_RVE.h"
-#include "mars_material.h"
+#include "material_mars.h"
+#include "material_ldpm.h"
 #include "fatigue_material.h"
 #include "material_misc.h"
 #include "material_slide_3_2.h"
@@ -90,6 +91,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("MarsMaterial") == 0 ) {
                     MarsMaterial *newmat = new MarsMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("LDPMMaterial") == 0 ) {
+                    LDPMMaterial *newmat = new LDPMMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("CoupledMarsMaterial") == 0 ) {

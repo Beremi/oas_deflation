@@ -1,4 +1,4 @@
-#include "mars_material.h"
+#include "material_ldpm.h"
 #include "element_discrete.h"
 
 using namespace std;
@@ -6,13 +6,13 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // CUSATIS MATERIAL STATUS
 
-MarsMaterialStatus :: MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+LDPMMaterialStatus :: LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
     name = "MARS mat. status";
     RAND_H = 1.0;
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: giveValues(string code, Vector &result) const {
+void LDPMMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_crackOpening;
@@ -23,19 +23,19 @@ void MarsMaterialStatus :: giveValues(string code, Vector &result) const {
         result.resize(1);
         result [ 0 ] = temp_damage;
     } else if ( code.compare("ft") == 0 ) {
-        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveFt();
     } else if ( code.compare("Gt") == 0 ) {
-        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveGt();
     } else if ( code.compare("fs") == 0 ) {
-        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveFs();
     } else if ( code.compare("Gs") == 0 ) {
-        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveGs();
     } else if ( ( code.compare("strainN") == 0 ) ) {
@@ -50,7 +50,7 @@ void MarsMaterialStatus :: giveValues(string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: init() {
+void LDPMMaterialStatus :: init() {
     computeOmega0();
     maxEpsT = 0;
     maxEpsN = 0;
@@ -72,7 +72,7 @@ void MarsMaterialStatus :: init() {
         exit(EXIT_FAILURE);
     }
 
-    MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
     Ks = 2 * m->giveAlpha() * m->giveE0() / ( m->giveLcrs() / L - 1 );
     Kt = 2 * m->giveE0() / ( m->giveLcrt() / L - 1 );
     nt = log( Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
@@ -85,8 +85,8 @@ void MarsMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-double MarsMaterialStatus :: giveS0tension(double omega) const {
-    MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+double LDPMMaterialStatus :: giveS0tension(double omega) const {
+    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
     double s = sin(omega);
     double s2 = s * s;
@@ -106,8 +106,8 @@ double MarsMaterialStatus :: giveS0tension(double omega) const {
 }
 
 //////////////////////////////////////////////////////////
-double MarsMaterialStatus :: giveS0compression(double omega) const {
-    MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+double LDPMMaterialStatus :: giveS0compression(double omega) const {
+    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
     double fc = m->giveFc() * RAND_H;
 
@@ -115,7 +115,7 @@ double MarsMaterialStatus :: giveS0compression(double omega) const {
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: computeOmega0() {
+void LDPMMaterialStatus :: computeOmega0() {
     double o1 = 0.1;
     double o2 = -M_PI;
     omega0 = ( o1 + o2 ) / 2;
@@ -146,8 +146,8 @@ void MarsMaterialStatus :: computeOmega0() {
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: computeDamage(Vector strain) {
-    MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+void LDPMMaterialStatus :: computeDamage(Vector strain) {
+    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
     double epsN = strain [ 0 ];
     double epsT;
     if ( strain.size() == 2 ) {
@@ -216,7 +216,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
 
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: update() {
+void LDPMMaterialStatus :: update() {
     DisMechMaterialStatus :: update();
     damage = temp_damage;
     maxEpsN = temp_maxEpsN;
@@ -226,7 +226,7 @@ void MarsMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: resetTemporaryVariables() {
+void LDPMMaterialStatus :: resetTemporaryVariables() {
     DisMechMaterialStatus :: resetTemporaryVariables();
     temp_damage = damage;
     temp_maxEpsN = maxEpsN;
@@ -237,12 +237,12 @@ void MarsMaterialStatus :: resetTemporaryVariables() {
 
 
 //////////////////////////////////////////////////////////
-Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+Matrix LDPMMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
-        MarsMaterial *m = static_cast< MarsMaterial * >( mat );
+        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         if ( m->giveDamageResiduum() > 0.0 ) {
             return stiff * fmax(1 - temp_damage, m->giveDamageResiduum() );
         } else if ( m->giveStressResiduum() > 0.0 ) {
@@ -279,19 +279,19 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
     } else if ( type.compare("tangent") == 0 ) {
         return stiff * ( 1 - temp_damage );                                   //not implemented, used unloading
     } else {
-        cerr << "Error: MarsMaterialStatus does not provide '" << type << "' stiffness";
+        cerr << "Error: LDPMMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
 }
 
 //////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage( addEigenStrain(strain) );
-    return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+    return LDPMMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
     if ( temp_strain [ 0 ] > 0 ) {
         temp_crackOpening = ( L * temp_damage ) * temp_strain [ 0 ]; //normal opening only
@@ -303,12 +303,12 @@ Vector MarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
 }
 
 //////////////////////////////////////////////////////////
-std :: string MarsMaterialStatus :: giveLineToSave() const {
+std :: string LDPMMaterialStatus :: giveLineToSave() const {
     return "damage " + to_string_sci(this->damage) + " maxEpsN " + to_string_sci(this->maxEpsN) + " maxEpsT " + to_string_sci(this->maxEpsT);
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: setParameterValue(string code, double value) {
+void LDPMMaterialStatus :: setParameterValue(string code, double value) {
     if ( code.compare("volumetric_strain") == 0 ) {
         volumetricStrain = value;
     } else {
@@ -317,7 +317,7 @@ void MarsMaterialStatus :: setParameterValue(string code, double value) {
 }
 
 //////////////////////////////////////////////////////////
-void MarsMaterialStatus :: readFromLine(istringstream &iss) {
+void LDPMMaterialStatus :: readFromLine(istringstream &iss) {
     std :: string param;
     while ( !iss.eof() ) {
         iss >> param;
@@ -335,7 +335,7 @@ void MarsMaterialStatus :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-bool MarsMaterialStatus :: isElastic(const bool &now) const {
+bool LDPMMaterialStatus :: isElastic(const bool &now) const {
     if ( now && this->temp_damage != 0.0 ) {
         return false;
     } else if ( this->damage != 0.0 ) {
@@ -349,7 +349,7 @@ bool MarsMaterialStatus :: isElastic(const bool &now) const {
 // CUSATIS MATERIAL
 
 //////////////////////////////////////////////////////////
-void MarsMaterial :: readFromLine(istringstream &iss) {
+void LDPMMaterial :: readFromLine(istringstream &iss) {
     DisMechMaterial :: readFromLine(iss); //read elastic parameters
 
     iss.clear(); // clear string stream
@@ -397,14 +397,14 @@ void MarsMaterial :: readFromLine(istringstream &iss) {
 };
 
 //////////////////////////////////////////////////////////
-MaterialStatus *MarsMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    MarsMaterialStatus *newStatus = new MarsMaterialStatus(this, e, ipnum); //needs to be deleted manually
+MaterialStatus *LDPMMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    LDPMMaterialStatus *newStatus = new LDPMMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };
 
 
 //////////////////////////////////////////////////////////
-void MarsMaterial :: init() {
+void LDPMMaterial :: init() {
     // if variables not specified on the input, use default multipliers
     fs = ( fs == 0 ) ? 3 * ft : fs;
     Gs = ( Gs == 0 ) ? 16 * Gt : Gs;
@@ -417,140 +417,3 @@ void MarsMaterial :: init() {
     Lcrt = 2 * E0 * Gt / pow(ft, 2);
     Lcrs = 2 * alpha * E0 * Gs / pow(fs, 2);
 };
-
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// LDPM MATERIAL STATUS (2011)
-//////////////////////////////////////////////////////////
-
-LDPMMaterialStatus :: LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum) : MarsMaterialStatus(m, e, ipnum) {}
-
-//////////////////////////////////////////////////////////
-Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    computeDamage( addEigenStrain(strain) );
-    return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
-}
-
-//////////////////////////////////////////////////////////
-void LDPMMaterialStatus :: computeDamage(Vector strain) {
-    ( void ) strain;
-}
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// LDPM MATERIAL (2011)
-//////////////////////////////////////////////////////////
-void LDPMMaterial :: readFromLine(istringstream &iss) {
-    MarsMaterial :: readFromLine(iss); //read elastic parameters
-};
-
-
-
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// COUPLED CUSATIS MATERIAL STATUS
-//////////////////////////////////////////////////////////
-CoupledMarsMaterialStatus :: CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum) : MarsMaterialStatus(m, e, ipnum) {
-    name = "Coupled MARS mat. status";
-}
-
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: init() {
-    MarsMaterialStatus :: init();
-    avgPressure = 0;
-}
-
-
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: setParameterValue(string code, double value) {
-    if ( code.compare("pressure") == 0 ) {
-        avgPressure = value;
-    } else {
-        MarsMaterialStatus :: setParameterValue(code, value);
-    }
-}
-
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("pressure") == 0 || code.compare("avg_pressure") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = avgPressure;
-    } else if ( code.compare("solid_stress") == 0 ) {
-        MarsMaterialStatus :: giveValues("stress", result); //standard stress including Biot's effect
-        CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
-        result [ 0 ] += m->giveBiotCoeff() * avgPressure; //stress without Biot's effect
-    }
-    else return MarsMaterialStatus :: giveValues(code, result);
-}
-
-
-
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: updateStressByBiotEffect(double timeStep) {
-    ( void ) timeStep;
-    CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
-    temp_stress [ 0 ] -= m->giveBiotCoeff() * avgPressure;
-}
-
-//////////////////////////////////////////////////////////
-Vector CoupledMarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    MarsMaterialStatus :: giveStress(strain, timeStep);
-    updateStressByBiotEffect(timeStep);
-    return temp_stress;
-}
-
-//////////////////////////////////////////////////////////
-Vector CoupledMarsMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
-    updateStressByBiotEffect(timeStep);
-    return temp_stress;
-}
-
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: update() {
-    MarsMaterialStatus :: update();
-}
-
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterialStatus :: resetTemporaryVariables() {
-    MarsMaterialStatus :: resetTemporaryVariables();
-}
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// COUPLED CUSATIS MATERIAL
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterial :: init() {
-    MarsMaterial :: init();
-}
-
-//////////////////////////////////////////////////////////
-MaterialStatus *CoupledMarsMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    CoupledMarsMaterialStatus *newStatus = new CoupledMarsMaterialStatus(this, e, ipnum);
-    return newStatus;
-};
-
-//////////////////////////////////////////////////////////
-void CoupledMarsMaterial :: readFromLine(istringstream &iss) {
-    MarsMaterial :: readFromLine(iss);
-
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
-
-    string param;
-    bool bbiot = false;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("biot_coeff") == 0 ) {
-            bbiot = true;
-            iss >> biotCoeff;
-        }
-    }
-    if ( !bbiot ) {
-        cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-}
