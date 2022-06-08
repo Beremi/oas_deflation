@@ -48,6 +48,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     RigidBodyContactCoupled *newelem = new RigidBodyContactCoupled(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("LTCBoundary") == 0 ) {
+                    RigidBodyBoundary *newelem = new RigidBodyBoundary(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("LTCBoundaryCoupled") == 0 ) {
                     RigidBodyBoundaryCoupled *newelem = new RigidBodyBoundaryCoupled(ndim);
                     newelem->readFromLine(iss, nodes, matrs);

@@ -1471,8 +1471,7 @@ void RigidPlate :: setDirectionToFix(istringstream &iss) {
     string param;
     unsigned num;
     bool b;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while ( iss >> param ) {
         if ( param.compare("dirs") == 0 ) {
             iss >> num;
             activeDirs.resize(num);

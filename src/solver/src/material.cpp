@@ -55,6 +55,11 @@ void MaterialStatus :: giveValues(std :: string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
+void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
+    temp_stress = temp_strain = updt_stress = updt_strain = Vector::Zero(num); 
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT MATERIAL
 

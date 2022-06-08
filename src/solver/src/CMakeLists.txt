@@ -14,6 +14,7 @@ set (solver_files
     #linear_algebra.cpp
     #main.cpp
     material_container.cpp
+    material_coulomb_friction.cpp
     material.cpp
     material_misc.cpp
     material_slide_3_2.cpp

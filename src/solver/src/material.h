@@ -18,7 +18,7 @@ class MaterialStatus
 private:
 
 public:
-    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; };
+    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum;};
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
     virtual ~MaterialStatus() {};
     std :: string whoAmI() { return name; }
@@ -47,6 +47,7 @@ public:
     virtual Vector giveInternalSource()const { return Vector(0); };
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value) { ( void ) code; ( void ) value; };
+    virtual void initializeStressAndStrainVector(unsigned num);
 
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;

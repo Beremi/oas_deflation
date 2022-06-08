@@ -93,6 +93,30 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// RBSN BOUNDARY ELEMENT
+class RigidBodyBoundary : public RigidBodyContact
+{
+protected:
+    virtual void checkNodeType() const;
+    bool active;
+public:
+    RigidBodyBoundary(const unsigned dim);
+    ~RigidBodyBoundary() {};
+
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+
+    void init();
+
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // COUPLED RBSN BOUNDARY ELEMENT
 // takes boundary pressure (or similar) and transfer into internal force according to biot coeff
 class RigidBodyBoundaryCoupled : public RigidBodyContactCoupled

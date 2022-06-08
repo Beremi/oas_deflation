@@ -87,6 +87,12 @@ void Element :: init() {
         Bs [ k ] = giveBMatrix( inttype->giveIPLocationPointer(k) );
         Hs [ k ] = giveHMatrix( inttype->giveIPLocationPointer(k) );
     }
+
+    //set stress and strain vectors at integration points
+    for ( k = 0; k < inttype->giveNumIP(); k++ ) {
+        stats [k] ->initializeStressAndStrainVector(Bs [ k ].rows());
+    }
+
 }
 
 //////////////////////////////////////////////////////////

@@ -1,6 +1,8 @@
 #include "element_discrete.h"
 #include "element_container.h"
 #include "boundary_condition.h"
+#include "material_coulomb_friction.h"
+#include "model.h"
 
 using namespace std;
 
@@ -334,7 +336,7 @@ Matrix RigidBodyContact::giveMassMatrix() const {
 	    // Mass
 	    M(0, 0) = M(1, 1) = M(2, 2) = m0;
 	    M(6, 6) = M(7, 7) = M(8, 8) = m1;
-	    int n = vert.size();
+	    size_t n = vert.size();
 	    for ( unsigned i = 0 ; i < n ; i++ ) {	
             	Point *C = vert[i]->givePointPointer();
            	Point *D;
@@ -524,8 +526,8 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
     if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
     } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize( A.size() );
-        for ( d = 0; d < A.size(); d++ ) {
+        result.resize( ndim );
+        for ( d = 0; d < ndim; d++ ) {
             result [ d ].resize(2);
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
             result [ d ] [ 1 ] =  area * ipres [ 0 ] * abs(B [ d ]);
@@ -599,6 +601,133 @@ Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// RBSN BOUNDARY ELEMENT 
+RigidBodyBoundary :: RigidBodyBoundary(const unsigned dim) : RigidBodyContact(dim) {
+    name = "LTCBoundary";
+    active = false;
+    numOfNodes = 2; //will be in init to 1
+    nodes.resize(2); //will be in init to 1
+    name = "LTCBEAM";
+    vtk_cell_type = 1; //point
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyBoundary :: checkNodeType() const {
+    // do nothing here, since the check is already performed during init() together setting correct order of nodes
+};
+
+//////////////////////////////////////////////////////////
+void RigidBodyBoundary :: init() {
+    //check that nodes are one particle and one auxNode
+    if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
+        // this is fine, do nothing, just use it to check if particle and auxnode is there
+    } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
+        std :: reverse(this->nodes.begin(), this->nodes.end() );
+        std :: reverse(this->vert.begin(), this->vert.end() );
+    } else {
+        cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
+    }
+    // init of parent class must be done after reverse of node, because the geometrical matrices are calculated in init()
+    RigidBodyContact :: init();
+
+    CoulombFrictionMaterial* cfm = dynamic_cast<CoulombFrictionMaterial*>(mat);
+    if (cfm) active = true;
+
+    numOfNodes = 1;
+    nodes.resize(1);
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyBoundary :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
+    Vector ipres;
+    giveIPValues(code, 0, ipres);
+    Vector A = giveVectorToNode(0, 0);
+    size_t d;
+
+    weights.resize(2);
+    weights [ 0 ] = giveVolumeAssociatedWithNode(0);
+
+    if ( ipres.size() == 0 ) {   //empty answer
+        result.resize(0);
+    } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
+        result.resize( ndim );
+        for ( d = 0; d < ndim; d++ ) {
+            result [ d ].resize(1);
+            result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
+        }
+    } else if ( ipres.size() == A.size() ) { //vector times vector of same length, symmetrization
+        //transform result to xyz
+        Vector ipresglobal = transformVectorToXYZ(ipres);
+
+        //dyadic product
+        unsigned k = A.size();
+        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
+            result [ d ].resize(1);
+        }
+        //diagonal
+        for ( d = 0; d < k; d++ ) {
+            result [ d ] [ 0 ] =  area * ipresglobal [ d ] * A [ d ];
+        }
+        //off diagonal
+        if ( k == 2 ) {
+            result [ 2 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 1 ] ) / 2.;
+        } else if ( k == 3 ) {
+            result [ 3 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 2 ] + ipresglobal [ 2 ] * A [ 1 ] ) / 2.;
+            result [ 4 ] [ 0 ] =  area * ( ipresglobal [ 2 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 2 ] ) / 2.;
+            result [ 5 ] [ 0 ] =  area * ( ipresglobal [ 1 ] * A [ 0 ] + ipresglobal [ 0 ] * A [ 1 ] ) / 2.;
+        } else {
+            cerr << "Error in " << name << ": transformation of matrix of size " << k << " to vector not implemented" << endl;
+            exit(1);
+        }
+    } else {
+        cerr << "Error in " << name << ": dyadic product of vectors of different length in function extrapolateIPValuesToNodes" << endl;
+        exit(1);
+    }
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
+
+    ( void ) i;
+    ( void ) DoFs;
+    Vector f_ext = masterModel->giveSolver()->giveNodalForces();
+    double pressure = 0;
+    for (unsigned i=0; i<ndim; i++) pressure += f_ext[DoFids[i]]*normal[i];
+    pressure /= area;
+    if (active)  {
+        stats [ 0 ]->setParameterValue("normal_stress", pressure);
+        return RigidBodyContact :: giveStrain(i, DoFs);
+    }
+    else return Vector::Zero( ( this->ndim - 1 ) * 3);
+    
+};
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyBoundary :: giveHMatrix(const Point *x) const {
+    ( void ) x;
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
+}
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyBoundary :: giveBMatrix(const Point *x) const {
+    ( void ) x;
+    // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
+    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
+    // MyMatrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
+            B(i, j) = Aa(i, j);
+            // B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab(i, j);
+        }
+    }
+    return ( R * B ) / length;
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // RBSN BOUNDARY ELEMENT COUPLED
 RigidBodyBoundaryCoupled :: RigidBodyBoundaryCoupled(const unsigned dim) : RigidBodyContactCoupled(dim) {
     name = "LTCBoundaryCoupled";
@@ -609,6 +738,7 @@ void RigidBodyBoundaryCoupled :: checkNodeType() const {
     // do nothing here, since the check is already performed during init() together setting correct order of nodes
 };
 
+//////////////////////////////////////////////////////////
 void RigidBodyBoundaryCoupled :: init() {
     //check that nodes are one particle and one auxNode
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
@@ -637,12 +767,12 @@ void RigidBodyBoundaryCoupled :: extrapolateIPValuesToNodes(string code, vector<
     if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
     } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize( A.size() );
-        for ( d = 0; d < A.size(); d++ ) {
+        result.resize( ndim );
+        for ( d = 0; d < ndim; d++ ) {
             result [ d ].resize(1);
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
         }
-    } else if ( ipres.size() == A.size() ) { //vector times vector of same length, symmetrization
+    } else if ( ipres.size() == ndim ) { //vector times vector of same length, symmetrization
         //transform result to xyz
         Vector ipresglobal = transformVectorToXYZ(ipres);
 
@@ -775,7 +905,7 @@ Matrix Truss :: giveHMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
     Vector strain = Bs [ 0 ] * DoFs;
-    for ( size_t k = 1; k < strain.size(); k++ ) {
+    for ( size_t k = 1; k < (size_t)strain.size(); k++ ) {
         strain [ k ] = 0;                                  //only normal strain active in truss
     }
     return strain;
@@ -1089,8 +1219,8 @@ void Transp1D :: extrapolateIPValuesToNodes(string code, vector< Vector > &resul
     if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
     } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize( A.size() );
-        for ( d = 0; d < A.size(); d++ ) {
+        result.resize( ndim );
+        for ( d = 0; d < ndim; d++ ) {
             result [ d ].resize(2);
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
             result [ d ] [ 1 ] =  area * ipres [ 0 ] * abs(B [ d ]);
