@@ -117,7 +117,11 @@ class Model:
 
         self.masterSolver = self.masterMaterials = self.masterFunctions = False
 
+        self.supportDivision = None
+
         for i in range (len(r)):
+            if (r[i]=='supportDivision'):
+                self.supportDivision = int(r[i+1])
 
             if (r[i]=='rebarMinDist'):
                 self.rebarMinDist = float(r[i+1])
@@ -394,7 +398,7 @@ class Model:
 
     def run_2d_notched3pb(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes)
+        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodesr)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
 
     def run_3d_notched3pb(self, node_coords_init=None,modelnr=-1):
@@ -410,7 +414,7 @@ class Model:
 
         #(self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged)
         #(self.node_coords, self.mechBC_merged, self.mechInitC_merged,  self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.trsprtBC_merged)
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes, roughMinDistCoef=self.roughMinDistCoef, supportDivision=self.supportDivision)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
 
 
@@ -777,21 +781,21 @@ class Model:
 
         # if src and dest are same, copyfile raises SameFileError Exception https://docs.python.org/3/library/shutil.html#shutil.SameFileError
         # get only the filename from master file string https://docs.python.org/3/library/os.path.html#os.path.basename
-        """
+
         dst_file = os.path.join(self.master_folder, os.path.basename(master_file))
         if not os.path.isfile(dst_file):
             print ('Copying prep_master used...', end='')
             copyfile(master_file, dst_file)
-        """
+
 
         print('master %s' %self.master_folder)
         print('cwd %s' %os.getcwd())
-        """
-        oneup = os.path.abspath(os.path.join(self.master_folder , '..'  ))
-        #oneup = os.path.abspath(os.path.join(oneup, '..'  ))
-        oneup = os.path.abspath(os.path.join(oneup, '..'  ))
-        df = os.path.abspath(os.path.join(oneup, self.defaultFilesFolder))
 
+        #oneup = os.path.abspath(os.path.join(self.master_folder , '..'  ))
+        #oneup = os.path.abspath(os.path.join(oneup, '..'  ))
+        #df = os.path.abspath(os.path.join(oneup, self.defaultFilesFolder))
+
+        
         df = self.defaultFilesFolder
         print('df %s' %df)
 
@@ -804,7 +808,7 @@ class Model:
                    shutil.copy2(os.path.join(self.defaultFilesFolder ,fname), self.master_folder)
                 else:
                    shutil.copytree(df+'/'+fname,  './'+self.master_folder+'/'+fname)
-        """
+
         print ('done.')
 
         utilitiesGeom.checkSavedModel(self.master_folder, self.dimension, self.activeMechanics, self.activeTransport)

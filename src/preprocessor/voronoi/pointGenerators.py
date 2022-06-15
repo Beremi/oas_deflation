@@ -1311,13 +1311,17 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     # remesh fine areas
     ci = 0
     for center in centersToRemesh:
+        #print("center")
+        #print(useExistingFineNodes)
         if not useExistingFineNodes:
             tr = 0
-            print("generating in remesh area %d - radius %s" %(ci,radiusRemesh), end=' ' )
+            #print("sad")
+            print("generating in remesh area %d / %d - radius %s" %(ci,len(centersToRemesh),radiusRemesh))
 
-            # print(center)
+            #print(center)
             ci += 1
             while (tr<trials):
+                #print(tr)
                 tr = 0
                 distIsGood = False
                 while (distIsGood == False):
@@ -1373,11 +1377,13 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     ##########################################################################
     # print(centersPreviouslyRemeshed)
     # remesh the transitional areas - same centers, just different radius and only outer ring
+    #print("trans")
     if radiusTransitional > radiusRemesh:
         ci = 0
         tr = 0
         # for center in centersToRemesh:
         for center in centersPreviouslyRemeshed:
+            #print(center)
             print("generating in transitional area %d - radius %s" %(ci,radiusTransitional), end=' ' )
             # if PRINT_TEST:
             #     print("generating in transitional area %d" % ci, end='\r' )
