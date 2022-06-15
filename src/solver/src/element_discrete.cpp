@@ -725,6 +725,13 @@ Matrix RigidBodyBoundary :: giveBMatrix(const Point *x) const {
     return ( R * B ) / length;
 }
 
+//////////////////////////////////////////////////////////
+Matrix RigidBodyBoundary :: giveStiffnessMatrix(std :: string matrixType) const{
+    if (active) {
+        return RigidBodyContact::giveStiffnessMatrix(matrixType);
+    } else return Matrix::Zero(6,6);
+
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
