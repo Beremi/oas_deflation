@@ -26,7 +26,7 @@ public:
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
     virtual void giveFileName(unsigned step, char *buffer) const;
     std :: string giveFileName() const { return filename; };
-    virtual void init() {};
+    virtual void init();
     size_t giveMaxSize(unsigned c) const { return maxsize [ c ]; }
     void appendToName(std :: string app) { filename = filename + app; };
 protected:
@@ -38,18 +38,18 @@ protected:
     double multiplier;
 
     std :: vector< double > times_to_save; // vector to store times for export
-    double saveTime_each; // time period
-    double saveTime_last; // last saved time using time period
-    double time_last; // time of the last export
-    double next_time_to_save; // time to perform the next export
-    unsigned saveTimes_idx; // possition in vector of times_to_save
+    double saveTime_each = std :: numeric_limits<double>::max(); // time period
+    double saveTime_last = 0; // last saved time using time period
+    double time_last = 0; // time of the last export
+    double next_time_to_save = std :: numeric_limits<double>::max(); // time to perform the next export
+    unsigned saveTimes_idx = 0; // possition in vector of times_to_save
 
     std :: vector< unsigned > steps_to_save; // vector to store steps for export
-    unsigned saveStep_each; // step period
-    unsigned saveStep_last; // last saved step using step period
-    unsigned step_last; // step of the last export
-    unsigned next_step_to_save; // step to perform the next export
-    unsigned saveSteps_idx; // possition in vector of steps_to_save
+    unsigned saveStep_each = std :: numeric_limits<unsigned>::max(); // step period
+    unsigned saveStep_last = 0; // last saved step using step period
+    unsigned step_last = 0; // step of the last export
+    unsigned next_step_to_save = std :: numeric_limits<unsigned>::max(); // step to perform the next export
+    unsigned saveSteps_idx = 0; // possition in vector of steps_to_save
 };
 
 //////////////////////////////////////////////////////////
@@ -247,7 +247,7 @@ public:
     fs :: path giveDirectoryPath() { return resultDir; }
     void appendToAllNames(std :: string app);
     void setSolver(Solver *s);
-    void updateAllTimeAndStepToSave(unsigned step, double time);
+    void updateAllTimeAndStepToSave(unsigned step, double time) const;
 protected:
 };
 

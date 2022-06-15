@@ -32,24 +32,13 @@ void DataExporter :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
     string param;
     // initiate variables in case they are not specified
-    saveTime_each = numeric_limits<double>::max();
-    saveTime_last = 0;
-    saveStep_each = numeric_limits<unsigned>::max();
-    saveStep_last = 0;
-    saveSteps_idx = 0;
-    saveTimes_idx = 0;
-    next_time_to_save = numeric_limits<double>::max();
-    next_step_to_save = numeric_limits<unsigned>::max();
     int num = 0;
-    bool saveTimeStepWasConfigured = false;
     while ( !iss.eof() ) {
         iss >> param;
         if ( param.compare("saveEveryTime") == 0 || param.compare("saveEvery") == 0 || param.compare("timeEach") == 0 ) {
             iss >> saveTime_each;
-            saveTimeStepWasConfigured = true;
         } else if ( param.compare("saveEveryStep") == 0 ) {
             iss >> saveStep_each;
-            saveTimeStepWasConfigured = true;
         } else if ( param.compare("saveTimes") == 0 ) {
             iss >> num;
             double val = 0;
@@ -59,7 +48,6 @@ void DataExporter :: readFromLine(istringstream &iss) {
             }
             sort(times_to_save.begin(), times_to_save.end()); // sort times
             times_to_save.erase(std::unique(times_to_save.begin(), times_to_save.end()), times_to_save.end()); // store only unique values
-            saveTimeStepWasConfigured = true;
         } else if ( param.compare("saveSteps") == 0 ) {
             iss >> num;
             unsigned val = 0;
@@ -69,7 +57,6 @@ void DataExporter :: readFromLine(istringstream &iss) {
             }
             sort(steps_to_save.begin(), steps_to_save.end()); // sort steps
             steps_to_save.erase(std::unique(steps_to_save.begin(), steps_to_save.end()), steps_to_save.end()); // store only unique values
-            saveTimeStepWasConfigured = true;
         } else if ( param.compare("timeShift") == 0 ) {
             iss >> saveTime_last;
         } else if ( param.compare("stepShift") == 0 ) {
@@ -80,7 +67,12 @@ void DataExporter :: readFromLine(istringstream &iss) {
             iss >> multiplier;
         }
     }
-    if (!saveTimeStepWasConfigured) saveStep_each = 1; // save in each step because no export frequency was set
+}
+
+//////////////////////////////////////////////////////////
+void DataExporter :: init() {
+    if (times_to_save.size() == 0 && steps_to_save.size() == 0 &&
+        saveStep_each == std :: numeric_limits<unsigned>::max() && saveTime_each == std :: numeric_limits<double>::max()) {saveStep_each = 1;} // save in each step because no export frequency was set
     next_time_to_save = saveTime_last + saveTime_each - 1e-12;
     if (times_to_save.size() > 0) {
         if (times_to_save[0] < next_time_to_save){
@@ -103,7 +95,7 @@ void DataExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
-    if ( (time >= next_time_to_save) || (step >= next_step_to_save) ) {
+    if ( (time >= next_time_to_save) || (step == next_step_to_save) ) {
         step_last = step;
         time_last = time;
         return true;
@@ -338,6 +330,7 @@ void TXTIntegrationPointExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void TXTIntegrationPointExporter :: init() {
+    DataExporter :: init();
     unsigned ncod = codes.size();
     maxsize.resize(ncod);
     Vector res;
@@ -479,16 +472,7 @@ ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned >
 
 //////////////////////////////////////////////////////////
 void ForceGauge :: init() {
-    saveTime_each = numeric_limits<double>::max();
-    saveTime_last = 0;
-    saveStep_each = numeric_limits<unsigned>::max();
-    saveStep_last = 0;
-    saveSteps_idx = 0;
-    saveTimes_idx = 0;
-    next_time_to_save = numeric_limits<double>::max();
-    next_step_to_save = 1;
-    saveStep_each = 1;
-    saveStep_last = 1;
+    DataExporter :: init();
 
     DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
@@ -539,16 +523,7 @@ DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
-    saveTime_each = numeric_limits<double>::max();
-    saveTime_last = 0;
-    saveStep_each = numeric_limits<unsigned>::max();
-    saveStep_last = 0;
-    saveSteps_idx = 0;
-    saveTimes_idx = 0;
-    next_time_to_save = numeric_limits<double>::max();
-    next_step_to_save = 1;
-    saveStep_each = 1;
-    saveStep_last = 1;
+    DataExporter :: init();
 
     unsigned DoFpos = 0;
     if ( codes [ 0 ].compare("ux") == 0 ) {
@@ -627,16 +602,7 @@ void IntegrationPointGauge :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void IntegrationPointGauge :: init() {
-    saveTime_each = numeric_limits<double>::max();
-    saveTime_last = 0;
-    saveStep_each = numeric_limits<unsigned>::max();
-    saveStep_last = 0;
-    saveSteps_idx = 0;
-    saveTimes_idx = 0;
-    next_time_to_save = numeric_limits<double>::max();
-    next_step_to_save = 1;
-    saveStep_each = 1;
-    saveStep_last = 1;
+    DataExporter :: init();
 
     maxsize.resize(1);
     Vector res;
@@ -723,16 +689,7 @@ void DisplacementGauge :: readFromLine(istringstream &iss) {
 }
 //////////////////////////////////////////////////////////
 void DisplacementGauge :: init() {
-    saveTime_each = numeric_limits<double>::max();
-    saveTime_last = 0;
-    saveStep_each = numeric_limits<unsigned>::max();
-    saveStep_last = 0;
-    saveSteps_idx = 0;
-    saveTimes_idx = 0;
-    next_time_to_save = numeric_limits<double>::max();
-    next_step_to_save = 1;
-    saveStep_each = 1;
-    saveStep_last = 1;
+    DataExporter :: init();
 
     //find element or closest point
     double dist;
@@ -816,16 +773,7 @@ void SolverGauge :: readFromLine(istringstream &iss) {
 }
 //////////////////////////////////////////////////////////
 void SolverGauge :: init() {
-    saveTime_each = numeric_limits<double>::max();
-    saveTime_last = 0;
-    saveStep_each = numeric_limits<unsigned>::max();
-    saveStep_last = 0;
-    saveSteps_idx = 0;
-    saveTimes_idx = 0;
-    next_time_to_save = numeric_limits<double>::max();
-    next_step_to_save = 1;
-    saveStep_each = 1;
-    saveStep_last = 1;
+    DataExporter :: init();
 
     maxsize.resize(1);
     Vector res;
@@ -1147,15 +1095,11 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
         outputfile.close();
     }
 
-    for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        (*d)->updateNextTimeToSave(time);
-        (*d)->updateNextStepToSave(step);
-    }
+    updateAllTimeAndStepToSave(step, time);
 };
 
 
-void ExporterContainer :: updateAllTimeAndStepToSave(unsigned step, double time){
-    std :: cout << "update time and step: " << time << " " << step << std :: endl;
+void ExporterContainer :: updateAllTimeAndStepToSave (unsigned step, double time) const{
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
         (*d)->updateNextTimeToSave(time);
         (*d)->updateNextStepToSave(step);

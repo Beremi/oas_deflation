@@ -228,6 +228,10 @@ docker run -it --entrypoint /bin/bash a992
                 cmake --build . --parallel 4
             \endcode
         - to enable GUI -DVTK_MODULE_ENABLE_VTK_RenderingContextOpenGL2=YES
+        - cmake opengl error - try install freeglut3-dev
+            \code{.sh}
+              sudo apt install freegl3-dev
+            \endcode
 - enable VTK in current build configuration
   \code{.sh}
     cmake -DUSE_VTK=ON .

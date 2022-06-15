@@ -34,6 +34,7 @@ class AdaptiveSolver : public BaseSolver
 private:
     std :: string prepInput; ///> modelName used in preprocessor
     std :: string remeshDir;
+    std :: string python_cmd = "python";
     fs :: path preprocessorDir;
 
     fs :: path nodeFile; // path to initial node file - particles must be in a single file
@@ -209,7 +210,7 @@ private:
             std :: cerr << "cannot run system command" << '\n';
             exit(EXIT_FAILURE);
         }
-        std :: string remeshCmd = "python " + ( this->preprocessorDir / "Remesh.py" ).string() +
+        std :: string remeshCmd = python_cmd + " " + ( this->preprocessorDir / "Remesh.py" ).string() +
                                   " " + this->prepInput + " " + this->remeshDir + " " +
                                   GlobPaths :: BASEDIR.string() + " " +
                                   std :: to_string(this->radius) + " " +
@@ -235,7 +236,7 @@ private:
         }
 
         if ( this->additional_procedures != "none" ) {
-            remeshCmd = "python " + this->additional_procedures +
+            remeshCmd = python_cmd + " " + this->additional_procedures +
             " " + this->remeshDir;
 
             std :: cout << "additional_python_script cmd " << remeshCmd << '\n';
@@ -458,6 +459,8 @@ private:
                 } else if ( param.compare("radius2") == 0 ) {
                     iss >> this->radius2;
                     br2 = true;
+                } else if ( param.compare("python") == 0 ) {
+                    iss >> this->python_cmd;
                 } else if ( param.compare("preprocessorDir") == 0 ) {
                     iss >> path;
                     this->preprocessorDir = fs :: absolute(path);
