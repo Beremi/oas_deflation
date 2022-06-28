@@ -2,6 +2,7 @@
 #include "element_discrete.h"
 #include "element_continuous.h"
 #include "element_polyhedral.h"
+#include "element_LDPM.h"
 #include <algorithm>
 #include "model.h"
 
@@ -46,6 +47,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     elems.push_back(newelem);
                 } else if ( elemType.compare("LTCBEAMCoupled") == 0 ) {
                     RigidBodyContactCoupled *newelem = new RigidBodyContactCoupled(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMTetra") == 0 ) {
+                    LDPMTetra *newelem = new LDPMTetra(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("LTCBoundary") == 0 ) {

@@ -6,6 +6,7 @@ set (solver_files
     element_container.cpp
     element.cpp
     element_discrete.cpp
+    element_LDPM.cpp
     element_continuous.cpp
     element_polyhedral.cpp
     geometry.cpp

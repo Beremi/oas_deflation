@@ -164,3 +164,13 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
         exit(1);
     }
 }
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TWELVE POINT INTEGRATION IN LDPM SIMPLEX
+//
+//////////////////////////////////////////////////////////
+void IntegrLDPM12 :: init() {
+    ip_locs.resize(12);
+    ip_weights.resize(12);
+}

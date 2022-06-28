@@ -1,5 +1,6 @@
 #include "vtk_exporter.h"
 #include "element_discrete.h"
+#include "element_LDPM.h"
 #include "misc.h"
 
 using namespace std;
@@ -230,18 +231,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 #endif
 }
 
-//////////////////////////////////////////////////////////
-// function tahat calculates displacement of any point of rigid body from its rotations and
-Point calculateVertexDisplacement(const RigidBodyContact *rbc, unsigned v, const Point *x, const Vector &DoFs, const unsigned &dim) {
-    Matrix A = rbc->giveAMatrix(v, * x);
-    unsigned DofsPerNode = ( dim - 1 ) * 3;
-    Vector U = Vector :: Zero(DofsPerNode);
-    for ( unsigned i = 0; i < DofsPerNode; i++ ) {
-        U [ i ]  = DoFs [ rbc->giveNode(v)->giveStartingDoF() + i ];
-    }
-    Vector P = A * U;
-    return Point(P [ 0 ], P [ 1 ], P.size() > 2 ? P [ 2 ] : 0);
-}
+
 //////////////////////////////////////////////////////////
 
 // RIGID POLYGONS TO VTU FILE
@@ -387,19 +377,24 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
 
     vtkSmartPointer< vtkPoints >points = vtkSmartPointer< vtkPoints > :: New();
 
-    vector< RigidBodyContact * >exportedElems;
-    vector< Node * >vertices;
+    vector< RigidBodyContact * >exportedElemsRBC;
+    vector< LDPMTetra * >exportedElemsTET;
+    vector< Node * >vertices, elemnodes;
     Point *pp;
     unsigned pointID = 0;
     RigidBodyContact *rbc;
+    LDPMTetra *tet;
     unsigned celtype = 3;     //line
+    vector<unsigned> fcodes;
+    vector<unsigned> ncodes;
+
     if ( dim == 3 ) {
         celtype = 7;            //polygon
     }
     for ( vector< Element * > :: const_iterator ee = elems->begin(); ee != elems->end(); ++ee ) {
         rbc = dynamic_cast< RigidBodyContact * >( * ee );
         if ( rbc ) {
-            exportedElems.push_back(rbc);
+            exportedElemsRBC.push_back(rbc);
             vertices = rbc->giveVertices();
             vtkSmartPointer< vtkIdList >elindicesA = vtkSmartPointer< vtkIdList > :: New();
             vtkSmartPointer< vtkIdList >elindicesB = vtkSmartPointer< vtkIdList > :: New();
@@ -416,36 +411,82 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             unstructuredGrid->InsertNextCell(celtype, elindicesB);
         }
     }
+    for ( vector< Element * > :: const_iterator ff = elems->begin(); ff != elems->end(); ++ff ) {
+            tet = dynamic_cast< LDPMTetra * >( * ff);
+            if ( tet ) {
+                exportedElemsTET.push_back(tet);
+                vertices = tet->giveVertices();            
+                for (unsigned i=0; i<tet->giveNumOfFacets(); i++){
+                    fcodes = tet->giveFacetVertCodes(i);
+                    vtkSmartPointer< vtkIdList >elindicesA = vtkSmartPointer< vtkIdList > :: New();
+                    vtkSmartPointer< vtkIdList >elindicesB = vtkSmartPointer< vtkIdList > :: New();
+                    for ( auto &p:fcodes ) {
+                        pp = vertices[p]->givePointPointer();
+                        elindicesA->InsertNextId(pointID);
+                        elindicesB->InsertNextId(pointID + 1);
+                        points->InsertNextPoint( pp->x(), pp->y(), pp->z() );   //every node twice
+                        points->InsertNextPoint( pp->x(), pp->y(), pp->z() );   //every node twice
+                        pointID++;
+                        pointID++;
+                    }
+                    unstructuredGrid->InsertNextCell(celtype, elindicesA);
+                    unstructuredGrid->InsertNextCell(celtype, elindicesB);
+                }                
+            }
+    }
     unstructuredGrid->SetPoints(points);
     unsigned numOfPoints = pointID;
 
     unsigned i, j;
     size_t msize;
     vector< Vector >data;
-    unsigned p = 0;
+    unsigned p;
     // ****************** DISPLACEMENTS
     Vector dataA, dataB;
-    Point A;
-    data.resize( nodes->giveSize() );
     msize = 3;
     vtkSmartPointer< vtkDoubleArray >pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
     pointDataArray->SetName("displacements");
     pointDataArray->SetNumberOfComponents(msize);
     pointDataArray->SetNumberOfValues(numOfPoints * msize);
     pointID = 0;
-    for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee ) {
-        vertices = ( * ee )->giveVertices();
+    Point displ;
+    Particle *part;
+    for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElemsRBC.begin(); ee != exportedElemsRBC.end(); ++ee ) {
+        vertices = (*ee)->giveVertices();
         for ( auto &q:vertices ) {
             pp = q->givePointPointer();
             for ( unsigned k = 0; k < 2; k++ ) {
-                A = calculateVertexDisplacement(* ee, k, pp, DoFs, dim);
+                part = static_cast<Particle*>(rbc->giveNode(k));
+                displ = part->calculateRigidBodyMotionPoint(pp,DoFs);           
                 for ( p = 0; p < msize; p++ ) {
-                    pointDataArray->SetValue( msize * pointID + p,   A(p) );
+                    pointDataArray->SetValue( msize * pointID + p,   displ(p) );
                 }
                 pointID++;
             }
         }
     }
+    for ( vector< LDPMTetra * > :: const_iterator ee = exportedElemsTET.begin(); ee != exportedElemsTET.end(); ++ee ) {
+        vertices = tet->giveVertices();            
+        elemnodes = (*ee)->giveNodes();
+        for (unsigned h=0; h<tet->giveNumOfFacets(); h++){
+            fcodes = tet->giveFacetVertCodes(h);
+            ncodes = tet->giveFacetNodeCodes(h);
+            for ( auto &q:fcodes ) {
+                pp = vertices[q]->givePointPointer();
+                for ( unsigned k = 0; k < 2; k++ ) {
+                    part = static_cast<Particle*>(elemnodes[ncodes[k]]);
+                    displ = part->calculateRigidBodyMotionPoint(pp,DoFs);                     
+                    for ( p = 0; p < msize; p++ ) {
+                        pointDataArray->SetValue( msize * pointID + p,   displ(p) );
+                    }
+                    pointID++;
+                }
+            }
+        }
+    }
+
+
+
     unstructuredGrid->GetPointData()->AddArray(pointDataArray);
 
     // ****************** cell data
@@ -453,7 +494,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     for ( p = 0; p < cell_data_size; p++ ) {
         msize = 1;
         i = 0;
-        for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee, i++ ) {
+        for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElemsRBC.begin(); ee != exportedElemsRBC.end(); ++ee, i++ ) {
             ( * ee )->giveValues(codes [ p ].c_str(), data [ i ]);
             msize = max< size_t >( msize, data [ i ].size() );
         }
@@ -497,7 +538,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         cellDataArray->SetNumberOfComponents(msize);
         cellDataArray->SetNumberOfValues(2 * elems->giveSize() * msize);
         i = 0;
-        for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElems.begin(); ee != exportedElems.end(); ++ee, i++ ) {
+        for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElemsRBC.begin(); ee != exportedElemsRBC.end(); ++ee, i++ ) {
             dataA = data [ ( * ee )->giveNode(0)->giveID() ];
             dataB = data [ ( * ee )->giveNode(1)->giveID() ];
             for ( j = 0; j < min< size_t >( msize, dataA.size() ); j++ ) {

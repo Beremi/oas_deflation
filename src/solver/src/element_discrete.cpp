@@ -89,8 +89,10 @@ Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
     Matrix B = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
+    Particle *a = static_cast<Particle *>(nodes[0]);
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
+    a = static_cast<Particle *>(nodes[1]);
+    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -214,9 +216,6 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
         if ( ( normal - arbit ).norm() < 1e-3 ) {
             t1 = arbit.cross(normal);
-            t1.normalize();
-            t2 = normal.cross(t1);
-            t2.normalize();
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
             if ( abs( normal.x() ) > 1e-3 ) {
@@ -227,8 +226,9 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
                 t1 = Point( 1, 0, -normal.x() / normal.z() );
             }
         }
-        t1 = t1 / t1.norm();
+        t1.normalize();
         t2 = normal.cross(t1);
+
         R = Matrix :: Zero(3, 3);
         R(0, 0) = normal.x();
         R(0, 1) = normal.y();
@@ -273,29 +273,6 @@ void RigidBodyContact :: init() {
 Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
     ( void ) x;
     return Matrix :: Zero(12, 12);  // NOTE JK: this should be based on ndim
-}
-
-
-//////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveAMatrix(unsigned v, Point x) const {
-    Matrix A = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
-    if ( ndim == 3 ) {
-        A(0, 0) = A(1, 1) = A(2, 2) = 1;
-        A(1, 3) = nodes [ v ]->givePointPointer()->z() - x.z();
-        A(0, 4) = -A(1, 3);
-        A(2, 3) = x.y() - nodes [ v ]->givePointPointer()->y();
-        A(0, 5) = -A(2, 3);
-        A(2, 4) = nodes [ v ]->givePointPointer()->x() - x.x();
-        A(1, 5) = -A(2, 4);
-    } else if ( ndim == 2 ) {
-        A(0, 0) = A(1, 1) = 1;
-        A(0, 2) = nodes [ v ]->givePointPointer()->y() - x.y();
-        A(1, 2) = x.x() - nodes [ v ]->givePointPointer()->x();
-    } else {
-        cerr << "Error - RigidBodyContact: dimension " << ndim << "not implemented" << endl;
-        exit(EXIT_FAILURE);
-    }
-    return A;
 }
 
 //////////////////////////////////////////////////////////
@@ -693,7 +670,7 @@ Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
     ( void ) DoFs;
     Vector f_ext = masterModel->giveSolver()->giveNodalForces();
     double pressure = 0;
-    for (unsigned i=0; i<ndim; i++) pressure += f_ext[DoFids[i]]*normal[i];
+    for (unsigned k=0; k<ndim; k++) pressure += f_ext[DoFids[k]]*normal[k];
     pressure /= area;
     if (active)  {
         stats [ 0 ]->setParameterValue("normal_stress", pressure);
@@ -714,12 +691,11 @@ Matrix RigidBodyBoundary :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
     Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
-    // MyMatrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
+    Particle *a = static_cast<Particle *>(nodes[0]);
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
-            // B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab(i, j);
         }
     }
     return ( R * B ) / length;
@@ -846,12 +822,11 @@ Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
     Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
-    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
-    // MyMatrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
+    Particle *a = static_cast<Particle *>(nodes[0]);
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
-            // B [ i ] [ j + 3 * ( ndim - 1 ) ] = Ab(i, j);
         }
     }
     return ( R * B ) / length;
@@ -861,21 +836,6 @@ Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRUSS ELEMENT
-Matrix Truss :: giveAMatrix(unsigned v, Point x) const {
-    ( void ) v;
-    ( void ) x;
-    Matrix A = Matrix :: Zero(ndim, ndim);
-    if ( ndim == 3 ) {
-        A(0, 0) = A(1, 1) = A(2, 2) = 1;
-    } else if ( ndim == 2 ) {
-        A(0, 0) = A(1, 1) = 1;
-    } else {
-        cerr << "Error - Truss: dimension " << ndim << "not implemented" << endl;
-        exit(EXIT_FAILURE);
-    }
-    return A;
-}
-
 //////////////////////////////////////////////////////////
 void Truss :: checkNodeType() const {
     //check that nodes are mechanical nodes
@@ -893,12 +853,11 @@ Matrix Truss :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
     Matrix B = Matrix :: Zero(ndim, 2 * ndim);
-    Matrix Aa = giveAMatrix( 0, inttype->giveIPLocation(0) ) * ( -1. );
-    Matrix Ab = giveAMatrix( 1, inttype->giveIPLocation(0) );
+    Matrix Aa = Matrix :: Identity( ndim, ndim );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < ndim; j++ ) {
-            B(i, j) = Aa(i, j);
-            B(i, j + ndim) = Ab(i, j);
+            B(i, j) = -Aa(i, j);
+            B(i, j + ndim) = Aa(i, j);
         }
     }
     return ( R * B ) / length;

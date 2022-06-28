@@ -1,0 +1,6 @@
+VTKElementExporter out  saveEvery 1e-4 pointData 2 displacement rotation
+VTKRCExporter faces  saveEvery 1e-1
+DisplacementGauge LD displ uy	0 0.09 0 0 -0.09 0
+ForceGauge LD f_top fy 1 57209
+ForceGauge LD f_bot fy 1 57210
+

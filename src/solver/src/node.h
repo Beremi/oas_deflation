@@ -175,6 +175,10 @@ public:
     virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
     virtual unsigned giveOrderOfForceCode(std :: string code) const;
     virtual std :: string giveLineToSave() const;
+    Vector calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const;
+    Point calculateRigidBodyMotionPoint(const Point *x, const Vector &DoFs) const;
+    Matrix giveRigidBodyMotionMatrix(const Point *x) const;
+
 };
 
 //////////////////////////////////////////////////////////

@@ -73,6 +73,7 @@ void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
 }
 
 void Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+    (void) DoFs;
     if ( code.compare("ID") == 0  || code.compare("nodeID") == 0  ) {
         result.resize(1);
         result[0] = id;
@@ -231,7 +232,16 @@ void Particle :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
-    if ( dim > 1 && code.compare("rotx") == 0 ) {
+    if ( code.compare("rotation") == 0  || code.compare("rotations") == 0  ) {
+        result.resize(3);
+        unsigned i=0;
+        for (; i < 2*dim-3; i++ ) {
+            result [ i ] = DoFs [ firstDoF + dim + i ];
+        }
+        for (; i < 3; i++ ) {
+            result [ i ] = 0;
+        }
+    } else if ( dim > 1 && code.compare("rotx") == 0 ) {
         result.resize(1);
         result [ 0 ] = DoFs [ firstDoF + 3 ];
     } else if ( dim > 2 && code.compare("roty") == 0 ) {
@@ -244,6 +254,45 @@ void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &res
         MechNode :: giveDoFBasedValues(code, DoFs, result);
     }
 };
+
+//////////////////////////////////////////////////////////
+Vector Particle::calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const {
+    unsigned DofsPerNode = ( dim - 1 ) * 3;
+    Vector u = Vector :: Zero(DofsPerNode);
+    for ( unsigned i = 0; i < DofsPerNode; i++ ) {
+        u [ i ]  = DoFs [ firstDoF + i ];
+    }
+    return giveRigidBodyMotionMatrix(x) * u;
+}
+
+//////////////////////////////////////////////////////////
+Point Particle::calculateRigidBodyMotionPoint(const Point *x, const Vector &DoFs) const {    
+    Vector u = calculateRigidBodyMotionVector(x, DoFs);
+    return Point(u [ 0 ], u [ 1 ], dim > 2 ? u [ 2 ] : 0);
+}
+
+//////////////////////////////////////////////////////////
+Matrix Particle::giveRigidBodyMotionMatrix(const Point *x) const {
+    Matrix A = Matrix :: Zero( dim, 3 * ( dim - 1 ) );
+    if ( dim == 3 ) {
+        A(0, 0) = A(1, 1) = A(2, 2) = 1;
+        A(1, 3) = point.z() - x->z();
+        A(0, 4) = -A(1, 3);
+        A(2, 3) = x->y() - point.y();
+        A(0, 5) = -A(2, 3);
+        A(2, 4) = point.x() - x->x();
+        A(1, 5) = -A(2, 4);
+    } else if ( dim == 2 ) {
+        A(0, 0) = A(1, 1) = 1;
+        A(0, 2) = point.y() - x->y();
+        A(1, 2) = x->x() - point.x();
+    } else {
+        cerr << "Error - Particle: dimension " << dim << "not implemented" << endl;
+        exit(EXIT_FAILURE);
+    }
+    return A;
+}
+
 
 //////////////////////////////////////////////////////////
 unsigned Particle :: giveOrderOfForceCode(string code) const {

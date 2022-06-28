@@ -89,6 +89,16 @@ public:
     virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TWELVE POINT INTEGRATION IN LDPM SIMPLEX
+class IntegrLDPM12 : public IntegrationType
+{
+public:
+    IntegrLDPM12() { name = "IntegrLLDPM12"; };
+    virtual ~IntegrLDPM12() {};
+    virtual void init();
+};
 
 
 #endif  /* _INTEGRATION_H */

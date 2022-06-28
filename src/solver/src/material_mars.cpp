@@ -1,5 +1,6 @@
 #include "material_mars.h"
 #include "element_discrete.h"
+#include "element_LDPM.h"
 
 using namespace std;
 
@@ -65,10 +66,13 @@ void MarsMaterialStatus :: init() {
     crackOpening = 0;
 
     RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
+    LDPMTetra *tet = dynamic_cast< LDPMTetra * >( element );
     if ( rbc ) {
         L = rbc->giveLength();
-    } else {
-        cerr << "Material " << name << " can be used only for RigidBodyContact elements" << endl;
+    } 
+    else if (tet){
+    }else {
+        cerr << "Material " << name << " can be used only for RigidBodyContact or LDPMTetra elements" << endl;
         exit(EXIT_FAILURE);
     }
 

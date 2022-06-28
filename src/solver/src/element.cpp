@@ -84,8 +84,8 @@ void Element :: init() {
     Bs.resize( inttype->giveNumIP() );
     Hs.resize( inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        Bs [ k ] = giveBMatrix( inttype->giveIPLocationPointer(k) );
-        Hs [ k ] = giveHMatrix( inttype->giveIPLocationPointer(k) );
+        Bs [ k ] = giveBMatrix( k );
+        Hs [ k ] = giveHMatrix( k );
     }
 
     //set stress and strain vectors at integration points

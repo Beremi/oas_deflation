@@ -24,9 +24,8 @@ protected:
 
 public:
     RigidBodyContact(const unsigned dim);
-    virtual Matrix giveAMatrix(unsigned v, Point x) const;
     ~RigidBodyContact() {};
-    void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     void init();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
@@ -150,7 +149,6 @@ protected:
 public:
     Truss(const unsigned dim) : RigidBodyContact(dim) { name = "Truss"; };
     ~Truss() {};
-    virtual Matrix giveAMatrix(unsigned v, Point x) const;
     virtual Vector giveContactStrainNT(const Vector &DoFs) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
@@ -180,7 +178,7 @@ public:
     Point giveNormal() const { return normal; }
     double giveLength() const { return length; }
     double giveVolumeAssociatedWithNode(unsigned nodenum) const;
-    void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;

@@ -6,6 +6,7 @@ using namespace std;
 volatile sig_atomic_t TERMINATED = 0;
 
 void my_handler(int s){
+    (void) s;
     if (TERMINATED) exit(EXIT_FAILURE);
     TERMINATED = 1;
 }
