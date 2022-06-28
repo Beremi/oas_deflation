@@ -1625,8 +1625,8 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
 
             mechElemRidges.append( ridges_out[m].copy() )
-            print('idx %s %s' %(len(mechElemRidges), ridges_out[m]))
-            print(node_count)
+            #print('idx %s %s' %(len(mechElemRidges), ridges_out[m]))
+            #print(node_count)
         #auxmech elements
         elif auxmechelements == True and (ridges_out[m][0] < node_count+len(aux_nodes) and ridges_out[m][1] < node_count+len(aux_nodes) and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
             aux_mechElemRidges.append( ridges_out[m].copy() )
