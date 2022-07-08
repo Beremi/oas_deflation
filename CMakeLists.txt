@@ -56,6 +56,7 @@ endif ()
 option (USE_PREPROCESSOR "Enable preprocessor" ON)
 option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
+option (ARCHIVE_BINARIES "Archive binary files" OFF)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" ON)
 option (USE_EXPRTK "Enable EXPRTK" OFF)
@@ -314,7 +315,7 @@ add_custom_command(
     ${PartMod_BINARY_DIR}/generated/version.h
     ALL
   COMMAND
-    ${CMAKE_COMMAND} -D TARGET_DIR=${PartMod_BINARY_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${PartMod_SOURCE_DIR}/version.cmake
+    ${CMAKE_COMMAND} -D TARGET_NAME=${TARGETNAME} -D TARGET_DIR=${PartMod_BINARY_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${PartMod_SOURCE_DIR}/version.cmake
   WORKING_DIRECTORY
     ${PartMod_SOURCE_DIR}
   )
@@ -330,6 +331,20 @@ add_custom_target(
 # version.hpp has to be generated
 # before we start building DiscreteModel
 add_dependencies(${TARGETNAME} get_git_hash)
+
+
+# Copy binary 
+if (ARCHIVE_BINARIES)
+  #add_custom_command(
+  #        TARGET ${TARGETNAME} POST_BUILD
+  #        COMMAND ${CMAKE_COMMAND} -E copy
+  #                ${CMAKE_CURRENT_BINARY_DIR}/bin/DiscreteModel
+  #                ${CMAKE_CURRENT_BINARY_DIR}/bin/DiscreteModel_${GIT_HASH}_${DATE_STRING})
+  add_custom_command(
+          TARGET ${TARGETNAME} POST_BUILD
+          COMMAND bash ${PartMod_SOURCE_DIR}/archive.sh
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif ()
 
 #######################################################################
 ######################## Documentation ################################
