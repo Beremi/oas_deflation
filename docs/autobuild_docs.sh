@@ -35,6 +35,8 @@ cmake --build . --target docs
 echo -e ${FINISHED}Docs generated.${NOCOLOR}
 cmake --build . --target docs_publish
 echo -e ${FINISHED}Docs pushed.${NOCOLOR}
+cmake --build .
+echo -e ${FINISHED}DiscreteModel build.${NOCOLOR}
 else
 echo -e ${FINISHED}Current branch is up to date with origin/master.${NOCOLOR}
 fi
