@@ -22,6 +22,8 @@ Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: update() {
+    totalEnergyDensity += ((temp_stress+updt_stress).dot(temp_strain-updt_strain))/2.;
+    strainEnergyDensity = temp_stress.dot(temp_strain)/2.; //only damage material
     updt_strain = temp_strain;
     updt_stress = temp_stress;
 }
@@ -51,6 +53,15 @@ void MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
+    }else if ( code.compare("total_energy_density") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = totalEnergyDensity;
+    }else if ( code.compare("strain_energy_density") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = strainEnergyDensity;
+    }else if ( code.compare("dissipated_energy_density") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = totalEnergyDensity - strainEnergyDensity;
     } else result.resize(0);
 }
 
@@ -311,18 +322,13 @@ Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned di
 };
 
 //////////////////////////////////////////////////////////
-void ElasticMechMaterialStatus :: update() {
-        
-    totalEnergyDensity += (temp_stress+updt_stress).dot(temp_strain-updt_strain);
-    strainEnergyDensity += temp_stress.dot(temp_strain)/2.;
+void ElasticMechMaterialStatus :: update() {     
     MaterialStatus :: update();
 }
 
 //////////////////////////////////////////////////////////
 ElasticMechMaterialStatus :: ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "tensorial mechanical mat. status";
-    totalEnergyDensity = 0;
-    strainEnergyDensity = 0;
 }
 
 //////////////////////////////////////////////////////////

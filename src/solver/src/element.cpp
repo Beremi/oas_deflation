@@ -152,7 +152,17 @@ void Element :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("id") == 0 ) {
         result.resize(1);
         result[0] = idx;
-    } else {    
+    } else if ( code.compare("strain_energy") == 0 ) {
+        Element::giveValues("strain_energy_density", result);
+        result *= giveVolume()*ndim; //ndim because of discrete elements
+        //cout << volume << endl; exit(1);
+    } else if ( code.compare("total_energy") == 0 ) {
+        Element::giveValues("total_energy_density", result);
+        result *= giveVolume()*ndim; //ndim because of discrete elements
+    } else if ( code.compare("dissipated_energy") == 0 ) {
+        Element::giveValues("dissipated_energy_density", result);
+        result *= giveVolume()*ndim; //ndim because of discrete elements 
+    } else {  //TODO: should be weighted average
         //average values from IP
         if (inttype->giveNumIP()>0) {
             stats [ 0 ] -> giveValues(code, result);

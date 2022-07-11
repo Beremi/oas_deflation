@@ -167,6 +167,7 @@ void TXTNodalExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void TXTNodalExporter :: init() {
+    DataExporter::init();
     unsigned ncod = codes.size();
     maxsize.resize(ncod);
     Vector res;
@@ -249,6 +250,7 @@ void TXTElementExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void TXTElementExporter :: init() {
+    DataExporter::init();
     unsigned ncod = codes.size();
     maxsize.resize(ncod);
     Vector res;

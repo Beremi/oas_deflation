@@ -5,3 +5,4 @@ VTKElementExporter out  saveEvery 1e-4 cellData 1 damage
 #TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ
 ForceGauge LD fy#11756 fy 1 11756
 DisplacementGauge LD uy#totalLS	uy	5.655000e-01	2.000000e-01	1.000000e-01	0.000000e+00	0.000000e+00	0.000000e+00
+TXTElementExporter energy 3 total_energy strain_energy dissipated_energy
