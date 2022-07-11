@@ -415,7 +415,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             tet = dynamic_cast< LDPMTetra * >( * ff);
             if ( tet ) {
                 exportedElemsTET.push_back(tet);
-                vertices = tet->giveVertices();            
+                vertices = tet->giveVertices();
                 for (unsigned i=0; i<tet->giveNumOfFacets(); i++){
                     fcodes = tet->giveFacetVertCodes(i);
                     vtkSmartPointer< vtkIdList >elindicesA = vtkSmartPointer< vtkIdList > :: New();
@@ -431,7 +431,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                     }
                     unstructuredGrid->InsertNextCell(celtype, elindicesA);
                     unstructuredGrid->InsertNextCell(celtype, elindicesB);
-                }                
+                }
             }
     }
     unstructuredGrid->SetPoints(points);
@@ -457,7 +457,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             pp = q->givePointPointer();
             for ( unsigned k = 0; k < 2; k++ ) {
                 part = static_cast<Particle*>((*ee)->giveNode(k));
-                displ = part->calculateRigidBodyMotionPoint(pp,DoFs);           
+                displ = part->calculateRigidBodyMotionPoint(pp,DoFs); 
                 for ( p = 0; p < msize; p++ ) {
                     pointDataArray->SetValue( msize * pointID + p,   displ(p) );
                 }
@@ -466,7 +466,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         }
     }
     for ( vector< LDPMTetra * > :: const_iterator ee = exportedElemsTET.begin(); ee != exportedElemsTET.end(); ++ee ) {
-        vertices = tet->giveVertices();            
+        vertices = tet->giveVertices();
         elemnodes = (*ee)->giveNodes();
         for (unsigned h=0; h<tet->giveNumOfFacets(); h++){
             fcodes = tet->giveFacetVertCodes(h);
@@ -475,7 +475,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                 pp = vertices[q]->givePointPointer();
                 for ( unsigned k = 0; k < 2; k++ ) {
                     part = static_cast<Particle*>(elemnodes[ncodes[k]]);
-                    displ = part->calculateRigidBodyMotionPoint(pp,DoFs);                     
+                    displ = part->calculateRigidBodyMotionPoint(pp,DoFs);
                     for ( p = 0; p < msize; p++ ) {
                         pointDataArray->SetValue( msize * pointID + p,   displ(p) );
                     }
@@ -542,16 +542,16 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             dataA = data [ ( * ee )->giveNode(0)->giveID() ];
             dataB = data [ ( * ee )->giveNode(1)->giveID() ];
             for ( j = 0; j < min< size_t >( msize, dataA.size() ); j++ ) {
-                pointDataArray->SetValue(msize * ( i * 2 ) + j, dataA [ j ]);
+                cellDataArray->SetValue(msize * ( i * 2 ) + j, dataA [ j ]);
             }
             for ( ; j < msize; j++ ) {
-                pointDataArray->SetValue(msize * ( i * 2 ) + j, 0);
+                cellDataArray->SetValue(msize * ( i * 2 ) + j, 0);
             }
             for ( j = 0; j < min< size_t >( msize, dataB.size() ); j++ ) {
-                pointDataArray->SetValue(msize * ( i * 2 + 1 ) + j, dataB [ j ]);
+                cellDataArray->SetValue(msize * ( i * 2 + 1 ) + j, dataB [ j ]);
             }
             for ( ; j < msize; j++ ) {
-                pointDataArray->SetValue(msize * ( i * 2 + 1 ) + j, 0);
+                cellDataArray->SetValue(msize * ( i * 2 + 1 ) + j, 0);
             }
         }
         unstructuredGrid->GetCellData()->AddArray(cellDataArray);
