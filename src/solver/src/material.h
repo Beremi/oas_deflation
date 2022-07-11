@@ -201,7 +201,7 @@ class ElasticMechMaterial;
 class ElasticMechMaterialStatus : public MaterialStatus
 {
 protected:
-
+    double totalEnergyDensity, strainEnergyDensity;
 public:
     ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~ElasticMechMaterialStatus() {};
@@ -210,6 +210,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual double giveMassConstant() const;
     virtual void giveValues(std :: string code, Vector &result) const;
+    virtual void update();
 };
 
 //////////////////////////////////////////////////////////

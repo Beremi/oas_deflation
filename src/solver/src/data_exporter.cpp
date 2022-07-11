@@ -892,7 +892,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                 continue;
             }
             istringstream iss(line);
-            iss >> exptype;
+            if (!(iss >> exptype)) continue;
 
             if ( !( exptype.rfind("#", 0) == 0 ) ) {
                 if ( exptype.compare("TXTNodalExporter") == 0 ) {

@@ -456,7 +456,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         for ( auto &q:vertices ) {
             pp = q->givePointPointer();
             for ( unsigned k = 0; k < 2; k++ ) {
-                part = static_cast<Particle*>(rbc->giveNode(k));
+                part = static_cast<Particle*>((*ee)->giveNode(k));
                 displ = part->calculateRigidBodyMotionPoint(pp,DoFs);           
                 for ( p = 0; p < msize; p++ ) {
                     pointDataArray->SetValue( msize * pointID + p,   displ(p) );

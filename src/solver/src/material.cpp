@@ -311,8 +311,18 @@ Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned di
 };
 
 //////////////////////////////////////////////////////////
+void ElasticMechMaterialStatus :: update() {
+        
+    totalEnergyDensity += (temp_stress+updt_stress).dot(temp_strain-updt_strain);
+    strainEnergyDensity += temp_stress.dot(temp_strain)/2.;
+    MaterialStatus :: update();
+}
+
+//////////////////////////////////////////////////////////
 ElasticMechMaterialStatus :: ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "tensorial mechanical mat. status";
+    totalEnergyDensity = 0;
+    strainEnergyDensity = 0;
 }
 
 //////////////////////////////////////////////////////////
