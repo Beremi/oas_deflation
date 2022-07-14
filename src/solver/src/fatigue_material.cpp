@@ -1063,6 +1063,7 @@ void FatigueMaterialStatus :: giveValues(string code, Vector &result) const {
     } else {
         result.resize(0);
         //DisMechMaterialStatus :: giveValues(code, result);
+        DamagePlasticMaterialStatus :: giveValues(code, result);
     }
 }
 
