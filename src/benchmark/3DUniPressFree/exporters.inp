@@ -1,4 +1,5 @@
 TXTNodalExporter translations 2 ux uy
 TXTNodalExporter pressure 1 pressure
-VTKElementExporter out  saveEvery 1e-20 0
-VTKRCExporter faces  saveEvery 1e-1
+VTKElementExporter out  saveEvery 1e-20 0 pointData 1 displacements elementData 7 damage total_energy_density strain_energy_density dissipated_energy total_energy strain_energy dissipated_energy_density
+VTKRCExporter faces  saveEvery 1e-1  elementData 7 damage total_energy_density strain_energy_density dissipated_energy_density total_energy strain_energy dissipated_energy
+TXTElementExporter energy 3 total_energy strain_energy dissipated_energy saveStep_each 1e-20

@@ -57,7 +57,7 @@ void VTKExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     while ( !iss.eof() ) {
         iss >> param;
-        if ( param.compare("cellData") == 0 ) {
+        if ( param.compare("cellData") == 0 ||  param.compare("elementData") == 0) {
             iss >> num;
             cellData.resize(num);
             for ( unsigned i = 0; i < num; i++ ) {

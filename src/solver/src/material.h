@@ -18,7 +18,7 @@ class MaterialStatus
 private:
 
 public:
-    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum;};
+    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; totalEnergyDensity = 0; strainEnergyDensity = 0;};
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
     virtual ~MaterialStatus() {};
     std :: string whoAmI() { return name; }
@@ -56,6 +56,7 @@ protected:
     Material *mat;
     Vector eigenstrain;
     Vector updt_strain, temp_strain, updt_stress, temp_stress;
+    double totalEnergyDensity, strainEnergyDensity;
     unsigned idx;
 };
 
@@ -201,7 +202,7 @@ class ElasticMechMaterial;
 class ElasticMechMaterialStatus : public MaterialStatus
 {
 protected:
-    double totalEnergyDensity, strainEnergyDensity;
+
 public:
     ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~ElasticMechMaterialStatus() {};
