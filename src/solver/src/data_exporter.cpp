@@ -95,7 +95,7 @@ void DataExporter :: init() {
 
 //////////////////////////////////////////////////////////
 bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
-    if ( (time >= next_time_to_save) || (step == next_step_to_save) ) {
+    if ( (time >= next_time_to_save) || (step => next_step_to_save) ) {
         step_last = step;
         time_last = time;
         return true;
