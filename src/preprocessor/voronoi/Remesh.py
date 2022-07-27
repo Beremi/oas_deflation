@@ -153,7 +153,7 @@ if __name__ == '__main__':
     print ('Fine remesh radius: %s' %radiusRemesh)
     print ('Gradient remesh radius: %s' %radiusTransitional)
     print ('Fine remesh radius: %s' %radiusRemesh)
-    print ('Remesh mindist: %s' %float(sys.argv[9]))
+    #print ('Remesh mindist: %s' %float(sys.argv[9]))
 
     if useExistingFineNodes:
         # print("loading existing fine geoemtry <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
@@ -209,6 +209,7 @@ if __name__ == '__main__':
     # empty specified nodes, since they are already appended if necessary
     model.specifiedNodes = []
 
+    print('trials %s' %model.trials)
     node_coords = generateNodesRemesh(node_coords_ini.copy(),
                         trials=model.trials, maxLim=model.maxLim,
                         minDistRemesh=minDistRemesh, minDist=model.minDist,

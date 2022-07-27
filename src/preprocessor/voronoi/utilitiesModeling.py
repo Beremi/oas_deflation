@@ -4133,7 +4133,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             #left
             nodeA = np.array([indent, indent])
             nodeB = np.array([indent, maxLim[1]-indent])
-            pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.8, dim, node_coords, trials, catchCorners=False, equidist=False)
+            #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.8, dim, node_coords, trials, catchCorners=False, equidist=False)
 
             """
             leftRigidPlateMechBC = np.array([0, -1,-1,   -1,-1,-1])
@@ -4146,7 +4146,7 @@ def assemble2dCorrosionRebar(maxLim, minDist, trials, rebarMinDist, interfaceMin
             #right
             nodeA = np.array([maxLim[0]-indent, indent])
             nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-            pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.8, dim, node_coords, trials, catchCorners=False, equidist=False)
+            #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.8, dim, node_coords, trials, catchCorners=False, equidist=False)
 
             """
             rightRigidPlateMechBC = np.array([0, -1,-1,   -1,-1,-1])
@@ -5829,7 +5829,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         maxLim[1]*notch-indent,
         indent])
         if not orthogonalFracZone:
-            print(maxLimF)
+            
             pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True)
         else:
             #pointGenerators.generateOrtogrid(maxLimF, minDist/2, dim, node_coords, maxLim[0]*fracZoneWidth)  #
@@ -5872,7 +5872,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         maxLim[1] -indent,#* notch,
         maxLim[2] - indent
         ])
-        print(maxLimF)
+
         pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist, topMinDist = minDist*roughMinDistCoef, gradienDirection=0)
 
         """
@@ -5891,18 +5891,18 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         indent,#* notch,
         indent
         ])
-        print(maxLimF)
+
         pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist, topMinDist = minDist*roughMinDistCoef, gradienDirection=0)
 
 
         ###############generating of nodes, front bottom line ###############
         nodeA = np.array([indent, indent, indent])
         nodeB = np.array([maxLim[0]-indent, indent, indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
         ###############generating of nodes, rear bottom line ###############
         nodeA = np.array([indent, indent,  maxLim[2]-indent])
         nodeB = np.array([maxLim[0]-indent, indent,  maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
         ###############generating of nodes, front top line ###############
         nodeA = np.array([indent, maxLim[1]-indent, indent])
         nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
@@ -5932,7 +5932,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         #bot surf
         nodeA =  np.array([indent , indent, indent])
         nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
+        #pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
 
         #left face surf
         nodeA =  np.array([indent , indent, indent])

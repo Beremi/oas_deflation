@@ -1621,6 +1621,8 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
     mechElemRidges = []
     aux_mechElemRidges = []
 
+
+
     for m in range (len(ridges_out)):
         if (ridges_out[m][0] < node_count and ridges_out[m][1] < node_count and ridges_out[m][0] >=0  and ridges_out[m][1] >= 0):
 
@@ -1901,9 +1903,47 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
     auxMechElements = len(aux_mechElemRidges)
 
+    """
+    for r in mechElemRidges:
+        iNa = int(r[0])
+        iNb = int(r[1])
+        nodeA = nodes[iNa]
+        nodeB = nodes[iNb]
+        if (nodeA[1]<1e-4 and nodeB[1]>1e-4) or (nodeA[1]>1e-4 and nodeB[1]<1e-4):
+             r[-1]=3
+    """
+
+    maxX=np.amax(np.asarray(nodes)[:,0])
+    maxY=np.amax(np.asarray(nodes)[:,1])
+    maxZ=np.amax(np.asarray(nodes)[:,2])
+    e=1e-4
     for r in aux_mechElemRidges:
+        iNa = int(r[0])
+        iNb = int(r[1])
+
+        if iNa >= node_count and auxmechelements==True:
+            nodeA = aux_nodes[iNa-node_count]
+        else:
+            nodeA = nodes[iNa]
+        if iNb >= node_count and auxmechelements==True:
+            nodeB = aux_nodes[iNb-node_count]
+        else:
+            nodeB = nodes[iNb]
+
+        #spodni podstava material s biot 1
+        if ( (nodeA[1]<e or nodeB[1]<e) ):
+             r = np.hstack( (r,  np.array([3])) )
+        elif (      (nodeA[0]<e or nodeB[0]<e)
+                or  (nodeA[2]<e or nodeB[2]<e)
+                or  (nodeA[0]>maxX-e or nodeB[0]>maxX-e)
+                or  (nodeA[2]>maxZ-e or nodeB[2]>maxZ-e)
+                or  (nodeA[1]>maxY-e or nodeB[1]>maxY-e)):
+             r = np.hstack( (r,  np.array([4])) )
+        else:
+            r = np.hstack( (r,  np.array([0])) )
 
         mechElemRidges.append(r)
+
 
 
 
@@ -1969,11 +2009,12 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
             if i >= trueMechElements:
                 ro = np.array(mechElemRidges[i], ndmin=2)
+                print(ro)
                 if coupled == False:
                     fmt='LTCBoundary\t%d\t%d\t%d'
                 if coupled == True:
                     fmt='LTCBoundaryCoupled\t%d\t%d\t%d'
-                np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
+                np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3))
 
 
     sys.stdout.flush()
