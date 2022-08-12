@@ -261,3 +261,7 @@ Matrix tetraInertia3D(const Point *a, const Point *b, const Point *c, const Poin
     
     return I;
 }
+
+double tetraVolumeSigned(const Point *a, const Point *b, const Point *c, const Point *d) {
+    return ((*a)-(*d)).dot( ((*b)-(*d)).cross((*c)-(*d) ) ) / 6.;
+}

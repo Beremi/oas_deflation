@@ -1,6 +1,7 @@
 #include "element_container.h"
 #include "element_discrete.h"
 #include "element_continuous.h"
+#include "element_fiber.h"
 #include "element_polyhedral.h"
 #include "element_LDPM.h"
 #include <algorithm>
@@ -107,6 +108,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     elems.push_back(newelem);
                 } else if ( elemType.compare("CoupledCosseratBrick") == 0 ) {
                     CoupledCosseratBrick *newelem = new CoupledCosseratBrick();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("Fiber") == 0 ) {
+                    Fiber *newelem = new Fiber(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("CoupledCosseratBrickWithDependentUpperZLayer") == 0 ) {
@@ -631,5 +636,81 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
     //normalize by number of attached elements
     for ( p = 0; p < nodes->giveSize(); p++ ) {
         result [ p ] /= weights [ p ];
+    }
+}
+
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: assignFibersToElems(){
+
+    vector<Fiber* > fibers;
+    RigidBodyContact *rbc;
+    Fiber *fib;
+    for ( auto &e: elems) {
+        fib = dynamic_cast<Fiber *>(e);
+        if(fib) fibers.push_back(fib);
+    }
+    if(fibers.size()==0) return;
+    
+    unsigned ndim = fibers[0]->giveDimension();
+
+    Vector bbox;
+    Point normal, dirvec, intersec;
+    Point loc;
+    Point *a, *b, *r, *s;
+    Point auxA, auxB;
+    double d,t,length;
+    bool bintersect;
+    double vol1, vol2, vol3;
+    std::vector<Node*> verts;
+    for ( auto &ee:elems) {
+        rbc = dynamic_cast<RigidBodyContact *>(ee);
+        if(rbc){
+            bbox = rbc->giveFacetBoundingBox();
+            normal = rbc->giveNormal();
+            loc = rbc->giveIPLoc(0);
+            d = -(loc[0]*normal[0]+loc[1]*normal[1]+loc[2]*normal[2]);
+            verts = rbc->giveVertices();
+            for(auto &f: fibers){
+                                
+                a = f->giveNode(0)->givePointPointer();
+                b = f->giveNode(1)->givePointPointer();
+
+                //detect bbox intersection
+                bintersect = true;
+                for(unsigned i=0; i<ndim; i++){
+                    if(min((*a)[i],(*b)[i])>bbox[2*i+1] || max((*a)[i],(*b)[i])<bbox[2*i]){bintersect=false; break;}
+                }
+                if(!bintersect) continue;
+
+                //compute intersection with facet plane   
+                dirvec = f->giveDirVector();
+                length = f->giveLength();
+                t = -(normal[0]*(*a)[0]+normal[1]*(*a)[1]+normal[2]*(*a)[2]+d)/(normal[0]*dirvec[0]+normal[1]*dirvec[1]+normal[2]*dirvec[2]); 
+                if (t<=0 || t>=length) continue;
+                intersec = (*a)+t*dirvec;
+
+                //check that it is inside the facet
+                //according to https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
+                bintersect = false;
+                auxA = intersec+dirvec*(5*sqrt(rbc->giveArea()));
+                auxB = intersec-dirvec*(5*sqrt(rbc->giveArea()));
+                for(unsigned i=0; i<verts.size() && !bintersect; i++){
+                    s = verts[i]->givePointPointer();
+                    if(i==0) r= verts[verts.size()-1]->givePointPointer();
+                    else r= verts[i-1]->givePointPointer(); 
+                    vol1 = tetraVolumeSigned(&auxA,&auxB, &loc,r);
+                    vol2 =tetraVolumeSigned(&auxA,&auxB, r, s);
+                    vol3 = tetraVolumeSigned(&auxA,&auxB, s, &loc);
+                    if ((vol1<0 && vol2<0 && vol3<0) || (vol1>0 && vol2>0 && vol3>0)) bintersect=true;   
+                }
+                if (!bintersect) continue;
+
+                f->createNewCrossing(intersec, rbc);
+            }
+        }
+    }
+    for(auto &f:fibers){
+        f->sutUpCrossings();
     }
 }

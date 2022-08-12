@@ -325,12 +325,8 @@ Matrix RigidBodyContact::giveMassMatrix() const {
                 Point cg0 = ( (*A) + (*C) + (*D) + (*FaceCentroid) ) / 4.;
                 Point cg1 = ( (*B) + (*C) + (*D) + (*FaceCentroid) ) / 4.;
             // Volume of tetrahedron 
-                Point A_ = (*A) - (*FaceCentroid);
-                Point B_ = (*B) - (*FaceCentroid);
-                Point C_ = (*C) - (*FaceCentroid);
-                Point D_ = (*D) - (*FaceCentroid);
-     	        double tetraVolume0 = A_.dot( C_.cross( D_ ) ) / 6.;
-    	        double tetraVolume1 = B_.dot( C_.cross( D_ ) ) / 6.;   
+     	        double tetraVolume0 = tetraVolumeSigned(A,C,D,FaceCentroid);
+    	        double tetraVolume1 = tetraVolumeSigned(B,C,D,FaceCentroid);  
 //cout << tetraVolume0 << endl; 	    
     	    // Inertia matrix relative to the centroid [0,0,0]	
     	        Point A__ = (*A) - cg0;
@@ -377,6 +373,42 @@ Matrix RigidBodyContact::giveMassMatrix() const {
 //    cout << M << endl;
 //    exit(1);
     return M;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveBoundingBox(){
+    Vector bbox = giveFacetBoundingBox();
+
+    Point *p;
+    for (auto &v:nodes){
+        p = v->givePointPointer();
+        for(unsigned i=0; i<ndim; i++){
+            bbox[2*i]   =  min(bbox[2*i  ],(*p)[i]);
+            bbox[2*i+1] =  max(bbox[2*i+1],(*p)[i]);
+        }
+    } 
+    return bbox;
+}
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContact :: giveFacetBoundingBox(){
+    Vector bbox = Vector::Zero(ndim*2);
+
+    //init
+    for(unsigned i=0; i<ndim; i++){
+        bbox[2*i]   =  std::numeric_limits<double>::infinity();
+        bbox[2*i+1] = -std::numeric_limits<double>::infinity();
+    }
+
+    Point *p;
+    for (auto &v:vert){
+        p = v->givePointPointer();
+        for(unsigned i=0; i<ndim; i++){
+            bbox[2*i]   =  min(bbox[2*i  ],(*p)[i]);
+            bbox[2*i+1] =  max(bbox[2*i+1],(*p)[i]);
+        }
+    }
+    return bbox;
 }
 
 //////////////////////////////////////////////////////////
