@@ -7,7 +7,7 @@ from scipy.sparse.csgraph import reverse_cuthill_mckee
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 import voronoi, power
-# from power_tesselation import PowerTesselation
+from power_tesselation import PowerTesselation
 import matplotlib
 #import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
