@@ -733,6 +733,13 @@ void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
         }
+    }else if ( code.compare("strain") == 0 || code.compare("strains") == 0) {
+        unsigned size = element->giveDimension();
+        result.resize(size);
+        if (size>temp_strain.size()) size = temp_strain.size();
+        for ( unsigned p = 0; p < size; p++ ) {
+            result [ p ] = temp_strain [ p ];
+        }
     }else if ( code.compare("E0") == 0 )  {
         result.resize(1);
         DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );

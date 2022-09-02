@@ -1,6 +1,0 @@
-This code has been built from version 5a9c70cfd1-dirty : 2022-09-02 15:10
-OS name: Linux
-OS sub-type: 5.4.0-125-generic
-OS build ID: #141-Ubuntu SMP Wed Aug 10 13:42:03 UTC 2022
-OS platform: x86_64
-Build type: Release

@@ -214,7 +214,6 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
             intF [ i ] += intS [ i ];
         }
     }
-
     return intF;
 }
 
@@ -454,7 +453,8 @@ Matrix MaterialTestElement :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix MaterialTestElement :: giveHMatrix(const Point *x) const {
-    Matrix H = Matrix::Identity(DoFids.size(), DoFids.size() );
+    unsigned numOfIntSources = 7;  //TODO: THIS IS WRONG, NEEDS TO BE TREATED AUTOMATICALLY
+    Matrix H = Matrix::Zero(numOfIntSources, DoFids.size() ); 
     return H;    
 }
 

@@ -10,7 +10,7 @@
 #G1 G2 G3
 
 #00 E11
-PWLFunction	3	0 0.5 1 0 1e-5 0 
+PWLFunction	3	0 0.5 1 0 1e-3 0 
 #01 E22
 PWLFunction	2	0	2e-5
 #02 E33
