@@ -50,7 +50,7 @@
 ###########DOGBONE BAND
 ###########Model 2d_dogboneBand minDist 0.001 Xsize 60 Ysize 10 activeMechanics 1  roughMinDistCoef 2 elasticHeightCoef 2 nr_models 100 defaultFilesFolder dogboneDefaultBand
 ###########
-###########Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1 
+Model 3d_dogbone dogboneD 0.05 minDist 0.007 dogboneExcentricityFrac 50 activeMechanics 1 symmetric 0
 ###########Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 ###########
 ########### Cusatis torsion press
@@ -102,7 +102,7 @@
 ###########SpecifiedNode 0.7 1e-6
 ###########
 ###########Model 3d_corrosionRebar Xsize 0.15 Ysize 0.15 Zsize 0.015 minDist 0.004 interfaceMinDist 0.0015 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 10000 roughMinDistCoef 4 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.4 gradientRegDepth 0.3 
-Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.002  interfaceMinDist 0.002 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 1 activeMechanics 1 coupled 1 trials 30000 roughMinDistCoef 1 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.25 gradientRegDepth 0.15 auxmechelements 0 defaultFilesFolder 2drebarsdefault
+###########Model 2d_corrosionRebar Xsize 0.5 Ysize 0.25 minDist 0.002  interfaceMinDist 0.002 rebarMinDist -1 rebarDiameter 0.016 rebarCount 4  rebarDepth 0.028  activeTransport 1 activeMechanics 1 coupled 1 trials 30000 roughMinDistCoef 1 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.25 gradientRegDepth 0.15 auxmechelements 0 defaultFilesFolder 2drebarsdefault
 ###########Model 2d_corrosionRebar Xsize 0.15 Ysize 0.15 minDist 0.002 interfaceMinDist 0.002 rebarMinDist -1 rebarDiameter 0.016 rebarCount 1  rebarDepth 0.038  activeTransport 1 activeMechanics 1 coupled 1 trials 50000 roughMinDistCoef 1 adaptivityReady 0 fineRingThickness 3 fineRegDepth 0.6 gradientRegDepth 0.4 auxmechelements 0 defaultFilesFolder 2drebarsdefault
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
@@ -140,6 +140,7 @@ Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
 ###########
 ###########
 ###########EXPORTERS
-Exporter VTKElementExporter elems saveEvery 0.00001 cellData 3 materialID damage crack_opening pointData 2 nodal_stress pressure
-#Exporter TXTGaussPointExporter txtout 4 s_N s_M s_L area saveEvery 1e-8
+# Exporter VTKElementExporter elems saveEvery 0.00001 cellData 3 materialID damage crack_opening pointData 2 nodal_stress pressure
+# VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage
+# Exporter TXTGaussPointExporter txtout 4 s_N s_M s_L area saveEvery 1e-8
 ######################TXTGaussPointExporter txtout 13 x y normal_x normal_y damageT damageN strainTY strainTZ strainPLTY strainPLTZ stressN stressT1 stressT2 saveEvery 1e-3

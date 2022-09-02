@@ -48,6 +48,7 @@ private:
 
     unsigned dim;
     double adaptThreshold; // user input value of stress
+    double compressThreshold = 0;  // compressive threshold for case yoou whant to refine in compression
     double radius; // user input value of radius to remesh around node over threshold
     double radius2; // user input value of radius of transitional area between remesher and inital lmin
     double remesherLmin = 0;
@@ -373,7 +374,13 @@ private:
                       ) {
                     LinalgEigenSolver(tensorial_stress [ i ], eignums, eigvecs);
                     if ( eignums.maxCoeff() > this->adaptThreshold ) {
+                        // std :: cout << "apply tensile threshold" << std :: endl;
                         nodeCentersToRmesh.push_back(n->givePoint() );
+                    } else if ( this->compressThreshold != 0 ) { 
+                        if ( eignums.minCoeff() < this->compressThreshold ) {
+                            std :: cout << "apply compress threshold" << std :: endl;
+                            nodeCentersToRmesh.push_back(n->givePoint() );
+                        }
                     }
                 }
             }
@@ -450,6 +457,12 @@ private:
                 if ( param.compare("adaptThreshold") == 0 ) {
                     iss >> this->adaptThreshold;
                     bat = true;
+                } else if ( param.compare("compressThreshold") == 0 ) {
+                    iss >> this->compressThreshold;
+                    if (this->compressThreshold > 0) {
+                        std :: cerr << "compressThreshold can't be positive value, leaving zero" << std :: endl;
+                        this->compressThreshold = 0;
+                    }
                 } else if ( param.compare("remesherLmin") == 0 ) {
                     iss >> this->remesherLmin;
                     brl = true;
