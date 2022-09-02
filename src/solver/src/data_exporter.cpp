@@ -627,8 +627,8 @@ void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, co
     giveFileName(step, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app);
-    Vector res, sum;
-    sum.resize(maxsize [ 0 ]);
+    Vector res;
+    Vector sum = Vector::Zero(maxsize [ 0 ]);
 
     Element *e;
     if ( outputfile.good() ) {
