@@ -87,6 +87,8 @@ void RVEMaterial :: readFromLine(istringstream &iss) {
             iss >> inputfile;
         } else if ( param.compare("enforce_linearity") == 0 ) {
             nonlinear = false;
+        } else if ( param.compare("do_not_precompute") == 0 ) {
+            start_from_precomputed = false;
         }
     }
     if ( !bdim ) {
@@ -469,7 +471,11 @@ void DiscreteTransportRVEMaterialStatus :: setFromPrecomputedToFullModel() {
 void DiscreteTransportRVEMaterialStatus :: init() {
     DiscreteTransportRVEMaterial *macromaterial = static_cast< DiscreteTransportRVEMaterial * >( mat );
     Matrix stiff = macromaterial->givePrecomputedConductivity();
-    if ( stiff.size() == 0 ) {
+    if (not macromaterial->shouldStartFromPrecomputed()){
+        setFromPrecomputedToFullModel();
+        calculateTransformationMatrix();
+    }
+    else if ( stiff.size() == 0) {
         DiscreteTransportRVEMaterialStatus :: setFromPrecomputedToFullModel();
         is_master_status = true;
         unsigned ndim = macromaterial->giveNumOfDimensions();
@@ -946,7 +952,10 @@ void DiscreteMechanicalRVEMaterialStatus :: setFromPrecomputedToFullModel() {
 void DiscreteMechanicalRVEMaterialStatus :: init() {
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     Matrix D = macromaterial->givePrecomputedElasticTensor();
-    if ( D.size() == 0 ) {
+    if (not macromaterial->shouldStartFromPrecomputed()){
+        setFromPrecomputedToFullModel();
+        calculateTransformationMatrix();
+    } else if ( D.size() == 0) {
         DiscreteMechanicalRVEMaterialStatus :: setFromPrecomputedToFullModel();
         is_master_status = true;
         unsigned ndim = RVE->giveDimension();
@@ -983,7 +992,7 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
         macromaterial->setPrecomputedInertiaTensor( giveInertiaTensor() );
 
         is_precomputed = true; //set back to precomputed to use it
-    } else {
+    } else {        
         calculateTransformationMatrix();
     }
 }
@@ -1182,7 +1191,9 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
     DiscreteCoupledRVEMaterial *macromaterial = static_cast< DiscreteCoupledRVEMaterial * >( mat );
     mechRVEstat->init();
     trspRVEstat->init();
-    if ( macromaterial->givePrecomputedElasticTensor().size() == 0 ) {
+    if (not macromaterial->shouldStartFromPrecomputed()){
+        setFromPrecomputedToFullModel();
+    }else if ( macromaterial->givePrecomputedElasticTensor().size() == 0) {
         unsigned ndim = trspRVEstat->giveWholeRVE()->giveDimension();
         macromaterial->setNumOfDimensions(ndim);
 
@@ -1631,6 +1642,8 @@ void DiscreteCoupledRVEMaterial :: readFromLine(istringstream &iss) {
             nonlinear = false;
             mechRVEmat->enforceLinearity();
             trspRVEmat->enforceLinearity();
+        } else if ( param.compare("do_not_precompute") == 0 ) {
+            //start_from_precomputed = false;
         }
     }
     if ( !bdim ) {

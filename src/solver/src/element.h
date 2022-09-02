@@ -137,4 +137,19 @@ public:
     ~MechanicalElement() {};
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MATERIAL TEST ELEMENT - only one material point and virtual loading through prescribed strains
+class MaterialTestElement : public Element
+{
+protected:
+
+public:
+    MaterialTestElement(unsigned dim);
+    ~MaterialTestElement() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual void setIntegrationPointsAndWeights();
+};
+
 #endif  /* _ELEMENT_H */

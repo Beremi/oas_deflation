@@ -198,6 +198,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
     Vector intF = Vector :: Zero( DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        Vector ppp = giveStrain(i, DoFs);
         if ( frozen ) {
             stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
         } else {
@@ -422,3 +423,38 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > 
     }
 
 }
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MATERIAL TEST ELEMENT - only one material point and virtual loading through prescribed strains
+//////////////////////////////////////////////////////////
+MaterialTestElement :: MaterialTestElement(unsigned dim){
+    ndim = dim;
+    numOfNodes = 1;
+    name = "MaterialTestElement";
+    vtk_cell_type = 1;
+    shafunc = new Linear1DLineShapeF();
+    inttype = new IntegrDiscrete1();
+}
+
+
+//////////////////////////////////////////////////////////
+void MaterialTestElement :: setIntegrationPointsAndWeights() {
+    stats.resize(1);
+    inttype->setIPLocation(0, Point(0.,0.,0.));
+    inttype->setIPWeight(0, 1);
+    stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
+}
+
+//////////////////////////////////////////////////////////
+Matrix MaterialTestElement :: giveBMatrix(const Point *x) const {
+    Matrix B = Matrix::Identity(DoFids.size(), DoFids.size() );
+    return B;    
+}
+
+//////////////////////////////////////////////////////////
+Matrix MaterialTestElement :: giveHMatrix(const Point *x) const {
+    Matrix H = Matrix::Identity(DoFids.size(), DoFids.size() );
+    return H;    
+}
+

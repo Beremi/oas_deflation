@@ -29,6 +29,9 @@ protected:
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
 
+
+    bool is_precomputed;
+
     virtual void generateRandomFixedBC() {};
     virtual void generateVolumetricAverageBC() {};
 public:
@@ -51,9 +54,10 @@ protected:
     bool nonlinear;
 
     bool elastic_sol_is_Voigt;  //distinguish whether the solution in initial precomputed state is really solved elastically or using Voigt constraint
+    bool start_from_precomputed;
 
 public:
-    RVEMaterial() { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; };
+    RVEMaterial() { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; start_from_precomputed = true;};
     virtual ~RVEMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -63,6 +67,7 @@ public:
     void setPathToInputFolder(std :: string f) { inputfile = GlobPaths :: BASEDIR  / f; };
     void enforceLinearity() { nonlinear = false; };
     bool isElasticSolutionVoigt() const { return elastic_sol_is_Voigt; };
+    bool shouldStartFromPrecomputed() const {return start_from_precomputed;};
 };
 
 
@@ -78,7 +83,6 @@ protected:
     double macro_pressure;
     double temp_nonlin;
     bool is_master_status;
-    bool is_precomputed;
 
     Vector local_strain, local_stress;
 
@@ -208,7 +212,6 @@ protected:
     DiscreteTransportRVEMaterialStatus *trspRVEstat;
 
     bool is_master_status;
-    bool is_precomputed;
 
     double temp_volumetricStrain, volumetricStrain, volStrainRate;
     double temp_pressure, pressure, pressureRate;
