@@ -50,7 +50,7 @@
 ###########DOGBONE BAND
 ###########Model 2d_dogboneBand minDist 0.001 Xsize 60 Ysize 10 activeMechanics 1  roughMinDistCoef 2 elasticHeightCoef 2 nr_models 100 defaultFilesFolder dogboneDefaultBand
 ###########
-Model 3d_dogbone dogboneD 0.05 minDist 0.007 dogboneExcentricityFrac 50 activeMechanics 1 symmetric 0
+Model 3d_dogbone dogboneD 0.05 minDist 0.006 dogboneExcentricityFrac 50 dogboneExcentricity_Z 0 activeMechanics 1 symmetric 0
 ###########Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 ###########
 ########### Cusatis torsion press

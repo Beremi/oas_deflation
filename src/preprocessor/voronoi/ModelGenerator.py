@@ -261,6 +261,8 @@ class Model:
                 self.dogboneD = float(r[i+1])
             if (r[i]=='dogboneExcentricityFrac'):
                 self.dogboneExcentricityFrac = float(r[i+1])
+            if (r[i] == 'dogboneExcentricity_Z'):
+                self.dogboneExcentricity_Z = float(r[i + 1])
             if (r[i]=='notchH'):
                 self.notchH = float(r[i+1])
             if (r[i]=='loadWidth'):
@@ -496,7 +498,7 @@ class Model:
         self.maxLim = np.array([self.dogboneD, 6/4*self.dogboneD, 0.1])
         #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='dogbone',  D=self.dogboneD, thickness=0.1)
         self.materialZones = None
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create3dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create3dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity_X=self.dogboneExcentricityFrac, excentricity_Z=self.dogboneExcentricity_Z, symmetric=self.symmetric)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone3d', D=self.dogboneD)
 
     def run_3d_torsionPress(self):
