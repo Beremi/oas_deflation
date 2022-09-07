@@ -456,7 +456,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
-            } else if ( param.compare("maxIt") == 0 ) {
+            } else if ( param.compare("maxIt") == 0 || param.compare("max_iterations") == 0 ) {
                 iss >> maxIt;
                 if ( maxIt < 1 ) {
                     std :: cerr << "number of itteration cannot be smaller than " << maxIt << "!!!,";

@@ -45,6 +45,7 @@ private:
     Region *reg;
     // Block block;
     bool transport = false;
+    bool all_nodes = false;  ///> only elements with all nodes inside the region are included if true
     unsigned material_id;
 public:
     MaterialRegion() { };

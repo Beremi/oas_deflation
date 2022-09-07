@@ -24,11 +24,14 @@ Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
 void MaterialStatus :: update() {
     totalEnergyDensity += ((temp_stress+updt_stress).dot(temp_strain-updt_strain))/2.;
     strainEnergyDensity = temp_stress.dot(temp_strain)/2.; //only damage material
-    unsigned ndim = element->giveDimension();
-    totalEnergyDensity *= ndim;     //TODO: fix, this works only for discrete material
-    strainEnergyDensity *= ndim;    //TODO: fix, this works only for discrete material
+    //unsigned ndim = element->giveDimension();
+    //totalEnergyDensity *= ndim;     //TODO: fix, this works only for discrete material
+    //strainEnergyDensity *= ndim;    //TODO: fix, this works only for discrete material
+    dissipEnergyDensity = totalEnergyDensity - strainEnergyDensity;
+    dissipEnergyDensityInc = dissipEnergyDensity - updt_dissip_energy;
     updt_strain = temp_strain;
     updt_stress = temp_stress;
+    updt_dissip_energy = dissipEnergyDensity;
 }
 
 //////////////////////////////////////////////////////////
@@ -64,13 +67,16 @@ void MaterialStatus :: giveValues(std :: string code, Vector &result) const {
         result [ 0 ] = strainEnergyDensity;
     }else if ( code.compare("dissipated_energy_density") == 0 ) {
         result.resize(1);
-        result [ 0 ] = totalEnergyDensity - strainEnergyDensity;
+        result [ 0 ] = dissipEnergyDensity;
+        }else if ( code.compare("dissipated_energy_density_inc") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = dissipEnergyDensityInc;
     } else result.resize(0);
 }
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    temp_stress = temp_strain = updt_stress = updt_strain = Vector::Zero(num); 
+    temp_stress = temp_strain = updt_stress = updt_strain = Vector::Zero(num);
 }
 
 //////////////////////////////////////////////////////////
@@ -325,7 +331,7 @@ Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned di
 };
 
 //////////////////////////////////////////////////////////
-void ElasticMechMaterialStatus :: update() {     
+void ElasticMechMaterialStatus :: update() {
     MaterialStatus :: update();
 }
 
@@ -720,12 +726,19 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 
 //////////////////////////////////////////////////////////
 void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
-    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {
+    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {        
         unsigned size = element->giveDimension();
         result.resize(size);
         if (size>temp_stress.size()) size = temp_stress.size();
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
+        }
+    }else if ( code.compare("strain") == 0 || code.compare("strains") == 0) {
+        unsigned size = element->giveDimension();
+        result.resize(size);
+        if (size>temp_strain.size()) size = temp_strain.size();
+        for ( unsigned p = 0; p < size; p++ ) {
+            result [ p ] = temp_strain [ p ];
         }
     }else if ( code.compare("E0") == 0 )  {
         result.resize(1);

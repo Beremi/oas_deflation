@@ -41,6 +41,7 @@ void Model :: init(const bool &initial) {     //initialization
     elems.init();
     nodes.initSimplices();
     constr.init(& nodes, & bconds, solver);
+    elems.assignFibersToElems();
     elems.findElementFriends();
     if ( initialFieldFile.compare("") != 0 ) {
         initialFieldFile = ( baseDir / initialFieldFile ).string();

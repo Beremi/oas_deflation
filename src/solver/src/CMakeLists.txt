@@ -6,6 +6,7 @@ set (solver_files
     element_container.cpp
     element.cpp
     element_discrete.cpp
+    element_fiber.cpp
     element_LDPM.cpp
     element_continuous.cpp
     element_polyhedral.cpp
@@ -17,6 +18,7 @@ set (solver_files
     material_container.cpp
     material_coulomb_friction.cpp
     material.cpp
+    material_fiber.cpp
     material_misc.cpp
     material_slide_3_2.cpp
     material_RVE.cpp

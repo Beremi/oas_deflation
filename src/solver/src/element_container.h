@@ -51,6 +51,7 @@ public:
     unsigned giveElemId(const Element *elem) const;
     bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;
     void extrapolateValuesFromIntegrationPointsToNodes(std :: string code, std :: vector< Vector > &results);
+    void assignFibersToElems();
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }

@@ -100,5 +100,18 @@ public:
     virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// FIBER INTEGRATION
+class IntegrFiber : public IntegrationType
+{
+public:
+    IntegrFiber() { name = "IntegrFiber"; };
+    virtual ~IntegrFiber() {};
+    virtual void init();    
+    void addNewIP(Point location);
+};
+
+
 
 #endif  /* _INTEGRATION_H */

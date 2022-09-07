@@ -154,14 +154,17 @@ void Element :: giveValues(std :: string code, Vector &result) const {
         result[0] = idx;
     } else if ( code.compare("strain_energy") == 0 ) {
         Element::giveValues("strain_energy_density", result);
-        result *= giveVolume(); //ndim because of discrete elements
+        result *= giveVolume() * ndim; //ndim because of discrete elements
         //cout << volume << endl; exit(1);
     } else if ( code.compare("total_energy") == 0 ) {
         Element::giveValues("total_energy_density", result);
-        result *= giveVolume(); //ndim because of discrete elements
+        result *= giveVolume() * ndim; //ndim because of discrete elements
     } else if ( code.compare("dissipated_energy") == 0 ) {
         Element::giveValues("dissipated_energy_density", result);
-        result *= giveVolume(); //ndim because of discrete elements 
+        result *= giveVolume() * ndim; //ndim because of discrete elements
+    } else if ( code.compare("dissipated_energy_inc") == 0 ) {
+        Element::giveValues("dissipated_energy_density_inc", result);
+        result *= giveVolume() * ndim; //ndim because of discrete elements
     } else {  //TODO: should be weighted average
         //average values from IP
         if (inttype->giveNumIP()>0) {
@@ -172,8 +175,8 @@ void Element :: giveValues(std :: string code, Vector &result) const {
                 result += res2;
             }
             result /= inttype->giveNumIP();
-        } else {   
-           result.resize(0); 
+        } else {
+           result.resize(0);
         }
     }
 }
@@ -195,6 +198,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
     Vector intF = Vector :: Zero( DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        Vector ppp = giveStrain(i, DoFs);
         if ( frozen ) {
             stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
         } else {
@@ -210,7 +214,6 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
             intF [ i ] += intS [ i ];
         }
     }
-
     return intF;
 }
 
@@ -419,3 +422,39 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > 
     }
 
 }
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// MATERIAL TEST ELEMENT - only one material point and virtual loading through prescribed strains
+//////////////////////////////////////////////////////////
+MaterialTestElement :: MaterialTestElement(unsigned dim){
+    ndim = dim;
+    numOfNodes = 1;
+    name = "MaterialTestElement";
+    vtk_cell_type = 1;
+    shafunc = new Linear1DLineShapeF();
+    inttype = new IntegrDiscrete1();
+}
+
+
+//////////////////////////////////////////////////////////
+void MaterialTestElement :: setIntegrationPointsAndWeights() {
+    stats.resize(1);
+    inttype->setIPLocation(0, Point(0.,0.,0.));
+    inttype->setIPWeight(0, 1);
+    stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
+}
+
+//////////////////////////////////////////////////////////
+Matrix MaterialTestElement :: giveBMatrix(const Point *x) const {
+    Matrix B = Matrix::Identity(DoFids.size(), DoFids.size() );
+    return B;    
+}
+
+//////////////////////////////////////////////////////////
+Matrix MaterialTestElement :: giveHMatrix(const Point *x) const {
+    unsigned numOfIntSources = 7;  //TODO: THIS IS WRONG, NEEDS TO BE TREATED AUTOMATICALLY
+    Matrix H = Matrix::Zero(numOfIntSources, DoFids.size() ); 
+    return H;    
+}
+

@@ -8,6 +8,7 @@
 #include "material_slide_3_2.h"
 #include "material_HTC.h"
 #include "material_coulomb_friction.h"
+#include "material_fiber.h"
 
 using namespace std;
 
@@ -136,6 +137,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("CoulombFrictionMaterial") == 0 ) {
                     CoulombFrictionMaterial *newmat = new CoulombFrictionMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("FiberMaterial") == 0 ) {
+                    FiberMaterial *newmat = new FiberMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else {

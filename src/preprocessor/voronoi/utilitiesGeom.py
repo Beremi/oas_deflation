@@ -197,7 +197,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
             node_coords, vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ)
     if (dim == 3):
         if (periodicModel == 0):
-            node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, randomizeMaterial=randomizeMaterial,auxmechelements=auxmechelements)
+            node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial,auxmechelements=auxmechelements)
         if (periodicModel == 1):
             node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3Dperiodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ,  notches = notches, isTube=isTube)
     return node_coords,vert_count, verticesIdxDict, vertIdxStart, totalNodeCount
@@ -306,7 +306,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         pointA = vor.ridge_points[validRidgeIdxs[i],0]
         pointB = vor.ridge_points[validRidgeIdxs[i],1]
 
-        #creating auxiliary nodes if one of nodes is outside
+        #auxiliary nodes if one of them is out of sample
         if len(node_indices_dogbone)>0:
             if(pointA in node_indices_dogbone  and pointB not in node_indices_dogbone):
                 pA = np.asarray( vor.points[pointA, :]  )
@@ -524,20 +524,29 @@ def ridgeWithinCenterBox(vertices, maxLim):
 
     return within
 
-def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, randomizeMaterial=False, auxmechelements=False):
+def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, node_indices_dogbone=[], randomizeMaterial=False, auxmechelements=False):
     start_time = time.time()
     dim = 3
 
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
 
+    nodes_out = np.zeros((node_count, (dim + 1 + 1)))
+    nodes_out[:, 0:dim] = vor.points[0:node_count, 0:dim]
+    nodes_out[:, dim] = 0
+    nodes_out[:, dim + 1] = 0
+
     printout = False
+
+    """
     # nody: [x,y,z] [powerR] [area]
     nodes_out = np.zeros( (node_count, (dim + 1 +1)))
     nodes_out[:,  0:dim] = node_coords[0:node_count,  0:dim]
+    """
 
     if ((len(areas) == node_count)):
        nodes_out[:,dim] = areas[:]
+
 
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area Error: %.5E ' %(relAreaError) )
@@ -549,8 +558,23 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     #print('ridge points')
     #adding ridges with at least one node in sample
     #validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
-    cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
-    validRidgeIdxs = np.where(cond)[0]
+
+    if len(node_indices_dogbone) > 0:
+        #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
+        #cond = np.all(cond, axis=1)
+        #validRidgeIdxs = np.where(cond)[0]
+        validRidgeIdxs = []
+        for i in range (vor.ridge_points.shape[0]):
+            pr = False
+            for p in range (2):
+                if (vor.ridge_points[i][p] in node_indices_dogbone):
+                    pr=True
+            if (pr):
+               validRidgeIdxs.append(i)
+        validRidgeIdxs = np.asarray(validRidgeIdxs)
+    else:
+        cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
+        validRidgeIdxs = np.where(cond)[0]
 
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
@@ -600,6 +624,23 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         pointB = vor.ridge_points[validRidgeIdxs[i]][1]
 
         #auxiliary nodes if one of them is out of sample
+        if len(node_indices_dogbone)>0:
+            if(pointA in node_indices_dogbone  and pointB not in node_indices_dogbone):
+                pA = np.asarray( vor.points[pointA, :]  )
+                pB = np.asarray( vor.points[pointB, :]  )
+                ptB = (pA + pB)/2
+
+                pointB = node_count + len(aux_nodes)
+                aux_nodes.append(ptB)
+
+            if(pointA not in node_indices_dogbone  and pointB in node_indices_dogbone):
+                pA = np.asarray( vor.points[pointA, :]  )
+                pB = np.asarray( vor.points[pointB, :]  )
+                ptA = (pA + pB)/2
+
+                pointA = node_count + len(aux_nodes)+1
+                aux_nodes.append(ptA)
+
         if(pointA >= node_count and pointB<node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )

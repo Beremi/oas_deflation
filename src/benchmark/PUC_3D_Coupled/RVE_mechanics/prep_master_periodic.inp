@@ -1,0 +1,4 @@
+Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.01 activeMechanics 1 activeTransport 1 trials 5000 powerTes 1 seed 333
+Solver	SteadyStateLinearSolver	time_step	1	total_time	1
+Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2600000.0 Gt 500
+Material TrsprtMaterial	capacity	1.62e-8	density	1e3 permeability	5e-18	viscosity	8.9e-4	crack_turtuosity	1.000000e+00 

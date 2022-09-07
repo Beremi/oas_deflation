@@ -54,6 +54,8 @@ public:
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector integrateInternalSources();
     double givePerimeter()const { return perimeter; };
+    virtual Vector giveBoundingBox();
+    virtual Vector giveFacetBoundingBox();
 
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate

@@ -1,0 +1,41 @@
+#ifndef _ELEMENT_FIBER_H
+#define _ELEMENT_FIBER_H
+
+
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+
+#include "element.h"
+
+class RigidBodyContact; //forward declaration
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// FIBER
+class Fiber : public MechanicalElement
+{
+protected:
+    double diam;
+    Point dirVector;
+    double length;
+    std::vector<RigidBodyContact*> contacts;     
+
+public:
+    Fiber(const unsigned dim);
+    virtual ~Fiber() {};
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void init();
+    Point giveDirVector()const{return dirVector;}
+    double giveLength()const{return length;}
+    void createNewCrossing(Point intersec, RigidBodyContact *rbc);
+    void sutUpCrossings();
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+};
+
+#endif /* _ELEMENT_FIBER_H */
+
+
+

@@ -1,0 +1,54 @@
+#strain tensor = grad ocross u - LeviCivita dot phi
+#E11 E12 E13
+#E21 E22 E23
+#E31 E32 E33
+#curvature tensor
+#C11 C12 C13
+#C21 C22 C23
+#CC31 C32 C33
+#pressure gradient vector
+#G1 G2 G3
+
+#00 E11
+PWLFunction	3	0 0.5 1 0 1e-3 0 
+#01 E22
+PWLFunction	2	0	2e-5
+#02 E33
+PWLFunction	2	0	3e-5
+#03 E32
+PWLFunction	2	0	1e-5
+#04 E23
+PWLFunction	2	0	1e-5
+#05 E31
+PWLFunction	1	0	0
+#06 E13
+PWLFunction	1	0	0
+#07 E21
+PWLFunction	1	0	0
+#08 E12
+PWLFunction	1	0	0
+#09 C11
+PWLFunction	1	0	0
+#10 C22
+PWLFunction	1	0	0
+#11 C33
+PWLFunction	1	0	0
+#12 C32
+PWLFunction	1	0	0
+#13 C23
+PWLFunction	1	0	0
+#14 C31
+PWLFunction	1	0	0
+#15 C13
+PWLFunction	1	0	0
+#16 C21
+PWLFunction	1	0	0
+#17 C12
+PWLFunction	1	0	0
+#18 G1
+PWLFunction	1	0	1
+#19 G2
+PWLFunction	1	0	0
+#20 G3
+PWLFunction	1   0	0
+

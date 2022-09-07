@@ -268,20 +268,23 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
         np.array([0,6/4*2*D,0]) + data * np.array([-1,-1,1]), #dolu doleva c
         np.array([2*D,6/4*2*D,0]) + data * np.array([-1,-1,1]), #dolu doprava c
 
-        np.array([0,0,0]) + data * np.array([1,-1,-1]), #nahoru dopredu
-        np.array([0,6/4*D*2,0]) + data * np.array([1,-1,-1]), #dolu dopredu
-        np.array([0,0,0]) + data * np.array([-1,1,-1]), #doleva dopredu
-        np.array([D*2,0,0]) + data * np.array([-1,1,-1]), #doprava dopredu
 
-        np.array([0,0,0]) + data * np.array([-1,-1,-1]), #nahoru doleva dopredu
-        np.array([2*D,0,0]) + data * np.array([-1,-1,-1]), #nahoru doprava dopredu
-        np.array([0,6/4*2*D,0]) + data * np.array([-1,-1,-1]), #dolu doleva dopredu
+        np.array([0,0,0]) + data * np.array([1,-1,-1]),  #nahoru dopredu
+        np.array([0,6/4*D*2,0]) + data * np.array([1,-1,-1]),  #dolu dopredu
+        np.array([0,0,0]) + data * np.array([-1,1,-1]),  #doleva dopredu
+        np.array([D*2,0,0]) + data * np.array([-1,1,-1]),  #doprava dopredu
+        np.array([0, 0, 0]) + data * np.array([1, 1, -1]),  # dopredu dopredu
+
+        np.array([0,0,0]) + data * np.array([-1,-1,-1]),  #nahoru doleva dopredu
+        np.array([2*D,0,0]) + data * np.array([-1,-1,-1]),  #nahoru doprava dopredu
+        np.array([0,6/4*2*D,0]) + data * np.array([-1,-1,-1]),  #dolu doleva dopredu
         np.array([2*D,6/4*2*D,0]) + data * np.array([-1,-1,-1]), #dolu doprava dopredu
 
         np.array([0,0,2*thickness]) + data * np.array([1,-1,-1]), #nahoru dozadu
         np.array([0,6/4*D*2,2*thickness]) + data * np.array([1,-1,-1]), #dolu dozadu
         np.array([0,0,2*thickness]) + data * np.array([-1,1,-1]), #doleva dozadu
         np.array([D*2,0,2*thickness]) + data * np.array([-1,1,-1]), #doprava dozadu
+        np.array([0, 0, 2*thickness]) + data * np.array([1, 1, -1]),  # dozadu dozadu
 
         np.array([0,0,2*thickness]) + data * np.array([-1,-1,-1]), #nahoru doleva dozadu
         np.array([2*D,0,2*thickness]) + data * np.array([-1,-1,-1]), #nahoru doprava dozadu
