@@ -30,16 +30,16 @@ while url:
 
     response.raise_for_status()
     response_json = response.json()
-    for job in response_json:
+    for job in response_json[1:]:
         print(job)
-        if job.get('id', None) != 408045050:
-            job_id = job['id']
-            delete_response = requests.delete(
-                f"https://{server}/api/v4/projects/{project_id}/pipelines/{job_id}",
-                headers={
-                    'private-token': token,
-                },
-            )
-            print(f"Processing job ID: {job_id} - status: {delete_response.status_code}")
+        #if job.get('id', None) != 408045050:
+        job_id = job['id']
+        delete_response = requests.delete(
+            f"https://{server}/api/v4/projects/{project_id}/pipelines/{job_id}",
+            headers={
+                'private-token': token,
+            },
+        )
+        print(f"Processing job ID: {job_id} - status: {delete_response.status_code}")
 
     url = response.links.get('next', {}).get('url', None)

@@ -130,6 +130,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     TranspCondensedPolygonal *newelem = new TranspCondensedPolygonal(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("MaterialTestElement") == 0 ) {
+                    MaterialTestElement *newelem = new MaterialTestElement(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                     /*} else if ( elemType.compare("PolyhedralFace") == 0 ) {
                      * PolyhedralFace *newelem = new PolyhedralFace(ndim);
                      * newelem->readFromLine(iss, nodes, matrs);
@@ -400,6 +404,7 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) con
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const {
+    if (K.rows()==0) return;
     K = K * 0; //set everything to zero
 
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();

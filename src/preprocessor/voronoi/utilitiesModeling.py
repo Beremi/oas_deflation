@@ -19,7 +19,7 @@ from scipy.spatial import Delaunay
 SHOW_PLOT = False
 
 
-def assembleMeasuringGauges(type, D=-1, maxLim = None, expansionRingsProps=[]):
+def assembleMeasuringGauges(type, D=-1, thickness = 0.1, maxLim = None, expansionRingsProps=[]):
     measuringGauges = []
     if (type == 'dogbone2d'):
         #if (D==0.1):
@@ -41,10 +41,39 @@ def assembleMeasuringGauges(type, D=-1, maxLim = None, expansionRingsProps=[]):
         measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS', False))
 
     if (type == 'dogbone3d'):
-        #total length LS
+        #total length LS front
+        coordsA = np.array([ D/2, 0, thickness])
+        coordsB = np.array([ D/2, 6/4*D, thickness ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS_front', False))
+        #mid LS front
+        coordsA = np.array([ D/2, 3/4*D-D*0.6/2, thickness  ])
+        coordsB = np.array([ D/2, 3/4*D+D*0.6/2, thickness  ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'midLS_front', False))
+        #left LC front
+        coordsA = np.array([ 0.2*D, 3/4*D-D*0.6/2, thickness ])
+        coordsB = np.array([ 0.2*D, 3/4*D+D*0.6/2, thickness ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'leftLS_front', False))
+        #right LC front
+        coordsA = np.array([ D-0.2*D, 3/4*D-D*0.6/2, thickness ])
+        coordsB = np.array([ D-0.2*D, 3/4*D+D*0.6/2, thickness ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS_front', False))
+
+        #total length LS back
         coordsA = np.array([ D/2, 0, 0])
         coordsB = np.array([ D/2, 6/4*D, 0])
-        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS', False))
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'totalLS_back', False))
+        #mid LS back
+        coordsA = np.array([ D/2, 3/4*D-D*0.6/2, 0  ])
+        coordsB = np.array([ D/2, 3/4*D+D*0.6/2, 0  ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'midLS_back', False))
+        #left LC back
+        coordsA = np.array([ 0.2*D, 3/4*D-D*0.6/2, 0])
+        coordsB = np.array([ 0.2*D, 3/4*D+D*0.6/2, 0])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'leftLS_back', False))
+        #right LC back
+        coordsA = np.array([ D-0.2*D, 3/4*D-D*0.6/2, 0 ])
+        coordsB = np.array([ D-0.2*D, 3/4*D+D*0.6/2, 0 ])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS_back', False))
 
     if (type == 'dogbone2dStrip'):
         #if (D==0.1):
@@ -2012,10 +2041,10 @@ def create2dDogBoneBand(maxLim, minDist,  roughMinDistCoef=1, elasticHeightCoef=
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions,  govNodes, govNodesMechBC, rigidPlates
 
 
-def create3dDogBone(minDist, trials, D=1.0, excentricity = 20, symmetric=False ):
+def create3dDogBone(minDist, trials, D=1.0, excentricity_X = 20, excentricity_Z = 0, symmetric=False):
     print('Creating 3sd dog bone....')
     #
-    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates  = assemble3dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric);
+    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates  = assemble3dDogBone(D, minDist, trials, excentricity_X= excentricity_X, excentricity_Z= excentricity_Z, symmetric = symmetric);
 
     node_coords_all = np.asarray(node_coords_all)
     """
@@ -5227,9 +5256,8 @@ def assemble2dDogBoneBand(maxLim, minDist, roughMinDistCoef=1, elasticHeightCoef
     return node_coords, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates
 
 
-def assemble3dDogBone(D, minDist, trials, excentricity = 20, symmetric=0):
+def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, excentricity_Z = 0, symmetric=0):
     dim = 3
-    thickness = 0.1
     #lists for the model
     node_coords = []
     mechBC_merged = []
@@ -5284,7 +5312,7 @@ def assemble3dDogBone(D, minDist, trials, excentricity = 20, symmetric=0):
      -indentRP,
      thickness+indentRP  ]))
     rigidPlates.append(topRigidPlate)
-    govNodes.append(np.array([ D/2+D/excentricity, indent, thickness/2 ]))
+    govNodes.append(np.array([D / 2 + D / excentricity_X, indent, thickness / 2 + excentricity_Z]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
     #bottom rigid plate
     bottomRigidPlateMechBC =  np.array([0,0,0,  -1,-1,-1, -1,-1,-1, -1,-1,-1,])
@@ -5296,7 +5324,7 @@ def assemble3dDogBone(D, minDist, trials, excentricity = 20, symmetric=0):
      -indentRP,
      thickness+indentRP  ]))
     rigidPlates.append(bottomRigidPlate)
-    govNodes.append(np.array([ D/2+D/excentricity, 6/4 * D-indent, thickness/2 ]))
+    govNodes.append(np.array([D / 2 + D / excentricity_X, 6 / 4 * D - indent, thickness / 2 + excentricity_Z]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, bottomRigidPlateMechBC))
     #####################
 

@@ -726,12 +726,19 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 
 //////////////////////////////////////////////////////////
 void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
-    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {
+    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {        
         unsigned size = element->giveDimension();
         result.resize(size);
         if (size>temp_stress.size()) size = temp_stress.size();
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
+        }
+    }else if ( code.compare("strain") == 0 || code.compare("strains") == 0) {
+        unsigned size = element->giveDimension();
+        result.resize(size);
+        if (size>temp_strain.size()) size = temp_strain.size();
+        for ( unsigned p = 0; p < size; p++ ) {
+            result [ p ] = temp_strain [ p ];
         }
     }else if ( code.compare("E0") == 0 )  {
         result.resize(1);

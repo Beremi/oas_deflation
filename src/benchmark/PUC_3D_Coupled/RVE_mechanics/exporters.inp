@@ -1,0 +1,2 @@
+#VTKElementExporter elems saveEvery 0.0001 cellData 4 strain stress damage tempCrackOpening pointData 0
+#VTKRCExporter faces saveEvery 0.0001 cellData 2 damage tempCrackOpening pointData 0

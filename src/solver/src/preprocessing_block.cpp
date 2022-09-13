@@ -56,6 +56,8 @@ void MaterialRegion :: readFromLine(istringstream &iss, unsigned d) {
             this->transport = false;
         } else if ( param.compare("material_id") == 0 || param.compare("materialID") == 0 ) {
             iss >> material_id;
+        } else if ( param.compare("all_nodes") == 0 ) {
+            this->all_nodes = true;
         } else if ( param.compare("region") == 0 ) {
             iss >> region_name;
             if ( region_name.compare("block") == 0 ) {
@@ -100,17 +102,25 @@ void MaterialRegion :: apply(NodeContainer *nodes, ElementContainer *e, BCContai
     ( void ) nodes;
 
     // TODO make sure material is sutable for mech / transport
-
+    unsigned num_nodes_inside;
     for ( auto &el : * e ) {
+        num_nodes_inside = 0;
         for ( auto const &nod : el->giveNodes() ) {
             if ( ( !this->transport && nod->doesMechanics() ) ||
                  ( this->transport && nod->doesTransport() ) ) {
                 // TODO JK: are there any elems that are mechanical and connect transport nodes and same for transport elems?
                 if ( this->reg->isInside(nod->givePoint() ) ) {
-                    el->changeMaterial(mats->giveMaterial(this->material_id) );
-                    break;
+                    if ( this->all_nodes ) {
+                        num_nodes_inside++;
+                    } else {
+                        el->changeMaterial(mats->giveMaterial(this->material_id) );
+                        break;
+                    }
                 }
             }
+        }
+        if (this->all_nodes && num_nodes_inside == el->giveNodes().size() ) {
+            el->changeMaterial(mats->giveMaterial(this->material_id) );
         }
     }
 }
