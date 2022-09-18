@@ -155,7 +155,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
                 for ( unsigned s = 0; s < nIP; s++ ) {
                     ip_locs [ 4 * i + r ] += ( * pp [ s ] ) * phi [ s ];
                 }
-                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian(localINT.giveIPLocationPointer(r) );
+                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian( localINT.giveIPLocationPointer(r) );
             }
             a = c;
         }
@@ -180,11 +180,10 @@ void IntegrLDPM12 :: init() {
 // FIBER INTEGRATION
 //
 //////////////////////////////////////////////////////////
-void IntegrFiber :: init() {
-}
+void IntegrFiber :: init() {}
 
 //////////////////////////////////////////////////////////
-void IntegrFiber::addNewIP(Point location){
+void IntegrFiber :: addNewIP(Point location) {
     ip_locs.push_back(location);
-    ip_weights.push_back(1);  
+    ip_weights.push_back(1);
 }

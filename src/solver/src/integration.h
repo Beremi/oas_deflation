@@ -108,7 +108,7 @@ class IntegrFiber : public IntegrationType
 public:
     IntegrFiber() { name = "IntegrFiber"; };
     virtual ~IntegrFiber() {};
-    virtual void init();    
+    virtual void init();
     void addNewIP(Point location);
 };
 

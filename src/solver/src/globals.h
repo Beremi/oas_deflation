@@ -13,8 +13,8 @@
  #include <ctime>
  #include <iomanip>
  #include <algorithm>
-#include <cctype>
-#include <locale>
+ #include <cctype>
+ #include <locale>
 
 // disable uncrustify
 // *INDENT-OFF*
