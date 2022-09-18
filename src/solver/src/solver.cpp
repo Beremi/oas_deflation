@@ -199,7 +199,7 @@ void Solver :: giveValues(string code, Vector &result) const {
 // STEADY STATE LINEAR SOLVER
 SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
-    conj_grad_precision = 1e-16;
+    conj_grad_precision = 1e-14;
     conj_grad_relative_maxit = 0.85;
 }
 
