@@ -40,5 +40,7 @@ ForceGauge RVEres M12 17 1 0
 ForceGauge RVEres flux_F1 18 1 0
 ForceGauge RVEres F2 19 1 0
 ForceGauge RVEres F3 20 1 0
+IntegrationPointGauge RVEres v_c0 crack_volume_density 1 0 0
+IntegrationPointGauge RVEres Lambda permeability_tensor 1 0 0
 
 

@@ -372,6 +372,7 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
 
 
     maxIt = 30;
+    minIt = 1;
     enlargeIt = shortenIt = 0;
     maxDisErr = maxResErr = maxEneErr = 1e-5;
     limitEneErr = limitResErr = limitDisErr = 0;
@@ -456,6 +457,8 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
+            } else if ( param.compare("minIt") == 0 || param.compare("min_iterations") == 0 ) {
+                iss >> minIt;
             } else if ( param.compare("maxIt") == 0 || param.compare("max_iterations") == 0 ) {
                 iss >> maxIt;
                 if ( maxIt < 1 ) {
@@ -860,12 +863,12 @@ void SteadyStateNonLinearSolver :: solve() {
                 break;
             }
 
-            if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr ) {
+            it++;
+            if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr && it>=minIt) {
                 converged = true;
             } else {
                 converged = false;
             }
-            it++;
         }
 
         if ( converged ) {

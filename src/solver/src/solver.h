@@ -96,6 +96,7 @@ protected:
     double maxDisErr, maxResErr, maxEneErr;
     double limitDisErr, limitResErr, limitEneErr;
     unsigned maxIt; ///> maximum number of iteration
+    unsigned minIt; ///> minimum number of iteration
     unsigned enlargeIt, shortenIt; ///> if lower/higher numIt -> enlarge/shorten time-step
     ///> time step is changed according to actual fraction of number of iteration vs maxIt
     double step_increase;  ///> increased in case the number of iteration is in lower 1/3

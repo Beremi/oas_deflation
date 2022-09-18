@@ -188,6 +188,29 @@ Vector DiscreteTransportRVEMaterialStatus :: giveStressPrecomputed(const Vector 
     return temp_stress;
 }
 
+//////////////////////////////////////////////////////////
+void DiscreteTransportRVEMaterialStatus ::  giveValues(string code, Vector &result) const {
+    if ( code.compare("permeability_tensor") == 0 ) {
+        //BE CAREFULL, THIS PART OF CODE MIGHT MODIFY THE RESULTS
+        DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >( mat );
+        unsigned ndim = macromat->giveNumOfDimensions();
+        DiscreteTransportRVEMaterialStatus *newThis = const_cast< DiscreteTransportRVEMaterialStatus *> (this);
+        Matrix Keff1 = newThis->giveStiffnessTensorLocalExact("secant",ndim);
+        Keff1 = ( transf.transpose() * Keff1 ) * transf;        
+        result = Vector::Zero(3*(ndim-1));
+        for (unsigned i=0; i<3; i++) result[i] = Keff1(i,i);
+        if (ndim==2) result[2] = Keff1(1,0);
+        else if (ndim==3){
+            result[3] = 0.5*(Keff1(1,2)+Keff1(2,1));
+            result[4] = 0.5*(Keff1(0,2)+Keff1(2,0));
+            result[5] = 0.5*(Keff1(0,1)+Keff1(1,0));
+        }
+    } else {
+        RVEMaterialStatus :: giveValues(code, result);
+    }
+}
+
+
 /////////////////////////////////./////////////////////////
 Vector DiscreteTransportRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
@@ -235,7 +258,7 @@ void DiscreteTransportRVEMaterialStatus :: setParameterValue(string code, double
 Vector DiscreteTransportRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
 
-    //temp_strain = strain;
+    temp_strain = strain;
     DiscreteTransportRVEMaterial *macromat = static_cast< DiscreteTransportRVEMaterial * >( mat );
     unsigned ndim = macromat->giveNumOfDimensions();
     transformStrain();
@@ -393,6 +416,31 @@ Matrix DiscreteTransportRVEMaterialStatus :: giveStiffnessTensorLocal(string typ
         volume += e->giveVolume();
     }
     Keff /= volume;
+    return Keff;
+}
+
+//////////////////////////////////////////////////////////
+Matrix DiscreteTransportRVEMaterialStatus :: giveStiffnessTensorLocalExact(string type, unsigned dimension) {
+
+    ( void ) type;
+    if ( is_precomputed ) {
+        return giveStiffnessTensorPrecomputedLocal(type, dimension);
+    }
+
+    //compute exactly
+    cout << "Precomputing primary fields for transport RVE" << endl;
+    Matrix Keff = Matrix :: Zero(dimension,dimension);
+    Vector help_strain = Vector :: Zero(dimension);
+    Vector help_stress;
+    double factor = 1e-10;
+    for ( unsigned i = 0; i < dimension; i++ ) {
+        help_strain [ i ] = factor;
+        help_stress = giveStress(help_strain, -1);
+        help_strain [ i ] = 0.;
+        for ( unsigned j = 0; j < dimension; j++ ) {
+            Keff(i, j) = help_stress [ j ] / factor;
+        }
+    }
     return Keff;
 }
 
@@ -1383,6 +1431,8 @@ void DiscreteCoupledRVEMaterialStatus ::  giveValues(string code, Vector &result
         DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = temp_crackVolume / dcm->givePUCVolume();
+    } else if ( code.compare("permeability_tensor") == 0 ) {
+        trspRVEstat->giveValues(code, result);
     } else {
         RVEMaterialStatus :: giveValues(code, result);
     }

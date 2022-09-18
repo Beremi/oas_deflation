@@ -94,6 +94,7 @@ protected:
     virtual unsigned giveStrainSize(unsigned rdim) const;
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type, unsigned dimension) const;
+    Matrix giveStiffnessTensorLocalExact(std::string type, unsigned dimension);
     virtual Matrix giveStiffnessTensorPrecomputedLocal(std :: string type, unsigned dimension) const;
     virtual Matrix giveDampingTensorPrecomputed() const;
 
@@ -116,6 +117,7 @@ public:
     void setToPrecomputed() { is_precomputed = true; };
     bool isPrecomputed() const { return is_precomputed; };
     void setToMasterStatus() { is_master_status = true; };
+    virtual void giveValues(std::string code, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////
