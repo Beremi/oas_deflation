@@ -75,6 +75,11 @@ def assembleMeasuringGauges(type, D=-1, thickness = 0.1, maxLim = None, expansio
         coordsB = np.array([ D-0.2*D, 3/4*D+D*0.6/2, 0 ])
         measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'rightLS_back', False))
 
+        #total length inside speciment
+        coordsA = np.array([D - 0.2 * D, 3 / 4 * D - D * 0.6 / 2, thickness / 2])
+        coordsB = np.array([D - 0.2 * D, 3 / 4 * D + D * 0.6 / 2, thickness / 2])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'total_LS_inside', False))
+
     if (type == 'dogbone2dStrip'):
         #if (D==0.1):
         #total length LS
@@ -5270,8 +5275,8 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
     indent = 1e-5
 
     if symmetric == 1:
-        remainerX = (0.6*D-minDist) % minDist
-        remainerZ = (thickness - minDist) % minDist
+        remainerX = (int(0.6 * D * 1000) % int(minDist * 1000)) * 0.001 # ! float to integer conversion due to the rounding error !
+        remainerZ = ((int(thickness * 1000) - int(minDist * 1000)) % int(minDist * 1000)) * 0.001 # ! float to integer conversion due to the rounding error !
         grainsN_X = int((0.6*D - minDist - remainerX) / minDist)+1 # number of grains in x direction
         grainsN_Z = int((thickness - minDist - remainerZ) / minDist)+1 # number of grains in z direction
         distX = minDist + (remainerX / (grainsN_X - 1)) # distance between grains in x direction
@@ -5288,17 +5293,24 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
         print()
 
         for IndexOfRow in range(grainsN_Z):
-            nodeA = np.array([0.2 * D + minDist / 2 + remainerX/2 + 2 * indent, 3 / 4 * D - minDist/2 + indent, minDist / 2 + IndexOfRow * distZ])
-            nodeB = np.array([0.8 * D - minDist / 2 - remainerX/2 - 2 * indent, 3 / 4 * D - minDist/2 + indent, minDist / 2 + IndexOfRow * distZ])
+            nodeA = np.array([0.2 * D + minDist / 2 + 2 * indent, 3 / 4 * D - minDist/2 + indent, minDist / 2 + IndexOfRow * distZ])
+            nodeB = np.array([0.8 * D - minDist / 2 - 2 * indent, 3 / 4 * D - minDist/2 + indent, minDist / 2 + IndexOfRow * distZ])
             pointGenerators.generateNodesLine3dRand(nodeA, nodeB, distX, dim, node_coords, trials, True, True)
 
-            nodeC = np.array([0.2 * D + minDist / 2 + remainerX/2 + 2 * indent, 3 / 4 * D + minDist/2 - indent, minDist / 2 + IndexOfRow * distZ])
-            nodeD = np.array([0.8 * D - minDist / 2 - remainerX/2 - 2 * indent, 3 / 4 * D + minDist/2 - indent, minDist / 2 + IndexOfRow * distZ])
+            nodeC = np.array([0.2 * D + minDist / 2 + 2 * indent, 3 / 4 * D + minDist/2 - indent, minDist / 2 + IndexOfRow * distZ])
+            nodeD = np.array([0.8 * D - minDist / 2 - 2 * indent, 3 / 4 * D + minDist/2 - indent, minDist / 2 + IndexOfRow * distZ])
             pointGenerators.generateNodesLine3dRand(nodeC, nodeD, distX, dim, node_coords, trials, True, True)
+
+            #print(f"nodes coords = {IndexOfRow}{[nodeA, nodeB, nodeC, nodeD]}")
 
     node_coords.append(np.array([(D-indent)/2, indent, thickness/2]))
     node_coords.append(np.array([(D-indent)/2, 6/4 * D - indent, thickness/2]))
 
+    """
+    print(node_coords)
+    plt.scatter(np.array(node_coords).T[0], np.array(node_coords).T[2])
+    plt.show()
+    """
 
     ##################### CONSTRAINTS AND RIGID PLATES
     #top rigid plate

@@ -35,7 +35,7 @@
 ########### roughEdgeDogbone 0 - presne nasamplovane kruznice
 ########### roughEdgeDogbone 1 - prvky s obema nody v modelu
 ########### roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-###########Model 2d_dogbone dogboneD 0.5 minDist 0.004 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 15 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 20 nr_models 50 defaultFilesFolder dogboneDefault
+########### Model 2d_dogbone dogboneD 0.05 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 defaultFilesFolder dogboneDefault
 ###########0.125
 ###########Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 1 nr_models 100 defaultFilesFolder dogboneDefault
 ###########C
@@ -50,7 +50,7 @@
 ###########DOGBONE BAND
 ###########Model 2d_dogboneBand minDist 0.001 Xsize 60 Ysize 10 activeMechanics 1  roughMinDistCoef 2 elasticHeightCoef 2 nr_models 100 defaultFilesFolder dogboneDefaultBand
 ###########
-Model 3d_dogbone dogboneD 0.05 minDist 0.006 dogboneExcentricityFrac 50 dogboneExcentricity_Z 0 activeMechanics 1 symmetric 0
+Model 3d_dogbone dogboneD 0.05 minDist 0.006 dogboneExcentricityFrac 50 dogboneExcentricity_Z 0 activeMechanics 1 symmetric 1
 ###########Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 ###########
 ########### Cusatis torsion press
