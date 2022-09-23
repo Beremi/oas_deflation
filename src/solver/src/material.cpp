@@ -22,8 +22,8 @@ Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: update() {
-    totalEnergyDensity += ((temp_stress+updt_stress).dot(temp_strain-updt_strain))/2.;
-    strainEnergyDensity = temp_stress.dot(temp_strain)/2.; //only damage material
+    totalEnergyDensity += ( ( temp_stress + updt_stress ).dot(temp_strain - updt_strain) ) / 2.;
+    strainEnergyDensity = temp_stress.dot(temp_strain) / 2.; //only damage material
     //unsigned ndim = element->giveDimension();
     //totalEnergyDensity *= ndim;     //TODO: fix, this works only for discrete material
     //strainEnergyDensity *= ndim;    //TODO: fix, this works only for discrete material
@@ -59,24 +59,26 @@ void MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
-    }else if ( code.compare("total_energy_density") == 0 ) {
+    } else if ( code.compare("total_energy_density") == 0 )  {
         result.resize(1);
         result [ 0 ] = totalEnergyDensity;
-    }else if ( code.compare("strain_energy_density") == 0 ) {
+    } else if ( code.compare("strain_energy_density") == 0 )  {
         result.resize(1);
         result [ 0 ] = strainEnergyDensity;
-    }else if ( code.compare("dissipated_energy_density") == 0 ) {
+    } else if ( code.compare("dissipated_energy_density") == 0 )  {
         result.resize(1);
         result [ 0 ] = dissipEnergyDensity;
-        }else if ( code.compare("dissipated_energy_density_inc") == 0 ) {
+    } else if ( code.compare("dissipated_energy_density_inc") == 0 )  {
         result.resize(1);
         result [ 0 ] = dissipEnergyDensityInc;
-    } else result.resize(0);
+    } else {
+        result.resize(0);
+    }
 }
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    temp_stress = temp_strain = updt_stress = updt_strain = Vector::Zero(num);
+    temp_stress = temp_strain = updt_stress = updt_strain = Vector :: Zero(num);
 }
 
 //////////////////////////////////////////////////////////
@@ -139,7 +141,7 @@ double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pre
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -715,7 +717,7 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -726,25 +728,29 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 
 //////////////////////////////////////////////////////////
 void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
-    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {        
+    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {
         unsigned size = element->giveDimension();
         result.resize(size);
-        if (size>temp_stress.size()) size = temp_stress.size();
+        if ( size > temp_stress.size() ) {
+            size = temp_stress.size();
+        }
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
         }
-    }else if ( code.compare("strain") == 0 || code.compare("strains") == 0) {
+    } else if ( code.compare("strain") == 0 || code.compare("strains") == 0 )   {
         unsigned size = element->giveDimension();
         result.resize(size);
-        if (size>temp_strain.size()) size = temp_strain.size();
+        if ( size > temp_strain.size() ) {
+            size = temp_strain.size();
+        }
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_strain [ p ];
         }
-    }else if ( code.compare("E0") == 0 )  {
+    } else if ( code.compare("E0") == 0 )  {
         result.resize(1);
         DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
         result [ 0 ] = m->giveE0();
-    } else if ( code.compare("s_N") == 0 )  {
+    } else if ( code.compare("s_N") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];
     } else if ( code.compare("s_M") == 0 ) {

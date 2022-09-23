@@ -4,41 +4,39 @@
 #include "material.h"
 
 //////////////////////////////////////////////////////////
-// CUSATIS/MARS MATERIAL 2007
+// CUSATIS/MARS MATERIAL 2011
 
 class LDPMMaterial;
 class LDPMMaterialStatus : public DisMechMaterialStatus
 {
 private:
-    double omega0, maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
-    // MyVector temp_strain;
-    double damage, temp_damage;
+    double maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
     double Kt, Ks, L, nt;
     double RAND_H;
+    double crackOpening;
     double temp_crackOpening;
     double volumetricStrain;
 
-    double giveS0tension(double omega) const;
-    double giveS0compression(double omega) const;
-    void computeOmega0();
-    void computeDamage(Vector strain);
-    void computeKsAnsKt();
+    double giveStrengthLimit(double omega);
+    Vector giveTension(const Vector &strain, const Vector strain_prev, const Vector stress_prev);
+    Vector giveCompression(const Vector &strain, const Vector strain_prev, const Vector stress_prev);
+    Vector passZero(const Vector &strain);
+    Vector passThroughZero(const Vector &strain);
 
-    double crackOpening;
 public:
     LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     virtual ~LDPMMaterialStatus() {};
     virtual void init();
+    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
+    virtual void setParameterValue(std :: string code, double value);
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
-    virtual void setParameterValue(std :: string code, double value);
 };
 
 
@@ -46,29 +44,33 @@ class LDPMMaterial : public DisMechMaterial
 {
 private:
     double ft, Gt;
-    double fs, Gs, fc, Kc, beta, mu, nc;
-    double Lcrs, Lcrt;
-    double damage_residuum = 0.0;
+    double nt, kt, beta;
+    double fc, fc0, Ed, Hc0, Kc0, Kc1, Kc2;
+    double fs, fs0, Et, mu0, muinf;
     double stress_residuum_fraction = 0.0;
 public:
-    LDPMMaterial() { name = "Mars material"; };
+    LDPMMaterial() { name = "LDPM material"; };
     virtual ~LDPMMaterial() {};
+    virtual void init();
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
     double giveGt() { return Gt; }
-    double giveFs() { return fs; }
-    double giveGs() { return Gs; }
-    double giveFc() { return fc; }
+    double givent() { return nt; }
+    double givekt() { return kt; }
     double giveBeta() { return beta; }
-    double giveMu() { return mu; }
-    double giveNc() { return nc; }
-    double giveLcrs() { return Lcrs; }
-    double giveLcrt() { return Lcrt; }
-    double giveKc() { return Kc; }
-    double giveDamageResiduum() { return damage_residuum; }
+    double giveFc() { return fc; }
+    double giveFc0() { return fc0; }
+    double giveEd() { return Ed; }
+    double giveHc0() { return Hc0; }
+    double giveKc0() { return Kc0; }
+    double giveKc1() { return Kc1; }
+    double giveKc2() { return Kc2; }
+    double giveFs() { return fs; }
+    double giveFs0() { return fs0; }
+    double giveEt() { return Et; }
+    double giveMu0() { return mu0; }
+    double giveMuinf() { return muinf; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
-
-    virtual void init();
 };
 #endif /* _LDPM_MATERIAL_H */

@@ -3,4 +3,5 @@ time_step	1.000000e+00
 total_time	1.000000
 limit_tolerance	1.000000
 maxIt	20
-tolerance	1.000000e-10
+minIt 2
+tolerance	1.000000e-5

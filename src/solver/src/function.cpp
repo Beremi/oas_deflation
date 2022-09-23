@@ -37,9 +37,9 @@ double GeneralSpatialFunction :: giveNextEtreme(const double &t) const {
 
 //////////////////////////////////////////////////////////
 double Function :: checkTimeBellowZero(double t) const {
-    if (!(t>=0)){
+    if ( !( t >= 0 ) ) {
         cerr << "Warning in Function: asking for value at time bellow zero (t=" << t << "), returning value at t=0" << endl;
-        return 0;  
+        return 0;
     }
     return t;
 }
@@ -63,7 +63,7 @@ void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveY(double t) const {
-    t = Function::checkTimeBellowZero(t);
+    t = Function :: checkTimeBellowZero(t);
 
     if ( x.size() <= 0 ) {
         return 0;
@@ -174,13 +174,13 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double ConstSawToothFunction :: giveY(double t) const {
-    t = Function::checkTimeBellowZero(t);
+    t = Function :: checkTimeBellowZero(t);
 
     if ( lower > 0 && t < abs(time_shift) ) {
         return multip * t * lower / ( abs(time_shift) );
     } else {
         return ( ( upper - lower ) - ( ( ( upper - lower ) / ( 0.5 * period ) ) *
-                                       abs(fmod( ( t + time_shift ), period) - 0.5 * period) ) +
+                                       abs(fmod( ( t + time_shift ), period ) - 0.5 * period) ) +
                  lower ) * multip;
     }
 }
@@ -261,7 +261,7 @@ void VaryingSawToothFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double VaryingSawToothFunction :: giveY(double t) const {
-    t = PieceWiseLinearFunction::checkTimeBellowZero(t);
+    t = PieceWiseLinearFunction :: checkTimeBellowZero(t);
 
     // only multiply result of the constant saw tooth function by linearly increasing time function SawToot(t) * (t_m * t)
     double value = ConstSawToothFunction :: giveY(t);
@@ -307,7 +307,7 @@ void SinusFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double SinusFunction :: giveY(double t) const {
-    t = Function::checkTimeBellowZero(t);
+    t = Function :: checkTimeBellowZero(t);
 
     return amplitude * sin(2 * M_PI * t / period) + shift;
 }
@@ -332,10 +332,10 @@ FunctionContainer :: ~FunctionContainer() {
 void FunctionContainer :: readFromFile(const string filename) {
     size_t origsize = functions.size();
     string line, ftype;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() || (line.at(0) == '#') ) {
+            if ( line.empty() || ( line.at(0) == '#' ) ) {
                 continue;
             }
             istringstream iss(line);
@@ -374,7 +374,7 @@ void FunctionContainer :: readFromFile(const string filename) {
                     VaryingSawToothFunction *newf = new VaryingSawToothFunction();
                     newf->readFromLine(iss);
                     // it is necessary to specify which of two parent classes will the tree go throug
-                    functions.push_back( ( ConstSawToothFunction * ) newf);
+                    functions.push_back( ( ConstSawToothFunction * ) newf );
                 } else {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);

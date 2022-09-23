@@ -37,7 +37,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
 
     streampos oldpos = inputfile.tellg();  // stores the position
     while ( getline(inputfile >> std :: ws, line) ) {
-        if ( line.empty() || (line.at(0) == '#') ) {
+        if ( line.empty() || ( line.at(0) == '#' ) ) {
             continue;
         }
         istringstream iss(line);
@@ -137,7 +137,9 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
             df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
         }
         lambda_temp = ( pdispl - dd ) / df;
-        if (lambda_temp<lambda) lambda = lambda_temp;
+        if ( lambda_temp < lambda ) {
+            lambda = lambda_temp;
+        }
     }
     return lambda;
 }

@@ -73,12 +73,12 @@ void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
 }
 
 void Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
-    (void) DoFs;
+    ( void ) DoFs;
     if ( code.compare("ID") == 0  || code.compare("nodeID") == 0  ) {
         result.resize(1);
-        result[0] = id;
+        result [ 0 ] = id;
     } else {
-         result.resize(0);
+        result.resize(0);
     }
 };
 
@@ -116,11 +116,11 @@ MechDoF :: MechDoF(unsigned dimension, unsigned numDoFs) : MechNode(dimension) {
 void MechNode :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("displacements") == 0  || code.compare("displacement") == 0  ) {
         result.resize(3);
-        unsigned i=0;
-        for (; i < dim; i++ ) {
+        unsigned i = 0;
+        for ( ; i < dim; i++ ) {
             result [ i ] = DoFs [ firstDoF + i ];
         }
-        for (; i < 3; i++ ) {
+        for ( ; i < 3; i++ ) {
             result [ i ] = 0;
         }
     } else if ( code.compare("ux") == 0 ) {
@@ -234,11 +234,11 @@ void Particle :: readFromLine(istringstream &iss) {
 void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
     if ( code.compare("rotation") == 0  || code.compare("rotations") == 0  ) {
         result.resize(3);
-        unsigned i=0;
-        for (; i < 2*dim-3; i++ ) {
+        unsigned i = 0;
+        for ( ; i < 2 * dim - 3; i++ ) {
             result [ i ] = DoFs [ firstDoF + dim + i ];
         }
-        for (; i < 3; i++ ) {
+        for ( ; i < 3; i++ ) {
             result [ i ] = 0;
         }
     } else if ( dim > 1 && code.compare("rotx") == 0 ) {
@@ -256,7 +256,7 @@ void Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &res
 };
 
 //////////////////////////////////////////////////////////
-Vector Particle::calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const {
+Vector Particle :: calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const {
     unsigned DofsPerNode = ( dim - 1 ) * 3;
     Vector u = Vector :: Zero(DofsPerNode);
     for ( unsigned i = 0; i < DofsPerNode; i++ ) {
@@ -266,14 +266,14 @@ Vector Particle::calculateRigidBodyMotionVector(const Point *x, const Vector &Do
 }
 
 //////////////////////////////////////////////////////////
-Point Particle::calculateRigidBodyMotionPoint(const Point *x, const Vector &DoFs) const {    
+Point Particle :: calculateRigidBodyMotionPoint(const Point *x, const Vector &DoFs) const {
     Vector u = calculateRigidBodyMotionVector(x, DoFs);
     return Point(u [ 0 ], u [ 1 ], dim > 2 ? u [ 2 ] : 0);
 }
 
 //////////////////////////////////////////////////////////
-Matrix Particle::giveRigidBodyMotionMatrix(const Point *x) const {
-    Matrix A = Matrix :: Zero( dim, 3 * ( dim - 1 ) );
+Matrix Particle :: giveRigidBodyMotionMatrix(const Point *x) const {
+    Matrix A = Matrix :: Zero(dim, 3 * ( dim - 1 ) );
     if ( dim == 3 ) {
         A(0, 0) = A(1, 1) = A(2, 2) = 1;
         A(1, 3) = point.z() - x->z();

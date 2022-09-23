@@ -5,9 +5,11 @@ using namespace std;
 
 volatile sig_atomic_t TERMINATED = 0;
 
-void my_handler(int s){
-    (void) s;
-    if (TERMINATED) exit(EXIT_FAILURE);
+void my_handler(int s) {
+    ( void ) s;
+    if ( TERMINATED ) {
+        exit(EXIT_FAILURE);
+    }
     TERMINATED = 1;
 }
 
@@ -57,12 +59,12 @@ void Model :: init(const bool &initial) {     //initialization
 //////////////////////////////////////////////////////////
 void Model :: solve() {
     //solution
-    signal (SIGINT, my_handler);
-    exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
-    while ( !solver->isTerminated() && TERMINATED==0) {
+    signal(SIGINT, my_handler);
+    exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
+    while ( !solver->isTerminated() && TERMINATED == 0 ) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
+        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
         if ( printTime ) {
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;
@@ -80,10 +82,10 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 
     string istr, line;
     int iint;
-    ifstream inputfile( fullPath.string() );
+    ifstream inputfile(fullPath.string() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() || (line.at(0) == '#') ) {
+            if ( line.empty() || ( line.at(0) == '#' ) ) {
                 continue;
             }
             istringstream iss(line);
@@ -94,7 +96,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    nodes.readFromFile( ( baseDir / istr ).string(), ndim);
+                    nodes.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( initial && istr.compare("MatFiles") == 0 ) {
                 iss >> iint;
@@ -106,7 +108,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs);
+                    elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs );
                 }
             } else if ( istr.compare("MatStatFiles") == 0 ) {
                 iss >> iint;
@@ -119,13 +121,13 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    constr.readFromFile( ( baseDir / istr ).string(), ndim, & nodes);
+                    constr.readFromFile( ( baseDir / istr ).string(), ndim, & nodes );
                 }
             } else if ( istr.compare("BCFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems);
+                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems );
                 }
             } else if ( initial && istr.compare("FunctionFiles") == 0 ) {  // functions are constant during whole calculation, even in adaptive case
                 iss >> std :: skipws >> iint;
@@ -137,13 +139,13 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim);
+                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim );
                 }
             } else if ( istr.compare("PBlockFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    pblocks.readFromFile( ( baseDir / istr ).string(), ndim);
+                    pblocks.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( initial && istr.compare("Solver") == 0 ) {
                 iss >> istr;
