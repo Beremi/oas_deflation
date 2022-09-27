@@ -16,9 +16,7 @@ void FiberMaterialStatus :: giveValues(string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
-void FiberMaterialStatus :: init() {
-
-}
+void FiberMaterialStatus :: init() {}
 
 //////////////////////////////////////////////////////////
 void FiberMaterialStatus :: update() {
@@ -35,29 +33,32 @@ void FiberMaterialStatus :: resetTemporaryVariables() {
 //////////////////////////////////////////////////////////
 Matrix FiberMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     //TODO
-    (void) type;
-    (void) dim;
-    cout << "FiberMaterialStatus::giveStiffnessTensor"<< endl; cout.flush();
+    ( void ) type;
+    ( void ) dim;
+    cout << "FiberMaterialStatus::giveStiffnessTensor" << endl;
+    cout.flush();
 
-    return Matrix::Zero(dim,dim);
+    return Matrix :: Zero(dim, dim);
 }
 
 //////////////////////////////////////////////////////////
 Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     //TODO
-    (void) strain;
-    (void) timeStep;
-    cout << "FiberMaterialStatus::giveStress"<< endl; cout.flush();
-    return Vector::Zero(strain.size());
+    ( void ) strain;
+    ( void ) timeStep;
+    cout << "FiberMaterialStatus::giveStress" << endl;
+    cout.flush();
+    return Vector :: Zero( strain.size() );
 }
 
 //////////////////////////////////////////////////////////
 Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     //TODO
-    (void) strain;
-    (void) timeStep;
-    cout << "FiberMaterialStatus::giveStressWithFrozenIntVars"<< endl; cout.flush();
-    return Vector::Zero(strain.size());
+    ( void ) strain;
+    ( void ) timeStep;
+    cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
+    cout.flush();
+    return Vector :: Zero( strain.size() );
 }
 
 //////////////////////////////////////////////////////////
@@ -81,7 +82,7 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     // initialize all values to zero (NOTE probably no ned in linux, but in windows necessary)
-    Ef = Gd = tau0 = betaf = ft =0;
+    Ef = Gd = tau0 = betaf = ft = 0;
 
     string param;
     bool bft, bGd, btau0, bbetaf, bEf;
@@ -109,23 +110,28 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     if ( !bEf ) {
         cerr << name << ": material parameter 'Ef' was not specified" << endl;
         exit(EXIT_FAILURE);
-    };
+    }
+    ;
     if ( !bGd ) {
         cerr << name << ": material parameter 'Gd' was not specified" << endl;
         exit(EXIT_FAILURE);
-    };
+    }
+    ;
     if ( !btau0 ) {
         cerr << name << ": material parameter 'tau0' was not specified" << endl;
         exit(EXIT_FAILURE);
-    };
+    }
+    ;
     if ( !bft ) {
         cerr << name << ": material parameter 'ft' was not specified" << endl;
         exit(EXIT_FAILURE);
-    };
+    }
+    ;
     if ( !bbetaf ) {
         cerr << name << ": material parameter 'betaf' was not specified" << endl;
         exit(EXIT_FAILURE);
-    };
+    }
+    ;
 };
 
 //////////////////////////////////////////////////////////
@@ -138,5 +144,5 @@ MaterialStatus *FiberMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnu
 //////////////////////////////////////////////////////////
 void FiberMaterial :: init() {
     // if variables not specified on the input, use default multipliers
-    Ef = Gd = tau0 = betaf = ft =0;
+    Ef = Gd = tau0 = betaf = ft = 0;
 };

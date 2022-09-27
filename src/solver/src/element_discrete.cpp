@@ -88,15 +88,15 @@ void RigidBodyContact :: checkNodeType() const {
 Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
-    Matrix B = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );
-    Particle *a = static_cast<Particle *>(nodes[0]);
-    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
-    a = static_cast<Particle *>(nodes[1]);
-    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) );
+    Matrix B = Matrix :: Zero(ndim, 6 * ( ndim - 1 ) );
+    Particle *a = static_cast< Particle * >( nodes [ 0 ] );
+    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
+    a = static_cast< Particle * >( nodes [ 1 ] );
+    Matrix Ab = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
-            B( i, j + 3 * ( ndim - 1 ) ) = Ab(i, j);
+            B(i, j + 3 * ( ndim - 1 ) ) = Ab(i, j);
         }
     }
     return ( R * B ) / length;
@@ -125,7 +125,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         double currErr = 0.0;
         //
         for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
-            currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+            currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
             if ( abs(currErr) > maxErr ) {
                 maxErr = abs(currErr);
             }
@@ -143,7 +143,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross(vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
 
         //JM: Perpendicularity check of the beam and face directions
@@ -185,7 +185,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-6 ) {
             cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
@@ -195,7 +195,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-    if ( abs( normal.dot(t) ) > 1e-8 ) {
+    if ( abs(normal.dot(t) ) > 1e-8 ) {
         cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
         cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal.dot(t) << " normal v." << normal.x() << " " << normal.y() << " contact v. " << t.x() << " " << t.y() << endl;
@@ -218,12 +218,12 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             t1 = arbit.cross(normal);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs( normal.x() ) > 1e-3 ) {
+            if ( abs(normal.x() ) > 1e-3 ) {
                 t1 = Point(-normal.y() / normal.x(), 1, 0);
-            } else if ( abs( normal.y() ) > 1e-3 ) {
+            } else if ( abs(normal.y() ) > 1e-3 ) {
                 t1 = Point(0, -normal.z() / normal.y(), 1);
             } else {
-                t1 = Point( 1, 0, -normal.x() / normal.z() );
+                t1 = Point(1, 0, -normal.x() / normal.z() );
             }
         }
         t1.normalize();
@@ -258,7 +258,7 @@ void RigidBodyContact :: init() {
 
     //create simplices
     for ( auto &v: vert ) {
-        simplices.push_back( v->addElementToSimplex(this) );
+        simplices.push_back(v->addElementToSimplex(this) );
     }
 
     //check that material is DisMechMat
@@ -276,136 +276,135 @@ Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact::giveMassMatrix() const {
-    Matrix M = Matrix::Zero(6 * (ndim - 1), 6 * (ndim - 1));
-    DisMechMaterialStatus *mechstat = static_cast<DisMechMaterialStatus *>(stats[0]);
+Matrix RigidBodyContact :: giveMassMatrix() const {
+    Matrix M = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+    DisMechMaterialStatus *mechstat = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
     double density = mechstat->giveDensity();
     double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
     double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
-    if (ndim == 2) {
-            // Define points
-	    Point *A = nodes[0]->givePointPointer();
-	    Point *B = nodes[1]->givePointPointer();
-	    Point *C = vert[0]->givePointPointer();		
-            Point *D = vert[1]->givePointPointer();
-            Point cg0 = ( (*A) + (*C) + (*D) ) / 3.;
-            Point cg1 = ( (*B) + (*C) + (*D) ) / 3.;
-            Point null(0,0,0);
-            Point C_ = (*C) - (*A);
-            Point D_ = (*D) - (*A);
-            Point C__ = (*C) - (*B);
-            Point D__ = (*D) - (*B);
-            // MassMatrix
-            M(0, 0) = M(1, 1) = m0;
-            M(3, 3) = M(4, 4) = m1;
-            M(2, 2) = density * ( triInertia2D(&null, &C_, &D_) ); // Inertia relative to the node A[0,0]
-            M(5, 5) = density * ( triInertia2D(&null, &C__, &D__) ); // Inertia relative to the node B[0,0]
-            M(0, 2) = M(2, 0) = - m0 * ( cg0.y() - A->y() );
-            M(1, 2) = M(2, 1) = + m0 * ( cg0.x() - A->x() );
-            M(3, 5) = M(5, 3) = - m1 * ( cg1.y() - B->y() ); 
-            M(4, 5) = M(5, 4) = + m1 * ( cg1.x() - B->x() );
-    }
-    else if (ndim == 3) {
-            // Define points
-	    Point *A = nodes[0]->givePointPointer();
-	    Point *B = nodes[1]->givePointPointer();
-	    Point *FaceCentroid = inttype->giveIPLocationPointer(0);
-	    // Mass
-	    M(0, 0) = M(1, 1) = M(2, 2) = m0;
-	    M(6, 6) = M(7, 7) = M(8, 8) = m1;
-	    size_t n = vert.size();
-	    for ( unsigned i = 0 ; i < n ; i++ ) {	
-            	Point *C = vert[i]->givePointPointer();
-           	Point *D;
-            	if (i == 0) {
-            	D = vert[n-1]->givePointPointer();
-            	} else {
-            	D = vert[i-1]->givePointPointer();
-            	}    
-                Point cg0 = ( (*A) + (*C) + (*D) + (*FaceCentroid) ) / 4.;
-                Point cg1 = ( (*B) + (*C) + (*D) + (*FaceCentroid) ) / 4.;
-            // Volume of tetrahedron 
-     	        double tetraVolume0 = tetraVolumeSigned(A,C,D,FaceCentroid);
-    	        double tetraVolume1 = tetraVolumeSigned(B,C,D,FaceCentroid);  
-//cout << tetraVolume0 << endl; 	    
-    	    // Inertia matrix relative to the centroid [0,0,0]	
-    	        Point A__ = (*A) - cg0;
-    	        Point C__ = (*C) - cg0;
-    	        Point D__ = (*D) - cg0;
-    	        Point FaceCentroid__ = (*FaceCentroid) - cg0;
-    	        Point B___ = (*B) - cg1;
-    	        Point C___ = (*C) - cg1;
-    	        Point D___ = (*D) - cg1;
-    	        Point FaceCentroid___ = (*FaceCentroid) - cg1;
-   	        Matrix Icg0 = tetraInertia3D(&A__, &C__, &D__, &FaceCentroid__);
-    	        Matrix Icg1 = tetraInertia3D(&B___, &C___, &D___, &FaceCentroid___);
-    	    
-	    // MassMatrix
-   	        M(3, 3) += density * ( Icg0(0, 0) + tetraVolume0 * ( pow((cg0.y() - A->y()),2) + pow((cg0.z() - A->z()),2) ) );
-    	        M(4, 4) += density * ( Icg0(1, 1) + tetraVolume0 * ( pow((cg0.x() - A->x()),2) + pow((cg0.z() - A->z()),2) ) );
-                M(5, 5) += density * ( Icg0(2, 2) + tetraVolume0 * ( pow((cg0.x() - A->x()),2) + pow((cg0.y() - A->y()),2) ) ); 
-                M(3, 4) = M(4, 3) += density * ( Icg0(0, 1) - tetraVolume0 * ( (cg0.x() - A->x()) * (cg0.y() - A->y()) ) );
-                M(3, 5) = M(5, 3) += density * ( Icg0(0, 2) - tetraVolume0 * ( (cg0.x() - A->x()) * (cg0.z() - A->z()) ) );
-                M(4, 5) = M(5, 4) += density * ( Icg0(1, 2) - tetraVolume0 * ( (cg0.y() - A->y()) * (cg0.z() - A->z()) ) ); 
-            
-                M(9, 9) += density * ( Icg1(0, 0) + tetraVolume1 * ( pow((cg1.y() - B->y()),2) + pow((cg1.z() - B->z()),2) ) );
-                M(10, 10) += density * ( Icg1(1, 1) + tetraVolume1 * ( pow((cg1.x() - B->x()),2) + pow((cg1.z() - B->z()),2) ) );
-                M(11, 11) += density * ( Icg1(2, 2) + tetraVolume1 * ( pow((cg1.x() - B->x()),2) + pow((cg1.y() - B->y()),2) ) ); 
-                M(9, 10) = M(10, 9) += density * ( Icg1(0, 1) - tetraVolume1 * ( (cg1.x() - B->x()) * (cg1.y() - B->y()) ) );
-                M(9, 11) = M(11, 9) += density * ( Icg1(0, 2) - tetraVolume1 * ( (cg1.x() - B->x()) * (cg1.z() - B->z()) ) );
-                M(10, 11) = M(11, 10) += density * ( Icg1(1, 2) - tetraVolume1 * ( (cg1.y() - B->y()) * (cg1.z() - B->z()) ) ); 
+    if ( ndim == 2 ) {
+        // Define points
+        Point *A = nodes [ 0 ]->givePointPointer();
+        Point *B = nodes [ 1 ]->givePointPointer();
+        Point *C = vert [ 0 ]->givePointPointer();
+        Point *D = vert [ 1 ]->givePointPointer();
+        Point cg0 = ( ( * A ) + ( * C ) + ( * D ) ) / 3.;
+        Point cg1 = ( ( * B ) + ( * C ) + ( * D ) ) / 3.;
+        Point null(0, 0, 0);
+        Point C_ = ( * C ) - ( * A );
+        Point D_ = ( * D ) - ( * A );
+        Point C__ = ( * C ) - ( * B );
+        Point D__ = ( * D ) - ( * B );
+        // MassMatrix
+        M(0, 0) = M(1, 1) = m0;
+        M(3, 3) = M(4, 4) = m1;
+        M(2, 2) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node A[0,0]
+        M(5, 5) = density * ( triInertia2D(& null, & C__, & D__) );  // Inertia relative to the node B[0,0]
+        M(0, 2) = M(2, 0) = -m0 * ( cg0.y() - A->y() );
+        M(1, 2) = M(2, 1) = +m0 * ( cg0.x() - A->x() );
+        M(3, 5) = M(5, 3) = -m1 * ( cg1.y() - B->y() );
+        M(4, 5) = M(5, 4) = +m1 * ( cg1.x() - B->x() );
+    } else if ( ndim == 3 )     {
+        // Define points
+        Point *A = nodes [ 0 ]->givePointPointer();
+        Point *B = nodes [ 1 ]->givePointPointer();
+        Point *FaceCentroid = inttype->giveIPLocationPointer(0);
+        // Mass
+        M(0, 0) = M(1, 1) = M(2, 2) = m0;
+        M(6, 6) = M(7, 7) = M(8, 8) = m1;
+        size_t n = vert.size();
+        for ( unsigned i = 0; i < n; i++ ) {
+            Point *C = vert [ i ]->givePointPointer();
+            Point *D;
+            if ( i == 0 ) {
+                D = vert [ n - 1 ]->givePointPointer();
+            } else {
+                D = vert [ i - 1 ]->givePointPointer();
+            }
+            Point cg0 = ( ( * A ) + ( * C ) + ( * D ) + ( * FaceCentroid ) ) / 4.;
+            Point cg1 = ( ( * B ) + ( * C ) + ( * D ) + ( * FaceCentroid ) ) / 4.;
+            // Volume of tetrahedron
+            double tetraVolume0 = tetraVolumeSigned(A, C, D, FaceCentroid);
+            double tetraVolume1 = tetraVolumeSigned(B, C, D, FaceCentroid);
+            //cout << tetraVolume0 << endl;
+            // Inertia matrix relative to the centroid [0,0,0]
+            Point A__ = ( * A ) - cg0;
+            Point C__ = ( * C ) - cg0;
+            Point D__ = ( * D ) - cg0;
+            Point FaceCentroid__ = ( * FaceCentroid ) - cg0;
+            Point B___ = ( * B ) - cg1;
+            Point C___ = ( * C ) - cg1;
+            Point D___ = ( * D ) - cg1;
+            Point FaceCentroid___ = ( * FaceCentroid ) - cg1;
+            Matrix Icg0 = tetraInertia3D(& A__, & C__, & D__, & FaceCentroid__);
+            Matrix Icg1 = tetraInertia3D(& B___, & C___, & D___, & FaceCentroid___);
 
-                M(0, 4) = M(4, 0) += + ( tetraVolume0 * density ) * ( cg0.z() - A->z() );
-                M(0, 5) = M(5, 0) += - ( tetraVolume0 * density ) * ( cg0.y() - A->y() );
-                M(1, 3) = M(3, 1) += - ( tetraVolume0 * density ) * ( cg0.z() - A->z() );
-                M(1, 5) = M(5, 1) += + ( tetraVolume0 * density ) * ( cg0.x() - A->x() );
-                M(2, 3) = M(3, 2) += + ( tetraVolume0 * density ) * ( cg0.y() - A->y() );
-                M(2, 4) = M(4, 2) += - ( tetraVolume0 * density ) * ( cg0.x() - A->x() );
-            
-                M(6, 10) = M(10, 6) += + ( tetraVolume1 * density ) * ( cg0.z() - B->z() );	
-                M(6, 11) = M(11, 6) += - ( tetraVolume1 * density ) * ( cg0.y() - B->y() );
-                M(7, 9) = M(9, 7) += - ( tetraVolume1 * density ) * ( cg0.z() - B->z() );
-                M(7, 11) = M(11, 7) += + ( tetraVolume1 * density ) * ( cg0.x() - B->x() );
-                M(8, 9) = M(9, 8) += + ( tetraVolume1 * density ) * ( cg0.y() - B->y() );
-                M(8, 10) = M(10, 8) += - ( tetraVolume1 * density ) * ( cg0.x() - B->x() );
-            }  
+            // MassMatrix
+            M(3, 3) += density * ( Icg0(0, 0) + tetraVolume0 * ( pow( ( cg0.y() - A->y() ), 2 ) + pow( ( cg0.z() - A->z() ), 2 ) ) );
+            M(4, 4) += density * ( Icg0(1, 1) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2 ) + pow( ( cg0.z() - A->z() ), 2 ) ) );
+            M(5, 5) += density * ( Icg0(2, 2) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2 ) + pow( ( cg0.y() - A->y() ), 2 ) ) );
+            M(3, 4) = M(4, 3) += density * ( Icg0(0, 1) - tetraVolume0 * ( ( cg0.x() - A->x() ) * ( cg0.y() - A->y() ) ) );
+            M(3, 5) = M(5, 3) += density * ( Icg0(0, 2) - tetraVolume0 * ( ( cg0.x() - A->x() ) * ( cg0.z() - A->z() ) ) );
+            M(4, 5) = M(5, 4) += density * ( Icg0(1, 2) - tetraVolume0 * ( ( cg0.y() - A->y() ) * ( cg0.z() - A->z() ) ) );
+
+            M(9, 9) += density * ( Icg1(0, 0) + tetraVolume1 * ( pow( ( cg1.y() - B->y() ), 2 ) + pow( ( cg1.z() - B->z() ), 2 ) ) );
+            M(10, 10) += density * ( Icg1(1, 1) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2 ) + pow( ( cg1.z() - B->z() ), 2 ) ) );
+            M(11, 11) += density * ( Icg1(2, 2) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2 ) + pow( ( cg1.y() - B->y() ), 2 ) ) );
+            M(9, 10) = M(10, 9) += density * ( Icg1(0, 1) - tetraVolume1 * ( ( cg1.x() - B->x() ) * ( cg1.y() - B->y() ) ) );
+            M(9, 11) = M(11, 9) += density * ( Icg1(0, 2) - tetraVolume1 * ( ( cg1.x() - B->x() ) * ( cg1.z() - B->z() ) ) );
+            M(10, 11) = M(11, 10) += density * ( Icg1(1, 2) - tetraVolume1 * ( ( cg1.y() - B->y() ) * ( cg1.z() - B->z() ) ) );
+
+            M(0, 4) = M(4, 0) += +( tetraVolume0 * density ) * ( cg0.z() - A->z() );
+            M(0, 5) = M(5, 0) += -( tetraVolume0 * density ) * ( cg0.y() - A->y() );
+            M(1, 3) = M(3, 1) += -( tetraVolume0 * density ) * ( cg0.z() - A->z() );
+            M(1, 5) = M(5, 1) += +( tetraVolume0 * density ) * ( cg0.x() - A->x() );
+            M(2, 3) = M(3, 2) += +( tetraVolume0 * density ) * ( cg0.y() - A->y() );
+            M(2, 4) = M(4, 2) += -( tetraVolume0 * density ) * ( cg0.x() - A->x() );
+
+            M(6, 10) = M(10, 6) += +( tetraVolume1 * density ) * ( cg0.z() - B->z() );
+            M(6, 11) = M(11, 6) += -( tetraVolume1 * density ) * ( cg0.y() - B->y() );
+            M(7, 9) = M(9, 7) += -( tetraVolume1 * density ) * ( cg0.z() - B->z() );
+            M(7, 11) = M(11, 7) += +( tetraVolume1 * density ) * ( cg0.x() - B->x() );
+            M(8, 9) = M(9, 8) += +( tetraVolume1 * density ) * ( cg0.y() - B->y() );
+            M(8, 10) = M(10, 8) += -( tetraVolume1 * density ) * ( cg0.x() - B->x() );
+        }
     }
-//    cout << M << endl;
-//    exit(1);
+    //    cout << M << endl;
+    //    exit(1);
     return M;
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveBoundingBox(){
+Vector RigidBodyContact :: giveBoundingBox() {
     Vector bbox = giveFacetBoundingBox();
 
     Point *p;
-    for (auto &v:nodes){
+    for ( auto &v:nodes ) {
         p = v->givePointPointer();
-        for(unsigned i=0; i<ndim; i++){
-            bbox[2*i]   =  min(bbox[2*i  ],(*p)[i]);
-            bbox[2*i+1] =  max(bbox[2*i+1],(*p)[i]);
+        for ( unsigned i = 0; i < ndim; i++ ) {
+            bbox [ 2 * i ]   =  min(bbox [ 2 * i  ], ( * p ) [ i ]);
+            bbox [ 2 * i + 1 ] =  max(bbox [ 2 * i + 1 ], ( * p ) [ i ]);
         }
-    } 
+    }
     return bbox;
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveFacetBoundingBox(){
-    Vector bbox = Vector::Zero(ndim*2);
+Vector RigidBodyContact :: giveFacetBoundingBox() {
+    Vector bbox = Vector :: Zero(ndim * 2);
 
     //init
-    for(unsigned i=0; i<ndim; i++){
-        bbox[2*i]   =  std::numeric_limits<double>::infinity();
-        bbox[2*i+1] = -std::numeric_limits<double>::infinity();
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        bbox [ 2 * i ]   =  std :: numeric_limits< double > :: infinity();
+        bbox [ 2 * i + 1 ] = -std :: numeric_limits< double > :: infinity();
     }
 
     Point *p;
-    for (auto &v:vert){
+    for ( auto &v:vert ) {
         p = v->givePointPointer();
-        for(unsigned i=0; i<ndim; i++){
-            bbox[2*i]   =  min(bbox[2*i  ],(*p)[i]);
-            bbox[2*i+1] =  max(bbox[2*i+1],(*p)[i]);
+        for ( unsigned i = 0; i < ndim; i++ ) {
+            bbox [ 2 * i ]   =  min(bbox [ 2 * i  ], ( * p ) [ i ]);
+            bbox [ 2 * i + 1 ] =  max(bbox [ 2 * i + 1 ], ( * p ) [ i ]);
         }
     }
     return bbox;
@@ -535,7 +534,7 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
     if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
     } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize( ndim );
+        result.resize(ndim);
         for ( d = 0; d < ndim; d++ ) {
             result [ d ].resize(2);
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
@@ -547,7 +546,7 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        result.resize( ( k * ( k - 1 ) ) / 2 + k);
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(2);
         }
@@ -610,7 +609,7 @@ Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// RBSN BOUNDARY ELEMENT 
+// RBSN BOUNDARY ELEMENT
 RigidBodyBoundary :: RigidBodyBoundary(const unsigned dim) : RigidBodyContact(dim) {
     name = "LTCBoundary";
     active = false;
@@ -631,16 +630,18 @@ void RigidBodyBoundary :: init() {
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
         // this is fine, do nothing, just use it to check if particle and auxnode is there
     } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
-        std :: reverse(this->nodes.begin(), this->nodes.end() );
-        std :: reverse(this->vert.begin(), this->vert.end() );
+        std :: reverse( this->nodes.begin(), this->nodes.end() );
+        std :: reverse( this->vert.begin(), this->vert.end() );
     } else {
         cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
     }
     // init of parent class must be done after reverse of node, because the geometrical matrices are calculated in init()
     RigidBodyContact :: init();
 
-    CoulombFrictionMaterial* cfm = dynamic_cast<CoulombFrictionMaterial*>(mat);
-    if (cfm) active = true;
+    CoulombFrictionMaterial *cfm = dynamic_cast< CoulombFrictionMaterial * >( mat );
+    if ( cfm ) {
+        active = true;
+    }
 
     numOfNodes = 1;
     nodes.resize(1);
@@ -659,7 +660,7 @@ void RigidBodyBoundary :: extrapolateIPValuesToNodes(string code, vector< Vector
     if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
     } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize( ndim );
+        result.resize(ndim);
         for ( d = 0; d < ndim; d++ ) {
             result [ d ].resize(1);
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
@@ -670,7 +671,7 @@ void RigidBodyBoundary :: extrapolateIPValuesToNodes(string code, vector< Vector
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        result.resize( ( k * ( k - 1 ) ) / 2 + k);
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(1);
         }
@@ -697,34 +698,35 @@ void RigidBodyBoundary :: extrapolateIPValuesToNodes(string code, vector< Vector
 
 //////////////////////////////////////////////////////////
 Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
-
     ( void ) i;
     ( void ) DoFs;
     Vector f_ext = masterModel->giveSolver()->giveNodalForces();
     double pressure = 0;
-    for (unsigned k=0; k<ndim; k++) pressure += f_ext[DoFids[k]]*normal[k];
+    for ( unsigned k = 0; k < ndim; k++ ) {
+        pressure += f_ext [ DoFids [ k ] ] * normal [ k ];
+    }
     pressure /= area;
-    if (active)  {
+    if ( active ) {
         stats [ 0 ]->setParameterValue("normal_stress", pressure);
         return RigidBodyContact :: giveStrain(i, DoFs);
+    } else   {
+        return Vector :: Zero( ( this->ndim - 1 ) * 3 );
     }
-    else return Vector::Zero( ( this->ndim - 1 ) * 3);
-    
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundary :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
 }
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundary :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
-    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
-    Particle *a = static_cast<Particle *>(nodes[0]);
-    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix B = Matrix :: Zero(ndim, 3 * ( ndim - 1 ) );
+    Particle *a = static_cast< Particle * >( nodes [ 0 ] );
+    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -734,11 +736,12 @@ Matrix RigidBodyBoundary :: giveBMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyBoundary :: giveStiffnessMatrix(std :: string matrixType) const{
-    if (active) {
-        return RigidBodyContact::giveStiffnessMatrix(matrixType);
-    } else return Matrix::Zero(6,6);
-
+Matrix RigidBodyBoundary :: giveStiffnessMatrix(std :: string matrixType) const {
+    if ( active ) {
+        return RigidBodyContact :: giveStiffnessMatrix(matrixType);
+    } else {
+        return Matrix :: Zero(6, 6);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -759,8 +762,8 @@ void RigidBodyBoundaryCoupled :: init() {
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
         // this is fine, do nothing, just use it to check if particle and auxnode is there
     } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
-        std :: reverse(this->nodes.begin(), this->nodes.end() );
-        std :: reverse(this->vert.begin(), this->vert.end() );
+        std :: reverse( this->nodes.begin(), this->nodes.end() );
+        std :: reverse( this->vert.begin(), this->vert.end() );
     } else {
         cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
     }
@@ -782,7 +785,7 @@ void RigidBodyBoundaryCoupled :: extrapolateIPValuesToNodes(string code, vector<
     if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
     } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize( ndim );
+        result.resize(ndim);
         for ( d = 0; d < ndim; d++ ) {
             result [ d ].resize(1);
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
@@ -793,7 +796,7 @@ void RigidBodyBoundaryCoupled :: extrapolateIPValuesToNodes(string code, vector<
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        result.resize( ( k * ( k - 1 ) ) / 2 + k);
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(1);
         }
@@ -840,22 +843,22 @@ Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     ( void ) DoFs;
     this->extractPressureFromSimplices();
     // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
-    return Vector::Zero( ( this->ndim - 1 ) * 3);
+    return Vector :: Zero( ( this->ndim - 1 ) * 3 );
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
 }
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
-    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
-    Particle *a = static_cast<Particle *>(nodes[0]);
-    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix B = Matrix :: Zero(ndim, 3 * ( ndim - 1 ) );
+    Particle *a = static_cast< Particle * >( nodes [ 0 ] );
+    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -885,7 +888,7 @@ Matrix Truss :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
     Matrix B = Matrix :: Zero(ndim, 2 * ndim);
-    Matrix Aa = Matrix :: Identity( ndim, ndim );
+    Matrix Aa = Matrix :: Identity(ndim, ndim);
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < ndim; j++ ) {
             B(i, j) = -Aa(i, j);
@@ -903,7 +906,7 @@ Matrix Truss :: giveHMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
     Vector strain = Bs [ 0 ] * DoFs;
-    for ( size_t k = 1; k < (size_t)strain.size(); k++ ) {
+    for ( size_t k = 1; k < ( size_t ) strain.size(); k++ ) {
         strain [ k ] = 0;                                  //only normal strain active in truss
     }
     return strain;
@@ -989,7 +992,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         if ( vert.size() > 3 ) {
             for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
                 // JM Zakomentoval cout << i <<  " " << endl;
-                currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+                currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
                 if ( abs(currErr) > maxErr ) {
                     maxErr = abs(currErr);
                 }
@@ -1003,13 +1006,13 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
         //JM: face normal vector made from first 3 vertices
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross(vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
         Point t2;
-        if ( fabs( n.x() ) > fabs( n.z() ) ) {
+        if ( fabs(n.x() ) > fabs(n.z() ) ) {
             t2 = Point(-n.y(), n.x(), 0.0f);
         } else {
-            t2 = Point( 0.0f, -n.z(), n.y() );
+            t2 = Point(0.0f, -n.z(), n.y() );
         }
         t = t2.cross(n);
         t /= t.norm();
@@ -1051,14 +1054,14 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-10 ) {
             cerr << "TRSPRT: Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
         }
     }
 
-    if ( abs( normal.dot(t) ) > 1e-5 ) {
+    if ( abs(normal.dot(t) ) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
         cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
         cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal.dot(t) << endl;
@@ -1217,7 +1220,7 @@ void Transp1D :: extrapolateIPValuesToNodes(string code, vector< Vector > &resul
     if ( ipres.size() == 0 ) {   //empty answer
         result.resize(0);
     } else if ( ipres.size() == 1 ) {   //scalar times vector //needs to be checked, probably not theoretically correct
-        result.resize( ndim );
+        result.resize(ndim);
         for ( d = 0; d < ndim; d++ ) {
             result [ d ].resize(2);
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);

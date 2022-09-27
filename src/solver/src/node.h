@@ -178,7 +178,6 @@ public:
     Vector calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const;
     Point calculateRigidBodyMotionPoint(const Point *x, const Vector &DoFs) const;
     Matrix giveRigidBodyMotionMatrix(const Point *x) const;
-
 };
 
 //////////////////////////////////////////////////////////

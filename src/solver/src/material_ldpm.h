@@ -37,9 +37,6 @@ public:
     virtual void setParameterValue(std :: string code, double value);
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
-
-    
-
 };
 
 
@@ -49,7 +46,7 @@ private:
     double ft, Gt;
     double nt, kt, beta;
     double fc, fc0, Ed, Hc0, Kc0, Kc1, Kc2;
-    double fs, fs0, Et, mu0, muinf; 
+    double fs, fs0, Et, mu0, muinf;
     double stress_residuum_fraction = 0.0;
 public:
     LDPMMaterial() { name = "LDPM material"; };

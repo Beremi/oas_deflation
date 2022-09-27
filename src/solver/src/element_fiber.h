@@ -20,15 +20,15 @@ protected:
     double diam;
     Point dirVector;
     double length;
-    std::vector<RigidBodyContact*> contacts;     
+    std :: vector< RigidBodyContact * >contacts;
 
 public:
     Fiber(const unsigned dim);
     virtual ~Fiber() {};
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
-    Point giveDirVector()const{return dirVector;}
-    double giveLength()const{return length;}
+    Point giveDirVector()const { return dirVector; }
+    double giveLength()const { return length; }
     void createNewCrossing(Point intersec, RigidBodyContact *rbc);
     void sutUpCrossings();
     virtual Matrix giveBMatrix(const Point *x) const;
@@ -36,6 +36,3 @@ public:
 };
 
 #endif /* _ELEMENT_FIBER_H */
-
-
-

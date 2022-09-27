@@ -18,7 +18,7 @@ class MaterialStatus
 private:
 
 public:
-    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; totalEnergyDensity = 0; strainEnergyDensity = 0; dissipEnergyDensity = 0; dissipEnergyDensityInc = 0;};
+    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; totalEnergyDensity = 0; strainEnergyDensity = 0; dissipEnergyDensity = 0; dissipEnergyDensityInc = 0; };
     MaterialStatus(Material *m) { name = "basic mat. status"; mat = m; };
     virtual ~MaterialStatus() {};
     std :: string whoAmI() { return name; }

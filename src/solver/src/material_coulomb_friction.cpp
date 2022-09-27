@@ -18,8 +18,7 @@ void CoulombFrictionMaterialStatus :: giveValues(string code, Vector &result) co
 }
 
 //////////////////////////////////////////////////////////
-void CoulombFrictionMaterialStatus :: init() {
-}
+void CoulombFrictionMaterialStatus :: init() {}
 
 //////////////////////////////////////////////////////////
 void CoulombFrictionMaterialStatus :: update() {
@@ -39,11 +38,13 @@ Matrix CoulombFrictionMaterialStatus :: giveStiffnessTensor(string type, unsigne
     Matrix D = Matrix :: Zero(dim, dim);
     //double strain_norm = temp_strain.norm();
     //if(strain_norm<1e-10)  strain_norm = 1e-10;
-    //double stress_norm = temp_stress.norm();    
+    //double stress_norm = temp_stress.norm();
     double stiff = 0.;
-    if (normalStress<=-1) stiff = m->giveInitialStiffness();
+    if ( normalStress <= -1 ) {
+        stiff = m->giveInitialStiffness();
+    }
     //if (normalStress<=-1) stiff = max(stiffX,0.);
-    for ( unsigned i = 1; i < dim; i++ ) {        
+    for ( unsigned i = 1; i < dim; i++ ) {
         D(i, i) =  stiff * rb->giveLength();
     }
     return D;
@@ -56,18 +57,21 @@ Vector CoulombFrictionMaterialStatus :: giveStress(const Vector &strain, double 
 
 //////////////////////////////////////////////////////////
 Vector CoulombFrictionMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    (void) timeStep;
+    ( void ) timeStep;
     CoulombFrictionMaterial *m = static_cast< CoulombFrictionMaterial * >( mat );
     RigidBodyBoundary *rb = static_cast< RigidBodyBoundary * >( element );
     temp_strain = strain * rb->giveLength();
-    temp_strain[0] = 0.;
+    temp_strain [ 0 ] = 0.;
     Vector strain_inc = temp_strain - updt_strain;
     temp_stress = updt_stress + strain_inc * m->giveInitialStiffness();
     double eff_stress = temp_stress.norm();
-    if (normalStress>-1) temp_stress *= 0.;
-    else {
-        double max_stress = -normalStress*m->giveFrictionAngle();
-        if (eff_stress>max_stress) temp_stress *= max_stress/eff_stress;
+    if ( normalStress > -1 ) {
+        temp_stress *= 0.;
+    } else {
+        double max_stress = -normalStress *m->giveFrictionAngle();
+        if ( eff_stress > max_stress ) {
+            temp_stress *= max_stress / eff_stress;
+        }
     }
     return temp_stress;
 }
@@ -128,6 +132,4 @@ CoulombFrictionMaterialStatus *CoulombFrictionMaterial :: giveNewMaterialStatus(
 
 
 //////////////////////////////////////////////////////////
-void CoulombFrictionMaterial :: init() {    
-};
-
+void CoulombFrictionMaterial :: init() {};
