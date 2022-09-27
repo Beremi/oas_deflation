@@ -507,7 +507,7 @@ void LDPMMaterial :: init() {
     // if variables not specified on the input, use default multipliers
     nt = ( nt == 0 ) ? 0.2 : nt;
     kt = ( kt == 0 ) ? 0.5 : kt;
-    beta = ( beta == 0 ) ? 0 : beta;
+    beta = ( beta == 0 ) ? 0. : beta;
 
     fc = ( fc == 0 ) ? 16 * ft : fc;
     Ed = ( Ed == 0 ) ? 2*E0 : Ed;
