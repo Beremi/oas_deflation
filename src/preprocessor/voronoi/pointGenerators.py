@@ -71,6 +71,44 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
+def generateNodesRect_KDtree(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1, setsize = 10):
+    if (dim==2):
+        print('Generating 2d block segment of size (k-d tree generator): %f / %f. Cython solution for k-d tree generator not avaliable yet' %(maxLim[0], maxLim[1]) )
+
+    if (dim==3):
+        print('Generating 3d block segment of size (k-d tree generator): %f / %f / %f. Cython solution for k-d tree generator not avaliable yet' %(maxLim[0], maxLim[1], maxLim[2]) )
+
+    tr = 0
+    node_coords_set = []
+    first_set = True
+    while (tr<trials):
+        tr = 0
+
+        distIsGood1, distIsGood2 = False, False
+        while not distIsGood1 or not distIsGood2:
+            coords = randPointInRectangle(dim, maxLim,useLowBound=useLowBound)
+            distIsGood1, distIsGood2 = True, True
+
+            if not first_set:
+                distIsGood1 = utilitiesGeom.checkMutDistancesCKDTree2(dim, minDist, coords, Tree)
+
+            if distIsGood1:
+                distIsGood2 = utilitiesGeom.checkMutDistancesLoops(dim, minDist, node_coords_set, list(coords))
+
+            if not distIsGood1 or not distIsGood2:
+                tr += 1
+            if (tr > trials): break
+
+        #Adding node coords:
+        if (tr < trials):
+            node_coords_set.append(coords)
+        if len(node_coords_set) > setsize or tr > trials:
+            node_coords += node_coords_set
+            Tree = scipy.spatial.cKDTree ( node_coords,  leafsize=1 )
+            node_coords_set = []
+            first_set = False
+
+
 def fuller2D(d, dmax):
     return (1.065*np.sqrt(d/dmax)-0.053*np.power(d/dmax,4)-0.012*np.power(d/dmax,6)-0.0045*np.power(d/dmax,8)-0.0025*np.power(d/dmax,10))
 
