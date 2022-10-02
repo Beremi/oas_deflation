@@ -313,7 +313,7 @@ if __name__ == '__main__':
     if args.ld_files:
         for ld_idx, ld_file in enumerate(args.ld_files):
             ld_viewer.panel.ldfiles.add_ldfile = True
-            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = pathlib.Path(ld_file).absolute()
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = str(pathlib.Path(ld_file).absolute())
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].name = pathlib.Path(ld_file).absolute().parts[-3]
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].add_ldcurve = True
             if args.x:# in ld_viewer.labels:
