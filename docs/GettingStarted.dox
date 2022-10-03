@@ -45,7 +45,7 @@ Recommended structure
 \endcode
 
 -# create build directory \c partmod-build \c
--# configure the target - default is RELEASE
+-# configure the target (default CMAKE_BUILD_TYPE=RELEASE for gcc compiler)
   \code{.sh}
     cd partmod-build
     cmake PATH_TO_SRC (if recommended structure - cmake ../partmod)
@@ -54,7 +54,7 @@ Recommended structure
     \code{.sh}
       cmake -D CMAKE_BUILD_TYPE=Debug PATH_TO_SRC
     \endcode
--# update build directory after change CMakeLists.txt
+-# update build directory after change in CMakeLists.txt
   \code{.sh}
     cmake . [run inside build directory]
   \endcode
@@ -62,7 +62,9 @@ Recommended structure
   \code{.sh}
     cmake --build .
     OR
-    make [when Makefile generated]
+    make [when Makefile generated, gcc]
+    OR
+    cmake --build . --config Release [Visual Studio]
   \endcode
   - for speedup use parallel ("cmake --build" will run "cmake ." if necessary)
     \code{.sh}
@@ -71,9 +73,9 @@ Recommended structure
       cmake --build . -- /M      [Visual Studio]
       make -j 4
     \endcode
-- enable SANITIZERS in current build configuration
+- modify current build configuration
   \code{.sh}
-    cmake -DUSE_SANITIZERS=ON .
+    cmake -DUSE_SANITIZERS=ON . (e.g. enable SANITIZERS)
     OR
     cmake-gui . [GUI]
     OR
@@ -220,10 +222,10 @@ docker run -it --entrypoint /bin/bash a992
         - build
             \code{.sh}
                 mkdir build; cd build
-                [Windows]
+                [Windows - Visual Studio]
                 cmake -DBUILD_SHARED_LIBS=OFF ..
                 cmake --build . --parallel 4 --config Release
-                [Linux]
+                [Linux, Windows gcc]
                 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
                 cmake --build . --parallel 4
             \endcode
