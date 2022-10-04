@@ -45,10 +45,11 @@ void Fiber :: createNewCrossing(Point intersec, RigidBodyContact *rbc) {
     IntegrFiber *intf = static_cast< IntegrFiber * >( inttype );
     intf->addNewIP(intersec);
     contacts.push_back(rbc);
+    positions.push_back((intersec-nodes[0]->givePoint()).norm());
 }
 
 //////////////////////////////////////////////////////////
-void Fiber :: sutUpCrossings() {
+void Fiber :: setUpCrossings() {
     std :: vector< Node * >rbcnodes;
     std :: vector< Node * > :: iterator pos;
     Node *kn;

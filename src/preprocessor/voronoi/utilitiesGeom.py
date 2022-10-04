@@ -156,6 +156,17 @@ def checkMutDistancesCKDTree (dim, minDist, currentNodes, newNode):
         distIsGood = False
     return distIsGood
 
+#check mutual distances between particles using cKDTree -> use, if tree is already build
+def checkMutDistancesCKDTree2 (dim, minDist, newNode, tree):
+    crds = np.asarray(newNode)
+    #ncrds = np.asarray (currentNodes)
+    #tree = scipy.spatial.cKDTree ( ncrds,  leafsize=50 )
+    violatingPoints = tree.query_ball_point (x = crds,  r = minDist) #, n_jobs = -1 )
+    distIsGood = True
+    if ( len(violatingPoints) != 0):
+        distIsGood = False
+    return distIsGood
+
 #check mutual distances between particles using loops
 def checkMutDistancesLoops (dim, minDist, currentNodes, newNode):
     distIsGood = True
@@ -559,6 +570,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     #adding ridges with at least one node in sample
     #validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
 
+
     if len(node_indices_dogbone) > 0:
         #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
         #cond = np.all(cond, axis=1)
@@ -590,6 +602,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     aux_nodes = []
     ########################################################################################################
     allCoplanar = True
+
+
     for i in range (validRidgeIdxs.size):
         sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
 
@@ -730,6 +744,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         """
 
         ridges_out.append(rdg)
+
+
     geom_time = time.time()
     print ('done in %.1f seconds' %(geom_time-start_time))
     if (allCoplanar):
@@ -759,6 +775,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         ln = len(np.asarray(ridges_out[i]) )
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
+
 
     for i in range (len(notchAuxRidges)):
         ln = len(np.asarray(notchAuxRidges[i]) )

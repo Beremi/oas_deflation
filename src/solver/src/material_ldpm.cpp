@@ -1,5 +1,6 @@
 #include "material_ldpm.h"
 #include "element_discrete.h"
+#include "element_LDPM.h"
 
 using namespace std;
 
@@ -20,8 +21,17 @@ void LDPMMaterialStatus :: init() {
     volumetricStrain = 0;
     crackOpening = 0;
     temp_crackOpening = 0;
-    damage = 0;
-    temp_damage = 0;
+
+    RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
+    LDPMTetra *tet = dynamic_cast< LDPMTetra * >( element );
+    if ( rbc ) {
+        L = rbc->giveLength();
+    }else if(tet) {
+        L = tet->giveLength(idx);
+    } else {
+        cerr << "Material " << name << " can be used only for RigidBodyContact or LDMPTetra elements" << endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -79,13 +89,6 @@ double LDPMMaterialStatus :: giveStrengthLimit(double omega) {
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_prev, Vector stress_prev) {
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-    RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
-    if ( !rbc ) {
-        cerr << "Material " << name << " can be used only for RigidBodyContact elements" << endl;
-        exit(EXIT_FAILURE);
-    } else {
-        L = rbc->giveLength();
-    }
 
     // new strains & strains + stresses from previous step
     double epsN = strain [ 0 ], epsN_prev = strain_prev [ 0 ], strN_prev = stress_prev [ 0 ];

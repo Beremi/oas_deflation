@@ -208,6 +208,9 @@ void DiscreteTransportRVEMaterialStatus ::  giveValues(string code, Vector &resu
             result [ 4 ] = 0.5 * ( Keff1(0, 2) + Keff1(2, 0) );
             result [ 5 ] = 0.5 * ( Keff1(0, 1) + Keff1(1, 0) );
         }
+    } else if ( code.compare("flux") == 0 || code.compare("stress") == 0) {
+        result.resize(temp_stress.size());
+        for (unsigned k=0; k<temp_stress.size(); k++) result[k] = temp_stress[k];
     } else {
         RVEMaterialStatus :: giveValues(code, result);
     }
@@ -718,6 +721,18 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
     }
     return temp_stress;
 }
+
+
+//////////////////////////////////////////////////////////
+void DiscreteMechanicalRVEMaterialStatus ::  giveValues(string code, Vector &result) const {
+    if ( code.compare("stress") == 0) {
+        result.resize(temp_stress.size());
+        for (unsigned k=0; k<temp_stress.size(); k++) result[k] = temp_stress[k];
+    } else {
+        RVEMaterialStatus :: giveValues(code, result);
+    }
+}
+
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
@@ -1443,6 +1458,10 @@ void DiscreteCoupledRVEMaterialStatus ::  giveValues(string code, Vector &result
         result.resize(1);
         result [ 0 ] = temp_crackVolume / dcm->givePUCVolume();
     } else if ( code.compare("permeability_tensor") == 0 ) {
+        trspRVEstat->giveValues(code, result);
+    } else if ( code.compare("stress") == 0 ) {
+        mechRVEstat->giveValues(code, result);
+    } else if ( code.compare("flux") == 0 ) {
         trspRVEstat->giveValues(code, result);
     } else {
         RVEMaterialStatus :: giveValues(code, result);

@@ -5353,7 +5353,9 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
     # block
     oldLen = len(node_coords)
     maxLim = np.array([D,  6/4*D, thickness])
-    pointGenerators.generateNodesRect(maxLim, minDist, 3, trials, node_coords)
+
+    #pointGenerators.generateNodesRect(maxLim, minDist, 3, trials, node_coords)
+    pointGenerators.generateNodesRect_KDtree(maxLim, minDist, 3, trials, node_coords, setsize = 10)
 
     nrOfPoints =  (len(node_coords)) - oldLen
 
