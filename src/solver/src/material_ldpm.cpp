@@ -20,6 +20,8 @@ void LDPMMaterialStatus :: init() {
     volumetricStrain = 0;
     crackOpening = 0;
     temp_crackOpening = 0;
+    damage = 0;
+    temp_damage = 0;
 }
 
 //////////////////////////////////////////////////////////
@@ -30,6 +32,9 @@ void LDPMMaterialStatus :: giveValues(string code, Vector &result) const {
     } else if ( code.compare("volumetric_strain") == 0 ) {
         result.resize(1);
         result [ 0 ] = volumetricStrain;
+    } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
+        result.resize(1);
+        result [ 0 ] = temp_damage;
     } else if ( code.compare("ft") == 0 ) {
         LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
@@ -311,13 +316,62 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
         temp_stress = passThroughZero(strain);
     }
 
-    if ( temp_stress [ 0 ] < 0 && temp_stress [ 0 ] < m->giveFc0() ) {
-        temp_crackOpening = ( strain [ 0 ] - ( m->giveFc0() / m->giveE0() ) - ( temp_stress [ 0 ] - m->giveFc0() / m->giveE0() ) ) * L;
-    } else {
+    // if ( temp_stress [ 0 ] < 0 && temp_stress [ 0 ] < m->giveFc0() ) {
+    //     temp_crackOpening = ( strain [ 0 ] - ( m->giveFc0() / m->giveE0() ) - ( temp_stress [ 0 ] - m->giveFc0() / m->giveE0() ) ) * L;
+    // } else {
+    //     temp_crackOpening = ( strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
+    // }
+
+    if ( temp_stress [ 0 ] > 0 ) {
         temp_crackOpening = ( strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
+    } else {
+        temp_crackOpening = 0;
     }
 
+    giveVirtualDamage();
+
     return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+void LDPMMaterialStatus :: giveVirtualDamage() {
+// void LDPMMaterialStatus :: giveVirtualDamage(const Vector temp_strain, const Vector temp_stress) {
+    // cout << "---- giveVirtualDamage" << endl; cout.flush();
+
+    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
+    double temp_epsEff, temp_strEff;
+
+    double epsN = temp_strain [ 0 ], strN = temp_stress [ 0 ];
+    double epsT, strT;
+
+    if ( temp_strain.size() == 2 ) {     //2D
+        epsT = abs( temp_strain [ 1 ] );
+        strT = abs( temp_stress [ 1 ] );
+    } else {    //3D
+        epsT = sqrt( pow( temp_strain [ 1 ], 2) + pow( temp_strain [ 2 ], 2) );
+        strT = sqrt( pow( temp_stress [ 1 ], 2) + pow( temp_stress [ 2 ], 2) );
+    }
+    
+    temp_epsEff = sqrt( pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );    // effective strains
+    temp_strEff = sqrt( pow(strN, 2) + pow(strT, 2) / m->giveAlpha() );     // effective stress
+
+    double temp_E;
+    if ( epsN < m->giveFc0() ) {
+        temp_E = m->giveEd();
+    } else {
+        temp_E = m->giveE0();
+    }
+    // cout << "-------- temp_strEff " << temp_strEff << " temp_epsEff " << temp_epsEff << " temp_E " << temp_E << endl; cout.flush();
+    // cout << "-------- temp_strEff " << temp_strEff << " temp_E * temp_epsEff " << temp_E * temp_epsEff << endl; cout.flush();
+    
+    temp_damage = 1 - temp_strEff / ( temp_E * temp_epsEff );
+
+    if ( temp_damage < 1e-10 ) {
+        temp_damage = 0.;
+    }
+
+    // cout << "-------- temp damage " << temp_damage << endl; cout.flush();
+
 }
 
 //////////////////////////////////////////////////////////
@@ -327,6 +381,7 @@ void LDPMMaterialStatus :: update() {
     maxEpsT = temp_maxEpsT;
 
     crackOpening = temp_crackOpening;
+    damage = temp_damage;
 }
 
 //////////////////////////////////////////////////////////
@@ -335,12 +390,13 @@ void LDPMMaterialStatus :: resetTemporaryVariables() {
     temp_maxEpsN = maxEpsN;
     temp_maxEpsT = maxEpsT;
     temp_crackOpening = crackOpening;
+    temp_damage = damage;
 }
 
 //////////////////////////////////////////////////////////
 Matrix LDPMMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
     Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
-    if ( type.compare("elastic") == 0 ) {
+    /*if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
         return stiff;
@@ -352,6 +408,47 @@ Matrix LDPMMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
         cerr << "Error: LDPMMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
+    */
+    // cout << "---- giveStiffnessTensor init" << endl; cout.flush();
+    // cout << "-------- temp_damage " << temp_damage << endl; cout.flush();
+    
+    
+    // cout << "-------- DR " << m->giveDamageResiduum() << endl; cout.flush();
+
+    if ( type.compare("elastic") == 0 ) {
+        return stiff;
+    } else if ( type.compare("secant") == 0 ) {
+        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
+        return stiff * max( 1 - temp_damage, m->giveDamageResiduum() );
+    } else {
+        cerr << "Error: LDPMMaterialStatus does not provide '" << type << "' stiffness";
+        exit(1);
+    };
+
+    /*
+    // TEST 1
+    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
+    if ( temp_damage > 0.0 && temp_strain [ 0 ] > 0) {
+        // cout << "-------- damage" << endl; cout.flush();
+        return stiff * max( 1 - temp_damage, m->giveDamageResiduum() );
+    } else {
+        // cout << "-------- elastic" << endl; cout.flush();
+        return stiff;
+    }
+    */
+
+    /*
+    // TEST 2
+    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
+    if ( temp_damage > 0.0 ) {
+        // cout << "-------- damage" << endl; cout.flush();
+        return stiff * max( 1 - temp_damage, m->giveDamageResiduum() );
+    } else {
+        // cout << "-------- elastic" << endl; cout.flush();
+        return stiff;
+    }
+    */
+
 }
 
 //////////////////////////////////////////////////////////
@@ -470,6 +567,8 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
             iss >> mu0;
         } else if ( param.compare("muinf") == 0 ) {
             iss >> muinf;
+        } else if ( param.compare("damage_residuum") == 0 ) {
+            iss >> damage_residuum;
         } else if ( param.compare("stress_residuum_fraction") == 0 ) {
             iss >> stress_residuum_fraction;
         }
@@ -520,4 +619,6 @@ void LDPMMaterial :: init() {
     Et = ( Et == 0 ) ? alpha*E0 : Et;
     mu0 = ( mu0 == 0 ) ? 0.1 : mu0;
     muinf = ( muinf == 0 ) ? 0.0125 : muinf;
+
+    damage_residuum = ( damage_residuum == 0 ) ? 0. : damage_residuum;
 };
