@@ -734,6 +734,6 @@ void ElementContainer :: assignFibersToElems() {
         }
     }
     for ( auto &f:fibers ) {
-        f->sutUpCrossings();
+        f->setUpCrossings();
     }
 }

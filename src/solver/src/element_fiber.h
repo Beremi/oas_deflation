@@ -21,6 +21,7 @@ protected:
     Point dirVector;
     double length;
     std :: vector< RigidBodyContact * >contacts;
+    std :: vector< double > positions;
 
 public:
     Fiber(const unsigned dim);
@@ -30,9 +31,11 @@ public:
     Point giveDirVector()const { return dirVector; }
     double giveLength()const { return length; }
     void createNewCrossing(Point intersec, RigidBodyContact *rbc);
-    void sutUpCrossings();
+    void setUpCrossings();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    double giveLeftLength(unsigned id) const {return positions[id];};
+    double giveRightLength(unsigned id) const {return length - positions[id];};
 };
 
 #endif /* _ELEMENT_FIBER_H */

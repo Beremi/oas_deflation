@@ -177,6 +177,7 @@ public:
     virtual double giveCrackVolume() const;
     void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; };
+    virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////
