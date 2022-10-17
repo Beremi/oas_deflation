@@ -1,4 +1,4 @@
-#include "fatigue_material.h"
+#include "material_fatigue.h"
 #include "element_discrete.h"
 
 using namespace std;
