@@ -98,7 +98,7 @@ private:
         //     regionsToRemove [ rr++ ] = new Sphere(cent, this->radius2);
         // }
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove.push_back(std :: make_unique< Sphere >(cent, this->radius2) );
+            regionsToRemove.push_back( std :: make_unique< Sphere >(cent, this->radius2) );
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -137,7 +137,7 @@ private:
         // }
         std :: vector< std :: unique_ptr< Region > >regionsToRemove;
         for ( auto const &cent : this->nodeCentersToRmesh ) {
-            regionsToRemove.push_back(std :: make_unique< Sphere >(cent, this->radius) );
+            regionsToRemove.push_back( std :: make_unique< Sphere >(cent, this->radius) );
         }
         // save nodes that are going to be kept
         // maybe here can be nodes.out to distinguish between old and the new ones
@@ -172,7 +172,7 @@ private:
             if ( isInsideRegions(this->fineRegions, el) ) {
                 for ( auto const &mstat : el->giveMaterialStats() ) {
                     if ( !mstat->isElastic(false) ) { // save elems that were already damaged (in past) now=false checks damage (true checks temp_damage)
-                        elems_to_save.push_back( el->giveID() );
+                        elems_to_save.push_back(el->giveID() );
                         break;
                     }
                 }
@@ -189,7 +189,7 @@ private:
         this->saveCenters(); // save centersToRemesh
         std :: vector< Point >fine_centers;
         for ( auto const &reg : this->fineRegions ) {
-            fine_centers.push_back( reg->giveMainPoint() );
+            fine_centers.push_back(reg->giveMainPoint() );
         }
         this->saveCenters("centersFine.out", fine_centers);   // save any specified vector of points
 
@@ -217,7 +217,7 @@ private:
                                   std :: to_string(this->radius) + " " +
                                   std :: to_string(this->radius2)
                                   + " " +
-                                  std :: to_string( int( this->nodesFine != nullptr ) );
+                                  std :: to_string(int( this->nodesFine != nullptr ) );
         ;
         remeshCmd = remeshCmd + " " + std :: to_string(this->remesherSeed);
         // regionsNotToRemesh
@@ -231,7 +231,7 @@ private:
 
         std :: cout << "system cmd " << remeshCmd << '\n';
 
-        if ( system( remeshCmd.c_str() ) != 0 ) {
+        if ( system(remeshCmd.c_str() ) != 0 ) {
             std :: cerr << "something went wrong during remesher run" << '\n';
             exit(EXIT_FAILURE);
         }
@@ -242,7 +242,7 @@ private:
 
             std :: cout << "additional_python_script cmd " << remeshCmd << '\n';
 
-            if ( system( remeshCmd.c_str() ) != 0 ) {
+            if ( system(remeshCmd.c_str() ) != 0 ) {
                 std :: cerr << "something went wrong during remesher additional procedures" << '\n';
                 exit(EXIT_FAILURE);
             }
@@ -279,7 +279,7 @@ private:
                 }
                 if ( change_mat ) {
                     if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II g - setMaterialInFineRegions " << change++ << ", " << el->giveName() << '\n'; }
-                    el->changeMaterial( masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
+                    el->changeMaterial(masterModel->giveMaterials()->giveMaterial(this->remeshMaterialId) );
                 }
             }
         }
@@ -292,7 +292,7 @@ private:
         Element *el;
         std :: string node_ids_string;
 
-        std :: ifstream inputfile( this->elemStatuses.string().c_str() );
+        std :: ifstream inputfile(this->elemStatuses.string().c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.at(0) == '#' || line.empty() ) {
@@ -307,7 +307,7 @@ private:
                         iss >> node_id;
                         node_ids_string += "\t" + std :: to_string(node_id);
                         // map old nodes to new
-                        node_ids.push_back( this->giveNewNodeId(node_id) );
+                        node_ids.push_back(this->giveNewNodeId(node_id) );
                     }
                     // find element connecting these nodes
                     el = BaseSolver :: elems->giveElementConnectingNodes(node_ids);
@@ -335,7 +335,7 @@ private:
         if ( PRINT_TEST ) { std :: cout << "adaptivity remesh II f - loadRemeshData" << '\n'; }
         masterModel->clear();
 
-        masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false);
+        masterModel->readFromFile( ( fs :: path(this->remeshDir) / "master.inp" ).string(), false );
 
         // update the dof fields etc
         std :: cout << "updated model initialization ..." << '\n';
@@ -368,17 +368,17 @@ private:
                 if ( (
                          // JK check point from regions not to remesh, only do not remesh nodes inside of it, that't why the following line commented
                          // !isInsideRegions( this->regionsNotToRemesh, n->givePoint() ) &&
-                         !isInsideRegions( this->fineRegions, n->givePoint() )
+                         !isInsideRegions(this->fineRegions, n->givePoint() )
                          )
                       ) {
                     LinalgEigenSolver(tensorial_stress [ i ], eignums, eigvecs);
                     if ( eignums.maxCoeff() > this->adaptThreshold ) {
                         // std :: cout << "apply tensile threshold" << std :: endl;
-                        nodeCentersToRmesh.push_back( n->givePoint() );
+                        nodeCentersToRmesh.push_back(n->givePoint() );
                     } else if ( this->compressThreshold != 0 ) {
                         if ( eignums.minCoeff() < this->compressThreshold ) {
                             std :: cout << "apply compress threshold" << std :: endl;
-                            nodeCentersToRmesh.push_back( n->givePoint() );
+                            nodeCentersToRmesh.push_back(n->givePoint() );
                         }
                     }
                 }
@@ -407,7 +407,7 @@ private:
             this->updateGeometry(); // run python preprocessor
 
             for ( auto const &p : nodeCentersToRmesh ) {
-                this->fineRegions.push_back( std :: make_unique< Sphere >(p, this->radius) );
+                this->fineRegions.push_back(std :: make_unique< Sphere >(p, this->radius) );
             }
 
             this->loadRemeshData(); // load updated geometry
@@ -445,7 +445,7 @@ private:
         std :: string param, path, line;
         bool bat, br, br2, bptp, bmn, brl;
         bat = br = br2 = bptp = bmn = brl = false;
-        std :: ifstream inputfile( filename.c_str() );
+        std :: ifstream inputfile(filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -563,7 +563,7 @@ public:
 
         if ( initial && this->nodesFine ) {
             std :: cout << "Adaptivity: loading fine geometry ..." << '\n';
-            this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim);
+            this->nodesFine->readFromFile( ( this->pathToFineNodes ).string(), this->dim );
         }
 
         BaseSolver :: init(init_r_file, init_v_file, initial);
@@ -575,7 +575,7 @@ public:
 
         std :: string param, path, line;
         bool bfa = false;
-        std :: ifstream inputfile( filename.c_str() );
+        std :: ifstream inputfile(filename.c_str() );
         if ( inputfile.is_open() ) {
             while ( getline(inputfile >> std :: ws, line) ) {
                 if ( line.empty() || ( line.at(0) == '#' ) ) {

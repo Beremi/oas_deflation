@@ -27,7 +27,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
 
         x = cgK.solveWithGuess(b, x0);
 
-        result = size_t(cgK.iterations() ) < Maxit;
+        result = size_t( cgK.iterations() ) < Maxit;
         if ( !result ) {
             cout << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
         }
@@ -87,7 +87,7 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
     cout.flush();
 #endif
 
-    bool result = size_t(bicg.iterations() ) < Maxit;
+    bool result = size_t( bicg.iterations() ) < Maxit;
     return result;
 }
 
@@ -180,7 +180,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot(AC.cross(AD) );
+    double coplanarityError = AB.dot( AC.cross(AD) );
     return coplanarityError;
 }
 

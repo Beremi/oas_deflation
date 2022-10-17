@@ -69,7 +69,7 @@ void MarsMaterialStatus :: init() {
     LDPMTetra *tet = dynamic_cast< LDPMTetra * >( element );
     if ( rbc ) {
         L = rbc->giveLength();
-    } else if ( tet )     {} else  {
+    } else if ( tet ) {    } else {
         cerr << "Material " << name << " can be used only for RigidBodyContact or LDPMTetra elements" << endl;
         exit(EXIT_FAILURE);
     }
@@ -77,7 +77,7 @@ void MarsMaterialStatus :: init() {
     MarsMaterial *m = static_cast< MarsMaterial * >( mat );
     Ks = 2 * m->giveAlpha() * m->giveE0() / ( m->giveLcrs() / L - 1 );
     Kt = 2 * m->giveE0() / ( m->giveLcrt() / L - 1 );
-    nt = log(Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
+    nt = log( Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
 
     if ( Ks < 0 || Kt < 0 ) {
         cerr << "Error " << name << ": snap back occured" << endl;
@@ -98,11 +98,11 @@ double MarsMaterialStatus :: giveS0tension(double omega) const {
     double sa = .5 * ft * ( pow(fs / ( m->giveMu() * ft ), 2) - 1. );
 
 
-    if ( omega == atan(sqrt(m->giveAlpha() ) / m->giveMu() ) ) {
+    if ( omega == atan( sqrt( m->giveAlpha() ) / m->giveMu() ) ) {
         // for this anle, the later equation is undetermined, but hyperbola eq. gives this (see Two Scale Study - Cusatis 2007 doi.org/10.1016/j.engfracmech.2006.01.021)
         return .5 * ( ft + 2 * sa ) * ft / ( ( ft + sa ) * s );
     } else {
-        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
+        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
     }
 }
 
@@ -112,7 +112,7 @@ double MarsMaterialStatus :: giveS0compression(double omega) const {
 
     double fc = m->giveFc() * RAND_H;
 
-    return fc / sqrt(pow(sin(omega), 2) + ( m->giveAlpha() * pow(cos(omega), 2) ) / m->giveBeta() );
+    return fc / sqrt( pow(sin(omega), 2) + ( m->giveAlpha() * pow(cos(omega), 2) ) / m->giveBeta() );
 }
 
 //////////////////////////////////////////////////////////
@@ -154,14 +154,14 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
     if ( strain.size() == 2 ) {
         epsT = abs(strain [ 1 ]);                //2D
     } else {
-        epsT = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );    //3D
+        epsT = sqrt( pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );    //3D
     }
-    double epsEQ = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );    //equivalent strain
+    double epsEQ = sqrt( pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );    //equivalent strain
 
     if ( epsEQ > 0 && damage < 1.0 ) {
         double omega, S0, chi, K0, strEQ;
         if ( epsT > 0 ) {
-            omega = atan(epsN / ( sqrt(m->giveAlpha() ) * epsT ) );
+            omega = atan( epsN / ( sqrt( m->giveAlpha() ) * epsT ) );
         } else if ( epsN > 0 ) {
             omega = 0.5 * M_PI;
         } else {
@@ -176,7 +176,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
             double emax, f;
             temp_maxEpsN = max(maxEpsN, epsN);
             temp_maxEpsT = max(maxEpsT, epsT);
-            emax = sqrt(pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
+            emax = sqrt( pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
             S0 = giveS0tension(omega);
 
             //confinement not applied
@@ -185,7 +185,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
             f = 1;
 
 
-            K0 = -f * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt ) );
+            K0 = -f * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt) );
             if ( omega < 0.0 ) {
                 chi = epsEQ * omega / omega0 + emax * ( 1. - omega / omega0 );
             } else {
@@ -193,7 +193,7 @@ void MarsMaterialStatus :: computeDamage(Vector strain) {
             }
         }
         if ( chi - S0 / m->giveE0() > 0 ) {
-            strEQ = S0 * exp(K0 / S0 * ( chi - S0 / m->giveE0() ) );
+            strEQ = S0 * exp( K0 / S0 * ( chi - S0 / m->giveE0() ) );
         } else {
             strEQ = S0;
         }
@@ -245,7 +245,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
     } else if ( type.compare("secant") == 0 ) {
         MarsMaterial *m = static_cast< MarsMaterial * >( mat );
         if ( m->giveDamageResiduum() > 0.0 ) {
-            return stiff * fmax( 1 - temp_damage, m->giveDamageResiduum() );
+            return stiff * fmax(1 - temp_damage, m->giveDamageResiduum() );
         } else if ( m->giveStressResiduum() > 0.0 ) {
             // TODO finish this JK
             // QUESTION is this performed before update?
@@ -256,7 +256,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
                 for ( unsigned i = 1; i < temp_stress.size(); i++ ) {
                     sT += pow(temp_stress [ i ], 2);
                 }
-                double strs = sqrt(pow(sN, 2) + ( sT / m->giveAlpha() ) );
+                double strs = sqrt( pow(sN, 2) + ( sT / m->giveAlpha() ) );
                 if ( strs  < m->giveStressResiduum() ) {
                     double epsN, epsT;
                     epsN = temp_strain [ 0 ];
@@ -264,7 +264,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
                     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
                         epsT += pow(temp_strain [ i ], 2);
                     }
-                    double epsEQ = sqrt(pow(epsN, 2) + epsT * m->giveAlpha() );
+                    double epsEQ = sqrt( pow(epsN, 2) + epsT * m->giveAlpha() );
                     return stiff * ( 1 - m->giveStressResiduum() / ( m->giveE0() * epsEQ ) );
                 } else {
                     return stiff * ( 1 - temp_damage );
@@ -287,7 +287,7 @@ Matrix MarsMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
 
 //////////////////////////////////////////////////////////
 Vector MarsMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    computeDamage(addEigenStrain(strain) );
+    computeDamage( addEigenStrain(strain) );
     return MarsMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
@@ -452,7 +452,7 @@ void CoupledMarsMaterialStatus :: giveValues(string code, Vector &result) const 
         MarsMaterialStatus :: giveValues("stress", result); //standard stress including Biot's effect
         CoupledMarsMaterial *m = static_cast< CoupledMarsMaterial * >( mat );
         result [ 0 ] += m->giveBiotCoeff() * avgPressure; //stress without Biot's effect
-    } else   {
+    } else {
         return MarsMaterialStatus :: giveValues(code, result);
     }
 }

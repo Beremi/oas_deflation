@@ -59,16 +59,16 @@ void MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
-    } else if ( code.compare("total_energy_density") == 0 )  {
+    } else if ( code.compare("total_energy_density") == 0 ) {
         result.resize(1);
         result [ 0 ] = totalEnergyDensity;
-    } else if ( code.compare("strain_energy_density") == 0 )  {
+    } else if ( code.compare("strain_energy_density") == 0 ) {
         result.resize(1);
         result [ 0 ] = strainEnergyDensity;
-    } else if ( code.compare("dissipated_energy_density") == 0 )  {
+    } else if ( code.compare("dissipated_energy_density") == 0 ) {
         result.resize(1);
         result [ 0 ] = dissipEnergyDensity;
-    } else if ( code.compare("dissipated_energy_density_inc") == 0 )  {
+    } else if ( code.compare("dissipated_energy_density_inc") == 0 ) {
         result.resize(1);
         result [ 0 ] = dissipEnergyDensityInc;
     } else {
@@ -141,7 +141,7 @@ double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pre
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -717,7 +717,7 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    temp_stress.resize(strain.size() );
+    temp_stress.resize( strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -737,7 +737,7 @@ void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
         }
-    } else if ( code.compare("strain") == 0 || code.compare("strains") == 0 )   {
+    } else if ( code.compare("strain") == 0 || code.compare("strains") == 0 ) {
         unsigned size = element->giveDimension();
         result.resize(size);
         if ( size > temp_strain.size() ) {
@@ -746,7 +746,7 @@ void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_strain [ p ];
         }
-    } else if ( code.compare("E0") == 0 )  {
+    } else if ( code.compare("E0") == 0 ) {
         result.resize(1);
         DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
         result [ 0 ] = m->giveE0();

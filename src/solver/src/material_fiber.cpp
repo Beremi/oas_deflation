@@ -48,7 +48,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
     ( void ) timeStep;
     cout << "FiberMaterialStatus::giveStress" << endl;
     cout.flush();
-    return Vector :: Zero( strain.size() );
+    return Vector :: Zero(strain.size() );
 }
 
 //////////////////////////////////////////////////////////
@@ -58,7 +58,7 @@ Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, 
     ( void ) timeStep;
     cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
     cout.flush();
-    return Vector :: Zero( strain.size() );
+    return Vector :: Zero(strain.size() );
 }
 
 //////////////////////////////////////////////////////////

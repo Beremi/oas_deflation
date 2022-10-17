@@ -273,7 +273,7 @@ Point Particle :: calculateRigidBodyMotionPoint(const Point *x, const Vector &Do
 
 //////////////////////////////////////////////////////////
 Matrix Particle :: giveRigidBodyMotionMatrix(const Point *x) const {
-    Matrix A = Matrix :: Zero(dim, 3 * ( dim - 1 ) );
+    Matrix A = Matrix :: Zero( dim, 3 * ( dim - 1 ) );
     if ( dim == 3 ) {
         A(0, 0) = A(1, 1) = A(2, 2) = 1;
         A(1, 3) = point.z() - x->z();
