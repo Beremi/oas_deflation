@@ -12,19 +12,19 @@ int main(int argc, char **argv) {
     string master_filename;
 
     if ( argc == 1 ) {
-        fprintf(stderr, "Expected argument after options\n");
-        fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n",
+        fprintf(stdout, "Expected argument after options\n");
+        fprintf(stdout, "Usage: %s [-j num] path/to/master.inp\n",
                 argv [ 0 ]);
-        fprintf(stderr, "     : [-j num] has effect for Eigen conjugate gradients\n");
+        fprintf(stdout, "     : [-j num] has effect for Eigen conjugate gradients\n");
         cerr << string(80, '=') << endl;
         cerr << version_info() << endl;
-        exit(EXIT_FAILURE);
+        exit(EXIT_SUCCESS);
     }
 
     for ( size_t i = 0; i != args.size(); ++i ) {
         if ( args [ i ] == "-h" || args [ i ] == "--help" ) {
-            fprintf(stderr, "Usage: %s [-j num] path/to/master.inp\n", argv [ 0 ]);
-            return 0;
+            fprintf(stdout, "Usage: %s [-j num] path/to/master.inp\n", argv [ 0 ]);
+            exit(EXIT_SUCCESS);
         } else if ( args [ i ] == "-j" ) {
             if ( i + 1 < args.size() ) {
                 num = atoi( ( args [ i + 1 ] ).c_str() );

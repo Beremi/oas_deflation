@@ -38,6 +38,13 @@ then
     cmake --build .
     echo -e ${FINISHED}DiscreteModel build.${NOCOLOR}
 
+    # generate AppImage
+    cmake --build . --target install DESTDIR=AppDir
+    export DISCRETE_MODEL_HASH=`cat generated/hash.txt`
+    appimage-builder --recipe AppImageBuilder.yml --skip-tests
+    mv DiscreteModel*.AppImage bin
+    echo -e ${FINISHED}DiscreteModel.AppImage build.${NOCOLOR}
+
     build_win_dir="../partmod-build-win"
     if [ -d "$build_win_dir" ]
     then

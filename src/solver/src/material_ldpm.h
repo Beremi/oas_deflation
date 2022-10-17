@@ -13,15 +13,16 @@ private:
     double maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
     double Kt, Ks, L, nt;
     double RAND_H;
-    double crackOpening;
-    double temp_crackOpening;
+    double crackOpening, temp_crackOpening;
     double volumetricStrain;
+    double damage, temp_damage;
 
     double giveStrengthLimit(double omega);
     Vector giveTension(const Vector &strain, const Vector strain_prev, const Vector stress_prev);
     Vector giveCompression(const Vector &strain, const Vector strain_prev, const Vector stress_prev);
     Vector passZero(const Vector &strain);
     Vector passThroughZero(const Vector &strain);
+    void giveVirtualDamage();
 
 public:
     LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
@@ -47,6 +48,7 @@ private:
     double nt, kt, beta;
     double fc, fc0, Ed, Hc0, Kc0, Kc1, Kc2;
     double fs, fs0, Et, mu0, muinf;
+    double damage_residuum;
     double stress_residuum_fraction = 0.0;
 public:
     LDPMMaterial() { name = "LDPM material"; };
@@ -71,6 +73,7 @@ public:
     double giveEt() { return Et; }
     double giveMu0() { return mu0; }
     double giveMuinf() { return muinf; }
+    double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
 };
 #endif /* _LDPM_MATERIAL_H */
