@@ -1,7 +1,7 @@
 #include "element_continuous.h"
 #include "element_container.h"
 #include "boundary_condition.h"
-#include "material_RVE.h"
+#include "material_rve.h"
 
 using namespace std;
 

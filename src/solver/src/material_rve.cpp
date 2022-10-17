@@ -1,4 +1,4 @@
-#include "material_RVE.h"
+#include "material_rve.h"
 #include "model.h"
 #include "element_discrete.h"
 #include "element_continuous.h"

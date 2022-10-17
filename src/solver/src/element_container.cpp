@@ -3,7 +3,7 @@
 #include "element_continuous.h"
 #include "element_fiber.h"
 #include "element_polyhedral.h"
-#include "element_LDPM.h"
+#include "element_ldpm.h"
 #include <algorithm>
 #include "model.h"
 

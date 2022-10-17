@@ -1,4 +1,4 @@
-#include "material_HTC.h"
+#include "material_htc.h"
 #include "element_continuous.h"
 
 using namespace std;

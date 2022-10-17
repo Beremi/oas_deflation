@@ -1,6 +1,6 @@
 #include "material_ldpm.h"
 #include "element_discrete.h"
-#include "element_LDPM.h"
+#include "element_ldpm.h"
 
 using namespace std;
 

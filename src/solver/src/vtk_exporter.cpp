@@ -1,6 +1,6 @@
 #include "vtk_exporter.h"
 #include "element_discrete.h"
-#include "element_LDPM.h"
+#include "element_ldpm.h"
 #include "misc.h"
 
 using namespace std;

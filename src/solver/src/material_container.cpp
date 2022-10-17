@@ -1,12 +1,12 @@
 #include "material_container.h"
 
-#include "material_RVE.h"
+#include "material_rve.h"
 #include "material_mars.h"
 #include "material_ldpm.h"
-#include "fatigue_material.h"
+#include "material_fatigue.h"
 #include "material_misc.h"
 #include "material_slide_3_2.h"
-#include "material_HTC.h"
+#include "material_htc.h"
 #include "material_coulomb_friction.h"
 #include "material_fiber.h"
 

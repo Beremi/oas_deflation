@@ -7,7 +7,7 @@ set (solver_files
     element.cpp
     element_discrete.cpp
     element_fiber.cpp
-    element_LDPM.cpp
+    element_ldpm.cpp
     element_continuous.cpp
     element_polyhedral.cpp
     geometry.cpp
@@ -21,10 +21,10 @@ set (solver_files
     material_fiber.cpp
     material_misc.cpp
     material_slide_3_2.cpp
-    material_RVE.cpp
+    material_rve.cpp
     material_mars.cpp
     material_ldpm.cpp
-    fatigue_material.cpp
+    material_fatigue.cpp
     node_container.cpp
     node.cpp
     solver.cpp
@@ -37,7 +37,7 @@ set (solver_files
     shape_functions.cpp
     integration.cpp
     simplex.cpp
-    material_HTC.cpp
+    material_htc.cpp
     )
 
 add_library(solver
