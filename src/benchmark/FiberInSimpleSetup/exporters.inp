@@ -1,8 +1,0 @@
-DoFGauge LD ux ux 1 0
-DoFGauge LD ux ux 1 1
-ForceGauge LD load fx 1 0
-ForceGauge LD load fx 1 1
-VTKElementExporter elems  saveEvery 1e-4 cellData 2 volumetric_strain damage pointData 1 displacement ascii
-VTKRCExporter faces  saveEvery 1e-4 cellData 2 volumetric_strain damage pointData 1 displacement extrapolatedNodeData 1 stress  ascii
-#TXTElementExporter energy 6 total_energy strain_energy dissipated_energy total_energy_density strain_energy_density dissipated_energy_density
-

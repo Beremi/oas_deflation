@@ -1,9 +1,0 @@
-Dimension	3
-Solver	solver.inp
-MatFiles	1	materials.inp
-NodeFiles	2	nodes.inp	vertices.inp 
-ElemFiles	2	mechElems.inp fibers.inp
-BCFiles	1	mechBC.inp
-FunctionFiles	1	functions.inp
-ExporterFiles	1	exporters.inp
-

@@ -34,6 +34,7 @@ public:
     void setUpCrossings();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    double giveDiameter() const {return diam;};
     double giveLeftLength(unsigned id) const { return positions [ id ]; };
     double giveRightLength(unsigned id) const { return length - positions [ id ]; };
 };

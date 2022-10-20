@@ -1,9 +1,0 @@
-SteadyStateNonLinearSolver
-time_step	1.000000e-02
-min_time_step	1.000000e-02
-max_time_step	1.000000e-02
-total_time	1
-limit_tolerance	1.000000e-01
-maxIt	15
-tolerance	1.000000e-03
-stiffness_matrix_update	0
