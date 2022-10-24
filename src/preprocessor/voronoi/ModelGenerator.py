@@ -875,8 +875,8 @@ class Model:
             self.materials.append(transportMaterial)
             print('done.')
 
-        #MarsMaterial
-        if (r[1]=='MarsMaterial'):
+        #CSLMaterial
+        if (r[1]=='CSLMaterial'):
 
             young = None
             alpha = None
@@ -892,7 +892,7 @@ class Model:
                     setattr(params, r[i], bool(r[i+1]))
 
             if None in params.values():
-                print ('!! MarsMaterial incomplete. Exiting. !!')
+                print ('!! CSLMaterial incomplete. Exiting. !!')
                 exit()
 
             #"""
@@ -909,11 +909,11 @@ class Model:
                     Gt = float(r[i+1])
             #"""
             if (young == None or alpha == None or density == None or ft == None or  Gt == None):
-                print ('!! MarsMaterial incomplete. Exiting. !!')
+                print ('!! CSLMaterial incomplete. Exiting. !!')
                 sys.exit()
 
-            marsMaterial = utilitiesMech.MarsMaterial(young, alpha, density, ft, Gt, coupled = self.coupled)
-            self.materials.append(marsMaterial)
+            CSLMaterial = utilitiesMech.CSLMaterial(young, alpha, density, ft, Gt, coupled = self.coupled)
+            self.materials.append(CSLMaterial)
             print('done.')
 
         #FatigueMaterial

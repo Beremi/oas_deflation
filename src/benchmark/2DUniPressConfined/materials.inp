@@ -1,2 +1,2 @@
-#MarsMaterial	E0	3.000000e+10	alpha	0.300000	density	2200.000000	ft	2000000.000000	Gt	500.000000
+#CSLMaterial	E0	3.000000e+10	alpha	0.300000	density	2200.000000	ft	2000000.000000	Gt	500.000000
 FatigueShearMaterial	E0	43.0e9	alpha	0.300000    density 2200.0 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.0025e6 m 0

@@ -4,7 +4,7 @@
 #include "material.h"
 
 //////////////////////////////////////////////////////////
-// CUSATIS/MARS MATERIAL 2011
+// LDPM MATERIAL 2011
 
 class LDPMMaterial;
 class LDPMMaterialStatus : public DisMechMaterialStatus

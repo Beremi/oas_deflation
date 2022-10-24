@@ -2006,7 +2006,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
 
     if randomizeMaterial == True:
-        randomizeMechMaterial(master_folder, mechElemRidges, nodes, materialType='mars')
+        randomizeMechMaterial(master_folder, mechElemRidges, nodes, materialType='csl')
 
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
@@ -2080,7 +2080,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
     return notchAuxNodes
 
 
-def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType='mars'):
+def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType='csl'):
     print('Randomizing materials...')
     materials = []
     for i in range(len(mechanicalRidges)):
@@ -2106,9 +2106,9 @@ def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType=
 
 
 
-def getRandomizedMaterialProperties(integrationPoint, materialType='mars'):
+def getRandomizedMaterialProperties(integrationPoint, materialType='csl'):
     #initial material properties
-    if materialType == 'mars':
+    if materialType == 'csl':
         initYoung = 30e9
         initAlpha = 0.25
         initDensity = 2200
@@ -2123,7 +2123,7 @@ def getRandomizedMaterialProperties(integrationPoint, materialType='mars'):
         myFt = initFt * randCoef
         myGt = initGt * randCoef
 
-        material =  utilitiesMech.MarsMaterial(myYoung, myAlpha, myDensity, myFt, myGt)
+        material =  utilitiesMech.CSLMaterial(myYoung, myAlpha, myDensity, myFt, myGt)
 
     return material
 

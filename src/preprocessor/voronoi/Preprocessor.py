@@ -258,8 +258,8 @@ if __name__ == '__main__':
         density = 2200
         ft = 2000000.0
         Gt = 500
-        marsMaterial = utilitiesMech.MarsMaterial(young, poisson, density, ft, Gt)
-        materials.append(marsMaterial)
+        CSLMaterial = utilitiesMech.CSLMaterial(young, poisson, density, ft, Gt)
+        materials.append(CSLMaterial)
         fatigueMaterial = utilitiesMech.FatigueMaterial(35000000000.0, 0.3, 2200, 200000000.0, 35000000.0, 4000000000.0, 20000000000.0, -2e-07, 0.004, 4000000.0, 0.0, 10000000.0, 250.0, 0)
 
 

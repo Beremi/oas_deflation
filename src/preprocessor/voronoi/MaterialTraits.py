@@ -30,8 +30,8 @@ class LinearElasticMaterial(MechMaterial):
         return utilitiesMech.linearElasticMaterial(self.young_modulus, self.poisson, self.density)
 
 
-class MarsMaterial(MechMaterial):
-    name = 'Mars Material'
+class CSLMaterial(MechMaterial):
+    name = 'CSL Material'
     young_modulus = Float(30e9)
     poisson = Float(0.3)
     density = Float(2200)
@@ -47,7 +47,7 @@ class MarsMaterial(MechMaterial):
     )
 
     def get_material_object(self):
-        return utilitiesMech.MarsMaterial(self.young_modulus, self.poisson, self.density, self.ft, self.Gt)
+        return utilitiesMech.CSLMaterial(self.young_modulus, self.poisson, self.density, self.ft, self.Gt)
 
 
 #E0	35e9	alpha	0.300000    density 2200.0 fc 200e6 ft 35e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.00025e6 a 0
@@ -112,7 +112,7 @@ class LinearTrsprtMaterial(TrsprtMaterial):
 
 mechMaterials = [
     LinearElasticMaterial(),
-    MarsMaterial(),
+    CSLMaterial(),
     FatigueMaterial()
 ]
 mechMaterials_dict = { m.name: m for m in mechMaterials }

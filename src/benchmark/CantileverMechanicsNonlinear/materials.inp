@@ -1,2 +1,2 @@
-MarsMaterial	E0	3.000000e+10	alpha	0.300000    density	2e6 ft 2e6 Gt 500
+CSLMaterial	E0	3.000000e+10	alpha	0.300000    density	2e6 ft 2e6 Gt 500
 

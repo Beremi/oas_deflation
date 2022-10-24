@@ -1,1 +1,1 @@
-MarsMaterial	E0	2.150000e+10	alpha	0.300000	density	2200.000000	ft	2100000.000000	Gt	50.000000 damage_residuum 0.05
+CSLMaterial	E0	2.150000e+10	alpha	0.300000	density	2200.000000	ft	2100000.000000	Gt	50.000000 damage_residuum 0.05
