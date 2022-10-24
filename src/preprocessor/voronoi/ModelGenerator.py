@@ -309,7 +309,7 @@ class Model:
         #
         #if (self.printout == False): blockPrint()
         if self.modelType == '2d_transportPatchTest':
-            self.run_2d_trans1portPatchTest()
+            self.run_2d_transportPatchTest()
         if self.modelType == '3d_transportPatchTest':
             self.run_3d_transportPatchTest()
         if self.modelType == '3d_BiparvaTubeTransport':

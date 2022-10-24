@@ -197,7 +197,6 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
     Vector intF = Vector :: Zero( DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        Vector ppp = giveStrain(i, DoFs);
         if ( frozen ) {
             stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
         } else {

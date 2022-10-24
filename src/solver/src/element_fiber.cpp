@@ -57,7 +57,7 @@ void Fiber :: setUpCrossings() {
     unsigned totalDoFs = 0;
     unsigned i = 0;
     for ( auto &r:contacts ) {
-        for ( unsigned p = 0; p < 1; p++ ) {
+        for ( unsigned p = 0; p < 2; p++ ) {
             kn = r->giveNode(p);
             pos = std :: find(rbcnodes.begin(), rbcnodes.end(), kn);
             if ( pos != rbcnodes.end() ) {
@@ -80,7 +80,7 @@ void Fiber :: setUpCrossings() {
             DoFids [ i ] = k + s;
         }
     }
-    outDoFs = totalDoFs; //basic elems will alway have input = output
+    outDoFs = totalDoFs; //basic elems will always have input = output
 
     unsigned nodedof = 3 * ( ndim - 1 );
     Bs.resize( inttype->giveNumIP() );
