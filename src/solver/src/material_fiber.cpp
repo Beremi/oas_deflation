@@ -1,13 +1,14 @@
 #include "material_fiber.h"
 #include "element_fiber.h"
 #include "element_discrete.h"
+#include "material_csl.h"
 
 using namespace std;
 
 //////////////////////////////////////////////////////////
 // FIBER MATERIAL STATUS
 
-FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
+FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum) : ElasticMechMaterialStatus(m, e, ipnum) {
     name = "fiber mat. status";
     crack_opening = 0;
     temp_crack_opening = 0;
@@ -25,14 +26,16 @@ FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigne
 
 //////////////////////////////////////////////////////////
 void FiberMaterialStatus :: giveValues(string code, Vector &result) const {
-    MaterialStatus :: giveValues(code, result);
+    ElasticMechMaterialStatus :: giveValues(code, result);
 }
 
 //////////////////////////////////////////////////////////
 void FiberMaterialStatus :: init() { 
 
-    RigidBodyContact* mechElement = static_cast < RigidBodyContact* > ( element );
+    Fiber* fib = static_cast < Fiber* > ( element );
+    RigidBodyContact* mechElement = static_cast < RigidBodyContact* > ( fib->giveRBContact(idx) );
     contactLength = mechElement -> giveLength();
+    contactNormal = mechElement -> giveNormal();
 
     FiberMaterial* fibermat = static_cast < FiberMaterial* > ( mat );    
     double Ef = fibermat -> giveEf();    
@@ -41,10 +44,11 @@ void FiberMaterialStatus :: init() {
     
     Fiber* fiberelem = static_cast < Fiber* > ( element );
     df = fiberelem -> giveDiameter();
-    rightLe = 0.006;
-    //fiberelem -> giveRightLength( idx );
-    leftLe = 0.004;
-    //fiberelem -> giveLeftLength( idx ); 
+    rightLe = fiberelem -> giveRightLength( idx );
+    leftLe = fiberelem -> giveLeftLength( idx ); 
+    fiberNormal = fiberelem -> giveDirVector();
+
+    inclineAngle = acos( (fiberNormal).dot(contactNormal) );
     
     right_F0 = M_PI * df * tau0 * rightLe;
     left_F0 = M_PI * df * tau0 * leftLe;
@@ -58,7 +62,7 @@ void FiberMaterialStatus :: update() {
     right_pullout = temp_rightPullout;
     left_pullout = temp_leftPullout;
     bridgingForce = temp_bridgingForce; 
-
+    
     MaterialStatus :: update();
 }
 
@@ -89,29 +93,39 @@ double derivF_unloading( double deltaX, double deltaY ) {
 
 //////////////////////////////////////////////////////////
 Matrix FiberMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    //TODO
     ( void ) type;
     ( void ) dim;
+    
+    Matrix stiffness = Matrix :: Zero(dim, dim);
+    
+    double alpha1, alpha2;
+    alpha1 = temp_bridgingForce / ( temp_rightPullout / contactLength );
+    alpha2 = temp_bridgingForce / ( temp_leftPullout / contactLength );
+    
+    stiffness(0,0) = stiffness(1,1) = stiffness(2,2) = alpha1 * alpha2 / ( alpha1 + alpha2 );
+    
     cout << "FiberMaterialStatus::giveStiffnessTensor" << endl;
     cout.flush();
-
-    return Matrix :: Zero(dim, dim);
+    return stiffness;
 }
 
 //////////////////////////////////////////////////////////
 Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    //TODO
     ( void ) strain;
     ( void ) timeStep;
-        
+            
     FiberMaterial* fibermat = static_cast < FiberMaterial* > ( mat );    
     double Ef = fibermat -> giveEf();    
     double Gd = fibermat -> giveGd();
     double tau0 = fibermat -> giveTau0();
     double betaf = fibermat -> giveBetaf();
-// ---------------------------------------------------------------------     
-    temp_crack_opening = 2. * 0.0010027;
-    //strain[0] * contactLength;
+    double f = fibermat -> giveF();; // snubbing coefficient
+// ---------------------------------------------------------------------  
+    Fiber* fib = static_cast < Fiber* > ( element );  
+    CSLMaterialStatus* status = static_cast < CSLMaterialStatus* > ( fib->giveRBContact(idx) -> giveMatStatus(0) );
+    Vector crack = status -> giveCrackOpeningVector();
+    
+    //temp_crack_opening = strain.norm();
     incrementOfCrack = temp_crack_opening - crack_opening; 
 // ---------------------------------------------------------------------  
     double v0; // pullout for the extreme of functions 
@@ -223,14 +237,14 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
             if ( abs(bridgingForce1 - bridgingForce2) > tolerance ) {
                 cout << " WARNING: Limit iteration was reached ! " << endl;  
             }
-        }
-        if ( rightLe > leftLe ) {
+            if ( rightLe > leftLe ) {
                 temp_leftPullout = v1; 
                 temp_rightPullout = v2; 
             } else if ( rightLe < leftLe ) {
                 temp_rightPullout = v1; 
                 temp_leftPullout = v2; 
             }
+        }
     } else if ( incrementOfCrack <= 0 ) {
         temp_rightPullout = right_pullout + incrementOfCrack / 2.; 
         temp_leftPullout = left_pullout + incrementOfCrack / 2.;
@@ -254,27 +268,29 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
         }
     }
 
-    cout << "Forces " << temp_bridgingForce << endl;
-    cout << temp_rightPullout << endl;
-    cout << temp_leftPullout << endl;
-    cout << "Soucet pulloutu " << temp_rightPullout + temp_leftPullout << endl;
-    cout << "Crack width " << temp_crack_opening << endl;
-    cout << "Iterations " << iteration << endl;
-
+    temp_bridgingForce = temp_bridgingForce * exp ( -f * inclineAngle );
+    Vector w = strain / ( temp_crack_opening / contactLength ); 
+    
+    temp_stress = temp_bridgingForce * w; 
     
     cout << "FiberMaterialStatus::giveStress" << endl;
     cout.flush();
-    return Vector :: Zero(strain.size() );
+    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
 Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    //TODO
     ( void ) strain;
-    ( void ) timeStep;
+    ( void ) timeStep;       
+    double dim = strain.size(); 
+    
+    temp_crack_opening = strain.norm() * contactLength; 
+       
+    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic", dim) * temp_crack_opening; 
+
     cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
     cout.flush();
-    return Vector :: Zero(strain.size() );
+    return stressWithFrozenIntVars;
 }
 
 //////////////////////////////////////////////////////////
@@ -303,11 +319,11 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     // initialize all values to zero (NOTE probably no ned in linux, but in windows necessary)
-    Ef = Gd = tau0 = betaf = ft = 0;
+    Ef = Gd = tau0 = betaf = ft = f = 0;
 
     string param;
-    bool bft, bGd, btau0, bbetaf, bEf;
-    bft = bGd = btau0 = bbetaf = bEf =  false;
+    bool bft, bGd, btau0, bbetaf, bEf, bf;
+    bft = bGd = btau0 = bbetaf = bEf = bf = false;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -326,6 +342,9 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("betaf") == 0 ) {
             bbetaf = true;
             iss >> betaf;
+        } else if ( param.compare("f") == 0 ) {
+            bf = true;
+            iss >> f;
         }
     }
     if ( !bEf ) {
@@ -350,6 +369,11 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     ;
     if ( !bbetaf ) {
         cerr << name << ": material parameter 'betaf' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bf ) {
+        cerr << name << ": material parameter 'f' was not specified" << endl;
         exit(EXIT_FAILURE);
     };
 };

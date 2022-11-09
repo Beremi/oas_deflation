@@ -204,7 +204,9 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
         }
         intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
     }
-
+    cout << name << endl; 
+    cout << Bs [ 0 ].transpose() << endl; 
+    cout << intF << endl;
     //add internal sources
     if ( mat->isProducingInternalSources() ) {
         Vector intS = integrateInternalSources();

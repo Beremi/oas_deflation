@@ -37,6 +37,7 @@ public:
     double giveDiameter() const {return diam;};
     double giveLeftLength(unsigned id) const { return positions [ id ]; };
     double giveRightLength(unsigned id) const { return length - positions [ id ]; };
+    RigidBodyContact * giveRBContact(unsigned i)const{return contacts[i];};
 };
 
 #endif /* _ELEMENT_FIBER_H */
