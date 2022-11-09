@@ -305,7 +305,7 @@ Vector CSLMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, do
 
 //////////////////////////////////////////////////////////
 Vector CSLMaterialStatus :: giveCrackOpeningVector() const {
-       return (L * temp_damage ) * temp_strain [ 0 ];
+       return (L * temp_damage ) * temp_strain;
 }
 //////////////////////////////////////////////////////////
 std :: string CSLMaterialStatus :: giveLineToSave() const {
