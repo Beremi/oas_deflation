@@ -39,6 +39,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value);
+    Vector giveCrackOpeningVector() const;
 };
 
 
