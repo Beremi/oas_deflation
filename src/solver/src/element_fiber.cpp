@@ -24,7 +24,7 @@ Fiber :: Fiber(const unsigned dim) {
 //////////////////////////////////////////////////////////
 void Fiber :: init() {
     dirVector = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
-    length = dirVector.squaredNorm();
+    length = dirVector.norm();
     dirVector /= length;
 }
 
@@ -89,7 +89,7 @@ void Fiber :: setUpCrossings() {
         Hs [ k ] = Element :: giveHMatrix(k);
 
         Bs [ k ] = Matrix :: Zero(ndim, DoFids.size() );
-        Matrix rbcB = contacts [ k ]->giveBMatrix(inttype->giveIPLocationPointer(i) );
+        Matrix rbcB = contacts [ k ]->giveBMatrix(inttype->giveIPLocationPointer(i) ) * contacts [ k ]->giveLength() ;
         for ( unsigned cc = 0; cc < nodedof; cc++ ) {
             for ( unsigned rr = 0; rr < ndim; rr++ ) {
                 Bs [ k ](rr, nodedof *np [ 2 * k ] + cc)   = rbcB(rr, cc);

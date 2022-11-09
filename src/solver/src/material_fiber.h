@@ -7,15 +7,18 @@
 // MATERIAL FIBER
 
 class FiberMaterial;
-class FiberMaterialStatus : public MaterialStatus
+class FiberMaterialStatus : public ElasticMechMaterialStatus
 {
 private:
     double crack_opening;
     double temp_crack_opening;
     double incrementOfCrack;
     
-    double df, rightLe, leftLe; 
     double contactLength; 
+    Point contactNormal;
+    double df, rightLe, leftLe; 
+    Point fiberNormal;
+    double inclineAngle; 
     
     double right_pullout;
     double temp_rightPullout;
@@ -27,7 +30,7 @@ private:
     double rightForce, leftForce;
     
     double limit_rightPullout, limit_leftPullout, right_F0, left_F0;
-
+    
 public:
     FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum);
     virtual ~FiberMaterialStatus() {};
@@ -42,10 +45,10 @@ public:
 };
 
 
-class FiberMaterial : public Material
+class FiberMaterial : public ElasticMechMaterial
 {
 private:
-    double Ef, Gd, tau0, betaf, ft;
+    double Ef, Gd, tau0, betaf, ft, f;
 public:
     FiberMaterial(); //{ name = "fiber material"; };
     virtual ~FiberMaterial() {};
@@ -56,6 +59,7 @@ public:
     double giveTau0() { return tau0; }
     double giveBetaf() { return betaf; }
     double giveFt() { return ft; }
+    double giveF() { return f; }
     virtual void init();
 };
 
