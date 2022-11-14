@@ -234,6 +234,8 @@ class Model:
             if (r[i]=='elasticHeightCoef'):
                 self.elasticHeightCoef = float(r[i+1])
 
+            if (r[i]=='dmgBand'):
+                self.dmgBand = float(r[i+1])
 
             if (r[i]=='cylinderRad'):
                 self.cylinderRad = float(r[i+1])
@@ -462,8 +464,10 @@ class Model:
             elaHeight = 1/4*self.dogboneD
             if self.roughDogBone >1:
                 elaHeight = 3/4*self.dogboneD - (self.roughDogBone-1)*self.minDist
-
             if self.symmetric:
+                if self.dmgBand == 1:
+                    elaHeight = 3 / 4 * self.dogboneD - self.minDist / 4
+
                 self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
             else:
                 self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)

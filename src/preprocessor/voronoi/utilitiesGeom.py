@@ -235,6 +235,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
         #cond = np.all(cond, axis=1)
         #validRidgeIdxs = np.where(cond)[0]
+        node_indices_dogbone = set(node_indices_dogbone)
         validRidgeIdxs = []
         for i in range (vor.ridge_points.shape[0]):
             pr = False
@@ -576,6 +577,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         #cond = np.all(cond, axis=1)
         #validRidgeIdxs = np.where(cond)[0]
         validRidgeIdxs = []
+        node_indices_dogbone = set(node_indices_dogbone)
         for i in range (vor.ridge_points.shape[0]):
             pr = False
             for p in range (2):
@@ -1547,6 +1549,8 @@ def saveExporters(master_folder,activeTransport, activeMechanics, exporters=[]):
                 fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 2 damage crack_opening pointData 1 nodal_stress\n')
             fl.write('#VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage\n')
             fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
+            fl.write('#TXTElementExporter elem 4 dissipated_energy total_energy strain_energy dissipated_energy_inc\n')
+            fl.write('#TXTIntegrationPointExporter beam_data 11 x y normal_x normal_y damage s_N s_M s_L e_N e_M e_L\n')
         if activeTransport:
             fl.write('TXTNodalExporter pressure 1 pressure\n')
             fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 2 damage crack_opening pointData 1 pressure\n')

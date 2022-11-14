@@ -35,7 +35,7 @@
 ########### roughEdgeDogbone 0 - presne nasamplovane kruznice
 ########### roughEdgeDogbone 1 - prvky s obema nody v modelu
 ########### roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-########### Model 2d_dogbone dogboneD 0.05 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 1 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 defaultFilesFolder dogboneDefault
+Model 2d_dogbone dogboneD 0.05 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 1 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 1 roughEdgeDogbone 3 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 3 defaultFilesFolder dogboneDefault dmgBand 1
 ###########0.125
 ###########Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 1 nr_models 100 defaultFilesFolder dogboneDefault
 ###########C
@@ -50,7 +50,7 @@
 ###########DOGBONE BAND
 ###########Model 2d_dogboneBand minDist 0.001 Xsize 60 Ysize 10 activeMechanics 1  roughMinDistCoef 2 elasticHeightCoef 2 nr_models 100 defaultFilesFolder dogboneDefaultBand
 ###########
-Model 3d_dogbone dogboneD 0.025 minDist 0.006 dogboneExcentricityFrac 50 dogboneExcentricity_Z 0 activeMechanics 1 symmetric 0
+###########Model 3d_dogbone dogboneD 0.025 minDist 0.006 dogboneExcentricityFrac 50 dogboneExcentricity_Z 0 activeMechanics 1 symmetric 0
 ###########Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
 ###########
 ########### Cusatis torsion press
@@ -121,7 +121,7 @@ Solver	SteadyStateNonLinearSolver	time_step	1.000000e-03	max_time_step	1.000000e
 ###########MATERIALS
 ###########
 ########### Mars material
-Material MarsMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
+Material CSLMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
 ###########
 ########### Fatigue shear material
 ###########Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0

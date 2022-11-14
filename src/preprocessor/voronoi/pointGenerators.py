@@ -72,12 +72,6 @@ except:
 
 
 def generateNodesRect_KDtree(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1, setsize = 10):
-    if (dim==2):
-        print('Generating 2d block segment of size (k-d tree generator): %f / %f. Cython solution for k-d tree generator not avaliable yet' %(maxLim[0], maxLim[1]) )
-
-    if (dim==3):
-        print('Generating 3d block segment of size (k-d tree generator): %f / %f / %f. Cython solution for k-d tree generator not avaliable yet' %(maxLim[0], maxLim[1], maxLim[2]) )
-
     tr = 0
     node_coords_set = []
     first_set = True
