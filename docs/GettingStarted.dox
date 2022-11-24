@@ -7,7 +7,7 @@ This is a very short guide on how to get started with PartMod.
 \section GettingStartedInstallation How to "install" PartMod?
 
 In order to use PartMod, you just need to download and extract PartMod's source code - https://gitlab.com/kelidas/partmod.
-To grab a copy of the latest version of OOFEM using git access.
+To grab a copy of the latest version of PartMod using git access.
 \code{.sh}
   git clone git@gitlab.com:kelidas/partmod.git
   OR
@@ -22,8 +22,7 @@ with STL support (Standard Template Library).
 
 \subsection Build Build
 PartMod project uses cross-platform building system \c cmake \c (\cite bast_cmake_2018).
-Examples: https://github.com/dev-cafe/cmake-cookbook/tree/v1.0
-http://www.oofem.org/wiki/doku.php?id=cmake .
+Examples: https://github.com/dev-cafe/cmake-cookbook/tree/v1.0 .
 Cmake can be used:
 - in terminal (command line)
 - GUI - cmake-gui
@@ -136,10 +135,9 @@ Build Windows executable on Linux machine
 
 
 \section CodingStandard Coding Standard
-http://www.oofem.org/wiki/doku.php?id=coding-conventions
 - uncrustify
 \code{.sh}
-uncrustify -c oofem_dir/uncrustify.cfg -l CPP --replace mysource.C
+uncrustify -c partmod_dir/uncrustify.cfg -l CPP --replace mysource.C
 \endcode
 - uncrustify all *.cpp and *.h files
 \code{.sh}

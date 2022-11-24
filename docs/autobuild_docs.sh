@@ -44,6 +44,7 @@ then
     export DISCRETE_MODEL_HASH=`cat generated/hash.txt`
     appimage-builder --recipe AppImageBuilder.yml --skip-tests
     mv DiscreteModel*.AppImage bin
+    mv DiscreteModel*.AppImage.zsync bin
     echo -e ${FINISHED}DiscreteModel.AppImage build.${NOCOLOR}
 
     build_win_dir="../partmod-build-win"
