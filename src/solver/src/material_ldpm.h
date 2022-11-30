@@ -16,6 +16,8 @@ private:
     double crackOpening, temp_crackOpening;
     double volumetricStrain;
     double damage, temp_damage;
+    Vector updt_mech_strain; //last strain without eigenstrain
+    Vector mech_strain; //current strain without eigenstrain
 
     double giveStrengthLimit(double omega);
     Vector giveTension(const Vector &strain, const Vector strain_prev, const Vector stress_prev);
@@ -38,6 +40,7 @@ public:
     virtual void setParameterValue(std :: string code, double value);
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
+    virtual void initializeStressAndStrainVector(unsigned num);
 };
 
 
