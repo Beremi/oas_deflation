@@ -309,31 +309,31 @@ Vector LDPMMaterialStatus :: passThroughZero(const Vector &strain) {
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     temp_strain = strain;
-    Vector mech_strain = addEigenStrain(strain);
+    Vector temp_mech_strain = addEigenStrain(strain);
 
     ( void ) timeStep;
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-    double epsNState = mech_strain [ 0 ] * updt_mech_strain [ 0 ];  // gives information about the evolution of normal strains
+    double epsNState = temp_mech_strain [ 0 ] * updt_mech_strain [ 0 ];  // gives information about the evolution of normal strains
     if ( epsNState < -1e-25 ) {  // change of sign of EpsN
-        temp_stress = passZero(mech_strain);
+        temp_stress = passZero(temp_mech_strain);
     } else if ( epsNState > 1e-25 ) {
-        if ( mech_strain [ 0 ] < 0 ) {  // normal evolution in compression
-            temp_stress = giveCompression(mech_strain, updt_mech_strain, updt_stress);
-        } else if ( mech_strain [ 0 ] >= 0 ) {     // normal evolution in tension
-            temp_stress = giveTension(mech_strain, updt_mech_strain, updt_stress);
+        if ( temp_mech_strain [ 0 ] < 0 ) {  // normal evolution in compression
+            temp_stress = giveCompression(temp_mech_strain, updt_mech_strain, updt_stress);
+        } else if ( temp_mech_strain [ 0 ] >= 0 ) {     // normal evolution in tension
+            temp_stress = giveTension(temp_mech_strain, updt_mech_strain, updt_stress);
         }
     } else if ( updt_mech_strain [ 0 ] > -1e-18 && updt_mech_strain [ 0 ] < 1e-18 ) {   // originally == 0
-        temp_stress = passThroughZero(mech_strain);
+        temp_stress = passThroughZero(temp_mech_strain);
     }
 
     // if ( temp_stress [ 0 ] < 0 && temp_stress [ 0 ] < m->giveFc0() ) {
-    //     temp_crackOpening = ( mech_strain [ 0 ] - ( m->giveFc0() / m->giveE0() ) - ( temp_stress [ 0 ] - m->giveFc0() / m->giveE0() ) ) * L;
+    //     temp_crackOpening = ( temp_mech_strain [ 0 ] - ( m->giveFc0() / m->giveE0() ) - ( temp_stress [ 0 ] - m->giveFc0() / m->giveE0() ) ) * L;
     // } else {
-    //     temp_crackOpening = ( mech_strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
+    //     temp_crackOpening = ( temp_mech_strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
     // }
 
     if ( temp_stress [ 0 ] > 0 ) {
-        temp_crackOpening = ( mech_strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
+        temp_crackOpening = ( temp_mech_strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
     } else {
         temp_crackOpening = 0;
     }
@@ -392,7 +392,7 @@ void LDPMMaterialStatus :: update() {
 
     crackOpening = temp_crackOpening;
     damage = temp_damage;
-    updt_mech_strain = mech_strain;
+    updt_mech_strain = temp_mech_strain;
 }
 
 //////////////////////////////////////////////////////////
@@ -497,19 +497,19 @@ Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
     temp_strain = strain;
-    Vector true_strain = addEigenStrain(strain);
+    temp_mech_strain = addEigenStrain(strain);
 
-    double strN_tmp = m->giveE0() * true_strain [ 0 ];
+    double strN_tmp = m->giveE0() * temp_mech_strain [ 0 ];
     if ( temp_stress [ 0 ] < m->giveFc0() ) {
-        double eps1 = true_strain [ 0 ] * m->giveFc0() / strN_tmp;
-        double eps2 = true_strain [ 0 ] * ( strN_tmp - m->giveFc0() ) / strN_tmp;
+        double eps1 = temp_mech_strain [ 0 ] * m->giveFc0() / strN_tmp;
+        double eps2 = temp_mech_strain [ 0 ] * ( strN_tmp - m->giveFc0() ) / strN_tmp;
         temp_stress [ 0 ] = -eps1 *m->giveE0() - eps2 * m->giveEd();
     } else {
         temp_stress [ 0 ] = strN_tmp;
     }
-    temp_stress [ 1 ] = m->giveEt() * true_strain [ 1 ];
+    temp_stress [ 1 ] = m->giveEt() * temp_mech_strain [ 1 ];
     if ( strain.size() == 3 ) {
-        temp_stress [ 2 ] = m->giveEt() * true_strain [ 2 ];
+        temp_stress [ 2 ] = m->giveEt() * temp_mech_strain [ 2 ];
     }
     return temp_stress;
 }

@@ -539,6 +539,7 @@ void DiscreteTransportRVEMaterialStatus :: init() {
         macromaterial->setMasterMaterial(status, material);
         is_master_status = true;
 
+
         if ( macromaterial->shouldStartFromPrecomputed() && stiff.size() == 0 ) {
             unsigned ndim = macromaterial->giveNumOfDimensions();
             Matrix Keff = Matrix :: Zero(ndim, ndim);
@@ -552,6 +553,7 @@ void DiscreteTransportRVEMaterialStatus :: init() {
                 Vector help_stress;
                 double factor = 1e-10;
                 for ( unsigned i = 0; i < ndim; i++ ) {
+                    cout << "precomputing for pressure gradient component " << i << " out of " << ndim << endl;                    
                     help_strain [ i ] = factor;
                     help_stress = giveStress(help_strain, -1);
                     help_strain [ i ] = 0.;
@@ -1074,6 +1076,7 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
                 Vector help_stress;
                 double factor = 1e-10;
                 for ( unsigned i = 0; i < strain_size; i++ ) {
+                    cout << "precomputing for strain component " << i << " out of " << strain_size << endl;                    
                     help_strain [ i ] = factor;
                     help_stress = giveStress(help_strain, -1);
                     help_strain [ i ] = 0.;

@@ -17,7 +17,7 @@ private:
     double volumetricStrain;
     double damage, temp_damage;
     Vector updt_mech_strain; //last strain without eigenstrain
-    Vector mech_strain; //current strain without eigenstrain
+    Vector temp_mech_strain; //current strain without eigenstrain
 
     double giveStrengthLimit(double omega);
     Vector giveTension(const Vector &strain, const Vector strain_prev, const Vector stress_prev);
