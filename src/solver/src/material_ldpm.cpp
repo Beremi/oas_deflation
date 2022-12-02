@@ -478,14 +478,14 @@ Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
     // incremental prediction
     double strN_tmp = updt_stress [ 0 ] + m->giveE0() * (temp_mech_strain [ 0 ] - updt_mech_strain [ 0 ]);
 
-    if ( temp_stress [ 0 ] < -m->giveFc0() ) { // Fc0 is positive
+    if ( strN_tmp < -m->giveFc0() ) { // Fc0 is positive
         double eps1 = abs( temp_mech_strain [ 0 ] * m->giveFc0() / strN_tmp );
         double eps2 = abs( temp_mech_strain [ 0 ] * ( strN_tmp + m->giveFc0() ) / strN_tmp );
         temp_stress [ 0 ] = - eps1 *m->giveE0() - eps2 * m->giveEd();
     } else {
         temp_stress [ 0 ] = strN_tmp;
     }
-    // temp_stress [ 0 ] = updt_stress [ 0 ] + m->giveE0() * (temp_mech_strain [ 0 ] - updt_mech_strain [ 0 ]);
+
     temp_stress [ 1 ] = updt_stress [ 1 ] + m->giveEt() * (temp_mech_strain [ 1 ] - updt_mech_strain [ 1 ]);
     if ( strain.size() == 3 ) {
         temp_stress [ 2 ] = updt_stress [ 2 ] + m->giveEt() * (temp_mech_strain [ 2 ] - updt_mech_strain [ 2 ]);
