@@ -15,7 +15,7 @@ private:
     double RAND_H;
     double crackOpening, temp_crackOpening;
     double volumetricStrain;
-    double damage, temp_damage;
+    double virtual_damage;
     Vector updt_mech_strain; //last strain without eigenstrain
     Vector temp_mech_strain; //current strain without eigenstrain
 

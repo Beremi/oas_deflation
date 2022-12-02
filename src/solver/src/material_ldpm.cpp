@@ -21,7 +21,7 @@ void LDPMMaterialStatus :: init() {
     volumetricStrain = 0;
     crackOpening = 0;
     temp_crackOpening = 0;
-    
+    virtual_damage = 0;
 
     RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
     LDPMTetra *tet = dynamic_cast< LDPMTetra * >( element );
@@ -49,9 +49,9 @@ void LDPMMaterialStatus :: giveValues(string code, Vector &result) const {
     } else if ( code.compare("volumetric_strain") == 0 ) {
         result.resize(1);
         result [ 0 ] = volumetricStrain;
-    } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
+    } else if ( code.rfind("virtual_damage") == 0 ) {
         result.resize(1);
-        result [ 0 ] = temp_damage;
+        result [ 0 ] = virtual_damage;
     } else if ( code.compare("ft") == 0 ) {
         LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
@@ -345,8 +345,6 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
 //////////////////////////////////////////////////////////
 void LDPMMaterialStatus :: giveVirtualDamage() {
-// void LDPMMaterialStatus :: giveVirtualDamage(const Vector temp_strain, const Vector temp_stress) {
-    // cout << "---- giveVirtualDamage" << endl; cout.flush();
 
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
     double temp_epsEff, temp_strEff;
@@ -361,7 +359,7 @@ void LDPMMaterialStatus :: giveVirtualDamage() {
         epsT = sqrt( pow( temp_strain [ 1 ], 2) + pow( temp_strain [ 2 ], 2) );
         strT = sqrt( pow( temp_stress [ 1 ], 2) + pow( temp_stress [ 2 ], 2) );
     }
-    
+
     temp_epsEff = sqrt( pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );    // effective strains
     temp_strEff = sqrt( pow(strN, 2) + pow(strT, 2) / m->giveAlpha() );     // effective stress
 
@@ -371,16 +369,12 @@ void LDPMMaterialStatus :: giveVirtualDamage() {
     } else {
         temp_E = m->giveE0();
     }
-    // cout << "-------- temp_strEff " << temp_strEff << " temp_epsEff " << temp_epsEff << " temp_E " << temp_E << endl; cout.flush();
-    // cout << "-------- temp_strEff " << temp_strEff << " temp_E * temp_epsEff " << temp_E * temp_epsEff << endl; cout.flush();
-    
-    temp_damage = 1 - temp_strEff / ( temp_E * temp_epsEff );
 
-    if ( temp_damage < 1e-10 ) {
-        temp_damage = 0.;
+    virtual_damage = 1 - temp_strEff / ( temp_E * temp_epsEff );
+
+    if ( virtual_damage < 1e-10 ) {
+        virtual_damage = 0.;
     }
-
-    // cout << "-------- temp damage " << temp_damage << endl; cout.flush();
 
 }
 
@@ -391,7 +385,6 @@ void LDPMMaterialStatus :: update() {
     maxEpsT = temp_maxEpsT;
 
     crackOpening = temp_crackOpening;
-    damage = temp_damage;
     updt_mech_strain = temp_mech_strain;
 }
 
@@ -401,7 +394,6 @@ void LDPMMaterialStatus :: resetTemporaryVariables() {
     temp_maxEpsN = maxEpsN;
     temp_maxEpsT = maxEpsT;
     temp_crackOpening = crackOpening;
-    temp_damage = damage;
 }
 
 //////////////////////////////////////////////////////////
@@ -420,46 +412,16 @@ Matrix LDPMMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) cons
         exit(1);
     };
     */
-    // cout << "---- giveStiffnessTensor init" << endl; cout.flush();
-    // cout << "-------- temp_damage " << temp_damage << endl; cout.flush();
-    
-    
-    // cout << "-------- DR " << m->giveDamageResiduum() << endl; cout.flush();
 
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
         LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-        return stiff * max( 1 - temp_damage, m->giveDamageResiduum() );
+        return stiff * max( 1 - virtual_damage, m->giveDamageResiduum() );
     } else {
         cerr << "Error: LDPMMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
     };
-
-    /*
-    // TEST 1
-    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-    if ( temp_damage > 0.0 && temp_strain [ 0 ] > 0) {
-        // cout << "-------- damage" << endl; cout.flush();
-        return stiff * max( 1 - temp_damage, m->giveDamageResiduum() );
-    } else {
-        // cout << "-------- elastic" << endl; cout.flush();
-        return stiff;
-    }
-    */
-
-    /*
-    // TEST 2
-    LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-    if ( temp_damage > 0.0 ) {
-        // cout << "-------- damage" << endl; cout.flush();
-        return stiff * max( 1 - temp_damage, m->giveDamageResiduum() );
-    } else {
-        // cout << "-------- elastic" << endl; cout.flush();
-        return stiff;
-    }
-    */
-
 }
 
 //////////////////////////////////////////////////////////
@@ -516,7 +478,7 @@ Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
 
 //////////////////////////////////////////////////////////
 bool LDPMMaterialStatus :: isElastic(const bool &now) const {
-    // if ( now && this->temp_damage != 0.0 ) {
+    // if ( now && this->virtual_damage != 0.0 ) {
     //     return false;
     // } else if ( this->damage != 0.0 ) {
     //     return false;
