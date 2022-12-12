@@ -127,7 +127,7 @@ Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_pre
     temp_maxEpsT = max(maxEpsT, epsT);
     double temp_maxEpsEff = sqrt( pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );    // max effective strains
 
-    //elasticity
+    // elasticity
     double dEps = epsEff - epsEff_prev;
     double dStrElastic = m->giveE0() * dEps;
 
@@ -180,6 +180,8 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
     deviatoricStrain = volumetricStrain - strain [ 0 ];
     epsDV = volumetricStrain + m->giveBeta() * deviatoricStrain;
 
+    // cout << "--- volumetricStrain " << volumetricStrain <<  "--- Beta " << m->giveBeta() <<  "--- deviatoricStrain " << deviatoricStrain << endl; cout.flush();
+
     if ( strain [ 0 ] == 0 ) {
         rDV = 0;
     } else {
@@ -219,9 +221,12 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
 
     strC1 = m->giveFc0() + ( epsC1 - epsC0 ) * Hc;
 
+    // cout << "--- -epsDV " << -epsDV << endl; cout.flush();
+    // epsC1 ok
     double mcb;
     if ( -epsDV <= 0 ) {
         strBc = m->giveFc0();
+        // cout << "------ nr 1" << endl; cout.flush();
     } else if ( 0 <= -epsDV && -epsDV <= epsC1 ) {
         if ( -epsDV - epsC0 > 0 ) {
             mcb = -epsDV - epsC0;
@@ -229,8 +234,10 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
             mcb = 0;
         }
         strBc = m->giveFc0() + mcb * Hc;
+        // cout << "------ nr 2" << endl; cout.flush();
     } else {
         strBc = strC1 * exp( ( -epsDV - epsC1 ) * Hc / strC1);
+        // cout << "------ nr 3" << endl; cout.flush();
     }
 
     Vector intStress = Vector :: Zero( strain.size() );       // vector to collect stress
@@ -308,8 +315,15 @@ Vector LDPMMaterialStatus :: passThroughZero(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    temp_mech_strain = addEigenStrain(strain);
+
+    temp_strain = strain; // total strain = 0?
+    // cout << "----------------------------------------------------" << endl; cout.flush();
+    // cout << "strain" << endl; cout.flush();
+    // cout << strain << endl; cout.flush();
+    temp_mech_strain = addEigenStrain(strain);  // subtracts eigenstrain to get mechnaical strain
+    // cout << "mech strain" << endl; cout.flush();
+    // cout << temp_mech_strain << endl; cout.flush();
+    // cout << "----------------------------------------------------" << endl; cout.flush();
 
     ( void ) timeStep;
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
@@ -349,14 +363,14 @@ void LDPMMaterialStatus :: giveVirtualDamage() {
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
     double temp_epsEff, temp_strEff;
 
-    double epsN = temp_strain [ 0 ], strN = temp_stress [ 0 ];
+    double epsN = temp_mech_strain [ 0 ], strN = temp_stress [ 0 ];
     double epsT, strT;
 
-    if ( temp_strain.size() == 2 ) {     //2D
-        epsT = abs( temp_strain [ 1 ] );
+    if ( temp_mech_strain.size() == 2 ) {     //2D
+        epsT = abs( temp_mech_strain [ 1 ] );
         strT = abs( temp_stress [ 1 ] );
     } else {    //3D
-        epsT = sqrt( pow( temp_strain [ 1 ], 2) + pow( temp_strain [ 2 ], 2) );
+        epsT = sqrt( pow( temp_mech_strain [ 1 ], 2) + pow( temp_mech_strain [ 2 ], 2) );
         strT = sqrt( pow( temp_stress [ 1 ], 2) + pow( temp_stress [ 2 ], 2) );
     }
 
@@ -481,10 +495,17 @@ Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
     if ( strN_tmp < -m->giveFc0() ) { // Fc0 is positive
         double eps1 = abs( temp_mech_strain [ 0 ] * m->giveFc0() / strN_tmp );
         double eps2 = abs( temp_mech_strain [ 0 ] * ( strN_tmp + m->giveFc0() ) / strN_tmp );
-        temp_stress [ 0 ] = - eps1 *m->giveE0() - eps2 * m->giveEd();
+        temp_stress [ 0 ] = - eps1 * m->giveE0() - eps2 * m->giveEd();
     } else {
         temp_stress [ 0 ] = strN_tmp;
     }
+
+    // cout << "--------------------------------------------" << endl; cout.flush();
+    // cout << "temp_strain" << endl; cout.flush();
+    // cout << temp_strain << endl; cout.flush();
+    // cout << "temp_mech_strain" << endl; cout.flush();
+    // cout << temp_mech_strain << endl; cout.flush();
+    // cout << "--------------------------------------------" << endl; cout.flush();
 
     temp_stress [ 1 ] = updt_stress [ 1 ] + m->giveEt() * (temp_mech_strain [ 1 ] - updt_mech_strain [ 1 ]);
     if ( strain.size() == 3 ) {
