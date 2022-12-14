@@ -10,6 +10,7 @@ class FiberMaterial;
 class FiberMaterialStatus : public ElasticMechMaterialStatus
 {
 private:
+    Vector crackOpeningVector;
     double crack_opening;
     double temp_crack_opening;
     double incrementOfCrack;
@@ -48,7 +49,7 @@ public:
 class FiberMaterial : public ElasticMechMaterial
 {
 private:
-    double Ef, Gd, tau0, betaf, ft, f;
+    double Ef, Gd, tau0, betaf, ft, Ksn, Ksp, Krup;
 public:
     FiberMaterial(); //{ name = "fiber material"; };
     virtual ~FiberMaterial() {};
@@ -59,7 +60,9 @@ public:
     double giveTau0() { return tau0; }
     double giveBetaf() { return betaf; }
     double giveFt() { return ft; }
-    double giveF() { return f; }
+    double giveKsn() { return Ksn; }
+    double giveKsp() { return Ksp; }
+    double giveKrup() { return Krup; }
     virtual void init();
 };
 

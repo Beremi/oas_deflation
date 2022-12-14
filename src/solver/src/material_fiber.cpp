@@ -22,6 +22,7 @@ FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigne
     bridgingForce = 0;
     temp_bridgingForce = 0;
     rightForce = leftForce = 0;
+
 }
 
 //////////////////////////////////////////////////////////
@@ -36,6 +37,9 @@ void FiberMaterialStatus :: init() {
     RigidBodyContact* mechElement = static_cast < RigidBodyContact* > ( fib->giveRBContact(idx) );
     contactLength = mechElement -> giveLength();
     contactNormal = mechElement -> giveNormal();
+    
+    temp_stress = Vector :: Zero(contactNormal.size());
+    crackOpeningVector = Vector :: Zero(contactNormal.size());
 
     FiberMaterial* fibermat = static_cast < FiberMaterial* > ( mat );    
     double Ef = fibermat -> giveEf();    
@@ -98,13 +102,14 @@ Matrix FiberMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) con
     
     Matrix stiffness = Matrix :: Zero(dim, dim);
     
-    double alpha1, alpha2;
-    alpha1 = temp_bridgingForce / ( temp_rightPullout / contactLength );
-    alpha2 = temp_bridgingForce / ( temp_leftPullout / contactLength );
+    if ( temp_rightPullout > 0 and temp_leftPullout > 0 ){
+        double alpha1, alpha2;
+        alpha1 = temp_bridgingForce / ( temp_rightPullout / contactLength );
+        alpha2 = temp_bridgingForce / ( temp_leftPullout / contactLength );
+        stiffness(0,0) = stiffness(1,1) = stiffness(2,2) = alpha1 * alpha2 / ( alpha1 + alpha2 );
+    } 
     
-    stiffness(0,0) = stiffness(1,1) = stiffness(2,2) = alpha1 * alpha2 / ( alpha1 + alpha2 );
-    
-    cout << "FiberMaterialStatus::giveStiffnessTensor" << endl;
+    //cout << "FiberMaterialStatus::giveStiffnessTensor" << endl;
     cout.flush();
     return stiffness;
 }
@@ -119,14 +124,16 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
     double Gd = fibermat -> giveGd();
     double tau0 = fibermat -> giveTau0();
     double betaf = fibermat -> giveBetaf();
-    double f = fibermat -> giveF();; // snubbing coefficient
+    double ft = fibermat -> giveFt();
+    double Ksn = fibermat -> giveKsn(); // snubbing coefficient
+    double Ksp = fibermat -> giveKsp(); // spalling coefficient
+    double Krup = fibermat -> giveKrup(); // rupture coefficient
 // ---------------------------------------------------------------------  
     Fiber* fib = static_cast < Fiber* > ( element );  
     CSLMaterialStatus* status = static_cast < CSLMaterialStatus* > ( fib->giveRBContact(idx) -> giveMatStatus(0) );
-    Vector crack = status -> giveCrackOpeningVector();
-    
-    //temp_crack_opening = strain.norm();
-    incrementOfCrack = temp_crack_opening - crack_opening; 
+    crackOpeningVector = status -> giveCrackOpeningVector();
+    temp_crack_opening = crackOpeningVector.norm();
+    incrementOfCrack = temp_crack_opening - crack_opening;
 // ---------------------------------------------------------------------  
     double v0; // pullout for the extreme of functions 
     double Le1, F01, v1, vd1, bridgingForce1; // shorter fiber, will be debonded 
@@ -267,13 +274,35 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
             temp_leftPullout = 0;
         }
     }
-
-    temp_bridgingForce = temp_bridgingForce * exp ( -f * inclineAngle );
-    Vector w = strain / ( temp_crack_opening / contactLength ); 
     
-    temp_stress = temp_bridgingForce * w; 
     
-    cout << "FiberMaterialStatus::giveStress" << endl;
+    
+    
+    // microeffect of spalling - excel hotovy 
+    
+    
+    
+    
+    
+    // RUPTURE CONDITION
+    double deflectionAngle = 0; // budu znat z microeffectu 
+    double fiberStress = temp_bridgingForce;
+    double limitStress = ft * exp( -Krup * deflectionAngle );
+    if ( fiberStress > limitStress ){
+        temp_bridgingForce = 0;
+    } else if ( fiberStress <= limitStress ){
+        temp_bridgingForce = temp_bridgingForce;
+    }
+    
+    // FINAL STRESS VECTOR 
+    if ( temp_crack_opening == 0 ){ 
+        temp_stress = Vector :: Zero(strain.size()); 
+    } else {
+        Vector w = crackOpeningVector / temp_crack_opening; // tohle vyjmout do microeffectu a pridat prispevok spalling length sf
+        temp_stress = temp_bridgingForce * w;
+    }
+    
+    //cout << "FiberMaterialStatus::giveStress" << endl;
     cout.flush();
     return temp_stress;
 }
@@ -288,7 +317,7 @@ Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, 
        
     Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic", dim) * temp_crack_opening; 
 
-    cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
+    //cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
     cout.flush();
     return stressWithFrozenIntVars;
 }
@@ -308,7 +337,7 @@ void FiberMaterialStatus :: setParameterValue(string code, double value) {
 FiberMaterial :: FiberMaterial(){
     name = "fiber material";
     // if variables not specified on the input, use default multipliers
-    Ef = Gd = tau0 = betaf = ft =0;
+    Ef = Gd = tau0 = betaf = ft = Ksn = Ksp = Krup = 0;
 }
 
 //////////////////////////////////////////////////////////
@@ -319,11 +348,11 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     // initialize all values to zero (NOTE probably no ned in linux, but in windows necessary)
-    Ef = Gd = tau0 = betaf = ft = f = 0;
+    Ef = Gd = tau0 = betaf = ft = Ksn = Ksp = Krup = 0;
 
     string param;
-    bool bft, bGd, btau0, bbetaf, bEf, bf;
-    bft = bGd = btau0 = bbetaf = bEf = bf = false;
+    bool bft, bGd, btau0, bbetaf, bEf, bKsn, bKsp, bKrup;
+    bft = bGd = btau0 = bbetaf = bEf = bKsn = bKsp = bKrup = false;
 
     while ( !iss.eof() ) {
         iss >> param;
@@ -342,9 +371,15 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("betaf") == 0 ) {
             bbetaf = true;
             iss >> betaf;
-        } else if ( param.compare("f") == 0 ) {
-            bf = true;
-            iss >> f;
+        } else if ( param.compare("Ksn") == 0 ) {
+            bKsn = true;
+            iss >> Ksn;
+        } else if ( param.compare("Ksp") == 0 ) {
+            bKsp = true;
+            iss >> Ksp;
+        } else if ( param.compare("Krup") == 0 ) {
+            bKrup = true;
+            iss >> Krup;
         }
     }
     if ( !bEf ) {
@@ -372,8 +407,18 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
         exit(EXIT_FAILURE);
     }
     ;
-    if ( !bf ) {
-        cerr << name << ": material parameter 'f' was not specified" << endl;
+    if ( !bKsn ) {
+        cerr << name << ": material parameter 'Ksn' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bKsp ) {
+        cerr << name << ": material parameter 'Ksp' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bKrup ) {
+        cerr << name << ": material parameter 'Krup' was not specified" << endl;
         exit(EXIT_FAILURE);
     };
 };
