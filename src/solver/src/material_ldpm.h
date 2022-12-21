@@ -49,7 +49,7 @@ class LDPMMaterial : public DisMechMaterial
 private:
     double ft, Gt;
     double nt, kt, beta;
-    double fc, fc0, Ed, Hc0, Kc0, Kc1, Kc2;
+    double fc, fc0, Ed, Hc0, Hc1, Kc0, Kc1, Kc2, Kc3;
     double fs, fs0, Et, mu0, muinf;
     double damage_residuum;
     double stress_residuum_fraction = 0.0;
@@ -68,9 +68,11 @@ public:
     double giveFc0() { return fc0; }
     double giveEd() { return Ed; }
     double giveHc0() { return Hc0; }
+    double giveHc1() { return Hc0; }
     double giveKc0() { return Kc0; }
     double giveKc1() { return Kc1; }
     double giveKc2() { return Kc2; }
+    double giveKc3() { return Kc3; }
     double giveFs() { return fs; }
     double giveFs0() { return fs0; }
     double giveEt() { return Et; }
