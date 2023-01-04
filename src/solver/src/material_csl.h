@@ -47,7 +47,7 @@ class CSLMaterial : public DisMechMaterial
 {
 private:
     double ft, Gt;
-    double fs, Gs, fc, Kc, beta, mu, nc;
+    double fs, Gs, fc, Kc, beta, mu, nc, lam0;
     double Lcrs, Lcrt;
     double damage_residuum = 0.0;
     double stress_residuum_fraction = 0.0;
@@ -67,6 +67,7 @@ public:
     double giveLcrs() { return Lcrs; }
     double giveLcrt() { return Lcrt; }
     double giveKc() { return Kc; }
+    double giveLam0() { return lam0; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
 

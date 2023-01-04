@@ -1,0 +1,5 @@
+Model 3d_cylinderTorsionPress cylinderHeight 0.15 cylinderRad 0.025 minDist 0.008 activeMechanics 1 activeTransport 0 coupled 0 trials 50000  auxmechelements 1 PowerTes 1 seed 333
+Solver	SteadyStateNonLinearSolver	time_step	5.000000e-03 min_time_step	5.000000e-04 max_time_step	1.000000e-02 total_time	0.2 limit_tolerance	1 maxIt	60 tolerance	1.000000e-05 stiffness_matrix_update 20 conj_grad_precision 1e-16 conj_grad_relative_maxit 10 damage_residuum 1e-7
+Material CSLMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
+Exporter VTKElementExporter elems saveEvery 0.003 cellData 2 damage crack_opening pointData 0
+Exporter VTKRCExporter   bodies 	saveEvery	0.003	cellData	2	damage	crack_opening	pointData	0

@@ -28,6 +28,7 @@ public:
     virtual Point giveMainPoint() const = 0;
     virtual double giveSize() const = 0;
     virtual void print() const {};
+    virtual void init(){};
 };
 
 
@@ -103,6 +104,37 @@ public:
     Polygon(const std :: vector< Point > &V);
     void addVertex(const Point &P);
     virtual bool isInside(const Point &P) const;
+};
+
+class Cylinder : public RegularRegion
+{
+private:
+    Point A, B;
+    double radius, length;
+    Point dir;
+    
+public:
+    Cylinder() {};
+    virtual ~Cylinder() {};
+    Cylinder(const Point &A, const Point &B, double radius);
+    virtual bool isInside(const Point &P) const;
+    virtual void readFromLine(std :: istringstream &iss);
+    virtual void init();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// CONTAINER FOR REGIONS
+class RegionContainer
+{
+protected:
+    std :: vector< Region * > regions;
+    unsigned dim;
+public:
+    RegionContainer() {};
+    virtual ~RegionContainer();
+    void readFromFile(const std :: string &filename, unsigned dim);
+    bool isLocationValid(const Point, const std :: vector<unsigned> in, const std :: vector<unsigned> out) const;
 };
 
 

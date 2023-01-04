@@ -1,18 +1,22 @@
 #include "boundary_condition.h"
 #include "node_container.h"
 #include "element_container.h"
+#include "solver.h"
 
 using namespace std;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DIRICHLET AND NEUMANN BOUNDARY CONDITION
-void BoundaryCondition :: init(FunctionContainer *funcs) {
+void BoundaryCondition :: init(FunctionContainer *funcs, double time) {
     blockedDoFNum = 0;
     loadedDoFNum = 0;
 
+    if (time < beginTime || time >= endTime) active = false;    
+    else active = true;
+
     dirichF.resize( dirichBC.size() );
     for ( unsigned i = 0; i < dirichBC.size(); i++ ) {
-        if ( dirichBC [ i ] >= 0 ) {
+        if ( dirichBC [ i ] >= 0 && active) {
             blockedDoFNum++;
             dirichF [ i ] = funcs->giveFunction(dirichBC [ i ]);
         } else {
@@ -22,7 +26,7 @@ void BoundaryCondition :: init(FunctionContainer *funcs) {
 
     neumannF.resize( neumannBC.size() );
     for ( unsigned i = 0; i < neumannBC.size(); i++ ) {
-        if ( neumannBC [ i ] >= 0 ) {
+        if ( neumannBC [ i ] >= 0 && active ) {
             loadedDoFNum++;
             neumannF [ i ] = funcs->giveFunction(neumannBC [ i ]);
         } else {
@@ -33,8 +37,10 @@ void BoundaryCondition :: init(FunctionContainer *funcs) {
 
 //////////////////////////////////////////////////////////
 vector< unsigned >BoundaryCondition :: giveBlockedDoFs() const {
+
     vector< unsigned >blocked;
     blocked.resize(blockedDoFNum);
+    if (!active) return blocked;
     unsigned k = 0;
     unsigned s = 0;
     for ( vector< int > :: const_iterator i = dirichBC.begin(); i != dirichBC.end(); ++i, k++ ) {
@@ -51,6 +57,7 @@ vector< unsigned >BoundaryCondition :: giveBlockedDoFs() const {
 vector< unsigned >BoundaryCondition :: giveLoadedDoFs() const {
     vector< unsigned >loaded;
     loaded.resize(loadedDoFNum);
+    if (!active) return loaded;
     unsigned k = 0;
     unsigned s = 0;
     for ( vector< int > :: const_iterator i = neumannBC.begin(); i != neumannBC.end(); ++i, k++ ) {
@@ -67,21 +74,44 @@ vector< unsigned >BoundaryCondition :: giveLoadedDoFs() const {
 vector< double >BoundaryCondition :: giveBlockedDoFValues(double t) const {
     vector< double >blocked;
     blocked.resize(blockedDoFNum);
-    unsigned s = 0;
+    if (!active) return blocked;
+
     unsigned i = 0;
+    unsigned s = 0;
     for ( vector< Function * > :: const_iterator f = dirichF.begin(); f != dirichF.end(); ++f, i++ ) {
         if ( * f ) {
             blocked [ s ] = ( * f )->giveY(t) * multipliers [ i ];
             s++;
         }
     }
+
+    if (addInitialDoFVals){
+        for (i=0; i<blockedDoFNum; i++) blocked[i] += initialState[i];
+    }
+
     return blocked;
+}
+
+//////////////////////////////////////////////////////////
+void BoundaryCondition :: setInitialDoFFields(Solver *solver){
+    //fill initial values
+    if (active && addInitialDoFVals && initialState.size() != blockedDoFNum){
+        initialState.resize(blockedDoFNum);
+
+        Vector DoFValues = solver->giveDoFValues();
+        vector DoFs = giveBlockedDoFs();
+        for ( unsigned i=0; i<blockedDoFNum; i++) {
+            initialState [ i ] = DoFValues[DoFs[i]];
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
 vector< double >BoundaryCondition :: giveLoadedDoFValues(double t) const {
     vector< double >loaded;
     loaded.resize(loadedDoFNum);
+    if (!active) return loaded;
+
     unsigned s = 0;
     unsigned i = 0;
     for ( vector< Function * > :: const_iterator f = neumannF.begin(); f != neumannF.end(); ++f, i++ ) {
@@ -113,6 +143,19 @@ void BoundaryCondition :: readFromLine(istringstream &iss, NodeContainer *nodes)
             exit(EXIT_FAILURE);
         }
     }
+    string param;
+    while ( !iss.eof() ) {
+        iss >> param;
+        if ( param.compare("valid_from") == 0 ) {
+            iss >> beginTime;
+        } else if ( param.compare("valid_until") == 0 ) {
+            iss >> endTime;
+        } else if ( param.compare("add_initial_DoF_values") == 0 ) {
+            addInitialDoFVals = true;
+        } 
+    }
+
+
     multipliers.resize(nDoFs, 1.);
 }
 
@@ -147,14 +190,27 @@ void BodyLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
             iss >> timeFunctionNum;
         } else if ( code.compare("direction") == 0 ) {
             iss >> dir;
-        }
+        } else if ( code.compare("valid_from") == 0 ) {
+            iss >> beginTime;
+        } else if ( code.compare("valid_until") == 0 ) {
+            iss >> endTime;
+        } 
     }
 }
 
 //////////////////////////////////////////////////////////
-void BodyLoad :: init(FunctionContainer *funcs) {
-    timeFunction = funcs->giveFunction(timeFunctionNum);
-    spatialFunction = funcs->giveFunction(spatialFunctionNum);
+void BodyLoad :: init(FunctionContainer *funcs, double time) {
+
+    if (time < beginTime || time >= endTime) active = false;    
+    else active = true;
+
+    if (active){
+        timeFunction = funcs->giveFunction(timeFunctionNum);
+        spatialFunction = funcs->giveFunction(spatialFunctionNum);
+    } else {
+        timeFunction = nullptr;
+        spatialFunction = nullptr;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -165,6 +221,7 @@ double BodyLoad :: giveValue(const Point *xyz, double t) {
 //////////////////////////////////////////////////////////
 vector< double >BodyLoad :: giveBodyForceDoFValues(double t) {
     vector< double >load;
+    if (!active) return load;
     Vector elemLoad;
     unsigned s = 0;
     for ( auto &e: els ) {
@@ -181,6 +238,7 @@ vector< double >BodyLoad :: giveBodyForceDoFValues(double t) {
 //////////////////////////////////////////////////////////
 vector< unsigned >BodyLoad :: giveArrayOfBodyForceDoFs() const {
     vector< unsigned >DoFs, elemDoFs;
+    if (!active) return DoFs;
     for ( auto &e: els ) {
         elemDoFs = e->giveDoFsInDirection(dir);
         DoFs.insert( DoFs.end(), elemDoFs.begin(), elemDoFs.end() );
@@ -254,16 +312,21 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes, El
 }
 
 //////////////////////////////////////////////////////////
-void BCContainer :: init() {
+void BCContainer :: init(double time) {
     dirichDoFs.resize(0);
     neumannDoFs.resize(0);
+    stageTimes.clear();
 
     for ( auto &bc: BC ) {
-        bc->init(functions);
+        bc->init(functions, time);
+        stageTimes.insert(bc->giveBeginTime());
+        stageTimes.insert(bc->giveEndTime());
     }
 
     for ( auto &l: loads ) {
-        l->init(functions);
+        l->init(functions, time);
+        stageTimes.insert(l->giveBeginTime());
+        stageTimes.insert(l->giveEndTime());
     }
 }
 
@@ -352,3 +415,21 @@ void BCContainer :: removeBoundaryCondition(unsigned i) {
     BC [ i ] = nullptr;
     BC.erase(BC.begin() + i);
 }
+
+//////////////////////////////////////////////////////////
+double BCContainer :: giveTimeOfNextChange(double time) {
+    for(set<double>::iterator it = stageTimes.begin(); it != stageTimes.end(); it++){
+        if ( *it > time) {
+            return *it;
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void BCContainer :: setInitialDoFFields(Solver *solver){
+    //fill initial values
+    for ( auto &bc: BC ) {
+        bc->setInitialDoFFields(solver);
+    }
+}
+

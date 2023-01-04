@@ -1,0 +1,8 @@
+# bcType	nodeIdx	KinTrX	KinTrY	KinTrZ	KinRotX	KinRotY	KinRotZ	StTrX	StTrY	StTrZ	StRotX	StRotY	StRotZ
+NodalBC	0	-1	0	0	-1 -1 -1 	-1	-1	-1	-1	-1	-1  
+NodalBC	1	-1	0	0	-1	-1	-1	-1	-1	-1	-1	-1	-1
+NodalBC	8108	0  -1	-1	0	0	0	-1	-1	-1	-1	-1	-1
+NodalBC	8109	-1	-1	-1	0	0	0	1	-1	-1	-1	-1	-1  valid_until 4e-3
+NodalBC	8109	3	-1	-1	0	0	0	-1	-1	-1	-1	-1	-1  valid_from  4e-3 add_initial_DoF_values
+
+

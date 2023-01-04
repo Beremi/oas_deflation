@@ -12,6 +12,7 @@
 // #include "node_container.h"
 // #include "element_container.h"
 #include "data_exporter.h"
+#include "element_discrete.h"
 #include "geometry.h"
 
 void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const std :: vector< bool > &activeDirs, const bool trsp = false);
@@ -28,11 +29,15 @@ class PBlock
 private:
 protected:
     unsigned dim;
+    std :: string name;
+    std :: vector<unsigned> insideRegions;
+    std :: vector<unsigned> outsideRegions;
 public:
     PBlock() {};
     virtual ~PBlock() {};
-    virtual void apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver)  = 0;
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv)  = 0;   
     virtual void readFromLine(std :: istringstream &iss, unsigned d) = 0;
+    std::string giveName() const {return name;}
 };
 
 // TODO JK: regions with separate material / elastic regions
@@ -50,7 +55,7 @@ private:
 public:
     MaterialRegion() { };
     virtual ~MaterialRegion() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 };
 //////////////////////////////////////////////////////////
@@ -59,7 +64,6 @@ public:
 class MechanicalPeriodicBC : public PBlock
 {
 protected:
-    std :: string name;
     std :: vector< double >PUCsize;
     std :: vector< unsigned >masters;
     std :: vector< unsigned >slaves;
@@ -79,7 +83,7 @@ protected:
 public:
     MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; nonsymmetric_shear = false; };
     virtual ~MechanicalPeriodicBC() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
     std :: vector< double >giveDimensions() const { return PUCsize; };
     double giveVolume() const;
@@ -108,7 +112,7 @@ protected:
 public:
     MechanicalPeriodicBCwithElasticConstraint() { name = "MechanicalPeriodicBCwithElasticConstraint"; };
     virtual ~MechanicalPeriodicBCwithElasticConstraint() {};
-    void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
 };
 
 //////////////////////////////////////////////////////////
@@ -138,7 +142,7 @@ class VoigtConstraint : public PBlock
 public:
     VoigtConstraint();
     virtual ~VoigtConstraint();
-    virtual void apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 };
 
@@ -155,7 +159,7 @@ class PressureFromMechanicalLoad : public PBlock
 public:
     PressureFromMechanicalLoad();
     virtual ~PressureFromMechanicalLoad();
-    virtual void apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 };
 
@@ -170,7 +174,7 @@ private:
 public:
     RigidPlate() { };
     virtual ~RigidPlate() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 protected:
     bool transport = false;
@@ -190,7 +194,7 @@ private:
 public:
     CoordRigidPlate() {};
     virtual ~CoordRigidPlate() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 protected:
 };
@@ -204,7 +208,7 @@ private:
 public:
     RingRigidPlate() {};
     virtual ~RingRigidPlate() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 protected:
     Point center, axis;
@@ -222,7 +226,7 @@ private:
 public:
     ExpansionRing() {};
     virtual ~ExpansionRing() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 protected:
 };
@@ -235,7 +239,7 @@ class ExpansionRingDoFLoad : public RingRigidPlate
 public:
     ExpansionRingDoFLoad() {};
     virtual ~ExpansionRingDoFLoad() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
 protected:
     unsigned expansion_master_id;
@@ -249,8 +253,22 @@ class ExpansionRingSingleDoFLoad : public ExpansionRingDoFLoad
 public:
     ExpansionRingSingleDoFLoad() {};
     virtual ~ExpansionRingSingleDoFLoad() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *e, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, Solver *solv);
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
     // virtual void readFromLine(istringstream &iss, unsigned d);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Surface load, pressure
+class NormalSurfaceLoad : public PBlock
+{
+protected:
+    unsigned fnID;
+public:
+    NormalSurfaceLoad() { name = "NormalSurfaceLoad"; };
+    virtual ~NormalSurfaceLoad() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
+    virtual void readFromLine(std :: istringstream &iss, unsigned d) ;
 };
 
 //////////////////////////////////////////////////////////
@@ -267,13 +285,14 @@ private:
     FunctionContainer *funcs;
     ExporterContainer *exporters;
     MaterialContainer *materials;
+    RegionContainer *regions;
     Solver *solver;
 public:
     PBlockContainer() {};
     virtual ~PBlockContainer();
     void readFromFile(const std :: string filename, unsigned dim);
-    void setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex, MaterialContainer *mats, Solver *solver);
-    void apply();
+    void setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *r, Solver *solver);
+    void init();
     void clear();
     unsigned giveSize() const { return blocks.size(); };
     PBlock *givePBlock(unsigned i) { return blocks [ i ]; };

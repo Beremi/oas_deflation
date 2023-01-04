@@ -615,7 +615,6 @@ RigidBodyBoundary :: RigidBodyBoundary(const unsigned dim) : RigidBodyContact(di
     active = false;
     numOfNodes = 2; //will be in init to 1
     nodes.resize(2); //will be in init to 1
-    name = "LTCBEAM";
     vtk_cell_type = 1; //point
 }
 
@@ -1307,7 +1306,7 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     }
 
 
-    stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //3 is there to obtain mechanical volumetric strain
+    stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain
 
     return Transp1D :: giveStrain(i, DoFs);
 };

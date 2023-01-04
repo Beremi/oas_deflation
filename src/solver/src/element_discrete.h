@@ -61,22 +61,6 @@ public:
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 
-// //////////////////////////////////////////////////////////
-// //////////////////////////////////////////////////////////
-// // RBSN BOUNDARY ELEMENT
-// TODO this will be needed in dynamics
-// class RigidBodyBoundary : public RigidBodyContact
-// {
-// protected:
-//     virtual void checkNodeType() const;
-// public:
-//     RigidBodyBoundary(const unsigned dim);
-//     ~RigidBodyBoundary() {};
-//     virtual MyMatrix giveStiffnessMatrix(string matrixType) const;
-//     virtual MyMatrix giveDampingMatrix() const;
-//     virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
-//     virtual MyVector giveStrain(unsigned i, const MyVector &DoFs);
-// };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

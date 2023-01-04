@@ -18,6 +18,7 @@ protected:
     ElementContainer *elems;
     NodeContainer *nodes;
     FunctionContainer *funcs;
+    BCContainer *bcs;
     double time, dt, initdt, termination_time;
     double init_time = 0.0;  ///> when starting from previously calculated results
     Vector f_ext, load, load_old, f_int, pbc, r, f, full_ddr, ddr, residuals;
@@ -36,7 +37,7 @@ public:
     virtual void init(std :: string init_r_file, std :: string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const std :: string filename);
     virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };
-    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions);
+    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc);
     std :: string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     bool convergedToTolerance() const { return fully_converged; };
@@ -57,6 +58,7 @@ public:
     virtual void runAfterEachStep();
     virtual void solve() {};
     virtual void giveValues(std :: string code, Vector &result) const;
+    virtual void rebuild();
 };
 
 //////////////////////////////////////////////////////////
@@ -82,6 +84,7 @@ public:
     virtual void runAfterEachStep();
     virtual void solve();
     virtual void reset();
+    virtual void rebuild();
 };
 
 //////////////////////////////////////////////////////////
@@ -151,6 +154,7 @@ public:
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
     virtual Solver *readFromFile(const std :: string filename);
+    virtual void rebuild();
 };
 
 //////////////////////////////////////////////////////////

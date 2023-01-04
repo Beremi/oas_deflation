@@ -19,6 +19,15 @@ void NodeContainer :: clear() {
             delete * n;
         }
     }
+    totalDoFs = 0;
+}
+
+//////////////////////////////////////////////////////////
+void NodeContainer :: addNode(Node *n){
+    n->setID(nodes.size() );
+    n->setStartingDoF(totalDoFs);
+    nodes.push_back(n); 
+    totalDoFs += n->giveNumberOfDoFs();
 }
 
 //////////////////////////////////////////////////////////
@@ -141,12 +150,6 @@ void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: establishDoFArray() {
-    totalDoFs = 0;
-
-    for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
-        ( * n )->setStartingDoF(totalDoFs);
-        totalDoFs += ( * n )->giveNumberOfDoFs();
-    }
 
     BC->calculateDoFfields();
     DoFid.resize(totalDoFs);
@@ -302,7 +305,7 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vecto
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
         if ( DoFid [ k ] >= freeDoFs ) {
-            f_ext [ k ] += f_int [ k ] + f_dam [ k ] + f_acc [ k ];
+            f_ext [ k ] = f_int [ k ] + f_dam [ k ] + f_acc [ k ];
         }
     }
 }

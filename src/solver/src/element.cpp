@@ -164,6 +164,9 @@ void Element :: giveValues(std :: string code, Vector &result) const {
     } else if ( code.compare("dissipated_energy_inc") == 0 ) {
         Element :: giveValues("dissipated_energy_density_inc", result);
         result *= giveVolume() * ndim; //ndim because of discrete elements
+    } else if ( code.compare("material_ID") == 0 ) {        
+        result.resize(1);
+        result [ 0 ] = mat->giveId();
     } else {  //TODO: should be weighted average
         //average values from IP
         if ( inttype->giveNumIP() > 0 ) {

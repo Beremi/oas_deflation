@@ -1,0 +1,4 @@
+#FuncTyped
+PWLFunction	1	0	0
+PWLFunction	2	0	1	0 -1963e4       #pressure times area
+PWLFunction	2	0   1	0 -1e10   #pressure 

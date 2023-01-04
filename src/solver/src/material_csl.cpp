@@ -173,19 +173,15 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             chi = epsEQ;
             K0 = m->giveKc() * ( 1. - pow( ( omega + 0.5 * M_PI ) / ( omega0 + 0.5 * M_PI ), m->giveNc() ) );
         } else { //tension-shear
-            double emax, f;
+            double emax;
             temp_maxEpsN = max(maxEpsN, epsN);
             temp_maxEpsT = max(maxEpsT, epsT);
             emax = sqrt( pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
             S0 = giveS0tension(omega);
 
-            //confinement not applied
-            //if (fabs(confiningStrain) / cLaw.lambda < 1. || confiningStrain > 0.) f = 1.;
-            //else f = 1. / (1. - confiningStrain / cLaw.lambda);
-            f = 1;
-
-
-            K0 = -f * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt) );
+            unsigned dim = element->giveDimension();
+            double flam = 1./(1.+max(-(volumetricStrain*dim - epsN)/(dim*m->giveLam0()),0.)); //projection of the trace perpendicularly to the connection
+            K0 = -flam * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt) );
             if ( omega < 0.0 ) {
                 chi = epsEQ * omega / omega0 + emax * ( 1. - omega / omega0 );
             } else {
@@ -383,6 +379,8 @@ void CSLMaterial :: readFromLine(istringstream &iss) {
             iss >> fc;
         } else if ( param.compare("Kc") == 0 ) {
             iss >> Kc;
+        } else if ( param.compare("lambda0") == 0 ) {
+            iss >> lam0;
         } else if ( param.compare("damage_residuum") == 0 ) {
             iss >> damage_residuum;
         } else if ( param.compare("stress_residuum_fraction") == 0 ) {
@@ -419,6 +417,7 @@ void CSLMaterial :: init() {
     mu = 0.2;
     nc = 2;
 
+    lam0 = 1e-3;
     Lcrt = 2 * E0 * Gt / pow(ft, 2);
     Lcrs = 2 * alpha * E0 * Gs / pow(fs, 2);
 };

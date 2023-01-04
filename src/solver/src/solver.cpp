@@ -10,13 +10,15 @@ using namespace std;
 // BASIC SOLVER CLASS
 Solver :: Solver() {
     name = "basic solver";
+    time = init_time;
 }
 
 
-void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions) {
+void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc) {
     elems = e;
     nodes = n;
     funcs = functions;
+    bcs = bc;
 }
 
 //////////////////////////////////////////////////////////
@@ -90,10 +92,17 @@ Solver *Solver :: readFromFile(const string filename) {
 //////////////////////////////////////////////////////////
 void Solver :: setNextStepTime() {
     double nextExtremeTime = funcs->giveTimeOfNextExtreme(time);
+    double nextBCTime = bcs->giveTimeOfNextChange(time);
+    double nextCritTime = min(nextExtremeTime,nextBCTime);
+
+    if ( abs(time - bcs->giveTimeOfNextChange(time-1e-12))<1e-12){
+        masterModel->jumpToNextStage();
+    } 
+
     // NOTE 1/4 of time step added to prevent next step extremely short
-    if ( nextExtremeTime < time + 1.25 * dt ) {
-        dt = nextExtremeTime - time;
-        time = nextExtremeTime;
+    if ( nextCritTime < time + 1.25 * dt ) {
+        dt = nextCritTime - time;
+        time = nextCritTime;
     } else {
         time += dt;
     }
@@ -145,7 +154,6 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
 
     if ( initial ) {
         step = init_step;
-        time = init_time;
         dt = initdt;
     }
 
@@ -195,6 +203,14 @@ void Solver :: giveValues(string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
+void Solver :: rebuild() {
+    freeDoFnum = nodes->giveNumFreeDoFs();
+    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    f = Vector :: Zero(freeDoFnum);
+    ddr = Vector :: Zero(freeDoFnum);
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // STEADY STATE LINEAR SOLVER
 SteadyStateLinearSolver :: SteadyStateLinearSolver() {
@@ -227,6 +243,13 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
+    computeKeff();
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: rebuild() {
+    Solver :: rebuild();
+    prepareSystemMatricesAndInitialField("","",false);
     computeKeff();
 }
 
@@ -1083,6 +1106,13 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
     }
     v = Vector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
+}
+
+//////////////////////////////////////////////////////////
+void TransientLinearTransportSolver :: rebuild() {
+    Solver :: rebuild();
+    prepareSystemMatricesAndInitialField("","",false);
+    computeKeff();
 }
 
 //////////////////////////////////////////////////////////
