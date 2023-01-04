@@ -180,8 +180,6 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
     deviatoricStrain = volumetricStrain - strain [ 0 ];
     epsDV = volumetricStrain + m->giveBeta() * deviatoricStrain;
 
-    // cout << "--- volumetricStrain " << volumetricStrain <<  "--- Beta " << m->giveBeta() <<  "--- deviatoricStrain " << deviatoricStrain << endl; cout.flush();
-
     if ( strain [ 0 ] == 0 ) {
         rDV = 0;
     } else {
@@ -190,7 +188,7 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
 
     // densified normal modulus and elastic step w/ or w/out change in normal modulus
     double ENc, strNElastic, dEps1, dEps2, epsC0, epsC1, Hc, strBc, strC1;
-    if ( stress_prev [ 0 ] <=  -1 * m->giveFc0() ) {
+    if ( stress_prev [ 0 ] <=  - m->giveFc0() ) {
         ENc = m->giveEd();
     } else {
         ENc = m->giveE0();
@@ -199,7 +197,8 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
     strNElastic = stress_prev [ 0 ] + dEpsN * ENc;
 
     if ( ( m->giveFc0() + stress_prev [ 0 ] ) * ( m->giveFc0() + strNElastic ) < 0 ) {
-        dEps1 = ( -m->giveFc0() - stress_prev [ 0 ] ) / ENc;
+        // Fc0 (+), str (-) -> if E0 changes to Ed, result negative
+        dEps1 = ( - m->giveFc0() - stress_prev [ 0 ] ) / ENc;
         dEps2 = dEpsN - dEps1;
         if ( ENc == m->giveEd() ) {
             strNElastic = stress_prev [ 0 ] + dEps1 * ENc + dEps2 * m->giveE0();
@@ -210,7 +209,7 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
         strNElastic = stress_prev [ 0 ] + ENc * dEpsN;
     }
 
-    epsC0 = m->giveFc0() / m->giveE0();
+    epsC0 = - m->giveFc0() / m->giveE0();
     epsC1 = m->giveKc0() * epsC0;  // rehardening begins
 
     if ( ( rDV - m->giveKc1() ) > 0 ) {
@@ -219,29 +218,24 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
         Hc = m->giveHc0();
     }
 
-    strC1 = m->giveFc0() + ( epsC1 - epsC0 ) * Hc;
+    strC1 = - m->giveFc0() + ( epsC1 - epsC0 ) * Hc;
 
-    // cout << "--- -epsDV " << -epsDV << endl; cout.flush();
-    // epsC1 ok
     double mcb;
-    if ( -epsDV <= 0 ) {
-        strBc = m->giveFc0();
-        // cout << "------ nr 1" << endl; cout.flush();
+    if ( - epsDV <= 0 ) {
+        strBc = - m->giveFc0();
     } else if ( 0 <= -epsDV && -epsDV <= epsC1 ) {
-        if ( -epsDV - epsC0 > 0 ) {
-            mcb = -epsDV - epsC0;
+        if ( - epsDV - epsC0 > 0 ) {
+            mcb = - epsDV + epsC0;
         } else {
             mcb = 0;
         }
-        strBc = m->giveFc0() + mcb * Hc;
-        // cout << "------ nr 2" << endl; cout.flush();
+        strBc = - m->giveFc0() + mcb * Hc;
     } else {
-        strBc = strC1 * exp( ( -epsDV - epsC1 ) * Hc / strC1);
-        // cout << "------ nr 3" << endl; cout.flush();
+        strBc = strC1 * exp( ( - epsDV + epsC1 ) * Hc / strC1);
     }
 
     Vector intStress = Vector :: Zero( strain.size() );       // vector to collect stress
-    intStress [ 0 ] = min(0.0, max(-strBc, strNElastic) );
+    intStress [ 0 ] = min(0.0, max( strBc, strNElastic) );
 
     // SHEAR
     double dEpsM, dEpsL, epsT, strMElastic, strLElastic, strTElastic, strBs, strT;
@@ -316,14 +310,8 @@ Vector LDPMMaterialStatus :: passThroughZero(const Vector &strain) {
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
-    temp_strain = strain; // total strain = 0?
-    // cout << "----------------------------------------------------" << endl; cout.flush();
-    // cout << "strain" << endl; cout.flush();
-    // cout << strain << endl; cout.flush();
-    temp_mech_strain = addEigenStrain(strain);  // subtracts eigenstrain to get mechnaical strain
-    // cout << "mech strain" << endl; cout.flush();
-    // cout << temp_mech_strain << endl; cout.flush();
-    // cout << "----------------------------------------------------" << endl; cout.flush();
+    temp_strain = strain;
+    temp_mech_strain = addEigenStrain(strain);
 
     ( void ) timeStep;
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
@@ -378,7 +366,7 @@ void LDPMMaterialStatus :: giveVirtualDamage() {
     temp_strEff = sqrt( pow(strN, 2) + pow(strT, 2) / m->giveAlpha() );     // effective stress
 
     double temp_E;
-    if ( epsN < m->giveFc0() ) {
+    if ( epsN < - m->giveFc0() ) {
         temp_E = m->giveEd();
     } else {
         temp_E = m->giveE0();
@@ -492,20 +480,15 @@ Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
     // incremental prediction
     double strN_tmp = updt_stress [ 0 ] + m->giveE0() * (temp_mech_strain [ 0 ] - updt_mech_strain [ 0 ]);
 
-    if ( strN_tmp < -m->giveFc0() ) { // Fc0 is positive
-        double eps1 = abs( temp_mech_strain [ 0 ] * m->giveFc0() / strN_tmp );
-        double eps2 = abs( temp_mech_strain [ 0 ] * ( strN_tmp + m->giveFc0() ) / strN_tmp );
-        temp_stress [ 0 ] = - eps1 * m->giveE0() - eps2 * m->giveEd();
-    } else {
-        temp_stress [ 0 ] = strN_tmp;
-    }
+    // if ( strN_tmp < - m->giveFc0() ) { // Fc0 is positive
+    //     double eps1 = abs( temp_mech_strain [ 0 ] * m->giveFc0() / strN_tmp );
+    //     double eps2 = abs( temp_mech_strain [ 0 ] * ( strN_tmp + m->giveFc0() ) / strN_tmp );
+    //     temp_stress [ 0 ] = - eps1 * m->giveE0() - eps2 * m->giveEd();
+    // } else {
+    //     temp_stress [ 0 ] = strN_tmp;
+    // }
 
-    // cout << "--------------------------------------------" << endl; cout.flush();
-    // cout << "temp_strain" << endl; cout.flush();
-    // cout << temp_strain << endl; cout.flush();
-    // cout << "temp_mech_strain" << endl; cout.flush();
-    // cout << temp_mech_strain << endl; cout.flush();
-    // cout << "--------------------------------------------" << endl; cout.flush();
+    temp_stress [ 0 ] = strN_tmp;
 
     temp_stress [ 1 ] = updt_stress [ 1 ] + m->giveEt() * (temp_mech_strain [ 1 ] - updt_mech_strain [ 1 ]);
     if ( strain.size() == 3 ) {
