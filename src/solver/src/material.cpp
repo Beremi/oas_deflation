@@ -141,7 +141,7 @@ double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pre
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -717,7 +717,7 @@ Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];

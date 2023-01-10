@@ -34,10 +34,10 @@ public:
     void setUpCrossings();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    double giveDiameter() const {return diam;};
+    double giveDiameter() const { return diam; };
     double giveLeftLength(unsigned id) const { return positions [ id ]; };
     double giveRightLength(unsigned id) const { return length - positions [ id ]; };
-    RigidBodyContact * giveRBContact(unsigned i)const{return contacts[i];};
+    RigidBodyContact *giveRBContact(unsigned i)const { return contacts [ i ]; };
 };
 
 #endif /* _ELEMENT_FIBER_H */

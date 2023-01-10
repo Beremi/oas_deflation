@@ -34,7 +34,7 @@ void ElementStatsExporter :: readFromLine(istringstream &iss) {
 void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
     ( void ) DoFs;
     ( void ) reactions;
-    char buffer [ 100 ];
+    char buffer[ 100 ];
 
     giveFileName(step, buffer);
 
@@ -50,7 +50,7 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
     if ( remove_previous ) {
         if ( !masterModel->giveSolver()->isTerminated() && masterModel->giveSolver()->convergedToTolerance() ) {  // remove previous only if not terminated and reached tolerance in this step
             if ( this->last_saved_file.compare("none") != 0 ) {
-                if ( std :: remove( last_saved_file.c_str() ) == 0 ) {
+                if ( std :: remove(last_saved_file.c_str() ) == 0 ) {
                     std :: cout << "element statuses saved to file " << this_file_path << '\n';
                 } else {
                     std :: cerr << "previous file with elem statuses not removed" << '\n';

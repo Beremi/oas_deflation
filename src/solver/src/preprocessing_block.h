@@ -30,14 +30,14 @@ private:
 protected:
     unsigned dim;
     std :: string name;
-    std :: vector<unsigned> insideRegions;
-    std :: vector<unsigned> outsideRegions;
+    std :: vector< unsigned >insideRegions;
+    std :: vector< unsigned >outsideRegions;
 public:
     PBlock() {};
     virtual ~PBlock() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv)  = 0;   
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv)  = 0;
     virtual void readFromLine(std :: istringstream &iss, unsigned d) = 0;
-    std::string giveName() const {return name;}
+    std :: string giveName() const { return name; }
 };
 
 // TODO JK: regions with separate material / elastic regions
@@ -268,7 +268,7 @@ public:
     NormalSurfaceLoad() { name = "NormalSurfaceLoad"; };
     virtual ~NormalSurfaceLoad() {};
     virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
-    virtual void readFromLine(std :: istringstream &iss, unsigned d) ;
+    virtual void readFromLine(std :: istringstream &iss, unsigned d);
 };
 
 //////////////////////////////////////////////////////////
@@ -288,7 +288,7 @@ private:
     RegionContainer *regions;
     Solver *solver;
 public:
-    PBlockContainer() {};
+    PBlockContainer() { nodes = nullptr; elems = nullptr; bcs = nullptr; constrs = nullptr; funcs = nullptr; exporters = nullptr; materials = nullptr; regions = nullptr; solver = nullptr; };
     virtual ~PBlockContainer();
     void readFromFile(const std :: string filename, unsigned dim);
     void setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *r, Solver *solver);

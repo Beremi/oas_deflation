@@ -7,7 +7,7 @@
 #include <fstream>
 #include <algorithm>
 #include <typeinfo>
-#include<set>
+#include <set>
 
 #include "function.h"
 #include "linalg.h"
@@ -28,16 +28,16 @@ protected:
     std :: vector< int >dirichBC; //kinematic - pressure BC
     std :: vector< int >neumannBC; //static - flux BC
     std :: vector< Function * >dirichF; //kinematic - pressure BC
-    std :: vector< double > initialState; //to be added to the function values
+    std :: vector< double >initialState;  //to be added to the function values
     std :: vector< Function * >neumannF; //static - flux BC
     std :: vector< double >multipliers; //multipliers of functions
     unsigned blockedDoFNum, loadedDoFNum;
     double beginTime, endTime;
     bool active, addInitialDoFVals;
 public:
-    BoundaryCondition() { beginTime = -INFINITY, endTime = INFINITY; addInitialDoFVals=false;};
-    BoundaryCondition(Node *n, std :: vector< int > &dBC, std :: vector< int > &nBC) : BoundaryCondition() { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.);};
-    BoundaryCondition(Node *n, std :: vector< int > &dBC, std :: vector< int > &nBC, std :: vector< double > &m) : BoundaryCondition(n, dBC, nBC) { multipliers = m;};
+    BoundaryCondition() { beginTime = -INFINITY, endTime = INFINITY; addInitialDoFVals = false; };
+    BoundaryCondition(Node *n, std :: vector< int > &dBC, std :: vector< int > &nBC) : BoundaryCondition() { node = n; dirichBC = dBC; neumannBC = nBC; multipliers.resize(dBC.size(), 1.); };
+    BoundaryCondition(Node *n, std :: vector< int > &dBC, std :: vector< int > &nBC, std :: vector< double > &m) : BoundaryCondition(n, dBC, nBC) { multipliers = m; };
 
     virtual ~BoundaryCondition() {};
     void replaceDirichBC(std :: vector< int > &newdBC) { dirichBC = newdBC; };
@@ -52,9 +52,9 @@ public:
     virtual std :: vector< double >giveLoadedDoFValues(double t) const;
     void setMultipliers(std :: vector< double > &m) { multipliers = m; };
     Node *giveNode() { return node; };
-    bool isActive() const {return active;};
-    double giveBeginTime() const {return beginTime;};
-    double giveEndTime() const {return endTime;};
+    bool isActive() const { return active; };
+    double giveBeginTime() const { return beginTime; };
+    double giveEndTime() const { return endTime; };
     void setInitialDoFFields(Solver *s);
 };
 
@@ -83,9 +83,9 @@ public:
     std :: vector< double >giveBodyForceDoFValues(double t);
     std :: vector< unsigned >giveArrayOfBodyForceDoFs() const;
     unsigned giveDirection() const { return dir; };
-    bool isActive() const {return active;};
-    double giveBeginTime() const {return beginTime;};
-    double giveEndTime() const {return endTime;};
+    bool isActive() const { return active; };
+    double giveBeginTime() const { return beginTime; };
+    double giveEndTime() const { return endTime; };
 };
 
 
@@ -101,12 +101,12 @@ private:
     std :: vector< unsigned >neumannDoFs;
 
     std :: vector< BodyLoad * >loads;
-    std :: set< double > stageTimes;
+    std :: set< double >stageTimes;
 
 public:
     BCContainer() { functions = nullptr; };
     virtual ~BCContainer();
-    void setContainers(FunctionContainer *f) { functions = f;};
+    void setContainers(FunctionContainer *f) { functions = f; };
     void setInitialDoFFields(Solver *s);
     void init(double time);
     void clear();

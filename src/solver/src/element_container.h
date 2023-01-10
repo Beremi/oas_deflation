@@ -14,14 +14,14 @@ private:
     NodeContainer *nodes;
     BCContainer *bconds;
     MaterialContainer *materials;
-    unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
+    unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType) const;
     void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
     std :: vector< std :: string >file_to_load_from;
 
 public:
-    ElementContainer() {};
+    ElementContainer() { nodes = nullptr; bconds = nullptr; materials = nullptr; };
     ~ElementContainer();
     void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const std :: string filename, const unsigned ndim, MaterialContainer *matrs);

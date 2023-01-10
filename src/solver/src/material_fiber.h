@@ -14,24 +14,24 @@ private:
     double crack_opening;
     double temp_crack_opening;
     double incrementOfCrack;
-    
-    double contactLength; 
+
+    double contactLength;
     Point contactNormal;
-    double df, rightLe, leftLe; 
+    double df, rightLe, leftLe;
     Point fiberNormal;
-    double inclineAngle; 
-    
+    double inclineAngle;
+
     double right_pullout;
     double temp_rightPullout;
-    double left_pullout; 
-    double temp_leftPullout; 
-    
+    double left_pullout;
+    double temp_leftPullout;
+
     double bridgingForce;
     double temp_bridgingForce;
     double rightForce, leftForce;
-    
+
     double limit_rightPullout, limit_leftPullout, right_F0, left_F0;
-    
+
 public:
     FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum);
     virtual ~FiberMaterialStatus() {};
@@ -66,11 +66,11 @@ public:
     virtual void init();
 };
 
-double bridgingForce_bonded( double v, double df, double Ef, double tau0, double Gd ); 
-double derivF_bonded( double v, double df, double Ef, double tau0, double Gd ); 
-double bridgingForce_debonded( double v, double vd, double Le, double F0, double df, double betaf );
-double derivF_debonded( double v, double vd, double Le, double F0, double df, double betaf ); 
-double bridgingForce_unloading( double deltaX, double deltaY, double x ); 
-double derivF_unloading( double deltaX, double deltaY ); 
+double bridgingForce_bonded(double v, double df, double Ef, double tau0, double Gd);
+double derivF_bonded(double v, double df, double Ef, double tau0, double Gd);
+double bridgingForce_debonded(double v, double vd, double Le, double F0, double df, double betaf);
+double derivF_debonded(double v, double vd, double Le, double F0, double df, double betaf);
+double bridgingForce_unloading(double deltaX, double deltaY, double x);
+double derivF_unloading(double deltaX, double deltaY);
 
 #endif /* _LDPM_MATERIAL_H */

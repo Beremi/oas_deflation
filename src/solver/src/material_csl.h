@@ -52,7 +52,7 @@ private:
     double damage_residuum = 0.0;
     double stress_residuum_fraction = 0.0;
 public:
-    CSLMaterial() { name = "CSL material"; lam0 = 1e10;}; //confinement removed
+    CSLMaterial() { name = "CSL material"; lam0 = 1e10; }; //confinement removed
     virtual ~CSLMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);

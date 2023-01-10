@@ -28,7 +28,7 @@ public:
     virtual Point giveMainPoint() const = 0;
     virtual double giveSize() const = 0;
     virtual void print() const {};
-    virtual void init(){};
+    virtual void init() {};
 };
 
 
@@ -112,7 +112,7 @@ private:
     Point A, B;
     double radius, length;
     Point dir;
-    
+
 public:
     Cylinder() {};
     virtual ~Cylinder() {};
@@ -128,13 +128,13 @@ public:
 class RegionContainer
 {
 protected:
-    std :: vector< Region * > regions;
+    std :: vector< Region * >regions;
     unsigned dim;
 public:
     RegionContainer() {};
     virtual ~RegionContainer();
     void readFromFile(const std :: string &filename, unsigned dim);
-    bool isLocationValid(const Point, const std :: vector<unsigned> in, const std :: vector<unsigned> out) const;
+    bool isLocationValid(const Point, const std :: vector< unsigned >in, const std :: vector< unsigned >out) const;
 };
 
 
