@@ -52,6 +52,8 @@ public:
     bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;
     void extrapolateValuesFromIntegrationPointsToNodes(std :: string code, std :: vector< Vector > &results);
     void assignFibersToElems();
+    void giveValues(std :: string code, Vector &result) const;
+    void sumFromElements(std :: string code, Vector &result) const;
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }

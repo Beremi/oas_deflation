@@ -570,7 +570,7 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
     if ( code.compare("iterations") == 0 ) {
         result.resize(1);
         result [ 0 ] = it;
-    } else if ( code.compare("restars") == 0 ) {
+    } else if ( code.compare("restarts") == 0 ) {
         result.resize(1);
         result [ 0 ] = restarts;
     } else if ( code.compare("error_displacements") == 0 ) {

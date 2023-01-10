@@ -417,7 +417,6 @@ void CSLMaterial :: init() {
     mu = 0.2;
     nc = 2;
 
-    lam0 = 1e-3;
     Lcrt = 2 * E0 * Gt / pow(ft, 2);
     Lcrs = 2 * alpha * E0 * Gs / pow(fs, 2);
 };

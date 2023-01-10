@@ -656,6 +656,56 @@ void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, co
     outputfile.close();
 }
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF SUMMATIONS AND AVERAGES FROM ELEMENT CONTAINER
+void ElementContainerGauge :: readFromLine(istringstream &iss) {
+    iss >> this->filename;
+    iss >> this->name;
+    this->codes.resize(1);
+    iss >> this->codes [ 0 ];
+    DataExporter :: readFromLine(iss);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainerGauge :: init() {
+    DataExporter :: init();
+    maxsize.resize(1);
+    Vector res;
+    elemcont->giveValues(codes [ 0 ], res);
+    maxsize [ 0 ] = res.size();
+}
+
+
+//////////////////////////////////////////////////////////
+void ElementContainerGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
+    ( void ) full_f;
+    ( void ) reactions;
+    char buffer [ 100 ];
+    Vector values;
+    giveFileName(step, buffer);
+    ofstream outputfile;
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    Vector res;
+    elemcont->giveValues(codes [ 0 ], res);
+
+    if ( outputfile.good() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+#if EIGEN_VERSION_AT_LEAST(3, 4, 0)
+        for ( auto &p: res ) {
+            outputfile <<  "\t" << p;
+        }
+#else
+        for ( long i = 0; i < res.size(); i++ ) {
+            outputfile <<  "\t" << sum [ i ];
+        }
+#endif
+    }
+    outputfile.close();
+}
+
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -933,6 +983,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("SolverGauge") == 0 ) {
                     SolverGauge *newexp = new SolverGauge(dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
+                } else if ( exptype.compare("ElementContainerGauge") == 0 ) {
+                    ElementContainerGauge *newexp = new ElementContainerGauge(e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else if ( exptype.compare("TXTIntegrationPointExporter") == 0 ) {

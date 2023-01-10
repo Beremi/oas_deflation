@@ -164,6 +164,20 @@ public:
     virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF SUMMATIONS AND AVERAGES FROM ELEMENT CONTAINER
+class ElementContainerGauge : public Gauge
+{
+protected:
+    ElementContainer *elemcont;
+public:
+    ElementContainerGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    ~ElementContainerGauge() {};
+    void readFromLine(std :: istringstream &iss);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void init();
+};
 
 
 //////////////////////////////////////////////////////////

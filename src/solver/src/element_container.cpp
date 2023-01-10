@@ -646,6 +646,37 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
     }
 }
 
+//////////////////////////////////////////////////////////
+void ElementContainer :: sumFromElements(std :: string code, Vector &result) const {
+    Vector help;
+    result.resize(0);
+    for(auto &e: elems){
+        e->giveValues(code, help);
+        if(help.size()>result.size()) {
+            size_t oldsize = result.size();
+            result.resize(help.size());
+            for(size_t i=oldsize; i<result.size(); i++) result[i] = 0.;
+        }
+        for(unsigned i=0; i<help.size(); i++) result[i] += help[i];
+    }
+}
+
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: giveValues(std :: string code, Vector &result) const {
+    if ( code.compare("strain_energy") == 0 || code.compare("elastic_energy") == 0 ) {
+        sumFromElements("strain_energy", result);
+    } else if ( code.compare("total_energy") == 0 ) {
+        sumFromElements("total_energy", result);
+    } else if ( code.compare("dissipated_energy") == 0 ) {
+        sumFromElements("dissipated_energy", result);
+    } else if ( code.compare("kinetic_energy") == 0 ) {
+        sumFromElements("kinetic_energy", result);
+    } else {
+        result.resize(0);    
+    }
+}
+
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: assignFibersToElems() {
