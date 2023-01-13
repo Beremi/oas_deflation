@@ -1692,8 +1692,17 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
-                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
+                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1])  or
+                      (mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
+                        mZ[1][0][1] < nodeA[1] < mZ[1][1][1] and
+                        mZ[1][0][0] < nodeB[0] < mZ[1][1][0] and
+                        mZ[1][0][1] < nodeB[1] < mZ[1][1][1]) or
+                        (mZ[1][2][0] < nodeA[0] < mZ[1][3][0] and
+                        mZ[1][2][1] < nodeA[1] < mZ[1][3][1] and
+                        mZ[1][2][0] < nodeB[0] < mZ[1][3][0] and
+                        mZ[1][2][1] < nodeB[1] < mZ[1][3][1])   ):
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+
 
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
@@ -1917,6 +1926,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
     maxY=np.amax(np.asarray(nodes)[:,1])
     maxZ=np.amax(np.asarray(nodes)[:,2])
     e=1e-4
+    d = 0
     for r in aux_mechElemRidges:
         iNa = int(r[0])
         iNb = int(r[1])
@@ -1939,6 +1949,8 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 or  (nodeA[2]>maxZ-e or nodeB[2]>maxZ-e)
                 or  (nodeA[1]>maxY-e or nodeB[1]>maxY-e)):
              r = np.hstack( (r,  np.array([4])) )
+             d+=1
+
         else:
             r = np.hstack( (r,  np.array([0])) )
 
@@ -2009,7 +2021,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
             if i >= trueMechElements:
                 ro = np.array(mechElemRidges[i], ndmin=2)
-                print(ro)
+
                 if coupled == False:
                     fmt='LTCBoundary\t%d\t%d\t%d'
                 if coupled == True:

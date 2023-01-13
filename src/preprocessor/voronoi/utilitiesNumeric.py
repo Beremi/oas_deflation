@@ -293,7 +293,7 @@ class linearSawToothFunc:
         if (self.time!=None):
             line += '\ttime\t%f' %(self.time)
         if (self.num_cycles!=None):
-            line += '\tlower\t%f' %(self.num_cycles)
+            line += '\tnum_cycles\t%f' %(self.num_cycles)
         if (self.multiplier!=None):
             line += '\tmultiplier\t%f' %(self.multiplier)
         return line

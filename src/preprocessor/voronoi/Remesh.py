@@ -79,7 +79,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     prep_input_file = os.path.join(sys.argv[3], sys.argv[1])
-    # print(prep_input_file)
+    print(sys.argv)
+    print(sys.argv[2])
 
     remeshDir = os.path.join(sys.argv[3], sys.argv[2])
     # print(remeshDir)
@@ -159,6 +160,8 @@ if __name__ == '__main__':
         # print("loading existing fine geoemtry <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
         # print("len nodes before: %d" % (len(node_coords_ini)))
         node_coords_ini.extend(loadNodes(os.path.join(remeshDir, "nodesFine.out"), model.dimension))
+        #fine_nodes = loadNodes(os.path.join("nodesFine.inp"), model.dimension)
+        #print('skipping fine nodes from solver')
         # print("len nodes after: %d" % (len(node_coords_ini)))
 
     remesherSeed = int(sys.argv[7])
@@ -171,6 +174,7 @@ if __name__ == '__main__':
     else:
         minDistRemesh = model.minDist / 3.
 
+    print('using mindistremesh %s' %minDistRemesh)
     # print("radiusRemesh %lg \nradiusTransitional %lg \nminDistRemesh %lg" % (
     #     radiusRemesh, radiusTransitional, minDistRemesh))
 
@@ -219,7 +223,7 @@ if __name__ == '__main__':
                         radiusTransitional=radiusTransitional,
                         dim=model.dimension,
                         useExistingFineNodes=useExistingFineNodes,
-                        remesherSeed=remesherSeed)
+                        remesherSeed=remesherSeed, fine_nodes=[])
 
     # exit(1)
     # print("--- after --------------------------------------")
@@ -240,7 +244,7 @@ if __name__ == '__main__':
 
     # dirNam = '/home/jose/Soft/ParticleModel/TESTS/adaptivity_pokus' + '/TPB_test_adaptive_II'
     dirNam = remeshDir
-
+    print('directory %s' %dirNam)
     if model != None:
         for i in range (model.nr_models):
             print('\nCreating model #%d' %i)

@@ -69,6 +69,8 @@ class Model:
 
         self.tpbwedgeheight = 0.2
 
+        self.loading = '3pb'
+
         self.functions = []
         self.radii = []
         self.totalNodeCount = -1
@@ -227,7 +229,8 @@ class Model:
             if (r[i]=='interLayerThickness'):
                 self.interLayerThickness = float(r[i+1])
 
-
+            if (r[i]=='loading'):
+                self.loading = (r[i+1])
 
             if (r[i]=='edgeMinDistCoef'):
                 self.edgeMinDistCoef = float(r[i+1])
@@ -398,8 +401,10 @@ class Model:
 
     def run_2d_notched3pb(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodesr)
+        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes, loading=self.loading)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
+        if self.loading == "4pb":
+            self.materialZones = utilitiesModeling.assembleMaterialZones(0, 2, model='4pb2d', maxLim=self.maxLim, minDist=self.minDist)
 
     def run_3d_notched3pb(self, node_coords_init=None,modelnr=-1):
         print('running notched')
@@ -669,7 +674,7 @@ class Model:
 
         print ('done.')
 
-    def saveRest(self, solver, master_file, exporters):
+    def saveRest(self, solver, master_file, exporters, generateFineNodes=-1):
         print('dim %d' %self.dimension)
         # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
         bc_path = os.path.join(self.master_folder,
@@ -791,24 +796,23 @@ class Model:
         print('master %s' %self.master_folder)
         print('cwd %s' %os.getcwd())
 
-        #oneup = os.path.abspath(os.path.join(self.master_folder , '..'  ))
-        #oneup = os.path.abspath(os.path.join(oneup, '..'  ))
-        #df = os.path.abspath(os.path.join(oneup, self.defaultFilesFolder))
-
-        
         df = self.defaultFilesFolder
         print('df %s' %df)
 
         if df != None:
-
             files=os.listdir(df)
-            print('files: %s' %files)
             for fname in files:
+                print(os.path.join(self.defaultFilesFolder ,fname))
+                print(os.path.isfile(os.path.join(self.defaultFilesFolder ,fname)))
                 if os.path.isfile(os.path.join(self.defaultFilesFolder ,fname)):
                    shutil.copy2(os.path.join(self.defaultFilesFolder ,fname), self.master_folder)
-                else:
-                   shutil.copytree(df+'/'+fname,  './'+self.master_folder+'/'+fname)
-
+        """
+        if generateFineNodes:
+            fine_nodes, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.assemble3DSSBeamBending(self.maxLim, generateFineNodes, self.trials, self.notchH, self.loadWidth, fracZoneWidth=self.fracZoneWidth, orthogonalFracZone=False, notchWidth = self.notchWidth, coupled=False, node_coords_init=None, specifiedNodes=self.specifiedNodes, roughMinDistCoef=1, supportDivision=self.supportDivision);
+            fine_nodes = np.asarray(fine_nodes)
+            fine_nodes = np.hstack(( fine_nodes, np.zeros((len(fine_nodes),1))   ))
+            utilitiesGeom.saveNodes(self.master_folder, fine_nodes, "Particle",3, 'nodesFine.inp')
+        """
         print ('done.')
 
         utilitiesGeom.checkSavedModel(self.master_folder, self.dimension, self.activeMechanics, self.activeTransport)
@@ -1128,7 +1132,7 @@ if __name__ == '__main__':
 
             model.createModel(modelnr = i)
             model.saveGeometry()
-            model.saveRest(solver, file, exporters)
+            model.saveRest(solver, file, exporters,generateFineNodes=0.02)
 
     print('\n%%%%%%%%% LATTICE PREPROCESSOR DONE %%%%%%%%%')
     #print('\n%%%%%%%%% %d NODES MODEL %%%%%%%%%' %len(model.node_coords))

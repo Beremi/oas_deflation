@@ -1292,15 +1292,39 @@ def minDistTrans(lminR, lmin, dst, rR, rT):
     return lminR + (lmin - lminR) * ( dst - rR ) / (rT - rR)
 
 
+def find_nearest(array, value):
+    array = np.asarray(array)
+    #    idx = (np.linalg.norm(array - value)).argmin()
+    idx = 0
+    mind = 1000
+    for p in range(len(array)):
+        if np.linalg.norm(array[p] - value)< mind:
+            mind = np.linalg.norm(array[p] - value)
+            idx = p
+    point = np.copy(array[p])
+    return point
+
+def getPointsWithinSphere(array, sphereCenter, sphereRadius):
+    points = []
+    for p in array:
+        if np.linalg.norm(sphereCenter - p)<sphereRadius:
+            print(np.linalg.norm(sphereCenter - p))
+            points.append(p)
+
+    return points
+
 
 def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                         centersToRemesh, centersPreviouslyRemeshed, regionsToSkip,
                         radiusRemesh, radiusTransitional,
                         dim, useExistingFineNodes=False,
-                        remesherSeed=1):
+                        remesherSeed=1, fine_nodes=[]):
     np.random.seed(seed=remesherSeed)  # same seed for remesher all the time to be able to replicate the adaptive remesh (test version 26.5.2021)
     PRINT_TEST = False
-    print ( 'Generating points to update geometry' )
+    print ( 'Generating points to update geometry. Trials %s' %trials )
+
+
+    rect = True
     if dim == 2:
         border_block = Block(Point(0., 0.),
                              Point(maxLim[0], maxLim[1]))
@@ -1312,10 +1336,34 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
     ci = 0
     for center in centersToRemesh:
         #print(useExistingFineNodes)
+        """
+        if len(fine_nodes)>0:
+            fine_nodes = np.asarray(fine_nodes)
+
+            mask = np.where( fine_nodes[:,1] > maxLim[1]/2 )
+            fine_nodes = fine_nodes[mask[0]]
+            #mask = np.where(fine_nodes[:,0] < maxLim[0]/3*2 )
+            #fine_nodes = fine_nodes[mask[0]]
+            #mask = np.where(fine_nodes[:,0] > maxLim[0]/3*1 )
+            #fine_nodes = fine_nodes[mask[0]]
+            node_coords = np.asarray(node_coords)
+
+            fine_nodes_out = []
+            for p in fine_nodes:
+                if np.linalg.norm(p-center) < radiusRemesh:
+                    distOk = utilitiesGeom.checkMutDistancesLoops(dim,0.0001,node_coords.tolist(),p.tolist())
+                    if distOk:
+                        fine_nodes_out.append(np.copy(p))
+            fine_nodes_out=np.asarray(fine_nodes_out)
+            print('adding fine nodes %s' %len(fine_nodes_out))
+            if len(fine_nodes_out)>0:
+                node_coords = np.vstack((node_coords, fine_nodes_out)).tolist()
+            else:
+                node_coords = node_coords.tolist()
+        """
         if not useExistingFineNodes:
             tr = 0
-            #print("sad")
-            print("generating in remesh area %d/%d - radius %s" %(ci,len(centersToRemesh),radiusRemesh) )
+            print("generating in remesh area %d/%d - radius %s - minDist %s. Minding finenodes" %(ci,len(centersToRemesh),radiusRemesh, minDistRemesh) )
 
             #print(center)
             ci += 1
@@ -1332,25 +1380,17 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                     coords = randPointInSphere(center, radiusRemesh)
                     p_coord = (dim == 2) and Point(coords[0], coords[1]) or Point(coords[0], coords[1], coords[2])
 
-                    # check if generated point is not outside the specimen
-                    # if rectLims is not None:
                     if not border_block.IsInside(p_coord):
                         distIsGood = False
-                        tr += 1
+                        #tr += 1
                         continue
-                    # check distances to already remeshed centers (if it is not in any previously remeshed circle/sphere)
-                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
-                                              radiusRemesh,
-                                              centersPreviouslyRemeshed,
-                                              list(coords))
+
+                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,radiusRemesh,centersPreviouslyRemeshed,list(coords))
                     if not distIsGood:
                         tr += 1
                         continue
-
                     # check distances to other nodes
-                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,
-                                                 minDistRemesh,
-                                                 node_coords, list(coords))
+                    distIsGood = utilitiesGeom.checkMutDistancesLoops(dim,minDistRemesh,node_coords,list(coords))
                     if not distIsGood:
                         tr +=1
                         continue
@@ -1361,7 +1401,7 @@ def generateNodesRemesh(node_coords, trials, maxLim, minDistRemesh, minDist,
                             distIsGood = False
                             break
                     if not distIsGood:
-                        tr += 1
+                        #tr += 1
                         continue
 
                 #Adding node coords
