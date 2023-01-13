@@ -21,6 +21,7 @@
 #include "data_exporter.h"
 #include "preprocessing_block.h"
 #include "solver.h"
+#include "geometry.h"
 
 class Model
 {
@@ -31,7 +32,7 @@ public:
     void readFromFile(const std :: string filename, const bool &initial = true);
     void init(const bool &initial = true);
     void solve();
-
+    void jumpToNextStage();
     void clear();
 
     ElementContainer *giveElements() { return & elems; };
@@ -45,6 +46,7 @@ public:
     MaterialContainer *giveMaterials() { return & matrs; };
     fs :: path giveResultDirectory() const { return resultDir; };
     PBlockContainer *givePBlockContainer() { return & pblocks; };
+    RegionContainer *giveRegionContainer() { return & regions; };
 
     unsigned giveDimension() const { return ndim; };
     void resetTime() { solver->setTime(0); solver->setStep(0); }
@@ -70,6 +72,7 @@ protected:
     ElementContainer elems;
     ExporterContainer exporters;
     PBlockContainer pblocks;
+    RegionContainer regions;
     Solver *solver;
 };
 

@@ -51,7 +51,7 @@ class LDFile(HasStrictTraits):
         super().__init__(**traits)
 
     name = Str
-    ld_file = Any('', changed=True)
+    ld_file = Str('', changed=True, enter_set=True, auto_set=False)
     open_button = Button('Open...')
     reload_button = Button('Reload')
     data = Any()
@@ -72,7 +72,7 @@ class LDFile(HasStrictTraits):
         """
         file_name = open_file(extensions=FileInfo(), id='ld_openfile')
         if file_name != '':
-            self.ld_file = pathlib.Path(file_name).absolute()
+            self.ld_file = str(pathlib.Path(file_name).absolute())
 
     def _reload_button_fired ( self ):
         """
@@ -313,7 +313,7 @@ if __name__ == '__main__':
     if args.ld_files:
         for ld_idx, ld_file in enumerate(args.ld_files):
             ld_viewer.panel.ldfiles.add_ldfile = True
-            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = pathlib.Path(ld_file).absolute()
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = str(pathlib.Path(ld_file).absolute())
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].name = pathlib.Path(ld_file).absolute().parts[-3]
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].add_ldcurve = True
             if args.x:# in ld_viewer.labels:

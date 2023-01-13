@@ -6,29 +6,30 @@ This is a very short guide on how to get started with PartMod.
 
 \section GettingStartedInstallation How to "install" PartMod?
 
-In order to use PartMod, you just need to download and extract PartMod's source code
-(see <a href="http://xxx">download page</a>
-for download instructions).
-To grab a copy of the latest version of OOFEM using git access.
+In order to use PartMod, you just need to download and extract PartMod's source code - https://gitlab.com/kelidas/partmod.
+To grab a copy of the latest version of PartMod using git access.
 \code{.sh}
   git clone git@gitlab.com:kelidas/partmod.git
   OR
   git clone https://gitlab.com/kelidas/partmod.git
 \endcode
+Or download arvhive file e.g. ZIP https://gitlab.com/kelidas/partmod/-/archive/master/partmod-master.zip .
 
 \subsection Prereqisites Pre-requisites
 The PartMod requires the CMake cross-platform build system and C++ compiler
 with STL support (Standard Template Library).
-Ubuntu:
-- see Dockerfile_XXX in docker directory
 
 
 \subsection Build Build
 PartMod project uses cross-platform building system \c cmake \c (\cite bast_cmake_2018).
-Examples: https://github.com/dev-cafe/cmake-cookbook/tree/v1.0
-http://www.oofem.org/wiki/doku.php?id=cmake
+Examples: https://github.com/dev-cafe/cmake-cookbook/tree/v1.0 .
+Cmake can be used:
+- in terminal (command line)
+- GUI - cmake-gui
+- TUI - terminal ccmake (Ubuntu: apt install cmake-curses-gui)
 
-Recommended structure
+A build directory has to be outside of the source directory.
+The recommended structure
 \code{.txt}
 .
 +-- partmod [git repository]
@@ -36,25 +37,39 @@ Recommended structure
 |   +-- docs
 |   +-- src
 |   +-- ...
-+-- partmod-site [git repository]
-|   +-- public
-|   +-- ...
 +-- partmod-build [can be created anywhere outside of partmod repository]
 |   +-- partmod_docs [generated documentation]
-|   +-- DiscreteModel [executable]
+|   +-- bin/DiscreteModel [executable]
++-- partmod-site [git repository for uploading documentation]
+|   +-- public
+|   +-- ...
 \endcode
 
--# create build directory \c partmod-build \c
--# configure the target - default is RELEASE
-  \code{.sh}
-    cd partmod-build
-    cmake PATH_TO_SRC (if recommended structure - cmake ../partmod)
-  \endcode
-  - create DEBUG
-    \code{.sh}
-      cmake -D CMAKE_BUILD_TYPE=Debug PATH_TO_SRC
-    \endcode
--# update build directory after change CMakeLists.txt
+\subsubsection Dependencies Dependencies
+Builds are mostly tested on Ubuntu 22.04. 
+Ubuntu dependencies can be found in docker/Dockerfile_XXX.
+VTK is optional dependency but user will lost possibility to export VTU files for postprocessing in ParaView.
+VTK is mostly tested with version >9 (but >8.2 should be working too). 
+If your version is lower or there is no system library than build your own
+\ref VTK "VTK build".
+
+\subsubsection PartModBuild Partmod build
+
+-# create build directory e.g. \c partmod-build \c
+-# configure the target
+  - `-D CMAKE_BUILD_TYPE=Release/Debug` (gcc compiler, Release is default)
+  - `-D USE_VTK=ON/OFF` (default ON)
+  - `-D VTK_DIR:PATH="cesta"` 
+    - system VTK library available in paths - configuration performs automatically
+    - own library build - `-D VTK_DIR:PATH="cesta/VTK/build"`
+  - `-D USE_SANITIZERS=ON/OFF` (default OFF) - for debuging
+\code{.sh}
+  cd partmod-build
+  cmake PATH_TO_SRC (if recommended structure - cmake ../partmod)
+  OR e.g.
+  cmake -D CMAKE_BUILD_TYPE=Debug -D VTK_DIR="cesta" -D USE_VTK=ON -D USE_SANITIZERS=OFF PATH_TO_SRC [gcc]
+\endcode
+-# update build directory after change in CMakeLists.txt
   \code{.sh}
     cmake . [run inside build directory]
   \endcode
@@ -62,27 +77,26 @@ Recommended structure
   \code{.sh}
     cmake --build .
     OR
-    make [when Makefile generated]
+    make [when Makefile generated, gcc]
+    OR
+    cmake --build . --config Release [Visual Studio]
+    OR
+    cmake --build . --config Debug [debug version, Visual Studio]
   \endcode
-  - for speedup use parallel ("cmake --build" will run "cmake ." if necessary)
+  - for speedup use parallel ("cmake --build" will run "cmake ." first if necessary)
     \code{.sh}
       cmake --build . --parallel 4 [universal]
+      OR
       cmake --build . -- -j 4 [makefile option "-j [N]" (Allow N jobs at once; infinite jobs with no arg.)]
+      OR
       cmake --build . -- /M      [Visual Studio]
-      make -j 4
+      OR
+      make -j 4 [when Makefile generated, gcc]
     \endcode
-- enable SANITIZERS in current build configuration
-  \code{.sh}
-    cmake -DUSE_SANITIZERS=ON .
-    OR
-    cmake-gui . [GUI]
-    OR
-    ccmake . [TUI]
-  \endcode
 
 
 \subsubsection Crosscompilation Cross Compilation
-Build Windows binary under Linux
+Build Windows executable on Linux machine
 - build mxe
   \code{.sh}
     make MXE_TARGETS=x86_64-w64-mingw32.static MXE_PLUGIN_DIRS=plugins/gcc9 gcc blas cblas lapack vtk
@@ -120,7 +134,54 @@ Build Windows binary under Linux
   \endcode
 
 
-\subsection Test Testing
+\section CodingStandard Coding Standard
+- uncrustify
+\code{.sh}
+uncrustify -c partmod_dir/uncrustify.cfg -l CPP --replace mysource.C
+\endcode
+- uncrustify all *.cpp and *.h files
+\code{.sh}
+uncrustify -c ../../../uncrustify.cfg -l CPP --replace *.cpp *.h
+\endcode
+
+
+
+\section Running Running PartMod
+PartMod executable requires path to master.inp - the path can be both absolute
+and relative. Unix commands can look like:
+\code{.sh}
+./DiscreteModel /path/to/master.inp
+./DiscreteModel ../../master.inp
+./DiscreteModel master.inp
+\endcode
+
+Windows alternatives are:
+\code{.sh}
+DiscreteModel.exe C:\path\to\master.inp
+DiscreteModel.exe ..\..\master.inp
+DiscreteModel master.inp
+\endcode
+
+\subsection OPENMP OpenMP
+Using OpenMP to use parallel Conjugate gradient (and some other operations) in Eigen on Linux:
+\code{.sh}
+./DiscreteModel -j number_of_threads master.inp
+OR
+OMP_NUM_THREADS=4 ./DiscreteModel master.inp
+OR
+export OMP_NUM_THREADS=4
+./DiscreteModel master.inp
+\endcode
+on Windows:
+\code
+set OMP_NUM_THREADS=4
+DiscreteModel master.inp
+OR
+DiscreteModel -j number_of_threads master.inp
+\endcode
+
+
+\subsection Test Testing [TODO]
 
 -# simply run all tests
   \code{.sh}
@@ -143,57 +204,6 @@ Build Windows binary under Linux
   \endcode
 
 
-
-\section CodingStandard Coding Standard
-http://www.oofem.org/wiki/doku.php?id=coding-conventions
-- uncrustify
-\code{.sh}
-uncrustify -c oofem_dir/uncrustify.cfg -l CPP --replace mysource.C
-\endcode
-- uncrustify all *.cpp and *.h files
-\code{.sh}
-uncrustify -c ../../../uncrustify.cfg -l CPP --replace *.cpp *.h
-\endcode
-
-
-
-\section Running Running PartMod
-PartMod executable requires path to master.inp - the path can be both absolute
-and relative. Unix commands can look like:
-\code{.sh}
-./DiscreteModel /path/to/master.inp
-./DiscreteModel ../../master.inp
-./DiscreteModel master.inp
-\endcode
-
-Windows alternatives are (TODO: test it):
-\code{.sh}
-DiscreteModel.exe C:\path\to\master.inp
-DiscreteModel.exe ..\..\master.inp
-DiscreteModel master.inp
-\endcode
-
-\subsection OPENMP OpenMP
-Using OpenMP to use parallel Conjugate gradient in Eigen on Linux:
-\code{.sh}
-./DiscreteModel -j number_of_threads master.inp
-\endcode
-\code{.sh}
-OMP_NUM_THREADS=4 ./DiscreteModel master.inp
-\endcode
-\code
-export OMP_NUM_THREADS=4
-./DiscreteModel master.inp
-\endcode
-on Windows:
-\code
-set OMP_NUM_THREADS=4
-DiscreteModel master.inp
-\endcode
-
-
-
-
 \subsection DOCKER Docker
 
 In partmod directory run:
@@ -213,24 +223,25 @@ docker run -it --entrypoint /bin/bash a992
 
 
 \section VTK VTK
-- install VTK
-    - install libvtk-dev
-    - download VTK (newer version, zip/tar.gz)
+- install system VTK library
+    - apt install libvtk-dev (Ubuntu 22.04, version >9)
+- build own VTK library
+    - download VTK (newer version, zip/tar.gz, https://vtk.org/download/)
         - extract archive file
         - build
             \code{.sh}
-                mkdir build; cd build
-                [Windows]
+                mkdir build; cd build [can be inside VTK directory]
+                [Windows - Visual Studio]
                 cmake -DBUILD_SHARED_LIBS=OFF ..
                 cmake --build . --parallel 4 --config Release
-                [Linux]
+                [Linux, Windows gcc]
                 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
                 cmake --build . --parallel 4
             \endcode
         - to enable GUI -DVTK_MODULE_ENABLE_VTK_RenderingContextOpenGL2=YES
-        - cmake opengl error - try install freeglut3-dev
+        - cmake opengl error
             \code{.sh}
-              sudo apt install freegl3-dev
+              apt install freeglut3-dev
             \endcode
 - enable VTK in current build configuration
   \code{.sh}
@@ -248,7 +259,23 @@ docker run -it --entrypoint /bin/bash a992
   \endcode
 
 
+\section Appimage AppImage
+\code{.sh}
+  pip install appimage-builder
+  apt install zsync patchelf
+  cd partmod-build
+  cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build . --target install DESTDIR=AppDir [make install DESTDIR=AppDir]
+  appimage-builder --generate [generate AppImageBuilder.yml]
+  # for autobuild modify AppImageBuilder.yml: version: '{{DISCRETE_MODEL_HASH}}'
+  appimage-builder --recipe AppImageBuilder.yml --skip-tests
+\endcode
 
+\code{.sh}
+  cd partmod-build
+  cmake --build . --target install DESTDIR=AppDir [make install DESTDIR=AppDir]
+  appimage-builder --recipe AppImageBuilder.yml --skip-tests
+\endcode
 
 
 \section Doxsyntax Doxygen tests

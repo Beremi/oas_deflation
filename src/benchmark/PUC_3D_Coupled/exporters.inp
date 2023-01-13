@@ -1,0 +1,46 @@
+DoFGauge RVEres strain_E11 0 1 0
+DoFGauge RVEres E22 1 1 0
+DoFGauge RVEres E33 2 1 0
+DoFGauge RVEres E32 3 1 0
+DoFGauge RVEres E23 4 1 0
+DoFGauge RVEres E31 5 1 0
+DoFGauge RVEres E13 6 1 0
+DoFGauge RVEres E21 7 1 0
+DoFGauge RVEres E12 8 1 0
+DoFGauge RVEres curvature_C11 9 1 0
+DoFGauge RVEres C22 10 1 0
+DoFGauge RVEres C33 11 1 0
+DoFGauge RVEres C32 12 1 0
+DoFGauge RVEres C23 13 1 0
+DoFGauge RVEres C31 14 1 0
+DoFGauge RVEres C13 15 1 0
+DoFGauge RVEres C21 16 1 0
+DoFGauge RVEres C12 17 1 0
+DoFGauge RVEres presgrad_G1 18 1 0
+DoFGauge RVEres G2 19 1 0
+DoFGauge RVEres G3 20 1 0
+ForceGauge RVEres stress_S11 0 1 0
+ForceGauge RVEres S22 1 1 0
+ForceGauge RVEres S33 2 1 0
+ForceGauge RVEres S32 3 1 0
+ForceGauge RVEres S23 4 1 0
+ForceGauge RVEres S31 5 1 0
+ForceGauge RVEres S13 6 1 0
+ForceGauge RVEres S21 7 1 0
+ForceGauge RVEres S12 8 1 0
+ForceGauge RVEres couplestress_M11 9 1 0
+ForceGauge RVEres M22 10 1 0
+ForceGauge RVEres M33 11 1 0
+ForceGauge RVEres M32 12 1 0
+ForceGauge RVEres M23 13 1 0
+ForceGauge RVEres M31 14 1 0
+ForceGauge RVEres M13 15 1 0
+ForceGauge RVEres M21 16 1 0
+ForceGauge RVEres M12 17 1 0
+ForceGauge RVEres flux_F1 18 1 0
+ForceGauge RVEres F2 19 1 0
+ForceGauge RVEres F3 20 1 0
+IntegrationPointGauge RVEres v_c0 crack_volume_density 1 0 0
+IntegrationPointGauge RVEres Lambda permeability_tensor 1 0 0
+
+

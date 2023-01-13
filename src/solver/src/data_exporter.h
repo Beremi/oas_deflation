@@ -17,7 +17,7 @@ class DataExporter
 {
 private:
 public:
-    DataExporter(unsigned dimension) { dim = dimension; precision = 6; multiplier=1.;};
+    DataExporter(unsigned dimension) { dim = dimension; precision = 6; multiplier = 1.; };
     virtual ~DataExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool doExportNow(const double &time, const unsigned &step);
@@ -33,22 +33,22 @@ protected:
     unsigned dim;
     std :: string filename;
     unsigned precision;
-    std :: vector< std :: string > codes;
-    std :: vector< size_t > maxsize;
+    std :: vector< std :: string >codes;
+    std :: vector< size_t >maxsize;
     double multiplier;
 
-    std :: vector< double > times_to_save; // vector to store times for export
-    double saveTime_each = std :: numeric_limits<double>::max(); // time period
+    std :: vector< double >times_to_save;  // vector to store times for export
+    double saveTime_each = std :: numeric_limits< double > :: max(); // time period
     double saveTime_last = 0; // last saved time using time period
     double time_last = 0; // time of the last export
-    double next_time_to_save = std :: numeric_limits<double>::max(); // time to perform the next export
+    double next_time_to_save = std :: numeric_limits< double > :: max(); // time to perform the next export
     unsigned saveTimes_idx = 0; // possition in vector of times_to_save
 
-    std :: vector< unsigned > steps_to_save; // vector to store steps for export
-    unsigned saveStep_each = std :: numeric_limits<unsigned>::max(); // step period
+    std :: vector< unsigned >steps_to_save;  // vector to store steps for export
+    unsigned saveStep_each = std :: numeric_limits< unsigned > :: max(); // step period
     unsigned saveStep_last = 0; // last saved step using step period
     unsigned step_last = 0; // step of the last export
-    unsigned next_step_to_save = std :: numeric_limits<unsigned>::max(); // step to perform the next export
+    unsigned next_step_to_save = std :: numeric_limits< unsigned > :: max(); // step to perform the next export
     unsigned saveSteps_idx = 0; // possition in vector of steps_to_save
 };
 
@@ -125,7 +125,7 @@ protected:
     std :: vector< unsigned >DoFs;
     std :: vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc;};
+    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc; };
     ForceGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(std :: istringstream &iss);
@@ -164,6 +164,20 @@ public:
     virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT OF SUMMATIONS AND AVERAGES FROM ELEMENT CONTAINER
+class ElementContainerGauge : public Gauge
+{
+protected:
+    ElementContainer *elemcont;
+public:
+    ElementContainerGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    ~ElementContainerGauge() {};
+    void readFromLine(std :: istringstream &iss);
+    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void init();
+};
 
 
 //////////////////////////////////////////////////////////

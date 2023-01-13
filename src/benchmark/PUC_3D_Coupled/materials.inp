@@ -1,0 +1,1 @@
+DiscreteCoupledRVEMaterial	RVEfolderMech RVE_mechanics/master.inp RVEfolderTrsprt  RVE_transport/master.inp biot_coeff 0.500000 dim 3  do_not_precompute  #enforce_linearity

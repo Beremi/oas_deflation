@@ -156,6 +156,17 @@ def checkMutDistancesCKDTree (dim, minDist, currentNodes, newNode):
         distIsGood = False
     return distIsGood
 
+#check mutual distances between particles using cKDTree -> use, if tree is already build
+def checkMutDistancesCKDTree2 (dim, minDist, newNode, tree):
+    crds = np.asarray(newNode)
+    #ncrds = np.asarray (currentNodes)
+    #tree = scipy.spatial.cKDTree ( ncrds,  leafsize=50 )
+    violatingPoints = tree.query_ball_point (x = crds,  r = minDist) #, n_jobs = -1 )
+    distIsGood = True
+    if ( len(violatingPoints) != 0):
+        distIsGood = False
+    return distIsGood
+
 #check mutual distances between particles using loops
 def checkMutDistancesLoops (dim, minDist, currentNodes, newNode):
     distIsGood = True
@@ -197,7 +208,7 @@ def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, a
             node_coords, vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ)
     if (dim == 3):
         if (periodicModel == 0):
-            node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, randomizeMaterial=randomizeMaterial,auxmechelements=auxmechelements)
+            node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial,auxmechelements=auxmechelements)
         if (periodicModel == 1):
             node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3Dperiodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ,  notches = notches, isTube=isTube)
     return node_coords,vert_count, verticesIdxDict, vertIdxStart, totalNodeCount
@@ -224,6 +235,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
         #cond = np.all(cond, axis=1)
         #validRidgeIdxs = np.where(cond)[0]
+        node_indices_dogbone = set(node_indices_dogbone)
         validRidgeIdxs = []
         for i in range (vor.ridge_points.shape[0]):
             pr = False
@@ -306,7 +318,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
         pointA = vor.ridge_points[validRidgeIdxs[i],0]
         pointB = vor.ridge_points[validRidgeIdxs[i],1]
 
-        #creating auxiliary nodes if one of nodes is outside
+        #auxiliary nodes if one of them is out of sample
         if len(node_indices_dogbone)>0:
             if(pointA in node_indices_dogbone  and pointB not in node_indices_dogbone):
                 pA = np.asarray( vor.points[pointA, :]  )
@@ -524,20 +536,29 @@ def ridgeWithinCenterBox(vertices, maxLim):
 
     return within
 
-def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, randomizeMaterial=False, auxmechelements=False):
+def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, node_indices_dogbone=[], randomizeMaterial=False, auxmechelements=False):
     start_time = time.time()
     dim = 3
 
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
 
+    nodes_out = np.zeros((node_count, (dim + 1 + 1)))
+    nodes_out[:, 0:dim] = vor.points[0:node_count, 0:dim]
+    nodes_out[:, dim] = 0
+    nodes_out[:, dim + 1] = 0
+
     printout = False
+
+    """
     # nody: [x,y,z] [powerR] [area]
     nodes_out = np.zeros( (node_count, (dim + 1 +1)))
     nodes_out[:,  0:dim] = node_coords[0:node_count,  0:dim]
+    """
 
     if ((len(areas) == node_count)):
        nodes_out[:,dim] = areas[:]
+
 
     #relAreaError = (np.sum(areas) - np.product(maxLim)) / np.product(maxLim)
     #print ('Area Error: %.5E ' %(relAreaError) )
@@ -549,8 +570,25 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     #print('ridge points')
     #adding ridges with at least one node in sample
     #validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
-    cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
-    validRidgeIdxs = np.where(cond)[0]
+
+
+    if len(node_indices_dogbone) > 0:
+        #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
+        #cond = np.all(cond, axis=1)
+        #validRidgeIdxs = np.where(cond)[0]
+        validRidgeIdxs = []
+        node_indices_dogbone = set(node_indices_dogbone)
+        for i in range (vor.ridge_points.shape[0]):
+            pr = False
+            for p in range (2):
+                if (vor.ridge_points[i][p] in node_indices_dogbone):
+                    pr=True
+            if (pr):
+               validRidgeIdxs.append(i)
+        validRidgeIdxs = np.asarray(validRidgeIdxs)
+    else:
+        cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
+        validRidgeIdxs = np.where(cond)[0]
 
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
@@ -566,6 +604,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     aux_nodes = []
     ########################################################################################################
     allCoplanar = True
+
+
     for i in range (validRidgeIdxs.size):
         sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
 
@@ -600,6 +640,23 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         pointB = vor.ridge_points[validRidgeIdxs[i]][1]
 
         #auxiliary nodes if one of them is out of sample
+        if len(node_indices_dogbone)>0:
+            if(pointA in node_indices_dogbone  and pointB not in node_indices_dogbone):
+                pA = np.asarray( vor.points[pointA, :]  )
+                pB = np.asarray( vor.points[pointB, :]  )
+                ptB = (pA + pB)/2
+
+                pointB = node_count + len(aux_nodes)
+                aux_nodes.append(ptB)
+
+            if(pointA not in node_indices_dogbone  and pointB in node_indices_dogbone):
+                pA = np.asarray( vor.points[pointA, :]  )
+                pB = np.asarray( vor.points[pointB, :]  )
+                ptA = (pA + pB)/2
+
+                pointA = node_count + len(aux_nodes)+1
+                aux_nodes.append(ptA)
+
         if(pointA >= node_count and pointB<node_count):
             pA = np.asarray( vor.points[pointA, :]  )
             pB = np.asarray( vor.points[pointB, :]  )
@@ -689,6 +746,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         """
 
         ridges_out.append(rdg)
+
+
     geom_time = time.time()
     print ('done in %.1f seconds' %(geom_time-start_time))
     if (allCoplanar):
@@ -718,6 +777,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
         ln = len(np.asarray(ridges_out[i]) )
         for l in range (3, ln):
             ridges_out[i][l] += newAuxNodes
+
 
     for i in range (len(notchAuxRidges)):
         ln = len(np.asarray(notchAuxRidges[i]) )
@@ -1489,6 +1549,8 @@ def saveExporters(master_folder,activeTransport, activeMechanics, exporters=[]):
                 fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 2 damage crack_opening pointData 1 nodal_stress\n')
             fl.write('#VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage\n')
             fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
+            fl.write('#TXTElementExporter elem 4 dissipated_energy total_energy strain_energy dissipated_energy_inc\n')
+            fl.write('#TXTIntegrationPointExporter beam_data 11 x y normal_x normal_y damage s_N s_M s_L e_N e_M e_L\n')
         if activeTransport:
             fl.write('TXTNodalExporter pressure 1 pressure\n')
             fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 2 damage crack_opening pointData 1 pressure\n')
@@ -1960,7 +2022,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
 
     if randomizeMaterial == True:
-        randomizeMechMaterial(master_folder, mechElemRidges, nodes, materialType='mars')
+        randomizeMechMaterial(master_folder, mechElemRidges, nodes, materialType='csl')
 
     if (dim == 2):
         headerLine = 'ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tvrtxAIdx\tvrtxBIdx\tMaterial'
@@ -2034,7 +2096,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
     return notchAuxNodes
 
 
-def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType='mars'):
+def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType='csl'):
     print('Randomizing materials...')
     materials = []
     for i in range(len(mechanicalRidges)):
@@ -2060,9 +2122,9 @@ def randomizeMechMaterial (master_folder, mechanicalRidges, nodes, materialType=
 
 
 
-def getRandomizedMaterialProperties(integrationPoint, materialType='mars'):
+def getRandomizedMaterialProperties(integrationPoint, materialType='csl'):
     #initial material properties
-    if materialType == 'mars':
+    if materialType == 'csl':
         initYoung = 30e9
         initAlpha = 0.25
         initDensity = 2200
@@ -2077,7 +2139,7 @@ def getRandomizedMaterialProperties(integrationPoint, materialType='mars'):
         myFt = initFt * randCoef
         myGt = initGt * randCoef
 
-        material =  utilitiesMech.MarsMaterial(myYoung, myAlpha, myDensity, myFt, myGt)
+        material =  utilitiesMech.CSLMaterial(myYoung, myAlpha, myDensity, myFt, myGt)
 
     return material
 

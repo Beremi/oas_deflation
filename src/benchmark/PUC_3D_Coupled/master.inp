@@ -1,0 +1,8 @@
+Dimension	3
+Solver	solver.inp
+NodeFiles	1	nodes.inp
+MatFiles	1	materials.inp
+ElemFiles	1	elems.inp
+BCFiles	1	BC.inp
+FunctionFiles	1	functions.inp
+ExporterFiles	1	exporters.inp

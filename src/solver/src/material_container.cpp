@@ -1,13 +1,14 @@
 #include "material_container.h"
 
-#include "material_RVE.h"
-#include "material_mars.h"
+#include "material_rve.h"
+#include "material_csl.h"
 #include "material_ldpm.h"
-#include "fatigue_material.h"
+#include "material_fatigue.h"
 #include "material_misc.h"
 #include "material_slide_3_2.h"
-#include "material_HTC.h"
+#include "material_htc.h"
 #include "material_coulomb_friction.h"
+#include "material_fiber.h"
 
 using namespace std;
 
@@ -40,11 +41,11 @@ Material *MaterialContainer :: giveMaterial(unsigned const mat) {
 void MaterialContainer :: readFromFile(const string filename) {
     size_t origsize = matrs.size();
     string line, matType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     unsigned id = 0;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() || (line.at(0) == '#') ) {
+            if ( line.empty() || ( line.at(0) == '#' ) ) {
                 continue;
             }
             istringstream iss(line);
@@ -90,16 +91,16 @@ void MaterialContainer :: readFromFile(const string filename) {
                     DiscreteTrsprtCoupledMaterial *newmat = new DiscreteTrsprtCoupledMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
-                } else if ( matType.compare("MarsMaterial") == 0 ) {
-                    MarsMaterial *newmat = new MarsMaterial();
+                } else if ( matType.compare("CSLMaterial") == 0 ) {
+                    CSLMaterial *newmat = new CSLMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("LDPMMaterial") == 0 ) {
                     LDPMMaterial *newmat = new LDPMMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
-                } else if ( matType.compare("CoupledMarsMaterial") == 0 ) {
-                    CoupledMarsMaterial *newmat = new CoupledMarsMaterial();
+                } else if ( matType.compare("CoupledCSLMaterial") == 0 ) {
+                    CoupledCSLMaterial *newmat = new CoupledCSLMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("FatigueShearMaterial") == 0 ) {
@@ -113,7 +114,7 @@ void MaterialContainer :: readFromFile(const string filename) {
                 } else if ( matType.compare("FatigueMaterial") == 0 ) {
                     FatigueMaterial *newmat = new FatigueMaterial();
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( FatigueShearMaterial * ) newmat);
+                    matrs.push_back( ( FatigueShearMaterial * ) newmat );
                 } else if ( matType.compare("Slide32Material") == 0 ) {
                     Slide32Material *newmat = new Slide32Material();
                     newmat->readFromLine(iss);
@@ -136,6 +137,10 @@ void MaterialContainer :: readFromFile(const string filename) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("CoulombFrictionMaterial") == 0 ) {
                     CoulombFrictionMaterial *newmat = new CoulombFrictionMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("FiberMaterial") == 0 ) {
+                    FiberMaterial *newmat = new FiberMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else {

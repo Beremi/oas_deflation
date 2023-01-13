@@ -237,6 +237,8 @@ class Model:
             if (r[i]=='elasticHeightCoef'):
                 self.elasticHeightCoef = float(r[i+1])
 
+            if (r[i]=='dmgBand'):
+                self.dmgBand = float(r[i+1])
 
             if (r[i]=='cylinderRad'):
                 self.cylinderRad = float(r[i+1])
@@ -264,6 +266,8 @@ class Model:
                 self.dogboneD = float(r[i+1])
             if (r[i]=='dogboneExcentricityFrac'):
                 self.dogboneExcentricityFrac = float(r[i+1])
+            if (r[i] == 'dogboneExcentricity_Z'):
+                self.dogboneExcentricity_Z = float(r[i + 1])
             if (r[i]=='notchH'):
                 self.notchH = float(r[i+1])
             if (r[i]=='loadWidth'):
@@ -310,7 +314,7 @@ class Model:
         #
         #if (self.printout == False): blockPrint()
         if self.modelType == '2d_transportPatchTest':
-            self.run_2d_trans1portPatchTest()
+            self.run_2d_transportPatchTest()
         if self.modelType == '3d_transportPatchTest':
             self.run_3d_transportPatchTest()
         if self.modelType == '3d_BiparvaTubeTransport':
@@ -465,8 +469,10 @@ class Model:
             elaHeight = 1/4*self.dogboneD
             if self.roughDogBone >1:
                 elaHeight = 3/4*self.dogboneD - (self.roughDogBone-1)*self.minDist
-
             if self.symmetric:
+                if self.dmgBand == 1:
+                    elaHeight = 3 / 4 * self.dogboneD - self.minDist / 4
+
                 self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
             else:
                 self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
@@ -501,7 +507,8 @@ class Model:
         self.maxLim = np.array([self.dogboneD, 6/4*self.dogboneD, 0.1])
         #self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, 3, model='dogbone',  D=self.dogboneD, thickness=0.1)
         self.materialZones = None
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates)   = utilitiesModeling.create3dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create3dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity_X=self.dogboneExcentricityFrac, excentricity_Z=self.dogboneExcentricity_Z, symmetric=self.symmetric)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone3d', D=self.dogboneD)
 
     def run_3d_torsionPress(self):
         self.maxLim = np.array([self.cylinderHeight, 2*self.cylinderRad, 2*self.cylinderRad])
@@ -876,8 +883,8 @@ class Model:
             self.materials.append(transportMaterial)
             print('done.')
 
-        #MarsMaterial
-        if (r[1]=='MarsMaterial'):
+        #CSLMaterial
+        if (r[1]=='CSLMaterial'):
 
             young = None
             alpha = None
@@ -893,7 +900,7 @@ class Model:
                     setattr(params, r[i], bool(r[i+1]))
 
             if None in params.values():
-                print ('!! MarsMaterial incomplete. Exiting. !!')
+                print ('!! CSLMaterial incomplete. Exiting. !!')
                 exit()
 
             #"""
@@ -910,11 +917,11 @@ class Model:
                     Gt = float(r[i+1])
             #"""
             if (young == None or alpha == None or density == None or ft == None or  Gt == None):
-                print ('!! MarsMaterial incomplete. Exiting. !!')
+                print ('!! CSLMaterial incomplete. Exiting. !!')
                 sys.exit()
 
-            marsMaterial = utilitiesMech.MarsMaterial(young, alpha, density, ft, Gt, coupled = self.coupled)
-            self.materials.append(marsMaterial)
+            CSLMaterial = utilitiesMech.CSLMaterial(young, alpha, density, ft, Gt, coupled = self.coupled)
+            self.materials.append(CSLMaterial)
             print('done.')
 
         #FatigueMaterial

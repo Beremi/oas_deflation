@@ -5,9 +5,11 @@ using namespace std;
 
 volatile sig_atomic_t TERMINATED = 0;
 
-void my_handler(int s){
-    (void) s;
-    if (TERMINATED) exit(EXIT_FAILURE);
+void my_handler(int s) {
+    ( void ) s;
+    if ( TERMINATED ) {
+        exit(EXIT_FAILURE);
+    }
     TERMINATED = 1;
 }
 
@@ -32,15 +34,16 @@ Model :: Model(bool pT) {
 
 //////////////////////////////////////////////////////////
 void Model :: init(const bool &initial) {     //initialization
-    //pblocks.apply(); //moved to reader
-    bconds.init();
-    nodes.init();
     if ( initial ) {
         matrs.init();
     }
     elems.init();
+    pblocks.init();
+    bconds.init( solver->giveTime() );
+    nodes.init();
     nodes.initSimplices();
     constr.init(& nodes, & bconds, solver);
+    elems.assignFibersToElems();
     elems.findElementFriends();
     if ( initialFieldFile.compare("") != 0 ) {
         initialFieldFile = ( baseDir / initialFieldFile ).string();
@@ -50,18 +53,29 @@ void Model :: init(const bool &initial) {     //initialization
     }
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
     exporters.init(initial);
+    bconds.setInitialDoFFields(solver);
     // exporters.updateAllTimeAndStepToSave(solver->giveTime(), solver->giveStepNumber());  // needed especially in adaptivity
+}
+
+//////////////////////////////////////////////////////////
+void Model :: jumpToNextStage() {
+    cout << "** updating model to the next computational stage ** " << endl;
+    bconds.init(solver->giveTime() + 1e-12);
+    bconds.setInitialDoFFields(solver);
+    nodes.init();
+    constr.init(& nodes, & bconds, solver);
+    solver->rebuild();
 }
 
 //////////////////////////////////////////////////////////
 void Model :: solve() {
     //solution
-    signal (SIGINT, my_handler);
-    exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
-    while ( !solver->isTerminated() && TERMINATED==0) {
+    signal(SIGINT, my_handler);
+    exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
+    while ( !solver->isTerminated() && TERMINATED == 0 ) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
+        exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
         if ( printTime ) {
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;
@@ -79,10 +93,10 @@ void Model :: readFromFile(const string filename, const bool &initial) {
 
     string istr, line;
     int iint;
-    ifstream inputfile( fullPath.string() );
+    ifstream inputfile(fullPath.string() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() || (line.at(0) == '#') ) {
+            if ( line.empty() || ( line.at(0) == '#' ) ) {
                 continue;
             }
             istringstream iss(line);
@@ -93,7 +107,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    nodes.readFromFile( ( baseDir / istr ).string(), ndim);
+                    nodes.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( initial && istr.compare("MatFiles") == 0 ) {
                 iss >> iint;
@@ -105,7 +119,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs);
+                    elems.readFromFile( ( baseDir / istr ).string(), ndim, & matrs );
                 }
             } else if ( istr.compare("MatStatFiles") == 0 ) {
                 iss >> iint;
@@ -118,13 +132,13 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    constr.readFromFile( ( baseDir / istr ).string(), ndim, & nodes);
+                    constr.readFromFile( ( baseDir / istr ).string(), ndim, & nodes );
                 }
             } else if ( istr.compare("BCFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems);
+                    bconds.readFromFile( ( baseDir / istr ).string(), & nodes, & elems );
                 }
             } else if ( initial && istr.compare("FunctionFiles") == 0 ) {  // functions are constant during whole calculation, even in adaptive case
                 iss >> std :: skipws >> iint;
@@ -136,13 +150,19 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim);
+                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim );
                 }
             } else if ( istr.compare("PBlockFiles") == 0 ) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    pblocks.readFromFile( ( baseDir / istr ).string(), ndim);
+                    pblocks.readFromFile( ( baseDir / istr ).string(), ndim );
+                }
+            } else if ( istr.compare("Regions") == 0 ) {
+                iss >> iint;
+                for ( int i = 0; i < iint; i++ ) {
+                    iss >> istr;
+                    regions.readFromFile( ( baseDir / istr ).string(), ndim );
                 }
             } else if ( initial && istr.compare("Solver") == 0 ) {
                 iss >> istr;
@@ -152,7 +172,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 //delete ptr;
                 solver = Solver().readFromFile( ( baseDir / istr ).string() );
                 // QUESTION JK: why is this here and not in the constructor? together with new Solver() ?
-                solver->setContainers(& elems, & nodes, & funcs);
+                solver->setContainers(& elems, & nodes, & funcs, & bconds);
             } else if ( initial && istr.compare("initial_master_field") == 0 ) {
                 iss >> initialFieldFile;
             } else if ( initial && istr.compare("initial_master_time_derivative_field") == 0 ) {
@@ -172,11 +192,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
         resultDir = baseDir / result_dir_name;
     }
 
-    //here we apply periodic blocks to generate all the necessary objects
-    //it was removed from Model initialization, because it had to be called in advance for RVE materials
-    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
-    pblocks.apply();
-
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
 
     exporters.setResultDirectory(resultDir);
     exporters.setSolver(solver);
@@ -205,9 +221,9 @@ void Model :: clear() {
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
     elems.setContainers(& nodes, & bconds);
-    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, solver);
+    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 
-    solver->setContainers(& elems, & nodes, & funcs);
+    solver->setContainers(& elems, & nodes, & funcs, & bconds);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 }

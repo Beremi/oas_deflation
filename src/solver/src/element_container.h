@@ -14,14 +14,14 @@ private:
     NodeContainer *nodes;
     BCContainer *bconds;
     MaterialContainer *materials;
-    unsigned max_sol_order; //maximum number of successive rounds of internal force evaluations
+    unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType) const;
     void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
     std :: vector< std :: string >file_to_load_from;
 
 public:
-    ElementContainer() {};
+    ElementContainer() { nodes = nullptr; bconds = nullptr; materials = nullptr; };
     ~ElementContainer();
     void setContainers(NodeContainer *n, BCContainer *b) { nodes = n; bconds = b; };
     void readFromFile(const std :: string filename, const unsigned ndim, MaterialContainer *matrs);
@@ -51,6 +51,9 @@ public:
     unsigned giveElemId(const Element *elem) const;
     bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;
     void extrapolateValuesFromIntegrationPointsToNodes(std :: string code, std :: vector< Vector > &results);
+    void assignFibersToElems();
+    void giveValues(std :: string code, Vector &result) const;
+    void sumFromElements(std :: string code, Vector &result) const;
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }

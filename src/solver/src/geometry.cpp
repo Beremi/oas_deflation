@@ -138,6 +138,46 @@ bool Polygon :: isInside(const Point &P) const {
     return count & 1; // Same as (count%2 == 1)
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+Cylinder :: Cylinder(const Point &a, const Point &b, double r) {
+    A = a;
+    B = b;
+    radius = r;
+    init();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void Cylinder :: readFromLine(std :: istringstream &iss) {
+    double x, y, z;
+    iss >> x >> y >> z;
+    A = Point(x, y, z);
+    iss >> x >> y >> z;
+    B = Point(x, y, z);
+    iss >> radius;
+    init();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void Cylinder :: init() {
+    dir = B - A;
+    length = dir.norm();
+    dir /= length;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool Cylinder :: isInside(const Point &P) const {
+    Point vec = P - A;
+    double pos = dir [ 0 ] * vec [ 0 ] + dir [ 1 ] * vec [ 1 ] + dir [ 2 ] * vec [ 2 ];
+    if ( pos< 0 or pos >length ) {
+        return false;
+    }
+    vec = vec - pos * dir;
+    if ( vec.norm() > radius ) {
+        return false;
+    }
+    return true;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -169,8 +209,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius,
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.x() <= max( p.x(), r.x() ) && q.x() >= min( p.x(), r.x() ) &&
-         q.y() <= max( p.y(), r.y() ) && q.y() >= min( p.y(), r.y() ) ) {
+    if ( q.x() <= max(p.x(), r.x() ) && q.x() >= min(p.x(), r.x() ) &&
+         q.y() <= max(p.y(), r.y() ) && q.y() >= min(p.y(), r.y() ) ) {
         return true;
     }
     return false;
@@ -267,13 +307,83 @@ bool isInPolygon(const std :: vector< Point > &polygon, const Point &p)
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// CONTAINER FOR REGIONS
+///////////////////////////////////////////////////////////////////////////////
+RegionContainer :: ~RegionContainer() {
+    for ( auto &r: regions ) {
+        if ( r != nullptr ) {
+            delete r;
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void RegionContainer :: readFromFile(const std :: string &filename, unsigned d) {
+    dim = d;
+
+    size_t origsize = regions.size();
+    string line, regionType;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() || ( line.at(0) == '#' ) ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> std :: ws >> regionType;
+            if ( !( regionType.rfind("#", 0) == 0 ) ) {
+                if ( regionType.compare("Block") == 0 || regionType.compare("Rectangle") == 0 ) {
+                    Block *newregion = new Block();
+                    newregion->readFromLine(iss);
+                    regions.push_back(newregion);
+                } else if ( regionType.compare("Circle") == 0 || regionType.compare("Sphere") == 0 ) {
+                    Sphere *newregion = new Sphere();
+                    newregion->readFromLine(iss);
+                    regions.push_back(newregion);
+                } else if ( regionType.compare("Cylinder") == 0 ) {
+                    Cylinder *newregion = new Cylinder();
+                    newregion->readFromLine(iss);
+                    regions.push_back(newregion);
+                } else {
+                    cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+        }
+        inputfile.close();
+        cout << "Input file '" <<  filename << "' succesfully loaded; " << regions.size() - origsize << " regions found" << endl;
+    } else {
+        cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool RegionContainer :: isLocationValid(const Point p, const vector< unsigned >in, const vector< unsigned >out) const {
+    for ( auto &k: in ) {
+        if ( !regions [ k ]->isInside(p) ) {
+            return false;
+        }
+    }
+    for ( auto &k: out ) {
+        if ( regions [ k ]->isInside(p) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+//TO BE USE IN ADAPTIVITY
+///////////////////////////////////////////////////////////////////////////////
 void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() || (line.at(0) == '#') ) {
+            if ( line.empty() || ( line.at(0) == '#' ) ) {
                 continue;
             }
             istringstream iss(line);
@@ -282,11 +392,11 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
                 if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
                     auto newregion = std :: make_unique< Block >();
                     newregion->readFromLine(iss);
-                    regions.push_back( std :: move(newregion) );
+                    regions.push_back(std :: move(newregion) );
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
                     auto newregion = std :: make_unique< Sphere >();
                     newregion->readFromLine(iss);
-                    regions.push_back( std :: move(newregion) );
+                    regions.push_back(std :: move(newregion) );
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -302,6 +412,8 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
 }
 
 
+
+///////////////////////////////////////////////////////////////////////////////
 bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions, const Point &p) {
     for ( auto const &reg : regions ) {
         if ( reg->isInside(p) ) {
@@ -317,7 +429,7 @@ bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside( n->givePoint() ) ) {
+            if ( reg->isInside(n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }

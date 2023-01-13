@@ -242,8 +242,8 @@ class linearElasticMaterial:
 
 
 ##################################################
-#### Mars material ####
-class MarsMaterial:
+#### CSL material ####
+class CSLMaterial:
     def __init__ (self, youngModulus, poisson, density, ft, Gt, coupled = False):
         self.youngModulus = youngModulus
         self.poisson = poisson
@@ -252,9 +252,9 @@ class MarsMaterial:
         self.Gt = Gt
         self.coupled = coupled
     def getString (self):
-        line = 'MarsMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'ft\t%f' %(self.ft) +'\t' + 'Gt\t%f' %(self.Gt)
+        line = 'CSLMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'ft\t%f' %(self.ft) +'\t' + 'Gt\t%f' %(self.Gt)
         if self.coupled == True:
-            line = 'CoupledMarsMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'ft\t%f' %(self.ft) +'\t' + 'Gt\t%f' %(self.Gt) +'\t' + 'biot_coeff\t0.5'
+            line = 'CoupledCSLMaterial\t' +'E0\t%e'%(self.youngModulus)   + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)     +'\t' + 'ft\t%f' %(self.ft) +'\t' + 'Gt\t%f' %(self.Gt) +'\t' + 'biot_coeff\t0.5'
         return line
 ##################################################
 

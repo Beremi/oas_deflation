@@ -1,13 +1,13 @@
-#ifndef _MARS_MATERIAL_H
-#define _MARS_MATERIAL_H
+#ifndef _CSL_MATERIAL_H
+#define _CSL_MATERIAL_H
 
 #include "material.h"
 
 //////////////////////////////////////////////////////////
-// CUSATIS/MARS MATERIAL 2007
+// CSL MATERIAL 2007
 
-class MarsMaterial;
-class MarsMaterialStatus : public DisMechMaterialStatus
+class CSLMaterial;
+class CSLMaterialStatus : public DisMechMaterialStatus
 {
 private:
     double omega0, maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
@@ -26,8 +26,8 @@ private:
 
     double crackOpening;
 public:
-    MarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
-    virtual ~MarsMaterialStatus() {};
+    CSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum);
+    virtual ~CSLMaterialStatus() {};
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();
@@ -39,20 +39,21 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value);
+    Vector giveCrackOpeningVector() const;
 };
 
 
-class MarsMaterial : public DisMechMaterial
+class CSLMaterial : public DisMechMaterial
 {
 private:
     double ft, Gt;
-    double fs, Gs, fc, Kc, beta, mu, nc;
+    double fs, Gs, fc, Kc, beta, mu, nc, lam0;
     double Lcrs, Lcrt;
     double damage_residuum = 0.0;
     double stress_residuum_fraction = 0.0;
 public:
-    MarsMaterial() { name = "Mars material"; };
-    virtual ~MarsMaterial() {};
+    CSLMaterial() { name = "CSL material"; lam0 = 1e10; }; //confinement removed
+    virtual ~CSLMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
@@ -66,6 +67,7 @@ public:
     double giveLcrs() { return Lcrs; }
     double giveLcrt() { return Lcrt; }
     double giveKc() { return Kc; }
+    double giveLam0() { return lam0; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
 
@@ -73,17 +75,17 @@ public:
 };
 
 //////////////////////////////////////////////////////////
-//COUPLED MARS MATERIAL
-class CoupledMarsMaterial;
-class CoupledMarsMaterialStatus : public MarsMaterialStatus
+//COUPLED CSL MATERIAL
+class CoupledCSLMaterial;
+class CoupledCSLMaterialStatus : public CSLMaterialStatus
 {
 private:
     void updateStressByBiotEffect(double timeStep);
     double avgPressure;
 
 public:
-    CoupledMarsMaterialStatus(MarsMaterial *m, Element *e, unsigned ipnum);
-    ~CoupledMarsMaterialStatus() {};
+    CoupledCSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum);
+    ~CoupledCSLMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual void giveValues(std :: string code, Vector &result) const;
@@ -93,17 +95,17 @@ public:
     virtual void setParameterValue(std :: string code, double value);
 };
 
-class CoupledMarsMaterial : public MarsMaterial
+class CoupledCSLMaterial : public CSLMaterial
 {
 private:
     double biotCoeff;
 public:
-    CoupledMarsMaterial() { name = "Coupled Mars material"; };
-    virtual ~CoupledMarsMaterial() {};
+    CoupledCSLMaterial() { name = "Coupled CSL material"; };
+    virtual ~CoupledCSLMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void init();
     double giveBiotCoeff() const { return biotCoeff; };
 };
 
-#endif /* _MARS_MATERIAL_H */
+#endif /* _CSL_MATERIAL_H */

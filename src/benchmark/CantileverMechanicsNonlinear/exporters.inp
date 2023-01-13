@@ -4,3 +4,7 @@ TXTElementExporter Elemdamage 1 damage
 DisplacementGauge LD displ uy 0 0 3 1
 ForceGauge LD load fy 1 6
 VTKElementExporter elems time_every 1e-20 cellData 1 damage pointData 1 pressure
+ElementContainerGauge LD dissipated_energy dissipated_energy
+ElementContainerGauge LD strain_energy strain_energy
+ElementContainerGauge LD total_energy total_energy
+ElementContainerGauge LD kinetic_energy kinetic_energy

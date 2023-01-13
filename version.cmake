@@ -44,4 +44,4 @@ set(my_output ${TARGET_DIR}/generated/date.txt)
 file(WRITE ${my_output} ${DATE_STRING})
 
 set(my_output ${TARGET_DIR}/generated/target_name.txt)
-file(WRITE ${my_output} ${TARGET_NAME}_${GIT_HASH}_${DATE_STRING})
+file(WRITE ${my_output} ${TARGET_NAME}_${DATE_STRING}_${GIT_HASH})

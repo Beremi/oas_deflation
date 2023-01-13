@@ -39,7 +39,7 @@ private:
     double init_alphac, init_alphas;
 
 public:
-    HTCMaterial() { name = "Mars material"; produceInternalSources = true; };
+    HTCMaterial() { name = "HTC material"; produceInternalSources = true; };
     virtual ~HTCMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
