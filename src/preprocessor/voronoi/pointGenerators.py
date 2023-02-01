@@ -991,6 +991,35 @@ def randPointInSphere(center, radius):
     point += center
     return point
 
+def randPointInSpherePolar(center, radius):
+    center_polar = np.zeros(len(center)) 
+    point_cart = np.zeros(len(center))      # [x, y, (z)]
+    point_polar = np.zeros(len(center))     # [angle1 0-2pi, (angle2 0-pi), radius]
+
+    angle1 = np.random.uniform() * np.pi * 2
+    rradius = radius * np.random.uniform()
+
+    if len(point_cart) == 2: # 2D case
+        center_polar[0] = np.arctan(center[1]/center[0])
+        center_polar[1] = np.sqrt(np.power(center[0],2) + np.power(center[1],2))
+        point_polar[0] = angle1
+        point_polar[1] = rradius
+        point_cart[0] = rradius * np.cos(angle1)
+        point_cart[1] = rradius * np.sin(angle1)
+    else:   # 3D case
+        center_polar[0] = np.arctan(center[1]/center[0])
+        center_polar[1] = np.arctan((np.sqrt(center[0],2) + np.power(center[1],2))/center[2])
+        center_polar[2] = np.sqrt(np.power(center[0],2) + np.power(center[1],2) + np.power(center[2],2))
+        angle2 = np.random.uniform() * np.pi
+        point_polar[0] = angle1
+        point_polar[1] = angle2
+        point_polar[2] = rradius
+        point_cart[0] = rradius * np.cos(angle1) * np.sin(angle2)
+        point_cart[1] = rradius * np.sin(angle1) * np.sin(angle2)
+        point_cart[2] = rradius * np.cos(angle2)
+    point_cart += center
+    point_polar += center_polar
+    return point_cart, point_polar
 
 def randPointBetweenSpheres(center, radius, thickness):
     # works also both anulus in xy plane
