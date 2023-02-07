@@ -326,18 +326,20 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
 
     # generate and add the first particle
     if allow_domain_overlap:
-        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin 
+        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin
     else:
         point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
 
     # add the first particle  (no need to check)
+    # ? format of node_coords_cart, node_coords_polar
     node_coords_cart[0] = point_cart
     node_coords_polar[0] = point_polar
     radii[0] = radius
     if periodic_distance:
+        periodicity = np.zeros(dim); periodicity[-1] = maxLim
+        # print(point_polar, periodicity)
         per_nodes_polar = point_polar - periodicity
-        per_nodes_cart = polarToCart(point_polar)
-        periodicity = np.zeros(dim); periodicity[-1] = maxLim   # to subtract diameter from nodal coords
+        per_nodes_cart = np.array([polarToCart(point_polar - periodicity)])
 
     if dim == 2:
         saturation += (np.pi*np.power(radius,2)) / (np.pi*np.power(maxLim, 2)/4)
@@ -349,10 +351,9 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
     radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
     nA += 1
 
-
     # generate other particles
     while 2*radius > minDiam and iters < trials:
-        # print('particle N ', nA, ' iteration: ', iters)
+        print('particle N ', nA, ' iteration: ', iters)
         # generate a candidate for particle center (both 2D and 3D)
         if allow_domain_overlap:
             point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin 
@@ -388,7 +389,7 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
             # sys.stdout.flush()
         else:
             iters += 1
-    return node_coords_cart, radii
+    return node_coords_cart, per_nodes_cart, radii
 
 def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
         gap = 0.1
@@ -1100,14 +1101,17 @@ def randPointInSpherePolar(center, radius):
     angle1 = np.random.uniform() * np.pi * 2
     rradius = radius * np.random.uniform()
 
-    if len(point_cart) == 2: # 2D case
+    if abs(center[0]) < 1e-5:
+        center_polar[0] = 0
+    else:
         center_polar[0] = np.arctan(center[1]/center[0])
+
+    if len(point_cart) == 2: # 2D case
         center_polar[1] = np.sqrt(np.power(center[0],2) + np.power(center[1],2))
         point_polar[0] = angle1
         point_polar[1] = rradius
         point_cart = polarToCart(point_polar)
     else:   # 3D case
-        center_polar[0] = np.arctan(center[1]/center[0])
         center_polar[1] = np.arctan((np.sqrt(center[0],2) + np.power(center[1],2))/center[2])
         center_polar[2] = np.sqrt(np.power(center[0],2) + np.power(center[1],2) + np.power(center[2],2))
         angle2 = np.random.uniform() * np.pi
