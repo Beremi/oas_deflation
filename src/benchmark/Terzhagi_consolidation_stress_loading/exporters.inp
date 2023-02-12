@@ -1,0 +1,15 @@
+VTKElementExporter	elems	saveEvery	0.0001	cellData	3	damage	crack_opening	volumetricStrain pointData	2   displacement	pressure	
+ForceGauge LD fx#MechPLT0 0 1 3223
+ForceGauge LD fy#MechPLT0 1 1 3223
+ForceGauge LD fz#MechPLT0 2 1 3223
+ForceGauge LD mx#MechPLT0 3 1 3223
+ForceGauge LD my#MechPLT0 4 1 3223
+ForceGauge LD mz#MechPLT0 5 1 3223
+ForceGauge LD fx#MechPLT1 0 1 3224
+ForceGauge LD fy#MechPLT1 1 1 3224
+ForceGauge LD fz#MechPLT1 2 1 3224
+ForceGauge LD mx#MechPLT1 3 1 3224
+ForceGauge LD my#MechPLT1 4 1 3224
+ForceGauge LD mz#MechPLT1 5 1 3224
+TXTNodalExporter pressure 1 pressure
+TXTNodalExporter displ 1 ux

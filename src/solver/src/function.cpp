@@ -114,8 +114,7 @@ void ConstSawToothFunction :: readFromLine(istringstream &iss) {
     double temp;
     bool bup, blow, bper, btim, bcyc, sym;
     bup = blow = bper = btim = bcyc = sym = false;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while ( iss >> param ) {
         if ( param.compare("lower") == 0 ) {
             iss >> lower;
             blow = true;
@@ -180,7 +179,7 @@ double ConstSawToothFunction :: giveY(double t) const {
         return multip * t * lower / ( abs(time_shift) );
     } else {
         return ( ( upper - lower ) - ( ( ( upper - lower ) / ( 0.5 * period ) ) *
-                                       abs(fmod( ( t + time_shift ), period ) - 0.5 * period) ) +
+                                       abs(fmod( ( t + time_shift ), period) - 0.5 * period) ) +
                  lower ) * multip;
     }
 }
@@ -208,8 +207,7 @@ void LinSawToothFunction :: readFromLine(istringstream &iss) {
     bool bmult, btim, bval;
     bmult = btim = bval = false;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while ( iss >> param ) {
         if ( param.compare("multip") == 0 ) {
             iss >> time_multiplier;
             bmult = true;
@@ -251,8 +249,7 @@ void VaryingSawToothFunction :: readFromLine(istringstream &iss) {
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
     string param;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while ( iss >> param ) {
         if ( param.compare("shift") == 0 ) {
             iss >> shift;
         }
@@ -278,8 +275,7 @@ void SinusFunction :: readFromLine(istringstream &iss) {
     string param;
     bool bper, bamp, bshift;
     bper = bamp = bshift = false;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while ( iss >> param ) {
         if ( param.compare("period") == 0 ) {
             iss >> period;
             bper = true;
@@ -332,7 +328,7 @@ FunctionContainer :: ~FunctionContainer() {
 void FunctionContainer :: readFromFile(const string filename) {
     size_t origsize = functions.size();
     string line, ftype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -374,7 +370,7 @@ void FunctionContainer :: readFromFile(const string filename) {
                     VaryingSawToothFunction *newf = new VaryingSawToothFunction();
                     newf->readFromLine(iss);
                     // it is necessary to specify which of two parent classes will the tree go throug
-                    functions.push_back( ( ConstSawToothFunction * ) newf );
+                    functions.push_back( ( ConstSawToothFunction * ) newf);
                 } else {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);

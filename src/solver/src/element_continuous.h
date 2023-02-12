@@ -9,7 +9,7 @@ class BodyLoad; //forward declaration
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL TRANSPORT ELEMENT
-class TrsprtQuad : public TransportElement
+class TrsprtQuad : public Element
 {
 protected:
 public:
@@ -50,7 +50,7 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
-class MechanicalQuad : public MechanicalElement
+class MechanicalQuad : public Element
 {
 protected:
 public:
@@ -106,13 +106,13 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
-class CoupledCosseratQuad : public CosseratQuad
+class CoupledCosseratTransportQuad : public CosseratQuad
 {
 protected:
 
 public:
-    CoupledCosseratQuad();
-    virtual ~CoupledCosseratQuad() {};
+    CoupledCosseratTransportQuad();
+    virtual ~CoupledCosseratTransportQuad() {};
     virtual void init();
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
@@ -121,13 +121,13 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
-class CoupledCosseratBrick : public CosseratBrick
+class CoupledCosseratTransportBrick : public CosseratBrick
 {
 protected:
 
 public:
-    CoupledCosseratBrick();
-    virtual ~CoupledCosseratBrick() {};
+    CoupledCosseratTransportBrick();
+    virtual ~CoupledCosseratTransportBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Matrix giveDampingMatrix() const;
@@ -137,7 +137,7 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK COSSERAT COUPLED MECHANICAL-TRANSPORT ELEMENT
-class CoupledCosseratBrickWithDependentUpperZLayer : public CoupledCosseratBrick
+class CoupledCosseratBrickWithDependentUpperZLayer : public CoupledCosseratTransportBrick
 {
 protected:
     bool bindlayers;

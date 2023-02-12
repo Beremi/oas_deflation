@@ -1,4 +1,0 @@
-# CSLMaterial	E0	3.000000e+10	alpha	0.300000	density	2200.000000	ft	2000000.000000	Gt	500.000000
-FatigueMaterial	E0	35e9	alpha	0.300000    density 2200.0 fc 200e6 ft 35e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0.0 gamma 10.0e6 S 0.00005e6 a 0
-TrsprtMaterial		capacity	11.000000	permeability	22e-18 viscosity 1e-5   density	1e3
-DisMechMaterial	E0	3.000000e+10	alpha	0.300000	density	2200.000000

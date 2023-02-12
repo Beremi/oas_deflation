@@ -15,7 +15,7 @@
 #include "element_discrete.h"
 #include "geometry.h"
 
-void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const std :: vector< bool > &activeDirs, const bool trsp = false);
+void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const std :: vector< bool > &activeDirs, bool includeRigidBodyRotation = true);
 
 void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const bool trsp = false, Function *fn = nullptr);
 
@@ -171,6 +171,7 @@ class RigidPlate : public PBlock
 {
 private:
     std :: vector< unsigned >slave_ids;
+    std :: vector< unsigned >insideRegions, outsideRegions;
 public:
     RigidPlate() { };
     virtual ~RigidPlate() {};
@@ -181,8 +182,7 @@ protected:
     unsigned master_id, ndim;
     std :: string which;  ///< which direction to fix (e.g. to leave expansion in perpendicualr direction)
     std :: vector< bool >activeDirs;
-    void checkMechTransport(Node *master);
-    void setDirectionToFix(std :: istringstream &iss);
+    void checkPhysicalField(Node *master);
 };
 
 //////////////////////////////////////////////////////////

@@ -7,46 +7,55 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // CSL MATERIAL STATUS
 
-CSLMaterialStatus :: CSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+CSLMaterialStatus :: CSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "CSL mat. status";
     RAND_H = 1.0;
 }
 
 //////////////////////////////////////////////////////////
-void CSLMaterialStatus :: giveValues(string code, Vector &result) const {
+bool CSLMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_crackOpening;
+        return true;
     } else if ( code.compare("volumetric_strain") == 0 ) {
         result.resize(1);
         result [ 0 ] = volumetricStrain;
+        return true;
     } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_damage;
+        return true;
     } else if ( code.compare("ft") == 0 ) {
         CSLMaterial *m = static_cast< CSLMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveFt();
+        return true;
     } else if ( code.compare("Gt") == 0 ) {
         CSLMaterial *m = static_cast< CSLMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveGt();
+        return true;
     } else if ( code.compare("fs") == 0 ) {
         CSLMaterial *m = static_cast< CSLMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveFs();
+        return true;
     } else if ( code.compare("Gs") == 0 ) {
         CSLMaterial *m = static_cast< CSLMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = m->giveGs();
+        return true;
     } else if ( ( code.compare("strainN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = temp_strain [ 0 ];
+        return true;
     } else if ( ( code.compare("stressN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];
+        return true;
     } else {
-        DisMechMaterialStatus :: giveValues(code, result);
+        return VectMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -77,7 +86,7 @@ void CSLMaterialStatus :: init() {
     CSLMaterial *m = static_cast< CSLMaterial * >( mat );
     Ks = 2 * m->giveAlpha() * m->giveE0() / ( m->giveLcrs() / L - 1 );
     Kt = 2 * m->giveE0() / ( m->giveLcrt() / L - 1 );
-    nt = log(Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
+    nt = log( Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
 
     if ( Ks < 0 || Kt < 0 ) {
         cerr << "Error " << name << ": snap back occured" << endl;
@@ -98,11 +107,11 @@ double CSLMaterialStatus :: giveS0tension(double omega) const {
     double sa = .5 * ft * ( pow(fs / ( m->giveMu() * ft ), 2) - 1. );
 
 
-    if ( omega == atan(sqrt(m->giveAlpha() ) / m->giveMu() ) ) {
+    if ( omega == atan( sqrt( m->giveAlpha() ) / m->giveMu() ) ) {
         // for this anle, the later equation is undetermined, but hyperbola eq. gives this (see Two Scale Study - Cusatis 2007 doi.org/10.1016/j.engfracmech.2006.01.021)
         return .5 * ( ft + 2 * sa ) * ft / ( ( ft + sa ) * s );
     } else {
-        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
+        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
     }
 }
 
@@ -112,7 +121,7 @@ double CSLMaterialStatus :: giveS0compression(double omega) const {
 
     double fc = m->giveFc() * RAND_H;
 
-    return fc / sqrt(pow(sin(omega), 2) + ( m->giveAlpha() * pow(cos(omega), 2) ) / m->giveBeta() );
+    return fc / sqrt( pow(sin(omega), 2) + ( m->giveAlpha() * pow(cos(omega), 2) ) / m->giveBeta() );
 }
 
 //////////////////////////////////////////////////////////
@@ -154,14 +163,14 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
     if ( strain.size() == 2 ) {
         epsT = abs(strain [ 1 ]);                //2D
     } else {
-        epsT = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );     //3D
+        epsT = sqrt( pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );     //3D
     }
-    double epsEQ = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );     //equivalent strain
+    double epsEQ = sqrt( pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );     //equivalent strain
 
     if ( epsEQ > 0 && damage < 1.0 ) {
         double omega, S0, chi, K0, strEQ;
         if ( epsT > 0 ) {
-            omega = atan(epsN / ( sqrt(m->giveAlpha() ) * epsT ) );
+            omega = atan( epsN / ( sqrt( m->giveAlpha() ) * epsT ) );
         } else if ( epsN > 0 ) {
             omega = 0.5 * M_PI;
         } else {
@@ -176,12 +185,12 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             double emax;
             temp_maxEpsN = max(maxEpsN, epsN);
             temp_maxEpsT = max(maxEpsT, epsT);
-            emax = sqrt(pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
+            emax = sqrt( pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
             S0 = giveS0tension(omega);
 
             unsigned dim = element->giveDimension();
             double flam = 1. / ( 1. + max(-( volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
-            K0 = -flam * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt ) );
+            K0 = -flam * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt) );
             if ( omega < 0.0 ) {
                 chi = epsEQ * omega / omega0 + emax * ( 1. - omega / omega0 );
             } else {
@@ -189,7 +198,7 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             }
         }
         if ( chi - S0 / m->giveE0() > 0 ) {
-            strEQ = S0 * exp(K0 / S0 * ( chi - S0 / m->giveE0() ) );
+            strEQ = S0 * exp( K0 / S0 * ( chi - S0 / m->giveE0() ) );
         } else {
             strEQ = S0;
         }
@@ -214,7 +223,7 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: update() {
-    DisMechMaterialStatus :: update();
+    VectMechMaterialStatus :: update();
     damage = temp_damage;
     maxEpsN = temp_maxEpsN;
     maxEpsT = temp_maxEpsT;
@@ -224,7 +233,7 @@ void CSLMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: resetTemporaryVariables() {
-    DisMechMaterialStatus :: resetTemporaryVariables();
+    VectMechMaterialStatus :: resetTemporaryVariables();
     temp_damage = damage;
     temp_maxEpsN = maxEpsN;
     temp_maxEpsT = maxEpsT;
@@ -234,14 +243,14 @@ void CSLMaterialStatus :: resetTemporaryVariables() {
 
 
 //////////////////////////////////////////////////////////
-Matrix CSLMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
+    Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
         CSLMaterial *m = static_cast< CSLMaterial * >( mat );
         if ( m->giveDamageResiduum() > 0.0 ) {
-            return stiff * fmax( 1 - temp_damage, m->giveDamageResiduum() );
+            return stiff * fmax(1 - temp_damage, m->giveDamageResiduum() );
         } else if ( m->giveStressResiduum() > 0.0 ) {
             // TODO finish this JK
             // QUESTION is this performed before update?
@@ -252,7 +261,7 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const
                 for ( unsigned i = 1; i < temp_stress.size(); i++ ) {
                     sT += pow(temp_stress [ i ], 2);
                 }
-                double strs = sqrt(pow(sN, 2) + ( sT / m->giveAlpha() ) );
+                double strs = sqrt( pow(sN, 2) + ( sT / m->giveAlpha() ) );
                 if ( strs  < m->giveStressResiduum() ) {
                     double epsN, epsT;
                     epsN = temp_strain [ 0 ];
@@ -260,7 +269,7 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const
                     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
                         epsT += pow(temp_strain [ i ], 2);
                     }
-                    double epsEQ = sqrt(pow(epsN, 2) + epsT * m->giveAlpha() );
+                    double epsEQ = sqrt( pow(epsN, 2) + epsT * m->giveAlpha() );
                     return stiff * ( 1 - m->giveStressResiduum() / ( m->giveE0() * epsEQ ) );
                 } else {
                     return stiff * ( 1 - temp_damage );
@@ -283,13 +292,13 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const
 
 //////////////////////////////////////////////////////////
 Vector CSLMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    computeDamage(addEigenStrain(strain) );
+    computeDamage( addEigenStrain(strain) );
     return CSLMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
 Vector CSLMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    temp_stress = DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
+    temp_stress = VectMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
     if ( temp_strain [ 0 ] > 0 ) {
         temp_crackOpening = ( L * temp_damage ) * temp_strain [ 0 ]; //normal opening only
         //temp_crackOpening = l2_norm( ( L * temp_damage ) * temp_strain );  //total opening
@@ -313,15 +322,14 @@ void CSLMaterialStatus :: setParameterValue(string code, double value) {
     if ( code.compare("volumetric_strain") == 0 ) {
         volumetricStrain = value;
     } else {
-        DisMechMaterialStatus :: setParameterValue(code, value);
+        VectMechMaterialStatus :: setParameterValue(code, value);
     }
 }
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: readFromLine(istringstream &iss) {
     std :: string param;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("damage") == 0 ) {
             iss >> this->damage;
             temp_damage = damage;
@@ -351,7 +359,7 @@ bool CSLMaterialStatus :: isElastic(const bool &now) const {
 
 //////////////////////////////////////////////////////////
 void CSLMaterial :: readFromLine(istringstream &iss) {
-    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+    VectMechMaterial :: readFromLine(iss); //read elastic parameters
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -363,8 +371,7 @@ void CSLMaterial :: readFromLine(istringstream &iss) {
     bool bft, bGt;
     bft = bGt = false;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("Gt") == 0 ) {
             bGt = true;
             iss >> Gt;
@@ -407,7 +414,9 @@ MaterialStatus *CSLMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum)
 
 
 //////////////////////////////////////////////////////////
-void CSLMaterial :: init() {
+void CSLMaterial :: init(MaterialContainer *matcont) {
+    VectMechMaterial :: init(matcont);
+
     // if variables not specified on the input, use default multipliers
     fs = ( fs == 0 ) ? 3 * ft : fs;
     Gs = ( Gs == 0 ) ? 16 * Gt : Gs;
@@ -446,14 +455,16 @@ void CoupledCSLMaterialStatus :: setParameterValue(string code, double value) {
 }
 
 //////////////////////////////////////////////////////////
-void CoupledCSLMaterialStatus :: giveValues(string code, Vector &result) const {
+bool CoupledCSLMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("pressure") == 0 || code.compare("avg_pressure") == 0 ) {
         result.resize(1);
         result [ 0 ] = avgPressure;
+        return true;
     } else if ( code.compare("solid_stress") == 0 ) {
         CSLMaterialStatus :: giveValues("stress", result); //standard stress including Biot's effect
         CoupledCSLMaterial *m = static_cast< CoupledCSLMaterial * >( mat );
         result [ 0 ] += m->giveBiotCoeff() * avgPressure; //stress without Biot's effect
+        return true;
     } else {
         return CSLMaterialStatus :: giveValues(code, result);
     }
@@ -496,8 +507,8 @@ void CoupledCSLMaterialStatus :: resetTemporaryVariables() {
 //////////////////////////////////////////////////////////
 // COUPLED CSL MATERIAL
 //////////////////////////////////////////////////////////
-void CoupledCSLMaterial :: init() {
-    CSLMaterial :: init();
+void CoupledCSLMaterial :: init(MaterialContainer *matcont) {
+    CSLMaterial :: init(matcont);
 }
 
 //////////////////////////////////////////////////////////
@@ -516,8 +527,7 @@ void CoupledCSLMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bbiot = false;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("biot_coeff") == 0 ) {
             bbiot = true;
             iss >> biotCoeff;

@@ -1,4 +1,0 @@
-## type      node    direction   numMasters master1 multiplier1 master2...
-## type      masterNode  x0 x1 y0 y1 z0 z1
-CoordRigidPlate 5677 -0.01 0.01 -100 100 -100 100
-CoordRigidPlate 5678 0.99 1.01 -100 100 -100 100

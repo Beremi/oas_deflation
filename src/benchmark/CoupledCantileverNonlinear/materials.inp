@@ -1,2 +1,2 @@
 CSLMaterial	E0	3.000000e+10	alpha	0.300000    density	2e6 ft 2e6 Gt 500
-DiscreteTrsprtCoupledMaterial		capacity	11.000000	permeability	22e-18 viscosity 1e-5 crack_turtuosity 0.5 density	1e3 biot_coeff 0.
+VectTrsprtCoupledMaterial		capacity	11.000000	permeability	22e-18 viscosity 1e-5 crack_turtuosity 0.5 density	1e3 biot_coeff 0.

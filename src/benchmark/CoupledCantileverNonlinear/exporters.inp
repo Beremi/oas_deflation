@@ -2,5 +2,5 @@ TXTNodalExporter translations 1 displacements
 TXTNodalExporter pressure 1 pressure
 DisplacementGauge LD displ uy 0 0 3 1
 ForceGauge LD load fy 1 6
-VTKElementExporter elems saveEvery 0.0001 cellData 1 damage pointData 2 displacements pressure extrapolatedNodeData 2 stress damage
+VTKElementExporter elems saveEvery 0.0001 cellData 1 damage pointData 2 displacements pressure extrapolatedNodeData 2 stress strain
 VTKRCExporter contacts saveEvery 0.0001 cellData 1 damage

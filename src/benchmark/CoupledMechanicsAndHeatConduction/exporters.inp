@@ -1,0 +1,22 @@
+VTKElementExporter	elems	saveEvery	0.00003	cellData	0	pointData 2 displacement temperature
+VTKRCExporter	bodies	saveEvery	0.00003	cellData	0	pointData 1 temperature	
+ForceGauge LD fx#PLT0 0 1 8108
+ForceGauge LD fy#PLT0 1 1 8108
+ForceGauge LD fz#PLT0 2 1 8108
+ForceGauge LD mx#PLT0 3 1 8108
+ForceGauge LD my#PLT0 4 1 8108
+ForceGauge LD mz#PLT0 5 1 8108
+ForceGauge LD flux#PLT0 0 1 8110
+ForceGauge LD fx#PLT1 0 1 8109
+ForceGauge LD fy#PLT1 1 1 8109
+ForceGauge LD fz#PLT1 2 1 8109
+ForceGauge LD mx#PLT1 3 1 8109
+ForceGauge LD my#PLT1 4 1 8109
+ForceGauge LD mz#PLT1 5 1 8109
+ForceGauge LD flux#PLT1 0 1 8111
+DisplacementGauge LD ux#total	ux	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00
+DisplacementGauge LD uy#total	uy	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00
+DisplacementGauge LD uz#total	uz	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00
+DisplacementGauge LD rotx#total	rotx	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00
+DisplacementGauge LD roty#total	roty	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00
+DisplacementGauge LD rotz#total	rotz	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00

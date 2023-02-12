@@ -8,79 +8,99 @@ double get_Lambda(const double &E_b, const double &K, const double &alpha, const
 //////////////////////////////////////////////////////////
 // FATIGUE SHEAR MATERIAL STATUS
 
-FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+FatigueShearMaterialStatus :: FatigueShearMaterialStatus(FatigueShearMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "Fatigue Shear mat. status";
 }
 
 //////////////////////////////////////////////////////////
-void FatigueShearMaterialStatus :: giveValues(string code, Vector &result) const {
+bool FatigueShearMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ||  ( code.compare("damageT") == 0 ) ) {
         if ( temporarily_killed ) {
             result.resize(0);
         }
         result.resize(1);
         result [ 0 ] = damageShear;
+        return true;
     } else if ( ( code.compare("temp_damage") == 0 ) ||  ( code.compare("temp_damageT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = temp_damageShear;
+        return true;
     } else if ( ( code.compare("crack_sliding") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
         result.resize(1);
         result [ 0 ] = slip.norm() * damageShear * rbc->giveLength() / strain_slip_multiplier;
+        return true;
     } else if ( ( code.compare("strainT") == 0 ) ||  ( code.compare("strain") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = slip.norm();
+        return true;
     } else if ( ( code.compare("strainYT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = slip.y();
+        return true;
     } else if ( ( code.compare("strainZT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = slip.z();
+        return true;
     } else if ( ( code.compare("strainPL") == 0 ) ||  ( code.compare("strainPLT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sPi.norm();
+        return true;
     } else if ( ( code.compare("strainYPLT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sPi.y();
+        return true;
     } else if ( ( code.compare("strainZPLT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sPi.z();
+        return true;
     } else if ( ( code.compare("stressT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = stressT.norm();
+        return true;
     } else if ( ( code.compare("stressYT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = stressT.y();
+        return true;
     } else if ( ( code.compare("stressZT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = stressT.z();
+        return true;
     } else if ( ( code.compare("energy_totalT") == 0 ) || ( code.compare("energy_total") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_PL + energy_D // - energy_Kin - energy_Iso
         ;
+        return true;
     } else if ( ( code.compare("energy_PLT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_PL - energy_Kin - energy_Iso;
+        return true;
     } else if ( ( code.compare("energy_DT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_D;
+        return true;
     } else if ( ( code.compare("energy_KinT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_Kin;
+        return true;
     } else if ( ( code.compare("energy_IsoT") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_Iso;
+        return true;
     } else if ( ( code.compare("work_totalT") == 0 ) || ( code.compare("work_total") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = work_tot;
+        return true;
     } else if ( ( code.compare("work_elaT") == 0 ) || ( code.compare("work_ela") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = ( slip - sPi ).dot(stressT) * 0.5;
+        return true;
     } else if ( ( code.compare("work_dissipT") == 0 ) || ( code.compare("work_dissip") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = work_tot - ( slip - sPi ).dot(stressT) * 0.5;
+        return true;
     } else {
-        DisMechMaterialStatus :: giveValues(code, result);
+        return VectMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -88,8 +108,8 @@ void FatigueShearMaterialStatus :: giveValues(string code, Vector &result) const
 void FatigueShearMaterialStatus :: init() {
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
-    strain_slip_multiplier = pow(rbc->giveLength(), int( m->useSlip() ) );
-    regularization_multiplier_area = pow(rbc->giveArea(), int( m->useSlip() ) );
+    strain_slip_multiplier = pow( rbc->giveLength(), int( m->useSlip() ) );
+    regularization_multiplier_area = pow( rbc->giveArea(), int( m->useSlip() ) );
     checkReturnMap = m->checkReturnMap();
     useAnaliticalLambda = m->analyticalLambda();
     newIter = m->newIterativeApproachOn();
@@ -115,7 +135,7 @@ void FatigueShearMaterialStatus :: init() {
 double get_Lambda(const double &E_b, const double &K, const double &alpha, const double &gamma, const double &omega, const double &s, const double &sPi) {
     // do not use this yet !! ( do not even look at it ;) )
     double dot_lambda_eta_result;
-    dot_lambda_eta_result = -E_b * s * ( pow(omega, 2) - 2 * omega + 1 ) * sqrt(pow(E_b, 2) * pow(omega - 1, 2) * pow(s - sPi, 2) - 2 * E_b * alpha * gamma * omega * ( omega - 1 ) * ( s - sPi ) + 2 * E_b * alpha * gamma * ( omega - 1 ) * ( s - sPi ) + pow(alpha, 2) * pow(gamma, 2) * pow(omega, 2) - 2 * pow(alpha, 2) * pow(gamma, 2) * omega + pow(alpha, 2) * pow(gamma, 2) ) / ( ( pow(E_b, 2) * ( omega - 1 ) * ( s - sPi ) - E_b * K * omega * ( omega - 1 ) * ( s - sPi ) + E_b * K * ( omega - 1 ) * ( s - sPi ) - E_b * alpha * gamma * omega + E_b * alpha * gamma - E_b * gamma * omega * ( omega - 1 ) * ( s - sPi ) + E_b * gamma * ( omega - 1 ) * ( s - sPi ) + K * alpha * gamma * pow(omega, 2) - 2 * K * alpha * gamma * omega + K * alpha * gamma + alpha * pow(gamma, 2) * pow(omega, 2) - 2 * alpha * pow(gamma, 2) * omega + alpha * pow(gamma, 2) ) * fabs(omega - 1) );
+    dot_lambda_eta_result = -E_b * s * ( pow(omega, 2) - 2 * omega + 1 ) * sqrt( pow(E_b, 2) * pow(omega - 1, 2) * pow(s - sPi, 2) - 2 * E_b * alpha * gamma * omega * ( omega - 1 ) * ( s - sPi ) + 2 * E_b * alpha * gamma * ( omega - 1 ) * ( s - sPi ) + pow(alpha, 2) * pow(gamma, 2) * pow(omega, 2) - 2 * pow(alpha, 2) * pow(gamma, 2) * omega + pow(alpha, 2) * pow(gamma, 2) ) / ( ( pow(E_b, 2) * ( omega - 1 ) * ( s - sPi ) - E_b * K * omega * ( omega - 1 ) * ( s - sPi ) + E_b * K * ( omega - 1 ) * ( s - sPi ) - E_b * alpha * gamma * omega + E_b * alpha * gamma - E_b * gamma * omega * ( omega - 1 ) * ( s - sPi ) + E_b * gamma * ( omega - 1 ) * ( s - sPi ) + K * alpha * gamma * pow(omega, 2) - 2 * K * alpha * gamma * omega + K * alpha * gamma + alpha * pow(gamma, 2) * pow(omega, 2) - 2 * alpha * pow(gamma, 2) * omega + alpha * pow(gamma, 2) ) * fabs(omega - 1) );
     return dot_lambda_eta_result;
 }
 
@@ -126,7 +146,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
 
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -159,7 +179,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     Point sgn1;
     double dLambda;
     double omega_dot;//rate of shear damage (to be multiplied by lambda and added to current damageShear)
-    omega_dot = pow( 1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow( Ynext / m->giveS(), m->giveR() );
+    omega_dot = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow(Ynext / m->giveS(), m->giveR() );
 
     if ( true ) { // here will be more options like new return mapping etc.
         // sub-stepping process - long step is cutted in a certain number of substeps
@@ -215,7 +235,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                 sgn1 = h / h.norm();
 
                 if ( useAnaliticalLambda ) {
-                    dLambda = get_Lambda( stiffT, m->giveKin(), this->alphaKin.norm(), m->giveGamma(), this->damageShear, this->temp_slip.norm(), this->sPi.norm() );
+                    dLambda = get_Lambda(stiffT, m->giveKin(), this->alphaKin.norm(), m->giveGamma(), this->damageShear, this->temp_slip.norm(), this->sPi.norm() );
                 } else {
                     dLambda = f_trial / ( ( stiffT / ( 1 - temp_damageShear ) ) + m->giveGamma() + m->giveKin() );
                     // dLambda =  dot((temp_slip - slip) * stiffT, sgn1) / (( stiffT / (1 - damageShear) + m->giveKin() + m->giveGamma() ));
@@ -230,9 +250,9 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                     omega_dot = 0.0;//increment of shear damage
                 } else {
                     //increment of shear damage as the derivative of phi wrt thermodyn force
-                    omega_dot = pow( 1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow( Ynext / m->giveS(), m->giveR() );
+                    omega_dot = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow(Ynext / m->giveS(), m->giveR() );
                 }
-                temp_damageShear = fmax( 0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );    //limited by <0,1)
+                temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );     //limited by <0,1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
                 temp_zIso += dLambda;
@@ -271,7 +291,7 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
 
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -312,7 +332,7 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: update() {
-    DisMechMaterialStatus :: update();
+    VectMechMaterialStatus :: update();
 
     prev_damageShear = damageShear;
     prev_sPi = sPi;
@@ -322,7 +342,7 @@ void FatigueShearMaterialStatus :: update() {
     prev_slip = slip;
     prev_temporarily_killed = temporarily_killed;
 
-    work_tot += ( temp_slip - slip ).dot( ( temp_stressT + stressT ) * 0.5);
+    work_tot += ( temp_slip - slip ).dot( ( temp_stressT + stressT ) * 0.5 );
 
     damageShear = temp_damageShear;
     sPi = temp_sPi;
@@ -347,7 +367,7 @@ void FatigueShearMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 void FatigueShearMaterialStatus :: resetTemporaryVariables() {
-    DisMechMaterialStatus :: resetTemporaryVariables();
+    VectMechMaterialStatus :: resetTemporaryVariables();
 
     temporarily_killed = prev_temporarily_killed;
 
@@ -378,8 +398,8 @@ void FatigueShearMaterialStatus :: print() const {
 
 
 //////////////////////////////////////////////////////////
-Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim) * strain_slip_multiplier;
+Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type) const {
+    Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type) * strain_slip_multiplier;
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {     //not implemented, used unloading
@@ -408,14 +428,14 @@ Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type, unsigned d
 }
 
 std :: string FatigueShearMaterialStatus :: giveLineToSave() const {
-    return "slip " + to_string_sci(this->slip.y() ) + " " +
-           to_string_sci(this->slip.z() ) +
-           " slip_free " + to_string_sci(this->slip_free.y() ) + " " +
-           to_string_sci(this->slip_free.z() ) +
-           " sPi " + to_string_sci(this->sPi.y() ) + " " +
-           to_string_sci(this->sPi.z() ) +
-           " alphaKin " + to_string_sci(this->alphaKin.y() ) + " " +
-           to_string_sci(this->alphaKin.z() ) +
+    return "slip " + to_string_sci( this->slip.y() ) + " " +
+           to_string_sci( this->slip.z() ) +
+           " slip_free " + to_string_sci( this->slip_free.y() ) + " " +
+           to_string_sci( this->slip_free.z() ) +
+           " sPi " + to_string_sci( this->sPi.y() ) + " " +
+           to_string_sci( this->sPi.z() ) +
+           " alphaKin " + to_string_sci( this->alphaKin.y() ) + " " +
+           to_string_sci( this->alphaKin.z() ) +
            " damageShear " + to_string_sci(this->damageShear) +
            " zIso " + to_string_sci(this->zIso) +
            " temporarily_killed " + to_string_sci(this->temporarily_killed);
@@ -424,8 +444,7 @@ std :: string FatigueShearMaterialStatus :: giveLineToSave() const {
 void FatigueShearMaterialStatus :: readFromLine(istringstream &iss) {
     std :: string param;
     double y, z;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("slip") == 0 ) {
             iss >> y >> z;
             this->slip = Point(0, y, z);
@@ -452,7 +471,7 @@ void FatigueShearMaterialStatus :: readFromLine(istringstream &iss) {
 // FATIGUE SHEAR MATERIAL
 //////////////////////////////////////////////////////////
 void FatigueShearMaterial :: readFromLine(istringstream &iss) {
-    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+    VectMechMaterial :: readFromLine(iss); //read elastic parameters
 
     use_slip = false;
     check_retturn_mapping = false;
@@ -469,8 +488,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool btau, bkin, bgam, bs, bc, br, bm, bat;
     btau = bkin = bgam = bs = bc = br = bm = bat = false;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("tauBar") == 0 ) {
             btau = true;
             iss >> tauBar;
@@ -559,61 +577,75 @@ MaterialStatus *FatigueShearMaterial :: giveNewMaterialStatus(Element *e, unsign
 };
 
 //////////////////////////////////////////////////////////
-void FatigueShearMaterial :: init() {};
-
+void FatigueShearMaterial :: init(MaterialContainer *matcont) {
+    VectMechMaterial :: init(matcont);
+}
 
 //////////////////////////////////////////////////////////
 // DAMAGE PLASTIC MATERIAL STATUS
 
-DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+DamagePlasticMaterialStatus :: DamagePlasticMaterialStatus(DamagePlasticMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "Damage Plastic mat. status";
 }
 
 //////////////////////////////////////////////////////////
-void DamagePlasticMaterialStatus :: giveValues(string code, Vector &result) const {
+bool DamagePlasticMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) || ( code.compare("damageN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = damage;
+        return true;
     } else if ( ( code.compare("temp_damage") == 0 ) || ( code.compare("temp_damageN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = temp_damage;
+        return true;
     } else if ( ( code.compare("crack_opening") == 0 ) ) {
         RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
         result.resize(1);
         result [ 0 ] = epsN * damage * rbc->giveLength();
+        return true;
     } else if ( ( code.compare("strainN") == 0 ) || ( code.compare("strain") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = epsN;
+        return true;
     } else if ( ( code.compare("stressN") == 0 ) || ( code.compare("stress") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = stressN;
+        return true;
     } else if ( ( code.compare("strainPL") == 0 ) || ( code.compare("strainPLN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = epsNP;
+        return true;
     } else if ( ( code.compare("energy_totalN") == 0 ) || ( code.compare("energy_total") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_PL + energy_D
                        // - energy_Kin
                        // - energy_Iso
         ;
+        return true;
     } else if ( ( code.compare("energy_PLN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_PL - energy_Kin - energy_Iso;
+        return true;
     } else if ( ( code.compare("energy_DN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_D;
+        return true;
     } else if ( ( code.compare("energy_KinN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_Kin;
+        return true;
     } else if ( ( code.compare("energy_IsoN") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = energy_Iso;
+        return true;
     } else if ( ( code.compare("work_totalN") == 0 ) || ( code.compare("work_total") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = work_tot;
+        return true;
     } else if ( ( code.compare("work_elaN") == 0 ) || ( code.compare("work_ela") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = ( epsN - epsNP ) * stressN * 0.5;
+        return true;
     } else if ( ( code.compare("work_dissipN") == 0 ) || ( code.compare("work_dissip") == 0 ) ) {
         // if ( (epsN - epsNP) * (prev_epsN - prev_epsNP) < 0 ){
         //   return work_tot - (epsN - epsNP) * stressN * 0.5 - (prev_epsN - prev_epsNP) * prev_stressN * 0.5;
@@ -621,8 +653,9 @@ void DamagePlasticMaterialStatus :: giveValues(string code, Vector &result) cons
         result.resize(1);
         result [ 0 ] = work_tot - ( epsN - epsNP ) * stressN * 0.5;
         // }
+        return true;
     } else {
-        DisMechMaterialStatus :: giveValues(code, result);
+        return VectMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -630,7 +663,7 @@ void DamagePlasticMaterialStatus :: giveValues(string code, Vector &result) cons
 void DamagePlasticMaterialStatus :: init() {
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
-    strain_displ_multiplier = pow(rbc->giveLength(), int( m->useDispl() ) );
+    strain_displ_multiplier = pow( rbc->giveLength(), int( m->useDispl() ) );
     damage_residuum = m->giveDamageResiduum();
 
     damage = temp_damage = prev_damage = 0;
@@ -666,7 +699,7 @@ void DamagePlasticMaterialStatus :: init() {
 Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
@@ -704,7 +737,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
                 temp_rN = rN;
             } else {
                 // update tensile internal variables
-                temp_damage = fmin(1 - 1e-10, fmax(0, 1 - 1 / ( 1 + m->giveAd() * ( temp_Y - Y_n0 ) ) ) );
+                temp_damage = fmin( 1 - 1e-10, fmax( 0, 1 - 1 / ( 1 + m->giveAd() * ( temp_Y - Y_n0 ) ) ) );
                 temp_rN = -temp_damage;
                 temp_alphaN = alphaN;
                 temp_zN = zN;
@@ -720,7 +753,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
                                   exp( ( -Kt / m->giveTensileStrength() ) *
                                        ( ( temp_epsN - epsNP ) - m->giveElasticLimit() ) );
                 double dam = 1 - sigma_eq / ( m->giveE0() * ( temp_epsN - epsNP ) );
-                temp_damage = fmin(1, fmax(damage, dam) );
+                temp_damage = fmin( 1, fmax(damage, dam) );
             }
         }
 
@@ -773,7 +806,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
 //////////////////////////////////////////////////////////
 Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
@@ -797,7 +830,7 @@ Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &
 
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: update() {
-    DisMechMaterialStatus :: update();
+    VectMechMaterialStatus :: update();
 
     prev_damage = damage;
     prev_epsNP = epsNP;
@@ -838,7 +871,7 @@ void DamagePlasticMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: resetTemporaryVariables() {
-    DisMechMaterialStatus :: resetTemporaryVariables();
+    VectMechMaterialStatus :: resetTemporaryVariables();
 
     temp_damage = damage;
     temp_epsN = epsN;
@@ -868,8 +901,8 @@ void DamagePlasticMaterialStatus :: print() const {
 
 
 //////////////////////////////////////////////////////////
-Matrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim) * strain_displ_multiplier;
+Matrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type) const {
+    Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type) * strain_displ_multiplier;
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {  //not implemented, used unloading
@@ -879,7 +912,7 @@ Matrix DamagePlasticMaterialStatus :: giveStiffnessTensor(string type, unsigned 
         return stiff;
     } else if ( type.compare("unloading") == 0 ) {
         if ( temp_epsN >= 0 ) {
-            for ( unsigned i = 1; i < dim; i++ ) {
+            for ( unsigned i = 1; i < mat->giveDimension(); i++ ) {
                 stiff(i, i) *= fmax(1. - temp_damage, damage_residuum);                             //IS THIS CORRECT????
             }
         }
@@ -908,8 +941,7 @@ std :: string DamagePlasticMaterialStatus :: giveLineToSave() const {
 void DamagePlasticMaterialStatus :: readFromLine(istringstream &iss) {
     // TODO finish this
     std :: string param;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("epsN") == 0 ) {
             iss >> this->epsN;
         } else if ( param.compare("epsNP") == 0 ) {
@@ -932,7 +964,7 @@ void DamagePlasticMaterialStatus :: readFromLine(istringstream &iss) {
 // DAMAGE PLASTIC MATERIAL
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
-    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+    VectMechMaterial :: readFromLine(iss); //read elastic parameters
 
     use_displ = false;
     sym = false;
@@ -944,8 +976,7 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bfc, bft, bgam, bkin, bAd, bm, bGt, bKt;
     bfc = bft = bgam = bkin = bAd = bm = bGt = bKt = false;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("fc") == 0 ) {
             bfc = true;
             iss >> fc;
@@ -1022,7 +1053,9 @@ MaterialStatus *DamagePlasticMaterial :: giveNewMaterialStatus(Element *e, unsig
 };
 
 //////////////////////////////////////////////////////////
-void DamagePlasticMaterial :: init() {};
+void DamagePlasticMaterial :: init(MaterialContainer *matcont) {
+    VectMechMaterial :: init(matcont);
+}
 
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -1035,35 +1068,39 @@ FatigueMaterialStatus :: FatigueMaterialStatus(FatigueMaterial *m, Element *e, u
 }
 
 //////////////////////////////////////////////////////////
-void FatigueMaterialStatus :: giveValues(string code, Vector &result) const {
+bool FatigueMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("energy_total") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("energy_totalN", result);
         Vector res2;
         FatigueShearMaterialStatus :: giveValues("energy_totalT", res2);
         result += res2;
+        return true;
     } else if  ( code.compare("work_total") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("work_totalN", result);
         Vector res2;
         FatigueShearMaterialStatus :: giveValues("work_totalT", res2);
         result += res2;
+        return true;
     } else if  ( code.compare("work_ela") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("work_elaN", result);
         Vector res2;
         FatigueShearMaterialStatus :: giveValues("work_elaT", res2);
         result += res2;
+        return true;
     } else if  ( code.compare("work_dissip") == 0 ) {
         DamagePlasticMaterialStatus :: giveValues("work_dissipN", result);
         Vector res2;
         FatigueShearMaterialStatus :: giveValues("work_dissipT", res2);
         result += res2;
+        return true;
     } else if ( code.back() == 'N' || code.compare("crack_opening") == 0 ) {  // last char of string
         DamagePlasticMaterialStatus :: giveValues(code, result);
+        return true;
     } else if ( code.back() == 'T' || code.compare("crack_sliding") == 0 ) {
         FatigueShearMaterialStatus :: giveValues(code, result);
+        return true;
     } else {
-        result.resize(0);
-        //DisMechMaterialStatus :: giveValues(code, result);
-        DamagePlasticMaterialStatus :: giveValues(code, result);
+        return DamagePlasticMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -1077,7 +1114,7 @@ void FatigueMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
     Vector res;
     for ( size_t i = 0; i < ( size_t ) strain.size(); i++ ) {
         if ( i == 0 ) {//normal direction (damage plastic material)
@@ -1105,7 +1142,7 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep
 
 //////////////////////////////////////////////////////////
 Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
 
     //Normal stress
     stress [ 0 ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ 0 ];
@@ -1145,13 +1182,13 @@ void FatigueMaterialStatus :: resetTemporaryVariables() {
 }
 
 //////////////////////////////////////////////////////////
-Matrix FatigueMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+Matrix FatigueMaterialStatus :: giveStiffnessTensor(string type) const {
     if ( type.compare("elastic") == 0 ) {
-        Matrix stiff = FatigueShearMaterialStatus :: giveStiffnessTensor("elastic", dim);
+        Matrix stiff = FatigueShearMaterialStatus :: giveStiffnessTensor("elastic");
         return stiff;
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 ) {    //not implemented, used unloading
-        Matrix stiffF = FatigueShearMaterialStatus :: giveStiffnessTensor(type, dim);
-        Matrix stiffD = DamagePlasticMaterialStatus :: giveStiffnessTensor(type, dim);
+        Matrix stiffF = FatigueShearMaterialStatus :: giveStiffnessTensor(type);
+        Matrix stiffD = DamagePlasticMaterialStatus :: giveStiffnessTensor(type);
         stiffF(0, 0) = stiffD(0, 0);
         return stiffF;
     } else {
@@ -1190,42 +1227,52 @@ MaterialStatus *FatigueMaterial :: giveNewMaterialStatus(Element *e, unsigned ip
 };
 
 //////////////////////////////////////////////////////////
-void FatigueMaterial :: init() {};
+void FatigueMaterial :: init(MaterialContainer *matcont) {
+    FatigueShearMaterial :: init(matcont);
+    DamagePlasticMaterial :: init(matcont);
+}
 
 //////////////////////////////////////////////////////////
 // ALLICHE MATERIAL STATUS
 //////////////////////////////////////////////////////////
 
-AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+AllicheMaterialStatus :: AllicheMaterialStatus(AllicheMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "Alliche mat. status";
 }
 
 //////////////////////////////////////////////////////////
-void AllicheMaterialStatus :: giveValues(string code, Vector &result) const {
+bool AllicheMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ) {
         // damage is different in each local direction
         result.resize(1);
         result [ 0 ] = damage.norm();
+        return true;
     } else if ( ( code.compare("damageX") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = damage.x();
+        return true;
     } else if ( ( code.compare("damageY") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = damage.y();
+        return true;
     } else if ( ( code.compare("damageZ") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = damage.z();
+        return true;
     } else if ( ( code.compare("stressX") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sigma.x();
+        return true;
     } else if ( ( code.compare("stressY") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sigma.y();
+        return true;
     } else if ( ( code.compare("stressZ") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sigma.z();
+        return true;
     } else {
-        DisMechMaterialStatus :: giveValues(code, result);
+        return VectMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -1267,7 +1314,7 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
     Point I(1, 1, 1);
 
     Y = eps * ( -1 ) * m->giveG() - eps * eps.sum() * m->giveAlphaDam() -
-        Point(pow(eps.x(), 2), pow(eps.y(), 2), pow(eps.z(), 2) ) * 2 * m->giveBetaDam();
+        Point( pow(eps.x(), 2), pow(eps.y(), 2), pow(eps.z(), 2) ) * 2 * m->giveBetaDam();
 
     if ( Y.x() < 0 ) {
         Y.x() = ( 0 );                ///< only positive part needed
@@ -1286,13 +1333,13 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
 
     if ( treshold_func > 0 ) {
         double yield_func = ( m->giveG() / sqrt(2) ) * eps_plus.norm() - ( m->giveC0() - m->giveC1() * damage.sum() );
-        temp_damage = damage + eps_plus * ( 1 / sqrt(2 * eps_plus.squaredNorm() ) ) *
+        temp_damage = damage + eps_plus * ( 1 / sqrt( 2 * eps_plus.squaredNorm() ) ) *
                       ( eps_plus.dot(eps_plus - eps_plus_prev) / ( m->giveC1() * eps_plus.sum() ) ) *
-                      pow(yield_func / m->giveK(), m->giveN() );
+                      pow( yield_func / m->giveK(), m->giveN() );
 
-        temp_damage << ( fmax(0, fmin(temp_damage.x(), 1) ),
-                         fmax(0, fmin(temp_damage.y(), 1) ),
-                         fmax(0, fmin(temp_damage.z(), 1) ) );
+        temp_damage << ( fmax( 0, fmin(temp_damage.x(), 1) ),
+                         fmax( 0, fmin(temp_damage.y(), 1) ),
+                         fmax( 0, fmin(temp_damage.z(), 1) ) );
     } else {
         temp_damage = damage;
     }
@@ -1303,7 +1350,7 @@ Vector AllicheMaterialStatus :: giveStress(const Vector &strain, double timeStep
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
     calculateDamage(strain);
 
     // NOTE use of damage as Point makes its calclulation more simple, but here it becomes quite messy
@@ -1320,7 +1367,7 @@ Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
 
     stress [ 0 ] = ( 1 - temp_damage.x() ) * m->giveE0() * strain [ 0 ];
     for ( unsigned i = 1; i < strain.size(); i++ ) {
@@ -1332,8 +1379,9 @@ Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
 }
 
 //////////////////////////////////////////////////////////
-Matrix AllicheMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix AllicheMaterialStatus :: giveStiffnessTensor(string type) const {
+    Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type);
+    unsigned dim = mat->giveDimension();
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) { //not implemented, used unloading
@@ -1363,7 +1411,7 @@ Matrix AllicheMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 
 //////////////////////////////////////////////////////////
 void AllicheMaterialStatus :: update() {
-    DisMechMaterialStatus :: update();
+    VectMechMaterialStatus :: update();
     damage = temp_damage;
     Y_prev  = Y;
     eps_plus_prev = eps_plus;
@@ -1375,7 +1423,7 @@ void AllicheMaterialStatus :: update() {
 // ALLICHE MATERIAL
 //////////////////////////////////////////////////////////
 void AllicheMaterial :: readFromLine(istringstream &iss) {
-    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+    VectMechMaterial :: readFromLine(iss); //read elastic parameters
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -1383,8 +1431,7 @@ void AllicheMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bC0, bC1, bK, bG, bAl, bBe, bN;
     bC0 = bC1 = bK = bG = bAl = bBe = bN = false;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("C0") == 0 ) {
             bC0 = true;
             iss >> C0;
@@ -1447,13 +1494,13 @@ MaterialStatus *AllicheMaterial :: giveNewMaterialStatus(Element *e, unsigned ip
 };
 
 //////////////////////////////////////////////////////////
-void AllicheMaterial :: init() {};
+void AllicheMaterial :: init(MaterialContainer *matcont) { VectMechMaterial :: init(matcont); };
 
 
 //////////////////////////////////////////////////////////
 // DESMORAT MATERIAL STATUS
 //////////////////////////////////////////////////////////
-DesmoratMaterialStatus :: DesmoratMaterialStatus(DesmoratMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+DesmoratMaterialStatus :: DesmoratMaterialStatus(DesmoratMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "Desmorat mat. status";
 }
 
@@ -1471,7 +1518,7 @@ void DesmoratMaterialStatus :: init() {
 
 //////////////////////////////////////////////////////////
 void DesmoratMaterialStatus :: update() {
-    DisMechMaterialStatus :: update();
+    VectMechMaterialStatus :: update();
     sigma = temp_sigma;
     Y = temp_Y;
     epsPi = temp_epsPi;
@@ -1481,8 +1528,8 @@ void DesmoratMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type) const {
+    Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
@@ -1500,7 +1547,7 @@ Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) 
 //////////////////////////////////////////////////////////
 Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
     for ( unsigned i = 0; i < strain.size(); i++ ) {
@@ -1522,7 +1569,7 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeSte
         Point deltaEps = ( ( sigmaPiTilda - alphaKin * m->giveGamma() ) / ( ( sigmaPiTilda - alphaKin * m->giveGamma() ).norm() ) ) * deltaPi;
         temp_epsPi = epsPi + deltaEps;
         temp_Y = 0.5 * m->giveE0() * pow(epsN, 2) + 0.5 * m->giveE2() * ( epsT - temp_epsPi ).squaredNorm();
-        temp_damage = fmax(0, fmin(damage + ( temp_Y / m->giveS() ) * deltaPi, 1) );
+        temp_damage = fmax( 0, fmin(damage + ( temp_Y / m->giveS() ) * deltaPi, 1) );
         temp_zIso = zIso + deltaPi * ( 1 - temp_damage );
         temp_alphaKin = alphaKin + deltaEps * ( 1 - temp_damage );
     } else {
@@ -1545,7 +1592,7 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeSte
 //////////////////////////////////////////////////////////
 Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
 
@@ -1561,21 +1608,25 @@ Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strai
 }
 
 //////////////////////////////////////////////////////////
-void DesmoratMaterialStatus :: giveValues(string code, Vector &result) const {
+bool DesmoratMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( ( code.compare("damage") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = damage;
+        return true;
     } else if ( ( code.compare("stressX") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sigma.x();
+        return true;
     } else if ( ( code.compare("stressY") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sigma.y();
+        return true;
     } else if ( ( code.compare("stressZ") == 0 ) ) {
         result.resize(1);
         result [ 0 ] = sigma.z();
+        return true;
     } else {
-        DisMechMaterialStatus :: giveValues(code, result);
+        return VectMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -1584,7 +1635,7 @@ void DesmoratMaterialStatus :: giveValues(string code, Vector &result) const {
 // DESMORAT MATERIAL
 //////////////////////////////////////////////////////////
 void DesmoratMaterial :: readFromLine(istringstream &iss) {
-    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+    VectMechMaterial :: readFromLine(iss); //read elastic parameters
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -1592,8 +1643,7 @@ void DesmoratMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bS0, bK, bG, bS;
     bS0 = bK = bG = bS = false;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("Sigma0") == 0 ) {
             bS0 = true;
             iss >> Sigma0;
@@ -1633,4 +1683,4 @@ MaterialStatus *DesmoratMaterial :: giveNewMaterialStatus(Element *e, unsigned i
 };
 
 //////////////////////////////////////////////////////////
-void DesmoratMaterial :: init() {};
+void DesmoratMaterial :: init(MaterialContainer *matcont) { VectMechMaterial :: init(matcont); };

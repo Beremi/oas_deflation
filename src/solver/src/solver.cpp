@@ -1,7 +1,6 @@
 #include "solver.h"
 #include "adaptivity.h"
-#define EPS2displ 1e-20
-#define EPS2press 1e-12
+#define numPhysicalFields 4
 
 using namespace std;
 
@@ -24,7 +23,7 @@ void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionCont
 //////////////////////////////////////////////////////////
 Solver *Solver :: readFromFile(const string filename) {
     string param, paramA, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -95,7 +94,7 @@ void Solver :: setNextStepTime() {
     double nextBCTime = bcs->giveTimeOfNextChange(time);
     double nextCritTime = min(nextExtremeTime, nextBCTime);
 
-    if ( abs( time - bcs->giveTimeOfNextChange(time - 1e-12) ) < 1e-12 ) {
+    if ( abs(time - bcs->giveTimeOfNextChange(time - 1e-12) ) < 1e-12 ) {
         masterModel->jumpToNextStage();
     }
 
@@ -170,7 +169,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     f_dam = Vector :: Zero(totalDoFnum);
     f_acc = Vector :: Zero(totalDoFnum);
     trial_r = Vector :: Zero(totalDoFnum);
-    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
     residuals = Vector :: Zero(totalDoFnum);
     ddr = Vector :: Zero(freeDoFnum);
@@ -193,7 +192,7 @@ void Solver :: giveValues(string code, Vector &result) const {
         result [ 0 ] = time;
     } else if ( code.compare("elapsed_time") == 0 ) {
         result.resize(1);
-        result [ 0 ] = chrono :: duration_cast< std :: chrono :: duration< double > >(std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
+        result [ 0 ] = chrono :: duration_cast< std :: chrono :: duration< double > >( std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
     } else if ( code.compare("number_of_dof") == 0 ) {
         result.resize(1);
         result [ 0 ] = freeDoFnum;
@@ -205,7 +204,7 @@ void Solver :: giveValues(string code, Vector &result) const {
 //////////////////////////////////////////////////////////
 void Solver :: rebuild() {
     freeDoFnum = nodes->giveNumFreeDoFs();
-    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
     ddr = Vector :: Zero(freeDoFnum);
 }
@@ -285,7 +284,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -300,7 +299,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("total_time") == 0 ) {
                 bttime = true;
                 iss >> termination_time;
-            } else if ( param.compare("conj_grad_precission") == 0 || param.compare("conj_grad_precision") == 0 ) {
+            } else if ( param.compare("conj_grad_precision") == 0 ) {
                 iss >> conj_grad_precision;
             } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
                 iss >> conj_grad_relative_maxit;
@@ -388,11 +387,16 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     name = "SteadyStateNonLinearSolver";
     idc = nullptr;
 
-    W_ext_oldM = 0;
-    W_int_oldM = 0;
-    W_ext_oldT = 0;
-    W_int_oldT = 0;
-
+    W_ext_old = Vector :: Zero(numPhysicalFields);
+    W_int_old = Vector :: Zero(numPhysicalFields);
+    W_ext = Vector :: Zero(numPhysicalFields);
+    W_int = Vector :: Zero(numPhysicalFields);
+    W_kin = Vector :: Zero(numPhysicalFields);
+    EPS2.resize(4);
+    EPS2 [ 0 ] = 1e-20; //mechanics
+    EPS2 [ 1 ] = 1e-12; //transport
+    EPS2 [ 2 ] = 1e-17; //temperature
+    EPS2 [ 3 ] = 1e-18; //humidity
 
     maxIt = 30;
     minIt = 1;
@@ -436,6 +440,7 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
             idc_time = idc_time_converged;
         }
     }
+
     computeForcesAtIntegrationTime(true); //to initialize all fields in the model
 }
 
@@ -451,7 +456,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     bool bsh = false;
     unsigned helpuint;
     double valueIN;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -573,7 +578,7 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
     } else if ( code.compare("restarts") == 0 ) {
         result.resize(1);
         result [ 0 ] = restarts;
-    } else if ( code.compare("error_displacements") == 0 ) {
+    } else if ( code.compare("error_dofs") == 0 ) {
         result.resize(1);
         result [ 0 ] = disErr;
     } else if ( code.compare("error_residuals") == 0 ) {
@@ -606,78 +611,43 @@ bool SteadyStateNonLinearSolver :: updateSystemMatrices(string matrixType, unsig
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: evaluateErrors() {
-    vector< bool >mechDoFs  = nodes->giveMechDoFsIndicator();   //these fields should be on input
-    vector< bool >transpDoFs = nodes->giveTranspDoFsIndicator();
-    double f_extM = 0;
-    double f_intM = 0;
-    double f_damM = 0;
-    double f_accM = 0;
-    double residualM = 0;
-    double full_ddrM = 0;
-    double trial_rM = 0;
-    double energyM = 0;
-    double f_extT = 0;
-    double f_intT = 0;
-    double f_damT = 0;
-    double f_accT = 0;
-    double residualT = 0;
-    double full_ddrT = 0;
-    double trial_rT = 0;
-    double energyT = 0;
-    W_intM = W_int_oldM;
-    W_extM = W_ext_oldM;
-    W_intT = W_int_oldT;
-    W_extT = W_ext_oldT;
-    W_kinM = 0;
-    W_kinT = 0;
+    vector< unsigned >pf  = nodes->givePhysicalFieldsOfDoFs();
+    Vector f_extPF = Vector :: Zero(numPhysicalFields);
+    Vector f_intPF = Vector :: Zero(numPhysicalFields);
+    Vector f_damPF = Vector :: Zero(numPhysicalFields);
+    Vector f_accPF = Vector :: Zero(numPhysicalFields);
+    Vector residualPF = Vector :: Zero(numPhysicalFields);
+    Vector full_ddrPF = Vector :: Zero(numPhysicalFields);
+    Vector trial_rPF = Vector :: Zero(numPhysicalFields);
+    Vector energyPF = Vector :: Zero(numPhysicalFields);
+    W_int = W_int_old;
+    W_ext = W_ext_old;
+    W_kin *= 0;
 
+    unsigned pff;
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
-        if ( mechDoFs [ i ] ) {
-            residualM += pow(residuals [ i ], 2);
-            f_extM += pow(f_ext [ i ], 2);
-            f_intM += pow(f_int [ i ], 2);
-            f_damM += pow(f_dam [ i ], 2);
-            f_accM += pow(f_acc [ i ], 2);
-            full_ddrM += pow(full_ddr [ i ], 2);
-            trial_rM += pow(trial_r [ i ], 2);
-            energyM += abs(residuals [ i ] * full_ddr [ i ]);
-            W_intM += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_extM += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_kinM += 0.; //TODO: correct kinetic energy
-        }
-        if ( transpDoFs [ i ] ) {
-            residualT += pow(residuals [ i ], 2);
-            f_extT += pow(f_ext [ i ], 2);
-            f_intT += pow(f_int [ i ], 2);
-            f_damT += pow(f_dam [ i ], 2);
-            f_accT += pow(f_acc [ i ], 2);
-            full_ddrT += pow(full_ddr [ i ], 2);
-            trial_rT += pow(trial_r [ i ], 2);
-            energyT += abs(residuals [ i ] * full_ddr [ i ]);
-            W_intT += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_extT += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-            W_kinT += 0.; //TODO: correct kinetic energy
-        }
+        pff = pf [ i ];
+        residualPF [ pff ] += pow(residuals [ i ], 2);
+        f_extPF [ pff ] += pow(f_ext [ i ], 2);
+        f_intPF [ pff ] += pow(f_int [ i ], 2);
+        f_damPF [ pff ] += pow(f_dam [ i ], 2);
+        f_accPF [ pff ] += pow(f_acc [ i ], 2);
+        full_ddrPF [ pff ] += pow(full_ddr [ i ], 2);
+        trial_rPF [ pff ] += pow(trial_r [ i ], 2);
+        energyPF [ pff ] += abs(residuals [ i ] * full_ddr [ i ]);
+        W_int [ pff ] += abs( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        W_ext [ pff ] += abs( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        W_kin [ pff ] += 0.; //TODO: correct kinetic energy
     }
-    resErr = sqrt(residualM / max(max(max(f_extM, f_intM), max(f_damM, f_accM) ), EPS2displ) + residualT / max(max(max(f_extT, f_intT), max(f_damT, f_accT) ), EPS2press) );
-    disErr = sqrt(full_ddrM / max(trial_rM, EPS2displ) + full_ddrT / max(trial_rT, EPS2press) );
-    eneErr = energyM / max(max(max(W_extM, W_intM), W_kinM), EPS2displ) + energyT / max(max(max(W_extT, W_intT), W_kinT), EPS2press);
-
-    /*
-     * std :: cout << "f_extM " << f_extM << '\t' <<
-     * "f_intM " << f_intM << '\t' <<
-     * "residualM " << residualM << '\t' <<
-     * "full_ddrM " << full_ddrM << '\t' <<
-     * "trial_rM " << trial_rM << '\t' <<
-     * "energyM " << energyM << '\n';
-     *
-     * std :: cout << "f_extT " << f_extT << '\t' <<
-     * "f_intT " << f_intT << '\t' <<
-     * "residualT " << residualT << '\t' <<
-     * "full_ddrT " << full_ddrT << '\t' <<
-     * "trial_rT " << trial_rT << '\t' <<
-     * "energyT " << energyT << '\n';
-     */
+    resErr = disErr = eneErr = 0;
+    for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
+        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
+        eneErr += energyPF [ i ] / max(max(max(W_ext [ i ], W_int [ i ]), W_kin [ i ]), EPS2 [ i ]);
+    }
+    resErr = sqrt(resErr);
+    disErr = sqrt(disErr);
+    eneErr = sqrt(eneErr);
 }
 
 //////////////////////////////////////////////////////////
@@ -733,7 +703,7 @@ void SteadyStateNonLinearSolver :: reset() {
             if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
                 if ( std :: isnan(resErr) ) {
-                    std :: cerr << "\tresidua ";
+                    std :: cerr << "\tresiduals ";
                 }
                 if ( std :: isnan(disErr) ) {
                     std :: cerr << "\tdisplacements ";
@@ -1036,10 +1006,10 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
         SteadyStateLinearSolver :: runAfterEachStep();
 
-        W_int_oldM = W_intM;
-        W_ext_oldM = W_extM;
-        W_int_oldT = W_intT;
-        W_ext_oldT = W_extT;
+        W_int_old = W_int;
+        W_ext_old = W_ext;
+        W_int_old = W_int;
+        W_ext_old = W_ext;
         cout << "----------------------------------------------------" << endl;
 
         if ( idc ) {
@@ -1118,7 +1088,7 @@ void TransientLinearTransportSolver :: rebuild() {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1171,7 +1141,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 
     double num;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1329,7 +1299,7 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 

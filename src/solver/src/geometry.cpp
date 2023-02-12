@@ -11,23 +11,57 @@ using namespace std;
 #define TOL 1e-9
 
 
-Block :: Block(const Point &lB, const Point &rT) {
+Block :: Block(const Point &lB, const Point &rT, unsigned d) : RegularRegion(d) {
+    dim = d;
     this->mainPoint = lB;
     this->rightTop = rT;
 }
 
 void Block :: readFromLine(istringstream &iss) {
     double x, y, z;
-    iss >> x >> y >> z;
-    this->mainPoint = Point(x, y, z);
-    iss >> x >> y >> z;
-    this->rightTop = Point(x, y, z);
+    string param;
+    bool ba = false;
+    bool bb = false;
+    while (  iss >> param ) { 
+        if ( param.compare("min_point") == 0 ) {
+            iss >> x >> y;
+            if ( dim == 3 ) {
+                iss >> z;
+            } else {
+                z = 0;
+            }
+            mainPoint = Point(x, y, z);
+            ba = true;
+        }
+        if ( param.compare("max_point") == 0 ) {
+            iss >> x >> y;
+            if ( dim == 3 ) {
+                iss >> z;
+            } else {
+                z = 0;
+            }
+            rightTop = Point(x, y, z);
+            bb = true;
+        }
+    }
+    if ( !ba ) {
+        cerr << name << " Error: parameter min_point not specified" << endl;
+        exit(1);
+    }
+    if ( !bb ) {
+        cerr << name << " Error: parameter max_point not specified" << endl;
+        exit(1);
+    }
 }
 
 bool Block :: isInside(const Point &P) const {
     if ( ( this->mainPoint.x() - P.x() ) < TOL && ( P.x() - this->rightTop.x() ) < TOL ) {
         if ( ( this->mainPoint.y() - P.y() ) < TOL && ( P.y() - this->rightTop.y() ) < TOL ) {
-            if ( ( this->mainPoint.z() - P.z() ) < TOL && ( P.z() - this->rightTop.z() ) < TOL ) {
+            if ( dim == 3 ) {
+                if ( ( this->mainPoint.z() - P.z() ) < TOL && ( P.z() - this->rightTop.z() ) < TOL ) {
+                    return true;
+                }
+            } else {
                 return true;
             }
         }
@@ -36,26 +70,36 @@ bool Block :: isInside(const Point &P) const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-Circle :: Circle(const Point &c, const double &r) {
+Circle :: Circle(const Point &c, const double &r) : RegularRegion(2) {
     this->mainPoint = c;
     this->size = r;
 }
 
 void Circle :: readFromLine(istringstream &iss) {
-    double x, y, r;
-    std :: string param;
-    iss >> x >> y >> r >> param;
-    if ( param.compare("along") == 0 ) {
-        iss >> this->along;
+    double x, y;
+    string param;
+    bool bcenter = false;
+    bool brad = false;
+    while (  iss >> param ) { 
+        if ( param.compare("center") == 0 ) {
+            iss >> x >> y;
+            mainPoint = Point(x, y, 0);
+            bcenter = true;
+        }
+        if ( param.compare("radius") == 0 ) {
+            iss >> size;
+            brad = true;
+        }
     }
-    if ( this->along == 'x' ) {
-        this->mainPoint = Point(0, x, y);
-    } else if ( this->along == 'x' ) {
-        this->mainPoint = Point(x, 0, y);
-    } else if ( this->along == 'z' ) {
-        this->mainPoint = Point(x, y, 0);
+    if ( !bcenter ) {
+        cerr << name << " Error: parameter cente not specified" << endl;
+        exit(1);
     }
-    this->size = r;
+    if ( !brad ) {
+        cerr << name << " Error: parameter radius not specified" << endl;
+        exit(1);
+    }
+    init();
 }
 
 bool Circle :: isInside(const Point &P) const {
@@ -79,15 +123,38 @@ bool Circle :: isInside(const Point &P) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 Sphere :: Sphere(const Point &c, const double &r) {
+    dim = 3;
+
     this->mainPoint = c;
     this->size = r;
 }
 
 void Sphere :: readFromLine(istringstream &iss) {
-    double x, y, z, r;
-    iss >> x >> y >> z >> r;
-    this->mainPoint = Point(x, y, z);
-    this->size = r;
+    double x, y, z;
+    string param;
+    bool bcenter = false;
+    bool brad = false;
+    while (  iss >> param ) { 
+        if ( param.compare("center") == 0 ) {
+            iss >> x >> y >> z;
+            mainPoint = Point(x, y, z);
+            bcenter = true;
+        }
+        if ( param.compare("radius") == 0 ) {
+            iss >> size;
+            brad = true;
+        }
+    }
+    if ( !bcenter ) {
+        cerr << name << " Error: parameter cente not specified" << endl;
+        exit(1);
+    }
+    if ( !brad ) {
+        cerr << name << " Error: parameter radius not specified" << endl;
+        exit(1);
+    }
+
+    init();
 }
 
 bool Sphere :: isInside(const Point &P) const {
@@ -98,7 +165,7 @@ bool Sphere :: isInside(const Point &P) const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-Polygon :: Polygon(const std :: vector< Point > &V) {
+Polygon :: Polygon(const std :: vector< Point > &V) : Region(3) {
     this->vertices = V;
 }
 
@@ -140,7 +207,7 @@ bool Polygon :: isInside(const Point &P) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-Cylinder :: Cylinder(const Point &a, const Point &b, double r) {
+Cylinder :: Cylinder(const Point &a, const Point &b, double r) : RegularRegion(3) {
     A = a;
     B = b;
     radius = r;
@@ -150,11 +217,38 @@ Cylinder :: Cylinder(const Point &a, const Point &b, double r) {
 ///////////////////////////////////////////////////////////////////////////////
 void Cylinder :: readFromLine(std :: istringstream &iss) {
     double x, y, z;
-    iss >> x >> y >> z;
-    A = Point(x, y, z);
-    iss >> x >> y >> z;
-    B = Point(x, y, z);
-    iss >> radius;
+    string param;
+    bool bbcenter = false;
+    bool btcenter = false;
+    bool brad = false;
+    while (  iss >> param ) { 
+        if ( param.compare("center_bottom") == 0 ) {
+            iss >> x >> y >> z;
+            A = Point(x, y, z);
+            bbcenter = true;
+        } else if ( param.compare("center_top") == 0 ) {
+            iss >> x >> y >> z;
+            B = Point(x, y, z);
+            btcenter = true;
+        }
+        if ( param.compare("radius") == 0 ) {
+            iss >> radius;
+            brad = true;
+        }
+    }
+    if ( !bbcenter ) {
+        cerr << name << " Error: parameter center_bottom not specified" << endl;
+        exit(1);
+    }
+    if ( !btcenter ) {
+        cerr << name << " Error: parameter center_top not specified" << endl;
+        exit(1);
+    }
+    if ( !brad ) {
+        cerr << name << " Error: parameter radius not specified" << endl;
+        exit(1);
+    }
+
     init();
 }
 
@@ -209,8 +303,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius,
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.x() <= max(p.x(), r.x() ) && q.x() >= min(p.x(), r.x() ) &&
-         q.y() <= max(p.y(), r.y() ) && q.y() >= min(p.y(), r.y() ) ) {
+    if ( q.x() <= max( p.x(), r.x() ) && q.x() >= min( p.x(), r.x() ) &&
+         q.y() <= max( p.y(), r.y() ) && q.y() >= min( p.y(), r.y() ) ) {
         return true;
     }
     return false;
@@ -322,10 +416,9 @@ RegionContainer :: ~RegionContainer() {
 ///////////////////////////////////////////////////////////////////////////////
 void RegionContainer :: readFromFile(const std :: string &filename, unsigned d) {
     dim = d;
-
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -334,8 +427,8 @@ void RegionContainer :: readFromFile(const std :: string &filename, unsigned d) 
             istringstream iss(line);
             iss >> std :: ws >> regionType;
             if ( !( regionType.rfind("#", 0) == 0 ) ) {
-                if ( regionType.compare("Block") == 0 || regionType.compare("Rectangle") == 0 ) {
-                    Block *newregion = new Block();
+                if ( regionType.compare("Box") == 0 || regionType.compare("Rectangle") == 0 ) {
+                    Block *newregion = new Block(dim);
                     newregion->readFromLine(iss);
                     regions.push_back(newregion);
                 } else if ( regionType.compare("Circle") == 0 || regionType.compare("Sphere") == 0 ) {
@@ -363,11 +456,19 @@ void RegionContainer :: readFromFile(const std :: string &filename, unsigned d) 
 ///////////////////////////////////////////////////////////////////////////////
 bool RegionContainer :: isLocationValid(const Point p, const vector< unsigned >in, const vector< unsigned >out) const {
     for ( auto &k: in ) {
+        if ( k >= regions.size() ) {
+            cerr << "Region number " << k << " does not exists" << endl;
+            exit(1);
+        }
         if ( !regions [ k ]->isInside(p) ) {
             return false;
         }
     }
     for ( auto &k: out ) {
+        if ( k >= regions.size() ) {
+            cerr << "Region number " << k << " does not exists" << endl;
+            exit(1);
+        }
         if ( regions [ k ]->isInside(p) ) {
             return false;
         }
@@ -377,10 +478,10 @@ bool RegionContainer :: isLocationValid(const Point p, const vector< unsigned >i
 
 //TO BE USE IN ADAPTIVITY
 ///////////////////////////////////////////////////////////////////////////////
-void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions) {
+void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions, unsigned dim) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -389,14 +490,14 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
             istringstream iss(line);
             iss >> std :: ws >> regionType;
             if ( !( regionType.rfind("#", 0) == 0 ) ) {
-                if ( regionType.compare("block") == 0 || regionType.compare("rectangle") == 0 ) {
-                    auto newregion = std :: make_unique< Block >();
+                if ( regionType.compare("box") == 0 || regionType.compare("rectangle") == 0 ) {
+                    auto newregion = std :: make_unique< Block >(dim);
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: move(newregion) );
+                    regions.push_back( std :: move(newregion) );
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
                     auto newregion = std :: make_unique< Sphere >();
                     newregion->readFromLine(iss);
-                    regions.push_back(std :: move(newregion) );
+                    regions.push_back( std :: move(newregion) );
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -429,7 +530,7 @@ bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside(n->givePoint() ) ) {
+            if ( reg->isInside( n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }

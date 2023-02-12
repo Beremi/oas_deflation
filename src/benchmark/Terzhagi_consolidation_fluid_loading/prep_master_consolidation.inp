@@ -1,0 +1,6 @@
+#Model 2d_consolidation Xsize 0.5 Ysize 0.1 minDist 0.04 activeTransport 1 activeMechanics 1  powerTes 0 seed 333
+Model 3d_consolidation Xsize 0.5 Ysize 0.1 Zsize 0.1 minDist 0.03 powerTes 1 activeMechanics 1 activeTransport 1 coupled 1 trials 10000 seed 333
+Solver	SteadyStateNonLinearSolver	time_step	5.0e-2	total_time	1.	limit_tolerance	1.000000e-01	maxIt	25 tolerance   0.001
+Material CSLMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
+Material TrsprtMaterial	capacity	11.000000	permeability 22e-18 viscosity 1e-5 crack_turtuosity 0.5 density	1e3
+Exporter VTKElementExporter elems saveEvery 0.0001 cellData 2 damage crack_opening pointData 1 pressure

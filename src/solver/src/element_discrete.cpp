@@ -3,14 +3,15 @@
 #include "boundary_condition.h"
 #include "material_coulomb_friction.h"
 #include "model.h"
+#include "material_vectorial.h"
 
 using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
-RigidBodyContact :: RigidBodyContact(const unsigned dim) {
-    ndim = dim;
+RigidBodyContact :: RigidBodyContact(const unsigned dim) : Element(dim) {
+    physicalFields [ 0 ] = true; //does mechanics
     numOfNodes = 2;
     nodes.resize(2);
     name = "LTCBEAM";
@@ -48,7 +49,7 @@ void RigidBodyContact :: giveValues(string code, Vector &result) const {
         result.resize(1);
         result [ 0 ] = length;
     } else {
-        MechanicalElement :: giveValues(code, result);
+        Element :: giveValues(code, result);
     }
 }
 
@@ -81,6 +82,13 @@ void RigidBodyContact :: checkNodeType() const {
             exit(1);
         }
     }
+
+    //check that material is VectMechMat
+    VectMechMaterial *p = dynamic_cast< VectMechMaterial * >( mat );
+    if ( !p ) {
+        cerr << "Error in " << name << ": material must be inherited from VectMechMaterial, " << mat->giveName() << " provided" << endl;
+        exit(1);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -88,15 +96,15 @@ void RigidBodyContact :: checkNodeType() const {
 Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
-    Matrix B = Matrix :: Zero(ndim, 6 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );
     Particle *a = static_cast< Particle * >( nodes [ 0 ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
     a = static_cast< Particle * >( nodes [ 1 ] );
-    Matrix Ab = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) );
+    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
-            B(i, j + 3 * ( ndim - 1 ) ) = Ab(i, j);
+            B( i, j + 3 * ( ndim - 1 ) ) = Ab(i, j);
         }
     }
     return ( R * B ) / length;
@@ -125,7 +133,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         double currErr = 0.0;
         //
         for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
-            currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+            currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
             if ( abs(currErr) > maxErr ) {
                 maxErr = abs(currErr);
             }
@@ -143,7 +151,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross(vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
 
         //JM: Perpendicularity check of the beam and face directions
@@ -185,7 +193,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-6 ) {
             cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
@@ -195,7 +203,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
     length = normal.norm();
     normal = normal / length;
-    if ( abs(normal.dot(t) ) > 1e-8 ) {
+    if ( abs( normal.dot(t) ) > 1e-8 ) {
         cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
         cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
         cerr << "Error: normal and contact vector are not parallel, error " << normal.dot(t) << " normal v." << normal.x() << " " << normal.y() << " contact v. " << t.x() << " " << t.y() << endl;
@@ -218,12 +226,12 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             t1 = arbit.cross(normal);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs(normal.x() ) > 1e-3 ) {
+            if ( abs( normal.x() ) > 1e-3 ) {
                 t1 = Point(-normal.y() / normal.x(), 1, 0);
-            } else if ( abs(normal.y() ) > 1e-3 ) {
+            } else if ( abs( normal.y() ) > 1e-3 ) {
                 t1 = Point(0, -normal.z() / normal.y(), 1);
             } else {
-                t1 = Point(1, 0, -normal.x() / normal.z() );
+                t1 = Point( 1, 0, -normal.x() / normal.z() );
             }
         }
         t1.normalize();
@@ -258,14 +266,7 @@ void RigidBodyContact :: init() {
 
     //create simplices
     for ( auto &v: vert ) {
-        simplices.push_back(v->addElementToSimplex(this) );
-    }
-
-    //check that material is DisMechMat
-    DisMechMaterial *p = dynamic_cast< DisMechMaterial * >( mat );
-    if ( !p ) {
-        cerr << "Error in " << name << ": material must be inherited from DisMechMaterial, " << mat->giveName() << " provided" << endl;
-        exit(1);
+        simplices.push_back( v->addElementToSimplex(this) );
     }
 }
 
@@ -277,8 +278,8 @@ Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveMassMatrix() const {
-    Matrix M = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
-    DisMechMaterialStatus *mechstat = static_cast< DisMechMaterialStatus * >( stats [ 0 ] );
+    Matrix M = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+    VectMechMaterialStatus *mechstat = static_cast< VectMechMaterialStatus * >( stats [ 0 ] );
     double density = mechstat->giveDensity();
     double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
     double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
@@ -340,16 +341,16 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
             Matrix Icg1 = tetraInertia3D(& B___, & C___, & D___, & FaceCentroid___);
 
             // MassMatrix
-            M(3, 3) += density * ( Icg0(0, 0) + tetraVolume0 * ( pow( ( cg0.y() - A->y() ), 2 ) + pow( ( cg0.z() - A->z() ), 2 ) ) );
-            M(4, 4) += density * ( Icg0(1, 1) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2 ) + pow( ( cg0.z() - A->z() ), 2 ) ) );
-            M(5, 5) += density * ( Icg0(2, 2) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2 ) + pow( ( cg0.y() - A->y() ), 2 ) ) );
+            M(3, 3) += density * ( Icg0(0, 0) + tetraVolume0 * ( pow( ( cg0.y() - A->y() ), 2) + pow( ( cg0.z() - A->z() ), 2) ) );
+            M(4, 4) += density * ( Icg0(1, 1) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2) + pow( ( cg0.z() - A->z() ), 2) ) );
+            M(5, 5) += density * ( Icg0(2, 2) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2) + pow( ( cg0.y() - A->y() ), 2) ) );
             M(3, 4) = M(4, 3) += density * ( Icg0(0, 1) - tetraVolume0 * ( ( cg0.x() - A->x() ) * ( cg0.y() - A->y() ) ) );
             M(3, 5) = M(5, 3) += density * ( Icg0(0, 2) - tetraVolume0 * ( ( cg0.x() - A->x() ) * ( cg0.z() - A->z() ) ) );
             M(4, 5) = M(5, 4) += density * ( Icg0(1, 2) - tetraVolume0 * ( ( cg0.y() - A->y() ) * ( cg0.z() - A->z() ) ) );
 
-            M(9, 9) += density * ( Icg1(0, 0) + tetraVolume1 * ( pow( ( cg1.y() - B->y() ), 2 ) + pow( ( cg1.z() - B->z() ), 2 ) ) );
-            M(10, 10) += density * ( Icg1(1, 1) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2 ) + pow( ( cg1.z() - B->z() ), 2 ) ) );
-            M(11, 11) += density * ( Icg1(2, 2) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2 ) + pow( ( cg1.y() - B->y() ), 2 ) ) );
+            M(9, 9) += density * ( Icg1(0, 0) + tetraVolume1 * ( pow( ( cg1.y() - B->y() ), 2) + pow( ( cg1.z() - B->z() ), 2) ) );
+            M(10, 10) += density * ( Icg1(1, 1) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2) + pow( ( cg1.z() - B->z() ), 2) ) );
+            M(11, 11) += density * ( Icg1(2, 2) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2) + pow( ( cg1.y() - B->y() ), 2) ) );
             M(9, 10) = M(10, 9) += density * ( Icg1(0, 1) - tetraVolume1 * ( ( cg1.x() - B->x() ) * ( cg1.y() - B->y() ) ) );
             M(9, 11) = M(11, 9) += density * ( Icg1(0, 2) - tetraVolume1 * ( ( cg1.x() - B->x() ) * ( cg1.z() - B->z() ) ) );
             M(10, 11) = M(11, 10) += density * ( Icg1(1, 2) - tetraVolume1 * ( ( cg1.y() - B->y() ) * ( cg1.z() - B->z() ) ) );
@@ -546,7 +547,7 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k);
+        result.resize( ( k * ( k - 1 ) ) / 2 + k );
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(2);
         }
@@ -629,8 +630,8 @@ void RigidBodyBoundary :: init() {
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
         // this is fine, do nothing, just use it to check if particle and auxnode is there
     } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
-        std :: reverse( this->nodes.begin(), this->nodes.end() );
-        std :: reverse( this->vert.begin(), this->vert.end() );
+        std :: reverse(this->nodes.begin(), this->nodes.end() );
+        std :: reverse(this->vert.begin(), this->vert.end() );
     } else {
         cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
     }
@@ -670,7 +671,7 @@ void RigidBodyBoundary :: extrapolateIPValuesToNodes(string code, vector< Vector
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k);
+        result.resize( ( k * ( k - 1 ) ) / 2 + k );
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(1);
         }
@@ -709,23 +710,23 @@ Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
         stats [ 0 ]->setParameterValue("normal_stress", pressure);
         return RigidBodyContact :: giveStrain(i, DoFs);
     } else {
-        return Vector :: Zero( ( this->ndim - 1 ) * 3 );
+        return Vector :: Zero( ( this->ndim - 1 ) * 3);
     }
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundary :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
 }
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundary :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
-    Matrix B = Matrix :: Zero(ndim, 3 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
     Particle *a = static_cast< Particle * >( nodes [ 0 ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -761,8 +762,8 @@ void RigidBodyBoundaryCoupled :: init() {
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
         // this is fine, do nothing, just use it to check if particle and auxnode is there
     } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
-        std :: reverse( this->nodes.begin(), this->nodes.end() );
-        std :: reverse( this->vert.begin(), this->vert.end() );
+        std :: reverse(this->nodes.begin(), this->nodes.end() );
+        std :: reverse(this->vert.begin(), this->vert.end() );
     } else {
         cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
     }
@@ -795,7 +796,7 @@ void RigidBodyBoundaryCoupled :: extrapolateIPValuesToNodes(string code, vector<
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k);
+        result.resize( ( k * ( k - 1 ) ) / 2 + k );
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(1);
         }
@@ -842,22 +843,22 @@ Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     ( void ) DoFs;
     this->extractPressureFromSimplices();
     // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
-    return Vector :: Zero( ( this->ndim - 1 ) * 3 );
+    return Vector :: Zero( ( this->ndim - 1 ) * 3);
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
 }
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
-    Matrix B = Matrix :: Zero(ndim, 3 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
     Particle *a = static_cast< Particle * >( nodes [ 0 ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -914,8 +915,7 @@ Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 1D TRANSPORT ELEMENT
-Transp1D :: Transp1D(const unsigned dim) {
-    ndim = dim;
+DiscreteTrsprtElem :: DiscreteTrsprtElem(const unsigned dim) : Element(dim) {
     nodes.resize(2);
     bound = false;
     name = "LTCTRSP";
@@ -923,10 +923,11 @@ Transp1D :: Transp1D(const unsigned dim) {
     shafunc = new Linear1DLineShapeF();
     inttype = new IntegrDiscrete1();
     vtk_cell_type = 3;
+    physicalFields [ 1 ] = true; //transport
 }
 
 //////////////////////////////////////////////////////////
-void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+void DiscreteTrsprtElem :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num, num2;
     iss >> num;
     nodes [ 0 ] = fullnodes->giveNode(num);
@@ -956,7 +957,7 @@ void Transp1D :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Mate
 
 
 //////////////////////////////////////////////////////////
-void Transp1D :: setIntegrationPointsAndWeights() {
+void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
     stats.resize(1);
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
@@ -991,7 +992,7 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         if ( vert.size() > 3 ) {
             for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
                 // JM Zakomentoval cout << i <<  " " << endl;
-                currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+                currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
                 if ( abs(currErr) > maxErr ) {
                     maxErr = abs(currErr);
                 }
@@ -1005,13 +1006,13 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 
         //JM: face normal vector made from first 3 vertices
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross(vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
         Point t2;
-        if ( fabs(n.x() ) > fabs(n.z() ) ) {
+        if ( fabs( n.x() ) > fabs( n.z() ) ) {
             t2 = Point(-n.y(), n.x(), 0.0f);
         } else {
-            t2 = Point(0.0f, -n.z(), n.y() );
+            t2 = Point( 0.0f, -n.z(), n.y() );
         }
         t = t2.cross(n);
         t /= t.norm();
@@ -1053,14 +1054,14 @@ void Transp1D :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-10 ) {
             cerr << "TRSPRT: Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
         }
     }
 
-    if ( abs(normal.dot(t) ) > 1e-5 ) {
+    if ( abs( normal.dot(t) ) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
         cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
         cerr << "TRSPRT: normal and contact vector are not parallel, error " << normal.dot(t) << endl;
@@ -1083,21 +1084,14 @@ void Transp1D :: setIntegrationPointsAndWeights() {
 }
 
 //////////////////////////////////////////////////////////
-void Transp1D :: init() {
+void DiscreteTrsprtElem :: init() {
     Element :: init(); //calling base class method;
 
-    checkNodeType();
-
-    //check that material is TrsprtMaterial
-    TrsprtMaterial *p = dynamic_cast< TrsprtMaterial * >( mat );
-    if ( !p ) {
-        cerr << "Error in " << name << ": material must be inherited from TrsprtMaterial, " << mat->giveName() << " provided" << endl;
-        exit(1);
-    }
+    checkNodeAndMaterialType();
 }
 
 //////////////////////////////////////////////////////////
-void Transp1D :: checkNodeType() const {
+void DiscreteTrsprtElem :: checkNodeAndMaterialType() const {
     for ( unsigned i = 0; i < 2; i++ ) {
         TrsNode *p = dynamic_cast< TrsNode * >( nodes [ i ] );
         if ( !p ) {
@@ -1105,10 +1099,16 @@ void Transp1D :: checkNodeType() const {
             exit(1);
         }
     }
+    //check that material is TrsprtMaterial
+    VectTrsprtMaterial *p = dynamic_cast< VectTrsprtMaterial * >( mat );
+    if ( !p ) {
+        cerr << "Error in " << name << ": material must be inherited from VectTrsprtMaterial, " << mat->giveName() << " provided" << endl;
+        exit(1);
+    }
 }
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D :: giveBMatrix(const Point *x) const {
+Matrix DiscreteTrsprtElem :: giveBMatrix(const Point *x) const {
     ( void ) x;
     Matrix B = Matrix :: Zero(1, 2);
     B(0, 0) = -1. / length;
@@ -1117,7 +1117,7 @@ Matrix Transp1D :: giveBMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D :: giveHMatrix(const Point *x) const {
+Matrix DiscreteTrsprtElem :: giveHMatrix(const Point *x) const {
     ( void ) x;
     Matrix H = Matrix :: Zero(1, 2);
     //double l1 = dot(* x - nodes [ 0 ]->givePoint(), normal);
@@ -1132,7 +1132,7 @@ Matrix Transp1D :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D :: giveDampingMatrix() const {
+Matrix DiscreteTrsprtElem :: giveDampingMatrix() const {
     Matrix S = Matrix :: Zero(2, 2);
     double s = area * stats [ 0 ]->giveDampingTensor()(0, 0) * length /  ( 2. * ndim );
 
@@ -1145,7 +1145,7 @@ Matrix Transp1D :: giveDampingMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
-double Transp1D :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
+double DiscreteTrsprtElem :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
     if ( nodenum == 0 ) {
         return ( vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(normal) * area / ndim;
     } else if ( nodenum == 1 ) {
@@ -1157,7 +1157,7 @@ double Transp1D :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
 };
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
+Vector DiscreteTrsprtElem :: giveStrain(unsigned i, const Vector &DoFs) {
     double averagePressure = ( DoFs [ 0 ] * giveVolumeAssociatedWithNode(0) + DoFs [ 1 ] * giveVolumeAssociatedWithNode(1) ) / volume;
     stats [ 0 ]->setParameterValue("pressure", averagePressure);
     return Element :: giveStrain(i, DoFs);
@@ -1165,30 +1165,30 @@ Vector Transp1D :: giveStrain(unsigned i, const Vector &DoFs) {
 
 
 //////////////////////////////////////////////////////////
-Matrix Transp1D :: giveStiffnessMatrix(string matrixType) const {
+Matrix DiscreteTrsprtElem :: giveStiffnessMatrix(string matrixType) const {
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
 }
 
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
+Vector DiscreteTrsprtElem :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
     //MyVector Q = Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
     //for (auto p:Q) cout << " " << p;
     return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: integrateLoad(BodyLoad *vl, double time) const {
+Vector DiscreteTrsprtElem :: integrateLoad(BodyLoad *vl, double time) const {
     return Element :: integrateLoad(vl, time) / ndim;
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: integrateInternalSources() {
+Vector DiscreteTrsprtElem :: integrateInternalSources() {
     return Element :: integrateInternalSources() / ndim;
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1D :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
+Vector DiscreteTrsprtElem :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const {
     ( void ) ip_id;
     Point distance = inttype->giveIPLocation(0) - nodes [ node_i ]->givePoint();
     Vector dst = Vector :: Zero(ndim);
@@ -1205,7 +1205,7 @@ Vector Transp1D :: giveVectorToNode(const unsigned &node_i, const unsigned &ip_i
 }
 
 //////////////////////////////////////////////////////////
-void Transp1D :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
+void DiscreteTrsprtElem :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
     Vector ipres;
     giveIPValues(code, 0, ipres);
     Vector A = giveVectorToNode(0, 0);
@@ -1233,30 +1233,56 @@ void Transp1D :: extrapolateIPValuesToNodes(string code, vector< Vector > &resul
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 1D TRANSPORT ELEMENT COUPLED WITH MECHANICS
-//////////////////////////////////////////////////////////
-void Transp1DCoupled :: init() {
-    Transp1D :: init(); //calling base class method;
+// 1D HEAT CONDUCTION ELEMENT
+DiscreteHeatConductionElem :: DiscreteHeatConductionElem(const unsigned dim) : DiscreteTrsprtElem(dim) {
+    name = "Heat Conduction Element 1D";
+    physicalFields [ 1 ] = false; //transport
+    physicalFields [ 2 ] = true; //heat conduction
 }
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: giveValues(string code, Vector &result) const {
+void DiscreteHeatConductionElem :: checkNodeAndMaterialType() const {
+    for ( unsigned i = 0; i < 2; i++ ) {
+        TempNode *p = dynamic_cast< TempNode * >( nodes [ i ] );
+        if ( !p ) {
+            cerr << "Error in " << name << ": nodes must be inherited from TempNode, " << nodes [ i ]->giveName() << " provided" << endl;
+            exit(1);
+        }
+    }
+    //check that material is TrsprtMaterial
+    VectHeatConductionMaterial *p = dynamic_cast< VectHeatConductionMaterial * >( mat );
+    if ( !p ) {
+        cerr << "Error in " << name << ": material must be inherited from HeatConductionMaterial, " << mat->giveName() << " provided" << endl;
+        exit(1);
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 1D TRANSPORT ELEMENT COUPLED WITH MECHANICS
+//////////////////////////////////////////////////////////
+void DiscreteTrsprtCoupledElem :: init() {
+    DiscreteTrsprtElem :: init(); //calling base class method;
+}
+
+//////////////////////////////////////////////////////////
+void DiscreteTrsprtCoupledElem :: giveValues(string code, Vector &result) const {
     if ( code.compare("numOfFriends") == 0 ) {
         result.resize(0);
         result [ 0 ] = friends.size();
     } else {
-        Transp1D :: giveValues(code, result);
+        DiscreteTrsprtElem :: giveValues(code, result);
     }
 };
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: addNewFriend(RigidBodyContact *f, double weight) {
+void DiscreteTrsprtCoupledElem :: addNewFriend(RigidBodyContact *f, double weight) {
     friends.push_back(f);
     friendsweight.push_back(weight);
 }
 
 //////////////////////////////////////////////////////////
-Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
+Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
     //crack opening
     double crackInNeighborhood = 0;
     double crackVolume = 0.;
@@ -1308,16 +1334,16 @@ Vector Transp1DCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
 
     stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain
 
-    return Transp1D :: giveStrain(i, DoFs);
+    return DiscreteTrsprtElem :: giveStrain(i, DoFs);
 };
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: collectInformationsFromNeigborhood() {
+void DiscreteTrsprtCoupledElem :: collectInformationsFromNeigborhood() {
     findFriendsFromSimplices();
 }
 
 //////////////////////////////////////////////////////////
-void Transp1DCoupled :: findFriendsFromSimplices() {
+void DiscreteTrsprtCoupledElem :: findFriendsFromSimplices() {
     friends.resize(0);
     friendsweight.resize(0);
 
@@ -1349,4 +1375,87 @@ void Transp1DCoupled :: findFriendsFromSimplices() {
             addNewFriend(rbc, weight);
         }
     }
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// RigidBodyContactWithHeatConduction ELEMENT
+
+RigidBodyContactWithHeatConduction :: RigidBodyContactWithHeatConduction(const unsigned dim) : RigidBodyContact(dim) {
+    name = "RigidBodyContactWithHeatConduction";
+    physicalFields [ 2 ] = true;
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyContactWithHeatConduction :: giveValues(string code, Vector &result) const {
+    RigidBodyContact :: giveValues(code, result);
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyContactWithHeatConduction :: checkNodeType() const {
+    //check that nodes are particles
+    for ( unsigned i = 0; i < 2; i++ ) {
+        ParticleWithTemperature *p = dynamic_cast< ParticleWithTemperature * >( nodes [ i ] );
+        if ( !p ) {
+            cerr << "Error in " << name << ": nodes must be inherited from ParticleWithTemperature, " << nodes [ i ]->giveName() << " provided" << endl;
+            exit(1);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+
+Matrix RigidBodyContactWithHeatConduction :: giveBMatrix(const Point *x) const {
+    unsigned p = 3 * ( ndim - 1 );
+    Matrix B = Matrix :: Zero(ndim + 1, 2 * p + 2);
+    Matrix RB = RigidBodyContact :: giveBMatrix(x);
+    //mechanics
+    for ( unsigned i = 0; i < p; i++ ) {
+        for ( unsigned j = 0; j < ndim; j++ ) {
+            B(j, i) = RB(j, i);
+            B(j, i + p + 1) = RB(j, i + p);
+        }
+    }
+    //transport
+    B(ndim, p) = -1. / length;
+    ;
+    B(ndim, 2 * p + 1) = 1. / length;
+    ;
+    return B;
+}
+
+
+//////////////////////////////////////////////////////////
+Vector RigidBodyContactWithHeatConduction :: giveStrain(unsigned i, const Vector &DoFs) {
+    unsigned p = 3 * ( ndim - 1 );
+    stats [ 0 ]->setParameterValue("temperature", ( DoFs [ p ] + DoFs [ 2 * p + 1 ] ) / 2.);
+    return RigidBodyContact :: giveStrain(i, DoFs);
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyContactWithHeatConduction :: init() {
+    RigidBodyContact :: init(); //calling base class method;
+}
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyContactWithHeatConduction :: giveHMatrix(const Point *x) const {
+    ( void ) x;
+    return Matrix :: Zero(12, 12);  // NOTE JK: this should be based on ndim
+}
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyContactWithHeatConduction :: giveMassMatrix() const {
+    Matrix M = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+    return M;
+}
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyContactWithHeatConduction :: giveStiffnessMatrix(string matrixType) const {
+    return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
+}
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyContactWithHeatConduction :: giveDampingMatrix() const {
+    return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
 }

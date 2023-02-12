@@ -16,7 +16,7 @@ public:
     MaterialContainer() {};
     ~MaterialContainer();
 
-    void readFromFile(const std :: string filename);
+    void readFromFile(const std :: string filename, unsigned dim);
     void init();
     Material *giveMaterial(unsigned const mat);
 protected:

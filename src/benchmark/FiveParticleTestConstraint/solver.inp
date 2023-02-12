@@ -1,3 +1,4 @@
 SteadyStateLinearSolver
 time_step	0.1e+00
 total_time	15
+conj_grad_relative_maxit 10
