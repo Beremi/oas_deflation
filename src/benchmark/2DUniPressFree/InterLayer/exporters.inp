@@ -1,3 +1,0 @@
-TXTNodalExporter translations 2 ux uy
-TXTNodalExporter pressure 1 pressure
-VTKElementExporter out  time_every 1e-20 cellData 1 damage

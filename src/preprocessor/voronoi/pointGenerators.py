@@ -306,7 +306,7 @@ def polarToCart(coords_polar):
 
 
 
-def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords_cart, node_coords_polar, radii, allow_domain_overlap=False, periodic_distance=False):
+def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords_cart, radii, allow_domain_overlap=False, periodic_distance=False):
     # maxLim is the diameter of a circle
     gap = 0.1
     d = np.flipud(np.linspace(minDiam*0.5, maxDiam, 30))      # array of diameters from largest to smallest one
@@ -314,6 +314,8 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
     saturation = 0
     iters = 0
     di = 0
+
+    node_coords_polar = np.zeros((1, dim))
 
     if dim==2:
         freq = fuller2D(d, maxDiam)
@@ -389,7 +391,7 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
             # sys.stdout.flush()
         else:
             iters += 1
-    return node_coords_cart, per_nodes_cart, radii
+    return node_coords_cart, radii
 
 def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
         gap = 0.1
