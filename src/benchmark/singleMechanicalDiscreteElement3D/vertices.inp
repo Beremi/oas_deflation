@@ -1,0 +1,7 @@
+# Type	nodeCrdX	nodeCrdY
+AuxNode	0.005 -1 -1 
+AuxNode	0.005 -1 1
+AuxNode	0.005 1 1
+AuxNode	0.005 1 -1
+
+

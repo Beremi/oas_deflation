@@ -1,3 +1,0 @@
-CSLMaterial	E0	6.027300e+10	alpha	0.250000	density	2200.000000	ft	3440000.000000	Gt	50.000000
-TrsprtMaterial		capacity	11.000000	permeability	22e-18 viscosity 1e-5 density	1e3
-DisMechMaterial	E0	3.000000e+10	alpha	0.300000	density	2200.000000

@@ -16,6 +16,9 @@ class Transp1D; //forward declaration
  *
  *  A more elaborate Node class description. DETAILED
  */
+
+//physicalFields Mechanics, Transport, Thermal, Humidity
+
 class Node
 {
 private:
@@ -26,24 +29,16 @@ protected:
     unsigned nDoFs; //
     unsigned firstDoF;
     std :: string name;
-    bool isMechanical;
-    bool isTransport;
+    std :: vector< bool >physicalFields;
+    std :: vector< unsigned >physicalFieldsDoFNum;
     unsigned id;
-
     Simplex *simplex; //simplex used to determine volumetric strain
 public:
-    Node() { name = "basic node"; isMechanical = false; isTransport = false; simplex = nullptr; };
+    Node(unsigned dimension);
     virtual ~Node() { if ( simplex != nullptr ) { delete simplex; } };
-
-    /// A pure virtual member.
-    /**
-     * \sa testMe()
-     * \param c1 the first argument.
-     * \param c2 the second argument.
-     */
     virtual void readFromLine(std :: istringstream &iss);
+    virtual void init();
     virtual std :: string giveLineToSave() const;
-
     Point givePoint() const { return point; };
     Point *givePointPointer() { return & point; };
     void setPoint(const Point &P) { point = P; };
@@ -53,21 +48,25 @@ public:
     unsigned giveStartingDoF() const { return firstDoF; };
     std :: string giveName() const { return name; }
     void setName(const std :: string &newName) { this->name = newName; };
-    bool doesMechanics() const { return isMechanical; };
-    bool doesTransport() const { return isTransport; };
-    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
-    virtual bool isDoFMechanical(unsigned k) { ( void ) k; return isMechanical; }; //in future we might have node with both fields
-    virtual bool isDoFTransport(unsigned k) { ( void ) k; return isTransport; };   //in future we might have node with both fields
+    bool doesMechanics() const { return physicalFields [ 0 ]; };
+    bool doesTransport() const { return physicalFields [ 1 ]; };
+    bool doesTemperature() const { return physicalFields [ 2 ]; };
+    virtual bool giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
+    unsigned giveRelativeDoFPhysicalFieldNum(unsigned k) const;
+    unsigned giveAbsoluteDoFPhysicalFieldNum(unsigned k) const;
+    std :: vector< unsigned >givePhysicalFieldsDoFNum() const { return physicalFieldsDoFNum; };
+    std :: vector< unsigned >givePhysicalFieldNumForAllDoFs() const;
     void subtructFromPoint(Point *p) { point -= ( * p ); };
-    virtual unsigned giveOrderOfForceCode(std :: string code) const;
+    virtual unsigned giveOrderOfEnergyConjugateCode(std :: string code) const;
+    unsigned giveID() const { return id; };
+    void setID(unsigned p) { id = p; };
     Simplex *addElementToSimplex(RigidBodyContact *rbc);
     void initSimplex();
     void updateSimplexVolumetricStrain(const Vector &fullDoFs);
     Simplex *giveSimplex() { return simplex; }
     bool hasSimplex()const { return simplex != nullptr; }
     bool hasValidSimplex() const { if ( !simplex ) { return false; } return simplex->isValid(); }
-    unsigned giveID() const { return id; };
-    void setID(unsigned p) { id = p; };
+    unsigned giveDimension() const { return dim; };
 };
 
 //////////////////////////////////////////////////////////
@@ -79,7 +78,7 @@ private:
 
 protected:
 public:
-    AuxNode(unsigned dimension) { dim = dimension; nDoFs = 0; name = "AuxNode"; };
+    AuxNode(unsigned dimension) : Node(dimension) { name = "AuxNode"; };
     virtual ~AuxNode() {};
 };
 
@@ -91,24 +90,8 @@ class MechNode : public Node
 private:
 protected:
 public:
-    MechNode(unsigned dimension) { dim = dimension; nDoFs = dim; name = "MechNode"; isMechanical = true; };
+    MechNode(unsigned dimension) : Node(dimension) { name = "MechNode"; physicalFields [ 0 ] = true; physicalFieldsDoFNum [ 0 ] = dim; };
     virtual ~MechNode() {};
-    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
-    virtual unsigned giveOrderOfForceCode(std :: string code) const;
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// Master Dof - additional DoF governing other dependent DoFs
-class MechDoF : public MechNode
-{
-private:
-
-protected:
-public:
-    MechDoF(unsigned dimension, unsigned numDoFs);
-    virtual ~MechDoF() {};
-    void readFromLine(std :: istringstream &iss);
 };
 
 //////////////////////////////////////////////////////////
@@ -120,42 +103,87 @@ private:
 
 protected:
 public:
-    TrsNode(unsigned dimension) { dim = dimension; nDoFs = 1; name = "TrsprtNode"; isTransport = true; };
+    TrsNode(unsigned dimension) : Node(dimension) { name = "TransportNode"; physicalFields [ 1 ] = true; physicalFieldsDoFNum [ 1 ] = 1; };
     virtual ~TrsNode() {};
-    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
-    virtual unsigned giveOrderOfForceCode(std :: string code) const;
 };
 
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// TRANSPORT + TEMPERATURE NODE
-class TrsTemprtrCoupledNode : public TrsNode
+// TEMPERATURE NODE
+class TempNode : public Node
 {
 private:
 
 protected:
 public:
-    TrsTemprtrCoupledNode(unsigned dimension) : TrsNode(dimension) { nDoFs = 2; name = "TrsTemprtrCoupledNode"; isTransport = true; };
-    virtual ~TrsTemprtrCoupledNode() {};
-    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
+    TempNode(unsigned dimension) : Node(dimension) { name = "TempNode"; physicalFields [ 2 ] = true; physicalFieldsDoFNum [ 2 ] = 1; };
+    virtual ~TempNode() {};
 };
-
 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Master Dof - additional DoF governing other dependent DoFs
-class TrsDoF : public TrsNode
+class FreeDoF : public Node
+{
+private:
+
+protected:
+public:
+    FreeDoF(unsigned dimension, unsigned numDoFs);
+    virtual ~FreeDoF() {};
+    void readFromLine(std :: istringstream &iss);
+    virtual void init();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+class MechDoF : public FreeDoF
+{
+private:
+
+protected:
+public:
+    MechDoF(unsigned dimension, unsigned numDoFs);
+    virtual ~MechDoF() {};
+    virtual void init();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+class TrsDoF : public FreeDoF
 {
 private:
 protected:
 public:
     TrsDoF(unsigned dimension, unsigned numDoFs);
     virtual ~TrsDoF() {};
-    void readFromLine(std :: istringstream &iss);
+    virtual void init();
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+class TempDoF : public FreeDoF
+{
+private:
+protected:
+public:
+    TempDoF(unsigned dimension, unsigned numDoFs);
+    virtual ~TempDoF() {};
+    virtual void init();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+class HumidityDoF : public FreeDoF
+{
+private:
+protected:
+public:
+    HumidityDoF(unsigned dimension, unsigned numDoFs);
+    virtual ~HumidityDoF() {};
+    virtual void init();
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -163,17 +191,16 @@ public:
 class Particle : public MechNode
 {
 private:
-    double r;  // radius in case of power tessellation
 protected:
+    double r;  // radius in case of power tessellation
 public:
-    Particle(unsigned dimension) : MechNode(dimension) { nDoFs = 3 * ( dim - 1 ); name = "Particle"; };
+    Particle(unsigned dimension) : MechNode(dimension) { name = "Particle";  physicalFieldsDoFNum [ 0 ] = 3 * ( dim - 1 ); };
     virtual ~Particle() {};
-
     virtual void readFromLine(std :: istringstream &iss);
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
-    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
-    virtual unsigned giveOrderOfForceCode(std :: string code) const;
+    virtual bool giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
+    virtual unsigned giveOrderOfEnergyConjugateCode(std :: string code) const;
     virtual std :: string giveLineToSave() const;
     Vector calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const;
     Point calculateRigidBodyMotionPoint(const Point *x, const Vector &DoFs) const;
@@ -183,18 +210,38 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // COUPLED PARTICLE - translational and rotational and transport DoFs
-class CoupledParticle : public Particle
+class ParticleWithTransport : public Particle
 {
 private:
-    double r;  // radius in case of power tessellation
 protected:
 public:
-    CoupledParticle(unsigned dimension) : Particle(dimension) { nDoFs = 3 * ( dim - 1 ) + 1; name = "CoupledParticle";  isTransport = true; };
-    virtual ~CoupledParticle() {};
-    virtual void giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
-    virtual unsigned giveOrderOfForceCode(std :: string code) const;
-    virtual bool isDoFMechanical(unsigned k) { if ( k < nDoFs - 1 ) { return true; } else { return false; } };
-    virtual bool isDoFTransport(unsigned k)  { if ( k == nDoFs - 1 ) { return true; } else { return false; } };
+    ParticleWithTransport(unsigned dimension) : Particle(dimension) { name = "ParticleWithTransport";  physicalFields [ 1 ] = true; physicalFieldsDoFNum [ 1 ] = 1; };
+    virtual ~ParticleWithTransport() {};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// PARTICLE COUPLED WITH TEMPARATURE
+class ParticleWithTemperature : public Particle
+{
+private:
+protected:
+public:
+    ParticleWithTemperature(unsigned dimension) : Particle(dimension) { nDoFs = 3 * ( dim - 1 ) + 1; name = "ParticleWithTemperature";  physicalFields [ 2 ] = true; physicalFieldsDoFNum [ 2 ] = 1; };
+    virtual ~ParticleWithTemperature() {};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// TRANSPORT + TEMPERATURE NODE
+class TempHumidityNode : public TempNode
+{
+private:
+
+protected:
+public:
+    TempHumidityNode(unsigned dimension) : TempNode(dimension) { name = "TempHumidityNode"; physicalFields [ 3 ] = true; physicalFieldsDoFNum [ 3 ] = 1; };
+    virtual ~TempHumidityNode() {};
 };
 
 #endif /* _NODE_H */

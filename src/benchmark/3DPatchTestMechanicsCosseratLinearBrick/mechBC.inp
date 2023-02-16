@@ -1,0 +1,13 @@
+# nodeIdx	KinTrX	KinTrY	KinRotZ	StTrX	StTrY	StRotZ
+NodalBC	0	0	0	0   -1	-1  -1
+NodalBC	1	0	-1	0   -1	-1  -1
+NodalBC	2	0	-1	-1   -1	-1  -1
+NodalBC	3	0	0	-1   -1	-1  -1
+NodalBC	4	0	-1	-1   -1	-1  -1
+NodalBC	5	0	-1	-1   -1	-1  -1
+NodalBC	6	0	-1	-1   -1	-1  -1
+NodalBC	7	0	-1	-1   -1	-1  -1
+NodalBC	24	-1	-1	-1   1	-1  -1
+NodalBC	25	-1	-1	-1   1	-1  -1
+NodalBC	26	-1	-1	-1   1	-1  -1
+NodalBC	27	-1	-1	-1   1	-1  -1

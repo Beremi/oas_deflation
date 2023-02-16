@@ -1119,7 +1119,7 @@ if __name__ == '__main__':
 
     if len(model.materials)==0:
         print ('Missing some material!! Exiting...')
-        sys.exit(1)
+        #sys.exit(1)
 
     if model != None:
         for i in range (model.nr_models):

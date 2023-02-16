@@ -1,7 +1,7 @@
 #ifndef _FATIGUE_MATERIAL_H
 #define _FATIGUE_MATERIAL_H
 
-#include "material.h"
+#include "material_vectorial.h"
 
 //////////////////////////////////////////////////////////
 // DAMAGE DRIVEN BY CUMMULATIVE SHEAR SLIP
@@ -9,7 +9,7 @@
 // MATERIAL ACCORDING TO ALGORITHM FROM https://doi.org/10.1016/j.ijfatigue.2018.04.020
 
 class FatigueShearMaterial;
-class FatigueShearMaterialStatus : public DisMechMaterialStatus
+class FatigueShearMaterialStatus : public VectMechMaterialStatus
 {
 private:
     Point slip; ///< slip
@@ -55,10 +55,10 @@ public:
     void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     double isDamageCoupled() const { return coup_dam; }
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
@@ -71,7 +71,7 @@ protected:
 };
 
 
-class FatigueShearMaterial : public DisMechMaterial
+class FatigueShearMaterial : public VectMechMaterial
 {
 private:
     double tauBar; ///< reversibility limit
@@ -86,7 +86,7 @@ private:
     double comp_thresh = 0.0;
     double damage_residuum = 0.1;  ///> if not specified
 public:
-    FatigueShearMaterial() { name = "Fatigue Shear material"; };
+    FatigueShearMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "Fatigue Shear material"; };
     ~FatigueShearMaterial() {};
     void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -98,7 +98,7 @@ public:
     double giveR() const { return r; }
     double giveMC() const { return mC; }
     double giveMT() const { return mT; }
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
 
     bool useSlip() const { return use_slip; }
     bool checkReturnMap() const { return check_retturn_mapping; }
@@ -117,7 +117,7 @@ public:
 // according to paper http://www.eccm-ecfd2018.org/admin/files/filePaper/p924.pdf
 
 class DamagePlasticMaterial;
-class DamagePlasticMaterialStatus : public DisMechMaterialStatus
+class DamagePlasticMaterialStatus : public VectMechMaterialStatus
 {
 private:
     double epsN; ///< slip
@@ -149,10 +149,10 @@ public:
     void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
 protected:
@@ -164,7 +164,7 @@ protected:
 };
 
 
-class DamagePlasticMaterial : public DisMechMaterial
+class DamagePlasticMaterial : public VectMechMaterial
 {
 private:
     double fc; ///< compressive plastic yielding stress
@@ -182,7 +182,7 @@ private:
     double damage_residuum = 1e-1;  ///> for stiffness matrix
 
 public:
-    DamagePlasticMaterial() { name = "Damage Plastic material"; };
+    DamagePlasticMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "Damage Plastic material"; };
     ~DamagePlasticMaterial() {};
     void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -195,7 +195,7 @@ public:
     double giveGt() const { return Gt; }
     double giveKt() const { return Kt; }
     double giveM() const { return m; }
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
 
     bool useDispl() const { return use_displ; }
     bool isSym() const { return sym; }
@@ -215,10 +215,10 @@ public:
     void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
 };
@@ -229,11 +229,11 @@ class FatigueMaterial : public FatigueShearMaterial, public DamagePlasticMateria
 private:
 
 public:
-    FatigueMaterial() { FatigueShearMaterial :: name = "Fatigue material"; DamagePlasticMaterial :: name = "Fatigue material"; };
+    FatigueMaterial(unsigned dimension) : FatigueShearMaterial(dimension), DamagePlasticMaterial(dimension) { FatigueShearMaterial :: name = "Fatigue material"; DamagePlasticMaterial :: name = "Fatigue material"; };
     ~FatigueMaterial() {};
     void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
 };
 
 
@@ -244,7 +244,7 @@ public:
 // see also Classification and evaluation of phenomenological numerical models for concrete fatigue behavior under compression, A. Baktheer, R. Chudoba 2019 doi.org/10.1016/j.conbuildmat.2019.06.022
 
 class AllicheMaterial;
-class AllicheMaterialStatus : public DisMechMaterialStatus
+class AllicheMaterialStatus : public VectMechMaterialStatus
 {
 private:
     Point sigma; ///< stress
@@ -261,16 +261,16 @@ public:
     virtual ~AllicheMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     // virtual MyVector giveStressWrong(const MyVector &strain);
     void calculateDamage(const Vector &strain);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
 };
 
 
-class AllicheMaterial : public DisMechMaterial
+class AllicheMaterial : public VectMechMaterial
 {
 private:
     double lambda, mu;   // Lame parameters
@@ -280,7 +280,7 @@ private:
     double g;  // constant relevant to damage-induced residual stress
     double alphaDam, betaDam;  // parameters of damage degradation moduli
 public:
-    AllicheMaterial() { name = "Alliche material"; };
+    AllicheMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "Alliche material"; };
     ~AllicheMaterial() {};
     void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -293,7 +293,7 @@ public:
     double giveG() const { return g; }
     double giveAlphaDam() const { return alphaDam; }
     double giveBetaDam() const { return betaDam; }
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
 };
 
 
@@ -305,7 +305,7 @@ public:
 // see also Classification and evaluation of phenomenological numerical models for concrete fatigue behavior under compression, A. Baktheer, R. Chudoba 2019 doi.org/10.1016/j.conbuildmat.2019.06.022
 
 class DesmoratMaterial;
-class DesmoratMaterialStatus : public DisMechMaterialStatus
+class DesmoratMaterialStatus : public VectMechMaterialStatus
 {
 private:
     Point temp_sigma, sigma; ///< stress
@@ -322,14 +322,14 @@ public:
     virtual ~DesmoratMaterialStatus() {};
     void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
 };
 
 
-class DesmoratMaterial : public DisMechMaterial
+class DesmoratMaterial : public VectMechMaterial
 {
 private:
     double E2;
@@ -338,7 +338,7 @@ private:
     double gamma;
     double S;
 public:
-    DesmoratMaterial() { name = "Desmorat material"; };
+    DesmoratMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "Desmorat material"; };
     ~DesmoratMaterial() {};
     void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -347,7 +347,7 @@ public:
     double giveK() const { return K; }
     double giveGamma() const { return gamma; }
     double giveS() const { return S; }
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
 };
 
 #endif /* _FATIGUE_MATERIAL_H */

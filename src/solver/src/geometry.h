@@ -19,7 +19,7 @@ protected:
     unsigned dim;
 
 public:
-    Region() {};
+    Region(unsigned d) { dim = d; };
     virtual ~Region() {};
     virtual bool isInside(const Point &P) const = 0;
     virtual void readFromLine(std :: istringstream &iss) = 0;
@@ -40,7 +40,7 @@ protected:
     Point mainPoint;
     double size;
 public:
-    RegularRegion() {};
+    RegularRegion(unsigned d) : Region(d) {};
     virtual ~RegularRegion() {};
     virtual bool isInside(const Point &P) const = 0;
     virtual void setMainPoint(const Point &P) { this->mainPoint = P; };
@@ -61,9 +61,9 @@ private:
     Point rightTop;
 
 public:
-    Block() {};
+    Block(unsigned d) : RegularRegion(d) {};
     virtual ~Block() {};
-    Block(const Point &lB, const Point &rT);
+    Block(const Point &lB, const Point &rT, unsigned d);
     virtual bool isInside(const Point &P) const;
     virtual void readFromLine(std :: istringstream &iss);
 };
@@ -73,25 +73,27 @@ class Circle : public RegularRegion
 private:
     char along = 'z';
 public:
-    Circle() {};
+    Circle() : RegularRegion(2) {};
     virtual ~Circle() {};
     Circle(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
     virtual void readFromLine(std :: istringstream &iss);
 };
 
-
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 class Sphere : public Circle
 {
 public:
-    Sphere() {};
+    Sphere() { dim = 3; };
     virtual ~Sphere() {};
     Sphere(const Point &c, const double &r);
     virtual bool isInside(const Point &P) const;
     virtual void readFromLine(std :: istringstream &iss);
 };
 
-
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 class Polygon : public Region
 {
 private:
@@ -99,13 +101,15 @@ private:
     void orderClockwise(); // TODO this
 
 public:
-    Polygon() {};
+    Polygon() : Region(2) {};
     virtual ~Polygon() {};
     Polygon(const std :: vector< Point > &V);
     void addVertex(const Point &P);
     virtual bool isInside(const Point &P) const;
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 class Cylinder : public RegularRegion
 {
 private:
@@ -114,7 +118,7 @@ private:
     Point dir;
 
 public:
-    Cylinder() {};
+    Cylinder() : RegularRegion(3) {};
     virtual ~Cylinder() {};
     Cylinder(const Point &A, const Point &B, double radius);
     virtual bool isInside(const Point &P) const;
@@ -140,7 +144,7 @@ public:
 
 
 bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions, const Point &p);
-void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions);
+void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions, unsigned d);
 bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions, const Element *el);
 ///////////////////////////////////////////////////////////////////////////////////
 

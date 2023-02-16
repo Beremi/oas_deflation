@@ -1,5 +1,6 @@
 Dimension	2
 Solver	solver.inp
+RegionFiles 1 regions.inp
 NodeFiles	4	nodes.inp	auxNodes.inp	vertices.inp	govNodes.inp
 PBlockFiles	1	constraint.inp
 MatFiles	1	materials.inp

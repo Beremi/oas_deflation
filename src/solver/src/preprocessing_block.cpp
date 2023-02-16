@@ -1,15 +1,17 @@
 #include "preprocessing_block.h"
 #include "model.h"
+#include "material_vectorial.h"
+
 // #include "misc.h"  // TODO JK: this include causes linking error
 using namespace std;
 
 
 std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {
     std :: vector< double >vect;
-    vect.push_back(p.x() );
-    vect.push_back(p.y() );
+    vect.push_back( p.x() );
+    vect.push_back( p.y() );
     if ( dim == 3 ) {
-        vect.push_back(p.z() );
+        vect.push_back( p.z() );
     }
     return vect;
 }
@@ -47,8 +49,7 @@ void MaterialRegion :: readFromLine(istringstream &iss, unsigned d) {
 
 
     std :: string param, region_name;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("trsp") == 0 ) {
             this->transport = true;
         } else if ( param.compare("mech") == 0 ) {
@@ -63,11 +64,11 @@ void MaterialRegion :: readFromLine(istringstream &iss, unsigned d) {
                 if ( d == 2 ) {
                     double x, y, x2, y2;
                     iss >> x >> y >> x2 >> y2;
-                    reg = new Block( Point(x, y, -1e10), Point(x2, y2, 1e10) );
+                    reg = new Block(Point(x, y, -1e10), Point(x2, y2, 1e10), 2);
                 } else if ( d == 3 ) {
                     double x, y, z, x2, y2, z2;
                     iss >> x >> y >> z >> x2 >> y2 >> z2;
-                    reg = new Block( Point(x, y, z), Point(x2, y2, z2) );
+                    reg = new Block(Point(x, y, z), Point(x2, y2, z2), 3);
                 }
             } else if ( region_name.compare("shpere") == 0 ) {
                 if ( d == 2 ) {
@@ -109,18 +110,18 @@ void MaterialRegion :: apply(NodeContainer *nodes, ElementContainer *elems, BCCo
             if ( ( !this->transport && nod->doesMechanics() ) ||
                  ( this->transport && nod->doesTransport() ) ) {
                 // TODO JK: are there any elems that are mechanical and connect transport nodes and same for transport elems?
-                if ( this->reg->isInside( nod->givePoint() ) ) {
+                if ( this->reg->isInside(nod->givePoint() ) ) {
                     if ( this->all_nodes ) {
                         num_nodes_inside++;
                     } else {
-                        el->changeMaterial( mats->giveMaterial(this->material_id) );
+                        el->changeMaterial(mats->giveMaterial(this->material_id) );
                         break;
                     }
                 }
             }
         }
         if ( this->all_nodes && num_nodes_inside == el->giveNodes().size() ) {
-            el->changeMaterial( mats->giveMaterial(this->material_id) );
+            el->changeMaterial(mats->giveMaterial(this->material_id) );
         }
     }
 }
@@ -133,7 +134,7 @@ void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
     initalNodeNum = nodes->giveSize();
-    mn = new MechDoF(dim, 3 * ( dim - 1 ) );
+    mn = new MechDoF( dim, 3 * ( dim - 1 ) );
     nodes->addNode(mn);
 }
 
@@ -347,7 +348,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );     //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize( m->giveNumberOfDoFs(), funcs->giveSize() );     //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -364,7 +365,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
 
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             if ( nodes->giveNode(n)->doesMechanics() && ( dynamic_cast< MechDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-                vm.push_back(nodes->giveNode(n) );
+                vm.push_back( nodes->giveNode(n) );
             }
         }
         if ( vm.size() > 0 ) {
@@ -375,7 +376,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
             MechDoF *pn = new MechDoF(dim, nDoFs);
             nodes->addNode(pn);
 
-            vector< unsigned >dirs(vm.size() );
+            vector< unsigned >dirs( vm.size() );
 
             for ( unsigned vi = 0; vi < nDoFs; vi++ ) {
                 fill(dirs.begin(), dirs.end(), vi);
@@ -529,8 +530,7 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
     bool sizeB, loadB, pairsB;
     sizeB = loadB = pairsB = false;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("pairs") == 0 ) {
             pairsB = true;
             iss >> num;
@@ -852,7 +852,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     cout << "*** computing elastic solution on the periodic model" << endl;
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
-    linS->setContainers(masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBC() );
+    linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBC() );
     linS->setTimeStep(dt);
     linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);
@@ -1103,7 +1103,7 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );     //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize( m->giveNumberOfDoFs(), funcs->giveSize() );     //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -1119,14 +1119,14 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         vector< Node * >vm;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-                vm.push_back(nodes->giveNode(n) );
+                vm.push_back( nodes->giveNode(n) );
             }
         }
         if ( vm.size() > 0 ) {
             TrsDoF *tn = new TrsDoF(dim, 1);
             nodes->addNode(tn);
 
-            vector< unsigned >dirs(vm.size() );
+            vector< unsigned >dirs( vm.size() );
             va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
             constrs->addConstraint(va);
 
@@ -1160,7 +1160,7 @@ void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
 
     MechDoF *master;
     unsigned masterNodeNum = nodes->giveSize();
-    master = new MechDoF(dim, 3 * ( dim - 1 ) );
+    master = new MechDoF( dim, 3 * ( dim - 1 ) );
     nodes->addNode(master);
 
     //export data
@@ -1333,8 +1333,7 @@ void VoigtConstraint :: readFromLine(istringstream &iss, unsigned d) {
     bool volumeB, loadB;
     volumeB = loadB = false;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("load") == 0 ) {
             loadB = true;
             iss >> num;
@@ -1434,9 +1433,9 @@ void PressureFromMechanicalLoad :: apply(NodeContainer *nodes, ElementContainer 
     ( void ) solver;
     ( void ) regions;
 
-    DiscreteTrsprtCoupledMaterial *dtcm = dynamic_cast< DiscreteTrsprtCoupledMaterial * >( mats->giveMaterial(materialnum) );
+    VectTrsprtCoupledMaterial *dtcm = dynamic_cast< VectTrsprtCoupledMaterial * >( mats->giveMaterial(materialnum) );
     if ( dtcm == nullptr ) {
-        cerr << "Error in PressureFromMechanicalLoad: material is not of DiscreteTrsprtCoupledMaterial type" << endl;
+        cerr << "Error in PressureFromMechanicalLoad: material is not of VectTrsprtCoupledMaterial type" << endl;
         exit(1);
     }
     double biot = dtcm->giveBiotCoeff();
@@ -1457,7 +1456,7 @@ void PressureFromMechanicalLoad :: apply(NodeContainer *nodes, ElementContainer 
     Node *trs;
     for ( auto &p: trsprtnodes ) {
         trs = nodes->giveNode(p);
-        if ( !trs->isDoFTransport(direction) ) {
+        if ( trs->giveRelativeDoFPhysicalFieldNum(direction) != 1 ) { //physical field 1 is transport
             cerr << "Error in PressureFromMechanicalLoad: node " << p << " direction " << direction <<  " is not pressure DoF" << endl;
             exit(1);
         }
@@ -1480,70 +1479,47 @@ void PressureFromMechanicalLoad :: readFromLine(istringstream &iss, unsigned d) 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-
-void RigidPlate :: setDirectionToFix(istringstream &iss) {
-    string param;
-    unsigned num;
+void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
+    this->dim = d;
+    unsigned nslaves, nodeid, num;
     bool b;
+    string param;
+    iss >> master_id;
+
     while ( iss >> param ) {
-        if ( param.compare("dirs") == 0 ) {
+        if ( param.compare("dependent_nodes") == 0 ) {
+            iss >> nslaves;
+            for ( unsigned i = 0; i < nslaves; i++ ) {
+                iss >> nodeid;
+                slave_ids.push_back(nodeid);
+            }
+        } else if ( param.compare("inside") == 0 ) {
+            iss >> num;
+            insideRegions.resize(num);
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> insideRegions [ i ];
+            }
+        } else if ( param.compare("outside") == 0 ) {
+            iss >> num;
+            outsideRegions.resize(num);
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> outsideRegions [ i ];
+            }
+        } else if ( param.compare("dirs") == 0 ) {
             iss >> num;
             activeDirs.resize(num);
             for ( unsigned i = 0; i < num; i++ ) {
                 iss >> b;
                 activeDirs [ i ] = b;
             }
-        } else if ( param.compare("which") == 0 ) {
-            cerr << "RigidPlate error: you are using old unsupported way of specifying active directions" << endl;
-            exit(1);
         }
     }
 }
 
 //////////////////////////////////////////////////////////
-void RigidPlate :: readFromLine(istringstream &iss, unsigned d) {
-    // jointDoF jD;
-    this->dim = d;
-    unsigned nslaves, nodeid;
-    //////////////////////////////////////////////////////////
-    // read the line "masterId numSlaves slaveId1, slaveId2...."
-    iss >> master_id >> nslaves;
-
-    for ( unsigned i = 0; i < nslaves; i++ ) {
-        iss >> nodeid;
-        slave_ids.push_back(nodeid);
-    }
-
-    this->setDirectionToFix(iss);
-}
-
-//////////////////////////////////////////////////////////
-void RigidPlate :: checkMechTransport(Node *master) {
-    // in case of rigid plate, master is a virtual virtual node and not a physical particle or
-    if ( !endsWith(master->giveName(), "virtual") ) {
-        master->setName(master->giveName().append("-virtual") );
-    }
-
-    if ( dynamic_cast< MechNode * >( master ) ) {
-        if ( master->giveNumberOfDoFs() != ( 3 * ( this->dim - 1 ) ) ) {
-            cerr << "Error in " << __func__ << ": Master for RigidPlate in mechnics must have " << ( 3 * ( this->dim - 1 ) ) << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
-            exit(EXIT_FAILURE);
-        }
-        if ( activeDirs.size() == 0 ) {
-            activeDirs.resize(3 * ( this->dim - 1 ), true);
-        }
-    } else if ( dynamic_cast< TrsNode * >( master ) ) {
-        this->transport = true;
-        if ( master->giveNumberOfDoFs() != 1 ) {
-            cerr << "Error in " << __func__ << ": Master for RigidPlate in transport must have " << 1 << " DoFs, " << master->giveNumberOfDoFs() << " provided" << '\n';
-            exit(EXIT_FAILURE);
-        }
-        if ( activeDirs.size() == 0 ) {
-            activeDirs.resize(1, true);
-        }
-    } else {
-        cerr << "Error in " << __func__ << ": Master for RigidPlate is niether mechanical nor transport " << '\n';
-        exit(EXIT_FAILURE);
+void RigidPlate :: checkPhysicalField(Node *master) {
+    if ( activeDirs.size() == 0 ) {
+        activeDirs.resize(master->giveNumberOfDoFs(), true);
     }
 }
 
@@ -1554,7 +1530,6 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCContai
     ( void ) funcs;
     ( void ) ex;
     ( void ) mats;
-    ( void ) regions;
     ( void ) solver;
 
     Node *master, *slave;
@@ -1562,11 +1537,30 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCContai
     // read the line "masterId numSlaves slaveId1, slaveId2...."
     master = nodes->giveNode(master_id);
     // check if it is master node
-    this->checkMechTransport(master);
+    this->checkPhysicalField(master);
 
     for ( auto const &sl_id : slave_ids ) {
         slave = nodes->giveNode(sl_id);
-        connectSlaveMasterRigid(constrs, slave, master, this->dim, activeDirs, this->transport);
+        connectSlaveMasterRigid(constrs, slave, master, this->dim, activeDirs);
+    }
+
+    if ( insideRegions.size() > 0 ) {
+        for ( auto const &nod : * nodes ) {
+            //test for regions
+            if ( !regions->isLocationValid(nod->givePoint(), insideRegions, outsideRegions) ) {
+                continue;
+            }
+            if ( nod == master || endsWith(nod->giveName(), "virtual") ) {
+                continue;
+            }
+            if ( nod->giveNumberOfDoFs() == 0 ) {
+                continue;
+            }
+            if ( dynamic_cast< FreeDoF * >( nod ) ) {
+                continue;
+            }
+            connectSlaveMasterRigid(constrs, nod, master, this->dim, activeDirs);
+        }
     }
 }
 
@@ -1587,7 +1581,20 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
         std :: cerr << "dimension " << d << " not implemented yet" << '\n';
         exit(EXIT_FAILURE);
     }
-    RigidPlate :: setDirectionToFix(iss);
+
+    bool b;
+    unsigned num;
+    string param;
+    while (  iss >> param ) { 
+        if ( param.compare("dirs") == 0 ) {
+            iss >> num;
+            activeDirs.resize(num);
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> b;
+                activeDirs [ i ] = b;
+            }
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -1605,21 +1612,20 @@ void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
 
     master = nodes->giveNode(master_id);
     // check if it is master node
-    RigidPlate :: checkMechTransport(master);
+    RigidPlate :: checkPhysicalField(master);
 
     for ( auto const &nod : * nodes ) {
         if ( isInBlock(nod->givePoint(), leftBottom, rightTop) ) {
             if ( nod == master || endsWith(nod->giveName(), "virtual") ) {
                 continue;
             }
-            if ( transport ) {
-                if ( !dynamic_cast< TrsNode * >( nod ) || dynamic_cast< TrsDoF * >( nod ) ) {
-                    continue;
-                }
-            } else if ( !dynamic_cast< MechNode * >( nod ) || dynamic_cast< MechDoF * >( nod ) ) {
+            if ( nod->giveNumberOfDoFs() == 0 ) {
                 continue;
             }
-            connectSlaveMasterRigid(constrs, nod, master, this->dim, activeDirs, this->transport);
+            if ( dynamic_cast< FreeDoF * >( nod ) ) {
+                continue;
+            }
+            connectSlaveMasterRigid(constrs, nod, master, this->dim, activeDirs);
         }
     }
 }
@@ -1654,7 +1660,19 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
     //     // axis = Point(0, 0, 1);
     // }
 
-    RigidPlate :: setDirectionToFix(iss);
+    bool b;
+    unsigned num;
+    string param;
+    while (  iss >> param ) { 
+        if ( param.compare("dirs") == 0 ) {
+            iss >> num;
+            activeDirs.resize(num);
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> b;
+                activeDirs [ i ] = b;
+            }
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -1672,7 +1690,7 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCCo
 
     master = nodes->giveNode(master_id);
     // check if it is master node
-    RigidPlate :: checkMechTransport(master);
+    RigidPlate :: checkPhysicalField(master);
 
     Point node_point;
     int xm, ym, zm;
@@ -1697,7 +1715,7 @@ void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCCo
                 if ( nod == master ) {
                     continue;
                 }
-                connectSlaveMasterRigid(constrs, nod, master, this->dim, activeDirs, this->transport);
+                connectSlaveMasterRigid(constrs, nod, master, this->dim, activeDirs);
             }
         }
     }
@@ -1715,8 +1733,7 @@ void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
     iss.seekg(0, iss.beg); //reset position in string stream
     bool bf = false;
     string param;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("volExpFn") == 0 ) {
             iss >> this->fn_id;
             bf = true;
@@ -1743,7 +1760,7 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *elems, BCCon
 
     master = nodes->giveNode(master_id);
     // check if it is master node
-    RigidPlate :: checkMechTransport(master);
+    RigidPlate :: checkPhysicalField(master);
 
     Point node_point;
     int xm, ym, zm;
@@ -1765,7 +1782,7 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *elems, BCCon
                 if ( nod == master || !dynamic_cast< MechNode * >( nod ) || dynamic_cast< MechDoF * >( nod ) ) {
                     continue;
                 }
-                connectSlaveMasterExpansion(constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
+                connectSlaveMasterExpansion( constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
             }
         }
     }
@@ -1782,8 +1799,7 @@ void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
     iss.seekg(0, iss.beg); //reset position in string stream
     bool bf = false;
     string param;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("expansionMaster") == 0 ) {
             iss >> this->expansion_master_id;
             bf = true;
@@ -1809,7 +1825,7 @@ void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *elems
     Node *expMaster;
 
     master = nodes->giveNode(this->master_id);
-    RigidPlate :: checkMechTransport(master);
+    RigidPlate :: checkPhysicalField(master);
 
     expMaster = nodes->giveNode(this->expansion_master_id);
 
@@ -1945,10 +1961,10 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
                 } else {
                     // first node is taken as a slave
                     slave = nod;
-                    if ( * std :: max_element(n_vect.begin(), n_vect.end() ) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() ) ) ) {
-                        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+                    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
+                        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
                     } else {
-                        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+                        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
                     }
                     slave_dir_vect_value = n_vect [ slave_dir ];
                     for ( unsigned i = 0; i < this->dim; i++ ) {
@@ -1978,7 +1994,7 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
         JointDoF *newJD = new JointDoF(slave, slave_dir, masterNodes, directions, multipliers);
         for ( unsigned u = 0; u < multipliers.size(); u++ ) {
             if ( multipliers [ u ] != multipliers [ u ] ) {
-                cout << "multipliersX ERROR" << endl;
+                cout << "multipliers ERROR" << endl;
                 exit(1);
             }
         }
@@ -2001,8 +2017,7 @@ void NormalSurfaceLoad :: readFromLine(istringstream &iss, unsigned d) {
     bool bf = false;
     string param;
     unsigned num;
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("load_function") == 0 ) {
             iss >> this->fnID;
             bf = true;
@@ -2042,10 +2057,10 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
     BoundaryCondition *bc;
     vector< int >dBC, nBC;
     Point diff;
-    dBC.resize( ( dim - 1 ) * 3, -1 );
-    nBC.resize( ( dim - 1 ) * 3, fnID );
+    dBC.resize( ( dim - 1 ) * 3, -1);
+    nBC.resize( ( dim - 1 ) * 3, fnID);
     vector< double >mult;
-    mult.resize( ( dim - 1 ) * 3, 0. );
+    mult.resize( ( dim - 1 ) * 3, 0.);
     Vector normal;
     double area;
     for ( auto &el : * e ) {
@@ -2121,7 +2136,7 @@ void PBlockContainer :: init() {
 void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
     unsigned origsize = blocks.size(); //todo: warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of dat
     string line, ftype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -2202,81 +2217,72 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
 
 
 
-void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector< bool > &activeDirs, const bool transport) {
-    unsigned nDoFsPerNode;
-    if ( transport ) {
-        nDoFsPerNode = 1;
-    } else {
-        nDoFsPerNode = 3 * ( ndim - 1 );
-    }
-
-
-    if ( nDoFsPerNode != master->giveNumberOfDoFs() ) {
-        std :: cerr << "RigidPlate Error: master node with " << master->giveNumberOfDoFs() << " DoFs should have " << nDoFsPerNode << "DoFs instead" << endl;
-        exit(1);
-    }
-    if ( nDoFsPerNode != activeDirs.size() ) {
-        std :: cerr << "RigidPlate Error: active directions with " << nDoFsPerNode << " entries should have " << nDoFsPerNode << " entries instead" << endl;
-        exit(1);
-    }
+void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector< bool > &activeDirs, bool includeRigidBodyRotation) {
+    vector< unsigned >slaveDoFNuM = slave->givePhysicalFieldsDoFNum();
+    vector< unsigned >masterDoFNuM = master->givePhysicalFieldsDoFNum();
+    vector< unsigned >physInd;  // Mechanics, Transport, Thermal, Humidity
+    physInd.resize(4, 0);
 
     // calculate multipliers and construct jointDof for every slaveDof
-    vector< vector< double > >tableOfMultipliers;
     vector< Node * >masterNodes;
     vector< double >multipliers;
     vector< unsigned >directions;
 
-    tableOfMultipliers.resize(nDoFsPerNode); // first index (j) is for master dof
 
-    for ( auto &mul : tableOfMultipliers ) {
-        mul.resize(nDoFsPerNode); // second index (i) is for slave dof
-    }
-
-    for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
-            if ( i == j ) {
-                tableOfMultipliers [ j ] [ i ] = 1;
-            } else if ( i == 0 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().y() - master->givePoint().y() );
-            } else if ( i == 1 && j == nDoFsPerNode - 1 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().x() - master->givePoint().x();
-            } else if ( i == 0 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().z() - master->givePoint().z();
-            } else if ( i == 1 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = -( slave->givePoint().z() - master->givePoint().z() );
-            } else if ( i == 2 && j == 3 ) {
-                tableOfMultipliers [ j ] [ i ] = slave->givePoint().y() - master->givePoint().y();
-            } else if ( i == 2 && j == 4 ) {
-                tableOfMultipliers [ j ] [ i ] =  -( slave->givePoint().x() - master->givePoint().x() );
-            } else {
-                tableOfMultipliers [ j ] [ i ] =  0;
-            }
-        }
-    }
-    // read the table and put the information to jointDoFs
-    // NOTE this could be done in the previous loop
-    for ( unsigned i = 0; i < nDoFsPerNode; i++ ) {
-        // for transport nodes, only ones are in tableOfMultipliers
-        if ( !activeDirs [ i ] ) {
-            continue;
-        }
-        //if (i==1 || i==2) continue;
-        for ( unsigned j = 0; j < nDoFsPerNode; j++ ) {
-            if ( tableOfMultipliers [ j ] [ i ] != 0 ) {
+    unsigned kmaster = 0;
+    unsigned kslave = 0;
+    unsigned kslavelast = 0;
+    unsigned stop = 0;
+    for ( unsigned i = 0; i < masterDoFNuM.size(); i++ ) {
+        kslave = kslavelast;
+        kmaster = stop;
+        stop += masterDoFNuM [ i ];
+        kslavelast += slaveDoFNuM [ i ];
+        for ( ; kmaster < stop && kslave < kslavelast; kmaster++, kslave++ ) {
+            if ( activeDirs [ kmaster ] ) {
                 masterNodes.push_back(master);
-                multipliers.push_back(tableOfMultipliers [ j ] [ i ]);
-                directions.push_back(j);
+                directions.push_back(kmaster);
+                multipliers.push_back(1);
+                //rigid body rotation
+                if ( i == 0 && includeRigidBodyRotation && masterDoFNuM [ 0 ] == 3 * ( ndim - 1 ) && kslave < ndim ) {
+                    if ( ndim == 2 ) {
+                        masterNodes.push_back(master);
+                        directions.push_back(2);
+                        if ( kslave == 0 ) {
+                            multipliers.push_back( ( slave->givePoint().y() - master->givePoint().y() ) );
+                        } else  {
+                            multipliers.push_back( -( slave->givePoint().x() - master->givePoint().x() ) );
+                        }
+                    } else if ( ndim == 3 )        {
+                        masterNodes.push_back(master);
+                        masterNodes.push_back(master);
+                        if ( kslave == 0 ) {
+                            directions.push_back(4);
+                            multipliers.push_back( ( slave->givePoint().z() - master->givePoint().z() ) );
+                            directions.push_back(5);
+                            multipliers.push_back( -( slave->givePoint().y() - master->givePoint().y() ) );
+                        } else if ( kslave == 1 )       {
+                            directions.push_back(3);
+                            multipliers.push_back( -( slave->givePoint().z() - master->givePoint().z() ) );
+                            directions.push_back(5);
+                            multipliers.push_back( ( slave->givePoint().x() - master->givePoint().x() ) );
+                        } else  {
+                            directions.push_back(3);
+                            multipliers.push_back( ( slave->givePoint().y() - master->givePoint().y() ) );
+                            directions.push_back(4);
+                            multipliers.push_back( -( slave->givePoint().x() - master->givePoint().x() ) );
+                        }
+                    }
+                }
+                JointDoF *newJD = new JointDoF(slave, kslave, masterNodes, directions, multipliers);
+                constrs->addConstraint(newJD);
+                masterNodes.clear();
+                multipliers.clear();
+                directions.clear();
             }
         }
-        JointDoF *newJD = new JointDoF(slave, i, masterNodes, directions, multipliers);
-        constrs->addConstraint(newJD);
-        masterNodes.clear();
-        multipliers.clear();
-        directions.clear();
     }
 }
-
-
 
 void connectSlaveMasterExpansionFLoad(ConstraintContainer *constrs, Node *slave, Node *master, Node *expMaster, unsigned const &ndim) {
     if ( !dynamic_cast< Particle * >( slave ) ) {
@@ -2304,10 +2310,10 @@ void connectSlaveMasterExpansionFLoad(ConstraintContainer *constrs, Node *slave,
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir;
-    if ( * std :: max_element(n_vect.begin(), n_vect.end() ) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() ) ) ) {
-        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
+        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
     } else {
-        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
     }
 
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -2383,10 +2389,10 @@ void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir;
-    if ( * std :: max_element(n_vect.begin(), n_vect.end() ) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() ) ) ) {
-        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
+    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
+        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
     } else {
-        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
+        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
     }
 
     for ( unsigned i = 0; i < ndim; i++ ) {

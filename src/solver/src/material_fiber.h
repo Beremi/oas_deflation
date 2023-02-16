@@ -1,13 +1,13 @@
 #ifndef _MATERIAL_FIBER_H
 #define _MATERIAL_FIBER_H
 
-#include "material.h"
+#include "material_tensorial.h"
 
 //////////////////////////////////////////////////////////
 // MATERIAL FIBER
 
 class FiberMaterial;
-class FiberMaterialStatus : public ElasticMechMaterialStatus
+class FiberMaterialStatus : public TensMechMaterialStatus
 {
 private:
     Vector crackOpeningVector;
@@ -38,20 +38,20 @@ public:
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void setParameterValue(std :: string code, double value);
 };
 
 
-class FiberMaterial : public ElasticMechMaterial
+class FiberMaterial : public TensMechMaterial
 {
 private:
     double Ef, Gd, tau0, betaf, ft, Ksn, Ksp, Krup;
 public:
-    FiberMaterial(); //{ name = "fiber material"; };
+    FiberMaterial(unsigned dimension);
     virtual ~FiberMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -63,7 +63,7 @@ public:
     double giveKsn() { return Ksn; }
     double giveKsp() { return Ksp; }
     double giveKrup() { return Krup; }
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
 };
 
 double bridgingForce_bonded(double v, double df, double Ef, double tau0, double Gd);

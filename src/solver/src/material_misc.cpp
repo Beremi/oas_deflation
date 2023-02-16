@@ -3,18 +3,19 @@
 
 using namespace std;
 
-BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+BrittleMaterialStatus :: BrittleMaterialStatus(BrittleMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "BRITTLE mat. status";
     RAND_H = 1.0;
 }
 
 //////////////////////////////////////////////////////////
-void BrittleMaterialStatus :: giveValues(string code, Vector &result) const {
+bool BrittleMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_damage;
+        return true;
     } else {
-        DisMechMaterialStatus :: giveValues(code, result);
+        return VectMechMaterialStatus :: giveValues(code, result);
     }
 }
 
@@ -60,15 +61,15 @@ void BrittleMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type) const {
+    Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
         if ( temp_normal_strain > 0 ) {
             stiff(0, 0) *= ( temp_damage ? 1e-10 : 1 );
         }
-        for ( size_t i = 1; i < dim; i++ ) {
+        for ( size_t i = 1; i < mat->giveDimension(); i++ ) {
             stiff(i, i) *= ( temp_damage ? 1e-10 : 1 );
         }
         return stiff;
@@ -82,10 +83,10 @@ Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     computeDamage(strain);
     if ( damage ) {
-        Matrix stiff = giveStiffnessTensor("secant", strain.size() );
+        Matrix stiff = giveStiffnessTensor("secant");
         return stiff * strain;
     } else {
-        return DisMechMaterialStatus :: giveStress(strain, timeStep);
+        return VectMechMaterialStatus :: giveStress(strain, timeStep);
     }
 }
 
@@ -102,7 +103,7 @@ Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
 
 //////////////////////////////////////////////////////////
 void BrittleMaterial :: readFromLine(istringstream &iss) {
-    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+    VectMechMaterial :: readFromLine(iss); //read elastic parameters
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -113,8 +114,7 @@ void BrittleMaterial :: readFromLine(istringstream &iss) {
     bool bft;
     bft = false;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("ft") == 0 ) {
             bft = true;
             iss >> ft;
@@ -137,7 +137,8 @@ MaterialStatus *BrittleMaterial :: giveNewMaterialStatus(Element *e, unsigned ip
 
 
 //////////////////////////////////////////////////////////
-void BrittleMaterial :: init() {
+void BrittleMaterial :: init(MaterialContainer *matcont) {
+    VectMechMaterial :: init(matcont);
     // if variables not specified on the input, use default multipliers
     fs = ( fs == 0 ) ? 3 * ft : fs;
 };
@@ -147,7 +148,7 @@ void BrittleMaterial :: init() {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-ContactMaterialStatus :: ContactMaterialStatus(ContactMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+ContactMaterialStatus :: ContactMaterialStatus(ContactMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "CONTACT mat. status";
 }
 
@@ -167,8 +168,8 @@ void ContactMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
-Matrix ContactMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
-    Matrix stiff = DisMechMaterialStatus :: giveStiffnessTensor(type, dim);
+Matrix ContactMaterialStatus :: giveStiffnessTensor(string type) const {
+    Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type);
     if ( type.compare("elastic") == 0 ) {
         return stiff;
         // this is unfortunately wrong, cannot be done this way, shear stress will change in abruptly
@@ -187,7 +188,7 @@ Matrix ContactMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) c
 Vector ContactMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_normal_strain = strain [ 0 ];
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
     if ( temp_normal_strain < 0 ) {
         ContactMaterial *m = static_cast< ContactMaterial * >( mat );
         stress [ 0 ] = strain [ 0 ] * m->giveE0();
@@ -212,7 +213,7 @@ Vector ContactMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain
 
 //////////////////////////////////////////////////////////
 void ContactMaterial :: readFromLine(istringstream &iss) {
-    DisMechMaterial :: readFromLine(iss); //read elastic parameters
+    VectMechMaterial :: readFromLine(iss); //read elastic parameters
 
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
@@ -221,8 +222,7 @@ void ContactMaterial :: readFromLine(istringstream &iss) {
 
     string param;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("friction_coef") == 0 ) {
             iss >> friction_coef;
         }
@@ -237,6 +237,7 @@ MaterialStatus *ContactMaterial :: giveNewMaterialStatus(Element *e, unsigned ip
 
 
 //////////////////////////////////////////////////////////
-void ContactMaterial :: init() {
+void ContactMaterial :: init(MaterialContainer *matcont) {
+    VectMechMaterial :: init(matcont);
     // if variables not specified on the input, use default multipliers
 }

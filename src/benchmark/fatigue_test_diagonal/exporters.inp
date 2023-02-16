@@ -1,9 +1,0 @@
-TXTNodalExporter translations 2 ux uy
-TXTNodalExporter pressure 1 pressure
-TXTGaussPointExporter damage 6 x y damage cumSlip slip EAlg
-DisplacementGauge LD elong_mid ux 0.5e0 0.7e0 1.5e0 0.7e0
-DisplacementGauge LD displ_vert uy 1.0e0 1.26e0 1.0e0 0.14e0
-## ForceGauge file_name gauge_name which_force how_many node_ids
-ForceGauge LD loadY fy 1 2
-## export VTK file
-VTKElementExporter elems 0

@@ -8,7 +8,7 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // FIBER MATERIAL STATUS
 
-FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum) : ElasticMechMaterialStatus(m, e, ipnum) {
+FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum) : TensMechMaterialStatus(m, e, ipnum) {
     name = "fiber mat. status";
     crack_opening = 0;
     temp_crack_opening = 0;
@@ -25,8 +25,8 @@ FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigne
 }
 
 //////////////////////////////////////////////////////////
-void FiberMaterialStatus :: giveValues(string code, Vector &result) const {
-    ElasticMechMaterialStatus :: giveValues(code, result);
+bool FiberMaterialStatus :: giveValues(string code, Vector &result) const {
+    return TensMechMaterialStatus :: giveValues(code, result);
 }
 
 //////////////////////////////////////////////////////////
@@ -36,8 +36,8 @@ void FiberMaterialStatus :: init() {
     contactLength = mechElement->giveLength();
     contactNormal = mechElement->giveNormal();
 
-    temp_stress = Vector :: Zero( contactNormal.size() );
-    crackOpeningVector = Vector :: Zero( contactNormal.size() );
+    temp_stress = Vector :: Zero(contactNormal.size() );
+    crackOpeningVector = Vector :: Zero(contactNormal.size() );
 
     FiberMaterial *fibermat = static_cast< FiberMaterial * >( mat );
     double Ef = fibermat->giveEf();
@@ -54,8 +54,8 @@ void FiberMaterialStatus :: init() {
 
     right_F0 = M_PI * df * tau0 * rightLe;
     left_F0 = M_PI * df * tau0 * leftLe;
-    limit_rightPullout = 2. * tau0 * pow(rightLe, 2) / ( Ef * df ) + sqrt(8. * Gd * pow(rightLe, 2) / ( Ef * df ) );
-    limit_leftPullout = 2. * tau0 * pow(leftLe, 2) / ( Ef * df ) + sqrt(8. * Gd * pow(leftLe, 2) / ( Ef * df ) );
+    limit_rightPullout = 2. * tau0 * pow(rightLe, 2) / ( Ef * df ) + sqrt( 8. * Gd * pow(rightLe, 2) / ( Ef * df ) );
+    limit_leftPullout = 2. * tau0 * pow(leftLe, 2) / ( Ef * df ) + sqrt( 8. * Gd * pow(leftLe, 2) / ( Ef * df ) );
 }
 
 //////////////////////////////////////////////////////////
@@ -75,10 +75,10 @@ void FiberMaterialStatus :: resetTemporaryVariables() {
 
 //////////////////////////////////////////////////////////
 double bridgingForce_bonded(double v, double df, double Ef, double tau0, double Gd) {
-    return sqrt(0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd ) );
+    return sqrt( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd ) );
 }
 double derivF_bonded(double v, double df, double Ef, double tau0, double Gd) {
-    return 0.5 / sqrt(0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd ) ) * ( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * tau0 );
+    return 0.5 / sqrt( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd ) ) * ( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * tau0 );
 }
 double bridgingForce_debonded(double v, double vd, double Le, double F0, double df, double betaf) {
     return F0 * ( 1 - ( v - vd ) / Le ) * ( 1 +  betaf * ( v - vd ) / df );
@@ -94,11 +94,11 @@ double derivF_unloading(double deltaX, double deltaY) {
 }
 
 //////////////////////////////////////////////////////////
-Matrix FiberMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
-    ( void ) dim;
 
-    Matrix stiffness = Matrix :: Zero(dim, dim);
+    unsigned ss = mat->giveStrainSize();
+    Matrix stiffness = Matrix :: Zero(ss, ss);
 
     if ( temp_rightPullout > 0 and temp_leftPullout > 0 ) {
         double alpha1, alpha2;
@@ -182,7 +182,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
                 bridgingForce1 = bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf);
                 bridgingForce2 = bridgingForce_unloading(vd1, bridgingForce_bonded(vd1, df, Ef, tau0, Gd), v2);
                 if ( abs(bridgingForce1 - bridgingForce2) > tolerance ) {
-                    v1 = v1 - ( bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf) - bridgingForce_unloading(vd1, bridgingForce_bonded(vd1, df, Ef, tau0, Gd), temp_crack_opening - v1) ) / ( derivF_debonded(v1, vd1, Le1, F01, df, betaf) + derivF_unloading(vd1, bridgingForce_bonded(vd1, df, Ef, tau0, Gd) ) );
+                    v1 = v1 - ( bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf) - bridgingForce_unloading(vd1, bridgingForce_bonded(vd1, df, Ef, tau0, Gd), temp_crack_opening - v1) ) / ( derivF_debonded(v1, vd1, Le1, F01, df, betaf) + derivF_unloading( vd1, bridgingForce_bonded(vd1, df, Ef, tau0, Gd) ) );
                     v2 = temp_crack_opening - v1;
                 } else if ( abs(bridgingForce1 - bridgingForce2) <= tolerance ) {
                     temp_bridgingForce = bridgingForce1;
@@ -293,7 +293,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
 
     // FINAL STRESS VECTOR
     if ( temp_crack_opening == 0 ) {
-        temp_stress = Vector :: Zero( strain.size() );
+        temp_stress = Vector :: Zero(strain.size() );
     } else {
         Vector w = crackOpeningVector / temp_crack_opening; // tohle vyjmout do microeffectu a pridat prispevok spalling length sf
         temp_stress = temp_bridgingForce * w;
@@ -308,11 +308,10 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
 Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) strain;
     ( void ) timeStep;
-    double dim = strain.size();
 
     temp_crack_opening = strain.norm() * contactLength;
 
-    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic", dim) * temp_crack_opening;
+    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic") * temp_crack_opening;
 
     //cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
     cout.flush();
@@ -331,7 +330,7 @@ void FiberMaterialStatus :: setParameterValue(string code, double value) {
 //////////////////////////////////////////////////////////
 // FIBER MATERIAL
 
-FiberMaterial :: FiberMaterial() {
+FiberMaterial :: FiberMaterial(unsigned dimension) : TensMechMaterial(dimension) {
     name = "fiber material";
     // if variables not specified on the input, use default multipliers
     Ef = Gd = tau0 = betaf = ft = Ksn = Ksp = Krup = 0;
@@ -351,8 +350,7 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     bool bft, bGd, btau0, bbetaf, bEf, bKsn, bKsp, bKrup;
     bft = bGd = btau0 = bbetaf = bEf = bKsn = bKsp = bKrup = false;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("Ef") == 0 ) {
             bEf = true;
             iss >> Ef;
@@ -428,4 +426,6 @@ MaterialStatus *FiberMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnu
 };
 
 //////////////////////////////////////////////////////////
-void FiberMaterial :: init() {};
+void FiberMaterial :: init(MaterialContainer *matcont) {
+    TensMechMaterial :: init(matcont);
+}

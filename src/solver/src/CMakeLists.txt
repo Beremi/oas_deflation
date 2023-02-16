@@ -13,16 +13,17 @@ set (solver_files
     geometry.cpp
     globals.cpp
     linalg.cpp
-    #linear_algebra.cpp
-    #main.cpp
     material_container.cpp
     material_coulomb_friction.cpp
     material.cpp
+    material_vectorial.cpp
     material_fiber.cpp
     material_misc.cpp
     material_slide_3_2.cpp
     material_rve.cpp
     material_csl.cpp
+    material_tensorial.cpp
+    material_thermomechanical.cpp
     material_ldpm.cpp
     material_fatigue.cpp
     node_container.cpp

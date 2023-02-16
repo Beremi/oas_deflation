@@ -1,8 +1,0 @@
-# nodeIdx	KinTrX	KinTrY	KinRotZ	StTrX	StTrY	StRotZ
-NodalBC	0	0	0	0	-1	-1	-1
-NodalBC	1	0	0	0	-1	-1	-1
-NodalBC	2	0	0	0	-1	-1	-1
-NodalBC	3	0	0	0	-1	-1	-1
-NodalBC	4	0	0	0	-1	-1	-1
-NodalBC	5	0	0	0	-1	-1	-1
-NodalBC	6	-1	-1	-1	0	1	0

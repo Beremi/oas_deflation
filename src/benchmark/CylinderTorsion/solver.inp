@@ -1,6 +1,0 @@
-SteadyStateNonLinearSolver
-time_step 1e-2
-min_time_step 1e-05
-total_time 101
-tolerance 1e-5
-maxIt 200

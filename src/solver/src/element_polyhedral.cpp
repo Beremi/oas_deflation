@@ -1,4 +1,5 @@
 #include "element_polyhedral.h"
+#include "material_tensorial.h"
 
 using namespace std;
 
@@ -7,14 +8,14 @@ using namespace std;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // TRANSPORT POLYHEDRAL ELEMENT
-TranspPolygonal :: TranspPolygonal(const unsigned dim) {
-    ndim = dim;
+TranspPolygonal :: TranspPolygonal(const unsigned dim) : Element(dim) {
     name = "TranspPolygonal";
     ip_type = "quad";
     numOfNodes = 0;
     vtk_cell_type = 7;
     shafunc = new Wachspress2DShapeF();
     inttype = new IntegrPolygon(ip_type);
+    physicalFields [ 1 ] = true; //transport
 }
 
 //////////////////////////////////////////////////////////
@@ -45,11 +46,11 @@ void TranspPolygonal :: prepareGeometry() {
     angles.resize(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         angles [ i ].second = i;
-        angles [ i ].first = atan2(nodes [ i ]->givePoint().y() - cpoint.y(), nodes [ i ]->givePoint().x() - cpoint.x() );
+        angles [ i ].first = atan2( nodes [ i ]->givePoint().y() - cpoint.y(), nodes [ i ]->givePoint().x() - cpoint.x() );
     }
 
     //sort to have counterclockwise direction
-    sort(angles.begin(), angles.end() );
+    sort( angles.begin(), angles.end() );
     vector< Node * >newnodes;
     newnodes.resize(numOfNodes);
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
@@ -97,7 +98,7 @@ void TranspPolygonal :: initIntegration() {
 
 //////////////////////////////////////////////////////////
 void TranspPolygonal :: setIntegrationPointsAndWeights() {
-    stats.resize(inttype->giveNumIP() );
+    stats.resize( inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
     }
@@ -113,10 +114,10 @@ void TranspPolygonal :: init() {
             exit(1);
         }
     }
-    //check that material is DisMechMat
-    TrsprtMaterial *p = dynamic_cast< TrsprtMaterial * >( mat );
+    //check that material is VectMechMat
+    TensTrsprtMaterial *p = dynamic_cast< TensTrsprtMaterial * >( mat );
     if ( !p ) {
-        cerr << "Error in " << name << ": material must be inherited from TrsprtMaterial, " << mat->giveName() << " provided" << endl;
+        cerr << "Error in " << name << ": material must be inherited from TensTrsprtMaterial, " << mat->giveName() << " provided" << endl;
         exit(1);
     }
 
@@ -125,7 +126,7 @@ void TranspPolygonal :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix TranspPolygonal :: giveBMatrix(const Point *x) const {
-    Matrix B = Matrix :: Zero(ndim, nodes.size() );
+    Matrix B = Matrix :: Zero( ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, B);
     return B;
 }
@@ -225,7 +226,7 @@ void TranspVirtPolygonal :: setIntegrationPointsAndWeights() {
         for ( v = 0; v < ndim; v++ ) {
             m [ v + 1 ] = ( inttype->giveIPLocation(i)(v) - centroid(v) ) / radius;
         }
-        H += dyadicProduct( m, m * inttype->giveIPWeight(i) );
+        H += dyadicProduct(m, m * inttype->giveIPWeight(i) );
     }
 
     double Hdet = H(0, 0) * H(1, 1) * H(2, 2) + H(0, 2) * H(1, 0) * H(2, 1) + H(2, 0) * H(0, 1) * H(1, 2) - H(0, 0) * H(2, 1) * H(1, 2) - H(0, 1) * H(1, 0) * H(2, 2) - H(0, 2) * H(1, 1) * H(2, 0);
@@ -255,7 +256,7 @@ Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
     Matrix C = TranspPolygonal :: giveStiffnessMatrix(matrixType);
     double cond = 0;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        cond += inttype->giveIPWeight(i) * stats [ i ]->giveStiffnessTensor("elastic", ndim)(0, 0);
+        cond += inttype->giveIPWeight(i) * stats [ i ]->giveStiffnessTensor("elastic")(0, 0);
     }
     cond /= volume;
 

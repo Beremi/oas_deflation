@@ -1,13 +1,13 @@
 #ifndef _LDPM_MATERIAL_H
 #define _LDPM_MATERIAL_H
 
-#include "material.h"
+#include "material_vectorial.h"
 
 //////////////////////////////////////////////////////////
 // LDPM MATERIAL 2011
 
 class LDPMMaterial;
-class LDPMMaterialStatus : public DisMechMaterialStatus
+class LDPMMaterialStatus : public VectMechMaterialStatus
 {
 private:
     double maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
@@ -30,12 +30,12 @@ public:
     LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     virtual ~LDPMMaterialStatus() {};
     virtual void init();
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual std :: string giveLineToSave() const;
     virtual void setParameterValue(std :: string code, double value);
     virtual void readFromLine(std :: istringstream &iss);
@@ -44,7 +44,7 @@ public:
 };
 
 
-class LDPMMaterial : public DisMechMaterial
+class LDPMMaterial : public VectMechMaterial
 {
 private:
     double ft, Gt;
@@ -54,9 +54,9 @@ private:
     double damage_residuum;
     double stress_residuum_fraction = 0.0;
 public:
-    LDPMMaterial() { name = "LDPM material"; };
+    LDPMMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "LDPM material"; };
     virtual ~LDPMMaterial() {};
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
