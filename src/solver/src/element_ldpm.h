@@ -31,7 +31,7 @@ public:
     LDPMTetra(unsigned ndim);
     ~LDPMTetra() {};
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    void init();
+    virtual void init();
     virtual Matrix giveBMatrix(unsigned k) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     double giveLength(unsigned i) const { return lengths [ i ]; }

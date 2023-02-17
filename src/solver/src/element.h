@@ -74,7 +74,7 @@ public:
     size_t giveNumOfNodes() const { return nodes.size(); }
     Material *giveMaterial() const { return mat; }
     std :: vector< MaterialStatus * >giveMaterialStats() const { return stats; };
-    MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
+    MaterialStatus *giveMatStatus(unsigned ipnum);
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
     virtual Matrix giveBMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); }; //at arbitrary point
