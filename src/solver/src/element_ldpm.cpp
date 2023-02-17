@@ -9,6 +9,8 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
 LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
+    cout << "LDPMTetra :: LDPMTetra(unsigned dim)" << endl; cout.flush();
+
     if ( ndim != 3 ) {
         cerr << "LDPMTetra implemented only in 3D" << endl;
         exit(1);
@@ -27,13 +29,16 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     normals.resize(12);
     R.resize(12);
 
-    nodecodes = { 0, 1, 0, 1, 0, 2, 0, 2, 0, 3, 0, 3, 1, 2, 1, 2, 1, 3, 1, 3, 2, 3, 2, 3 };
-    vertcodes = { 0, 6, 7, 0, 6, 1, 1, 8, 2, 7, 8, 2, 3, 6, 9, 3, 7, 4, 4, 9, 9, 5, 5, 8 };
+    // nodecodes = { 0, 1, 0, 1, 0, 2, 0, 2, 0, 3, 0, 3, 1, 2, 1, 2, 1, 3, 1, 3, 2, 3, 2, 3 };
+    // vertcodes = { 0, 6, 7, 0, 6, 1, 1, 8, 2, 7, 8, 2, 3, 6, 9, 3, 7, 4, 4, 9, 9, 5, 5, 8 };
+    nodecodes = { 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 2, 3, 0, 1, 0, 3, 1, 3, 0, 1, 0, 2, 1, 2};
+    vertcodes = { 1, 2, 1, 3, 1, 4, 5, 6, 5, 7, 5, 4, 8, 9, 8, 7, 8, 3, 10, 9, 10, 6, 10, 2};
 }
 
 
 /////////////////////////////////////////////////////////
 void LDPMTetra :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+    cout << "LDPMTetra :: readFromLine" << endl; cout.flush();
     unsigned num;
     for ( unsigned i = 0; i < 4; i++ ) {
         iss >> num;
@@ -117,7 +122,7 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
 //////////////////////////////////////////////////////////
 void LDPMTetra :: init() {
     Element :: init(); //calling base class method;
-
+    cout << "LDPMTetra :: init()" << endl; cout.flush();
     checkNodeType();
 
     //check that material is VectMechMat
@@ -131,6 +136,7 @@ void LDPMTetra :: init() {
 //////////////////////////////////////////////////////////
 
 Matrix LDPMTetra :: giveBMatrix(unsigned k) const {
+    cout << "LDPMTetra :: giveBMatrix" << endl; cout.flush();
     unsigned nA = nodecodes [ 2 * k ];
     unsigned nB = nodecodes [ 2 * k + 1 ];
     Matrix B = Matrix :: Zero(3, 24);
@@ -138,6 +144,7 @@ Matrix LDPMTetra :: giveBMatrix(unsigned k) const {
     Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
     a = static_cast< Particle * >( nodes [ nB ] );
     Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
+
     for ( unsigned i = 0; i < 3; i++ ) {
         for ( unsigned j = 0; j < 6; j++ ) {
             B(i, nA * 6 + j) = -Aa(i, j);
@@ -149,12 +156,14 @@ Matrix LDPMTetra :: giveBMatrix(unsigned k) const {
 
 //////////////////////////////////////////////////////////
 Matrix LDPMTetra :: giveHMatrix(const Point *x) const {
+    cout << "LDPMTetra :: giveHMatrix" << endl; cout.flush();
     ( void ) x;
     return Matrix :: Zero(3, 24);  // NOTE JK: this should be based on ndim
 }
 
 //////////////////////////////////////////////////////////
 Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {
+    cout << "LDPMTetra :: giveStrain" << endl; cout.flush();
     //compute volumetric strain
     if ( i == 0 ) {
         volumetricStrain = 0;
@@ -167,48 +176,59 @@ Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 Matrix LDPMTetra :: giveStiffnessMatrix(string matrixType) const {
+    cout << "LDPMTetra :: giveStiffnessMatrix" << endl; cout.flush();
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
 }
 
 //////////////////////////////////////////////////////////
 
 Matrix LDPMTetra :: giveDampingMatrix() const {
+    cout << "LDPMTetra :: giveDampingMatrix" << endl; cout.flush();
     return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
 }
 
 //////////////////////////////////////////////////////////
 Vector LDPMTetra :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
+    cout << "LDPMTetra :: giveInternalForces" << endl; cout.flush();
     return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
 }
 
 //////////////////////////////////////////////////////////
 Vector LDPMTetra :: integrateLoad(BodyLoad *vl, double time) const {
+    cout << "LDPMTetra :: integrateLoad" << endl; cout.flush();
     return Element :: integrateLoad(vl, time) / ndim;
 }
 
 //////////////////////////////////////////////////////////
 Vector LDPMTetra :: integrateInternalSources() {
+    cout << "LDPMTetra :: integrateInternalSources" << endl; cout.flush();
     return Element :: integrateInternalSources() / ndim;
 }
 
 //////////////////////////////////////////////////////////
 Matrix LDPMTetra :: giveMassMatrix() const {
+    cout << "LDPMTetra :: giveMassMatrix" << endl; cout.flush();
     Matrix M = Matrix :: Zero(24, 24);
     return M;
 }
 
 //////////////////////////////////////////////////////////
 vector< unsigned >LDPMTetra :: giveFacetVertCodes(unsigned k) const {
+    cout << "LDPMTetra :: giveFacetVertCodes" << endl; cout.flush();
     vector< unsigned >v;
     v.resize(3);
-    v [ 0 ] = vertcodes [ 2 * k ];
-    v [ 1 ] = vertcodes [ 2 * k + 1 ];
-    v [ 2 ] = 10;
+    // v [ 0 ] = vertcodes [ 2 * k ];
+    // v [ 1 ] = vertcodes [ 2 * k + 1 ];
+    // v [ 2 ] = 10;
+    v [ 0 ] = 0;
+    v [ 1 ] = vertcodes [ 2 * k ];
+    v [ 2 ] = vertcodes [ 2 * k + 1 ];
     return v;
 }
 
 //////////////////////////////////////////////////////////
 vector< unsigned >LDPMTetra :: giveFacetNodeCodes(unsigned k) const {
+    cout << "LDPMTetra :: giveFacetNodeCodes" << endl; cout.flush();
     vector< unsigned >v;
     v.resize(2);
     v [ 0 ] = nodecodes [ 2 * k ];
