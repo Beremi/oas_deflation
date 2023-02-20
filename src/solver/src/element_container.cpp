@@ -173,6 +173,13 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     }
 }
 
+//////////////////////////////////////////////////////////
+Element * ElementContainer :: giveElement(unsigned const num) const {
+    if (num<elems.size())  return elems [ num ]; 
+    cerr << "ElementContainer Error: requested element no. " << num << " but only " << elems.size() << " exist" << endl;
+    exit(1);
+}
+
 
 //////////////////////////////////////////////////////////
 // void ElementContainer ::  saveToFile(const string &filepath, std :: vector< unsigned > &elems_to_save) const {

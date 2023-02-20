@@ -128,6 +128,10 @@ void Element :: resetMaterialStatuses() {
 
 //////////////////////////////////////////////////////////
 void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result) const {
+    if ( ipnum >= inttype->giveNumIP() ) {
+        std :: cerr << name <<  " Error: intergration point number " << ipnum << " exceeds number of integration points" << std :: endl;
+        exit(1);
+    }
     if ( code.compare("x") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->x();
@@ -137,14 +141,19 @@ void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result)
     } else if ( code.compare("z") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->z();
-    } else {
-        if ( ipnum >= inttype->giveNumIP() ) {
-            std :: cerr << "Error in giveIPValues: ipnum " << ipnum << " excceds number of integration points " << std :: endl;
-            exit(1);
-        }
+    } else {        
         stats [ ipnum ]->giveValues(code, result);
     }
 };
+
+//////////////////////////////////////////////////////////
+MaterialStatus * Element :: giveMatStatus(unsigned ipnum){
+    if ( ipnum >= inttype->giveNumIP() ) {
+        std :: cerr << name <<  " Error: intergration point number " << ipnum << " exceeds number of integration points" << std :: endl;
+        exit(1);
+    }        
+    return stats[ipnum];
+}
 
 //////////////////////////////////////////////////////////
 void Element :: giveValues(std :: string code, Vector &result) const {

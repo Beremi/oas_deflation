@@ -613,8 +613,8 @@ void IntegrationPointGauge :: init() {
     Element *ee;
     maxsize [ 0 ] = 0;
     for ( unsigned e = 0; e < elems.size(); e++ ) {
-        ee = elemcont->giveElement(e);
-        ee->giveIPValues(codes [ 0 ], e, res);
+        ee = elemcont->giveElement(elems[e]);
+        ee->giveIPValues(codes [ 0 ], ipnums[e], res);
         maxsize [ 0 ] = max< size_t >( maxsize [ 0 ], res.size() );
     }
 }
@@ -638,7 +638,7 @@ void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, co
         outputfile.precision(precision);
         for ( unsigned i = 0; i < elems.size(); i++ ) {
             e = elemcont->giveElement(elems [ i ]);
-            e->giveIPValues(codes [ 0 ], i, res);
+            e->giveIPValues(codes [ 0 ], ipnums [ i ], res);
             for ( unsigned p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
                 sum [ p ] += res [ p ];
             }
