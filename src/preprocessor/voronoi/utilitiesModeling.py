@@ -5663,9 +5663,6 @@ def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
     node_coords[XBYB] + np.array([-maxLim[0], -maxLim[1]])
     ))
 
-    #masters = np.hstack(( masters,XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))
-    radii = np.hstack(( radii, radii[np.hstack((XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))]))
-
     """
     nNds = np.asarray(nNds)
     if SHOW_PLOT:

@@ -1114,7 +1114,10 @@ def randPointInSpherePolar(center, radius):
         point_polar[1] = rradius
         point_cart = polarToCart(point_polar)
     else:   # 3D case
-        center_polar[1] = np.arctan((np.sqrt(center[0],2) + np.power(center[1],2))/center[2])
+        if abs(center[2]) < 1e-5:
+            center_polar[1] = 0
+        else:
+            center_polar[1] = np.arctan(np.sqrt(np.power(center[0],2) + np.power(center[1],2))/center[2])
         center_polar[2] = np.sqrt(np.power(center[0],2) + np.power(center[1],2) + np.power(center[2],2))
         angle2 = np.random.uniform() * np.pi
         point_polar[0] = angle1
