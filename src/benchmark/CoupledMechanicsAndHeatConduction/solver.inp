@@ -1,0 +1,10 @@
+SteadyStateNonLinearSolver
+time_step	5.000000e-04
+total_time	5.000000e-04
+limit_tolerance	1.000000e+00
+maxIt	60
+tolerance	1.000000e-05
+stiffness_matrix_update	0
+conj_grad_precision 1e-8
+conj_grad_relative_maxit 10
+stiffness_matrix_update 1000

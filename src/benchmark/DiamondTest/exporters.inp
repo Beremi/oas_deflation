@@ -1,8 +1,0 @@
-TXTNodalExporter translations 2 ux uy
-TXTNodalExporter pressure 1 pressure
-ForceGauge LD loadY fx 1 0
-ForceGauge LD loadY fy 1 0
-ForceGauge LD loadY fz 1 0
-## export VTK file
-VTKElementExporter elems 0
-TXTElementExporter energy 3 total_energy strain_energy dissipated_energy

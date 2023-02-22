@@ -93,8 +93,7 @@ class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 protected:
     unsigned it, restarts; //number of iterations, number of restarts
     double dtmax, dtmin;  // for adaptive step
-    double W_ext_oldM, W_int_oldM, W_extM, W_intM, W_kinM; //mechanics
-    double W_ext_oldT, W_int_oldT, W_extT, W_intT, W_kinT; //transport
+    Vector W_ext_old, W_int_old, W_ext, W_int, W_kin, EPS2;
     double disErr, resErr, eneErr;
     double maxDisErr, maxResErr, maxEneErr;
     double limitDisErr, limitResErr, limitEneErr;

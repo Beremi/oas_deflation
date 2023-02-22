@@ -21,9 +21,7 @@ private:
     unsigned totalDoFs, freeDoFs, constrDoFs;
     BCContainer *BC;
 
-    std :: vector< bool >mechDoFs, transpDoFs; //tells if the DoF is mechanical or Transport
-
-    // #constraint
+    std :: vector< unsigned >physicalFieldsDoF;  //tells which physical field is involved
     std :: vector< unsigned >constrainedDoFid;  //mapping from particle order to DoF order for constrained DoFs
     ConstraintContainer *constr;
 
@@ -44,6 +42,7 @@ public:
     unsigned giveTotalNumDoFs() const { return totalDoFs; };
     unsigned giveNumFreeDoFs() const { return freeDoFs; };
     unsigned giveNumConstrDoFs() const { return constrDoFs; };
+    std :: vector< unsigned >givePhysicalFieldsOfDoFs() const { return physicalFieldsDoF; };
     void init();
     void clear();
     void addRHS_nodalLoad(Vector &f, double time) const;
@@ -58,8 +57,6 @@ public:
     Node *findClosestTransportNode(const Point A, double *distance) const;
     unsigned giveNodeNumber(const Node *n) const;
     void addNode(Node *n);
-    std :: vector< bool >giveMechDoFsIndicator() { return mechDoFs; }
-    std :: vector< bool >giveTranspDoFsIndicator() { return transpDoFs; }
     void initSimplices();
     void updateSimplexVolumetricStrains(const Vector &fullDoFs);
 

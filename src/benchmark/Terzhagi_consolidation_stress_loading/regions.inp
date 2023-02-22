@@ -1,0 +1,5 @@
+Box	min_point -1.000000e-06	-1.000000e-06	-1.000000e-06	max_point	1.000000e-06	1.000000e-01	1.000000e-01	
+Box	min_point	4.999990e-01	-1.000000e-06	-1.000000e-06	max_point	5.000010e-01	1.000000e-01	1.000000e-01
+Box	min_point	-1	-1	-1	max_point 1 1 1
+Box	min_point	-1e-4 -1e-4 1e-4	max_point 5.9990e-01 1.1e-01 0.9990e-01
+Box	min_point	-1e-4 1e-4 -1e-4	max_point 5.9990e-01 0.9990e-01 1.1e-01

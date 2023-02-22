@@ -7,14 +7,14 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // COULOMB FRICTION MATERIAL STATUS
 
-CoulombFrictionMaterialStatus :: CoulombFrictionMaterialStatus(CoulombFrictionMaterial *m, Element *e, unsigned ipnum) : DisMechMaterialStatus(m, e, ipnum) {
+CoulombFrictionMaterialStatus :: CoulombFrictionMaterialStatus(CoulombFrictionMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "Coulomb friction mat. status";
     normalStress = 0.;
 }
 
 //////////////////////////////////////////////////////////
-void CoulombFrictionMaterialStatus :: giveValues(string code, Vector &result) const {
-    DisMechMaterialStatus :: giveValues(code, result);
+bool CoulombFrictionMaterialStatus :: giveValues(string code, Vector &result) const {
+    return VectMechMaterialStatus :: giveValues(code, result);
 }
 
 //////////////////////////////////////////////////////////
@@ -22,20 +22,21 @@ void CoulombFrictionMaterialStatus :: init() {}
 
 //////////////////////////////////////////////////////////
 void CoulombFrictionMaterialStatus :: update() {
-    DisMechMaterialStatus :: update();
+    VectMechMaterialStatus :: update();
 }
 
 //////////////////////////////////////////////////////////
 void CoulombFrictionMaterialStatus :: resetTemporaryVariables() {
-    DisMechMaterialStatus :: resetTemporaryVariables();
+    VectMechMaterialStatus :: resetTemporaryVariables();
 }
 
 //////////////////////////////////////////////////////////
-Matrix CoulombFrictionMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+Matrix CoulombFrictionMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
     RigidBodyBoundary *rb = static_cast< RigidBodyBoundary * >( element );
     CoulombFrictionMaterial *m = static_cast< CoulombFrictionMaterial * >( mat );
-    Matrix D = Matrix :: Zero(dim, dim);
+    unsigned ss = m->giveStrainSize();
+    Matrix D = Matrix :: Zero(ss, ss);
     //double strain_norm = temp_strain.norm();
     //if(strain_norm<1e-10)  strain_norm = 1e-10;
     //double stress_norm = temp_stress.norm();
@@ -44,7 +45,7 @@ Matrix CoulombFrictionMaterialStatus :: giveStiffnessTensor(string type, unsigne
         stiff = m->giveInitialStiffness();
     }
     //if (normalStress<=-1) stiff = max(stiffX,0.);
-    for ( unsigned i = 1; i < dim; i++ ) {
+    for ( unsigned i = 1; i < ss; i++ ) {
         D(i, i) =  stiff * rb->giveLength();
     }
     return D;
@@ -82,7 +83,7 @@ void CoulombFrictionMaterialStatus :: setParameterValue(string code, double valu
     if ( code.compare("normal_stress") == 0 ) {
         normalStress = value;
     } else {
-        DisMechMaterialStatus :: setParameterValue(code, value);
+        VectMechMaterialStatus :: setParameterValue(code, value);
     }
 }
 
@@ -100,8 +101,7 @@ void CoulombFrictionMaterial :: readFromLine(istringstream &iss) {
     bis = bfa = false;
     string param;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("initStiffness") == 0 ) {
             bis = true;
             iss >> init_stiffness;
@@ -132,4 +132,4 @@ CoulombFrictionMaterialStatus *CoulombFrictionMaterial :: giveNewMaterialStatus(
 
 
 //////////////////////////////////////////////////////////
-void CoulombFrictionMaterial :: init() {};
+void CoulombFrictionMaterial :: init(MaterialContainer *matcont) { VectMechMaterial :: init(matcont); };

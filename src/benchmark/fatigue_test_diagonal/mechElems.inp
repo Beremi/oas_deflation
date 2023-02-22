@@ -1,6 +1,0 @@
-# ElemType	nodeAidx	nodeBidx	nrOfVertices	vrtxAIdx	vrtxBIdx	Material
-LTCBEAM	2	0	2	15	13	0
-LTCBEAM	2	1	2	15	12	0
-LTCBEAM	0	1	2	15	19	0
-LTCBEAM	0	3	2	19	18	0
-LTCBEAM	1	3	2	19	21	0

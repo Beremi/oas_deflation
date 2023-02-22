@@ -8,8 +8,7 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // FIBER
 
-Fiber :: Fiber(const unsigned dim) {
-    ndim = dim;
+Fiber :: Fiber(const unsigned dim) : Element(dim) {
     name = "Fiber";
     diam = 0;
     solution_order = 0;
@@ -19,6 +18,7 @@ Fiber :: Fiber(const unsigned dim) {
     vtk_cell_type = 3;
     shafunc = new Linear1DLineShapeF();
     inttype = new IntegrFiber();
+    physicalFields [ 0 ] = true; //mechanics
 }
 
 //////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ void Fiber :: readFromLine(istringstream &iss, NodeContainer *fullnodes, Materia
 
 //////////////////////////////////////////////////////////
 void Fiber :: createNewCrossing(Point intersec, RigidBodyContact *rbc) {
-    stats.push_back( mat->giveNewMaterialStatus( this, stats.size() ) );
+    stats.push_back(mat->giveNewMaterialStatus(this, stats.size() ) );
     IntegrFiber *intf = static_cast< IntegrFiber * >( inttype );
     intf->addNewIP(intersec);
     contacts.push_back(rbc);
@@ -53,7 +53,7 @@ void Fiber :: setUpCrossings() {
     std :: vector< Node * >rbcnodes;
     std :: vector< Node * > :: iterator pos;
     Node *kn;
-    vector< unsigned >np( 2 * stats.size() );
+    vector< unsigned >np(2 * stats.size() );
     unsigned totalDoFs = 0;
     unsigned i = 0;
     for ( auto &r:contacts ) {
@@ -83,13 +83,13 @@ void Fiber :: setUpCrossings() {
     outDoFs = totalDoFs; //basic elems will always have input = output
 
     unsigned nodedof = 3 * ( ndim - 1 );
-    Bs.resize(inttype->giveNumIP() );
-    Hs.resize(inttype->giveNumIP() );
+    Bs.resize( inttype->giveNumIP() );
+    Hs.resize( inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
         Hs [ k ] = Element :: giveHMatrix(k);
 
-        Bs [ k ] = Matrix :: Zero( ndim, DoFids.size() );
-        Matrix rbcB = contacts [ k ]->giveBMatrix( inttype->giveIPLocationPointer(i) ) * contacts [ k ]->giveLength();
+        Bs [ k ] = Matrix :: Zero(ndim, DoFids.size() );
+        Matrix rbcB = contacts [ k ]->giveBMatrix(inttype->giveIPLocationPointer(i) ) * contacts [ k ]->giveLength();
 
         for ( unsigned cc = 0; cc < nodedof; cc++ ) {
             for ( unsigned rr = 0; rr < ndim; rr++ ) {
@@ -101,7 +101,7 @@ void Fiber :: setUpCrossings() {
 
     //set stress and strain vectors at integration points
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        stats [ k ]->initializeStressAndStrainVector( Bs [ k ].rows() );
+        stats [ k ]->initializeStressAndStrainVector(Bs [ k ].rows() );
         stats [ k ]->init();
     }
 }
@@ -116,5 +116,5 @@ Matrix Fiber :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Matrix Fiber :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix( DoFids.size(), DoFids.size() );
+    return Matrix(DoFids.size(), DoFids.size() );
 };

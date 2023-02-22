@@ -1,12 +1,22 @@
 #include "material.h"
 #include "element.h"
 #include "element_discrete.h"
+#include "material_container.h"
 
 using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC MATERIAL
+MaterialStatus :: ~MaterialStatus() {
+    for ( vector< MaterialStatus * > :: iterator n = matStatComponents.begin(); n != matStatComponents.end(); ++n ) {
+        if ( * n != nullptr ) {
+            delete * n;
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
 Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
     if ( eigenstrain.size() > 0 ) {
         if ( eigenstrain.size() != totalStrain.size() ) {
@@ -55,24 +65,30 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 }
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: giveValues(std :: string code, Vector &result) const {
+bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
+        return true;
     } else if ( code.compare("total_energy_density") == 0 ) {
         result.resize(1);
         result [ 0 ] = totalEnergyDensity;
+        return true;
     } else if ( code.compare("strain_energy_density") == 0 ) {
         result.resize(1);
         result [ 0 ] = strainEnergyDensity;
+        return true;
     } else if ( code.compare("dissipated_energy_density") == 0 ) {
         result.resize(1);
         result [ 0 ] = dissipEnergyDensity;
+        return true;
     } else if ( code.compare("dissipated_energy_density_inc") == 0 ) {
         result.resize(1);
         result [ 0 ] = dissipEnergyDensityInc;
+        return true;
     } else {
         result.resize(0);
+        return false;
     }
 }
 
@@ -82,736 +98,187 @@ void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
 }
 
 //////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// TRANSPORT MATERIAL
-
-TrsprtMaterialStatus :: TrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
-    name = "transport mat. status";
-    temp_pressure = 0;
-    effConductivity = updateEffectiveConductivity();
-}
-
-
-//////////////////////////////////////////////////////////
-Vector TrsprtMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    effConductivity = updateEffectiveConductivity(); //nonlinear effecto of pressure
-    return giveStressWithFrozenIntVars(strain, timeStep);
-};
-
-//////////////////////////////////////////////////////////
-Vector TrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
-    temp_strain = strain;
-    temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
-    return temp_stress;
-};
-
-//////////////////////////////////////////////////////////
-Matrix TrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
-    ( void ) type;
-    Matrix T = Matrix :: Zero(dimension, dimension);
-    for ( unsigned i = 0; i < dimension; i++ ) {
-        T(i, i) = -giveEffectiveConductivity(type);
-    }
-    return T;
-};
-
-//////////////////////////////////////////////////////////
-Matrix TrsprtMaterialStatus :: giveDampingTensor() const {
-    TrsprtMaterial *m = static_cast< TrsprtMaterial * >( mat );
-    Matrix M = Matrix :: Zero(1, 1);
-    M(0, 0) = -m->giveCapacity() * m->giveDensity();
-    return M;
-}
-
-//////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: giveEffectiveConductivity(string type) const {
-    if ( type.compare("elastic") == 0 ) {
-        TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-        return calculatePressureDependentPermeability(0.) * tmat->giveDensity() / tmat->giveViscosity();
-    } else {
-        return effConductivity;
-    }
-}
-
-//////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: calculatePressureDependentPermeability(double pressure) const {
-    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    if ( tmat->giveParamA() < 0 ) {
-        return tmat->givePermeability();
-    } else {
-        double m = tmat->giveParamM();
-        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
-        return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
-    }
-}
-
-//////////////////////////////////////////////////////////
-void TrsprtMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("permeability") == 0 ) {
-        TrsprtMaterial *m = dynamic_cast< TrsprtMaterial * >( mat );
-        result.resize(1);
-        result [ 0 ] =  m->givePermeability();
-    } else if ( code.compare("flux") == 0 ) {
-        result.resize(1);
-        result [ 0 ] =  abs(temp_stress [ 0 ]);
-    } else if ( code.compare("pressure_gradient") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = abs(temp_strain [ 0 ]);
-    } else {
-        MaterialStatus :: giveValues(code, result);
-    }
-}
-
-//////////////////////////////////////////////////////////
-double TrsprtMaterialStatus :: updateEffectiveConductivity() const {
-    TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-    return calculatePressureDependentPermeability(temp_pressure) * tmat->giveDensity() / tmat->giveViscosity();
-}
-
-//////////////////////////////////////////////////////////
-bool TrsprtMaterialStatus :: isElastic(const bool &now) const {
-    ( void ) now;
-    return true; //this is not true, discuss with Pepa
-}
-
-//////////////////////////////////////////////////////////
-void TrsprtMaterialStatus :: setParameterValue(string code, double value) {
-    if ( code.compare("pressure") == 0 ) {
-        temp_pressure = value;
-    } else {
-        MaterialStatus :: setParameterValue(code, value);
-    }
-}
-
-
-
-//////////////////////////////////////////////////////////
-void TrsprtMaterial :: readFromLine(istringstream &iss) {
-    string param;
-    bool bcapacity, bpermeability, bviscosity, bdensity;
-    bcapacity = bpermeability = bviscosity = bdensity = false;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("capacity") == 0 ) {
-            bcapacity = true;
-            iss >> capacity;
-        } else if ( param.compare("viscosity") == 0 ) {
-            bviscosity = true;
-            iss >> viscosity;
-        } else if ( param.compare("permeability") == 0 ) {
-            bpermeability = true;
-            iss >> permeability;
-        } else if ( param.compare("density") == 0 ) {
-            bdensity = true;
-            iss >> density;
-        } else if ( param.compare("a") == 0 ) {
-            iss >> a; //negative "a" means linear material behavior
-        } else if ( param.compare("m") == 0 ) {
-            iss >> m;
+Material :: ~Material() {
+    for ( vector< Material * > :: iterator n = matComponents.begin(); n != matComponents.end(); ++n ) {
+        if ( * n != nullptr ) {
+            delete * n;
         }
     }
-    if ( !bcapacity ) {
-        cerr << name << ": material parameter 'capacity' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bviscosity ) {
-        cerr << name << ": material parameter 'viscosity' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bpermeability ) {
-        cerr << name << ": material parameter 'permeability' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bdensity ) {
-        cerr << name << ": material parameter 'density' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-};
-
-//////////////////////////////////////////////////////////
-MaterialStatus *TrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    TrsprtMaterialStatus *newStatus = new TrsprtMaterialStatus(this, e, ipnum); //needs to be deleted manually
-    return newStatus;
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// DISCRETE TRANSPORT MATERIAL
-
-DiscreteTrsprtMaterialStatus :: DiscreteTrsprtMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : TrsprtMaterialStatus(m, e, ipnum) {
-    name = "transport mat. status";
 }
 
 //////////////////////////////////////////////////////////
-Matrix DiscreteTrsprtMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
-    ( void ) type;
-    ( void ) dimension;
-    Matrix T = Matrix :: Zero(1, 1); //discrete material, only one direction in any dimension
-    T(0, 0) = -giveEffectiveConductivity(type);
-    return T;
-};
-
 //////////////////////////////////////////////////////////
-MaterialStatus *DiscreteTrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    DiscreteTrsprtMaterialStatus *newStatus = new DiscreteTrsprtMaterialStatus(this, e, ipnum); //needs to be deleted manually
-    return newStatus;
-};
-
+// COUPLED MATERIAL
 //////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// ELASTIC TENSORIAL MECHANICAL MATERIAL
 
-Vector ElasticMechMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    return ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
-};
-
-
-//////////////////////////////////////////////////////////
-double ElasticMechMaterialStatus :: giveMassConstant() const {
-    ElasticMechMaterial *material = static_cast< ElasticMechMaterial * >( mat );
-    return material->giveDensity();
-}
-
-//////////////////////////////////////////////////////////
-Vector ElasticMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
-    temp_strain = addEigenStrain(strain);
-    unsigned dim = 0;
-    if ( temp_strain.size() == 1 ) {
-        dim = 1;
-    } else if ( temp_strain.size() == 3 ) {
-        dim = 2;
-    } else if ( temp_strain.size() == 6 ) {
-        dim = 3;
-    }
-    temp_stress = giveStiffnessTensor("elastic", dim) * temp_strain;
-    return temp_stress;
-};
-
-//////////////////////////////////////////////////////////
-Matrix ElasticMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
-    ( void ) type;
-    unsigned size = 1;
-    if ( dimension == 1 ) {
-        size = 1;
-    } else if ( dimension == 2 ) {
-        size = 3;
-    } else if ( dimension == 3 ) {
-        size = 6;
-    } else {
-        cerr << name << ": unsupported dimension " << dimension << endl;
+CoupledMaterialStatus :: CoupledMaterialStatus(Material *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
+    CoupledMaterial *cm = dynamic_cast< CoupledMaterial * >( m );
+    if ( !cm ) {
+        cerr << name << " " << "Error: material is not derived from  CoupledMaterialStatus" << endl;
         exit(1);
     }
-    Matrix D = Matrix :: Zero(size, size);
-    ElasticMechMaterial *m = static_cast< ElasticMechMaterial * >( mat );
-    if ( dimension == 1 ) {
-        D(0, 0) = m->giveElasticModulus();
-    } else if ( dimension == 2 ) {
-        if ( m->isPlaneStress() ) {
-            double factor = m->giveElasticModulus() / ( 1. - pow(m->givePoissonsRatio(), 2) );
-            D(0, 0) = D(1, 1) = factor;
-            D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
-            D(2, 2) = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
-        } else {  //plane strain
-            double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
-            D(0, 0) = D(1, 1) = factor * ( 1. - m->givePoissonsRatio() );
-            D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
-            D(2, 2) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
+
+    name = "generic coupled material status";
+
+
+    vector< Material * >mats = cm->giveMaterials();
+    stats.resize( mats.size() );
+    for ( unsigned i = 0; i < mats.size(); i++ ) {
+        stats [ i ] = mats [ i ]->giveNewMaterialStatus(e, ipnum);
+    }
+}
+
+//////////////////////////////////////////////////////////
+CoupledMaterialStatus :: ~CoupledMaterialStatus() {
+    for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
+        if ( * m != nullptr ) {
+            delete * m;
         }
-    } else if ( dimension == 3 ) {
-        double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
-        D(0, 0) = D(1, 1) = D(2, 2) = factor * ( 1. - m->givePoissonsRatio() );
-        D(0, 1) = D(1, 0) = D(0, 2) = D(2, 0) = D(2, 1) = D(1, 2) = m->givePoissonsRatio() * factor;
-        D(3, 3) = D(4, 4) = D(5, 5) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
-    } else {
-        cerr << name << " error: dimension " << dimension << " not implemented" << endl;
-        exit(1);
+    }
+}
+
+//////////////////////////////////////////////////////////
+Matrix CoupledMaterialStatus :: giveStiffnessTensor(string type) const {
+    ( void ) type;
+    unsigned ss = mat->giveStrainSize();
+    Matrix D = Matrix :: Zero(ss, ss);
+    unsigned k = 0;
+    Matrix mD;
+    unsigned mk = 0;
+    for ( auto &s:stats ) {
+        mD = s->giveStiffnessTensor(type);
+        mk = s->giveMaterial()->giveStrainSize();
+        for ( unsigned i = 0; i < mk; i++ ) {
+            for ( unsigned j = 0; j < mk; j++ ) {
+                D(k + i, k + j) += mD(i, j);
+            }
+        }
+        k += mk;
     }
     return D;
 };
 
 //////////////////////////////////////////////////////////
-void ElasticMechMaterialStatus :: update() {
+void CoupledMaterialStatus :: setParameterValue(std :: string code, double value) {
+    MaterialStatus :: setParameterValue(code, value);
+    for ( auto &s:stats ) {
+        s->setParameterValue(code, value);
+    }
+}
+
+//////////////////////////////////////////////////////////
+Vector CoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    temp_strain = strain;
+    Vector mstrain, mstress;
+    unsigned k = 0;
+    unsigned h, i;
+    for ( auto &s:stats ) {
+        h = s->giveMaterial()->giveStrainSize();
+        mstrain.resize(h);
+        for ( i = 0; i < h; i++ ) {
+            mstrain [ i ] = temp_strain [ k + i ];
+        }
+        mstress = s->giveStress(mstrain, timeStep);
+        for ( i = 0; i < h; i++ ) {
+            temp_stress [ k + i ] = mstress [ i ];
+        }
+        k += h;
+    }
+    return temp_stress;
+}
+
+
+//////////////////////////////////////////////////////////
+Vector CoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    temp_strain = strain;
+    Vector mstrain, mstress;
+    unsigned k = 0;
+    unsigned h, i;
+    for ( auto &s:stats ) {
+        h = s->giveMaterial()->giveStrainSize();
+        mstrain.resize(h);
+        for ( i = 0; i < h; i++ ) {
+            mstrain [ i ] = temp_strain [ k + i ];
+        }
+        mstress = s->giveStressWithFrozenIntVars(mstrain, timeStep);
+        for ( i = 0; i < h; i++ ) {
+            temp_stress [ k + i ] = mstress [ i ];
+        }
+        k += h;
+    }
+    return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+bool CoupledMaterialStatus :: giveValues(std :: string code, Vector &result) const {
+    bool found = 0;
+    for ( auto &s:stats ) {
+        found = s->giveValues(code, result);
+        if ( found ) {
+            return true;
+        }
+    }
+    return MaterialStatus :: giveValues(code, result);
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMaterialStatus :: update() {
+    for ( auto &s:stats ) {
+        s->update();
+    }
     MaterialStatus :: update();
 }
 
 //////////////////////////////////////////////////////////
-ElasticMechMaterialStatus :: ElasticMechMaterialStatus(ElasticMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
-    name = "tensorial mechanical mat. status";
-}
-
-//////////////////////////////////////////////////////////
-void ElasticMechMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
-        unsigned size = ( element->giveDimension() - 1 ) * 3;
-        result.resize(size);
-        for ( unsigned p = 0; p < size; p++ ) {
-            result [ p ] = temp_stress [ p ];
-        }
-    } else {
-        MaterialStatus :: giveValues(code, result);
+void CoupledMaterial :: init(MaterialContainer *matcont) {
+    mats.resize(nmats);
+    for ( unsigned i = 0; i < nmats; i++ ) {
+        mats [ i ] = matcont->giveMaterial(matnums [ i ]);
     }
-}
 
-//////////////////////////////////////////////////////////
-void ElasticMechMaterial :: readFromLine(istringstream &iss) {
-    string param;
-    bool bE, bnu, bdensity;
-    bE = bnu = bdensity = false;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("E") == 0 ) {
-            bE = true;
-            iss >> E;
-        } else if ( param.compare("nu") == 0 ) {
-            bnu = true;
-            iss >> nu;
-        } else if ( param.compare("density") == 0 ) {
-            bdensity = true;
-            iss >> density;
-        } else if ( param.compare("planeStrain") == 0 ) {
-            planeStress = false;
-        }
+    strainsize = 0;
+    for ( auto &m: mats ) {
+        strainsize += m->giveStrainSize();
     }
-    if ( !bE ) {
-        cerr << name << ": material parameter 'E' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bnu ) {
-        cerr << name << ": material parameter 'nu' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bdensity ) {
-        cerr << name << ": material parameter 'density' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-};
 
-//////////////////////////////////////////////////////////
-MaterialStatus *ElasticMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    ElasticMechMaterialStatus *newStatus = new ElasticMechMaterialStatus(this, e, ipnum); //needs to be deleted manually
-    return newStatus;
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// ELASTIC COSSERAT MECHANICAL MATERIAL
-
-Vector CosseratMechMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
-    return CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(strain, timeStep);
-};
-
-//////////////////////////////////////////////////////////
-Vector CosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
-    temp_strain = addEigenStrain(strain);
-    unsigned dim;
-    if ( temp_strain.size() == 2 ) {
-        dim = 1;
-    } else if ( temp_strain.size() == 6 ) {
-        dim = 2;
-    } else if ( temp_strain.size() == 18 ) {
-        dim = 3;
-    } else {
-        cerr << name << " error: unsupported dimension" << endl;
-        exit(1);
-    }
-    temp_stress = giveStiffnessTensor("elastic", dim) *  temp_strain;
-    return temp_stress;
-};
-
-//////////////////////////////////////////////////////////
-Matrix CosseratMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
-    ( void ) type;
-    unsigned size;
-    if ( dimension == 1 ) {
-        size = 1;
-    } else if ( dimension == 2 ) {
-        size = 6;
-    } else if ( dimension == 3 ) {
-        size = 18;
-    } else {
-        cerr << name << ": unsupported dimension " << dimension << endl;
-        exit(1);
-    }
-    Matrix D = Matrix :: Zero(size, size);
-    CosseratMechMaterial *m = static_cast< CosseratMechMaterial * >( mat );
-    double lammeL = m->giveElasticModulus() * m->givePoissonsRatio() / ( ( 1. + m->givePoissonsRatio() ) * ( 1. - 2 * m->givePoissonsRatio() ) );
-    double lammeM = m->giveElasticModulus() / ( 2. * ( 1. + m->givePoissonsRatio() ) );
-    if ( dimension == 1 ) {
-        D(0, 0) = m->giveElasticModulus();
-        D(1, 1) = 4. * m->giveCosseratShearParam() * pow(m->giveCharacteristicLength(), 2);
-    } else if ( dimension == 2 ) {
-        if ( m->isPlaneStress() ) {
-            cerr << name << " error: dimension " << dimension << ", Cosserat plane stress not implemented" << endl;
+    for ( auto &i : matnums ) {
+        if ( i >= idx ) {
+            cerr << name << " Error: individual materials inside the coupled material must be specified in advance" << endl;
             exit(1);
-        } else {  //plane strain ACTUALLY NOT IMPLEMENTED YET
-            D(0, 0) = D(1, 1) = lammeL + 2. * lammeM;
-            D(0, 1) = D(1, 0) = lammeL;
-            D(2, 2) = D(3, 3) = lammeM + m->giveCosseratShearParam();
-            D(2, 3) = D(3, 2) = lammeM - m->giveCosseratShearParam();
-            D(4, 4) = D(5, 5) = lammeM * 4. * m->giveCharacteristicLength();
         }
-    } else {
-        cerr << name << " error: dimension " << dimension << " not implemented" << endl;
+    }
+}
+
+//////////////////////////////////////////////////////////
+CoupledMaterial :: ~CoupledMaterial() {
+    //does not apply, the material is deleted by material container automatically
+    //for ( vector< Material * > :: iterator m = mats.begin(); m != mats.end(); ++m ) {
+    //    if ( * m != nullptr ) {
+    //        delete * m;
+    //    }
+    //}
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMaterial :: readFromLine(std :: istringstream &iss) {
+    iss >> nmats;
+    matnums.resize(nmats);
+    for ( unsigned i = 0; i < nmats; i++ ) {
+        iss >> matnums [ i ];
+    }
+}
+
+//////////////////////////////////////////////////////////
+MaterialStatus *CoupledMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    CoupledMaterialStatus *newStatus = new CoupledMaterialStatus(this, e, ipnum);
+    return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+Material *CoupledMaterial :: giveMaterial(unsigned i) const {
+    if ( i >= mats.size() ) {
+        cerr << name << " Error: requested material number " << i << " but only " << mats.size() << " materials exist." << endl;
         exit(1);
     }
-    return D;
-};
-
-//////////////////////////////////////////////////////////
-CosseratMechMaterialStatus :: CosseratMechMaterialStatus(CosseratMechMaterial *m, Element *e, unsigned ipnum) : ElasticMechMaterialStatus(m, e, ipnum) {
-    name = "tensorial cosserat mat. status";
-}
-
-//////////////////////////////////////////////////////////
-void CosseratMechMaterial :: readFromLine(istringstream &iss) {
-    ElasticMechMaterial :: readFromLine(iss);
-
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
-
-    string param;
-    bool blc, bmuc;
-    blc = bmuc = false;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("lc") == 0 ) {
-            blc = true;
-            iss >> lc;
-        } else if ( param.compare("muc") == 0 ) {
-            bmuc = true;
-            iss >> muc;
-        }
-    }
-    if ( !blc ) {
-        cerr << name << ": material parameter 'lc' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bmuc ) {
-        cerr << name << ": material parameter 'muc' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-};
-
-//////////////////////////////////////////////////////////
-MaterialStatus *CosseratMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    CosseratMechMaterialStatus *newStatus = new CosseratMechMaterialStatus(this, e, ipnum);
-    return newStatus;
-};
-
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// COUPLED TRANSPORT MATERIAL
-//////////////////////////////////////////////////////////
-
-DiscreteTrsprtCoupledMaterialStatus :: DiscreteTrsprtCoupledMaterialStatus(TrsprtMaterial *m, Element *e, unsigned ipnum) : DiscreteTrsprtMaterialStatus(m, e, ipnum) {
-    name = "discrete coupled transport mat. status";
-    crackParam = 0.;
-    temp_volumetricStrain = volumetricStrain = volStrainRate = 0.;
-    temp_crackVolume = crackVolume = crackVolumeRate = 0.;
-    pressure = pressureRate = 0.;
-}
-
-//////////////////////////////////////////////////////////
-double DiscreteTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type) const {
-    if ( type.compare("elastic") == 0  ) {
-        TrsprtMaterial *tmat = static_cast< TrsprtMaterial * >( mat );
-        return calculatePressureDependentPermeability(0.) * tmat->giveDensity() / tmat->giveViscosity();
-    } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
-        return updateEffectiveConductivity();
-    } else {
-        cerr << "Error: DiscreteTrsprtCoupledMaterialStatus does not provide '" << type << "' stiffness";
-        exit(1);
-    };
-}
-
-
-//////////////////////////////////////////////////////////
-double DiscreteTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() const {
-    DiscreteTrsprtCoupledMaterial *tmat = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
-    Transp1DCoupled *tc = static_cast< Transp1DCoupled * >( element );
-    return ( TrsprtMaterialStatus :: updateEffectiveConductivity() ) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
-}
-
-//////////////////////////////////////////////////////////
-void DiscreteTrsprtCoupledMaterialStatus ::  updateRateVariables(double timeStep) {
-    if ( timeStep > 0 ) {
-        volStrainRate = ( temp_volumetricStrain - volumetricStrain ) / timeStep;
-        crackVolumeRate = ( temp_crackVolume - crackVolume ) / timeStep;
-        pressureRate = ( temp_pressure - pressure ) / timeStep;
-    } else {
-        volStrainRate = 0.;
-        crackVolumeRate = 0.;
-        pressureRate = 0.;
-    }
-}
-
-//////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    updateRateVariables(timeStep);
-    effConductivity = updateEffectiveConductivity();
-    return giveStressWithFrozenIntVars(strain, timeStep);
-};
-
-
-//////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledMaterialStatus :: giveInternalSource() const {
-    Vector ints = Vector :: Zero(1);
-    DiscreteTrsprtCoupledMaterial *m = static_cast< DiscreteTrsprtCoupledMaterial * >( mat );
-
-    ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
-    if ( crackVolumeRate > 0 || temp_crackVolume > 0 ) {
-        Transp1D *trs = static_cast< Transp1D * >( element );
-        double vol = trs->giveVolume();
-        ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
-        ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
-    }
-    return ints * m->giveDensity();
-}
-
-
-//////////////////////////////////////////////////////////
-void DiscreteTrsprtCoupledMaterialStatus :: setParameterValue(string code, double value) {
-    if ( code.compare("volumetric_strain") == 0 ) {
-        temp_volumetricStrain = value;
-    } else if ( code.compare("crack_opening") == 0 ) {
-        crackParam = value;
-    } else if ( code.compare("crack_volume") == 0 ) {
-        temp_crackVolume = value;
-    } else {
-        TrsprtMaterialStatus :: setParameterValue(code, value);
-    }
-}
-
-
-//////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    updateRateVariables(timeStep);
-    temp_strain  = addEigenStrain(strain);
-    temp_stress = -effConductivity * temp_strain;
-
-    return temp_stress;
-};
-
-
-//////////////////////////////////////////////////////////
-void DiscreteTrsprtCoupledMaterialStatus ::  update() {
-    TrsprtMaterialStatus :: update();
-    volumetricStrain = temp_volumetricStrain;
-    crackVolume = temp_crackVolume;
-    pressure = temp_pressure;
-}
-
-//////////////////////////////////////////////////////////
-void DiscreteTrsprtCoupledMaterialStatus ::  resetTemporaryVariables() {
-    TrsprtMaterialStatus :: resetTemporaryVariables();
-    temp_volumetricStrain = volumetricStrain;
-    temp_crackVolume = crackVolume;
-    temp_pressure = pressure;
-}
-
-
-
-//////////////////////////////////////////////////////////
-void DiscreteTrsprtCoupledMaterialStatus ::  giveValues(string code, Vector &result) const {
-    if ( code.compare("volumetric_strain") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = volumetricStrain;
-    } else if ( code.compare("crack_volume") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_crackVolume;
-    } else if ( code.compare("crack_volume_rate") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = crackVolumeRate;
-    } else if ( code.compare("rel_crack_volume_rate") == 0 ) {
-        Transp1D *trs = static_cast< Transp1D * >( element );
-        double vol = trs->giveVolume();
-        result.resize(1);
-        result [ 0 ] = crackVolumeRate / vol;
-    } else {
-        TrsprtMaterialStatus :: giveValues(code, result);
-    }
-}
-
-//////////////////////////////////////////////////////////
-void DiscreteTrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
-    TrsprtMaterial :: readFromLine(iss);
-
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
-
-    string param;
-    bool bturtuosity, bbiot;
-    bturtuosity = bbiot = false;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("crack_turtuosity") == 0 ) {
-            bturtuosity = true;
-            iss >> crack_turtuosity;
-        } else if ( param.compare("biot_coeff") == 0 ) {
-            bbiot = true;
-            iss >> biotCoeff;
-        } else if ( param.compare("reference_pressure") == 0 ) {
-            iss >> refP;
-        } else if ( param.compare("Kw") == 0 ) {
-            iss >> Kw;
-        }
-    }
-    if ( !bturtuosity ) {
-        cerr << name << ": material parameter 'crack_turtuosity' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bbiot ) {
-        cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-};
-
-//////////////////////////////////////////////////////////
-MaterialStatus *DiscreteTrsprtCoupledMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    DiscreteTrsprtCoupledMaterialStatus *newStatus = new DiscreteTrsprtCoupledMaterialStatus(this, e, ipnum); //needs to be deleted manually
-    return newStatus;
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// DISCRETE MECHANICAL ELASTIC MATERIAL
-
-DisMechMaterialStatus :: DisMechMaterialStatus(DisMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
-    name = "discrete mechanical mat. status";
-    mat = m;
-}
-
-//////////////////////////////////////////////////////////
-Matrix DisMechMaterialStatus :: giveStiffnessTensor(string type, unsigned dimension) const {
-    ( void ) type;
-    DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    Matrix D = Matrix :: Zero(dimension, dimension);
-    D(0, 0) = m->giveE0();
-    for ( size_t i = 1; i < dimension; i++ ) {
-        D(i, i) =  m->giveAlpha() * m->giveE0();
-    }
-    return D;
-}
-
-//////////////////////////////////////////////////////////
-double DisMechMaterialStatus :: giveDensity() const {
-    DisMechMaterial *tmat = static_cast< DisMechMaterial * >( mat );
-    return tmat->giveDensity();
-}
-
-//////////////////////////////////////////////////////////
-Vector DisMechMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
-    return DisMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
-};
-
-//////////////////////////////////////////////////////////
-Vector DisMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
-    temp_strain = addEigenStrain(strain);
-    DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-    temp_stress.resize(strain.size() );
-    temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
-    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
-        temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
-    }
-
-    return temp_stress;
-};
-
-//////////////////////////////////////////////////////////
-void DisMechMaterialStatus ::  giveValues(string code, Vector &result) const {
-    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 || code.compare("solid_stress") == 0 ) {
-        unsigned size = element->giveDimension();
-        result.resize(size);
-        if ( size > temp_stress.size() ) {
-            size = temp_stress.size();
-        }
-        for ( unsigned p = 0; p < size; p++ ) {
-            result [ p ] = temp_stress [ p ];
-        }
-    } else if ( code.compare("strain") == 0 || code.compare("strains") == 0 ) {
-        unsigned size = element->giveDimension();
-        result.resize(size);
-        if ( size > temp_strain.size() ) {
-            size = temp_strain.size();
-        }
-        for ( unsigned p = 0; p < size; p++ ) {
-            result [ p ] = temp_strain [ p ];
-        }
-    } else if ( code.compare("E0") == 0 ) {
-        result.resize(1);
-        DisMechMaterial *m = static_cast< DisMechMaterial * >( mat );
-        result [ 0 ] = m->giveE0();
-    } else if ( code.compare("s_N") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_stress [ 0 ];
-    } else if ( code.compare("s_M") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_stress [ 1 ];
-    } else if ( code.compare("s_L") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_stress [ 2 ];
-    } else if ( code.compare("e_N") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_strain [ 0 ];
-    } else if ( code.compare("e_M") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_strain [ 1 ];
-    } else if ( code.compare("e_L") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_strain [ 2 ];
-    } else {
-        MaterialStatus :: giveValues(code, result);
-    }
-}
-
-//////////////////////////////////////////////////////////
-void DisMechMaterial :: readFromLine(istringstream &iss) {
-    string param;
-
-    bool bE0, balpha, bdensity;
-    bE0 = balpha = bdensity = false;
-
-    while ( !iss.eof() ) {
-        iss >> param;
-        if ( param.compare("E0") == 0 ) {
-            bE0 = true;
-            iss >> E0;
-        } else if ( param.compare("alpha") == 0 ) {
-            balpha = true;
-            iss >> alpha;
-        } else if ( param.compare("density") == 0 ) {
-            bdensity = true;
-            iss >> density;
-        }
-    }
-    if ( !bE0 ) {
-        cerr << name << ": material parameter 'E0' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    ;
-    if ( !balpha ) {
-        cerr << name << ": material parameter 'alpha' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    ;
-    if ( !bdensity ) {
-        cerr << name << ": material parameter 'density' was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    ;
-};
-
-//////////////////////////////////////////////////////////
-MaterialStatus *DisMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
-    DisMechMaterialStatus *newStatus = new DisMechMaterialStatus(this, e, ipnum); //needs to be deleted manually
-    return newStatus;
+    return mats [ i ];
 };

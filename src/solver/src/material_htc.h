@@ -1,13 +1,13 @@
 #ifndef _MATERIAL_HTC_H
 #define _MATERIAL_HTC_H
 
-#include "material.h"
+#include "material_vectorial.h"
 
 //////////////////////////////////////////////////////////
 // HTC MATERIAL
 
 class HTCMaterial;
-class HTCMaterialStatus : public TrsprtMaterialStatus
+class HTCMaterialStatus : public TensTrsprtMaterialStatus
 {
 private:
     double temp_alphac, temp_alphas, alphac, alphas;
@@ -20,10 +20,10 @@ public:
     virtual ~HTCMaterialStatus() {};
     virtual void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Vector giveInternalSource() const;
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveMassTensor() const;
@@ -31,7 +31,7 @@ public:
 };
 
 
-class HTCMaterial : public TrsprtMaterial
+class HTCMaterial : public TensTrsprtMaterial
 {
 private:
     Matrix permeabilityTensor;
@@ -39,11 +39,11 @@ private:
     double init_alphac, init_alphas;
 
 public:
-    HTCMaterial() { name = "HTC material"; produceInternalSources = true; };
+    HTCMaterial(unsigned dimension) : TensTrsprtMaterial(dimension) { name = "HTC material"; produceInternalSources = true; };
     virtual ~HTCMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
     Matrix givePermeabilityTensor() const { return permeabilityTensor; };
     double giveKappa()const { return kappa; };
     double giveD1()const { return D1; };

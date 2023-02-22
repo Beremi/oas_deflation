@@ -1,2 +1,2 @@
-VTKElementExporter elems 0
-TXTNodalExporter translations 3 ux uy uz
+VTKElementExporter elems time_every 1e-20 cellData 1 damage pointData 1 displacements extrapolatedNodeData 2 stress strain
+TXTNodalExporter translations 1 displacements

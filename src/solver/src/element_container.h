@@ -46,7 +46,7 @@ public:
     void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep);          ///< return internal forces with or without frozen internal variables
     void integrateDampingForces(const Vector &full_v, Vector &full_f) const;
     void integrateInertiaForces(const Vector &full_a, Vector &full_f) const;
-    Element *giveElement(unsigned const num) const { return elems [ num ]; }
+    Element *giveElement(unsigned const num) const;
     Element *giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const;
     unsigned giveElemId(const Element *elem) const;
     bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;

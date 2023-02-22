@@ -1,0 +1,8 @@
+CosseratQuad 0 4 5 1	0
+CosseratQuad 1 5 6 2	0
+CosseratQuad 2 6 7 3	0
+CosseratQuad 4 8 9 5	0
+CosseratQuad 5 9 10 6	0
+CosseratQuad 6 10 11 7	0
+CosseratQuad 9 8 11 10	0
+CosseratQuad 8 12 13 11	0

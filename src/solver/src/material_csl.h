@@ -1,13 +1,13 @@
 #ifndef _CSL_MATERIAL_H
 #define _CSL_MATERIAL_H
 
-#include "material.h"
+#include "material_vectorial.h"
 
 //////////////////////////////////////////////////////////
 // CSL MATERIAL 2007
 
 class CSLMaterial;
-class CSLMaterialStatus : public DisMechMaterialStatus
+class CSLMaterialStatus : public VectMechMaterialStatus
 {
 private:
     double omega0, maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
@@ -31,10 +31,10 @@ public:
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
@@ -43,7 +43,7 @@ public:
 };
 
 
-class CSLMaterial : public DisMechMaterial
+class CSLMaterial : public VectMechMaterial
 {
 private:
     double ft, Gt;
@@ -52,7 +52,7 @@ private:
     double damage_residuum = 0.0;
     double stress_residuum_fraction = 0.0;
 public:
-    CSLMaterial() { name = "CSL material"; lam0 = 1e10; }; //confinement removed
+    CSLMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "CSL material"; lam0 = 1e10; }; //confinement removed
     virtual ~CSLMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -71,7 +71,7 @@ public:
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
 
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
 };
 
 //////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ public:
     ~CoupledCSLMaterialStatus() {};
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void init();
     virtual void update();
     virtual void resetTemporaryVariables();
@@ -100,11 +100,11 @@ class CoupledCSLMaterial : public CSLMaterial
 private:
     double biotCoeff;
 public:
-    CoupledCSLMaterial() { name = "Coupled CSL material"; };
+    CoupledCSLMaterial(unsigned dimension) : CSLMaterial(dimension) { name = "Coupled CSL material"; };
     virtual ~CoupledCSLMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
     double giveBiotCoeff() const { return biotCoeff; };
 };
 

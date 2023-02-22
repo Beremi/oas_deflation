@@ -1,0 +1,6 @@
+NodalBC	0	0	0	-1 -1 -1 -1
+NodalBC	1	0	-1	-1 -1 -1 -1
+NodalBC	2	0	-1	-1 -1 -1 -1
+NodalBC	3	0	-1	-1 -1 -1 -1
+NodalBC	12	-1	-1	-1	1 -1 -1
+NodalBC	13	-1	-1	-1	1 -1 -1

@@ -1,18 +1,20 @@
 #include "element_ldpm.h"
 #include "element_container.h"
 #include "boundary_condition.h"
+#include "material_vectorial.h"
 
 using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
-LDPMTetra :: LDPMTetra(unsigned dim) {
-    if ( dim != 3 ) {
+LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
+    cout << "LDPMTetra :: LDPMTetra(unsigned dim)" << endl; cout.flush();
+
+    if ( ndim != 3 ) {
         cerr << "LDPMTetra implemented only in 3D" << endl;
         exit(1);
     }
-    ndim = 3;
     numOfNodes = 4;
     nodes.resize(4);
     name = "LDPMTetra";
@@ -27,8 +29,8 @@ LDPMTetra :: LDPMTetra(unsigned dim) {
     normals.resize(12);
     R.resize(12);
 
-    nodecodes = { 0, 1, 0, 1, 0, 2, 0, 2, 0, 3, 0, 3, 1, 2, 1, 2, 1, 3, 1, 3, 2, 3, 2, 3 };
-    vertcodes = { 0, 6, 7, 0, 6, 1, 1, 8, 2, 7, 8, 2, 3, 6, 9, 3, 7, 4, 4, 9, 9, 5, 5, 8 };
+    nodecodes = { 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 2, 3, 0, 1, 0, 3, 1, 3, 0, 1, 0, 2, 1, 2};
+    vertcodes = { 1, 2, 3, 1, 1, 4, 6, 5, 5, 7, 4, 5, 8, 9, 7, 8, 8, 3, 9, 10, 10, 6, 2, 10}; //last point is always centroid at position 0
 }
 
 
@@ -70,14 +72,14 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
 
     for ( unsigned i = 0; i < 12; i++ ) {
         //true face normal
-        Point n = ( vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() ).cross(vert [ 10 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
+        Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1] ]->givePoint() ).cross( vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
         n /= n.norm();
         //contact vector
         normals [ i ] = nodes [ nodecodes [ 2 * i + 1 ] ]->givePoint() - nodes [ nodecodes [ 2 * i ] ]->givePoint();
         lengths [ i ] = normals [ i ].norm();
         normals [ i ] /= lengths [ i ];
-        inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ vertcodes [ 2 * i ] ]->givePoint() + vert [ 10 ]->givePoint() ) / 3.);
-        areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ vertcodes [ 2 * i ] ]->givePointPointer(), vert [ 10 ]->givePointPointer() );
+        inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
+        areas [ i ] = triArea3D(vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
         areas [ i ] *= n.dot(normals [ i ]); //projection of area
 
         // coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
@@ -87,12 +89,12 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
             t1 = arbit.cross(normals [ i ]);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs(normals [ i ].x() ) > 1e-3 ) {
+            if ( abs( normals [ i ].x() ) > 1e-3 ) {
                 t1 = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
-            } else if ( abs(normals [ i ].y() ) > 1e-3 ) {
+            } else if ( abs( normals [ i ].y() ) > 1e-3 ) {
                 t1 = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
             } else {
-                t1 = Point(1, 0, -normals [ i ].x() / normals [ i ].z() );
+                t1 = Point( 1, 0, -normals [ i ].x() / normals [ i ].z() );
             }
         }
         t1.normalize();
@@ -117,13 +119,12 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
 //////////////////////////////////////////////////////////
 void LDPMTetra :: init() {
     Element :: init(); //calling base class method;
-
     checkNodeType();
 
-    //check that material is DisMechMat
-    DisMechMaterial *p = dynamic_cast< DisMechMaterial * >( mat );
+    //check that material is VectMechMat
+    VectMechMaterial *p = dynamic_cast< VectMechMaterial * >( mat );
     if ( !p ) {
-        cerr << "Error in " << name << ": material must be inherited from DisMechMaterial, " << mat->giveName() << " provided" << endl;
+        cerr << "Error in " << name << ": material must be inherited from VectMechMaterial, " << mat->giveName() << " provided" << endl;
         exit(1);
     }
 }
@@ -135,9 +136,10 @@ Matrix LDPMTetra :: giveBMatrix(unsigned k) const {
     unsigned nB = nodecodes [ 2 * k + 1 ];
     Matrix B = Matrix :: Zero(3, 24);
     Particle *a = static_cast< Particle * >( nodes [ nA ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
     a = static_cast< Particle * >( nodes [ nB ] );
-    Matrix Ab = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
+    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
+
     for ( unsigned i = 0; i < 3; i++ ) {
         for ( unsigned j = 0; j < 6; j++ ) {
             B(i, nA * 6 + j) = -Aa(i, j);
@@ -154,12 +156,11 @@ Matrix LDPMTetra :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {
+Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {    
     //compute volumetric strain
     if ( i == 0 ) {
         volumetricStrain = 0;
     }
-
     stats [ i ]->setParameterValue("volumetric_strain", volumetricStrain);
 
     return Element :: giveStrain(i, DoFs);
@@ -203,7 +204,7 @@ vector< unsigned >LDPMTetra :: giveFacetVertCodes(unsigned k) const {
     v.resize(3);
     v [ 0 ] = vertcodes [ 2 * k ];
     v [ 1 ] = vertcodes [ 2 * k + 1 ];
-    v [ 2 ] = 10;
+    v [ 2 ] = 0;
     return v;
 }
 
@@ -258,7 +259,7 @@ vector< unsigned >LDPMTetra :: giveFacetNodeCodes(unsigned k) const {
  * //////////////////////////////////////////////////////////
  * Matrix RigidBodyContact::giveMassMatrix() const {
  *  Matrix M = Matrix::Zero(6 * (ndim - 1), 6 * (ndim - 1));
- *  DisMechMaterialStatus *mechstat = static_cast<DisMechMaterialStatus *>(stats[0]);
+ *  VectMechMaterialStatus *mechstat = static_cast<VectMechMaterialStatus *>(stats[0]);
  *  double density = mechstat->giveDensity();
  *  double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
  *  double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
@@ -367,7 +368,7 @@ vector< unsigned >LDPMTetra :: giveFacetNodeCodes(unsigned k) const {
  * //////////////////////////////////////////////////////////
  * Matrix RigidBodyContact::giveMassMatrix() const {
  *  Matrix M = Matrix::Zero(6 * (ndim - 1), 6 * (ndim - 1));
- *  DisMechMaterialStatus *mechstat = static_cast<DisMechMaterialStatus *>(stats[0]);
+ *  VectMechMaterialStatus *mechstat = static_cast<VectMechMaterialStatus *>(stats[0]);
  *  double density = mechstat->giveDensity();
  *  double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
  *  double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
@@ -487,11 +488,6 @@ vector< unsigned >LDPMTetra :: giveFacetNodeCodes(unsigned k) const {
  * Vector RigidBodyContact :: transformVectorToXYZ(Vector &result) const {
  *  return this->R.transpose() * result;
  * };
- *
- * //////////////////////////////////////////////////////////
- * Vector RigidBodyContact :: transformToLocal(const Vector &DoFs) const {
- *  return this->R.transpose() * DoFs;
- * }
  *
  * //////////////////////////////////////////////////////////
  * Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {

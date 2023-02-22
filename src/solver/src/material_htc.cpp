@@ -6,26 +6,28 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // HTC MATERIAL STATUS
 
-HTCMaterialStatus :: HTCMaterialStatus(HTCMaterial *m, Element *e, unsigned ipnum) : TrsprtMaterialStatus(m, e, ipnum) {
+HTCMaterialStatus :: HTCMaterialStatus(HTCMaterial *m, Element *e, unsigned ipnum) : TensTrsprtMaterialStatus(m, e, ipnum) {
     name = "HTC mat. status";
 }
 
 //////////////////////////////////////////////////////////
-void HTCMaterialStatus :: giveValues(string code, Vector &result) const {
+bool HTCMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("alpha_c") == 0 ) {
         result.resize(1);
         result [ 0 ] = alphac;
+        return true;
     } else if ( code.compare("alpha_s") == 0 ) {
         result.resize(1);
         result [ 0 ] = alphas;
+        return true;
     } else {
-        TrsprtMaterialStatus :: giveValues(code, result);
+        return TensTrsprtMaterialStatus :: giveValues(code, result);
     }
 }
 
 //////////////////////////////////////////////////////////
 void HTCMaterialStatus :: init() {
-    TrsprtMaterialStatus :: init();
+    TensTrsprtMaterialStatus :: init();
     HTCMaterial *htc = static_cast< HTCMaterial * >( mat );
     alphac = temp_alphac = htc->giveInitAlphac();
     alphas = temp_alphas = htc->giveInitAlphas();
@@ -33,19 +35,19 @@ void HTCMaterialStatus :: init() {
 
 //////////////////////////////////////////////////////////
 void HTCMaterialStatus :: update() {
-    TrsprtMaterialStatus :: update();
+    TensTrsprtMaterialStatus :: update();
 
     alphac = temp_alphac;
     alphas = temp_alphas;
 }
 
 //////////////////////////////////////////////////////////
-Matrix HTCMaterialStatus :: giveStiffnessTensor(string type, unsigned dim) const {
+Matrix HTCMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
     HTCMaterial *htc = static_cast< HTCMaterial * >( mat );
     Matrix P = htc->givePermeabilityTensor();
     double kappa = htc->giveKappa();
-
+    unsigned dim = mat->giveDimension();
     Matrix s = Matrix :: Zero(2 * dim, 2 * dim);
     for ( unsigned i = 0; i < dim; i++ ) {
         for ( unsigned j = 0; j < dim; j++ ) {
@@ -63,7 +65,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
         timeStep = 0;
     }
 
-    double betah = 1. / ( 1. + pow( htc->giveA() - htc->giveA() * h, htc->giveB() ) );
+    double betah = 1. / ( 1. + pow(htc->giveA() - htc->giveA() * h, htc->giveB() ) );
     double Ac, As, alphacdot, alphasdot, old_temp_alphac, old_temp_alphas;
 
     //backward Euler method
@@ -74,7 +76,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     while ( error > 1e-12 && it < 100 ) {
         old_temp_alphac = temp_alphac;
         midalphac = ( temp_alphac + alphac ) / 2.;
-        Ac = htc->giveAc1() * ( htc->giveAc2() / htc->giveAlphacinf() + midalphac ) * ( htc->giveAlphacinf() - midalphac ) * exp( -htc->giveEtac() * midalphac / htc->giveAlphacinf() );
+        Ac = htc->giveAc1() * ( htc->giveAc2() / htc->giveAlphacinf() + midalphac ) * ( htc->giveAlphacinf() - midalphac ) * exp(-htc->giveEtac() * midalphac / htc->giveAlphacinf() );
         alphacdot = Ac * betah * exp(-htc->giveEacR() / T);
         temp_alphac = alphac +  alphacdot * timeStep;
         error = abs(old_temp_alphac - temp_alphac);
@@ -91,7 +93,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
         old_temp_alphas = temp_alphas;
         midalphas = ( temp_alphas + alphas ) / 2.;
         if ( htc->giveAlphasinf() > 1e-15 ) {
-            As = htc->giveAs1() * ( htc->giveAs2() / htc->giveAlphasinf() + midalphas ) * ( htc->giveAlphasinf() - midalphas ) * exp( -htc->giveEtas() * midalphas / htc->giveAlphasinf() );
+            As = htc->giveAs1() * ( htc->giveAs2() / htc->giveAlphasinf() + midalphas ) * ( htc->giveAlphasinf() - midalphas ) * exp(-htc->giveEtas() * midalphas / htc->giveAlphasinf() );
         } else {
             As = 0;
         }
@@ -104,7 +106,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
 
     double psi = exp(htc->giveEadR() / htc->giveT0() - htc->giveEadR() / T);
     double G1 = htc->giveKcvg() * htc->giveC() * temp_alphac + htc->giveKsvg() * htc->giveS() * temp_alphas;
-    double K1 = ( htc->giveW0() - 0.188 * temp_alphac * htc->giveC() + 0.22 * temp_alphas * htc->giveS() - G1 * ( 1. - exp(-10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) ) / ( exp( 10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. );
+    double K1 = ( htc->giveW0() - 0.188 * temp_alphac * htc->giveC() + 0.22 * temp_alphas * htc->giveS() - G1 * ( 1. - exp( -10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) ) / ( exp(10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. );
 
     double G1mult = 1. - 1. / exp(10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) * h);
     double K1mult = exp(10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) * h) - 1.;
@@ -114,11 +116,11 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     double dG1_dac = htc->giveKcvg() * htc->giveC();
     double dG1_das = htc->giveKsvg() * htc->giveS();
     double dK1_dac = (
-        ( exp( 10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. ) * ( -0.188 * htc->giveC() - dG1_dac * ( 1. - exp(-10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) )  - G1 * ( -10 * exp(-10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) )
-        - ( -10. * exp( 10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. ) * ( htc->giveW0() - 0.188 * temp_alphac * htc->giveC() + 0.22 * temp_alphas * htc->giveS() - G1 * ( 1. - exp(-10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) )
+        ( exp(10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. ) * ( -0.188 * htc->giveC() - dG1_dac * ( 1. - exp( -10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) )  - G1 * ( -10 * exp( -10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) )
+        - ( -10. * exp(10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. ) * ( htc->giveW0() - 0.188 * temp_alphac * htc->giveC() + 0.22 * temp_alphas * htc->giveS() - G1 * ( 1. - exp( -10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) )
         )
-                     / pow(exp( 10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1., 2);
-    double dK1_das = ( 0.22 * htc->giveS()  - dG1_das * ( 1. - exp(-10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) ) / ( exp( 10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. );
+                     / pow(exp(10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1., 2);
+    double dK1_das = ( 0.22 * htc->giveS()  - dG1_das * ( 1. - exp( -10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) ) ) / ( exp(10 * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) - 1. );
     double dG1mult_dac = -10. * h * exp(-10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) * h);
     double dK1mult_dac = -10. * h * exp(10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) * h);
 
@@ -126,7 +128,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
     double dwe_das = dG1_das * G1mult + dK1_das * K1mult;
     double dwn_dac = htc->giveKappac() * htc->giveC();
 
-    Dh = psi * htc->giveD1() / ( 1. + ( htc->giveD1() / htc->giveD0() - 1. ) * pow(1. - h, htc->giveN() ) );
+    Dh = psi * htc->giveD1() / ( 1. + ( htc->giveD1() / htc->giveD0() - 1. ) * pow( 1. - h, htc->giveN() ) );
     qh = dwe_dac * alphacdot + dwe_das * alphasdot + dwn_dac * alphacdot;
     qT = alphacdot * htc->giveC() * htc->giveQcinf() + alphasdot * htc->giveS() * htc->giveQsinf();
     dwe_dh = G1 * ( 10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) * exp(-10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) * h) + K1 * ( 10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) ) * exp(10. * ( htc->giveG1() * htc->giveAlphacinf() - temp_alphac ) * h);
@@ -192,7 +194,7 @@ void HTCMaterialStatus :: setParameterValue(string code, double value) {
     } else if  ( code.compare("temperature") == 0 ) {
         T = value;
     } else {
-        TrsprtMaterialStatus :: setParameterValue(code, value);
+        TensTrsprtMaterialStatus :: setParameterValue(code, value);
     }
 }
 
@@ -204,8 +206,7 @@ void HTCMaterialStatus :: setParameterValue(string code, double value) {
 void HTCMaterial :: readFromLine(istringstream &iss) {
     string param;
 
-    while ( !iss.eof() ) {
-        iss >> param;
+    while (  iss >> param ) { 
         if ( param.compare("kappa") == 0 ) {
             iss >> kappa;
         } else if ( param.compare("D1") == 0 ) {
@@ -280,7 +281,9 @@ MaterialStatus *HTCMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum)
 
 
 //////////////////////////////////////////////////////////
-void HTCMaterial :: init() {
+void HTCMaterial :: init(MaterialContainer *matcont) {
+    TensTrsprtMaterial :: init(matcont);
+
     permeabilityTensor  = Matrix :: Zero(3, 3);
 
     permeabilityTensor(0, 0) = permeabilityTensor(1, 1) = permeabilityTensor(2, 2) = 0.90020548;

@@ -1,6 +1,0 @@
-## type      node    direction   numMasters master1 multiplier1 master2...
-# jointDoF 1  0   2   13  1   14  0
-## type      masterNode  numSlaves slave1 slave2 ...
-RigidPlate  1656 18 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-## type      masterNode  x0 x1 y0 y1 (z0 z1)
-# CoordRigidPlate 1656 0.98 1.02 -100 100

@@ -1,5 +1,0 @@
-# nodeIdx	KinTrX	KinTrY	KinTrZ	KinRotX	KinRotY	KinRotZ	StTrX	StTrY	StTrZ	StRotX	StRotY	StRotZ
-NodalBC	5677	0	0	0	0	0	0	-1	-1	-1	-1	-1	-1
-NodalBC	5678	-1	0	0	1	0	0	2	-1	-1	-1	-1	-1
-# for linearly increasing tensile/compressive deformation
-#NodalBC 5678	1	0	0	0	0	0	-1	-1	-1	-1	-1	-1

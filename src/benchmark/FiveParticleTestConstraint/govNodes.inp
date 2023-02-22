@@ -1,3 +1,3 @@
 #type xcoord ycoord (zcoord) numDoFs
-Particle 1 0.5 1
-Particle 1 0.5 1
+MechDoF 1 0.5 1
+MechDoF 1 0.5 1
