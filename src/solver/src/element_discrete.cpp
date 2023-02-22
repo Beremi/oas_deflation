@@ -432,12 +432,12 @@ Vector RigidBodyContact :: transformVectorToXYZ(Vector &result) const {
 };
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: transformToLocal(const Vector &DoFs) const {
+Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
     return this->R.transpose() * DoFs;
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: transformToGlobal(const Vector &DoFs) const {
+Vector RigidBodyContact :: transformToLocal(const Vector &DoFs) const {
     return this->R * DoFs;
 }
 
