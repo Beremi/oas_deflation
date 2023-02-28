@@ -37,11 +37,12 @@ void RVEMaterialStatus :: init() {
 
     //generateVolumetricAverageBC(); //not good idea because the stiffness matrix becomes full
     generateRandomFixedBC();
-    RVE->init();
 
     stringstream appendname;
     appendname << "_" << std :: setfill('0') << std :: setw(4) << element->giveID() << "_" << std :: setw(2) << idx;
     RVE->giveExporters()->appendToAllNames( appendname.str() );
+
+    RVE->init();
 }
 
 //////////////////////////////////////////////////////////
