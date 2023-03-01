@@ -89,7 +89,12 @@ void CSLMaterialStatus :: init() {
     nt = log( Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
 
     if ( Ks < 0 || Kt < 0 ) {
-        cerr << "Error " << name << ": snap back occured" << endl;
+        cerr << "Error in " << name << ": snap back occured" << endl;
+        exit(1);
+    }
+
+    if ( Kt <= Ks ) {
+        cerr << "Error in " << name << ": Ks is greater than Kt" << endl;
         exit(1);
     }
 }
@@ -191,6 +196,7 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             unsigned dim = element->giveDimension();
             double flam = 1. / ( 1. + max(-( volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
             K0 = -flam * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt) );
+            
             if ( omega < 0.0 ) {
                 chi = epsEQ * omega / omega0 + emax * ( 1. - omega / omega0 );
             } else {
@@ -203,7 +209,7 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             strEQ = S0;
         }
 
-        temp_damage = 1. - strEQ / ( m->giveE0() * epsEQ );
+        temp_damage = 1. - strEQ / ( m->giveE0() * epsEQ );      
     } else {
         temp_damage = 0.0;
     }
