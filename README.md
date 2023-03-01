@@ -1,4 +1,4 @@
-# PARTMOD
+# OAS
 
 ## Documentation
 https://kelidas.gitlab.io/partmod-site

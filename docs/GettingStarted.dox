@@ -1,13 +1,13 @@
 /** \page GettingStarted Getting started
 
 
-This is a very short guide on how to get started with PartMod.
+This is a very short guide on how to get started with OAS.
 
 
-\section GettingStartedInstallation How to "install" PartMod?
+\section GettingStartedInstallation How to "install" OAS?
 
-In order to use PartMod, you just need to download and extract PartMod's source code - https://gitlab.com/kelidas/partmod.
-To grab a copy of the latest version of PartMod using git access.
+In order to use OAS, you just need to download and extract OAS's source code - https://gitlab.com/kelidas/partmod.
+To grab a copy of the latest version of OAS using git access.
 \code{.sh}
   git clone git@gitlab.com:kelidas/partmod.git
   OR
@@ -16,12 +16,12 @@ To grab a copy of the latest version of PartMod using git access.
 Or download arvhive file e.g. ZIP https://gitlab.com/kelidas/partmod/-/archive/master/partmod-master.zip .
 
 \subsection Prereqisites Pre-requisites
-The PartMod requires the CMake cross-platform build system and C++ compiler
+The OAS requires the CMake cross-platform build system and C++ compiler
 with STL support (Standard Template Library).
 
 
 \subsection Build Build
-PartMod project uses cross-platform building system \c cmake \c (\cite bast_cmake_2018).
+OAS project uses cross-platform building system \c cmake \c (\cite bast_cmake_2018).
 Examples: https://github.com/dev-cafe/cmake-cookbook/tree/v1.0 .
 Cmake can be used:
 - in terminal (command line)
@@ -32,15 +32,14 @@ A build directory has to be outside of the source directory.
 The recommended structure
 \code{.txt}
 .
-+-- partmod [git repository]
++-- OAS [git repository]
 |   +-- .git
 |   +-- docs
 |   +-- src
 |   +-- ...
-+-- partmod-build [can be created anywhere outside of partmod repository]
-|   +-- partmod_docs [generated documentation]
-|   +-- bin/DiscreteModel [executable]
-+-- partmod-site [git repository for uploading documentation]
++-- OAS-build [can be created anywhere outside of OAS repository]
+|   +-- OAS_docs [generated documentation]
+|   +-- OAS-site [git repository for uploading documentation]
 |   +-- public
 |   +-- ...
 \endcode
@@ -53,9 +52,9 @@ VTK is mostly tested with version >9 (but >8.2 should be working too).
 If your version is lower or there is no system library than build your own
 \ref VTK "VTK build".
 
-\subsubsection PartModBuild Partmod build
+\subsubsection OASBuild OAS build
 
--# create build directory e.g. \c partmod-build \c
+-# create build directory e.g. \c OAS-build \c
 -# configure the target
   - `-D CMAKE_BUILD_TYPE=Release/Debug` (gcc compiler, Release is default)
   - `-D USE_VTK=ON/OFF` (default ON)
@@ -64,8 +63,8 @@ If your version is lower or there is no system library than build your own
     - own library build - `-D VTK_DIR:PATH="cesta/VTK/build"`
   - `-D USE_SANITIZERS=ON/OFF` (default OFF) - for debuging
 \code{.sh}
-  cd partmod-build
-  cmake PATH_TO_SRC (if recommended structure - cmake ../partmod)
+  cd OAS-build
+  cmake PATH_TO_SRC (if recommended structure - cmake ../OAS)
   OR e.g.
   cmake -D CMAKE_BUILD_TYPE=Debug -D VTK_DIR="cesta" -D USE_VTK=ON -D USE_SANITIZERS=OFF PATH_TO_SRC [gcc]
 \endcode
@@ -105,12 +104,12 @@ Build Windows executable on Linux machine
   \endcode
 - using toolchain to build Windows executable under Linux system using cross compiler MXE (https://mxe.cc)
   \code{.sh}
-    cmake -D CMAKE_TOOLCHAIN_FILE=../partmod/toolchain_mxe.cmake ../partmod
+    cmake -D CMAKE_TOOLCHAIN_FILE=../OAS/toolchain_mxe.cmake ../OAS
   \endcode
 - using mxe cmake wrapper
 \code{.sh}
-  x86_64-w64-mingw32.static-cmake ../partmod
-  /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake -D CMAKE_TOOLCHAIN_FILE=../partmod/toolchain_mxe.cmake -DBLAS_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/cblas-3.8.0 -DLAPACK_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapack-3.8.0 -DLAPACKE_DIR=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapacke-3.8.0 ../partmod
+  x86_64-w64-mingw32.static-cmake ../OAS
+  /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake -D CMAKE_TOOLCHAIN_FILE=../OAS/toolchain_mxe.cmake -DBLAS_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/cblas-3.8.0 -DLAPACK_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapack-3.8.0 -DLAPACKE_DIR=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapacke-3.8.0 ../OAS
 \endcode
 
 
@@ -121,7 +120,7 @@ Build Windows executable on Linux machine
     OR
     make docs [when Makefile generated]
   \endcode
--# publish documentation (if partmod and partmod-site placed in the same directory
+-# publish documentation (if OAS and OAS-site placed in the same directory
    as recommended)
   \code{.sh}
     cmake --build . --target docs_publish
@@ -137,7 +136,7 @@ Build Windows executable on Linux machine
 \section CodingStandard Coding Standard
 - uncrustify
 \code{.sh}
-uncrustify -c partmod_dir/uncrustify.cfg -l CPP --replace mysource.C
+uncrustify -c OAS_dir/uncrustify.cfg -l CPP --replace mysource.C
 \endcode
 - uncrustify all *.cpp and *.h files
 \code{.sh}
@@ -146,8 +145,8 @@ uncrustify -c ../../../uncrustify.cfg -l CPP --replace *.cpp *.h
 
 
 
-\section Running Running PartMod
-PartMod executable requires path to master.inp - the path can be both absolute
+\section Running Running OAS
+OAS executable requires path to master.inp - the path can be both absolute
 and relative. Unix commands can look like:
 \code{.sh}
 ./DiscreteModel /path/to/master.inp
@@ -185,19 +184,19 @@ DiscreteModel -j number_of_threads master.inp
 
 -# simply run all tests
   \code{.sh}
-    cd partmod-build
+    cd OAS-build
     ctest
   \endcode
 
 -# run multiple tests parallel
   \code{.sh}
-    cd partmod-build
+    cd OAS-build
     ctest -j [number of jobs]
   \endcode
 
 -# specify tests label
   \code{.sh}
-    cd partmod-build
+    cd OAS-build
     ctest -L [label] -j 4
     ctest -L tests -j 4
     ctest -L tests -C Release -j 4 # [Windows]
@@ -206,7 +205,7 @@ DiscreteModel -j number_of_threads master.inp
 
 \subsection DOCKER Docker
 
-In partmod directory run:
+In OAS directory run:
 \code{.sh}
 docker build -f docker/Dockerfile_ubuntu20 .
 >> Successfully built a99225cc61c5 (this number will change)
@@ -263,7 +262,7 @@ docker run -it --entrypoint /bin/bash a992
 \code{.sh}
   pip install appimage-builder
   apt install zsync patchelf
-  cd partmod-build
+  cd OAS-build
   cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
   cmake --build . --target install DESTDIR=AppDir [make install DESTDIR=AppDir]
   appimage-builder --generate [generate AppImageBuilder.yml]
@@ -272,7 +271,7 @@ docker run -it --entrypoint /bin/bash a992
 \endcode
 
 \code{.sh}
-  cd partmod-build
+  cd OAS-build
   cmake --build . --target install DESTDIR=AppDir [make install DESTDIR=AppDir]
   appimage-builder --recipe AppImageBuilder.yml --skip-tests
 \endcode
