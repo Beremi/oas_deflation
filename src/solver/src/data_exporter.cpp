@@ -614,7 +614,7 @@ void IntegrationPointGauge :: init() {
     maxsize [ 0 ] = 0;
     for ( unsigned e = 0; e < elems.size(); e++ ) {
         ee = elemcont->giveElement(elems[e]);
-        ee->giveIPValues(codes [ 0 ], e, res);
+        ee->giveIPValues(codes [ 0 ], ipnums[e], res);
         maxsize [ 0 ] = max< size_t >(maxsize [ 0 ], res.size() );
     }
 }
