@@ -14,7 +14,7 @@ To grab a copy of the latest version of OAS using git access.
   OR
   git clone https://gitlab.com/kelidas/OAS.git
 \endcode
-Or download arvhive file e.g. ZIP https://gitlab.com/kelidas/OAS/-/archive/master/OAS-master.zip .
+Or download archive file e.g. ZIP https://gitlab.com/kelidas/OAS/-/archive/master/OAS-master.zip .
 
 \subsection Prereqisites Pre-requisites
 The OAS requires the CMake cross-platform build system and C++ compiler
@@ -253,7 +253,7 @@ docker run -it --entrypoint /bin/bash a992
   \endcode
 - if VTK not in path/not installed (newer version) (for MXE: /opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/vtk-8.2)
   \code{.sh}
-    cmake -DVTK_DIR:PATH=/path_to_vtk_build ../gamu
+    cmake -DVTK_DIR:PATH=/path_to_vtk_build ../OAS
     OR
     cmake -DVTK_DIR:PATH=/path_to_vtk_build .
   \endcode
@@ -277,38 +277,6 @@ docker run -it --entrypoint /bin/bash a992
   appimage-builder --recipe AppImageBuilder.yml --skip-tests
 \endcode
 
-
-\section Doxsyntax Doxygen tests
-
-Here is a rather simple program to get you started.
-
-Paper \cite ImanConover:1980
-
-The distance between \f$(x_1,y_1)\f$ and \f$(x_2,y_2)\f$ is
-  \f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
-
-  First Header  | Second Header
-  ------------- | -------------
-  Content Cell  | Content Cell
-  Content Cell  | Content Cell
-
-
-~~~~~~~~~~~~~{.py}
-# A class
-class Dummy:
-    pass
-~~~~~~~~~~~~~
-
-
-
-\code{.py}
-class Python:
-   pass
-\endcode
-
-\code{.cpp}
-class Cpp {};
-\endcode
 
 
 */
