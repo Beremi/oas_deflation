@@ -1,5 +1,5 @@
 
-#add_custom_command( TARGET DiscreteModel
+#add_custom_command( TARGET OAS
 #    POST_BUILD
 #    COMMAND ${CMAKE_COMMAND} -E echo "Copying tests data.."
 #    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/tests ${CMAKE_BINARY_DIR}/tests
@@ -32,19 +32,19 @@ set_tests_properties(
 add_test(
   NAME SpringMechElastic
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests/SpringMechElastic
-  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:DiscreteModel>
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:OAS>
   )
 
 add_test(
   NAME SpringMechElastic_3D
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests/SpringMechElastic_3D
-  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:DiscreteModel>
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:OAS>
   )
 
 add_test(
   NAME 2DPatchTestMechanics
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests/2DPatchTestMechanics
-  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:DiscreteModel>
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:OAS>
   )
 
 set_tests_properties(

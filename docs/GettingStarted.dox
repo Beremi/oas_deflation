@@ -1,4 +1,5 @@
-/** \page GettingStarted Getting started
+/** 
+\mainpage Getting started
 
 
 This is a very short guide on how to get started with OAS.
@@ -6,14 +7,14 @@ This is a very short guide on how to get started with OAS.
 
 \section GettingStartedInstallation How to "install" OAS?
 
-In order to use OAS, you just need to download and extract OAS's source code - https://gitlab.com/kelidas/partmod.
+In order to use OAS, you just need to download and extract OAS's source code - https://gitlab.com/kelidas/OAS.
 To grab a copy of the latest version of OAS using git access.
 \code{.sh}
-  git clone git@gitlab.com:kelidas/partmod.git
+  git clone git@gitlab.com:kelidas/OAS.git
   OR
-  git clone https://gitlab.com/kelidas/partmod.git
+  git clone https://gitlab.com/kelidas/OAS.git
 \endcode
-Or download arvhive file e.g. ZIP https://gitlab.com/kelidas/partmod/-/archive/master/partmod-master.zip .
+Or download arvhive file e.g. ZIP https://gitlab.com/kelidas/OAS/-/archive/master/OAS-master.zip .
 
 \subsection Prereqisites Pre-requisites
 The OAS requires the CMake cross-platform build system and C++ compiler
@@ -149,34 +150,34 @@ uncrustify -c ../../../uncrustify.cfg -l CPP --replace *.cpp *.h
 OAS executable requires path to master.inp - the path can be both absolute
 and relative. Unix commands can look like:
 \code{.sh}
-./DiscreteModel /path/to/master.inp
-./DiscreteModel ../../master.inp
-./DiscreteModel master.inp
+./OAS /path/to/master.inp
+./OAS ../../master.inp
+./OAS master.inp
 \endcode
 
 Windows alternatives are:
 \code{.sh}
-DiscreteModel.exe C:\path\to\master.inp
-DiscreteModel.exe ..\..\master.inp
-DiscreteModel master.inp
+OAS.exe C:\path\to\master.inp
+OAS.exe ..\..\master.inp
+OAS master.inp
 \endcode
 
 \subsection OPENMP OpenMP
 Using OpenMP to use parallel Conjugate gradient (and some other operations) in Eigen on Linux:
 \code{.sh}
-./DiscreteModel -j number_of_threads master.inp
+./OAS -j number_of_threads master.inp
 OR
-OMP_NUM_THREADS=4 ./DiscreteModel master.inp
+OMP_NUM_THREADS=4 ./OAS master.inp
 OR
 export OMP_NUM_THREADS=4
-./DiscreteModel master.inp
+./OAS master.inp
 \endcode
 on Windows:
 \code
 set OMP_NUM_THREADS=4
-DiscreteModel master.inp
+OAS master.inp
 OR
-DiscreteModel -j number_of_threads master.inp
+OAS -j number_of_threads master.inp
 \endcode
 
 

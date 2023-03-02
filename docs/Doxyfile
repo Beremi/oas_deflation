@@ -713,7 +713,7 @@ LAYOUT_FILE            =
 # LATEX_BIB_STYLE. To use this feature you need bibtex and perl available in the
 # search path. See also \cite for info how to create references.
 
-CITE_BIB_FILES         = @PartMod_SOURCE_DIR@/docs/bibliography.bib
+CITE_BIB_FILES         = @OAS_SOURCE_DIR@/docs/bibliography.bib
 
 #---------------------------------------------------------------------------
 # Configuration options related to warning and progress messages
@@ -790,8 +790,8 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @PartMod_SOURCE_DIR@/src/solver/src \
-                         @PartMod_SOURCE_DIR@/docs
+INPUT                  = @OAS_SOURCE_DIR@/src/solver/src \
+                         @OAS_SOURCE_DIR@/docs
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -2082,7 +2082,7 @@ SEARCH_INCLUDES        = YES
 # preprocessor.
 # This tag requires that the tag SEARCH_INCLUDES is set to YES.
 
-INCLUDE_PATH           = @PartMod_SOURCE_DIR@/src/solver/src
+INCLUDE_PATH           = @OAS_SOURCE_DIR@/src/solver/src
 
 # You can use the INCLUDE_FILE_PATTERNS tag to specify one or more wildcard
 # patterns (like *.h and *.hpp) to filter out the header-files in the

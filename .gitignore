@@ -664,7 +664,7 @@ MigrationBackup/
 ########### This project
 voro++
 dmgalpha
-*DiscreteModel
+*OAS
 point_generators_cython.cpp
 /src/preprocessor/voronoi/power_*/
 /src/postprocessor/LD_viewer/example-Mirek.bat

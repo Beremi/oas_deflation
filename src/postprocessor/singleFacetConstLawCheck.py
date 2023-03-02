@@ -212,7 +212,7 @@ def generateInputs(tensileLoad, shearLoad,
 
 
 def runCalculation(angle, masterFile="input_files/master.inp",
-                   binary="DiscreteModel",
+                   binary="OAS",
                    nohup=True):
     if not os.path.isfile(binary):
         print("there is no binary file in this directory %s" % os.path.abspath("."))
