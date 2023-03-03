@@ -1,11 +1,37 @@
 /** \page Preprocessor Preprocessor
 
 
-This is a very short guide on how to get started with Eigen. It has a dual
-purpose. It serves as a minimal introduction to the Eigen library for people
-who want to start coding as soon as possible. You can also read this page as
-the first part of the Tutorial, which explains the library in more detail;
-in this case you will continue with \ref GettingStarted.
+\section Doxsyntax Doxygen tests
+
+Here is a rather simple program to get you started.
+
+Paper \cite ImanConover:1980
+
+The distance between \f$(x_1,y_1)\f$ and \f$(x_2,y_2)\f$ is
+  \f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
+
+  First Header  | Second Header
+  ------------- | -------------
+  Content Cell  | Content Cell
+  Content Cell  | Content Cell
+
+
+~~~~~~~~~~~~~{.py}
+# A class
+class Dummy:
+    pass
+~~~~~~~~~~~~~
+
+
+
+\code{.py}
+class Python:
+   pass
+\endcode
+
+\code{.cpp}
+class Cpp {};
+\endcode
 
 
 

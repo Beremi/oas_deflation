@@ -1,7 +1,7 @@
-filename=$(ls -1 bin/DiscreteModel{,.exe} 2>/dev/null)
+filename=$(ls -1 bin/OAS{,.exe} 2>/dev/null)
 extension=""
 
-if [[ "$filename" == *"DiscreteModel.exe"* ]]; then
+if [[ "$filename" == *"OAS.exe"* ]]; then
   extension=".exe"
 fi
 
