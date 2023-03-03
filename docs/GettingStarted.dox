@@ -5,6 +5,10 @@
 This is a very short guide on how to get started with OAS.
 
 
+\section Description What is OAS?
+
+Open Academic Solver is a project developing numerical solver primarily focused on mechanical behavior of solids. It also solves mass transport, heat conducion or other scalar problems described by Poisson's equation. Large effort is devoted to multiphysical coupled tasks. Both discrete and continuous material representations are included.
+
 \section GettingStartedInstallation How to "install" OAS?
 
 In order to use OAS, you just need to download and extract OAS's source code - https://gitlab.com/kelidas/OAS.
