@@ -25,6 +25,8 @@ protected:
     std :: vector< unsigned >nodecodes;   //coonectivity of facets between nodes
     std :: vector< unsigned >vertcodes;   //coonectivity of facets between vertices
 
+    Vector volWeights; //factors to caluclate volumetric strain
+
     double volumetricStrain;
 
 public:

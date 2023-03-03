@@ -114,6 +114,32 @@ void LDPMTetra :: init() {
         cerr << "Error in " << name << ": material must be inherited from VectMechMaterial, " << mat->giveName() << " provided" << endl;
         exit(1);
     }
+
+    //weights fro volumetric calculations
+    volWeights.resize( 12 );
+    Point volumeChangeWeights;
+    unsigned j, k, l;
+    double sign;
+    double averageSide = 0;
+    for ( unsigned i = 0; i < 4; i++ ) {
+        j = ( i + 1 ) % 4;
+        k = ( i + 2 ) % 4;
+        l = ( i + 3 ) % 4;
+        averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
+        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross( nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+        volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
+        sign = volume / abs(volume);
+        for ( unsigned v = 0; v < 3; v++ ) {
+            volWeights [ 3*i + v ] = sign * volumeChangeWeights(v) / 3; //divided by ndim, othewise total trace of strain vector would be returned
+        }
+    }
+    volume = abs(volume);
+
+    averageSide /= 4;
+    if ( volume < 0.05 * sqrt(2) / 12. * pow(averageSide, 3) || volume < 1e-25 ) {
+        cerr << name << "Error: wrong geometry" << endl;
+        exit(1);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -145,8 +171,13 @@ Matrix LDPMTetra :: giveHMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {    
     //compute volumetric strain
-    if ( i == 0 ) {
+
+    if (i==0){  //first IP     
         volumetricStrain = 0;
+        for ( unsigned k = 0; k < DoFs.size(); k++ ) {
+            volumetricStrain += DoFs [ k ] * volWeights [ k ];
+        }
+        volumetricStrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
     }
     stats [ i ]->setParameterValue("volumetric_strain", volumetricStrain);
 
