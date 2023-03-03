@@ -5632,47 +5632,17 @@ def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
 
     ########### getting nodes and radii
     node_coords = np.zeros( (1, dim) )
+    node_coords_polar = np.zeros( (1, dim) )
     radii = np.zeros( 1 )
-    node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True, periodic_distance=True)
+    node_coords, per_node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True, periodic_distance=True)
 
     node_coords = np.asarray(node_coords)
-    #masters = np.ones(len(node_coords)).astype(int)*(-1)
 
-    limit = 8*minDist
-    XA = np.where(node_coords[:,0]<limit)[0]
-    XB = np.where(node_coords[:,0]>maxLim[0]-limit)[0]
-    YA = np.where(node_coords[:,1]<limit)[0]
-    YB = np.where(node_coords[:,1]>maxLim[1]-limit)[0]
 
-    XAYA = XA[np.where(node_coords[XA,1]<limit)[0]]
-    XAYB = XA[np.where(node_coords[XA,1]>maxLim[1]-limit)[0]]
-    XBYA = XB[np.where(node_coords[XB,1]<limit)[0]]
-    XBYB = XB[np.where(node_coords[XB,1]>maxLim[1]-limit)[0]]
-
-    nNds = np.vstack((
-    node_coords,
-    node_coords[XA] + np.array([maxLim[0], 0]),
-    node_coords[YA] + np.array([0, maxLim[1]]),
-    #
-    node_coords[XB] + np.array([-maxLim[0], 0]),
-    node_coords[YB] + np.array([0, -maxLim[1]]),
-    #
-    node_coords[XAYA] + np.array([maxLim[0], maxLim[1]]),
-    node_coords[XBYA] + np.array([-maxLim[0], maxLim[1]]),
-    node_coords[XAYB] + np.array([maxLim[0], -maxLim[1]]),
-    node_coords[XBYB] + np.array([-maxLim[0], -maxLim[1]])
-    ))
-
-    """
-    nNds = np.asarray(nNds)
-    if SHOW_PLOT:
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        #ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
-        #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
-        ax.scatter(nNds[:,0], nNds[:,1], nNds[:,2], color='r')
-        plt.show()
-    """
+    nNds = np.vstack((      # all the nodes (RVE + periodic)
+        node_coords,
+        per_node_coords
+    ))   
 
 
 

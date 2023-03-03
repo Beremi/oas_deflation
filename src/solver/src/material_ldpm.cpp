@@ -179,23 +179,21 @@ Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_pre
 Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain_prev, Vector stress_prev) {
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
-    // NORMAL STRESS
-    // deviatoric / volumetric change
-    double dEpsN, deviatoricStrain, epsDV, rDV;
-    dEpsN = strain [ 0 ] - strain_prev [ 0 ];
     temp_maxEpsN = max(maxEpsN, strain [ 0 ]);
 
+    // NORMAL STRESS
+    double deviatoricStrain, epsT, omega, eps0, str0, rDV, epsDV, epsV0, strNElastic, dEpsN;
+    double sigmaBC, epsC0, Hc, epsC1;
+
+    epsC0 = m->giveFc0() / m->giveE0();
+    epsC1 = m->giveKc0() * epsC0;
     deviatoricStrain = volumetricStrain - strain [ 0 ];
     epsDV = volumetricStrain + m->giveBeta() * deviatoricStrain;
 
-    if ( strain [ 0 ] == 0 ) {
-        rDV = 0;
-    } else {
-        rDV = deviatoricStrain / volumetricStrain;
-    }
 
+    dEpsN = strain [ 0 ] - strain_prev [ 0 ];    
     // densified normal modulus and elastic step w/ or w/out change in normal modulus
-    double ENc, strNElastic, dEps1, dEps2, epsC0, epsC1, Hc, strBc, strC1;
+    double ENc, dEps1, dEps2;
     if ( stress_prev [ 0 ] <=  -m->giveFc0() ) {
         ENc = m->giveEd();
     } else {
@@ -216,37 +214,46 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
     } else {
         strNElastic = stress_prev [ 0 ] + ENc * dEpsN;
     }
-
-    epsC0 = -m->giveFc0() / m->giveE0();
-    epsC1 = m->giveKc0() * epsC0;  // rehardening begins
-
-    if ( ( rDV - m->giveKc1() ) > 0 ) {
-        Hc = m->giveHc0() / ( 1 + m->giveKc2() * ( rDV - m->giveKc1() ) );
-    } else {
-        Hc = m->giveHc0();
+    
+    if ( strain.size() == 2 ) {     //2D
+        epsT = abs(strain [ 1 ]);
+    } else {    //3D
+        epsT = sqrt( pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );
     }
 
-    strC1 = -m->giveFc0() + ( epsC1 - epsC0 ) * Hc;
-
-    double mcb;
-    if ( -epsDV <= 0 ) {
-        strBc = -m->giveFc0();
-    } else if ( 0 <= -epsDV && -epsDV <= epsC1 ) {
-        if ( -epsDV - epsC0 > 0 ) {
-            mcb = -epsDV + epsC0;
-        } else {
-            mcb = 0;
-        }
-        strBc = -m->giveFc0() + mcb * Hc;
+    if ( epsT == 0 ) {
+        omega = 0.5 * M_PI;
     } else {
-        strBc = strC1 * exp( ( -epsDV + epsC1 ) * Hc / strC1);
+        omega = atan( strain [ 0 ] / ( sqrt( m->giveAlpha() ) * epsT ) );
+    }
+
+    str0 = giveStrengthLimit(omega);
+
+    epsV0 = m->giveKc3() * str0 / m->giveE0();
+
+    if (volumetricStrain <= 0. ) {
+        rDV = - abs( deviatoricStrain ) / ( volumetricStrain - epsV0 );
+    } else {
+        rDV = abs( deviatoricStrain ) / epsV0;
+    }
+
+    Hc = ( m->giveHc0() - m->giveHc1() ) / ( 1 + m->giveKc2() * max( 0., rDV - m->giveKc1())) + m->giveHc1();
+
+    // inelastic boundary
+    if ( epsDV >= 0 ) {
+        sigmaBC = m->giveFc0();
+    } else if ( 0 <= - epsDV && - epsDV <= epsC1 ) {
+        sigmaBC = m->giveFc0() + max( 0., -epsDV-epsC0 ) * Hc;
+    } else {
+        double sigmaC1 = m->giveFc0() + (epsC1 - epsC0) * Hc;
+        sigmaBC = sigmaC1 * exp( (-epsDV - epsC1 ) * Hc / sigmaC1 );
     }
 
     Vector intStress = Vector :: Zero( strain.size() );        // vector to collect stress
-    intStress [ 0 ] = min(0.0, max(strBc, strNElastic) );
+    intStress [ 0 ] = min( 0., max( - sigmaBC, strNElastic ));
 
     // SHEAR
-    double dEpsM, dEpsL, epsT, strMElastic, strLElastic, strTElastic, strBs, strT;
+    double dEpsM, dEpsL, strMElastic, strLElastic, strTElastic, strBs, strT;
     dEpsM = strain [ 1 ] - strain_prev [ 1 ];
     strMElastic = stress_prev [ 1 ] + m->giveEt() * dEpsM;
     if ( strain.size() == 2 ) {     //2D
@@ -439,7 +446,7 @@ std :: string LDPMMaterialStatus :: giveLineToSave() const {
 //////////////////////////////////////////////////////////
 void LDPMMaterialStatus :: setParameterValue(string code, double value) {
     if ( code.compare("volumetric_strain") == 0 ) {
-        volumetricStrain = value;
+        volumetricStrain = value;     // volumetric change, cela stopa matice, proto *3
     } else {
         VectMechMaterialStatus :: setParameterValue(code, value);
     }
@@ -524,7 +531,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     // initialize all values to zero (NOTE probably no need in linux, but in windows necessary)
-    nt = kt = beta = fc = Ed = Hc0 = Kc0 = Kc1 = Kc2 = fs = mu0 = muinf = Et = 0;
+    nt = kt = beta = fc = Ed = Hc0 = Hc1 = Kc0 = Kc1 = Kc2 = Kc3 = fs = mu0 = muinf = Et = 0;
 
     string param;
     bool bft, bGt, bfc0, bfs0;
@@ -552,12 +559,16 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
             iss >> Ed;
         } else if ( param.compare("Hc0") == 0 ) {
             iss >> Hc0;
+        } else if ( param.compare("Hc1") == 0 ) {
+            iss >> Hc1;
         } else if ( param.compare("Kc0") == 0 ) {
             iss >> Kc0;
         } else if ( param.compare("Kc1") == 0 ) {
             iss >> Kc1;
         } else if ( param.compare("Kc2") == 0 ) {
             iss >> Kc2;
+        } else if ( param.compare("Kc3") == 0 ) {
+            iss >> Kc3;
         } else if ( param.compare("fs") == 0 ) {
             iss >> fs;
         } else if ( param.compare("fs0") == 0 ) {
@@ -616,9 +627,11 @@ void LDPMMaterial :: init(MaterialContainer *matcont) {
     fc = ( fc == 0 ) ? 16 * ft : fc;
     Ed = ( Ed == 0 ) ? 2 * E0 : Ed;
     Hc0 = ( Hc0 == 0 ) ? 0.6 * E0 : Hc0;
+    Hc1 = ( Hc1 == 0 ) ? 0.1 * E0 : Hc1;
     Kc0 = ( Kc0 == 0 ) ? 4 : Kc0;
     Kc1 = ( Kc1 == 0 ) ? 1 : Kc1;
     Kc2 = ( Kc2 == 0 ) ? 10 : Kc2;
+    Kc3 = ( Kc3 == 0 ) ? 0.1 : Kc3;
 
     fs = ( fs == 0 ) ? 3 * ft : fs;
     Et = ( Et == 0 ) ? alpha * E0 : Et;
