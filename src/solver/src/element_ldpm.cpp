@@ -83,7 +83,7 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         areas [ i ] *= n.dot(normals [ i ]); //projection of area
 
         Point t1, t2;
-        t1 = vert [ 0 ]->givePoint() - inttype->giveIPLocation(i);                
+        t1 = inttype->giveIPLocation(i)-vert [ 0 ]->givePoint();                
         t1.normalize();
         t2 = normals [ i ].cross(t1);
         R [ i ] = Matrix :: Zero(3, 3);
