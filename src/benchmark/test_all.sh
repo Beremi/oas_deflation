@@ -8,13 +8,13 @@ echo "---------------------------------------------------------"
 # Any subsequent(*) commands which fail will cause the shell script to exit immediately
 set -e
 # path to binary file for recomended build tree
-# (see https://kelidas.gitlab.io/partmod-site/GettingStarted.html)
+# (see https://kelidas.gitlab.io/OAS-site/GettingStarted.html)
 # NOTE it is a path from one of the subdirectories
-path_to_binary_file="../../../../partmod-build/bin/DiscreteModel"
+path_to_binary_file="../../../../OAS-build/bin/OAS"
 remove_fol="rm -Rf results"
-copy_bin="cp $path_to_binary_file DiscreteModel"
-run_test="nohup ./DiscreteModel master.inp"
-remove_binary="rm DiscreteModel"
+copy_bin="cp $path_to_binary_file OAS"
+run_test="nohup ./OAS master.inp"
+remove_binary="rm OAS"
 remove_out_files="rm *.out"
 remove_results="$remove_binary && $remove_fol && $remove_out_files"
 save_output=false

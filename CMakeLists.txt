@@ -26,18 +26,18 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
-project(PartMod C CXX)
-set (PartMod_VERSION_MAJOR 0)
-set (PartMod_VERSION_MINOR 1)
-set (PartMod_VERSION_PATCH 0) # Unused
-set (PartMod_HOMEPAGE "https://kelidas.gitlab.io/partmod-site")
-#set (PartMod_COPYRIGHT "Copyright (C) 2019")
-#set (PartMod_EMAIL "elias.j@fce.vutbr.cz")
+project(OAS C CXX)
+set (OAS_VERSION_MAJOR 0)
+set (OAS_VERSION_MINOR 1)
+set (OAS_VERSION_PATCH 0) # Unused
+set (OAS_HOMEPAGE "https://kelidas.gitlab.io/OAS-site")
+#set (OAS_COPYRIGHT "Copyright (C) 2019")
+#set (OAS_EMAIL "elias.j@fce.vutbr.cz")
 
 set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-message(STATUS "project source directory -> ${PartMod_SOURCE_DIR}")
-message(STATUS "project build directory -> ${PartMod_BINARY_DIR}")
+message(STATUS "project source directory -> ${OAS_SOURCE_DIR}")
+message(STATUS "project build directory -> ${OAS_BINARY_DIR}")
 
 include(GNUInstallDirs)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
@@ -120,7 +120,7 @@ set (CMAKE_CXX_STANDARD 20)
 
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 #set (CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O2 -pg")
-set(TARGETNAME DiscreteModel)
+set(TARGETNAME OAS)
 
 # detect
 find_package(PythonInterp REQUIRED)
@@ -146,25 +146,25 @@ endif()
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
 
-include_directories ("${PartMod_BINARY_DIR}")
+include_directories ("${OAS_BINARY_DIR}")
 set (LIB_TYPE OBJECT) # set (LIB_TYPE SHARED)
 
 if (USE_SOLVER)
-  include_directories ("${PartMod_SOURCE_DIR}/src/solver/src")
-  add_subdirectory ("${PartMod_SOURCE_DIR}/src/solver/src")
+  include_directories ("${OAS_SOURCE_DIR}/src/solver/src")
+  add_subdirectory ("${OAS_SOURCE_DIR}/src/solver/src")
   #list (APPEND MODULE_LIST "solver")
   list (APPEND LIBS $<TARGET_OBJECTS:solver>)
   target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
 endif ()
 
-#file(GLOB SOURCE "${PartMod_SOURCE_DIR}/src/solver/src/*.h" "${PartMod_SOURCE_DIR}/src/*.cpp")
+#file(GLOB SOURCE "${OAS_SOURCE_DIR}/src/solver/src/*.h" "${OAS_SOURCE_DIR}/src/*.cpp")
 
 #add_executable(${TARGETNAME} ${SOURCE})
-#add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
-#add_executable(${TARGETNAME} ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
+#add_executable(${TARGETNAME} ${OAS_SOURCE_DIR}/src/solver/src/main.cpp ${LIBS})
+#add_executable(${TARGETNAME} ${OAS_SOURCE_DIR}/src/solver/src/main.cpp ${solver_files})
 add_executable(${TARGETNAME}
-                ${PartMod_SOURCE_DIR}/src/solver/src/main.cpp
-                ${PartMod_SOURCE_DIR}/src/solver/src/version.cpp
+                ${OAS_SOURCE_DIR}/src/solver/src/main.cpp
+                ${OAS_SOURCE_DIR}/src/solver/src/version.cpp
                 ${LIBS}
                 )
 
@@ -208,9 +208,9 @@ endif ()
 # precompiled headers - no speedup?
 #target_precompile_headers(solver
 #                PUBLIC
-#                  ${PartMod_SOURCE_DIR}/src/solver/src/exprtk.hpp)
+#                  ${OAS_SOURCE_DIR}/src/solver/src/exprtk.hpp)
 
-#target_link_libraries (${TARGETNAME} libDiscreteModel Eigen3::Eigen)
+#target_link_libraries (${TARGETNAME} libOAS Eigen3::Eigen)
 #find_package(Boost ${Boost_MINIMUM_REQUIRED} QUIET COMPONENTS "${BOOST_COMPONENTS_REQUIRED}")
 if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
@@ -307,17 +307,17 @@ set_target_properties(
 # needs to find the generated header file
 target_include_directories(${TARGETNAME}
   PRIVATE
-    ${PartMod_BINARY_DIR}/generated
+    ${OAS_BINARY_DIR}/generated
   )
 
 add_custom_command(
   OUTPUT
-    ${PartMod_BINARY_DIR}/generated/version.h
+    ${OAS_BINARY_DIR}/generated/version.h
     ALL
   COMMAND
-    ${CMAKE_COMMAND} -D TARGET_NAME=${TARGETNAME} -D TARGET_DIR=${PartMod_BINARY_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${PartMod_SOURCE_DIR}/version.cmake
+    ${CMAKE_COMMAND} -D TARGET_NAME=${TARGETNAME} -D TARGET_DIR=${OAS_BINARY_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${OAS_SOURCE_DIR}/version.cmake
   WORKING_DIRECTORY
-    ${PartMod_SOURCE_DIR}
+    ${OAS_SOURCE_DIR}
   )
 
 # rebuild version.hpp every time
@@ -325,11 +325,11 @@ add_custom_target(
   get_git_hash
   ALL
   DEPENDS
-    ${PartMod_BINARY_DIR}/generated/version.h
+    ${OAS_BINARY_DIR}/generated/version.h
   )
 
 # version.hpp has to be generated
-# before we start building DiscreteModel
+# before we start building OAS
 add_dependencies(${TARGETNAME} get_git_hash)
 
 
@@ -338,11 +338,11 @@ if (ARCHIVE_BINARIES)
   #add_custom_command(
   #        TARGET ${TARGETNAME} POST_BUILD
   #        COMMAND ${CMAKE_COMMAND} -E copy
-  #                ${CMAKE_CURRENT_BINARY_DIR}/bin/DiscreteModel
-  #                ${CMAKE_CURRENT_BINARY_DIR}/bin/DiscreteModel_${GIT_HASH}_${DATE_STRING})
+  #                ${CMAKE_CURRENT_BINARY_DIR}/bin/OAS
+  #                ${CMAKE_CURRENT_BINARY_DIR}/bin/OAS_${GIT_HASH}_${DATE_STRING})
   add_custom_command(
           TARGET ${TARGETNAME} POST_BUILD
-          COMMAND bash ${PartMod_SOURCE_DIR}/archive.sh
+          COMMAND bash ${OAS_SOURCE_DIR}/archive.sh
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif ()
 
@@ -351,16 +351,16 @@ endif ()
 #######################################################################
 find_package (Doxygen)
 if (DOXYGEN_FOUND)
-    set (DOXYGEN_INPUT ${PartMod_BINARY_DIR}/Doxyfile)
-    set (DOXYGEN_OUTPUT ${PartMod_BINARY_DIR}/partmod_docs/)
+    set (DOXYGEN_INPUT ${OAS_BINARY_DIR}/Doxyfile)
+    set (DOXYGEN_OUTPUT ${OAS_BINARY_DIR}/OAS_docs/)
     #file (MAKE_DIRECTORY ${DOXYGEN_OUTPUT})
 
     #configure_file (
-    #    "${PartMod_SOURCE_DIR}/doc/refman/footer.html.in"
-  #    "${PartMod_BINARY_DIR}/footer.html")
+    #    "${OAS_SOURCE_DIR}/doc/refman/footer.html.in"
+  #    "${OAS_BINARY_DIR}/footer.html")
     configure_file (
-        "${PartMod_SOURCE_DIR}/docs/Doxyfile"
-      "${PartMod_BINARY_DIR}/Doxyfile")
+        "${OAS_SOURCE_DIR}/docs/Doxyfile"
+      "${OAS_BINARY_DIR}/Doxyfile")
 
 
     add_custom_target (
@@ -369,24 +369,24 @@ if (DOXYGEN_FOUND)
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DOXYGEN_OUTPUT}
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
         COMMAND ${CMAKE_COMMAND} -E echo "Done."
-        WORKING_DIRECTORY ${PartMod_BINARY_DIR}
+        WORKING_DIRECTORY ${OAS_BINARY_DIR}
         DEPENDS)
 
-    get_filename_component(PARTMOD_SITE_SOURCE ../partmod-site ABSOLUTE $(PartMod_SOURCE_DIR))
-    message(STATUS "PARTMOD_SITE_SOURCE -> ${PARTMOD_SITE_SOURCE}")
+    get_filename_component(OAS_SITE_SOURCE ../OAS-site ABSOLUTE $(OAS_SOURCE_DIR))
+    message(STATUS "OAS_SITE_SOURCE -> ${OAS_SITE_SOURCE}")
     find_package(Git)
-    IF(EXISTS "${PARTMOD_SITE_SOURCE}" AND IS_DIRECTORY "${PARTMOD_SITE_SOURCE}" AND GIT_FOUND)
+    IF(EXISTS "${OAS_SITE_SOURCE}" AND IS_DIRECTORY "${OAS_SITE_SOURCE}" AND GIT_FOUND)
         add_custom_target (
             docs_publish
             COMMAND ${CMAKE_COMMAND} -E echo_append "Deploying Documentation..."
             COMMAND ${GIT_EXECUTABLE} merge master
-            COMMAND ${CMAKE_COMMAND} -E remove_directory ${PARTMOD_SITE_SOURCE}/public
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_OUTPUT}/html ${PARTMOD_SITE_SOURCE}/public
-            COMMAND ${GIT_EXECUTABLE} add -A ${PARTMOD_SITE_SOURCE}
+            COMMAND ${CMAKE_COMMAND} -E remove_directory ${OAS_SITE_SOURCE}/public
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_OUTPUT}/html ${OAS_SITE_SOURCE}/public
+            COMMAND ${GIT_EXECUTABLE} add -A ${OAS_SITE_SOURCE}
             COMMAND ${GIT_EXECUTABLE} commit -m "documentation updated"
             COMMAND ${GIT_EXECUTABLE} push origin master
             COMMAND ${CMAKE_COMMAND} -E echo "Done."
-            WORKING_DIRECTORY ${PARTMOD_SITE_SOURCE}
+            WORKING_DIRECTORY ${OAS_SITE_SOURCE}
             DEPENDS)
     endif ()
 
@@ -394,13 +394,13 @@ if (DOXYGEN_FOUND)
         docs_publish_rsync
         COMMAND ${CMAKE_COMMAND} -E echo_append "Deploying Documentation by RSync..."
         #COMMAND ${GIT_EXECUTABLE} merge master
-        #COMMAND ${CMAKE_COMMAND} -E remove_directory ${PARTMOD_SITE_SOURCE}/public
-        #COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_OUTPUT}/html ${PARTMOD_SITE_SOURCE}/public
-        #COMMAND ${GIT_EXECUTABLE} add -A ${PARTMOD_SITE_SOURCE}
+        #COMMAND ${CMAKE_COMMAND} -E remove_directory ${OAS_SITE_SOURCE}/public
+        #COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOXYGEN_OUTPUT}/html ${OAS_SITE_SOURCE}/public
+        #COMMAND ${GIT_EXECUTABLE} add -A ${OAS_SITE_SOURCE}
         #COMMAND ${GIT_EXECUTABLE} commit -m "documentation updated"
         #COMMAND ${GIT_EXECUTABLE} push
         COMMAND ${CMAKE_COMMAND} -E echo "Done."
-        WORKING_DIRECTORY ${PARTMOD_SITE_SOURCE}
+        WORKING_DIRECTORY ${OAS_SITE_SOURCE}
         DEPENDS)
 endif (DOXYGEN_FOUND)
 
@@ -410,16 +410,16 @@ endif (DOXYGEN_FOUND)
 #######################################################################
 # https://stackoverflow.com/questions/7050997/zip-files-using-cmake
 ### versions
-set (CPACK_PACKAGE_VERSION_MAJOR ${PartMod_VERSION_MAJOR})
-set (CPACK_PACKAGE_VERSION_MINOR ${PartMod_VERSION_MINOR})
-set (CPACK_PACKAGE_VERSION_PATCH ${PartMod_VERSION_PATCH})
+set (CPACK_PACKAGE_VERSION_MAJOR ${OAS_VERSION_MAJOR})
+set (CPACK_PACKAGE_VERSION_MINOR ${OAS_VERSION_MINOR})
+set (CPACK_PACKAGE_VERSION_PATCH ${OAS_VERSION_PATCH})
 set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}")
 
 ### general settings
-set (CPACK_PACKAGE_NAME "partmod")
+set (CPACK_PACKAGE_NAME "OAS")
 #set (CPACK_PACKAGE_VENDOR "OOFEM development team")
 #set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Object Oriented Finite Element")
-set (CPACK_RESOURCE_FILE_README "${PartMod_SOURCE_DIR}/README.md")
+set (CPACK_RESOURCE_FILE_README "${OAS_SOURCE_DIR}/README.md")
 #set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.LGPLv2.1")
 set (CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
 set (CPACK_PACKAGE_EXECUTABLES ${TARGETNAME})
@@ -434,7 +434,7 @@ endif ()
 
 ### source package (type "make source_package" to produce a zip)
 set (CPACK_SOURCE_GENERATOR "ZIP")
-set (CPACK_SOURCE_PACKAGE_FILE_NAME "partmod-${CPACK_PACKAGE_VERSION}")
+set (CPACK_SOURCE_PACKAGE_FILE_NAME "OAS-${CPACK_PACKAGE_VERSION}")
 set (CPACK_SOURCE_IGNORE_FILES "~$;/build/;tags;cscope.*;.*\\\\.out$;\\\\.out\\\\.;/\\\\..*;\\\\.kdev4$;do_release;release_filter\\\\.pl") # Note: All hidden files are ignored
 
 ### deb package options

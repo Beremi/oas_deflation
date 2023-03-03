@@ -1,4 +1,4 @@
-add_custom_command( TARGET DiscreteModel
+add_custom_command( TARGET OAS
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "Copying benchmark data.."
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/benchmark ${CMAKE_BINARY_DIR}/benchmark
@@ -16,47 +16,47 @@ add_custom_command( TARGET DiscreteModel
 
 add_test(
   NAME CantileverCoupledLinear
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/CantileverCoupledLinear/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/CantileverCoupledLinear/master.inp
   )
 
 add_test(
   NAME CantileverMechanicsNonlinear
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/CantileverMechanicsNonlinear/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/CantileverMechanicsNonlinear/master.inp
   )
 
 add_test(
   NAME 2DUniPressConfined
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/2DUniPressConfined/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/2DUniPressConfined/master.inp
   )
 
 add_test(
   NAME 2DUniPressFree
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/2DUniPressFree/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/2DUniPressFree/master.inp
   )
 
 add_test(
   NAME 3DUniPressConfined
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/3DUniPressConfined/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/3DUniPressConfined/master.inp
   )
 
 add_test(
   NAME 3DUniPressFree
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/3DUniPressFree/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/3DUniPressFree/master.inp
   )
 
 add_test(
   NAME DiamondTest
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/DiamondTest/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/DiamondTest/master.inp
   )
 
 add_test(
   NAME RectangleTest
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/RectangleTest/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/RectangleTest/master.inp
   )
 
 add_test(
   NAME SpringMechanicsShear
-  COMMAND $<TARGET_FILE:DiscreteModel> benchmark/SpringMechanicsShear/master.inp
+  COMMAND $<TARGET_FILE:OAS> benchmark/SpringMechanicsShear/master.inp
   )
 
 

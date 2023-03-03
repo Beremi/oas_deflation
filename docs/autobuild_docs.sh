@@ -1,6 +1,6 @@
 #!/bin/bash
 # script for cron to update docs on server
-# 0 23 * * * cd /home/kelidas/workspace_git/partmod/docs; bash autobuild_docs.sh > /tmp/partmod.log
+# 0 23 * * * cd /home/kelidas/workspace_git/OAS/docs; bash autobuild_docs.sh > /tmp/OAS.log
 
 ACTION='\033[1;90m'
 FINISHED='\033[1;96m'
@@ -29,31 +29,31 @@ then
     echo
     git pull
 
-    cd ../../partmod-build
+    cd ../../OAS-build
     cmake .
     cmake --build . --target docs
     echo -e ${FINISHED}Docs generated.${NOCOLOR}
     cmake --build . --target docs_publish
     echo -e ${FINISHED}Docs pushed.${NOCOLOR}
     cmake --build .
-    echo -e ${FINISHED}DiscreteModel build.${NOCOLOR}
+    echo -e ${FINISHED}OAS build.${NOCOLOR}
 
     # generate AppImage
     rm -r AppDir
     cmake --build . --target install DESTDIR=AppDir
     export DISCRETE_MODEL_HASH=`cat generated/hash.txt`
     appimage-builder --recipe AppImageBuilder.yml --skip-tests
-    mv DiscreteModel*.AppImage bin
-    mv DiscreteModel*.AppImage.zsync bin
-    echo -e ${FINISHED}DiscreteModel.AppImage build.${NOCOLOR}
+    mv OAS*.AppImage bin
+    mv OAS*.AppImage.zsync bin
+    echo -e ${FINISHED}OAS.AppImage build.${NOCOLOR}
 
-    build_win_dir="../partmod-build-win"
+    build_win_dir="../OAS-build-win"
     if [ -d "$build_win_dir" ]
     then
         cd "$build_win_dir"
         cmake .
         cmake --build .
-        echo -e ${FINISHED}DiscreteModel build for Win.${NOCOLOR}
+        echo -e ${FINISHED}OAS build for Win.${NOCOLOR}
     fi
 else
     echo -e ${FINISHED}Current branch is up to date with origin/master.${NOCOLOR}
