@@ -5,7 +5,7 @@
 This is a very short guide on how to get started with OAS.
 
 
-\section Description What is OAS?
+\section Description Description What is OAS?
 
 Open Academic Solver is a project developing numerical solver primarily focused on mechanical behavior of solids. It also solves mass transport, heat conducion or other scalar problems described by Poisson's equation. Large effort is devoted to multiphysical coupled tasks. Both discrete and continuous material representations are included.
 
@@ -115,6 +115,19 @@ Build Windows executable on Linux machine
 \code{.sh}
   x86_64-w64-mingw32.static-cmake ../OAS
   /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake -D CMAKE_TOOLCHAIN_FILE=../OAS/toolchain_mxe.cmake -DBLAS_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/cblas-3.8.0 -DLAPACK_LIBRARIES=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapack-3.8.0 -DLAPACKE_DIR=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/cmake/lapacke-3.8.0 ../OAS
+\endcode
+
+\subsubsection Appimage AppImage
+Build OAS in AppImage format (format for distributing software on Linux)
+\code{.sh}
+  pip install appimage-builder
+  apt install zsync patchelf
+  cd OAS-build
+  cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build . --target install DESTDIR=AppDir [make install DESTDIR=AppDir]
+  appimage-builder --generate [generate AppImageBuilder.yml]
+  # for autobuild modify AppImageBuilder.yml: version: '{{DISCRETE_MODEL_HASH}}'
+  appimage-builder --recipe AppImageBuilder.yml --skip-tests
 \endcode
 
 
@@ -262,24 +275,6 @@ docker run -it --entrypoint /bin/bash a992
     cmake -DVTK_DIR:PATH=/path_to_vtk_build .
   \endcode
 
-
-\section Appimage AppImage
-\code{.sh}
-  pip install appimage-builder
-  apt install zsync patchelf
-  cd OAS-build
-  cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
-  cmake --build . --target install DESTDIR=AppDir [make install DESTDIR=AppDir]
-  appimage-builder --generate [generate AppImageBuilder.yml]
-  # for autobuild modify AppImageBuilder.yml: version: '{{DISCRETE_MODEL_HASH}}'
-  appimage-builder --recipe AppImageBuilder.yml --skip-tests
-\endcode
-
-\code{.sh}
-  cd OAS-build
-  cmake --build . --target install DESTDIR=AppDir [make install DESTDIR=AppDir]
-  appimage-builder --recipe AppImageBuilder.yml --skip-tests
-\endcode
 
 
 
