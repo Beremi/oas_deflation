@@ -124,7 +124,11 @@ class Model:
         for i in range (len(r)):
             if (r[i]=='supportDivision'):
                 self.supportDivision = int(r[i+1])
-
+            if (r[i]=='holeMinDist'):
+                print(float(r[i+1]))
+                self.holeMinDist = float(r[i+1])
+            if (r[i]=='holeDiameter'):
+                self.holeDiameter = float(r[i+1])
             if (r[i]=='rebarMinDist'):
                 self.rebarMinDist = float(r[i+1])
             if (r[i]=='rebarDiameter'):
@@ -372,6 +376,9 @@ class Model:
         if self.modelType == '3d_coupledArtificialCrack':
             self.run_3d_coupledArtificialCrack()
 
+        if self.modelType == '2d_CFRAC_Clover':
+            self.run_2d_CFRAC_Clover()
+
         if self.modelType == '2d_corrosionRebar':
             self.run_2d_corrosionRebar(node_coords_init=node_coords_init)
         if self.modelType == '3d_corrosionRebar':
@@ -612,6 +619,20 @@ class Model:
         expansionRingsProps.append(self.maxLim)
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_corrosionRebar', expansionRingsProps=expansionRingsProps)
+
+    def run_2d_CFRAC_Clover(self, node_coords_init=None):
+        self.activeTransport = False
+
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2d_CFRAC_Clover(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, 1)
+
+        self.materialZones= []
+        if self.activeTransport == False:
+            self.rigidPlatesTrspt = []
+            self.govNodesTrspt=[]
+            self.govNodesTrsptBC = []
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_CFRAC_Clover')
+
 
 
     def run_3d_corrosionRebar(self, node_coords_init=None):

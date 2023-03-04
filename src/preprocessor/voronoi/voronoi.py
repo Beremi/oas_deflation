@@ -213,6 +213,65 @@ def mirror_data_rebars(data, dim, sizes, rebarDiameter, rebarDepth, rebarCount):
     return dataOut
 
 
+def mirror_data_clover(data, dim, sizes, holeDiameter):
+    '''Mirror data 2D and 3D'''
+    if (dim == 2):
+        dataOut= np.vstack((
+        data,
+        np.array([0,0]) + data * np.array([-1,1]),
+        np.array([sizes[0]*2,0]) + data * np.array([-1,1]),
+        np.array([0,sizes[1]*2]) + data * np.array([1,-1]),
+        np.array([0,0]) + data * np.array([1,-1])
+        ))
+
+    if (dim == 3):
+        dataOut =  np.vstack((data,
+            np.array([0,0,0]) + data * np.array([-1,1,1]),
+            np.array([ sizes[0]*2 ,0,0]) + data * np.array([-1,1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,sizes[1]*2,0]) + data * np.array([1,-1,1]),
+            np.array([ 0 ,0,0]) + data * np.array([1,1,-1]),
+            np.array([ 0 ,0,sizes[2]*2]) + data * np.array([1,1,-1])
+        ))
+
+    intrfcNodes = []
+    mrdnodes = []
+
+    for node in dataOut:
+        for r in range (4):
+            if r == 0:
+                centre = np.array([ sizes[0]/2-0.011, sizes[1]/2 ])
+            if r == 1:
+                centre = np.array([ sizes[0]/2+0.011, sizes[1]/2 ])
+            if r == 2:
+                centre = np.array([ sizes[0]/2, sizes[1]/2-0.011 ])
+            if r == 3:
+                centre = np.array([ sizes[0]/2, sizes[1]/2+0.011 ])
+
+            dist = np.linalg.norm(node[0:2]-centre[0:2])
+
+            if (dist < (holeDiameter/2*1.05)  ):
+                intrfcNodes.append(node)
+                rad0 = dist
+                mirroredNode = np.zeros((dim))
+                mirroredNode[0] = centre[0] + (-centre[0]+node[0]) * ((2*(holeDiameter*0.99)/2-rad0) / rad0 )
+                mirroredNode[1] = centre[1] + (-centre[1]+node[1]) * ((2*(holeDiameter*0.99)/2-rad0) / rad0 )
+                if dim ==3:
+                    mirroredNode[2] = node[2]
+
+                mrdnodes.append(np.copy(mirroredNode))
+
+                dataOut= np.vstack((dataOut,  np.copy(mirroredNode[0:dim])     ))
+    #"""
+
+
+    intrfcNodes = np.asarray(intrfcNodes)
+    mrdnodes = np.asarray(mrdnodes)
+    dataOut = np.asarray(dataOut)
+
+
+    return dataOut
+
 
 def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
     '''Mirror data 3D'''

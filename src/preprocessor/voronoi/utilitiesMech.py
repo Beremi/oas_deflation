@@ -75,7 +75,7 @@ class RigidPlate:
 
     def getNodesAffected (self, nodes):
         nodesAffected = []
-
+        print('minX %s maxX %s minY %s maxY %s' %(self.limits[0],self.limits[1],self.limits[2],self.limits[3]))
         if self.directIdcs == True:
             nodesAffected = self.directNodes
 
