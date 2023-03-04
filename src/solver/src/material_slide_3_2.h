@@ -1,7 +1,7 @@
 #ifndef _MATERIAL_SLIDE_3_2
 #define _MATERIAL_SLIDE_3_2
 
-#include "material.h"
+#include "material_vectorial.h"
 
 /******************************************************************************
 *                       Code generated with sympy 1.4                        *
@@ -26,7 +26,7 @@ void get_Phi(double S_s, double S_w, double X_x, double X_y, double Y_s, double 
 ******************************************************************************/
 
 class Slide32Material;
-class Slide32MaterialStatus : public DisMechMaterialStatus
+class Slide32MaterialStatus : public VectMechMaterialStatus
 {
 private:
     // state variables
@@ -59,13 +59,13 @@ public:
     virtual ~Slide32MaterialStatus() {};
     void init();
     virtual void update();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
 };
 
 
-class Slide32Material : public DisMechMaterial
+class Slide32Material : public VectMechMaterial
 {
 private:
     // tangential material params:
@@ -91,7 +91,7 @@ private:
     bool use_discrete_values; // if true calcualte in slips (or strains if false)
     unsigned max_iter; // maximum naumber of iteration in return mapping
 public:
-    Slide32Material() { name = "Slide32 material"; };
+    Slide32Material(unsigned dimension) : VectMechMaterial(dimension) { name = "Slide32 material"; };
     ~Slide32Material() {};
     void readFromLine(std :: istringstream &iss);
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -118,7 +118,7 @@ public:
     bool calc_slips() const { return use_discrete_values; }
     unsigned giveMax_iter() const { return max_iter; }
 
-    virtual void init() {};
+    virtual void init(MaterialContainer *matcont) { VectMechMaterial :: init(matcont); };
 };
 
 #endif /* _MATERIAL_SLIDE_3_2 */

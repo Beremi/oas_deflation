@@ -24,7 +24,8 @@ void NodeContainer :: clear() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: addNode(Node *n) {
-    n->setID( nodes.size() );
+    n->init();
+    n->setID(nodes.size() );
     n->setStartingDoF(totalDoFs);
     nodes.push_back(n);
     totalDoFs += n->giveNumberOfDoFs();
@@ -34,7 +35,7 @@ void NodeContainer :: addNode(Node *n) {
 void NodeContainer :: readFromFile(const string filename, const int dim) {
     size_t origsize = nodes.size();
     string line, nodeType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -55,8 +56,8 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     Particle *newnode = new Particle(dim);
                     newnode->readFromLine(iss);
                     addNode(newnode);
-                } else if ( nodeType.compare("CoupledParticle") == 0 ) {
-                    CoupledParticle *newnode = new CoupledParticle(dim);
+                } else if ( nodeType.compare("ParticleWithTransport") == 0 ) {
+                    ParticleWithTransport *newnode = new ParticleWithTransport(dim);
                     newnode->readFromLine(iss);
                     addNode(newnode);
                 } else if ( nodeType.compare("AuxNode") == 0 ) {
@@ -71,8 +72,20 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
                     TrsDoF *newnode = new TrsDoF(dim, 0);
                     newnode->readFromLine(iss);
                     addNode(newnode);
-                } else if ( nodeType.compare("TrsTemprtrCoupledNode") == 0 ) {
-                    TrsTemprtrCoupledNode *newnode = new TrsTemprtrCoupledNode(dim);
+                } else if ( nodeType.compare("TempDoF") == 0 ) {
+                    TempDoF *newnode = new TempDoF(dim, 0);
+                    newnode->readFromLine(iss);
+                    addNode(newnode);
+                } else if ( nodeType.compare("HumidityDoF") == 0 ) {
+                    HumidityDoF *newnode = new HumidityDoF(dim, 0);
+                    newnode->readFromLine(iss);
+                    addNode(newnode);
+                } else if ( nodeType.compare("TempNode") == 0 ) {
+                    TempNode *newnode = new TempNode(dim);
+                    newnode->readFromLine(iss);
+                    addNode(newnode);
+                } else if ( nodeType.compare("ParticleWithTemperature") == 0 ) {
+                    ParticleWithTemperature *newnode = new ParticleWithTemperature(dim);
                     newnode->readFromLine(iss);
                     addNode(newnode);
                 } else {
@@ -155,7 +168,7 @@ void NodeContainer :: establishDoFArray() {
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
     loadedDoFs = BC->giveArrayOfLoadedDoFs();
     bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
-    blockedDoFid.resize(blocked.size() );
+    blockedDoFid.resize( blocked.size() );
 
     /////////////////////////////////////////////////////////////////
     // #constraint
@@ -163,24 +176,24 @@ void NodeContainer :: establishDoFArray() {
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-    cstr.resize(constr->giveSize() );
+    cstr.resize( constr->giveSize() );
     for ( unsigned j = 0; j < constr->giveSize(); j++ ) {
         cstr [ j ].first = constr->giveConstraint(j)->giveSlaveDoF();
         cstr [ j ].second = j;
     }
-    sort(cstr.begin(), cstr.end() );
+    sort( cstr.begin(), cstr.end() );
 
     /////////////////////////////////////////////////////////////////
     freeDoFs = totalDoFs - constrDoFs - blocked.size();
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
-    a.resize(blocked.size() );
+    a.resize( blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
-    sort(a.begin(), a.end() );
+    sort( a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
     if ( a.size() > 0 ) {
@@ -218,16 +231,15 @@ void NodeContainer :: establishDoFArray() {
         }
     }
 
-    //identify whether the DoF is mechanical or Transport
-    mechDoFs.resize(totalDoFs);
-    transpDoFs.resize(totalDoFs);
+    //identify physical fields of DoFs
+    physicalFieldsDoF.resize(totalDoFs);
     unsigned i = 0;
-    unsigned ndofs;
-    for ( vector< Node * > :: iterator n = nodes.begin(); n != nodes.end(); ++n ) {
-        ndofs = ( * n )->giveNumberOfDoFs();
-        for ( unsigned q = 0; q < ndofs; q++, i++ ) { //todo:  warning C4456: declaration of 'k' hides previous local declaration
-            mechDoFs [ i ]   = ( * n )->isDoFMechanical(q);
-            transpDoFs [ i ] = ( * n )->isDoFTransport(q);
+    vector< unsigned >nodePhysFields;
+    for ( auto &n:nodes ) {
+        nodePhysFields = n->givePhysicalFieldNumForAllDoFs();
+        for ( auto &q:nodePhysFields ) {
+            physicalFieldsDoF [ i ]   = q;
+            i++;
         }
     }
 
@@ -385,7 +397,7 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
     unsigned numi, startDoF;
     double numd;
     Vector initvalues = Vector :: Zero(totalDoFs);
-    ifstream inputfile(initfile.c_str() );
+    ifstream inputfile( initfile.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             istringstream iss(line);

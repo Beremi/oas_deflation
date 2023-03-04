@@ -389,6 +389,9 @@ class Model:
 
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
+        
+        if self.modelType == '2d_circRVE':
+            self.run_2d_circRVE()
 
         if self.modelType == '2d_coupledPress':
             self.run_2d_coupledPress()
@@ -656,6 +659,11 @@ class Model:
         print('2d_coupledRVE')
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCoupledRVE(self.maxLim, self.minDist, self.trials, self.powerTes )
         self.materialZones=None
+        self.periodicModel = 1
+
+    def run_2d_circRVE(self):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCircRVE(self.maxLim, self.minDist, self.trials, self.powerTes )
+        self.materialZones = None
         self.periodicModel = 1
 
     def run_2d_cantileverBending(self):
@@ -1136,7 +1144,7 @@ if __name__ == '__main__':
 
     if len(model.materials)==0:
         print ('Missing some material!! Exiting...')
-        sys.exit(1)
+        #sys.exit(1)
 
     if model != None:
         for i in range (model.nr_models):

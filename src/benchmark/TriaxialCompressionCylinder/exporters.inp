@@ -1,17 +1,17 @@
 VTKElementExporter	elems	saveEvery	0.00003	cellData	3	damage	crack_opening volumetric_strain	pointData 1 displacement
 VTKRCExporter	bodies	saveEvery	0.00003	cellData	3	damage	crack_opening	material_ID pointData 0		
-ForceGauge LD fx#MechPLT0 fx 1 8108
-ForceGauge LD fy#MechPLT0 fy 1 8108
-ForceGauge LD fz#MechPLT0 fz 1 8108
-ForceGauge LD mx#MechPLT0 mx 1 8108
-ForceGauge LD my#MechPLT0 my 1 8108
-ForceGauge LD mz#MechPLT0 mz 1 8108
-ForceGauge LD fx#MechPLT1 fx 1 8109
-ForceGauge LD fy#MechPLT1 fy 1 8109
-ForceGauge LD fz#MechPLT1 fz 1 8109
-ForceGauge LD mx#MechPLT1 mx 1 8109
-ForceGauge LD my#MechPLT1 my 1 8109
-ForceGauge LD mz#MechPLT1 mz 1 8109
+ForceGauge LD fx#MechPLT0 0 1 8108
+ForceGauge LD fy#MechPLT0 1 1 8108
+ForceGauge LD fz#MechPLT0 2 1 8108
+ForceGauge LD mx#MechPLT0 3 1 8108
+ForceGauge LD my#MechPLT0 4 1 8108
+ForceGauge LD mz#MechPLT0 5 1 8108
+ForceGauge LD fx#MechPLT1 0 1 8109
+ForceGauge LD fy#MechPLT1 1 1 8109
+ForceGauge LD fz#MechPLT1 2 1 8109
+ForceGauge LD mx#MechPLT1 3 1 8109
+ForceGauge LD my#MechPLT1 4 1 8109
+ForceGauge LD mz#MechPLT1 5 1 8109
 DisplacementGauge LD ux#total	ux	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00
 DisplacementGauge LD uy#total	uy	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00
 DisplacementGauge LD uz#total	uz	0.000000e+00	0.000000e+00	0.000000e+00	1.500000e-01	0.000000e+00	0.000000e+00

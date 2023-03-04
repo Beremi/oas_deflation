@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <UnstructuredGrid>
+    <Piece NumberOfPoints="14" NumberOfCells="8">
+      <PointData>
+        <DataArray type="Float64" Name="displacements" NumberOfComponents="3" format="binary" RangeMin="0" RangeMax="5.702589873339198">
+          AQAAAACAAABQAQAAoQAAAA==eJxjYEAFykAsh8TnfSoGJK/sR1PGIPYEJP4EQ1w9VAlIvoOLt5/TAfHtH6hYtKz99nUvTPwBVLx1fx6K+UHnIeKuF51QzH8NFfdw8kMx/8INSQaGBjaHdZwlM79UCOyDie/jUQWS/+w1Zx5DMd+bFyLOvC8PxfzNNyHm3JRehmL+jhw+oLiYw9e0ArXzFQpw8/VyIeIcDzUZkdUDAAbSQV4=
+          <InformationKey name="L2_NORM_RANGE" location="vtkDataArray" length="2">
+            <Value index="0">
+              0
+            </Value>
+            <Value index="1">
+              5.7025898733
+            </Value>
+          </InformationKey>
+        </DataArray>
+        <DataArray type="Float64" Name="stress" NumberOfComponents="3" format="binary" RangeMin="1.000000000001651" RangeMax="1.000000000357963">
+          AQAAAACAAABQAQAALQEAAA==eJwzmSHBwMDwwf6ekeQ3/30HbFfttfKd90F9XxtU/FBWi4jewQO2xU56FnmfzPe9gYr7/StTSj16wHbWhcmTFSus9kXNhIhzyCbuaD1+wLb9/OmgWl77fTM+CIPF/RcsXzY1ZKHtE6fDe9ZLKNvdhIqXT/5+Xip+oe3/n3+q8+xk94V9hIg7f/35nqNgoe0Eo+i3HaHP986GigfvWODiUr7QVufSIzUna3m7eisusLjV2YpX0r1H956apqsgv0fYLsCTHyzuWuvQ/Fp+w94nPvZ+wVnGdqug4l8vxC35JL1h77kbM7tE8jTtLkHNWVF+5fDRrqN7a/aUMs9b93UvtywDWPy/weQPM5xu7O2fKuhocOnLXgGouGfRvXf9QPHXnkvf3Y0W3AcAlRaTyQ==
+          <InformationKey name="L2_NORM_RANGE" location="vtkDataArray" length="2">
+            <Value index="0">
+              1
+            </Value>
+            <Value index="1">
+              1.0000000004
+            </Value>
+          </InformationKey>
+        </DataArray>
+        <DataArray type="Float64" Name="strain" NumberOfComponents="3" format="binary" RangeMin="0.98821176885658" RangeMax="0.988211769138264">
+          AQAAAACAAABQAQAA3AAAAA==eJzrPafDwMDwzp7vqRiQvrL/k8/OlJ3fnu69AxUXewIR755+KX4bUDzsPER80SOIuBrjjQebgOJvoOKqUPH+my+NNgDFs3hUweIXoOb8On7CIBsofgAq/vIxRPx9hfO+SKB4EC9EvAtqzo27WfmWQPENUHEOqPg/x4VPVYHiW++IgMXdoOYcuv7M/srXp3vXesmCxWWg4juuzP1/BChu4Q0RXwA1591LA9m9QHGFuxBz+qDinMznNx4Ait9kYAGL74SK6/4/4jMbKP4AKr4HKq4w0ycOJA4AW4GXSQ==
+          <InformationKey name="L2_NORM_RANGE" location="vtkDataArray" length="2">
+            <Value index="0">
+              0.98821176886
+            </Value>
+            <Value index="1">
+              0.98821176914
+            </Value>
+          </InformationKey>
+        </DataArray>
+      </PointData>
+      <CellData>
+      </CellData>
+      <Points>
+        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="binary" RangeMin="0" RangeMax="6.708203932499369">
+          AQAAAACAAACoAAAAMQAAAA==eJxjYEAHDfZIHAckpgOmPIgN44NpJDUw9TAaZh5cvwNCPUgNTN0BJPUH4OIANBoLeg==
+          <InformationKey name="L2_NORM_RANGE" location="vtkDataArray" length="2">
+            <Value index="0">
+              0
+            </Value>
+            <Value index="1">
+              6.7082039325
+            </Value>
+          </InformationKey>
+        </DataArray>
+      </Points>
+      <Cells>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="0" RangeMax="13">
+          AQAAAACAAAAAAQAAPgAAAA==eJxdjbkRADAIw8hD/uy/boqYRjS6k8GY/amiiwkM38QMhu9iQe8QJ/ocfqGvwW/8ibuBfMEf8WLvAVUYANc=
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="4" RangeMax="32">
+          AQAAAACAAABAAAAAHgAAAA==eJxjYYAADijNA6UFoLQIlJaA0jJQWgFKAwAPQACR
+        </DataArray>
+        <DataArray type="UInt8" Name="types" format="binary" RangeMin="9" RangeMax="9">
+          AQAAAACAAAAIAAAACwAAAA==eJzj5IQAAAFMAEk=
+        </DataArray>
+      </Cells>
+    </Piece>
+  </UnstructuredGrid>
+</VTKFile>

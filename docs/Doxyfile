@@ -32,7 +32,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "PARTMOD"
+PROJECT_NAME           = "OAS"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
@@ -44,7 +44,7 @@ PROJECT_NUMBER         =
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          =
+PROJECT_BRIEF          =  Open Academic Solver
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
@@ -318,7 +318,7 @@ TOC_INCLUDE_HEADINGS   = 0
 # globally by setting AUTOLINK_SUPPORT to NO.
 # The default value is: YES.
 
-AUTOLINK_SUPPORT       = YES
+AUTOLINK_SUPPORT       = NO
 
 # If you use STL classes (i.e. std::string, std::vector, etc.) but do not want
 # to include (a tag file for) the STL sources as input, then you should set this
@@ -713,7 +713,8 @@ LAYOUT_FILE            =
 # LATEX_BIB_STYLE. To use this feature you need bibtex and perl available in the
 # search path. See also \cite for info how to create references.
 
-CITE_BIB_FILES         = @PartMod_SOURCE_DIR@/docs/bibliography.bib
+CITE_BIB_FILES         = @OAS_SOURCE_DIR@/docs/bibliography.bib \
+                         @OAS_SOURCE_DIR@/docs/publications.bib
 
 #---------------------------------------------------------------------------
 # Configuration options related to warning and progress messages
@@ -790,8 +791,11 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @PartMod_SOURCE_DIR@/src/solver/src \
-                         @PartMod_SOURCE_DIR@/docs
+INPUT                  = @OAS_SOURCE_DIR@/docs/GettingStarted.dox \
+                         @OAS_SOURCE_DIR@/docs/Publications.dox \
+                         @OAS_SOURCE_DIR@/src/solver/src \
+                         @OAS_SOURCE_DIR@/docs \
+                         @OAS_SOURCE_DIR@/docs/publications.html
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -874,7 +878,9 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = _build
+EXCLUDE                = @OAS_SOURCE_DIR@/docs/Inputfiles.dox \
+                         @OAS_SOURCE_DIR@/docs/Preprocessor.dox \
+                         _build
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -907,7 +913,7 @@ EXCLUDE_SYMBOLS        =
 # that contain example code fragments that are included (see the \include
 # command).
 
-EXAMPLE_PATH           =
+EXAMPLE_PATH           = @OAS_SOURCE_DIR@/docs
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and
@@ -1203,7 +1209,7 @@ HTML_EXTRA_STYLESHEET  =
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       =
+HTML_EXTRA_FILES       = @OAS_SOURCE_DIR@/docs/publications_bib.html
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output. Doxygen
 # will adjust the colors in the style sheet and background images according to
@@ -2082,7 +2088,7 @@ SEARCH_INCLUDES        = YES
 # preprocessor.
 # This tag requires that the tag SEARCH_INCLUDES is set to YES.
 
-INCLUDE_PATH           = @PartMod_SOURCE_DIR@/src/solver/src
+INCLUDE_PATH           = @OAS_SOURCE_DIR@/src/solver/src
 
 # You can use the INCLUDE_FILE_PATTERNS tag to specify one or more wildcard
 # patterns (like *.h and *.hpp) to filter out the header-files in the

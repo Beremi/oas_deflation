@@ -289,6 +289,109 @@ except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
+def polarToCart(coords_polar):
+    # for both 2D and 3D
+    if len(coords_polar) == 2:
+        # coords[0] = angle, coords[1] = radius
+        x = coords_polar[1]*np.cos(coords_polar[0])
+        y = coords_polar[1]*np.sin(coords_polar[0])
+        return np.array([x, y])
+    elif len(coords_polar) == 3:
+        # coords[0] = angle1, coords[1] = angle2, coords[2] = radius
+        x = coords_polar[2]*np.sin(coords_polar[0])*np.cos(coords_polar[1])
+        y = coords_polar[2]*np.sin(coords_polar[0])*np.sin(coords_polar[1])
+        z = coords_polar[2]*np.cos(coords_polar[0])
+        return np.array([x, y, z])
+    return
+
+
+
+def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords_cart, radii, allow_domain_overlap=False, periodic_distance=False):
+    # maxLim is the diameter of a circle
+    gap = 0.1
+    d = np.flipud(np.linspace(minDiam*0.5, maxDiam, 30))      # array of diameters from largest to smallest one
+    radius = maxDiam/2.     # initial value, then adjusted based on fuller (going from largest to smallest particles)
+    saturation = 0
+    iters = 0
+    di = 0
+
+    node_coords_polar = np.zeros((1, dim))
+
+    if dim==2:
+        freq = fuller2D(d, maxDiam)
+        center = np.zeros(2)
+    elif dim==3:
+        freq = fuller3D(d, maxDiam)
+        center = np.zeros(3)
+
+    nA = 1  # n of particle I am generating
+
+    # generate and add the first particle
+    if allow_domain_overlap:
+        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin
+    else:
+        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
+
+    # add the first particle  (no need to check)
+    # ? format of node_coords_cart, node_coords_polar
+    node_coords_cart[0] = point_cart
+    node_coords_polar[0] = point_polar
+    radii[0] = radius
+    if periodic_distance:
+        periodicity = np.zeros(dim); periodicity[-1] = maxLim
+        # print(point_polar, periodicity)
+        per_nodes_polar = point_polar - periodicity
+        per_nodes_cart = np.array([polarToCart(point_polar - periodicity)])
+
+    if dim == 2:
+        saturation += (np.pi*np.power(radius,2)) / (np.pi*np.power(maxLim, 2)/4)
+    elif dim == 3:
+        saturation += (4*np.pi*np.power(radius,3)/4) / (np.pi*np.power(maxLim,3)/6)
+
+    while ( (1. - saturation / volumeRatio ) < freq[di] ):
+        di += 1
+    radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+    nA += 1
+
+    # generate other particles
+    while 2*radius > minDiam and iters < trials:
+        print('particle N ', nA, ' iteration: ', iters)
+        # generate a candidate for particle center (both 2D and 3D)
+        if allow_domain_overlap:
+            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin 
+        else:
+            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
+
+        delta = np.abs(node_coords_cart-point_cart)   # list of coords distances from all the nodes generated so far
+        dist = np.sum( np.square(delta), axis=1)     # abs distance between coords
+        if periodic_distance:
+            dist2 = np.sum( np.square( np.abs(per_nodes_cart-point_cart) ), axis=1)
+            dist = np.minimum( dist, dist2 )
+
+        if min(dist - np.square((radii+radius) + gap*(radii+radius))) > 0:
+            # radius = r of new the particle, radii = rs of existing particles 
+            node_coords_cart = np.vstack( (node_coords_cart, point_cart) )   # add new approved particle
+            node_coords_polar = np.vstack( (node_coords_polar, point_polar) )   # add new approved particle
+            if periodic_distance:
+                per_nodes_polar = np.vstack( (per_nodes_polar, point_polar - periodicity) )
+                per_nodes_cart = np.vstack( (per_nodes_cart, polarToCart(per_nodes_polar[-1])) )
+            radii = np.hstack( (radii, radius) )    # add its diameter
+            iters = 0   # restart number of iterations
+            # add volume fraction of the new particle to saturation
+            if dim == 2:
+                saturation += (np.pi*np.power(radius,2)) / (np.pi*np.power(maxLim, 2)/4)
+            elif dim == 3:
+                saturation += (4*np.pi*np.power(radius,3)/4) / (np.pi*np.power(maxLim,3)/6)
+
+            while ( (1. - saturation / volumeRatio ) < freq[di]):
+                di += 1
+            radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+            nA += 1
+            # sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
+            # sys.stdout.flush()
+        else:
+            iters += 1
+    return node_coords_cart, per_nodes_cart, radii
 
 def generateParticlesDam(maxLim, topsize, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii):
         gap = 0.1
@@ -970,6 +1073,7 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
     return point
 
 def randPointInSphere(center, radius):
+    # radius: r of the circle/sphere which limits the region 
     # works also for circle in xy plane (based on len(center))
     point = np.zeros(len(center))
 
@@ -991,6 +1095,38 @@ def randPointInSphere(center, radius):
     point += center
     return point
 
+def randPointInSpherePolar(center, radius):
+    center_polar = np.zeros(len(center)) 
+    point_cart = np.zeros(len(center))      # [x, y, (z)]
+    point_polar = np.zeros(len(center))     # [angle1 0-2pi, (angle2 0-pi), radius]
+
+    angle1 = np.random.uniform() * np.pi * 2
+    rradius = radius * np.random.uniform()
+
+    if abs(center[0]) < 1e-5:
+        center_polar[0] = 0
+    else:
+        center_polar[0] = np.arctan(center[1]/center[0])
+
+    if len(point_cart) == 2: # 2D case
+        center_polar[1] = np.sqrt(np.power(center[0],2) + np.power(center[1],2))
+        point_polar[0] = angle1
+        point_polar[1] = rradius
+        point_cart = polarToCart(point_polar)
+    else:   # 3D case
+        if abs(center[2]) < 1e-5:
+            center_polar[1] = 0
+        else:
+            center_polar[1] = np.arctan(np.sqrt(np.power(center[0],2) + np.power(center[1],2))/center[2])
+        center_polar[2] = np.sqrt(np.power(center[0],2) + np.power(center[1],2) + np.power(center[2],2))
+        angle2 = np.random.uniform() * np.pi
+        point_polar[0] = angle1
+        point_polar[1] = angle2
+        point_polar[2] = rradius
+        point_cart = polarToCart(point_polar)
+    point_cart += center
+    point_polar += center_polar
+    return point_cart, point_polar
 
 def randPointBetweenSpheres(center, radius, thickness):
     # works also both anulus in xy plane

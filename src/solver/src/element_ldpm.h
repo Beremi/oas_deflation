@@ -8,10 +8,10 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
-class LDPMTetra : public MechanicalElement
+class LDPMTetra : public Element
 {
 protected:
-    std :: vector< Node * >vert; //first six are line centers 0-1, 0-2, 0-3, 1-2, 1-3, 2-3, then four surface centers 0-1-2, 0-1-3, 0-2-3, 1-2-3 and the volume center
+    std :: vector< Node * >vert;
     Vector lengths, areas, volumes;
     std :: vector< Point >normals;
     std :: vector< Matrix >R;
@@ -25,13 +25,15 @@ protected:
     std :: vector< unsigned >nodecodes;   //coonectivity of facets between nodes
     std :: vector< unsigned >vertcodes;   //coonectivity of facets between vertices
 
+    Vector volWeights; //factors to caluclate volumetric strain
+
     double volumetricStrain;
 
 public:
     LDPMTetra(unsigned ndim);
     ~LDPMTetra() {};
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
-    void init();
+    virtual void init();
     virtual Matrix giveBMatrix(unsigned k) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     double giveLength(unsigned i) const { return lengths [ i ]; }

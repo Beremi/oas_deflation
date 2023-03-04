@@ -1894,6 +1894,15 @@ def create2dCoupledRVE(maxLim, minDist, trials, powerTes ):
     return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, radii
 
 
+def create2dCircRVE(maxLim, minDist, trials, powerTes):
+    print('Creating 2d circular periodic RVE.')
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, radii = asssemble2dCircRVE(maxLim, minDist, trials, powerTes )
+
+    return 0
+
+
 def assembleTwoNodeSpringTest (maxLim, idt):
     node_coords = []
     mechBC_merged = []
@@ -5826,6 +5835,34 @@ def asssemble3dPeriodicRectangle (maxLim, minDist, trials, powerTes):
         plt.show()
     """
     return nNds, mechBC_merged, mechInitC_merged, radii
+
+
+def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
+    dim = 2
+    # lists for the model
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+
+    print('assembling 2d periodic circular RVE')
+
+    ########### getting nodes and radii
+    node_coords = np.zeros( (1, dim) )
+    node_coords_polar = np.zeros( (1, dim) )
+    radii = np.zeros( 1 )
+    node_coords, per_node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True, periodic_distance=True)
+
+    node_coords = np.asarray(node_coords)
+
+
+    nNds = np.vstack((      # all the nodes (RVE + periodic)
+        node_coords,
+        per_node_coords
+    ))   
+
+
+
+    return nNds, mechBC_merged, mechInitC_merged, radii#, masters
 
 
 

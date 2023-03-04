@@ -11,6 +11,9 @@
 class ElementContainer; //forward declaration;
 class BodyLoad; //forward declaration
 
+
+//physicalFields Mechanics, Transport, Thermal, Humidity
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC ELEMENT - MASTER CLASS
@@ -41,8 +44,10 @@ protected:
     unsigned vtk_cell_type = 0; //integer detrmining type of cell for VTK plotting,
     //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
 
+    std :: vector< bool >physicalFields;
+
 public:
-    Element() { name = "basic element"; solution_order = 0; volume = 0; }
+    Element(unsigned dim) { name = "basic element"; solution_order = 0; volume = 0; ndim = dim; physicalFields.resize(4, false); }  //mechanical, transport, thermal, humidity
     virtual ~Element();
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
@@ -69,17 +74,17 @@ public:
     size_t giveNumOfNodes() const { return nodes.size(); }
     Material *giveMaterial() const { return mat; }
     std :: vector< MaterialStatus * >giveMaterialStats() const { return stats; };
-    MaterialStatus *giveMatStatus(unsigned ipnum) { return stats [ ipnum ]; };
+    MaterialStatus *giveMatStatus(unsigned ipnum);
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
     virtual Matrix giveBMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); }; //at arbitrary point
-    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix(inttype->giveIPLocationPointer(i) ); };   //at integration point i
+    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix( inttype->giveIPLocationPointer(i) ); };   //at integration point i
     Matrix giveStoredBMatrix(unsigned i) { return Bs [ i ]; };
     virtual Matrix giveHMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); };
-    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix(inttype->giveIPLocationPointer(i) ); };   //at integration point i
+    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix( inttype->giveIPLocationPointer(i) ); };   //at integration point i
     Matrix giveStoredHMatrix(unsigned i) { return Hs [ i ]; };
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs) { return Bs [ i ] * DoFs; };
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     unsigned giveDimension() const { return ndim; }
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     unsigned giveVTKCellType() const { return vtk_cell_type; };
@@ -107,34 +112,9 @@ class GeometricalElement : virtual public Element
 protected:
 
 public:
-    GeometricalElement() { mat = nullptr; }
+    GeometricalElement(unsigned dim) : Element(dim) { mat = nullptr; }
     ~GeometricalElement() {};
     double giveIPValue(std :: string code, unsigned ipnum) const { ( void ) code; ( void ) ipnum; return 0; }
-};
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// TRANSPORT ELEMENT
-class TransportElement : public Element
-{
-protected:
-
-public:
-    TransportElement() {}
-    ~TransportElement() {};
-};
-
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// MECHANICAL ELEMENT
-class MechanicalElement : public Element
-{
-protected:
-
-public:
-    MechanicalElement() {}
-    ~MechanicalElement() {};
 };
 
 //////////////////////////////////////////////////////////

@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
-class RigidBodyContact : public MechanicalElement
+class RigidBodyContact : public Element
 {
 protected:
     std :: vector< Node * >vert;
@@ -65,7 +65,7 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
-class Transp1D; //forward declaration
+class RigidBodyContact; //forward declaration
 class RigidBodyContactCoupled : public RigidBodyContact
 {
 protected:
@@ -93,7 +93,7 @@ public:
 
     void init();
 
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
@@ -118,8 +118,8 @@ public:
 
     void init();
 
-    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
@@ -143,8 +143,8 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 1D TRANSPORT ELEMENT
-class Transp1D : public TransportElement
+// Discrete TRANSPORT ELEMENT
+class DiscreteTrsprtElem : public Element
 {
 protected:
     std :: vector< Node * >vert;
@@ -153,12 +153,12 @@ protected:
     double length, area;
     bool BolanderCapacityMatrix;
 
-    virtual void checkNodeType() const;
+    virtual void checkNodeAndMaterialType() const;
     virtual void setIntegrationPointsAndWeights();
 
 public:
-    Transp1D(const unsigned dim);
-    ~Transp1D() {};
+    DiscreteTrsprtElem(const unsigned dim);
+    ~DiscreteTrsprtElem() {};
     void init();
     double giveArea() const { return area; }
     Point giveNormal() const { return normal; }
@@ -181,8 +181,21 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// COUPLED 1D TRANSPORT ELEMENT
-class Transp1DCoupled : public Transp1D
+// 1D TRANSPORT ELEMENT
+class DiscreteHeatConductionElem : public DiscreteTrsprtElem
+{
+protected:
+
+public:
+    DiscreteHeatConductionElem(const unsigned dim);
+    virtual void checkNodeAndMaterialType() const;
+    ~DiscreteHeatConductionElem() {};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// COUPLED DISCRETE TRANSPORT ELEMENT
+class DiscreteTrsprtCoupledElem : public DiscreteTrsprtElem
 {
 private:
     std :: vector< RigidBodyContact * >friends; //mechanical elements involved in computation
@@ -191,14 +204,34 @@ private:
     void findFriendsFromSimplices();
 
 public:
-    Transp1DCoupled(const unsigned dim) : Transp1D(dim) { name = "Transp1DCoupled"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
-    ~Transp1DCoupled() {};
+    DiscreteTrsprtCoupledElem(const unsigned dim) : DiscreteTrsprtElem(dim) { name = "DicscreteTrsprtCoupledElem"; solution_order = 1; }; //coupled elements must be solved after all RBSN elements
+    ~DiscreteTrsprtCoupledElem() {};
     virtual void giveValues(std :: string code, Vector &result) const;
     void init();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     void addNewFriend(RigidBodyContact *f, double weight);
     unsigned giveNumOfFriends() const { return friends.size(); };
     virtual void collectInformationsFromNeigborhood();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// RBSN + TEMPERATURE ELEMENT
+class RigidBodyContactWithHeatConduction : public RigidBodyContact
+{
+protected:
+public:
+    RigidBodyContactWithHeatConduction(const unsigned dim);
+    ~RigidBodyContactWithHeatConduction() {};
+    void init();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
+    virtual Matrix giveDampingMatrix() const;
+    virtual Matrix giveMassMatrix() const;
+    virtual void checkNodeType() const;
 };
 
 #endif  /* _ELEMENT_DISCRETE_H */

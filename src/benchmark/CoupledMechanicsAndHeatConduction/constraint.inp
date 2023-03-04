@@ -1,0 +1,5 @@
+#ConstraintType	GovNodeIdx	Xmin	Xmax	Ymin	Ymax	Zmin	Zmax
+RigidPlate	8108	inside 1 0 dirs 6 1 0 0 1 1 1
+RigidPlate	8109	inside 1 1 dirs 6 1 0 0 1 1 1
+RigidPlate	8110	inside 1 2
+RigidPlate	8111	inside 1 3

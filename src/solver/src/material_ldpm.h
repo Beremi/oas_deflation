@@ -1,13 +1,13 @@
 #ifndef _LDPM_MATERIAL_H
 #define _LDPM_MATERIAL_H
 
-#include "material.h"
+#include "material_vectorial.h"
 
 //////////////////////////////////////////////////////////
 // LDPM MATERIAL 2011
 
 class LDPMMaterial;
-class LDPMMaterialStatus : public DisMechMaterialStatus
+class LDPMMaterialStatus : public VectMechMaterialStatus
 {
 private:
     double maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
@@ -30,12 +30,12 @@ public:
     LDPMMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     virtual ~LDPMMaterialStatus() {};
     virtual void init();
-    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual void update();
     virtual void resetTemporaryVariables();
-    virtual Matrix giveStiffnessTensor(std :: string type, unsigned dim) const;
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual std :: string giveLineToSave() const;
     virtual void setParameterValue(std :: string code, double value);
     virtual void readFromLine(std :: istringstream &iss);
@@ -44,19 +44,19 @@ public:
 };
 
 
-class LDPMMaterial : public DisMechMaterial
+class LDPMMaterial : public VectMechMaterial
 {
 private:
     double ft, Gt;
     double nt, kt, beta;
-    double fc, fc0, Ed, Hc0, Kc0, Kc1, Kc2;
+    double fc, fc0, Ed, Hc0, Hc1, Kc0, Kc1, Kc2, Kc3;
     double fs, fs0, Et, mu0, muinf;
     double damage_residuum;
     double stress_residuum_fraction = 0.0;
 public:
-    LDPMMaterial() { name = "LDPM material"; };
+    LDPMMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "LDPM material"; };
     virtual ~LDPMMaterial() {};
-    virtual void init();
+    virtual void init(MaterialContainer *matcont);
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveFt() { return ft; }
@@ -68,9 +68,11 @@ public:
     double giveFc0() { return fc0; }
     double giveEd() { return Ed; }
     double giveHc0() { return Hc0; }
+    double giveHc1() { return Hc1; }
     double giveKc0() { return Kc0; }
     double giveKc1() { return Kc1; }
     double giveKc2() { return Kc2; }
+    double giveKc3() { return Kc3; }
     double giveFs() { return fs; }
     double giveFs0() { return fs0; }
     double giveEt() { return Et; }

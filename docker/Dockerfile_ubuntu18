@@ -33,18 +33,18 @@ RUN apt-get autoremove
 RUN apt-get clean
 
 # Copy the current folder which contains C++ source code to the Docker image under /usr/src
-COPY . /usr/src/partmod
+COPY . /usr/src/oas
 
 # Specify the working directory
-WORKDIR /usr/src/partmod-build
+WORKDIR /usr/src/oas-build
 
 # Use Clang to compile the Test.cpp source file
-RUN cmake ../partmod
+RUN cmake ../oas
 
 RUN cmake --build . -- -j$((`nproc`-1))
 
 #RUN g++ -o Test Test.cpp
 
 # Run the output program from the previous step
-#CMD ["./bin/DiscreteModel"]
+#CMD ["./bin/OAS"]
 ENTRYPOINT ["ctest", "-L", "tests", "-T", "memcheck"]
