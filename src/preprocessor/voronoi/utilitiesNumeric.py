@@ -56,6 +56,18 @@ def runMirroredVoronoiClover (data, dim, sizes, holeDiameter):
         volumes = voronoi.voronoi_3d(vor, sizes);
         return vor, volumes
 
+# run voronoi, rebars 2d
+def runMirroredVoronoiTDCB (data, dim, sizes, holeDiameter):
+    vor = Voronoi(voronoi.mirror_data_TDCB(data, dim, sizes, holeDiameter))
+
+    if (dim == 2):
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, sizes)
+        return vor, regions, vertices, polygons, areas, centroids, points
+
+    if (dim==3):
+        volumes = voronoi.voronoi_3d(vor, sizes);
+        return vor, volumes
+
 
 ##run voronoi, mirrored data
 def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):

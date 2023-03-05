@@ -379,6 +379,10 @@ class Model:
         if self.modelType == '2d_CFRAC_Clover':
             self.run_2d_CFRAC_Clover()
 
+        if self.modelType == '2d_CFRAC_TDCB':
+            self.run_2d_CFRAC_TDCB()
+
+
         if self.modelType == '2d_corrosionRebar':
             self.run_2d_corrosionRebar(node_coords_init=node_coords_init)
         if self.modelType == '3d_corrosionRebar':
@@ -389,7 +393,7 @@ class Model:
 
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
-        
+
         if self.modelType == '2d_circRVE':
             self.run_2d_circRVE()
 
@@ -636,7 +640,18 @@ class Model:
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_CFRAC_Clover')
 
+    def run_2d_CFRAC_TDCB(self, node_coords_init=None):
+        self.activeTransport = False
 
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions,self.notches,self.node_indices_dogbone)  = utilitiesModeling.create2d_CFRAC_TDCB(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, 1)
+
+        self.materialZones= []
+        if self.activeTransport == False:
+            self.rigidPlatesTrspt = []
+            self.govNodesTrspt=[]
+            self.govNodesTrsptBC = []
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_CFRAC_TDCB')
 
     def run_3d_corrosionRebar(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceVertexIndices)  = utilitiesModeling.create3dCorrosionRebar(self.maxLim, self.minDist, self.trials, self.rebarMinDist, self.rebarDiameter, self.rebarCount, self.rebarDepth, node_coords_init=node_coords_init, interfaceMinDist=self.interfaceMinDist, roughMinDistCoef=self.roughMinDistCoef, adaptivityReady=self.adaptivityReady,
