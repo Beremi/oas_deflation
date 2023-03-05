@@ -1314,6 +1314,38 @@ def create2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter, in
 
 
 
+def create3d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1):
+    print('Creating CFRAC 3d clover model...')
+    dim=3
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    sampleBorders = True
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble3d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter)
+
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoiClover (node_coords, dim, maxLim, holeDiameter)
+    print('done.')
+
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #2 mech loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, 1e-4]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+
+    return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, areas, functions
+
+
+
 
 
 def create2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1):
@@ -4286,6 +4318,140 @@ def assemble2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter):
 
     return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
 
+
+
+def assemble3d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter):
+    dim = 3
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+    functions = []
+
+    #an indent due to mirroring of the data for voronoi tess.
+    indent = 1e-8
+    indentRP = 1e-7
+
+    #sampling holes
+    for r in range (4):
+        oldLen = len(node_coords)
+        interface = []
+
+        print ('Hole 3d #%d' %r)
+        if r == 0:
+            centre = np.array([ maxLim[0]/2-0.011, maxLim[1]/2, indent ])
+        if r == 1:
+            centre = np.array([ maxLim[0]/2+0.011, maxLim[1]/2,indent ])
+        if r == 2:
+            centre = np.array([ maxLim[0]/2, maxLim[1]/2-0.011,indent ])
+        if r == 3:
+            centre = np.array([ maxLim[0]/2, maxLim[1]/2+0.011,indent ])
+
+        circleLength = 2*np.pi*holeDiameter/2
+        nrNodes = int ( circleLength / holeMinDist )
+        #print ('nrnodes: %d' %nrNodes)
+        #deleno ctyrma
+        nrNodes = (int (nrNodes / 4) +1 ) * 4
+
+        nodesOld = len(node_coords)
+        pointGenerators.generateNodesOrtoCircleBorder3dRand(centre, holeDiameter/2, 2, minDist, node_coords, trials)
+        newNodes = len(node_coords) - nodesOld
+        print('new c %s' %newNodes)
+
+    sampleBorders=False
+    if sampleBorders:
+        #top
+        nodeA = np.array([indent, maxLim[1]-indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=True, equidist=False)
+
+        #bottom
+        nodeA = np.array([indent, indent])
+        nodeB = np.array([maxLim[0]-indent, indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+        #left
+        nodeA = np.array([indent, indent])
+        nodeB = np.array([indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+
+        #right
+        nodeA = np.array([maxLim[0]-indent, indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+
+
+    leftRigidPlateMechBC = np.array([0, 0,-1,   -1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([-indentRP, 0.015,0.007, 0.025 ]))
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ 0.0075, (0.025+0.007)/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+    rightRigidPlateMechBC = np.array([1, 0,-1,   -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([maxLim[0]-0.015,maxLim[0]+indentRP,    0.007, 0.025 ]))
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0]-0.0075, (0.025+0.007)/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+
+
+
+
+
+
+    #pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
+
+    #left
+    interBounds = np.array([     indent,      indent , maxLim[0]/3,              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*3, bottomMinDist = minDist, gradienDirection=0)
+
+    interBounds = np.array([     maxLim[0]/3,      indent , maxLim[0]/3*2,              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True)
+
+    interBounds = np.array([     maxLim[0]/3*2,      indent , maxLim[0],              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*3, gradienDirection=0)
+
+
+    #remove points from rebars
+    newNodes = []
+    for i in range (len(node_coords)):
+        app = True
+        for r in range(4):
+
+            if r == 0:
+                centre = np.array([ maxLim[0]/2-0.011, maxLim[1]/2 ])
+                if (np.linalg.norm(centre - node_coords[i]) < holeDiameter/2*0.999):
+                    app = False
+            if r == 1 and app==True:
+                centre = np.array([ maxLim[0]/2+0.011, maxLim[1]/2])
+                if not (np.linalg.norm(centre - node_coords[i]) > holeDiameter/2*0.999):
+                    app = False
+            if r == 2and app==True:
+                centre = np.array([ maxLim[0]/2, maxLim[1]/2-0.011 ])
+                if not (np.linalg.norm(centre - node_coords[i]) > holeDiameter/2*0.999):
+                    app = False
+            if r == 3and app==True:
+                centre = np.array([ maxLim[0]/2, maxLim[1]/2+0.011 ])
+                if not (np.linalg.norm(centre - node_coords[i]) > holeDiameter/2*0.999):
+                    app = False
+
+        if app==True:
+            newNodes.append(node_coords[i])
+
+    node_coords = newNodes.copy()
+
+
+
+    node_coords = np.asarray(node_coords)
+    if True:
+        plt.plot(node_coords[:,0], node_coords[:,1], 'o', color='black');
+        plt.show()
+
+
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
 
 
 

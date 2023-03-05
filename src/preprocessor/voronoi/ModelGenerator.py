@@ -379,6 +379,9 @@ class Model:
         if self.modelType == '2d_CFRAC_Clover':
             self.run_2d_CFRAC_Clover()
 
+        if self.modelType == '3d_CFRAC_Clover':
+            self.run_2d_CFRAC_Clover()
+
         if self.modelType == '2d_CFRAC_TDCB':
             self.run_2d_CFRAC_TDCB()
 
@@ -639,6 +642,19 @@ class Model:
             self.govNodesTrsptBC = []
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_CFRAC_Clover')
+
+    def run_3d_CFRAC_Clover(self, node_coords_init=None):
+        self.activeTransport = False
+
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create3d_CFRAC_Clover(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, 1)
+
+        self.materialZones= []
+        if self.activeTransport == False:
+            self.rigidPlatesTrspt = []
+            self.govNodesTrspt=[]
+            self.govNodesTrsptBC = []
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_CFRAC_Clover')
 
     def run_2d_CFRAC_TDCB(self, node_coords_init=None):
         self.activeTransport = False
