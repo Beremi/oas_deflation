@@ -4553,18 +4553,18 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
 
         #left
         nodeA = np.array([indent, maxLim[1]-indent])
-        nodeB = np.array([0.03, indent])
+        nodeB = np.array([0.015, indent])
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
         nodeA = np.array([0, maxLim[1]-indent])
-        nodeB = np.array([0.03-indent, indent])
+        nodeB = np.array([0.015-indent, indent])
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
 
         #right
-        nodeA = np.array([0.06, indent])
+        nodeA = np.array([0.075, indent])
         nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
         #right
-        nodeA = np.array([0.06+indent, indent])
+        nodeA = np.array([0.075+indent, indent])
         nodeB = np.array([maxLim[0], maxLim[1]-indent])
         pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
 
@@ -4605,11 +4605,11 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
     model_indices = []
     for i,p in enumerate(node_coords):
         app = True
-        if p[0]<0.03:
-            if not (p[1]>=(0.1-(3+1/3)*p[0]) ):
+        if p[0]<0.015:
+            if not (p[1]>=(0.1-(6+2/3)*p[0]) ):
                 app = False
-        if p[0]>0.06:
-            if not (p[1]>=(3+1/3)*(p[0]-0.06) ):
+        if p[0]>0.075:
+            if not (p[1]>=(6+2/3)*(p[0]-0.075) ):
                 app = False
 
         if app == True:
