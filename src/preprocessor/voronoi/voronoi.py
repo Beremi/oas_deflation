@@ -277,6 +277,8 @@ def mirror_data_clover(data, dim, sizes, holeDiameter):
 
 def mirror_data_TDCB(data, dim, sizes, holeDiameter):
     '''Mirror data 2D and 3D'''
+    data = np.asarray(data)
+
     if (dim == 2):
         dataOut= np.vstack((
         data,
