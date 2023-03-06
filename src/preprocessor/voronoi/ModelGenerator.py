@@ -380,7 +380,7 @@ class Model:
             self.run_2d_CFRAC_Clover()
 
         if self.modelType == '3d_CFRAC_Clover':
-            self.run_2d_CFRAC_Clover()
+            self.run_3d_CFRAC_Clover()
 
         if self.modelType == '2d_CFRAC_TDCB':
             self.run_2d_CFRAC_TDCB()

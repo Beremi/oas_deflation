@@ -289,6 +289,13 @@ except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
+try:
+    from generateNodesOrtoSurface3dRand import generateNodesOrtoSurface3dRand_cython as generateParticlesRect
+    print('Using Cython version of point generator - generateNodesOrtoSurface3dRand.')
+except:
+    print('''Using Python version of generateNodesOrtoSurface3dRand. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
 def polarToCart(coords_polar):
     # for both 2D and 3D
     if len(coords_polar) == 2:
@@ -358,7 +365,7 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
         print('particle N ', nA, ' iteration: ', iters)
         # generate a candidate for particle center (both 2D and 3D)
         if allow_domain_overlap:
-            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin 
+            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin
         else:
             point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
 
@@ -369,7 +376,7 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
             dist = np.minimum( dist, dist2 )
 
         if min(dist - np.square((radii+radius) + gap*(radii+radius))) > 0:
-            # radius = r of new the particle, radii = rs of existing particles 
+            # radius = r of new the particle, radii = rs of existing particles
             node_coords_cart = np.vstack( (node_coords_cart, point_cart) )   # add new approved particle
             node_coords_polar = np.vstack( (node_coords_polar, point_polar) )   # add new approved particle
             if periodic_distance:
@@ -1073,7 +1080,7 @@ def randPointInAnnulus(center, radius, thickness, directionDim):
     return point
 
 def randPointInSphere(center, radius):
-    # radius: r of the circle/sphere which limits the region 
+    # radius: r of the circle/sphere which limits the region
     # works also for circle in xy plane (based on len(center))
     point = np.zeros(len(center))
 
@@ -1096,7 +1103,7 @@ def randPointInSphere(center, radius):
     return point
 
 def randPointInSpherePolar(center, radius):
-    center_polar = np.zeros(len(center)) 
+    center_polar = np.zeros(len(center))
     point_cart = np.zeros(len(center))      # [x, y, (z)]
     point_polar = np.zeros(len(center))     # [angle1 0-2pi, (angle2 0-pi), radius]
 

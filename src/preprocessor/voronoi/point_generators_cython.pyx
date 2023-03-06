@@ -21,6 +21,7 @@ def generateNodesRect_cython(double[:] maxLim,
                       list node_coords,
                       bool useLowBound=False, double topMinDist = -1, double bottomMinDist=-1, int gradienDirection = -1,                        int minDistCenter=-1):
     print('Generating {:d}d block segment of size: {}'.format(dim, ' / '.join('{:f}'.format(i) for i in maxLim)))
+    
     cdef:
         int generatedPoints = 0
         int p, d, i = 0
@@ -138,6 +139,79 @@ def generateNodesRect_cython(double[:] maxLim,
 
                         minDistDiff = topMinDist - bottomMinDist
                         currentMinDist = bottomMinDist + relativePosition * minDistDiff
+
+                if (distInt < currentMinDist):
+                    distIsGood = False
+                    tr += 1
+                    break
+
+        # Adding node coords
+        if distIsGood and (tr < trials):
+            for d in range(dim):
+                node_coords_temp.push_back(coords[d])
+            generatedPoints += 1
+
+
+    # Copy back to lists
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
+        if (dim==2):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1]])
+        if (dim==3):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1], node_coords_temp[p*dim+2]])
+
+
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True)
+def generateNodesOrtoSurface3dRand_cython(double[:] nodeA,double[:] nodeB,
+                      double minDist,
+                      int dim,
+                      list node_coords,
+                      int trials    ,bool minDistAmongNewPoints=False   ):
+    print('Generating {:d}d surface')
+    cdef:
+        int generatedPoints = 0
+        int p, d, i = 0
+        int tr = 0
+        double distInt
+        vector[double] coords
+        int node_coords_input_len = 0
+        vector[double] node_coords_temp
+        bint distIsGood
+        vector[double]  mdC
+        #mt19937_64 gen = mt19937_64()
+        #uniform_real_distribution[double] dist = uniform_real_distribution[double](0.0, 1.0)
+    for d in range(dim):
+        coords.push_back(0.0)
+        mdC.push_back(0.0)
+
+    if node_coords:
+        node_coords_input_len = len(node_coords)
+        for i in range(node_coords_input_len):
+            for d in range(dim):
+                node_coords_temp.push_back(node_coords[i][d])
+
+    while (tr < trials):
+        tr = 0
+        distIsGood = False
+        while (not distIsGood) and (tr < trials):
+            for c in range (dim):
+                if (nodeA[c] == nodeB[c]):
+                    coords[c] = nodeA[c]
+                else:
+                    coords[c] = (nodeB[c] - nodeA[c])*np.random.uniform()  + nodeA[c]
+
+            distIsGood = True
+
+            for p in range(node_coords_input_len + generatedPoints):
+                distInt = 0
+                for d in range(dim):
+                    dx = node_coords_temp[p*dim+d]
+                    dx -= coords[d]
+                    distInt += dx * dx
+                distInt = distInt**0.5
+
+                currentMinDist = minDist
 
                 if (distInt < currentMinDist):
                     distIsGood = False
