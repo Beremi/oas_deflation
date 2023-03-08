@@ -1754,8 +1754,9 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       (mZ[0][2][0] < nodeA[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
-                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1])  or
-                      (mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
+                      mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([1])) )
+                elif len(mZ)>1 and ((mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
                         mZ[1][0][1] < nodeA[1] < mZ[1][1][1] and
                         mZ[1][0][0] < nodeB[0] < mZ[1][1][0] and
                         mZ[1][0][1] < nodeB[1] < mZ[1][1][1]) or
@@ -1763,7 +1764,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                         mZ[1][2][1] < nodeA[1] < mZ[1][3][1] and
                         mZ[1][2][0] < nodeB[0] < mZ[1][3][0] and
                         mZ[1][2][1] < nodeB[1] < mZ[1][3][1])   ):
-                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([2])) )
+                    mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([1])) )
 
 
                 else:

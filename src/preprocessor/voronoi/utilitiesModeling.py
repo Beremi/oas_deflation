@@ -1347,14 +1347,14 @@ def create3d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter, in
 
 
 
-def create2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1):
+def create2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1, elazonewidth=10*0.001):
     print('Creating CFRAC TDCB model...')
     dim=2
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions,notches,node_indices  = assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions,notches,node_indices  = assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,roughMinDistCoef,elazonewidth)
 
 
     print('Conducting Voronoi tesselation...', end = '')
@@ -4488,7 +4488,8 @@ def assemble3d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter):
 
 
 
-def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
+def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,roughMinDistCoef,elazonewidth):
+    roughCoef = roughMinDistCoef
     dim = 2
     node_coords = []
     mechBC_merged = []
@@ -4573,47 +4574,64 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
         node_coords.append(np.array([maxLim[0]/2, nTop+minDist/2]))
         #node_coords.append(np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch]))
 
-
+    rougherCoef = 1.2
 
     sampleBorders=True
     if sampleBorders:
         #top
         nodeA = np.array([indent, maxLim[1]-indent])
         nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*2, dim, node_coords, trials, catchCorners=False, equidist=False)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughCoef, dim, node_coords, trials, catchCorners=False, equidist=False)
         #bottom
         nodeA = np.array([indent, indent])
         nodeB = np.array([maxLim[0]-indent, indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughCoef*rougherCoef, dim, node_coords, trials, catchCorners=False, equidist=False)
 
         #left
         nodeA = np.array([indent, maxLim[1]-indent])
         nodeB = np.array([0.015, indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughCoef*rougherCoef, dim, node_coords, trials, catchCorners=False, equidist=True)
         nodeA = np.array([0, maxLim[1]-indent])
         nodeB = np.array([0.015-indent, indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughCoef*rougherCoef, dim, node_coords, trials, catchCorners=False, equidist=True)
 
         #right
         nodeA = np.array([0.075, indent])
         nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughCoef*rougherCoef, dim, node_coords, trials, catchCorners=False, equidist=True)
         #right
         nodeA = np.array([0.075+indent, indent])
         nodeB = np.array([maxLim[0], maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
+        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*roughCoef*rougherCoef, dim, node_coords, trials, catchCorners=False, equidist=True)
 
 
 
     #pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
 
+    fineCenterWidth = elazonewidth
+    #bottom up to notch
+    interBounds = np.array([     indent,      indent , maxLim[0]-indent,              maxLim[1]*notch])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef, gradienDirection=1)
+
     #left
-    interBounds = np.array([     indent,      indent , maxLim[0],              maxLim[1]/3*2])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist, gradienDirection=1)
+    interBounds = np.array([     indent,       indent , maxLim[0]/2,              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef/5, gradienDirection=0)
+    interBounds = np.array([     maxLim[0]/3,       maxLim[1]*notch*0.9 , maxLim[0]/2-fineCenterWidth,              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist, gradienDirection=0)
+    interBounds = np.array([     indent,      indent , maxLim[0]/2-fineCenterWidth,              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef*rougherCoef, bottomMinDist = minDist*roughCoef, gradienDirection=0)
 
-    interBounds = np.array([     indent,      maxLim[1]/3*2 , maxLim[0],              maxLim[1]])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*2, gradienDirection=1)
+    #right
+    interBounds = np.array([     maxLim[0]/2,      indent, maxLim[0],              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/5, bottomMinDist = minDist*roughCoef, gradienDirection=0)
+    interBounds = np.array([     maxLim[0]/2+fineCenterWidth,      maxLim[1]*notch*0.9 , maxLim[0]/3*2,              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*roughCoef, gradienDirection=0)
+    interBounds = np.array([     maxLim[0]/2+fineCenterWidth,      indent , maxLim[0],              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef*rougherCoef, gradienDirection=0)
 
+    #center
+    interBounds = np.array([     maxLim[0]/2 - fineCenterWidth,      maxLim[1]*notch , maxLim[0]/2+ fineCenterWidth,              maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist, gradienDirection=0)
 
     #remove points from rebars
     newNodes = []
@@ -4652,7 +4670,7 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
 
 
     node_coords = np.asarray(node_coords)
-    if False:
+    if True:
         plt.plot(node_coords[model_indices,0], node_coords[model_indices,1], 'o', color='black');
         plt.show()
 
