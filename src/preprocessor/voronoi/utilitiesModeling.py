@@ -204,7 +204,7 @@ def assembleMeasuringGauges(type, D=-1, thickness = 0.1, maxLim = None, expansio
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None, minDist=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None, minDist=None, notch=None):
     #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
@@ -213,6 +213,31 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
     matZ1 = []
 
     matZ2 = []
+    if (model=='tdcb'):
+        if (dim==2):
+            boundA = np.array(  [ -1e-8             , -1e-8          ] )
+            matZ.append (boundA)
+            boundB = np.array(  [ elaX    , maxLim[1] + 1e-8] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ maxLim[0]-elaX , - 1e-8] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ maxLim[0] + 1e-8 , maxLim[1] + 1e8]  )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+
+
+            boundA2 = np.array(  [ -1e-8    ,  -1e-8] )
+            boundB2 = np.array(  [ maxLim[0]+1e-8   ,  maxLim[1]*0.37 ])
+            matZ1.append(boundA2)
+            matZ1.append(boundB2)
+
+            boundA3 = np.array(  [ -1e-8    ,  -1e-8] )
+            boundB3 = np.array(  [ maxLim[0]+1e-8   ,  maxLim[1]*0.37 ])
+            matZ1.append(boundA3)
+            matZ1.append(boundB3)
+            materialZones.append(matZ1)
+
+
     if (model=='box'):
         if (dim==2):
             boundA = np.array(  [ -1e-8             , -1e-8          ] )

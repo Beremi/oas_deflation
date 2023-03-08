@@ -666,7 +666,7 @@ class Model:
 
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions,self.notches,self.node_indices_dogbone)  = utilitiesModeling.create2d_CFRAC_TDCB(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, self.roughMinDistCoef,elazonewidth=self.fineWidth/2)
 
-        self.materialZones= utilitiesModeling.assembleMaterialZones (self.maxLim[0]/2-elazonewidth, 2, model='box', maxLim=self.maxLim)
+        self.materialZones= utilitiesModeling.assembleMaterialZones (self.maxLim[0]/2-elazonewidth, 2, model='tdcb', maxLim=self.maxLim)
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
             self.govNodesTrspt=[]
