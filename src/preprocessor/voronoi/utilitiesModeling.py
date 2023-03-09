@@ -4638,25 +4638,33 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
     interBounds = np.array([     indent,      indent , maxLim[0]-indent,              maxLim[1]*notch])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef, gradienDirection=1)
 
+    roughtop = 0.8
     #left
-    interBounds = np.array([     indent,       indent , maxLim[0]/2,              maxLim[1]])
+    interBounds = np.array([     indent,       indent , maxLim[0]/2,              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef/5, gradienDirection=0)
-    interBounds = np.array([     maxLim[0]/3,       maxLim[1]*notch*0.9 , maxLim[0]/2-fineCenterWidth,              maxLim[1]])
+    interBounds = np.array([     maxLim[0]/3,       maxLim[1]*notch*0.9 , maxLim[0]/2-fineCenterWidth,              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist, gradienDirection=0)
-    interBounds = np.array([     indent,      indent , maxLim[0]/2-fineCenterWidth,              maxLim[1]])
+    interBounds = np.array([     indent,      indent , maxLim[0]/2-fineCenterWidth,              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef*rougherCoef, bottomMinDist = minDist*roughCoef, gradienDirection=0)
 
     #right
-    interBounds = np.array([     maxLim[0]/2,      indent, maxLim[0],              maxLim[1]])
+    interBounds = np.array([     maxLim[0]/2,      indent, maxLim[0],              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/5, bottomMinDist = minDist*roughCoef, gradienDirection=0)
-    interBounds = np.array([     maxLim[0]/2+fineCenterWidth,      maxLim[1]*notch*0.9 , maxLim[0]/3*2,              maxLim[1]])
+    interBounds = np.array([     maxLim[0]/2+fineCenterWidth,      maxLim[1]*notch*0.9 , maxLim[0]/3*2,              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*roughCoef, gradienDirection=0)
-    interBounds = np.array([     maxLim[0]/2+fineCenterWidth,      indent , maxLim[0],              maxLim[1]])
+    interBounds = np.array([     maxLim[0]/2+fineCenterWidth,      indent , maxLim[0],              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef*rougherCoef, gradienDirection=0)
 
     #center
-    interBounds = np.array([     maxLim[0]/2 - fineCenterWidth,      maxLim[1]*notch , maxLim[0]/2+ fineCenterWidth,              maxLim[1]])
+    interBounds = np.array([     maxLim[0]/2 - fineCenterWidth,      maxLim[1]*notch , maxLim[0]/2+ fineCenterWidth,              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist, gradienDirection=0)
+    #center
+    interBounds = np.array([     maxLim[0]/2 - fineCenterWidth,      maxLim[1]*roughtop , maxLim[0]/2 + fineCenterWidth    ,         maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/2, bottomMinDist = minDist*roughCoef/2, gradienDirection=0)
+    interBounds = np.array([     indent,      maxLim[1]*roughtop , maxLim[0]/2 - fineCenterWidth     ,         maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef/3, gradienDirection=0)
+    interBounds = np.array([        maxLim[0]/2 + fineCenterWidth,      maxLim[1]*roughtop , maxLim[0]     ,         maxLim[1]])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/3, bottomMinDist = minDist*roughCoef, gradienDirection=0)
 
     #remove points from rebars
     newNodes = []
