@@ -41,13 +41,17 @@ then
     # generate AppImage
     rm -r AppDir
     cmake --build . --target install DESTDIR=AppDir
-    export DISCRETE_MODEL_HASH=`cat generated/hash.txt`
+    export DISCRETE_MODEL_HASH=`cat generated/date.txt`_`cat generated/hash.txt`
     appimage-builder --recipe AppImageBuilder.yml --skip-tests
+    mkdir bin/old
+    mv bin/OAS_* bin/old
     mv OAS*.AppImage bin
     mv OAS*.AppImage.zsync bin
     echo -e ${FINISHED}OAS.AppImage build.${NOCOLOR}
 
     build_win_dir="../OAS-build-win"
+    mkdir bin/old
+    mv bin/OAS_*.exe bin/old
     if [ -d "$build_win_dir" ]
     then
         cd "$build_win_dir"
