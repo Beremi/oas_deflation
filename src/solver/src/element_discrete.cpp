@@ -35,9 +35,12 @@ void RigidBodyContact :: giveValues(string code, Vector &result) const {
             result [ i ] = R(1, i);
         }
     } else if ( code.compare("t2") == 0 ) {
-        result.resize(ndim);
-        for ( unsigned i = 0; i < ndim; i++ ) {
-            result [ i ] = R(1, i);
+        if (ndim<3) result.resize(0);
+        else { 
+            result.resize(ndim);        
+            for ( unsigned i = 0; i < ndim; i++ ) {
+                result [ i ] = R(2, i);
+            }
         }
     } else if ( code.compare("volume") == 0 ) {
         result.resize(1);

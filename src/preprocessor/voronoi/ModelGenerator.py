@@ -662,7 +662,7 @@ class Model:
     def run_2d_CFRAC_TDCB(self, node_coords_init=None):
         self.activeTransport = False
         self.fineWidth *= self.minDist
-        elazonewidth = self.fineWidth /2
+        elazonewidth = self.fineWidth/2-self.minDist
 
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions,self.notches,self.node_indices_dogbone)  = utilitiesModeling.create2d_CFRAC_TDCB(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, self.roughMinDistCoef,elazonewidth=self.fineWidth/2)
 

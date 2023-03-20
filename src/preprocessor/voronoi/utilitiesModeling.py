@@ -231,7 +231,7 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             matZ1.append(boundA2)
             matZ1.append(boundB2)
 
-            boundA3 = np.array(  [ -1e-8    ,  maxLim[1]*0.8] )
+            boundA3 = np.array(  [ -1e-8    ,  maxLim[1]*0.79] )
             boundB3 = np.array(  [ maxLim[0]+1e-8   ,  maxLim[1]*1.1 ])
             matZ1.append(boundA3)
             matZ1.append(boundB3)
@@ -4635,7 +4635,7 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
 
     fineCenterWidth = elazonewidth
     #bottom up to notch
-    interBounds = np.array([     indent,      indent , maxLim[0]-indent,              maxLim[1]*notch])
+    interBounds = np.array([     indent,      indent , maxLim[0]-indent,              maxLim[1]*(notch-2.*minDist)])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef, gradienDirection=1)
 
     roughtop = 0.8
@@ -4656,7 +4656,7 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef*rougherCoef, gradienDirection=0)
 
     #center
-    interBounds = np.array([     maxLim[0]/2 - fineCenterWidth,      maxLim[1]*notch , maxLim[0]/2+ fineCenterWidth,              maxLim[1]*roughtop])
+    interBounds = np.array([     maxLim[0]/2 - fineCenterWidth,      maxLim[1]*(notch-0.02) , maxLim[0]/2+ fineCenterWidth,              maxLim[1]*roughtop])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist, gradienDirection=0)
     #center
     interBounds = np.array([     maxLim[0]/2 - fineCenterWidth,      maxLim[1]*roughtop , maxLim[0]/2 + fineCenterWidth    ,         maxLim[1]])
