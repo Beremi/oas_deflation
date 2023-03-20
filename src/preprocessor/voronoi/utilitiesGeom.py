@@ -1709,6 +1709,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
+        print(mZ)
         print('auxMechElements %s' %auxmechelements)
 
         for i in range (len(mechElemRidges)):
@@ -1780,7 +1781,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 #print (mZ[0][0][0])
                 #print (mZ[0][1][0])
                 #print (mZ[0][0][0] - mZ[0][1][0])
-                #print (triangle)
+
 
                 """
                 if ( triangle == False and
@@ -1801,20 +1802,20 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 #print('len mz %d' %len(mZ))
                 """
                 if ( triangle == False):
-                    add=False
+                    addA=False
+                    addB=False
                     if (mZ[0][0][0] < nodeA[0] < mZ[0][1][0] and mZ[0][0][1] < nodeA[1] < mZ[0][1][1] and
                         mZ[0][0][2] < nodeA[2] < mZ[0][1][2]):
                         #print('lim %s' %mZ[0])
                         #print('catched A%s' %nodeA[0:dim])
                         #print('catch?? B%s' %nodeB[0:dim])
-                        add=True
+                        addA=True
                     if ( mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
                         #print('catched B%s' %nodeB[0:dim])
-                        add=True
+                        addB=True
 
-                    if add and (iNa >= node_count or iNb >= node_count) :
-                        #print('adding \n')
-                        mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
+                    if addA==True and addB==True :#and (iNa >= node_count or iNb >= node_count) :
+                        mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([1])) )
 
                 """
                 elif ( triangle == False):
