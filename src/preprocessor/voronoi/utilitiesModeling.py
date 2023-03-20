@@ -237,6 +237,18 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             matZ1.append(boundB3)
             materialZones.append(matZ1)
 
+        if (dim==3):
+            boundA = np.array(  [ maxLim[0]/2-elaX             , maxLim[1]*0.37*0.95   , -1e-8] )
+            matZ.append (boundA)
+            boundB = np.array(  [ maxLim[0]/2+elaX    , maxLim[1]*0.8, maxLim[2]+1e-8] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ maxLim[0]/2-elaX             , maxLim[1]*0.37*0.95   , -1e-8 ] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ maxLim[0]/2+elaX    , maxLim[1]*0.8, maxLim[2]+1e-8] )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+
+
 
     if (model=='box'):
         if (dim==2):
@@ -1403,14 +1415,14 @@ def create2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, inte
     return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, areas, functions,notches,node_indices
 
 
-def create3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1):
+def create3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1, elazonewidth=10*0.001):
     print('Creating CFRAC 3d TDCB model...')
     dim=3
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions,notches,node_indices  = assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions,notches,node_indices  = assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,roughMinDistCoef,elazonewidth)
 
 
     print('Conducting Voronoi tesselation...', end = '')
@@ -4549,8 +4561,17 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
         newNodes = len(node_coords) - nodesOld
         if r == 0:
             idcs_leftHole = np.arange(0,newNodes)+nodesOld
+            idcs_leftHole = idcs_leftHole.tolist()
+            for h in idcs_leftHole:
+                if (node_coords[h][0] > (centre[0]-0.7071*holeDiameter/2)) :
+                    idcs_leftHole.remove(h)
+
         if r == 1:
             idcs_rightHole = np.arange(0,newNodes)+nodesOld
+            idcs_rightHole = idcs_rightHole.tolist()
+            for h in idcs_rightHole:
+                if (node_coords[h][0] < (centre[0]+0.7071*holeDiameter/2)) :
+                    idcs_rightHole.remove(h)
 
     leftRigidPlateMechBC = np.array([0, 0,-1,   -1,-1,-1])
     leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, None, directIdcs=True )
@@ -4715,7 +4736,7 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
 
 
 
-def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
+def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, roughMinDistCoef,elazonewidth):
     dim = 3
     node_coords = []
     mechBC_merged = []
@@ -4735,9 +4756,9 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
     for r in range (2):
         print ('Hole #%d' %r)
         if r == 0:
-            centre = np.array([ maxLim[0]/2-0.01, 0.011 ])
+            centre = np.array([ maxLim[0]/2-0.01, 0.011, indent ])
         if r == 1:
-            centre = np.array([ maxLim[0]/2+0.01, 0.011 ])
+            centre = np.array([ maxLim[0]/2+0.01, 0.011, indent ])
 
         circleLength = 2*np.pi*holeDiameter/2
         nrNodes = int ( circleLength / holeMinDist )
@@ -4750,8 +4771,17 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
         newNodes = len(node_coords) - nodesOld
         if r == 0:
             idcs_leftHole = np.arange(0,newNodes)+nodesOld
+            idcs_leftHole = idcs_leftHole.tolist()
+            for h in idcs_leftHole:
+                if (node_coords[h][0] > (centre[0]-0.7071*holeDiameter/2)) :
+                    idcs_leftHole.remove(h)
+
         if r == 1:
             idcs_rightHole = np.arange(0,newNodes)+nodesOld
+            idcs_rightHole = idcs_rightHole.tolist()
+            for h in idcs_rightHole:
+                if (node_coords[h][0] < (centre[0]+0.7071*holeDiameter/2)) :
+                    idcs_rightHole.remove(h)
 
 
 
@@ -4777,7 +4807,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
         if nTop < minDist:
             nTop = maxLim[1]*notch+indent
 
-        notchWidth = 0.00125
+
         notchWidth = minDist/2
         notchSide0 = []
         oldLen = len(node_coords)
@@ -4788,7 +4818,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
         nodeB = np.array([maxLim[0]/2-notchWidth, nTop, maxLim[2]-indent])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
 
-        nodeA = np.array([maxLim[0]/2-notchWidth, indent,indent])
+        nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist, maxLim[2]-indent])
 
         #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=True, equidist=True)
@@ -4808,6 +4838,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
         nodeA = np.array([maxLim[0]/2+notchWidth, indent,indent])
         nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist, maxLim[2]-indent])
 
+
         pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials,minDistAmongNewPoints=True)
 
 
@@ -4825,44 +4856,30 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter):
     pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
 
 
-    sampleBorders=False
-    if sampleBorders:
-        #top
-        nodeA = np.array([indent, maxLim[1]-indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
-        #bottom
-        nodeA = np.array([indent, indent])
-        nodeB = np.array([maxLim[0]-indent, indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=False)
 
-        #left
-        nodeA = np.array([indent, maxLim[1]-indent])
-        nodeB = np.array([0.015, indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
-        nodeA = np.array([0, maxLim[1]-indent])
-        nodeB = np.array([0.015-indent, indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
+    rougherCoef = 1.2
+    roughCoef = roughMinDistCoef
+    roughtop = 0.8
+    fracW = elazonewidth
+    
+    #from bottom to notch
+    interBounds = np.array([     indent,      indent , indent, maxLim[0]-indent, maxLim[1]*notch*0.9, maxLim[2]-indent])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/2, bottomMinDist = minDist*roughCoef/2, gradienDirection=1)
 
-        #right
-        nodeA = np.array([0.075, indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
-        #right
-        nodeA = np.array([0.075+indent, indent])
-        nodeB = np.array([maxLim[0], maxLim[1]-indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=False, equidist=True)
+    #from top to crack
+    interBounds = np.array([     maxLim[0]/2-fracW,      maxLim[1]*roughtop , indent, maxLim[0]/2+fracW,   maxLim[1], maxLim[2]-indent])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*roughCoef/2, gradienDirection=1)
 
+    #left
+    interBounds = np.array([     indent,      maxLim[1]*notch*0.9 , indent, maxLim[0]/2,   maxLim[1], maxLim[2]-indent])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist, gradienDirection=0)
+    #right
+    interBounds = np.array([     maxLim[0]/2,      maxLim[1]*notch*0.9 , indent, maxLim[0],   maxLim[1], maxLim[2]-indent])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*roughCoef, gradienDirection=0)
 
-
-    #pointGenerators.generateNodesRect(maxLim, minDist, 3, trials, node_coords)
-
-
-    interBounds = np.array([     indent,      indent , indent, maxLim[0]-indent,              maxLim[1]/3*2, maxLim[2]-indent])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist, gradienDirection=1)
-
-    interBounds = np.array([     indent,      maxLim[1]/3*2 , indent, maxLim[0],              maxLim[1], maxLim[2]-indent])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*2, gradienDirection=1)
+    #center
+    interBounds = np.array([     maxLim[0]/2-fracW,  maxLim[1]*notch*0.9 , indent, maxLim[0]/2+fracW,   maxLim[1]*roughtop, maxLim[2]-indent])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist, gradienDirection=0)
 
 
     #remove points from rebars
@@ -6377,16 +6394,15 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials, powerTes):
     #masters = np.hstack(( masters,XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))
     radii = np.hstack(( radii, radii[np.hstack((XA,YA,XB,YB,XAYA,XBYA,XAYB,XBYB ))]))
 
-    """
+
     nNds = np.asarray(nNds)
-    if SHOW_PLOT:
-        fig = plt.figure()
-        ax = Axes3D(fig)
+    if True:
+
         #ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
         #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
-        ax.scatter(nNds[:,0], nNds[:,1], nNds[:,2], color='r')
+        plt.scatter(nNds[:,0], nNds[:,1],  color='r')
         plt.show()
-    """
+
 
 
 
