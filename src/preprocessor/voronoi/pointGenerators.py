@@ -289,12 +289,6 @@ except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
-try:
-    from generateNodesOrtoSurface3dRand import generateNodesOrtoSurface3dRand_cython as generateParticlesRect
-    print('Using Cython version of point generator - generateNodesOrtoSurface3dRand.')
-except:
-    print('''Using Python version of generateNodesOrtoSurface3dRand. To use the Cython version the
-          the code has to be build using: python setup.py build_ext --inplace.''')
 
 def polarToCart(coords_polar):
     # for both 2D and 3D
@@ -584,6 +578,13 @@ def generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist, dim, node_coords, tria
             if (minDistAmongNewPoints == True): new_points.append(coords)
             node_coords.append(coords)
 
+
+try:
+    from point_generators_cython import generateNodesOrtoSurface3dRand_cython as generateNodesOrtoSurface3dRand
+    print('Using Cython version of point generator - generateNodesOrtoSurface3dRand.')
+except:
+    print('''Using Python version of generateNodesOrtoSurface3dRand. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
 
 def ortho_grid(n, nvar):
     nsim = n ** nvar
