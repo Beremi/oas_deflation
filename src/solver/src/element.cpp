@@ -132,7 +132,12 @@ void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result)
         std :: cerr << name <<  " Error: intergration point number " << ipnum << " exceeds number of integration points" << std :: endl;
         exit(1);
     }
-    if ( code.compare("x") == 0 ) {
+    if ( code.compare("location") == 0 ) {
+        result.resize(ndim);
+        Point* h = inttype->giveIPLocationPointer(ipnum);
+        for (unsigned k=0; k<ndim; k++) result [ k ] = (*h)[k];
+        
+    } else if ( code.compare("x") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->x();
     } else if ( code.compare("y") == 0 ) {

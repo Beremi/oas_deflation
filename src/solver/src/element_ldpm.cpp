@@ -115,7 +115,7 @@ void LDPMTetra :: init() {
         exit(1);
     }
 
-    //weights fro volumetric calculations
+    //weights for volumetric calculations
     volWeights.resize( 12 );
     Point volumeChangeWeights;
     unsigned j, k, l;
@@ -130,11 +130,10 @@ void LDPMTetra :: init() {
         volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
         sign = volume / abs(volume);
         for ( unsigned v = 0; v < 3; v++ ) {
-            volWeights [ 3*i + v ] = sign * volumeChangeWeights(v) / 3; //divided by ndim, othewise total trace of strain vector would be returned
-        }
+            volWeights [ 3*i + v ] = sign * volumeChangeWeights(v)  / 3; //divided by ndim, othewise total trace of strain vector would be returned
+        }        
     }
     volume = abs(volume);
-
     averageSide /= 4;
     if ( volume < 0.05 * sqrt(2) / 12. * pow(averageSide, 3) || volume < 1e-25 ) {
         cerr << name << "Error: wrong geometry" << endl;
@@ -174,8 +173,12 @@ Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {
 
     if (i==0){  //first IP     
         volumetricStrain = 0;
-        for ( unsigned k = 0; k < DoFs.size(); k++ ) {
-            volumetricStrain += DoFs [ k ] * volWeights [ k ];
+        unsigned r = 0;
+        for ( unsigned k = 0; k < 4; k++ ) {            
+            for(unsigned p = 0; p<3; p++){
+                volumetricStrain += DoFs [ r + p ] * volWeights [ 3*k + p ];
+            }
+            r += nodes[k]->giveNumberOfDoFs();
         }
         volumetricStrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
     }
