@@ -4724,7 +4724,7 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
 
 
     node_coords = np.asarray(node_coords)
-    if True:
+    if False:
         plt.plot(node_coords[model_indices,0], node_coords[model_indices,1], 'o', color='black');
         plt.show()
 

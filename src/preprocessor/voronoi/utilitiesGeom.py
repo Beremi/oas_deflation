@@ -1705,7 +1705,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
     onlyMechNodesConnected = True
     elaElems = []
-    fig, ax = plt.subplots()
+    #fig, ax = plt.subplots()
 
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
