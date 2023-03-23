@@ -21,7 +21,7 @@ def generateNodesRect_cython(double[:] maxLim,
                       list node_coords,
                       bool useLowBound=False, double topMinDist = -1, double bottomMinDist=-1, int gradienDirection = -1,                        int minDistCenter=-1):
     print('Generating {:d}d block segment of size: {}'.format(dim, ' / '.join('{:f}'.format(i) for i in maxLim)))
-    
+
     cdef:
         int generatedPoints = 0
         int p, d, i = 0
@@ -150,7 +150,9 @@ def generateNodesRect_cython(double[:] maxLim,
             for d in range(dim):
                 node_coords_temp.push_back(coords[d])
             generatedPoints += 1
-
+            sys.stdout.write("\033[F") #back to previous line
+            sys.stdout.write("\033[K") #clear line
+            print('points %s, trials %s' %(generatedPoints, tr))
 
     # Copy back to lists
     for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
@@ -168,7 +170,7 @@ def generateNodesOrtoSurface3dRand_cython(double[:] nodeA,double[:] nodeB,
                       int dim,
                       list node_coords,
                       int trials    ,bool minDistAmongNewPoints=False   ):
-    print('Generating {:d}d surface')
+    print('Generating 3d surface')
     cdef:
         int generatedPoints = 0
         int p, d, i = 0
@@ -223,6 +225,12 @@ def generateNodesOrtoSurface3dRand_cython(double[:] nodeA,double[:] nodeB,
             for d in range(dim):
                 node_coords_temp.push_back(coords[d])
             generatedPoints += 1
+            #sys.stdout.write("\033[F") #back to previous line
+            #sys.stdout.write("\033[K") #clear line
+            #print('points %s, trials %s' %(generatedPoints, tr))
+
+
+
 
 
     # Copy back to lists
@@ -1019,10 +1027,12 @@ def generateNodesRectPeriodic_cython(double[:] maxLim,
             for d in range(dim):
                 node_coords_temp.push_back(node[d])
 
+
     while (tr < trials):
         tr = 0
         distIsGood = False
         while (not distIsGood) and (tr < trials):
+            print(tr)
             #for d in range(dim):
             #    coords[d] = dist(gen) * maxLim[d]
             for d in range(dim):
@@ -1046,6 +1056,7 @@ def generateNodesRectPeriodic_cython(double[:] maxLim,
                 distInt = distInt**0.5
 
                 if (distInt < minDist):
+                    print(distInt)
                     distIsGood = False
                     tr += 1
                     break
@@ -1055,7 +1066,7 @@ def generateNodesRectPeriodic_cython(double[:] maxLim,
             for d in range(dim):
                 node_coords_temp.push_back(coords[d])
             generatedPoints += 1
-            #print (generatedPoints)
+
 
     # Copy back to lists
     for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):

@@ -4746,6 +4746,12 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
     rigidPlates = []
     functions = []
 
+    rougherCoef = 1.2
+    roughCoef = 0.004/minDist#roughMinDistCoef
+
+    roughtop = 0.8
+    fracW = elazonewidth
+
     #an indent due to mirroring of the data for voronoi tess.
     indent = 1e-8
     indentRP = 1e-7
@@ -4767,7 +4773,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
         nrNodes = (int (nrNodes / 4) +1 ) * 4
 
         nodesOld = len(node_coords)
-        pointGenerators.generateNodesOrtoCilinderSurf3dRand(centre, holeDiameter/2,  maxLim[2]-indent, 2 ,       minDist, node_coords, trials)
+        pointGenerators.generateNodesOrtoCilinderSurf3dRand(centre, holeDiameter/2,  maxLim[2]-indent, 2 ,       holeMinDist, node_coords, trials)
         newNodes = len(node_coords) - nodesOld
         if r == 0:
             idcs_leftHole = np.arange(0,newNodes)+nodesOld
@@ -4807,22 +4813,24 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
         if nTop < minDist:
             nTop = maxLim[1]*notch+indent
 
-
+        notchMinDist= minDist*0.75
+        #if notchMinDist < 0.001:
+        #    notchMinDist = 0.001
         notchWidth = minDist/2
         notchSide0 = []
         oldLen = len(node_coords)
         nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, indent, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, notchMinDist, dim, node_coords, trials*2, catchCorners=True, equidist=True)
         nodeA = np.array([maxLim[0]/2-notchWidth, nTop, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, nTop, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, notchMinDist, dim, node_coords, trials*2, catchCorners=True, equidist=True)
 
         nodeA = np.array([maxLim[0]/2-notchWidth, indent, indent])
         nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist, maxLim[2]-indent])
 
         #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, catchCorners=True, equidist=True)
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials,minDistAmongNewPoints=True)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, notchMinDist, dim, node_coords, trials*2,minDistAmongNewPoints=True)
 
         for i in range (oldLen, len(node_coords), 1):
             notchSide0.append(i)
@@ -4831,15 +4839,15 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
         oldLen = len(node_coords)
         nodeA = np.array([maxLim[0]/2+notchWidth, indent, indent])
         nodeB = np.array([maxLim[0]/2+notchWidth, indent, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, notchMinDist, dim, node_coords, trials*2, catchCorners=True, equidist=True)
         nodeA = np.array([maxLim[0]/2+notchWidth, nTop, indent])
         nodeB = np.array([maxLim[0]/2+notchWidth, nTop, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
+        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, notchMinDist, dim, node_coords, trials*2, catchCorners=True, equidist=True)
         nodeA = np.array([maxLim[0]/2+notchWidth, indent,indent])
         nodeB = np.array([maxLim[0]/2+notchWidth, maxLim[1]*notch-minDist, maxLim[2]-indent])
 
 
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials,minDistAmongNewPoints=True)
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, notchMinDist, dim, node_coords, trials*2,minDistAmongNewPoints=True)
 
 
         for i in range (oldLen, len(node_coords), 1):
@@ -4856,28 +4864,34 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
     pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/2, dim, node_coords, trials, catchCorners=True, equidist=True)
 
 
-
-    rougherCoef = 1.2
-    roughCoef = roughMinDistCoef
-    roughtop = 0.8
-    fracW = elazonewidth
-    
-    #from bottom to notch
+    print('Generating volumes...')
+    print('from bottom to notch')
     interBounds = np.array([     indent,      indent , indent, maxLim[0]-indent, maxLim[1]*notch*0.9, maxLim[2]-indent])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/2, bottomMinDist = minDist*roughCoef/2, gradienDirection=1)
 
-    #from top to crack
+    #left
+    print('left gradient')
+    oldnodes=len(node_coords)
+    interBounds = np.array([     indent,      maxLim[1]*notch*0.9 , indent, maxLim[0]/2,   maxLim[1], maxLim[2]-indent])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist*roughCoef/3, gradienDirection=0)
+
+    #right
+    print('right gradient')
+    #for i in range(oldnodes, len(node_coords),1):
+    #    n = node_coords[i].copy()
+    #        n[0]=maxLim[0]/2+(maxLim[0]/2-n[0])#
+    #    node_coords.append(n)
+    interBounds = np.array([     maxLim[0]/2,      maxLim[1]*notch*0.9 , indent, maxLim[0],   maxLim[1], maxLim[2]-indent])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/3, bottomMinDist = minDist*roughCoef, gradienDirection=0)
+
+    print('from top to crack')
     interBounds = np.array([     maxLim[0]/2-fracW,      maxLim[1]*roughtop , indent, maxLim[0]/2+fracW,   maxLim[1], maxLim[2]-indent])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*roughCoef/2, gradienDirection=1)
 
-    #left
-    interBounds = np.array([     indent,      maxLim[1]*notch*0.9 , indent, maxLim[0]/2,   maxLim[1], maxLim[2]-indent])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef, bottomMinDist = minDist, gradienDirection=0)
-    #right
-    interBounds = np.array([     maxLim[0]/2,      maxLim[1]*notch*0.9 , indent, maxLim[0],   maxLim[1], maxLim[2]-indent])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*roughCoef, gradienDirection=0)
-
     #center
+    expectedparticles = (maxLim[1]*(roughtop-notch*0.9)*maxLim[2]*fracW*2/(4/3*np.pi*(minDist/2)**3) )
+    print('fine fracture zone')
+    print('expect about %d particles in fracture zone' %(expectedparticles*0.35 ) )
     interBounds = np.array([     maxLim[0]/2-fracW,  maxLim[1]*notch*0.9 , indent, maxLim[0]/2+fracW,   maxLim[1]*roughtop, maxLim[2]-indent])
     pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist, gradienDirection=0)
 
@@ -4927,7 +4941,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
         plt.plot(node_coords[model_indices,2], node_coords[model_indices,1], 'o', color='black');
         plt.show()
 
-
+    print('Voronoi...')
     return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, notches,model_indices
 
 
