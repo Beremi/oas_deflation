@@ -483,7 +483,7 @@ class Model:
         self.materialZones=None
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness, powerTes = self.powerTes )
         self.materialZones=None
         if self.elasticZone > 0:
             elaHeight = 1/4*self.dogboneD

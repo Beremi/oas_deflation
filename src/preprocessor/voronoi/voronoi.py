@@ -361,7 +361,7 @@ def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
     return dataOut
 
 
-def mirror_dataDogBone(data, dim, D, thickness = None):
+def mirror_dataDogBone(data, dim, D, thickness = None, radii = []):
     '''Mirror data dogbone 2D and 3D'''
     if (dim == 2):
         dataOut= np.vstack((
@@ -376,6 +376,9 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
         np.array([0,6/4*2*D]) + data * np.array([-1,-1]), #dolu doleva
         np.array([2*D,6/4*2*D]) + data * np.array([-1,-1]), #dolu doprava
         ))
+
+        if len(radii) > 0:
+            radii = np.tile(radii,9) #hstack radii 9x
 
     if(dim==3):
         dataOut= np.vstack((
@@ -421,7 +424,7 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
     ax.scatter(dataOut[:,0], dataOut[:,1])
     plt.show()
     """
-    return dataOut
+    return dataOut, radii
 
 def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = False, weights=None ):
     #quarter je ctvrt valec, ktery se pocital pro RWTH punch test, jinak se nepouziva

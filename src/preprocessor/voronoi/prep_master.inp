@@ -35,7 +35,7 @@
 ########### roughEdgeDogbone 0 - presne nasamplovane kruznice
 ########### roughEdgeDogbone 1 - prvky s obema nody v modelu
 ########### roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-##Model 2d_dogbone dogboneD 0.05 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 1 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 1 roughEdgeDogbone 3 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 3 defaultFilesFolder dogboneDefault dmgBand 1
+Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 0 roughEdgeDogbone 2 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 defaultFilesFolder dogboneDefault dmgBand 1 powerTes 0
 ###########0.125
 ###########Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 1 nr_models 100 defaultFilesFolder dogboneDefault
 ###########C
@@ -68,7 +68,7 @@
 ###########Model 2d_singleSpring minDist 1 activeMechanics 1
 ###########
 ###########PERIODIC MODELS
-Model 2d_periodicShear Xsize 0.1 Ysize 0.1 minDist 0.004 activeMechanics 1 activeTransport 1 trials 5000
+###########Model 2d_periodicShear Xsize 0.1 Ysize 0.1 minDist 0.004 activeMechanics 1 activeTransport 1 trials 5000
 ###########Model 3d_periodicShear Xsize 0.05 Ysize 0.05 Zsize 0.05 minDist 0.005 activeMechanics 1 activeTransport 1 trials 400 powerTes 0
 ###########
 ###########
