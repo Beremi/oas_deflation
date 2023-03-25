@@ -204,7 +204,7 @@ def assembleMeasuringGauges(type, D=-1, thickness = 0.1, maxLim = None, expansio
     """
 
 
-def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None, minDist=None, notch=None):
+def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thickness=None, limits=None, limits1=None, rebarDepth=None, rebarDiameter=None, rebarCount=None, minDist=None, notch=None, weakboundary = False):
     #limits = xmin, ymin, zmin, xmax, ymax, zmax
     materialZones = []
     #matZone 1
@@ -274,15 +274,38 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
 
     if (model=='dogbone'):
         if (dim==2):
-            boundA = np.array(  [ -1e-8    , -1e-8  ] )
-            matZ.append (boundA)
-            boundB = np.array(  [ D+1e-8   ,  elaX] )
-            matZ.append (boundB)
-            boundA1 = np.array(  [ -1e-8, 6/4*D - elaX] )
-            matZ.append (boundA1)
-            boundB1 = np.array(  [ D  ,  6/4*D+1e-8]  )
-            matZ.append (boundB1)
-            materialZones.append(matZ)
+
+            if weakboundary:
+                radius = 0.725 * D
+                b_radius = 0.725 * D + elaX
+
+                # left boundary
+                center = np.array([0.8 * D + radius, 3/4 * D])
+                matZ = []
+                matZ.append('wb')
+                matZ.append(b_radius)
+                matZ.append(center)
+                materialZones.append(matZ)
+
+                # right boundary
+                center = np.array([0.2 * D - radius, 3/4 * D])
+                matZ = []
+                matZ.append('wb')
+                matZ.append(b_radius)
+                matZ.append(center)
+                materialZones.append(matZ)
+
+            else:
+                boundA = np.array(  [ -1e-8    , -1e-8  ] )
+                matZ.append (boundA)
+                boundB = np.array(  [ D+1e-8   ,  elaX] )
+                matZ.append (boundB)
+                boundA1 = np.array(  [ -1e-8, 6/4*D - elaX] )
+                matZ.append (boundA1)
+                boundB1 = np.array(  [ D  ,  6/4*D+1e-8]  )
+                matZ.append (boundB1)
+                materialZones.append(matZ)
+
         if (dim==3):
             boundA = np.array(  [ -1e-8    , -1e-8, -1e-8  ] )
             matZ.append (boundA)

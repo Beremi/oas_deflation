@@ -1547,10 +1547,11 @@ def saveExporters(master_folder,activeTransport, activeMechanics, exporters=[]):
             fl.write('#TXTNodalExporter pressure 1 pressure\n')
             if not activeTransport:
                 fl.write('VTKElementExporter out  saveEvery 1e-4 cellData 2 damage crack_opening pointData 1 nodal_stress\n')
-            fl.write('#VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage\n')
+            fl.write('VTKRCExporter faces  saveEvery 1e-4 cellData 1 damage\n')
             fl.write('#TXTGaussPointExporter damageT 11 x y z normal_x normal_y normal_z damage strainTY strainTZ strainPLTY strainPLTZ\n')
-            fl.write('#TXTElementExporter elem 4 dissipated_energy total_energy strain_energy dissipated_energy_inc\n')
-            fl.write('#TXTIntegrationPointExporter beam_data 11 x y normal_x normal_y damage s_N s_M s_L e_N e_M e_L\n')
+            fl.write("VTKElementExporter MatProp  saveSteps 1 1 cellData 5 E0 ft fs Gt Gs")
+            fl.write('TXTElementExporter elem 4 dissipated_energy total_energy strain_energy dissipated_energy_inc\n')
+            fl.write('TXTIntegrationPointExporter beam_data 11 x y normal_x normal_y damage s_N s_M s_L e_N e_M e_L\n')
         if activeTransport:
             fl.write('TXTNodalExporter pressure 1 pressure\n')
             fl.write('VTKElementExporter elems saveEvery 0.0001 cellData 2 damage crack_opening pointData 1 pressure\n')
@@ -1735,10 +1736,24 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
             if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) :
                 onlyMechNodesConnected = False
 
-            if (dim==2 or mZ[0][0]=='circle'):
+            if (dim==2 or mZ[0][0]=='circle' or (mZ[0][0]=='wb' and mZ[1][0]=='wb')):
+                if (mZ[0][0]=='wb' and mZ[1][0]=='wb'):
+                    in_boundary = False
+                    for boundary in mZ:
+                        # print(np.linalg.norm(nodeA[0:2]-boundary[2][0:2]))
+                        # print(boundary[1])
+                        if (np.linalg.norm(nodeA[0:2]-boundary[2][0:2]) < boundary[1] ) and (np.linalg.norm(nodeB[0:2]-boundary[2][0:2]) < boundary[1] ):
+                            in_boundary = True
+
+                    if in_boundary:
+                        mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([3])) )
+                        # print("in")
+                    else:
+                        # print("out")
+                        mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
                 #rebars
-                if (mZ[0][0]=='circle'):
+                elif (mZ[0][0]=='circle'):
                     inRebar = False
                     for rebar in range (mZ[0][3]):
                         if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2][0:2]) < mZ[rebar][1] ) and (np.linalg.norm(nodeB[0:2]-mZ[rebar][2][0:2]) < mZ[rebar][1] ):

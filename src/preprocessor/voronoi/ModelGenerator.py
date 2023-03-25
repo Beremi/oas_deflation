@@ -78,6 +78,7 @@ class Model:
         self.materialZones= []
         self.measuringGauges = []
         self.symmetric = 0
+        self.weakboundary = 0
 
         self.vor = None
         self.areas = None
@@ -287,6 +288,8 @@ class Model:
                 self.Xtopsize = float(r[i+1])
             if (r[i]=='symmetric'):
                 self.symmetric =  int(r[i+1])
+            if (r[i]=='weakboundary'):
+                self.weakboundary =  float(r[i+1])
 
             if (r[i]=='adaptivityReady'):
                 if (int(r[i+1])==1): self.adaptivityReady = True
@@ -493,9 +496,13 @@ class Model:
                 if self.dmgBand == 1:
                     elaHeight = 3 / 4 * self.dogboneD - self.minDist / 4
 
-                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
+                self.materialZones = utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
             else:
-                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
+                self.materialZones = utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
+
+            if self.weakboundary > 0:
+                print("Weak boundary activated - material at second row is taken as boundary material...\n")
+                self.materialZones = utilitiesModeling.assembleMaterialZones(self.weakboundary, 2, model='dogbone', D=self.dogboneD, weakboundary = True)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
 
