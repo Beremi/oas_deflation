@@ -2097,12 +2097,12 @@ def assembleTwoNodeSpringTest (maxLim, idt):
 
 
 
-def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=0, roughEdgeDogbone = 0, roughMinDistCoef=1, interLayerThickness=2, powerTes = False):
+def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=0, roughEdgeDogbone = 0, roughMinDistCoef=1, interLayerThickness=2, powerTes = False, weakboundary = 0):
     print('Creating 2d dog bone....')
     #
 
 
-    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates, radii  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone, roughEdgeDogbone=roughEdgeDogbone, roughMinDistCoef=roughMinDistCoef, interLayerThickness=interLayerThickness, powerTes = powerTes);
+    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates, radii  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone, roughEdgeDogbone=roughEdgeDogbone, roughMinDistCoef=roughMinDistCoef, interLayerThickness=interLayerThickness, powerTes = powerTes, weakboundary = weakboundary);
 
     node_coords_all = np.asarray(node_coords_all)
 
@@ -5733,7 +5733,7 @@ def assemble3dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch)
 
 
 
-def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=0, edgeMinDistCoef = 1.0, roughDogBone=0, roughEdgeDogbone=0, roughMinDistCoef=1, interLayerThickness=2, powerTes = False ):
+def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=0, edgeMinDistCoef = 1.0, roughDogBone=0, roughEdgeDogbone=0, roughMinDistCoef=1, interLayerThickness=2, powerTes = False, weakboundary = 0 ):
 
     if roughDogBone >0 :
         sampleCircularBorders = False
@@ -5901,9 +5901,28 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=0, edgeMi
         plt.show()
     #"""
 
+    # boundary with diferent discretization
+    if weakboundary > 0:
+        print('Assembling weak boundary...\n', end='')
 
+        boundary_minDist = 0.5 * minDist
+        radius = 0.725*D
+        maxLim_left = [0.2 * D + weakboundary, 1.5 * D]
+        node_coords_BoundaryRect = []
+        node_coords_inBoundary = []
+        pointGenerators.generateNodesRect(maxLim_left, boundary_minDist, 2, trials, node_coords_BoundaryRect)
 
+        for i in range(len(node_coords_BoundaryRect)):
+            node = node_coords_BoundaryRect[i]
+            distA = np.linalg.norm( node - centreA)
+            distB = np.linalg.norm( node - centreB)
+            if (distA > radius and distA < (radius + weakboundary) or  distB > radius and distB < (radius + weakboundary)):
+                # LEFT BOUNDARY
+                node_coords.append(np.array(node))
+                # RIGHT BOUNDARY
+                node_coords.append(np.array(np.array([D,0]) + node * np.array([-1,1])))
 
+        print('done.\n')
 
     if roughDogBone == 1: #hrubsi jen obdelniky prilozek
         #top rough rectangle
@@ -5917,8 +5936,8 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=0, edgeMi
         # middle fine asssemble3dPeriodicRectanglemaxLimF = np.array([     indent,       5/4 * D,        D,        6/4 * D   ])
         maxLimF = np.array([     indent,       1/4 * D,        D,        5/4 * D   ])
         pointGenerators.generateNodesRect(maxLimF, minDist, 2, trials, node_coords, useLowBound=True)
-
         nrOfPoints =  (len(node_coords)) - oldLen
+
     elif roughDogBone > 1: #hrubsi krome pruhu +-10xmindist od prostredka
         #top rough rectangle
         oldLen = len(node_coords)
@@ -5954,7 +5973,10 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=0, edgeMi
             node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDiam, maxDiam, 0.8, 2, trials, np.array(node_coords), np.array(radii), allow_domain_overlap = False, periodic_distance=False)
         else:
             pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
+            # print(list(node_coords))
+            # pointGenerators.generateNodesRect_old(maxLim, minDist, 2, trials, list(node_coords))
         nrOfPoints =  (len(node_coords)) - oldLen
+
 
 
     node_coords_all = np.copy ( node_coords )

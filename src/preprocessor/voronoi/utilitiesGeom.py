@@ -1746,7 +1746,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                             in_boundary = True
 
                     if in_boundary:
-                        mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([3])) )
+                        mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([1])) )
                         # print("in")
                     else:
                         # print("out")
