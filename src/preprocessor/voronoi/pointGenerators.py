@@ -35,7 +35,7 @@ def randPointOnLine(dim, nodeA, nodeB):
 # generates random points no closer to each other than minDist
 # into 2d or 3d block
 # maxLim: n-d array of dimensions
-def generateNodesRect_old(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1):
+def generateNodesRect(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1):
     if (dim==2):
         print('Generating 2d block segment of size: %f / %f. This may take few minutes. Do not panic. \nAlthough attempt to use the Cython solution by Vasek!!!' %(maxLim[0], maxLim[1]) )
     if (dim==3):
@@ -71,7 +71,7 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 # KD tree algorithm
-def generateNodesRect(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1, setsize = 10):
+def generateNodesRect_POZOR_NEMENIT_NAZEV_PUVODNI_METODY_KVULI_CYTHONU(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1, setsize = 10):
     if (dim==2):
         print('Generating 2d block segment of size: %f / %f. Using KD-tree algorithm. For old version of block generator try generateNodesRect_old in pointGenerators.py' %(maxLim[0], maxLim[1]) )
     if (dim==3):

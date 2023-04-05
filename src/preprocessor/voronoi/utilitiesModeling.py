@@ -4925,7 +4925,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
         if fem == False:
             print('from bottom to notch left')
             interBounds = np.array([     indent,      indent , indent, maxLim[0]/2-notchWidth/2, maxLim[1]*notch*0.9, maxLim[2]-indent])
-            pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/2, bottomMinDist = minDist*roughCoef/2, gradientDirection=1)
+            pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*roughCoef/2, bottomMinDist = minDist*roughCoef/2, gradienDirection=1)
 
         for i in range (oldLen, len(node_coords), 1):
             notchSide0.append(i)
