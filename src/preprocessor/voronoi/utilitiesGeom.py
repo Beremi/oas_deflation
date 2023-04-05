@@ -2859,7 +2859,7 @@ def saveMeasuringGauges(master_folder, dimension, measuringGauges):
         saveDisplacementGauges(master_folder, dimension, mg.name, mg.coordsA, mg.coordsB, rotations = mg.rotation)
 
 
-def checkSavedModel(master_folder, dim, activeMechanics, activeTransport):
+def checkSavedModel(master_folder, dim, activeMechanics, activeTransport,fem_output=False):
     print('\nChecking  generated files...')
     allOK = True
     cols = np.arange(1,dim+1)

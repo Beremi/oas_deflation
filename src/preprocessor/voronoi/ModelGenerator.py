@@ -79,6 +79,8 @@ class Model:
         self.measuringGauges = []
         self.symmetric = 0
 
+        self.ansysOut = False
+
         self.vor = None
         self.areas = None
 
@@ -116,6 +118,10 @@ class Model:
         self.rebarDepth = None
         self.interfaceMinDist = None
 
+        self.fracZoneHeight = None
+        self.fracZoneOverhang = None
+        self.fem = False
+
 
         self.masterSolver = self.masterMaterials = self.masterFunctions = False
 
@@ -125,8 +131,11 @@ class Model:
             if (r[i]=='supportDivision'):
                 self.supportDivision = int(r[i+1])
             if (r[i]=='holeMinDist'):
-                print(float(r[i+1]))
                 self.holeMinDist = float(r[i+1])
+            if (r[i]=='fracZoneHeight'):
+                self.fracZoneHeight = float(r[i+1])
+            if (r[i]=='fracZoneOverhang'):
+                self.fracZoneOverhang = float(r[i+1])
             if (r[i]=='holeDiameter'):
                 self.holeDiameter = float(r[i+1])
             if (r[i]=='rebarMinDist'):
@@ -154,8 +163,16 @@ class Model:
 
             if (r[i]=='printout'):
                 if r[i+1] == 1:
-                    print('print')
                     self.printout = True
+            if (r[i]=='fem'):
+                if int(r[i+1]) == 1:
+                    self.fem = True
+
+            if (r[i]=='ansysOut'):
+                if int(r[i+1]) == 1:
+                    self.ansysOut = True
+
+
 
             if (r[i]=='nr_models'):
                 self.nr_models = int(r[i+1])
@@ -679,9 +696,16 @@ class Model:
         self.fineWidth *= self.minDist
         elazonewidth = self.fineWidth /2
 
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions,self.notches,self.node_indices_dogbone)  = utilitiesModeling.create3d_CFRAC_TDCB(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, self.roughMinDistCoef,elazonewidth=self.fineWidth/2)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions,self.notches,self.node_indices_dogbone)  = utilitiesModeling.create3d_CFRAC_TDCB(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, self.roughMinDistCoef,elazonewidth=self.fineWidth/2,notchWidth=self.notchWidth,fracZoneHeight=self.fracZoneHeight,fracZoneOverhang=self.fracZoneOverhang, fem=self.fem)
 
-        self.materialZones= utilitiesModeling.assembleMaterialZones (elazonewidth, 3, model='tdcb', maxLim=self.maxLim)
+
+        if self.fem == False:
+            self.materialZones= utilitiesModeling.assembleMaterialZones (elazonewidth, 3, model='tdcb', maxLim=self.maxLim)
+        else:
+            coords = np.asarray(self.node_coords)
+            lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),np.amax(coords[:,1]),np.amin(coords[:,2]),np.amax(coords[:,2]) ]
+            self.materialZones= utilitiesModeling.assembleMaterialZones (elazonewidth, 3, model='tdcbfem', maxLim=lims)
+
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
             self.govNodesTrspt=[]
@@ -730,6 +754,9 @@ class Model:
         tube = False
         if self.modelType == '3d_BiparvaTubeTransport' or self.modelType=='3d_TubeInnerPressure': tube = True
 
+        actvTrsprt = self.activeTransport
+        if self.ansysOut == True:
+            actvTrsprt = True
         #print('Extracting geometry...', end='')
         #if (self.printout == False): blockPrint()
         self.node_coords = np.asarray(self.node_coords)
@@ -744,7 +771,7 @@ class Model:
             self.maxLim, self.vor,
             self.node_coords,
             self.areas,
-            self.activeTransport, self.activeMechanics,
+            actvTrsprt, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
             notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial, auxmechelements=self.auxmechelements)
 
@@ -762,7 +789,6 @@ class Model:
         print ('done.')
 
     def saveRest(self, solver, master_file, exporters, generateFineNodes=-1):
-        print('dim %d' %self.dimension)
         # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
         bc_path = os.path.join(self.master_folder,
                                utilitiesGeom.mechBCFile)
@@ -893,6 +919,8 @@ class Model:
                 print(os.path.isfile(os.path.join(self.defaultFilesFolder ,fname)))
                 if os.path.isfile(os.path.join(self.defaultFilesFolder ,fname)):
                    shutil.copy2(os.path.join(self.defaultFilesFolder ,fname), self.master_folder)
+
+
         """
         if generateFineNodes:
             fine_nodes, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = utilitiesModeling.assemble3DSSBeamBending(self.maxLim, generateFineNodes, self.trials, self.notchH, self.loadWidth, fracZoneWidth=self.fracZoneWidth, orthogonalFracZone=False, notchWidth = self.notchWidth, coupled=False, node_coords_init=None, specifiedNodes=self.specifiedNodes, roughMinDistCoef=1, supportDivision=self.supportDivision);

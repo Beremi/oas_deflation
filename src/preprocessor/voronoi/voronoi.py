@@ -85,10 +85,34 @@ def copy_data_general_full(data):
     return new_data
 
 
-def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
+def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None,notch=None):
     print('shifts %s' %shifts)
     '''Mirror data 2D and 3D'''
     if (dim == 2):
+        if notch is not None:
+            notch_height = notch[0]
+            notch_width = notch[1]
+            leftnotchpoints = []
+            rightnotchpoints = []
+            for p in data:
+                if p[0]<sizes[0]/2 and p[0]>sizes[0]/2-notch_width*1.1 and p[1]<sizes[1]*notch_height:
+                    leftnotchpoints.append( [p[0]+1e-5, p[1] ])
+                if p[0]>sizes[0]/2 and p[0]<sizes[0]/2+notch_width*1.1 and p[1]<sizes[1]*notch_height:
+                    rightnotchpoints.append( [p[0]-1e-5, p[1] ])
+
+            print(leftnotchpoints)
+            print(rightnotchpoints)
+
+        data=np.asarray(data)
+        leftnotchpoints=np.asarray(leftnotchpoints)
+        rightnotchpoints=np.asarray(rightnotchpoints)
+        """
+        plt.scatter(data[:,0],data[:,1])
+        plt.scatter(leftnotchpoints[:,0],leftnotchpoints[:,1])
+        plt.scatter(rightnotchpoints[:,0],rightnotchpoints[:,1])
+        plt.show()
+        """
+        data = np.vstack((data,leftnotchpoints,rightnotchpoints))
         dataOut= np.vstack((
         data,
         np.array([0,0]) + data * np.array([-1,1]),

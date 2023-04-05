@@ -20,9 +20,9 @@ from scipy.spatial import Delaunay
 SHOW_PLOT = False
 AXIS_ASPECT_EQUAL = False  # True may cause error using newer matplotlib versions
 ##run voronoi, mirrored data
-def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
+def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0, notch=None):
     print(maxLim)
-    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts)[:,:dim]) #the last column might be present representing radii
+    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts,notch=notch)[:,:dim]) #the last column might be present representing radii
 
     if (dim == 2):
         regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim, shifts = shifts)
