@@ -78,6 +78,7 @@ class Model:
         self.materialZones= []
         self.measuringGauges = []
         self.symmetric = 0
+        self.weakboundary = 0
 
         self.ansysOut = False
 
@@ -304,6 +305,8 @@ class Model:
                 self.Xtopsize = float(r[i+1])
             if (r[i]=='symmetric'):
                 self.symmetric =  int(r[i+1])
+            if (r[i]=='weakboundary'):
+                self.weakboundary =  float(r[i+1])
 
             if (r[i]=='adaptivityReady'):
                 if (int(r[i+1])==1): self.adaptivityReady = True
@@ -500,7 +503,7 @@ class Model:
         self.materialZones=None
 
     def run_2d_dogbone(self):
-        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness )
+        (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness, powerTes = self.powerTes, weakboundary = self.weakboundary)
         self.materialZones=None
         if self.elasticZone > 0:
             elaHeight = 1/4*self.dogboneD
@@ -510,9 +513,12 @@ class Model:
                 if self.dmgBand == 1:
                     elaHeight = 3 / 4 * self.dogboneD - self.minDist / 4
 
-                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
+                self.materialZones = utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
             else:
-                self.materialZones= utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
+                self.materialZones = utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogbone', D=self.dogboneD)
+        if self.weakboundary > 0:
+            print("Weak boundary activated - material at second row is taken as boundary material...\n")
+            self.materialZones = utilitiesModeling.assembleMaterialZones(self.weakboundary, 2, model='dogbone', D=self.dogboneD, weakboundary = True)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('dogbone2d', D=self.dogboneD)
 
 
