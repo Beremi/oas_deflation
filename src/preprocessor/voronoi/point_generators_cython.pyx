@@ -29,6 +29,7 @@ def generateNodesRect_cython(double[:] maxLim,
         double distInt
         vector[double] coords
         int node_coords_input_len = 0
+        double expectedNodeCount = 0
         vector[double] node_coords_temp
         double[:] topBound, lowBound
         bint distIsGood
@@ -48,6 +49,13 @@ def generateNodesRect_cython(double[:] maxLim,
         for i in range(node_coords_input_len):
             for d in range(dim):
                 node_coords_temp.push_back(node_coords[i][d])
+
+
+    if dim == 2:
+        expectedNodeCount = (maxLim[2]-maxLim[0])*(maxLim[3]-maxLim[1])/(np.pi*(minDist/2)**2) /2
+    if dim == 3:
+        expectedNodeCount = (maxLim[3]-maxLim[0])*(maxLim[4]-maxLim[1])*(maxLim[4]-maxLim[2])/(4/3*np.pi*(minDist/2)**3) /3
+
 
     while (tr < trials):
         tr = 0
@@ -152,7 +160,10 @@ def generateNodesRect_cython(double[:] maxLim,
             generatedPoints += 1
             sys.stdout.write("\033[F") #back to previous line
             sys.stdout.write("\033[K") #clear line
-            print('points %s, trials %s' %(generatedPoints, tr))
+            if gradienDirection ==-1:
+                print('Expected %d, generated points %s, trials %s.' %(expectedNodeCount,generatedPoints, tr))
+            else:
+                print('Generated points %s, trials %s.' %(generatedPoints, tr))
 
     # Copy back to lists
     for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):

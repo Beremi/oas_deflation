@@ -20,9 +20,9 @@ from scipy.spatial import Delaunay
 SHOW_PLOT = False
 AXIS_ASPECT_EQUAL = False  # True may cause error using newer matplotlib versions
 ##run voronoi, mirrored data
-def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0):
+def runMirroredVoronoi (node_coords, dim, maxLim, shifts=0, notch=None):
     print(maxLim)
-    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts)[:,:dim]) #the last column might be present representing radii
+    vor = Voronoi(voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts,notch=notch)[:,:dim]) #the last column might be present representing radii
 
     if (dim == 2):
         regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim, shifts = shifts)
@@ -71,11 +71,33 @@ def runMirroredVoronoiTDCB (data, dim, sizes, holeDiameter):
 
 ##run voronoi, mirrored data
 def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
-    vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[:,:dim]) #the last column might be present representing radii
+    vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
     #fig, ax = plt.subplots()
     #voronoi_plot_2d(vor, ax=ax)
     #plt.show()
     return vor
+
+##run power, mirrored data
+def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, radii = []):
+    # vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
+
+    node_coords, radii = voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness, radii = radii)
+
+    # vor = Voronoi(node_coords) #the last column might be present representing radii
+    vor = PowerTesselation(node_coords, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
+
+    # PLOT
+    # fig, ax = plt.subplots()
+    #
+    # for i, p in enumerate(node_coords):
+    #     circle = plt.Circle(p, radii[i], color='grey', fill=True)
+    #     ax.add_artist(circle)
+    # plt.scatter(node_coords.T[0], node_coords.T[1])
+    # ax.set_aspect('equal')
+    # plt.show()
+
+    return vor
+
 
 ##run power, no mirroring data
 def runPowerPlain (node_coords, radii, dim, maxLim, Xtop=0, shifts=0):

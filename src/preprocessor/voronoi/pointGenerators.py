@@ -70,8 +70,12 @@ except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
-
-def generateNodesRect_KDtree(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1, setsize = 10):
+# KD tree algorithm
+def generateNodesRect_POZOR_NEMENIT_NAZEV_PUVODNI_METODY_KVULI_CYTHONU(maxLim, minDist, dim, trials, node_coords, useLowBound=False, topMinDist = -1, bottomMinDist=-1, setsize = 10):
+    if (dim==2):
+        print('Generating 2d block segment of size: %f / %f. Using KD-tree algorithm. For old version of block generator try generateNodesRect_old in pointGenerators.py' %(maxLim[0], maxLim[1]) )
+    if (dim==3):
+        print('Generating 3d block segment of size: %f / %f / %f. Using KD-tree algorithm. For old version of block generator try generateNodesRect_old in pointGenerators.py' %(maxLim[0], maxLim[1], maxLim[2]) )
     tr = 0
     node_coords_set = []
     first_set = True

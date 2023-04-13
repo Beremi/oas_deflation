@@ -85,10 +85,34 @@ def copy_data_general_full(data):
     return new_data
 
 
-def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None):
+def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None,notch=None):
     print('shifts %s' %shifts)
     '''Mirror data 2D and 3D'''
     if (dim == 2):
+        if notch is not None:
+            notch_height = notch[0]
+            notch_width = notch[1]
+            leftnotchpoints = []
+            rightnotchpoints = []
+            for p in data:
+                if p[0]<sizes[0]/2 and p[0]>sizes[0]/2-notch_width*1.1 and p[1]<sizes[1]*notch_height:
+                    leftnotchpoints.append( [p[0]+1e-5, p[1] ])
+                if p[0]>sizes[0]/2 and p[0]<sizes[0]/2+notch_width*1.1 and p[1]<sizes[1]*notch_height:
+                    rightnotchpoints.append( [p[0]-1e-5, p[1] ])
+
+            print(leftnotchpoints)
+            print(rightnotchpoints)
+
+        data=np.asarray(data)
+        leftnotchpoints=np.asarray(leftnotchpoints)
+        rightnotchpoints=np.asarray(rightnotchpoints)
+        """
+        plt.scatter(data[:,0],data[:,1])
+        plt.scatter(leftnotchpoints[:,0],leftnotchpoints[:,1])
+        plt.scatter(rightnotchpoints[:,0],rightnotchpoints[:,1])
+        plt.show()
+        """
+        data = np.vstack((data,leftnotchpoints,rightnotchpoints))
         dataOut= np.vstack((
         data,
         np.array([0,0]) + data * np.array([-1,1]),
@@ -361,7 +385,7 @@ def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
     return dataOut
 
 
-def mirror_dataDogBone(data, dim, D, thickness = None):
+def mirror_dataDogBone(data, dim, D, thickness = None, radii = []):
     '''Mirror data dogbone 2D and 3D'''
     if (dim == 2):
         dataOut= np.vstack((
@@ -376,6 +400,9 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
         np.array([0,6/4*2*D]) + data * np.array([-1,-1]), #dolu doleva
         np.array([2*D,6/4*2*D]) + data * np.array([-1,-1]), #dolu doprava
         ))
+
+        if len(radii) > 0:
+            radii = np.tile(radii,9) #hstack radii 9x
 
     if(dim==3):
         dataOut= np.vstack((
@@ -421,7 +448,7 @@ def mirror_dataDogBone(data, dim, D, thickness = None):
     ax.scatter(dataOut[:,0], dataOut[:,1])
     plt.show()
     """
-    return dataOut
+    return dataOut, radii
 
 def mirror_dataCylinder(data, center, radius, height, directionDim, quarter = False, weights=None ):
     #quarter je ctvrt valec, ktery se pocital pro RWTH punch test, jinak se nepouziva
