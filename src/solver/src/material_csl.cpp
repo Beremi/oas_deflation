@@ -131,32 +131,31 @@ double CSLMaterialStatus :: giveS0compression(double omega) const {
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: computeOmega0() {
-    double o1 = 0.1;
-    double o2 = -M_PI;
-    omega0 = ( o1 + o2 ) / 2;
-    double err = giveS0tension(omega0) - giveS0compression(omega0);
+    double step = 0.01;
+    double minomega=0;
+    double minerr = 1e100;
+    double err;
+    for (omega0 = -M_PI/2.; omega0<0; omega0+=step){
+        err = giveS0tension(omega0) - giveS0compression(omega0);        
+        if (minerr>fabs(err)) {
+            minomega = omega0; 
+            minerr = fabs(err);
+        }
+    }    
+    omega0 = minomega;
+    
     unsigned itmax = 1000;
     unsigned it = 0;
+    double diff;
     while ( fabs(err) > 1e-5 && it < itmax ) {
-        if ( err * o1 < 0. ) {
-            o1 = omega0;
-        } else {
-            o2 = omega0;
-        }
-        omega0 = ( o1 + o2 ) / 2.;
+        diff = ((giveS0tension(omega0+1e-8) - giveS0compression(omega0+1e-8)) - (giveS0tension(omega0) - giveS0compression(omega0)))/1e-8;
+        omega0 -= err/diff;
         err = giveS0tension(omega0) - giveS0compression(omega0);
         it++;
     }
     if ( it == itmax ) {
         cerr << "CSL Material Error: omega0 does not converging, error " << fabs(err) << endl;
         exit(1);
-    }
-
-    if ( omega0 > 0.0 ) {
-        omega0 -= 2. * M_PI;
-    }
-    if ( omega0 < -0.5 * M_PI ) {
-        omega0 = -M_PI - omega0;
     }
 }
 
