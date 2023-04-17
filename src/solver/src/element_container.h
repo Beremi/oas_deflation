@@ -50,6 +50,7 @@ public:
     Element *giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const;
     unsigned giveElemId(const Element *elem) const;
     bool findElementOwningPoint(Element **elem, Point *xn, const Point *x) const;
+    Element* findClosestElement(const Point *x) const;
     void extrapolateValuesFromIntegrationPointsToNodes(std :: string code, std :: vector< Vector > &results);
     void assignFibersToElems();
     void giveValues(std :: string code, Vector &result) const;

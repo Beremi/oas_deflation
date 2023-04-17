@@ -628,6 +628,23 @@ bool ElementContainer :: findElementOwningPoint(Element **elem, Point *xn, const
 }
 
 //////////////////////////////////////////////////////////
+Element* ElementContainer :: findClosestElement(const Point *x) const {
+    bool mindist = 1e100;  
+    double dist;
+    Element *mine;
+    Point C;
+    for ( auto &e:elems ) {
+        C = e->giveApproxCenter();
+        dist = (C-(*x)).norm();
+        if(dist<mindist){
+            mindist=dist;
+            mine = e;
+        } 
+    }
+    return mine;
+}
+
+//////////////////////////////////////////////////////////
 void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result) {
     //delete everythink inside
     size_t p;

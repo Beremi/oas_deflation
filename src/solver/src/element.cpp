@@ -451,6 +451,49 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > 
 }
 
 //////////////////////////////////////////////////////////
+Point Element :: findNaturalCoords(const Point *x) const{
+    Point natcoords;
+    if (shafunc->isInNaturalCoords()){
+        natcoords = Point(0,0,0);
+        Point testglocoords, glocoords, testnatcoords, errcoords;
+        giveGlobalCoords(&glocoords, &natcoords);
+        errcoords = glocoords - (*x);
+        double err=errcoords.norm();
+        Point grad, prevgrad;
+        double step=1e-5;
+        unsigned maxit = 5000;
+        unsigned it = 0;
+        while (err>1e-6 && it<maxit){
+            testnatcoords = natcoords;            
+            for(unsigned dim=0; dim<ndim; dim++){
+                testnatcoords[dim] += step;
+                giveGlobalCoords(&testglocoords, &testnatcoords);    
+                errcoords = testglocoords - (*x);            
+                grad[dim] = (errcoords.norm()-err)/step;
+                testnatcoords[dim] -= step;                
+            }   
+            natcoords -= grad*(err/pow(grad.norm(),2));
+            giveGlobalCoords(&glocoords, &natcoords);
+            errcoords = glocoords - (*x);
+            err = errcoords.norm();
+            it ++;
+        }
+        if(it==maxit){
+            cerr << "Error in " << name << ": Natural coordinates were not found" << endl;
+            exit(1);
+        }   
+    }    
+    return natcoords;
+}
+
+//////////////////////////////////////////////////////////
+Vector Element :: giveShapeFunctions(const Point *x) const{
+    Vector phi = Vector :: Zero( nodes.size() );
+    shafunc->giveShapeF(x, phi);
+    return phi;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MATERIAL TEST ELEMENT - only one material point and virtual loading through prescribed strains
 //////////////////////////////////////////////////////////
@@ -485,4 +528,12 @@ Matrix MaterialTestElement :: giveHMatrix(const Point *x) const {
     unsigned numOfIntSources = 7;  //TODO: THIS IS WRONG, NEEDS TO BE TREATED AUTOMATICALLY
     Matrix H = Matrix :: Zero(numOfIntSources, DoFids.size() );
     return H;
+}
+
+//////////////////////////////////////////////////////////
+Point Element :: giveApproxCenter() const {
+    Point c = Point(0,0,0);
+    for(auto &k: nodes) c += k->givePoint();
+    if(nodes.size()>0) c/= nodes.size();
+    return c;
 }

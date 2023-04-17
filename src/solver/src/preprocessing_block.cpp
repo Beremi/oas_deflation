@@ -2092,6 +2092,52 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
     }
 }
 
+/////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Hanging Node
+//////////////////////////////////////////////////////////
+void MechHangingNode :: readFromLine(istringstream &iss, unsigned d) {
+    (void) d;
+    if (iss >> nodeid){}
+    else{
+        std :: cerr << "Error in MechHangingNode: nodeid not found" << '\n';
+        exit(EXIT_FAILURE);
+    }
+    if (iss >> elemid){}
+    else{
+        std :: cerr << "Error in MechHangingNode: elemid not found" << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MechHangingNode :: apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
+    //add boundary conditions
+    ( void ) funcs;
+    ( void ) ex;
+    ( void ) mats;
+    ( void ) solver;    
+    ( void ) b;    
+    ( void ) regions;    
+
+    Element *ee = e->giveElement(elemid);
+    unsigned ndim = ee->giveDimension();
+    Point natcoords = ee->findNaturalCoords(n->giveNode(nodeid)->givePointPointer());  
+    Vector weights = ee->giveShapeFunctions(&natcoords);
+    vector<Node*> masters = ee->giveNodes();
+    vector<unsigned> dirs(masters.size());
+    vector<double> mults(masters.size());
+
+    for(unsigned k=0; k<masters.size(); k++) mults[k] = weights[k];
+    for(unsigned i=0; i<ndim; i++){
+        for(unsigned k=0; k<masters.size(); k++) {
+            dirs[k] = i;
+        }        
+        JointDoF *newJD = new JointDoF(n->giveNode(nodeid), i, masters, dirs, mults);        
+        c->addConstraint(newJD);
+    }
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // CONTAINER FOR PBLOCKS
@@ -2199,6 +2245,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("NormalSurfaceLoad") == 0 ) {
                     NormalSurfaceLoad *newblock = new NormalSurfaceLoad();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("MechHangingNode") == 0 ) {
+                    MechHangingNode *newblock = new MechHangingNode();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else {

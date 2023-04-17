@@ -273,6 +273,21 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// Surface load, pressure
+class MechHangingNode : public PBlock
+{
+protected:
+    unsigned nodeid;
+    unsigned elemid;
+public:
+    MechHangingNode() { name = "MechHangingNode"; };
+    virtual ~MechHangingNode() {};
+    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
+    virtual void readFromLine(std :: istringstream &iss, unsigned d);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // CONTAINER FOR PREPROCESSOR BLOCKS
 class PBlockContainer
 {
