@@ -250,16 +250,15 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
 
     if (model=='tdcbfem'):
         if (dim==3):
-            boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]+1e-5     , -1e-8] )
+            boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
             matZ.append (boundA)
             boundB = np.array(  [ maxLim[1]-1e-5    , maxLim[3]-1e-5  , 1e8] )
             matZ.append (boundB)
-            boundA1 = np.array(  [ maxLim[0]+1e-5             , maxLim[2]+1e-5     , -1e-8] )
+            boundA1 = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
             matZ.append (boundA1)
             boundB1 = np.array(  [ maxLim[1]-1e-5    , maxLim[3]-1e-5  , 1e8] )
             matZ.append (boundB1)
             materialZones.append(matZ)
-            print(materialZones)
 
     if (model=='hangingfraczone'):
         if (dim==3):
@@ -4977,8 +4976,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
 
     notches = []
     #generating notch points
-
-    if (notch > 0):
+    if (notch > 0 and fracZoneOverhang>0):
 
         nTop = maxLim[1]*notch+indent-minDist/2
         if nTop < minDist:
@@ -5075,12 +5073,12 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
         notchA.append(notchSide1)
         notches.append(notchA)
 
-
-
-
-
-
-
+    else:
+       print('bottom bound surface for fem frac zone')
+       nodeA = np.array([maxLim[0]/2-fracW, maxLim[1]*(notch-notch*fracZoneOverhang), indent])
+       nodeB = np.array([maxLim[0]/2+fracW, maxLim[1]*(notch-notch*fracZoneOverhang), maxLim[2]-indent])
+       pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+    
     print('Generating volumes...')
 
 

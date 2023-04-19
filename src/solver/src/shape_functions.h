@@ -34,6 +34,7 @@ public:
     void giveJacobiM(const Point *x, Matrix &JacobiM) const;
     void giveJacobiMInverse(const Point *x, Matrix &JacobiMInverse) const;
     double giveJacobian(const Point *x) const;
+    bool isInNaturalCoords()const{return is_natural;};
 };
 
 //////////////////////////////////////////////////////////

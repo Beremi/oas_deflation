@@ -101,6 +101,9 @@ public:
 
     virtual void collectInformationsFromNeigborhood() {};
     virtual bool isPointInside(Point *xn, const Point *x) const;
+    virtual Point giveApproxCenter() const;
+    Vector giveShapeFunctions(const Point *x) const;
+    Point findNaturalCoords(const Point *x) const;
 };
 
 

@@ -307,7 +307,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> this->init_time;
             } else if ( param.compare("init_step") == 0 ) {
                 iss >> this->init_step;
-            } else if ( param.compare("symsolver_type") == 0 ) {
+            } else if ( param.compare("solver_type") == 0 ) {
                 iss >> symsolver_type;
             }
         }
