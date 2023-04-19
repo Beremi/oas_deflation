@@ -1707,11 +1707,11 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
     onlyMechNodesConnected = True
     elaElems = []
     #fig, ax = plt.subplots()
-
+    print('auxMechElements %s' %auxmechelements)
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
         print(mZ)
-        print('auxMechElements %s' %auxmechelements)
+
 
         for i in range (len(mechElemRidges)):
             iNa = int(mechElemRidges[i][0])

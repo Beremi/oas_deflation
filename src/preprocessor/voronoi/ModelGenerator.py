@@ -408,6 +408,8 @@ class Model:
             self.run_2d_CFRAC_TDCB()
         if self.modelType == '3d_CFRAC_TDCB':
             self.run_3d_CFRAC_TDCB()
+        if self.modelType == '3d_Hanging_FracZone':
+            self.run_3d_Hanging_FracZone()
 
         if self.modelType == '2d_corrosionRebar':
             self.run_2d_corrosionRebar(node_coords_init=node_coords_init)
@@ -696,6 +698,24 @@ class Model:
             self.govNodesTrsptBC = []
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_CFRAC_TDCB')
+
+    def run_3d_Hanging_FracZone(self, node_coords_init=None):
+        self.activeTransport = False
+
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create3d_Hanging_FracZone(self.maxLim, self.minDist, self.trials)
+
+        coords = np.asarray(self.node_coords)
+        lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),
+        np.amax(coords[:,1]),np.amin(coords[:,2]),np.amax(coords[:,2]) ]
+
+        self.materialZones= utilitiesModeling.assembleMaterialZones (0, 3, model='hangingfraczone', maxLim=lims)
+
+        if self.activeTransport == False:
+            self.rigidPlatesTrspt = []
+            self.govNodesTrspt=[]
+            self.govNodesTrsptBC = []
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('hangingfraczone')
 
     def run_3d_CFRAC_TDCB(self, node_coords_init=None):
         self.activeTransport = False

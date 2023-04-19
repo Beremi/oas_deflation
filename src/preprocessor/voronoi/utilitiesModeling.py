@@ -261,6 +261,18 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             materialZones.append(matZ)
             print(materialZones)
 
+    if (model=='hangingfraczone'):
+        if (dim==3):
+            boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
+            matZ.append (boundA)
+            boundB = np.array(  [ maxLim[1]-1e-5    , maxLim[3]-1e-5  , 1e8] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ maxLim[1]-1e-5    , maxLim[3]-1e-5  , 1e8] )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+            print(materialZones)
 
 
     if (model=='box'):
@@ -577,7 +589,11 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,      loadWidth =
 
     node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates  = assemble2DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth=notchWidth, node_coords_init=node_coords_init,  coupled=coupled, specifiedNodes=specifiedNodes, loading=loading);
 
-    notch=[notch,notchWidth]
+    if notch == 0:
+        notch = None
+    else:
+        notch=[notch,notchWidth]
+
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim,notch=notch)
     print('done.')
@@ -1456,6 +1472,39 @@ def create2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, inte
 
 
     return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, areas, functions,notches,node_indices
+
+
+
+def create3d_Hanging_FracZone(maxLim, minDist, trials):
+    print('Creating CFRAC 3d TDCB model...')
+    dim=3
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble3d_Hanging_FracZone(maxLim, minDist, trials)
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, volumes= utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    print('done.')
+
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #2 mech loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, 3e-5]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+
+    return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, [], functions
+
+
+
 
 
 def create3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1, elazonewidth=10*0.001, notchWidth=0,fracZoneHeight=0.8,fracZoneOverhang=0.2, fem=False):
@@ -2413,7 +2462,11 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     print('Conducting Voronoi tesselation...', end = '')
 
 
-    vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
+    if notch == 0:
+        notch = None
+    else:
+        notch=[notch,notchWidth]
+    vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim,notch=notch)
 
 
 
@@ -4785,6 +4838,52 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
 
 
 
+def assemble3d_Hanging_FracZone(maxLim, minDist, trials):
+    dim = 3
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+    functions = []
+
+    indent = 1e-8
+
+    print('bottom bound surface for fem frac zone')
+    nodeA = np.array([indent, indent, indent])
+    nodeB = np.array([maxLim[0]-indent, indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+    print('top bound surface for fem frac zone')
+    nodeA = np.array([indent, maxLim[1]-indent, indent])
+    nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+    print('left bound surface for fem frac zone')
+    nodeA = np.array([indent, indent, indent])
+    nodeB = np.array([indent, maxLim[1]-indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+    print('right bound surface for fem frac zone')
+    nodeA = np.array([maxLim[0]-indent, indent, indent])
+    nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+
+    print('fine fracture zone volume')
+    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+    leftRigidPlateMechBC = np.array([0, 0,0,   -1,-1,-1, -1,-1,-1, -1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, None, directIdcs=True )
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2-0.01, 0.011 ,maxLim[2]/2]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+    rightRigidPlateMechBC = np.array([1, 0,0,   -1,-1,-1, -1,-1,-1, -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 3, None, directIdcs=True )
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2+0.01, 0.011,maxLim[2]/2 ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
+
 
 
 def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, roughMinDistCoef,elazonewidth, notchWidth, fracZoneOverhang=0.1, fracZoneHeight=0.8, fem=False):
@@ -6735,7 +6834,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
     #width of the supports
     supportWidth = maxLim[0] / 21
-
+    print(supportDivision)
 
     #lists for the model
     if node_coords_init is None:
