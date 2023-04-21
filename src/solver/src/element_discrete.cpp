@@ -154,13 +154,13 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         //JM: face normal vector made from first 3 vertices
-        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() );
         n /= n.norm();
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0
-        double prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(t);
+        double prp = ( n ).dot(t);
         if ( prp > 1e-8 ) {
             cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
             //  exit(1);
@@ -192,7 +192,8 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
         }
-        centroid /= area;
+        if (area>1e-20) centroid /= area;
+        else centroid = avgPoint;
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
@@ -494,6 +495,8 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
+
+    Matrix KK = Element :: giveStiffnessMatrix(matrixType);    
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
 }
 

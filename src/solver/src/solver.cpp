@@ -839,6 +839,7 @@ void SteadyStateNonLinearSolver :: solve() {
             }
             cout << setw(15) << eneErr << endl;
 
+            // This check works only if flag "-ffast-math" is removed from CMake
             if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
                 if ( std :: isnan(resErr) ) {
