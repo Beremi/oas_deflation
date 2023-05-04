@@ -31,9 +31,11 @@ class VTKElementExporter : public VTKExporter
 protected:
     ElementContainer *elems;
     NodeContainer *nodes;
+    Solver *solver;
 public:
     VTKElementExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n; };
     ~VTKElementExporter() {};
+    void setSolverPointer(Solver *s);
     // virtual void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
 protected:

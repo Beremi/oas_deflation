@@ -1,6 +1,7 @@
 #include "vtk_exporter.h"
 #include "element_discrete.h"
 #include "element_ldpm.h"
+#include "solver.h"
 #include "misc.h"
 
 using namespace std;
@@ -142,7 +143,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     data.resize( elems->giveSize() );
     for ( p = 0; p < cell_data_size; p++ ) {
         msize = 1;
-        i = 0;
+        i = 0;        
         for ( vector< Element * > :: const_iterator ee = elems->begin(); ee != elems->end(); ++ee, i++ ) {
             ( * ee )->giveValues(codes [ p ].c_str(), data [ i ]);
             msize = max< size_t >( msize, data [ i ].size() );
@@ -169,9 +170,18 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     for ( ; p < node_data_size + cell_data_size; p++ ) {
         msize = 1;
         i = 0;
-        for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
-            ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), DoFs, data [ i ]);
-            msize = max< size_t >( msize, data [ i ].size() );
+        if (codes[p].compare("residuals")==0){
+            msize = 1;
+            Vector res = solver->giveResiduals();
+            for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
+                data [ i ] = Vector(1);
+                data[i][0] = res[i];
+            }
+        }else{
+           for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {            
+                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), DoFs, data [ i ]);
+                msize = max< size_t >( msize, data [ i ].size() );
+            }
         }
         vtkSmartPointer< vtkDoubleArray >pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
         pointDataArray->SetName( codes [ p ].c_str() );
@@ -228,6 +238,12 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 #else
     cout << "VTK library not install, export of Elements skipped" << endl;
 #endif
+}
+
+
+//////////////////////////////////////////////////////////
+void VTKElementExporter :: setSolverPointer(Solver *s) {
+    solver = s;
 }
 
 
