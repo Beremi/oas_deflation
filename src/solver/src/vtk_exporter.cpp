@@ -171,11 +171,15 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
         msize = 1;
         i = 0;
         if (codes[p].compare("residuals")==0){
-            msize = 1;
+            msize = 0;
+            unsigned stDoF = 0;
+            unsigned numDoF = 0;
             Vector res = solver->giveResiduals();
             for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
-                data [ i ] = Vector(1);
-                data[i][0] = res[i];
+                stDoF = (*nn)->giveStartingDoF();
+                numDoF = (*nn)->giveNumberOfDoFs();
+                data [ i ] = Vector(numDoF);
+                for(unsigned t=0; t<numDoF; t++) data[i][t] = res[stDoF+t];
             }
         }else{
            for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {            
