@@ -179,6 +179,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
                 stDoF = (*nn)->giveStartingDoF();
                 numDoF = (*nn)->giveNumberOfDoFs();
                 data [ i ] = Vector(numDoF);
+                msize = max< size_t >( msize, numDoF );
                 for(unsigned t=0; t<numDoF; t++) data[i][t] = res[stDoF+t];
             }
         }else{
