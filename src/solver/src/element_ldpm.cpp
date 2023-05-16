@@ -83,7 +83,21 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         areas [ i ] *= n.dot(normals [ i ]); //projection of area
 
         Point t1, t2;
-        t1 = inttype->giveIPLocation(i)-vert [ 0 ]->givePoint();                
+        //t1 = inttype->giveIPLocation(i)-vert [ 0 ]->givePoint();   this is wrong for irregular TET
+        // coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
+        Point arbit(sqrt(2.), -sqrt(3.), M_PI);
+        if ( ( normals [ i ] - arbit ).norm() < 1e-3 ) {
+            t1 = arbit.cross(normals [ i ]);
+        } else {
+            // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
+            if ( abs( normals [ i ].x() ) > 1e-3 ) {
+                t1 = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
+            } else if ( abs( normals [ i ].y() ) > 1e-3 ) {
+                t1 = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
+            } else {
+                t1 = Point( 1, 0, -normals [ i ].x() / normals [ i ].z() );
+             }
+        }
         t1.normalize();
         t2 = normals [ i ].cross(t1);
         R [ i ] = Matrix :: Zero(3, 3);
