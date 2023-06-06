@@ -9,8 +9,6 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT
 LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
-    cout << "LDPMTetra :: LDPMTetra(unsigned dim)" << endl; cout.flush();
-
     if ( ndim != 3 ) {
         cerr << "LDPMTetra implemented only in 3D" << endl;
         exit(1);
@@ -149,7 +147,7 @@ void LDPMTetra :: init() {
     }
     volume = abs(volume);
     averageSide /= 4;
-    if ( volume < 0.05 * sqrt(2) / 12. * pow(averageSide, 3) || volume < 1e-25 ) {
+    if ( volume < 1e-25 ) {
         cerr << name << "Error: wrong geometry" << endl;
         exit(1);
     }

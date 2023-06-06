@@ -401,10 +401,7 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *elems
     ( void ) solver;
     ( void ) regions;
 
-    volume = 1;
-    for ( auto const a : PUCsize ) {
-        volume *= a;
-    }
+    calculateVolume();
 
     unsigned const_num = constrs->giveSize();
     unsigned funcs_num = funcs->giveSize();
@@ -572,6 +569,174 @@ void MechanicalPeriodicBC :: readFromLine(istringstream &iss, unsigned d) {
 double MechanicalPeriodicBC :: giveVolume() const {
     return volume;
 }
+
+//////////////////////////////////////////////////////////
+void MechanicalPeriodicBC :: calculateVolume() {
+    volume = 1;
+    for ( auto const a : PUCsize ) {
+        volume *= a;
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Mechanical Periodic BC on SPHERE
+void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
+    //apply contraints, connect periodic images
+    JointDoF *jd;
+    vector< Node * >vm;
+    vector< unsigned >dirs;
+    vector< double >mults;
+    Node *s = nullptr;
+    Node *m = nullptr;
+    Point diff;
+    for ( unsigned i = 0; i < masters.size(); i++ ) {
+        m = nodes->giveNode(masters [ i ]);
+        s = nodes->giveNode(slaves [ i ]);
+        //connect rotations
+        if ( dynamic_cast< Particle * >( s ) && dynamic_cast< Particle * >( m ) ) {
+            dirs.resize(1);
+            mults.resize(1);
+            vm.resize(1);
+            mults [ 0 ] = 1;
+            vm [ 0 ] = m;
+            for ( unsigned k = 0; k < 2 * ( dim - 1 ) - 1; k++ ) {
+                dirs [ 0 ] = dim + k;
+                jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+                constrs->addConstraint(jd);
+            }
+        }
+
+        //connect translations
+        diff = s->givePoint() - m->givePoint();
+
+        if ( !nonsymmetric_shear ) {
+            //direction X  (all gammaxy and gammaxy realized here)
+            if ( dim == 3 ) {
+                vm.resize(4);
+                mults.resize(4);
+                dirs.resize(4, 0);
+                dirs [ 2 ] = 5; //gamma xy
+                dirs [ 3 ] = 4; //gamma xz
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
+                vm [ 3 ] = nodes->giveNode(initalNodeNum); //gamma xz
+                mults [ 3 ] = diff.z() / 2;
+            } else if ( dim == 2 ) {
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3, 0);
+                dirs [ 2 ] = 2; //gamma xy
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
+            }
+            dirs [ 0 ] = 0;
+            dirs [ 1 ] = 0; //eps x
+            vm [ 0 ] = m; //master
+            vm [ 1 ] = nodes->giveNode(initalNodeNum);
+            mults [ 0 ] = 1;
+            mults [ 1 ] = diff.x();
+            mults [ 2 ] = diff.y() / 2;
+            jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Y  (gammaxz realized here)
+            if ( dim == 3 ) {
+                dirs [ 2 ] = 5; //gamma xy
+                dirs [ 3 ] = 3; //gamma yz
+                mults [ 3 ] = diff.z() / 2;
+            }
+            dirs [ 0 ] = 1;
+            dirs [ 1 ] = 1; //eps y
+            mults [ 1 ] = diff.y();
+            mults [ 2 ] = diff.x() / 2;
+            jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Z  (gammaxz realized here)
+            if ( dim == 3 ) {
+                dirs [ 2 ] = 4; //gamma xz
+                dirs [ 3 ] = 3; //gamma yz
+                mults [ 3 ] = diff.y() / 2;
+
+                dirs [ 0 ] = 2;
+                dirs [ 1 ] = 2; //eps z
+                mults [ 1 ] = diff.z();
+                mults [ 2 ] = diff.x() / 2;
+                jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+                constrs->addConstraint(jd);
+            }
+        } else {
+            //direction X  (all gammaxy and gammaxy realized here)
+            if ( dim == 3 ) {
+                vm.resize(4);
+                mults.resize(4);
+                dirs.resize(4, 0);
+                dirs [ 2 ] = 5;  //gamma xy
+                dirs [ 3 ] = 4;  //gamma xz
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
+                vm [ 3 ] = nodes->giveNode(initalNodeNum);
+                mults [ 3 ] = diff.z();
+            } else if ( dim == 2 ) {
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3, 0);
+                dirs [ 2 ] = 2; //gamma xy
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
+            }
+            dirs [ 0 ] = 0;
+            dirs [ 1 ] = 0; //eps x
+            vm [ 0 ] = m; //master
+            vm [ 1 ] = nodes->giveNode(initalNodeNum);
+            mults [ 0 ] = 1;
+            mults [ 1 ] = diff.x();
+            mults [ 2 ] = diff.y();
+            jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Y  (gammaxz realized here)
+            if ( dim == 3 ) {
+                vm.resize(3);
+                mults.resize(3);
+                dirs.resize(3, 0);
+                dirs [ 2 ] = 3; //gamma yz
+                vm [ 2 ] = nodes->giveNode(initalNodeNum);
+                mults [ 2 ] = diff.z();
+            } else if ( dim == 2 ) {
+                vm.resize(2);
+                mults.resize(2);
+                dirs.resize(2, 0);
+            }
+            dirs [ 0 ] = 1;
+            dirs [ 1 ] = 1; //eps y
+            vm [ 0 ] = m; //master
+            vm [ 1 ] = nodes->giveNode(initalNodeNum);
+            mults [ 0 ] = 1;
+            mults [ 1 ] = diff.y();
+            jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+            constrs->addConstraint(jd);
+
+            //direction Z  (gammaxz realized here)
+            if ( dim == 3 ) {
+                vm.resize(2);
+                mults.resize(2);
+                dirs.resize(2, 0);
+                dirs [ 0 ] = 2;
+                dirs [ 1 ] = 2;  //eps z
+                vm [ 0 ] = m; //master
+                vm [ 1 ] = nodes->giveNode(initalNodeNum);
+                mults [ 0 ] = 1;
+                mults [ 1 ] = diff.z();
+                jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
+                constrs->addConstraint(jd);
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalSphericalPeriodicBC :: calculateVolume() {
+    volume = M_PI*pow(PUCsize[0],2);
+}
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -2193,6 +2358,10 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
             if ( !( ftype.rfind("#", 0) == 0 ) ) {
                 if ( ftype.compare("MechanicalPeriodicBC") == 0 ) {
                     MechanicalPeriodicBC *newblock = new MechanicalPeriodicBC();
+                    newblock->readFromLine(iss, dim);
+                    blocks.push_back(newblock);
+                } else if ( ftype.compare("MechanicalSphericalPeriodicBC") == 0 ) {
+                    MechanicalSphericalPeriodicBC *newblock = new MechanicalSphericalPeriodicBC();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("MechanicalPeriodicBCwithVoigtConstraint") == 0 ) {

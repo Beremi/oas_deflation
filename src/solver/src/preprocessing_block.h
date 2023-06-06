@@ -87,6 +87,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
     std :: vector< double >giveDimensions() const { return PUCsize; };
     double giveVolume() const;
+    virtual void calculateVolume();
 };
 
 //////////////////////////////////////////////////////////
@@ -130,6 +131,19 @@ protected:
 public:
     TransportPeriodicBC() { name = "TransportPeriodicBC"; };
     virtual ~TransportPeriodicBC() {};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Transport Periodic Boundary Condition on sphere
+class MechanicalSphericalPeriodicBC : public MechanicalPeriodicBC
+{
+protected:
+    virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+public:
+    MechanicalSphericalPeriodicBC() { name = "MechanicalSphericalPeriodicBC"; nonsymmetric_shear = false; };
+    virtual ~MechanicalSphericalPeriodicBC() {};
+    virtual void calculateVolume();
 };
 
 //////////////////////////////////////////////////////////
