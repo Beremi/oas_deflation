@@ -65,6 +65,8 @@ class Model:
 
         self.node_coords = []
 
+        self.node_coords_polar = []
+
         self.mechBC_merged = self.mechIC_merged = self.trsprtBC_merged = self.trsprtIC_merged = self.govNodesMechBC = self.govNodesTrsptBC =self.expansionRings= None
 
         self.tpbwedgeheight = 0.2
@@ -93,7 +95,7 @@ class Model:
         r = row.split()
         self.modelType = r[1]
         self.dimension = int(r[1][0])
-        self.maxLim = np.zeros((self.dimension))
+        self.maxLim = np.zeros((self.dimension))    # float for circRVE
 
         self.masters = []
 
@@ -187,6 +189,8 @@ class Model:
             if (r[i]=='Zsize'):
                 if (self.dimension==3):
                     self.maxLim[2] = float(r[i+1])
+            if (r[i] == 'RVEdiameter'):
+                self.maxLim = float(r[i+1])
             if (r[i]=='minDist'):
                 self.minDist = float(r[i+1])
             if (r[i]=='trials'):
@@ -763,9 +767,9 @@ class Model:
         self.periodicModel = 1
 
     def run_2d_circRVE(self):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCircRVE(self.maxLim, self.minDist, self.trials, self.powerTes )
+        (self.node_coords, self.node_coords_polar, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCircRVE(self.maxLim, self.minDist, self.trials, self.powerTes )
         self.materialZones = None
-        self.periodicModel = 1
+        self.periodicModel = 2
 
     def run_2d_cantileverBending(self):
         print('2d_cantilever bending')
@@ -796,6 +800,7 @@ class Model:
             len(self.node_coords),
             self.maxLim, self.vor,
             self.node_coords,
+            self.node_coords_polar,
             self.areas,
             actvTrsprt, self.activeMechanics,
             mZ=self.materialZones, periodicModel=self.periodicModel,
@@ -1263,17 +1268,16 @@ if __name__ == '__main__':
             print('\nCreating model #%d' %i)
             if len(sys.argv) > 3:
                 model.userSeed = int(sys.argv[3])
-            model.setDirectory(len(sys.argv) > 2 and sys.argv[2] or None) # directory to genereate in can be specified in the input string (after prep_master.inp)
+            model.setDirectory(len(sys.argv) > 2 and sys.argv[2] or None) # directory to generate in can be specified in the input string (after prep_master.inp)
             dst_file = os.path.join(model.master_folder, os.path.basename(file))
             #print ('prep_master used... %s' %dst_file, end='')
             if not os.path.isfile(dst_file):
                 print ('Copying prep_master used... %s' %dst_file)
                 copyfile(file, dst_file)
 
-
             model.createModel(modelnr = i)
             model.saveGeometry()
-            model.saveRest(solver, file, exporters,generateFineNodes=0.02)
+            model.saveRest(solver, file, exporters, generateFineNodes=0.02)
 
     print('\n%%%%%%%%% LATTICE PREPROCESSOR DONE %%%%%%%%%')
     #print('\n%%%%%%%%% %d NODES MODEL %%%%%%%%%' %len(model.node_coords))

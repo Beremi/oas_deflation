@@ -595,6 +595,7 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
         s = nodes->giveNode(slaves [ i ]);
         //connect rotations
         if ( dynamic_cast< Particle * >( s ) && dynamic_cast< Particle * >( m ) ) {
+            cout << "----------------- 1" << endl; cout.flush();
             dirs.resize(1);
             mults.resize(1);
             vm.resize(1);
@@ -611,6 +612,7 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
         diff = s->givePoint() - m->givePoint();
 
         if ( !nonsymmetric_shear ) {
+            cout << "----------------- 2" << endl; cout.flush();
             //direction X  (all gammaxy and gammaxy realized here)
             if ( dim == 3 ) {
                 vm.resize(4);
@@ -665,6 +667,7 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
                 constrs->addConstraint(jd);
             }
         } else {
+            cout << "----------------- 3" << endl; cout.flush();
             //direction X  (all gammaxy and gammaxy realized here)
             if ( dim == 3 ) {
                 vm.resize(4);
