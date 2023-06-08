@@ -39,6 +39,9 @@ public:
     double giveLength(unsigned i) const { return lengths [ i ]; }
     double giveArea(unsigned i) const { return areas [ i ]; }
     Point giveNormal(unsigned i) const { return normals [ i ]; }
+    std :: vector< Node * >giveVertices() const { return vert; };
+    Node * giveVertex(unsigned i) const { return vert[i]; };
+    unsigned giveNumOfVertices() const { return vert.size(); };
 
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
@@ -51,7 +54,6 @@ public:
     unsigned giveNumOfFacets()const { return 12; };
     std :: vector< unsigned >giveFacetVertCodes(unsigned k) const;
     std :: vector< unsigned >giveFacetNodeCodes(unsigned k) const;
-    std :: vector< Node * >giveVertices()const { return vert; };
 
     //virtual void giveValues(std :: string code, Vector &result) const;
     //Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
