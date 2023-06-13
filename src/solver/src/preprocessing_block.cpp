@@ -1,6 +1,7 @@
 #include "preprocessing_block.h"
 #include "model.h"
 #include "material_vectorial.h"
+#include "element_ldpm.h"
 
 // #include "misc.h"  // TODO JK: this include causes linking error
 using namespace std;
@@ -2223,6 +2224,7 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
     ( void ) mats;
     ( void ) solver;
     RigidBodyBoundary *rbb;
+    LDPMTetra *tet;
     BoundaryCondition *bc;
     vector< int >dBC, nBC;
     Point diff;
@@ -2257,6 +2259,38 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
 
             bc = new BoundaryCondition(rbb->giveNode(0), dBC, nBC, mult);
             b->addBoundaryCondition(bc);
+        }
+    }
+    for ( unsigned i = 0; i < mult.size(); i++ ) {
+        mult [ i ] = 0;
+    }
+    for ( auto &el : * e ) {
+        tet = dynamic_cast< LDPMTetra * >( el );
+        if ( tet ) {
+            vector<Node*> innodes;            
+            vector<Node*> tetnodes = tet->giveNodes();
+            for(auto &nn:tetnodes){
+                if ( regions->isLocationValid(nn->givePoint(), insideRegions, outsideRegions) ) {
+                    innodes.push_back(nn);
+                }
+            }
+            if(innodes.size()!=3) continue;
+
+            area = triArea3D(innodes[0]->givePointPointer(),innodes[1]->givePointPointer(),innodes[2]->givePointPointer());
+            normal = (innodes[1]->givePoint()-innodes[0]->givePoint()).cross(innodes[2]->givePoint()-innodes[0]->givePoint());
+            normal /= normal.norm();
+            if((innodes[0]->givePoint()-tet->giveVertex(0)->givePoint()).dot(normal) < 0.){
+                normal *= -1; //must be outward normal
+            }            
+            //forces
+            for ( unsigned i = 0; i < dim; i++ ) {
+                mult [ i ] = normal [ i ] * area/3.;
+            }
+
+            for(unsigned k=0; k<3; k++){
+                bc = new BoundaryCondition(innodes[k], dBC, nBC, mult);
+                b->addBoundaryCondition(bc);
+            }
         }
     }
 }

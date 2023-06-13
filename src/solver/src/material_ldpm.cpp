@@ -430,8 +430,9 @@ Matrix LDPMMaterialStatus :: giveStiffnessTensor(string type) const {
     if ( type.compare("elastic") == 0 ) {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
-        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-        return stiff * max( 1 - virtual_damage, m->giveDamageResiduum() );
+        //LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
+        //return stiff * max( 1 - virtual_damage, m->giveDamageResiduum() );
+        return stiff;
     } else {
         cerr << "Error: LDPMMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
