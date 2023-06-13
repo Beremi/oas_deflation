@@ -587,7 +587,7 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
     Node *s = nullptr;
     Node *m = nullptr;
 
-    int constrained_rots = 1;   // counter so that constrainRotations is applied to one pair only
+    int constrained_rots = 0;   // counter so that constrainRotations is applied to one pair only
 
     for ( unsigned i = 0; i < masters.size(); i++ ) {
         // get coords
@@ -611,7 +611,12 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalSphericalPeriodicBC :: generateRigidBodyBC() {
+void MechanicalSphericalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
+    ( void ) nodes;
+    ( void ) elems;
+    ( void ) bcs;
+    ( void ) constrs;
+    ( void ) funcs;
     // substituted by constraints on one master-slave pair in generateConstraints which gets restricted in tangentional direction (constrainRotations)
 }
 
@@ -666,8 +671,8 @@ void MechanicalSphericalPeriodicBC :: constrainRegular(NodeContainer *nodes, Con
     dirs [ 3 ] = 2;     // position where it takes gammaxy value from M
     mults [ 0 ] = A;
     mults [ 1 ] = B;
-    mults [ 2 ] = n [ 0 ] * diam;
-    mults [ 3 ] = n [ 1 ] * diam;
+    mults [ 2 ] = -n [ 0 ] * diam;
+    mults [ 3 ] = -n [ 1 ] * diam;
     jd = new JointDoF(s, 0, vm, dirs, mults);
     constrs->addConstraint(jd);
 
@@ -678,8 +683,8 @@ void MechanicalSphericalPeriodicBC :: constrainRegular(NodeContainer *nodes, Con
     dirs [ 3 ] = 2;     // position where it takes gammaxy value from M
     mults [ 0 ] = C;
     mults [ 1 ] = D;
-    mults [ 2 ] = n [ 1 ] * diam;
-    mults [ 3 ] = n [ 0 ] * diam;
+    mults [ 2 ] = -n [ 1 ] * diam;
+    mults [ 3 ] = -n [ 0 ] * diam;
     jd = new JointDoF(s, 1, vm, dirs, mults);
     constrs->addConstraint(jd);
 }
@@ -722,8 +727,8 @@ void MechanicalSphericalPeriodicBC :: constrainRotation(NodeContainer *nodes, Co
     // ux_S = ( A * (nx/ny) + B ) * uy_M + (epsx*nx*2*r + gammaxy*ny*2*r)
     dirs [ 1 ] = 0;     // position where it takes epsx value from M
     mults [ 0 ] = AB;
-    mults [ 1 ] = n [ 0 ] * diam;
-    mults [ 2 ] = n [ 1 ] * diam;
+    mults [ 1 ] = -n [ 0 ] * diam;
+    mults [ 2 ] = -n [ 1 ] * diam;
     jd = new JointDoF(s, 0, vm, dirs, mults);
     constrs->addConstraint(jd);
 
@@ -731,8 +736,8 @@ void MechanicalSphericalPeriodicBC :: constrainRotation(NodeContainer *nodes, Co
     // uy_S = ( C * (nx/ny) + D ) * uy_M + (epsy*ny*2*r + gammaxy*nx*2*r)
     dirs [ 1 ] = 1;     // position where it takes epsy value from M
     mults [ 0 ] = CD;
-    mults [ 1 ] = n [ 1 ] * diam;
-    mults [ 2 ] = n [ 0 ] * diam;
+    mults [ 1 ] = -n [ 1 ] * diam;
+    mults [ 2 ] = -n [ 0 ] * diam;
     jd = new JointDoF(s, 1, vm, dirs, mults);
     constrs->addConstraint(jd);
 }
