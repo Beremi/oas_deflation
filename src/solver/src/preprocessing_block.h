@@ -140,6 +140,9 @@ class MechanicalSphericalPeriodicBC : public MechanicalPeriodicBC
 {
 protected:
     virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+    virtual void generateRigidBodyBC();
+    void constrainRegular(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t);
+    void constrainRotation(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t);
 public:
     MechanicalSphericalPeriodicBC() { name = "MechanicalSphericalPeriodicBC"; nonsymmetric_shear = false; };
     virtual ~MechanicalSphericalPeriodicBC() {};
