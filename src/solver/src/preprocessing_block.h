@@ -135,8 +135,21 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// Transport Periodic Boundary Condition on sphere
+// Mechanical Periodic Boundary Condition on sphere
 class MechanicalSphericalPeriodicBC : public MechanicalPeriodicBC
+{
+protected:
+    virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
+public:
+    MechanicalSphericalPeriodicBC() { name = "MechanicalSphericalPeriodicBC"; nonsymmetric_shear = false; };
+    virtual ~MechanicalSphericalPeriodicBC() {};
+    virtual void calculateVolume();
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Mechanical Periodic Boundary Condition on sphere experimental
+class MechanicalSphericalPeriodicBCExperimental : public MechanicalPeriodicBC
 {
 protected:
     virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
@@ -144,8 +157,8 @@ protected:
     void constrainRegular(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t);
     void constrainRotation(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t);
 public:
-    MechanicalSphericalPeriodicBC() { name = "MechanicalSphericalPeriodicBC"; nonsymmetric_shear = false; };
-    virtual ~MechanicalSphericalPeriodicBC() {};
+    MechanicalSphericalPeriodicBCExperimental() { name = "MechanicalSphericalPeriodicBCExperimental"; nonsymmetric_shear = false; };
+    virtual ~MechanicalSphericalPeriodicBCExperimental() {};
     virtual void calculateVolume();
 };
 
