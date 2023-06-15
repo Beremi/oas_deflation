@@ -87,7 +87,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
     std :: vector< double >giveDimensions() const { return PUCsize; };
     double giveVolume() const;
-    virtual void calculateVolume();
+    virtual void calculateVolume(ElementContainer *elems);
 };
 
 //////////////////////////////////////////////////////////
@@ -146,7 +146,7 @@ protected:
 public:
     MechanicalSphericalPeriodicBC() { name = "MechanicalSphericalPeriodicBC"; nonsymmetric_shear = false; };
     virtual ~MechanicalSphericalPeriodicBC() {};
-    virtual void calculateVolume();
+    virtual void calculateVolume(ElementContainer *elems);
 };
 
 //////////////////////////////////////////////////////////

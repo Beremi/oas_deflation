@@ -402,7 +402,7 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *elems
     ( void ) solver;
     ( void ) regions;
 
-    calculateVolume();
+    calculateVolume(elems);
 
     unsigned const_num = constrs->giveSize();
     unsigned funcs_num = funcs->giveSize();
@@ -572,10 +572,16 @@ double MechanicalPeriodicBC :: giveVolume() const {
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBC :: calculateVolume() {
-    volume = 1;
+void MechanicalPeriodicBC :: calculateVolume(ElementContainer *elems) {
+    /*volume = 1;
     for ( auto const a : PUCsize ) {
         volume *= a;
+    }
+    */
+    //THIS IS INCORRECT - WILL NOT WORK FOR COUPLED PROBLEMS WHERE ELEMENTS MIGHT OVERLAP
+    volume = 0;
+    for(unsigned i=0; i<elems->giveSize(); i++){
+        volume += elems->giveElement(i)->giveVolume(); 
     }
 }
 
@@ -743,7 +749,8 @@ void MechanicalSphericalPeriodicBC :: constrainRotation(NodeContainer *nodes, Co
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalSphericalPeriodicBC :: calculateVolume() {
+void MechanicalSphericalPeriodicBC :: calculateVolume(ElementContainer *elems) {
+    (void) elems;
     volume = M_PI*pow(PUCsize[0],2);
 }
 
