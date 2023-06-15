@@ -1327,6 +1327,7 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     vertices_renum = vor.vertices[vertices_orig]
     sort_idc = vertices_orig.argsort()   # indices 0 to len(vertices_orig)
     trspElemNodes = sort_idc[np.searchsorted(vertices_orig, mechElemVerts, sorter=sort_idc)]
+    trspElemNodes_renum = trspElemNodes + len(RVEnodes_renum)   # indices reflecting the order of auxNodes
 
     '''
     ########################################################################
@@ -1373,8 +1374,8 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     inpf = open(os.path.join(master_folder, mechElemsFile), 'w')
     inpf.write("#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n")
     for k in range(len(mechElemParticles_renum)):
-        inpf.write("LTCBEAM\t%d\t%d\t%d" %(mechElemParticles_renum[k,0], mechElemParticles_renum[k,1], len(trspElemNodes[k]) ))
-        for p in trspElemNodes[k]:
+        inpf.write("LTCBEAM\t%d\t%d\t%d" %(mechElemParticles_renum[k,0], mechElemParticles_renum[k,1], len(trspElemNodes_renum[k]) ))
+        for p in trspElemNodes_renum[k]:
             inpf.write("\t%d"%(p))
         inpf.write("\t0\n")
     inpf.close()
