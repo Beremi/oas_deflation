@@ -2689,9 +2689,9 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
                         masterNodes.push_back(master);
                         directions.push_back(2);
                         if ( kslave == 0 ) {
-                            multipliers.push_back( ( slave->givePoint().y() - master->givePoint().y() ) );
+                            multipliers.push_back( -( slave->givePoint().y() - master->givePoint().y() ) );
                         } else  {
-                            multipliers.push_back( -( slave->givePoint().x() - master->givePoint().x() ) );
+                            multipliers.push_back(  ( slave->givePoint().x() - master->givePoint().x() ) );
                         }
                     } else if ( ndim == 3 )        {
                         masterNodes.push_back(master);
@@ -2708,7 +2708,7 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
                             multipliers.push_back( ( slave->givePoint().x() - master->givePoint().x() ) );
                         } else  {
                             directions.push_back(3);
-                            multipliers.push_back( ( slave->givePoint().y() - master->givePoint().y() ) );
+                            multipliers.push_back(  ( slave->givePoint().y() - master->givePoint().y() ) );
                             directions.push_back(4);
                             multipliers.push_back( -( slave->givePoint().x() - master->givePoint().x() ) );
                         }
