@@ -970,7 +970,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         print('Ridge se odkazuji na nejake nody s indexy, ktere nejsou v samplu. !!!')
         print(' Tohle dela powerTes 1')
         print('Nastane chyba index out of bounds...')
-    print('Stiskni enter!\n')
+    #print('Stiskni enter!\n')
     a = input('').split(" ")[0]
 
 
@@ -1237,7 +1237,7 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
         print('Ridge se odkazuji na nejake nody s indexy, ktere nejsou v samplu!!!')
         print('Tohle dela powerTes 1.')
         print('Nastane chyba index out of bounds...')
-    print('Stiskni enter!\n')
+    #print('Stiskni enter!\n')
     a = input('').split(" ")[0]
 
     nnodes = len(inside_idcs)     # n of nodes inside of the RVE
