@@ -456,7 +456,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     bool bsh = false;
     unsigned helpuint;
     double valueIN;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile( filename.c_str(), ios::in | ios::binary );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {

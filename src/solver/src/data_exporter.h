@@ -7,7 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <bits/stdc++.h> //lower case string
+//#include <bits/stdc++.h> //lower case string
 
 class Solver; //forward declaration
 
