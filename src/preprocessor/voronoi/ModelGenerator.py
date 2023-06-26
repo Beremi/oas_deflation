@@ -392,6 +392,11 @@ class Model:
         if self.modelType == '2d_singleSpring':
             self.run_2d_singleSpring()
 
+        if self.modelType == '2d_singleContact':
+            self.run_2d_singleContact()
+        if self.modelType == '3d_singleContact':
+            self.run_3d_singleContact()
+
         if self.modelType == '2d_coupledArtificialCrack':
             self.run_2d_coupledArtificialCrack()
 
@@ -408,6 +413,8 @@ class Model:
             self.run_2d_CFRAC_TDCB()
         if self.modelType == '3d_CFRAC_TDCB':
             self.run_3d_CFRAC_TDCB()
+        if self.modelType == '2d_Hanging_FracZone':
+            self.run_2d_Hanging_FracZone()
         if self.modelType == '3d_Hanging_FracZone':
             self.run_3d_Hanging_FracZone()
 
@@ -445,7 +452,26 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_singleSpring', maxLim=np.array([self.minDist, 1]) )
         materialZones = None
 
+    def run_2d_singleContact(self):
+        self.maxLim=np.array([self.minDist*2,self.minDist])
+        (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions,self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create_2d_SingleContat( self.minDist, self.master_folder,self.maxLim )
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_singleSpring', maxLim=self.maxLim )
+        materialZones = None
+    def run_3d_singleContact(self):
+        print(self.dimension)
+        self.maxLim=np.array([self.minDist*2,self.minDist,self.minDist])
+        (self.node_coords, self.mechBC_merged,  self.vor, self.areas, self.functions,self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create_3d_SingleContat( self.minDist, self.master_folder,self.maxLim )
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_singleContact', maxLim=self.maxLim )
+        materialZones = None
+
     def run_2d_notched3pb(self, node_coords_init=None):
+        supportWidth = self.maxLim[0] / 20
+
+        # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
+        #na kazdou stranu se prida pulka podpory
+        self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
+        #print('rozsireni modelu')
+
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
         self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes, loading=self.loading)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
@@ -499,6 +525,8 @@ class Model:
     def run_3d_cube(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dCube(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
         self.materialZones=None
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('box3d', maxLim=self.maxLim)
+
 
     def run_3d_consolidation(self, node_coords_init=None):
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged, self.radii) = utilitiesModeling.create3dConsolidation(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
@@ -699,6 +727,23 @@ class Model:
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('2d_CFRAC_TDCB')
 
+    def run_2d_Hanging_FracZone(self, node_coords_init=None):
+        self.activeTransport = False
+
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2d_Hanging_FracZone(self.maxLim, self.minDist, self.trials)
+
+        coords = np.asarray(self.node_coords)
+        lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),np.amax(coords[:,1])]
+
+        self.materialZones= utilitiesModeling.assembleMaterialZones (0, 2, model='hangingfraczone', maxLim=lims)
+
+        if self.activeTransport == False:
+            self.rigidPlatesTrspt = []
+            self.govNodesTrspt=[]
+            self.govNodesTrsptBC = []
+
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('hangingfraczone')
+
     def run_3d_Hanging_FracZone(self, node_coords_init=None):
         self.activeTransport = False
 
@@ -777,6 +822,7 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create3dDam(self.maxLim, self.minDist, self.trials, self.Xtopsize)
 
     def saveGeometry(self):
+        print('SAVING GEOMETRY')
         tube = False
         if self.modelType == '3d_BiparvaTubeTransport' or self.modelType=='3d_TubeInnerPressure': tube = True
 
@@ -801,7 +847,7 @@ class Model:
             mZ=self.materialZones, periodicModel=self.periodicModel,
             notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial, auxmechelements=self.auxmechelements)
 
-        print('nodes after %d' %len(new_node_coords))
+        print('NODES NODES after %d' %len(new_node_coords))
 
         self.node_coords = np.copy(new_node_coords)
         self.node_count = len(self.node_coords)
@@ -812,9 +858,10 @@ class Model:
                 for j in range (len(self.interfaceVertexIndices[i])):
                     self.interfaceVertexIndices[i][j] += int(self.vertIdxStart)
 
-        print ('done.')
+        print ('saving dome mdome.')
 
     def saveRest(self, solver, master_file, exporters, generateFineNodes=-1):
+        print('saving rest')
         # NOTE JK: folder and bc_file already exist, then it is only appended, which results in error while bc are loaded to solver (two bc applied on the same dof). This cannot be done in saveMechBC, because it can be used by save constraints
         bc_path = os.path.join(self.master_folder,
                                utilitiesGeom.mechBCFile)

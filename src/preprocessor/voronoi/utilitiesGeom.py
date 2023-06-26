@@ -463,6 +463,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
 
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
 
+    print('OUTPUT 3d done')
     return nodes_out, v_count, verticesIdxDict, vertIdxStart, totalPointCount #, nodes_out, aux_nodes, vertices_out, ridges_out
 
 def findClosest(points, target, dim):
@@ -815,16 +816,13 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     if activeTransport:
         saveNodes(master_folder, vertices_out, "TrsprtNode",dim, verticesFile)
         saveNodes(master_folder, aux_nodes, "AuxNode",dim, auxNodesFile)
-        #JM: save transport elements uz je volane drive
-        # je potreba, aby bylo volane prvni, protoze jeste generuje nove aux nodes
-        #saveTransportElements(master_folder, ridges_out,dim, node_count, aux_nodes, maxLim)
     else:
         saveNodes(master_folder, vertices_out, "AuxNode",dim, verticesFile)
 
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
-    print('total pc %s' %totalPointCount)
 
-    checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
+    print('SACING DOMEME')
+    #checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
 
     return node_coords, v_count, verticesIdxDict, vertIdxStart, totalPointCount
@@ -1414,7 +1412,8 @@ def saveSolver(master_folder, solver, solStep, minStep, maxStep, simTime, limitT
     f.close()
 
 def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTime, activeTransport, activeMechanics, periodic=False, constraint=False, constraintTrspt=False, limitTolerance= 1e-1, maxIt=20, tolerance = 1e-3, auxMechElements=False, masterSolver=False, masterMaterials=False, masterFunctions = False):
-
+     print('MASTER')
+     print(activeTransport,activeMechanics, periodic, constraint,auxMechElements)
      solverF = solverFile
      if masterSolver ==True:
          solverF = '../' + solverFile
@@ -1428,7 +1427,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
          functionsF = '../' + functionsFile
 
 
-     print('Saving master file...', end='')
+     print('Saving master file...')
      sys.stdout.flush()
      fl=open(os.path.join(master_folder,masterFile),'w')
 
@@ -1445,6 +1444,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
      """
 
      if not periodic:
+         fl.write("MatFiles\t1\t%s\n"%materialsF)
          if not constraint:
              fl.write("NodeFiles\t3\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile))
          else:
@@ -1459,7 +1459,7 @@ def saveMasterInput(master_folder,dim, solver, solStep, minStep, maxStep, simTim
                  fl.write("NodeFiles\t5\t%s\t%s\t%s\t%s\t%s\n"%(nodesFile,auxNodesFile,verticesFile, govNodesFile, govNodesTrsptFile))
                  fl.write('PBlockFiles\t2\t%s\t%s\n' %(constraintFile, constraintTrsptFile))
 
-             fl.write("MatFiles\t1\t%s\n"%materialsF)
+
 
          if not auxMechElements:
             if (activeTransport and activeMechanics):
@@ -1700,14 +1700,12 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
         aux_mechElemRidges.append(n)
 
     print ('Mech elements: %d, aux_mechElemRidges: %d' %(len(mechElemRidges), len(aux_mechElemRidges)))
-
     trueMechElements = len(mechElemRidges)
-    print('true mech %s' %trueMechElements)
 
     onlyMechNodesConnected = True
     elaElems = []
     #fig, ax = plt.subplots()
-    print('auxMechElements %s' %auxmechelements)
+
     if (mZ!=None and len(mZ)>0):
         print('Material zones recognized.')
         print(mZ)
@@ -1730,8 +1728,6 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
             else:
                 nodeB = nodes[iNb]
                 #print('normal nodeB %s' %iNb)
-
-
 
             if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) :
                 onlyMechNodesConnected = False
@@ -1771,6 +1767,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
+                    print('mz')
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([1])) )
                 elif len(mZ)>1 and ((mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
                         mZ[1][0][1] < nodeA[1] < mZ[1][1][1] and
@@ -1781,11 +1778,9 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                         mZ[1][2][0] < nodeB[0] < mZ[1][3][0] and
                         mZ[1][2][1] < nodeB[1] < mZ[1][3][1])   ):
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([1])) )
-
-
+                    print('mz')
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
-
 
 
             if (dim==3 and  mZ[0][0]!='circle'):
@@ -1830,16 +1825,8 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                         addB=True
 
                     if addA==True and addB==True :#and (iNa >= node_count or iNb >= node_count) :
-                        mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([1])) )
+                        mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
 
-                """
-                elif ( triangle == False):
-                    if ( mZ[0][0][0] < nodeB[0] < mZ[0][1][0] and
-                      mZ[0][0][1] < nodeB[1] < mZ[0][1][1] and
-                      mZ[0][0][2] < nodeB[2] < mZ[0][1][2] ):
-                      print('catched B%s' %nodeB)
-                      mechElemRidges[i] =  np.hstack( (mechElemRidges[i], np.array([2])) )
-                """
 
                 if (  len(mZ)==2 and
                       ((mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
@@ -1871,9 +1858,6 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       y = ymax - nodeA[1]
                       z = nodeA[2]
 
-                      #print ('cx %f' %(xmin+xTop*0.5/yTop))
-                      #print ('cy %f' %(xmax-yTop*0.05/xTop))
-
                       if (nodeA[0]==(xmin+xmax)/2 or nodeB[0]==(xmin+xmax)/2 ):
                           if (nodeA[1]>ymin or nodeB[1]>ymin):
                               isPresentA = True
@@ -1895,14 +1879,6 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
                           if (  nodeA[0]<xMAXlim and nodeA[1]>yMINlim and zmin<z<zmax):
                               isPresentA = True
-                              #ax.scatter(nodeA[0], nodeA[1])
-                              #print ('xtop %f' %xTop)
-                              #print ('ytop %f' %yTop)
-                              #print ('x %f < %f' %(nodeA[0], xMAXlim))
-                              #print ('y %f > %f' %(nodeA[1], yMINlim))
-
-                              #a = input('').split(" ")[0]
-
 
                       x = nodeB[0] - xmin
                       y = ymax - nodeB[1]
@@ -1984,10 +1960,6 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
         mechElemRidges = elementsWithoutNotch
         trueMechElements = len(mechElemRidges)
-        print('true mech %s' %trueMechElements)
-
-
-        print('done.')
 
     auxMechElements = len(aux_mechElemRidges)
 
@@ -2076,40 +2048,39 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                 np.savetxt(fl, mechElemRidges[trueMechElements:], delimiter='\t',fmt='LTCBoundaryCoupled\t%d\t%d\t%d\t%d\t%d\t%d', header = headerLine )
             fl.close()
 
-
-
-
     if (dim == 3):
         headerLine = '#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n'
         fl=open(os.path.join(master_folder,mechElemsFile),'w')
-        ro = np.asarray(mechElemRidges[0])
         fl.write(headerLine)
 
         if auxmechelements == True:
             flaux=open(os.path.join(master_folder,boundaryMechElemsFile),'w')
             flaux.write(headerLine)
 
+
         for i in range (len(mechElemRidges)):
+
             if i < trueMechElements:
                 ro = np.array(mechElemRidges[i], ndmin=2)
+
                 if coupled == False:
                     fmt='LTCBEAM\t%d\t%d\t%d'
                 if coupled == True:
                     fmt='LTCBEAMCoupled\t%d\t%d\t%d'
+                print('LTCBEAM ',ro[0], '\t0')
                 np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
             if i >= trueMechElements:
                 ro = np.array(mechElemRidges[i], ndmin=2)
-
                 if coupled == False:
                     fmt='LTCBoundary\t%d\t%d\t%d'
                 if coupled == True:
                     fmt='LTCBoundaryCoupled\t%d\t%d\t%d'
+                print('LTCBoundary ',ro[0], '\t0')
                 np.savetxt(flaux,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3))
 
-
     sys.stdout.flush()
-
+    print('SAVING MECH ELEMS DOME')
     return notchAuxNodes
 
 
@@ -2309,7 +2280,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
             for i in range (1, len( elem.connectedNodes )-2, 2) :
                 if (elem.connectedNodes[i] != elem.connectedNodes[i+1]):
                     #reorderOk = False
-                    print ('\n !!! %d Reorder not ok %s ' %((i), elem.connectedNodes))
+                    #print ('\n !!! %d Reorder not ok %s ' %((i), elem.connectedNodes))
                     #allReorderedFine = False
 
                     nodesCoords = []
@@ -2331,7 +2302,7 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
                         reorderOk = False
                         allReorderedFine = False
                     else:
-                        print('But nodes are coplanar, ignoring. (err %e)' %val)
+                        #print('But nodes are coplanar, ignoring. (err %e)' %val)
                         retart = False
 
                     #break

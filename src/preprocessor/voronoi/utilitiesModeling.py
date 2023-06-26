@@ -164,6 +164,19 @@ def assembleMeasuringGauges(type, D=-1, thickness = 0.1, maxLim = None, expansio
         coordsA = np.array([ maxLim[0]/2+1e3, 0])
         measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'notchOpening', False))
 
+    if(type=='box3d'):
+        coordsA = np.array([ 0, maxLim[1]/2, maxLim[2]/2])
+        coordsB = np.array([ maxLim[0], maxLim[1]/2, maxLim[2]/2])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'contrXmid', False))
+        coordsA = np.array([ maxLim[0]/2, 0, maxLim[2]/2])
+        coordsB = np.array([ maxLim[0]/2, maxLim[1], maxLim[2]/2])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'contrYmid', False))
+        coordsA = np.array([ maxLim[0]/2, maxLim[1]/2, 0])
+        coordsB = np.array([ maxLim[0]/2, maxLim[1]/2, maxLim[2]])
+        measuringGauges.append(utilitiesMech.MeasuringGauge(coordsA, coordsB, 'contrZmid', False))
+
+
+
 
     if(type=='3pb3d'):
         coordsA = np.array([ maxLim[0]/2, maxLim[1], maxLim[2]/2])
@@ -261,6 +274,18 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             materialZones.append(matZ)
 
     if (model=='hangingfraczone'):
+        if (dim==2):
+            boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5 ] )
+            matZ.append (boundA)
+            boundB = np.array(  [ maxLim[1]-1e-5    , maxLim[3]-1e-5 ] )
+            matZ.append (boundB)
+            boundA1 = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5    ] )
+            matZ.append (boundA1)
+            boundB1 = np.array(  [ maxLim[1]-1e-5    , maxLim[3]-1e-5 ] )
+            matZ.append (boundB1)
+            materialZones.append(matZ)
+            print('MZMZMMZMZMZM')
+            print(materialZones)
         if (dim==3):
             boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
             matZ.append (boundA)
@@ -271,7 +296,7 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             boundB1 = np.array(  [ maxLim[1]-1e-5    , maxLim[3]-1e-5  , 1e8] )
             matZ.append (boundB1)
             materialZones.append(matZ)
-            print(materialZones)
+
 
 
     if (model=='box'):
@@ -518,6 +543,59 @@ def createSingleSpringTestModel(length, master_folder):
 
     return node_coords, mechBC_merged,  vor, areas, functions,govNodes, govNodesMechBC, rigidPlates
 
+
+def create_2d_SingleContat(length, master_folder,maxLim):
+    print ('Creating 2d singlecontact model.')
+    functions = []
+
+    #constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+
+    fn2 = utilitiesNumeric.sawToothConstFunc(value = 1, period = 1, sym =1)
+    functions.append (fn2)
+
+    dim = len(maxLim)
+    idt = length /2
+
+
+    node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble2D_singleContact(maxLim, idt)
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    print('done.')
+
+    node_coords = np.asarray(node_coords)
+
+    return node_coords, mechBC_merged,  vor, areas, functions,[], [], rigidPlates
+
+def create_3d_SingleContat(length, master_folder,maxLim):
+    print ('Creating 3d singlecontact model.')
+    functions = []
+
+    #constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+
+    fn2 = utilitiesNumeric.sawToothConstFunc(value = 1, period = 1, sym =1)
+    functions.append (fn2)
+
+    dim = len(maxLim)
+    idt = length /2
+
+
+    node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble3D_singleContact(maxLim, idt)
+    print(node_coords)
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    print('done.')
+
+    node_coords = np.asarray(node_coords)
+    print(mechBC_merged)
+
+    return node_coords, mechBC_merged,  vor, areas, functions,[], [], rigidPlates
 
 
 def createDiamondTestModel(width, height):
@@ -1474,8 +1552,38 @@ def create2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, inte
 
 
 
+def create2d_Hanging_FracZone(maxLim, minDist, trials):
+    print('Creating 2d frac zone...')
+    dim=2
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble2d_Hanging_FracZone(maxLim, minDist, trials)
+
+    print('Conducting Voronoi tesselation...', end = '')
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    print('done.')
+
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #2 mech loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, 3e-5]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+
+    return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, [], functions
+
+
+
 def create3d_Hanging_FracZone(maxLim, minDist, trials):
-    print('Creating CFRAC 3d TDCB model...')
+    print('Creating 3d frac zone...')
     dim=3
 
     ### sampling of nodes
@@ -2163,8 +2271,47 @@ def assembleTwoNodeSpringTest (maxLim, idt):
     return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
 
 
+def assemble2D_singleContact (maxLim, idt):
+    node_coords = []
+    mechBC_merged = []
 
+    dim = 2
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
 
+    nodeA = np.array ( [ 0 + idt , maxLim[1]/2 ] )
+    pointGenerators.generateSingleNode(nodeA, dim, node_coords)
+    mBC = utilitiesMech.mechanicalBC(dim, 0, np.array([0,0,0, -1,-1,-1]))
+    mechBC_merged.append(mBC)
+
+    nodeB = np.array ( [ maxLim[0] - idt, maxLim[1]/2 ] )
+    pointGenerators.generateSingleNode(nodeB, dim, node_coords)
+    mBC = utilitiesMech.mechanicalBC(dim, 1, np.array([-1,-1,0, 1,1,-1]))
+    mechBC_merged.append(mBC)
+
+    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
+
+def assemble3D_singleContact (maxLim, idt):
+    node_coords = []
+    mechBC_merged = []
+
+    dim = 3
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+    nodeA = np.array ( [ 0 + idt , maxLim[1]/2,maxLim[2]/2 ] )
+    pointGenerators.generateSingleNode(nodeA, dim, node_coords)
+    mBC = utilitiesMech.mechanicalBC(dim, 0, np.array([0,0,0, 0,0,0, -1,-1,-1, -1,-1,-1]))
+    mechBC_merged.append(mBC)
+
+    nodeB = np.array ( [ maxLim[0] - idt, maxLim[1]/2,maxLim[2]/2 ] )
+    pointGenerators.generateSingleNode(nodeB, dim, node_coords)
+    mBC = utilitiesMech.mechanicalBC(dim, 1, np.array([1,0,0, 0,0,0, -1,-1,-1, -1,-1,-1]))
+    mechBC_merged.append(mBC)
+
+    return node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates
 
 
 def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, edgeMinDistCoef=1.0, roughDogBone=0, roughEdgeDogbone = 0, roughMinDistCoef=1, interLayerThickness=2, powerTes = False, weakboundary = 0):
@@ -2482,7 +2629,7 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     #1 loading function, top surface,
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([1, -1e-2]) )
+    func1.append( np.array([1, -1e-4]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
@@ -2495,7 +2642,6 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     rigidPlatesTrspt = []
 
     if coupled == True:
-
         ### selecting vertices on the bottom surface
         botFaceBC = np.array([2,-1])
         boundA = np.array(  [-1e-4 , -1e-5, -1e-5] )
@@ -2503,10 +2649,13 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
         botFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
         ### selecting vertices inside notch
-        notchFaceBC = np.array([2,-1])
-        boundA = np.array(  [ maxLim[0]/2-notchWidth/3 , -1e-5, -1e-5] )
-        boundB = np.array(  [ maxLim[0]/2+notchWidth/3 , maxLim[1]*notch+minDist*0.9, maxLim[2]+1e-5]  )
-        notchFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+        try:
+            notchFaceBC = np.array([2,-1])
+            boundA = np.array(  [ maxLim[0]/2-notchWidth/3 , -1e-5, -1e-5] )
+            boundB = np.array(  [ maxLim[0]/2+notchWidth/3 , maxLim[1]*notch+minDist*0.9, maxLim[2]+1e-5]  )
+            notchFace = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
+        except:
+            notchFace = []
 
         for i in range (len(notchFace)):
             if not notchFace[i] in botFace:
@@ -2553,7 +2702,7 @@ def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_i
     print('Creating 3d cube. Power tesselation: %s' %powerTes)
     #govNodes, rigidPlates
     dim = 3
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init);
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates,radii  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init);
     node_coords = np.asarray(node_coords)
     """
     if SHOW_PLOT:
@@ -2577,7 +2726,7 @@ def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_i
     #1 loading function, top surface,
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([1, -1e-2]) )
+    func1.append( np.array([1, 1e-4]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
@@ -4114,17 +4263,21 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
     govNodesMechBC = []
     rigidPlates = []
 
+    indent = 1e-8
+
+    node_coords.append(np.array([maxLim[0]/2-0.01, maxLim[1] - indent]))
+    node_coords.append(np.array([maxLim[0]/2+0.01, maxLim[1] - indent]))
 
     #an indent due to mirroring of the data for voronoi tess.
     notches=[]
-    indent = 1e-8
+
     # the following is for remesher that works so far just for the bema WITHOUT notch
     if node_coords_init is None:
         if (len(specifiedNodes)>0):
             print ('appending specified nodes...')
             for node in specifiedNodes:
                 node_coords.append((node))
-            print (node_coords)
+
 
         #generating notch points
         if (notch > 0):
@@ -4154,23 +4307,25 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
                 node_coords.append(np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch]))
 
     #width of the supports
-    supportWidth = maxLim[0] / 20
+    supportWidth = maxLim[0] / 21
 
 
     ##################### CONSTRAINTS AND RIGID PLATES
     #rigid plate left support
     indentRP = 1e-3
     leftRigidPlateMechBC = np.array([0,0,-1, -1,-1,-1])
-    leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([ -indentRP, supportWidth+indentRP, -indentRP, 2*indentRP ]))
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([ -indentRP, supportWidth/2+indentRP, -indentRP, 2*indentRP ]))
     rigidPlates.append(leftRigidPlate)
     govNodes.append(np.array([ indent+supportWidth/2, indent ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
     #rigid plate left support
     rightRigidPlateMechBC = np.array([-1,0,-1, -1,-1,-1])
-    rightRigidPlate = utilitiesMech.RigidPlate(-2, 2, np.array([ maxLim[0] - 2*indentRP-supportWidth, maxLim[0] + indentRP, -indentRP, 2*indentRP ]))
+    rightRigidPlate = utilitiesMech.RigidPlate(-2, 2, np.array([ maxLim[0] - 2*indentRP-supportWidth/2, maxLim[0] + indentRP, -indentRP, 2*indentRP ]))
     rigidPlates.append(rightRigidPlate)
     govNodes.append(np.array([ maxLim[0]-indent-supportWidth/2, indent ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+
 
     if loading =='3pb':
         #rigid plate top load
@@ -4233,11 +4388,11 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
         ############### loaded top face ###############
         nodeA =  np.array([indent + 0.5*maxLim[0]*(1-loadWidth) , maxLim[1] - indent])
         nodeB =  np.array([maxLim[0] - indent - 0.5*maxLim[0]*(1-loadWidth) , maxLim[1] - indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist/2, dim, node_coords,  trials, True, True)
+        #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False, False)
         #######top of frac zone
         nodeA =  np.array([0.5*maxLim[0] - 0.5*maxLim[1]*(1-notch) , maxLim[1] - indent])
         nodeB =  np.array([0.5*maxLim[0] + 0.5*maxLim[1]*(1-notch), maxLim[1] - indent])
-        pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False, False)
+        #pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, False, False)
 
 
         ########################################## rest of  faces
@@ -4836,6 +4991,54 @@ def assemble2d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter,rou
 
 
 
+def assemble2d_Hanging_FracZone(maxLim, minDist, trials):
+    dim = 2
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+    functions = []
+
+    indent = 1e-8
+
+    print('bottom bound surface for fem frac zone')
+    nodeA = np.array([indent, indent])
+    nodeB = np.array([maxLim[0]-indent, indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+    print('top bound surface for fem frac zone')
+    nodeA = np.array([indent, maxLim[1]-indent])
+    nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+    print('left bound surface for fem frac zone')
+    nodeA = np.array([indent, indent])
+    nodeB = np.array([indent, maxLim[1]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+    print('right bound surface for fem frac zone')
+    nodeA = np.array([maxLim[0]-indent, indent])
+    nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent])
+    pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
+
+    print('fine fracture zone volume')
+    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+    leftRigidPlateMechBC = np.array([0, 0,0,   -1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, None, directIdcs=True )
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2-0.01, 0.011]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+    rightRigidPlateMechBC = np.array([1, 0,0,   -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, None, directIdcs=True )
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2+0.01, 0.011]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
+
+
+
 
 def assemble3d_Hanging_FracZone(maxLim, minDist, trials):
     dim = 3
@@ -5078,7 +5281,7 @@ def assemble3d_CFRAC_TDCB(maxLim, minDist, trials, holeMinDist, holeDiameter, ro
        nodeA = np.array([maxLim[0]/2-fracW, maxLim[1]*(notch-notch*fracZoneOverhang), indent])
        nodeB = np.array([maxLim[0]/2+fracW, maxLim[1]*(notch-notch*fracZoneOverhang), maxLim[2]-indent])
        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
-    
+
     print('Generating volumes...')
 
 
@@ -6832,7 +7035,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
     #width of the supports
     supportWidth = maxLim[0] / 21
-    print(supportDivision)
+
 
     #lists for the model
     if node_coords_init is None:
@@ -6879,11 +7082,11 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         if (notch > 0):
             notchSide0 = []
             oldLen = len(node_coords)
-            """
+
             nodeA = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/8, indent])
             nodeB = np.array([maxLim[0]/2-notchWidth, maxLim[1]*notch-minDist/8, maxLim[2]-indent])
             pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist/4, dim, node_coords, trials, catchCorners=True, equidist=True)
-            """
+
             nTop = maxLim[1]*notch+indent-minDist/2
             if nTop < minDist:
                 nTop = maxLim[1]*notch+indent
@@ -7113,6 +7316,23 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         nodeB = np.array([maxLim[0] - indent-supportWidth, indent, maxLim[2]-indent])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, True)
 
+        ###############generating of nodes, front bottom line ###############
+        nodeA = np.array([indent, indent, indent])
+        nodeB = np.array([maxLim[0]-indent, indent, indent])
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.8, dim, node_coords, trials, False, False)
+        ###############generating of nodes, rear bottom line ###############
+        nodeA = np.array([indent, indent,  maxLim[2]-indent])
+        nodeB = np.array([maxLim[0]-indent, indent,  maxLim[2]-indent])
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.8, dim, node_coords, trials, False, False)
+        ###############generating of nodes, front top line ###############
+        nodeA = np.array([indent, maxLim[1]-indent, indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.8, dim, node_coords, trials, False, False)
+        ###############generating of nodes, rear top line ###############
+        nodeA = np.array([indent, maxLim[1]-indent,  maxLim[2]-indent])
+        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent,  maxLim[2]-indent])
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.8, dim, node_coords, trials, False, False)
+
 
         #catchCorners, equidist
 
@@ -7148,6 +7368,40 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             notchFrac1.append(fracZone)
             if exactNotch:
                 notches.append(notchFrac1)
+
+
+
+
+        #front surf
+        nodeA =  np.array([indent , maxLim[1] - indent, indent])
+        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
+
+        #back surf
+        nodeA =  np.array([indent , maxLim[1] - indent, maxLim[2]-indent])
+        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
+
+        #top surf
+        nodeA =  np.array([indent , maxLim[1] - indent, indent])
+        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
+
+        #bot surf
+        nodeA =  np.array([indent , indent, indent])
+        nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
+
+        #left face surf
+        nodeA =  np.array([indent , indent, indent])
+        nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
+
+        #right face surf
+        nodeA =  np.array([maxLim[0]-indent , indent, indent])
+        nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
+        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
+
 
         ##########################################generating of points, fracture zone
         maxLimF = np.array([
@@ -7192,54 +7446,6 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist, topMinDist = minDist*roughMinDistCoef, gradienDirection=0)
 
 
-        ###############generating of nodes, front bottom line ###############
-        nodeA = np.array([indent, indent, indent])
-        nodeB = np.array([maxLim[0]-indent, indent, indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.9, dim, node_coords, trials, False, False)
-        ###############generating of nodes, rear bottom line ###############
-        nodeA = np.array([indent, indent,  maxLim[2]-indent])
-        nodeB = np.array([maxLim[0]-indent, indent,  maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.9, dim, node_coords, trials, False, False)
-        ###############generating of nodes, front top line ###############
-        nodeA = np.array([indent, maxLim[1]-indent, indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.9, dim, node_coords, trials, False, False)
-        ###############generating of nodes, rear top line ###############
-        nodeA = np.array([indent, maxLim[1]-indent,  maxLim[2]-indent])
-        nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent,  maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist*.9, dim, node_coords, trials, False, False)
-
-
-
-        #front surf
-        nodeA =  np.array([indent , maxLim[1] - indent, indent])
-        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
-
-        #back surf
-        nodeA =  np.array([indent , maxLim[1] - indent, maxLim[2]-indent])
-        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2]-indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
-
-        #top surf
-        nodeA =  np.array([indent , maxLim[1] - indent, indent])
-        nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
-
-        #bot surf
-        nodeA =  np.array([indent , indent, indent])
-        nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
-        #pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
-
-        #left face surf
-        nodeA =  np.array([indent , indent, indent])
-        nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
-
-        #right face surf
-        nodeA =  np.array([maxLim[0]-indent , indent, indent])
-        nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
-        pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*roughMinDistCoef, dim, node_coords, trials)
 
 
         """
@@ -7281,7 +7487,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
         nodeA =  np.array([0.5*maxLim[0], maxLim[1]-indent, indent])
         nodeB =  np.array([0.5*maxLim[0], maxLim[1]-indent, maxLim[2]-indent])
-        pointGenerators.generateNodesLine3dRand(nodeA, nodeB, maxLim[2]/supportDivision, dim, node_coords, trials, False, True)
+        #pointGenerators.generateNodesLine3dRand(nodeA, nodeB, maxLim[2]/supportDivision, dim, node_coords, trials, False, True)
 
 
 
@@ -7369,19 +7575,48 @@ def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords
             ###############generating of nodes, front bottom line ###############
             nodeA = np.array([indent, indent, indent])
             nodeB = np.array([maxLim[0]-indent, indent, indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
             ###############generating of nodes, rear bottom line ###############
             nodeA = np.array([indent, indent,  maxLim[2]-indent])
             nodeB = np.array([maxLim[0]-indent, indent,  maxLim[2]-indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
             ###############generating of nodes, front top line ###############
             nodeA = np.array([indent, maxLim[1]-indent, indent])
             nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
-            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
             ###############generating of nodes, rear top line ###############
             nodeA = np.array([indent, maxLim[1]-indent,  maxLim[2]-indent])
             nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent,  maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, False)
+
+            ###############generating of nodes, left face lines ###############
+            nodeA = np.array([indent, indent, indent])
+            nodeB = np.array([indent, indent, maxLim[2]-indent])
             pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            nodeA = np.array([indent, maxLim[1]-indent, indent])
+            nodeB = np.array([indent, maxLim[1]-indent, maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            nodeA = np.array([indent, indent, indent])
+            nodeB = np.array([indent, maxLim[1]-indent, indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            nodeA = np.array([indent, indent, maxLim[2]-indent])
+            nodeB = np.array([indent, maxLim[1]-indent, maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+
+            ###############generating of nodes, right face lines ###############
+            nodeA = np.array([maxLim[0]-indent, indent, indent])
+            nodeB = np.array([maxLim[0]-indent, indent, maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            nodeA = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
+            nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            nodeA = np.array([maxLim[0]-indent, indent, indent])
+            nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+            nodeA = np.array([maxLim[0]-indent, indent, maxLim[2]-indent])
+            nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+            pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, False, False)
+
             ############### loaded top surf ###############
             nodeA =  np.array([indent, maxLim[1]-indent, indent])
             nodeB =  np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])

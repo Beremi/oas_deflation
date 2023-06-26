@@ -35,7 +35,7 @@
 ########### roughEdgeDogbone 0 - presne nasamplovane kruznice
 ########### roughEdgeDogbone 1 - prvky s obema nody v modelu
 ########### roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 0 roughEdgeDogbone 2 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 defaultFilesFolder dogboneDefault dmgBand 0 powerTes 0 weakboundary 0.02
+##Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 0 roughEdgeDogbone 2 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 defaultFilesFolder dogboneDefault dmgBand 0 powerTes 0 weakboundary 0.02
 ###########0.125
 ###########Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 1 nr_models 100 defaultFilesFolder dogboneDefault
 ###########C
@@ -50,8 +50,8 @@ Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMec
 ###########DOGBONE BAND
 ###########Model 2d_dogboneBand minDist 0.001 Xsize 60 Ysize 10 activeMechanics 1  roughMinDistCoef 2 elasticHeightCoef 2 nr_models 100 defaultFilesFolder dogboneDefaultBand
 ###########
-###########Model 3d_dogbone dogboneD 0.025 minDist 0.006 dogboneExcentricityFrac 50 dogboneExcentricity_Z 0 activeMechanics 1 symmetric 0
-###########Model 3d_dogbone dogboneD 0.1 minDist 0.010 dogboneExcentricityFrac 50 activeMechanics 1
+#########xModel 3d_dogbone dogboneD 0.025 minDist 0.006 dogboneExcentricityFrac 50 dogboneExcentricity_Z 0 activeMechanics 1 symmetric 0
+###########Model 3d_dogbone dogboneD 0.1 minDist 0.0050 dogboneExcentricityFrac 50 activeMechanics 1
 ###########
 ########### Cusatis torsion press
 ###########Model 3d_cylinderTorsionPress cylinderHeight 0.4445 cylinderRad 0.1183 minDist 0.030 activeMechanics 1 activeTransport 0 coupled 0 trials 100000 #powerTes 1
@@ -81,7 +81,7 @@ Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMec
 ###########Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 ###########Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
 ###########Model 3d_BiparvaTubeTransport minDist 0.005 cylinderRad 0.05 cylinderHeight 0.05 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 5000
-###########Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 20000
+Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 20000 ansysOut 1
 ###########
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
