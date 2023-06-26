@@ -456,7 +456,7 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     bool bsh = false;
     unsigned helpuint;
     double valueIN;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile( filename.c_str(), ios::in | ios::binary );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -839,6 +839,7 @@ void SteadyStateNonLinearSolver :: solve() {
             }
             cout << setw(15) << eneErr << endl;
 
+            // This check works only if flag "-ffast-math" is removed from CMake
             if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
                 if ( std :: isnan(resErr) ) {

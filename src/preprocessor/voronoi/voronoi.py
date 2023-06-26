@@ -721,11 +721,14 @@ def voronoi_2d(vor, sizes, shifts=0):
     points = []
     new_vertices = vor.vertices.tolist()
 
-    polArr = np.array([(0.,0), (0,sizes[1]), (sizes[0],sizes[1]), (sizes[0],0)])
-    polArr += shifts
-
-    pol=Polygon(polArr)
-  #  pol=Polygon([(0,0), (0,ySize), (xSize,ySize), (xSize,0)])
+    # different creation of polygon based the dimension of 'sizes'
+    if isinstance(sizes, float):    # circular, hence only one dimension
+        pol = Point(0, 0).buffer(sizes)
+    else:   # rectangular
+        polArr = np.array([(0.,0), (0,sizes[1]), (sizes[0],sizes[1]), (sizes[0],0)])
+        polArr += shifts
+        pol=Polygon(polArr)
+    # pol=Polygon([(0,0), (0,ySize), (xSize,ySize), (xSize,0)])
     # Reconstruct infinite regions
     for p1, region in enumerate(vor.point_region):
         vertices = vor.regions[region]

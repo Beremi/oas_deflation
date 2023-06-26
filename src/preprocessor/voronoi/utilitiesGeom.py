@@ -8,6 +8,7 @@ import time
 from mpl_toolkits.mplot3d import Axes3D
 import utilitiesMech
 import Preprocessor as prepro
+from scipy.spatial import voronoi_plot_2d
 
 masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
@@ -199,13 +200,15 @@ except:
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 
-def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0, node_indices_dogbone=[], randomizeMaterial=False, auxmechelements=False):
+def extractGeometry (master_folder, dim, node_count, maxLim, vor, node_coords, node_coords_polar, areas, activeTransport, activeMechanics, mZ=None, periodicModel = 0, notches = None, isTube=False, coupled=False, minDist = 0, node_indices_dogbone=[], randomizeMaterial=False, auxmechelements=False):
 
     if (dim == 2):
         if (periodicModel == 0):
             node_coords, vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ, notches = notches, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial, auxmechelements=auxmechelements)
         if (periodicModel == 1):
             node_coords, vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, minDist, mZ=mZ)
+        if (periodicModel == 2):
+            node_coords, vert_count, verticesIdxDict, vertIdxStart, totalNodeCount = output2DCircPeriodic(master_folder, node_count,  maxLim, vor, node_coords, node_coords_polar, areas, activeTransport, activeMechanics, minDist, mZ=mZ)
     if (dim == 3):
         if (periodicModel == 0):
             node_coords, vert_count, verticesIdxDict, vertIdxStart,totalNodeCount = output3D(master_folder, node_count,  maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=mZ,  notches = notches, isTube=isTube, coupled=coupled, node_indices_dogbone=node_indices_dogbone, randomizeMaterial=randomizeMaterial,auxmechelements=auxmechelements)
@@ -473,48 +476,61 @@ def findClosest(points, target, dim):
     index = np.argmin(dist2)
     return index,np.sqrt(dist2[index])
 
-def savePeriodicBlock (master_folder,cpldNds, maxLim, nodes_out):
-    cf = open(os.path.join(master_folder,blocksFile),"w")
-#    print(cpldNds)
+def savePeriodicBlock(master_folder, cpldNds, maxLim, nodes_out, dim=3):
+    cf = open(os.path.join(master_folder, blocksFile), "w")
     nblocks = len(cpldNds)
-    print("BLOCKS   ", nblocks)
-    if (len(maxLim)==2):
-        #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
-        loads=["\t2\tey\t0\tgxy\t1","\t2\tgx\t0\tgy\t0"]
-        names=["MechanicalPeriodicBC","TransportPeriodicBC"]
-        for q in range(nblocks):
-            ndepend = len(cpldNds[q])
-            #ex ey gxy sx sy sxy
-            cf.write("%s\tsize\t2\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],loads[q], ndepend))
 
-            for i in range(len(cpldNds[q])):
-                cf.write("\t%d\t%d"%(cpldNds[q][i][0], cpldNds[q][i][1]))
-
-            #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
-            #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
-            #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
-
+    if isinstance(maxLim, (int,float)):
+        # maxLim for circular RVE does not have len()
+        # only mechanics in 2D!
+        # nblocks = n of coupled pairs
+        if dim == 2:
+            load = '\t3\tex\t0\tey\t0\tgxy\t0'
+            name = 'MechanicalPeriodicBC'
+            # ex ey gxy sx sy sxy
+            cf.write( "%s\tsize\t1\t%e\tload\t%s\tpairs\t%s" %(name, maxLim, load, nblocks))
+            for i in range(len(cpldNds)):   # iterates over coupled pairs
+                cf.write("\t%d\t%d" %(cpldNds[i][0], cpldNds[i][1]))
             cf.write(os.linesep)
-        cf.close()
+            cf.close()
+    else:
+        if (len(maxLim)==2):
+            #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
+            loads=["\t2\tey\t0\tgxy\t1","\t2\tgx\t0\tgy\t0"]
+            names=["MechanicalPeriodicBC","TransportPeriodicBC"]
+            for q in range(nblocks):
+                ndepend = len(cpldNds[q])
+                #ex ey gxy sx sy sxy
+                cf.write("%s\tsize\t2\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],loads[q], ndepend))
 
-    if (len(maxLim)==3):
-        #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
-        loads=["\t2\tey\t0\tgxy\t1","\t3\tgx\t0\tgy\t0\tgz\t0"]
-        names=["MechanicalPeriodicBC","TransportPeriodicBC"]
-        for q in range(nblocks):
-            ndepend = len(cpldNds[q])
-            #ex ey gxy sx sy sxy
-            cf.write("%s\tsize\t3\t%e\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],maxLim[2],loads[q], ndepend))
+                for i in range(len(cpldNds[q])):
+                    cf.write("\t%d\t%d"%(cpldNds[q][i][0], cpldNds[q][i][1]))
 
-            for i in range(len(cpldNds[q])):
-                cf.write("\t%d\t%d"%(cpldNds[q][i][0], cpldNds[q][i][1]))
+                #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
+                #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
+                #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
 
-            #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
-            #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
-            #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
+                cf.write(os.linesep)
+            cf.close()
 
-            cf.write(os.linesep)
-        cf.close()
+        if (len(maxLim)==3):
+            #loads=["\t2\tey\t0\tgxy\t1","\t2\tjy\t0\tjy\t0"]
+            loads=["\t2\tey\t0\tgxy\t1","\t3\tgx\t0\tgy\t0\tgz\t0"]
+            names=["MechanicalPeriodicBC","TransportPeriodicBC"]
+            for q in range(nblocks):
+                ndepend = len(cpldNds[q])
+                #ex ey gxy sx sy sxy
+                cf.write("%s\tsize\t3\t%e\t%e\t%e\tload\t%s\tpairs\t%d"%(names[q],maxLim[0],maxLim[1],maxLim[2],loads[q], ndepend))
+
+                for i in range(len(cpldNds[q])):
+                    cf.write("\t%d\t%d"%(cpldNds[q][i][0], cpldNds[q][i][1]))
+
+                #plt.plot( [nodes_out[ cpldNds[i][0],0 ], nodes_out[ cpldNds[i][1],0 ]], [nodes_out[ cpldNds[i][0],1 ], nodes_out[ cpldNds[i][1],1 ]],'ro-', color='red')
+                #plt.text(nodes_out[ cpldNds[i][0],0 ] , nodes_out[ cpldNds[i][0],1 ], cpldNds[i][0], fontsize=11)
+                #plt.text(nodes_out[ cpldNds[i][1],0 ] , nodes_out[ cpldNds[i][1],1 ], cpldNds[i][1], fontsize=11)
+
+                cf.write(os.linesep)
+            cf.close()
 
     #plt.plot(nodes_out[:,0], nodes_out[:,1], 'o', color='black')
 
@@ -952,7 +968,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         print('Ridge se odkazuji na nejake nody s indexy, ktere nejsou v samplu. !!!')
         print(' Tohle dela powerTes 1')
         print('Nastane chyba index out of bounds...')
-    print('Stiskni enter!\n')
+    #print('Stiskni enter!\n')
     a = input('').split(" ")[0]
 
 
@@ -960,7 +976,6 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     actual_node_count = len(valid_node_idcs)
     print ('actual node count: %d' %actual_node_count)
-
 
     for ir,r in enumerate(vor.ridge_points):
         sys.stdout.write('\rRidge nr.'+str(ir)+' / '+str(len(vor.ridge_points))+' ')
@@ -1077,20 +1092,17 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         trsprtElemNodes[i] = q[:-1]
 
     ######################
-    print('renumbering everything...')
-
     valid_node_idcs = np.array(valid_node_idcs).astype(int) #nodes with degrees of freedom
 
     numnodes = len(valid_node_idcs)
-    mechauxnodes = np.unique(np.hstack(trsprtElemNodes))
-    mapping = np.arange(len(mechauxnodes))
+    mechauxnodes = np.unique(np.hstack(trsprtElemNodes))        # original numbering of nodes
+    mapping = np.arange(len(mechauxnodes))          # new numbering of nodes (consecutive)
     trueauxindicators = np.isin(mechauxnodes,valid_node_idcs)
     trueaux  = np.where(trueauxindicators==False)[0]
     falseaux = np.where(trueauxindicators==True)[0]
     sort_idx = valid_node_idcs.argsort()
     mapping[falseaux] = sort_idx[np.searchsorted(valid_node_idcs,mechauxnodes[falseaux],sorter = sort_idx)]
     mapping[trueaux] = np.arange(len(trueaux))+numnodes
-
 
     sort_idx = mechauxnodes.argsort()
     for i in range(len(trsprtElemNodes)):
@@ -1130,6 +1142,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 
     coupledNodesTrsp = np.array(coupledNodesTrsp).astype(int)
     coupledNodesTrsp = sort_idx[np.searchsorted(valid_vert_idcs,coupledNodesTrsp,sorter = sort_idx)] + numnodes+len(mechauxnodes)+len(trueaux)
+
 
     """
     fullnodes = np.vstack((vor.points[valid_node_idcs], vor.points[mechauxnodes], vor.vertices[trspauxnodes], vor.vertices[valid_vert_idcs]))
@@ -1192,6 +1205,186 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
 def output2DPeriodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeMechanics, activeTransport, minDist, mZ=None):
     return output3Dperiodic(master_folder, node_count,  maxLim, vor, node_coords, areas, activeMechanics, activeTransport, minDist, mZ=mZ)
 
+def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, node_coords_polar, areas, activeTransport, activeMechanics, minDist, mZ=None, notches=None, isTube=False, coupled=False):
+    dim = len(node_coords[0])
+
+    print('Extracting the geometry...',  end ='')
+    sys.stdout.flush()
+
+    # Mechanical Elements
+    #######################################################################################################
+    
+    print ('Periodic model, filtering ridges...', end = '')
+    # voronoi points inside the RVE (maxLim = circ diameter)
+    inside_idcs = list(range(len(node_coords)))[:len(node_coords)//2]
+    is_positive = np.where(vor.points[:,0]>=0)[0]
+    
+    mechElemParticles_orig = np.zeros((0,2)).astype(int)
+    mechElemVerts = []
+
+    print('\nPocet nodu, se kterymi pocital voronoj: %d' %len(vor.points))
+            
+    maxIdx = vor.ridge_points.max()
+    print('Nejvyssi index nodu v ridges: %d' %maxIdx)
+
+    if (len(vor.points)-1 == (maxIdx)):
+        print('Ridge spojuji jen nody v samplu.')
+        print('Tohle dela powerTes 0.')
+        print('Export probehne v poradku.')
+    elif (len(vor.points)-1 < (maxIdx)):
+        print('Ridge se odkazuji na nejake nody s indexy, ktere nejsou v samplu!!!')
+        print('Tohle dela powerTes 1.')
+        print('Nastane chyba index out of bounds...')
+    #print('Stiskni enter!\n')
+    a = input('').split(" ")[0]
+
+    nnodes = len(inside_idcs)     # n of nodes inside of the RVE
+    print('actual node count: %d' %nnodes)
+
+    coupling_orig = []; RVEnodes_orig = set()     # set does nothing when adding a duplicate value
+    masters_orig = []; slaves_orig = []
+
+    ###################################################################
+    ## ver. A: slave nodes in regions also completely outside of the RVE
+    for ir, ridge in enumerate(vor.ridge_points):
+        sys.stdout.write('\rRidge nr.' + str(ir) + ' / ' + str(len(vor.ridge_points)) + ' ')
+        sys.stdout.flush()
+        ridge.sort()    # contains two ridge nodes, smaller index is on the first position
+        if ridge[1] in inside_idcs:  # greater of the two nodes inside RVE = both nodes are inside
+            RVEnodes_orig.add(ridge[0]); RVEnodes_orig.add(ridge[1])
+            mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
+            mechElemVerts.append(vor.ridge_vertices[int(ir)])
+        elif (all(inode in is_positive for inode in ridge) and ridge[0] in inside_idcs and ridge [1] not in inside_idcs):
+            if ridge[0] not in masters_orig and ridge[1] not in slaves_orig:
+                islave = ridge[1]; imaster = islave - nnodes
+                coupling_orig.append([imaster, islave]); RVEnodes_orig.add(islave)
+                slaves_orig.append(islave); masters_orig.append(imaster) 
+    
+            mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
+            mechElemVerts.append(vor.ridge_vertices[int(ir)])
+
+    RVEnodes_orig = np.array(list(RVEnodes_orig)) # nodes with degrees of freedom
+
+    '''
+    ###################################################################
+    ## ver. B: select only regions on the boundary of the RVE
+    # from shapely.geometry import Point
+    # from shapely.geometry.polygon import Polygon
+    
+    # boundary_regions = []
+    # iregions = []
+
+    # n = 25
+    # circ_points = np.zeros((n, dim))
+    # for i, angle in enumerate(np.linspace(-np.pi/2, np.pi/2, n)):
+    #     circ_points[i, 0] = maxLim/2*np.cos(angle); circ_points[i, 1] = maxLim/2*np.sin(angle)
+
+    # for iregion, region in enumerate(vor.regions):
+    #     points = []
+    #     for vertex in region:
+    #         if vertex != -1:
+    #             point = (vor.vertices[vertex, 0], vor.vertices[vertex, 1])
+    #             points.append(point)
+    #     polygon = Polygon(points)
+    #     for point in circ_points:
+    #         p = Point(point[0], point[1])
+    #         if polygon.contains(p):
+    #             boundary_regions.append(region); iregions.append(iregion)
+    #             break
+
+    # for ridge in vor.ridge_points:
+    #     ridge.sort()    # contains two ridge nodes, smaller index is on the first position
+    #     if ridge[1] in inside_idcs:  # greater of the two nodes inside RVE = both nodes are inside
+    #         RVEnodes.add(ridge[0]); RVEnodes.add(ridge[1])
+
+    # for i in iregions:
+    #     islave = np.where(vor.point_region == i)[0][0]
+    #     if islave in is_positive:
+    #         imaster = islave - nnodes
+    #         slaves.append(islave), masters.append(imaster); RVEnodes.add(islave); RVEnodes.add(imaster)
+    '''
+
+    ########################################################################
+    # renumbering
+    ########################################################################
+    # RVEnodes_orig =   all the particles I have for the RVE (inside + on the side)
+    #                   indices of nodes from vor.points (particles for mechanics)
+    # RVEnodes_renum = renumbered
+    # sort_idx =    'new' indices (from zero to len(RVEnodes_orig))
+    # mechElemParticles_orig = particle connections (LTCBEAM elements) for RVE nodes (mechanical particles)
+    # mechElemParticles_renum = LTCBEAM elements from the new numbering
+    # coupling_orig = pairs of master + slave in RVEnodes numbering
+    # coupling_renum = pairs of master + slave in the new numbering
+
+    RVEnodes_renum = vor.points[RVEnodes_orig]
+    sort_idx = RVEnodes_orig.argsort()   # indices 0 to len(RVEnodes_orig)
+    mechElemParticles_renum = sort_idx[np.searchsorted(RVEnodes_orig, mechElemParticles_orig, sorter=sort_idx)]
+    coupling_renum = sort_idx[np.searchsorted(RVEnodes_orig, coupling_orig, sorter=sort_idx)]
+
+    vertices_orig = np.unique(mechElemVerts)
+    vertices_renum = vor.vertices[vertices_orig]
+    sort_idc = vertices_orig.argsort()   # indices 0 to len(vertices_orig)
+    trspElemNodes = sort_idc[np.searchsorted(vertices_orig, mechElemVerts, sorter=sort_idc)]
+    trspElemNodes_renum = trspElemNodes + len(RVEnodes_renum)   # indices reflecting the order of auxNodes
+
+    '''
+    ########################################################################
+    ## plot Voronoi
+    voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  linewidth=1, line_alpha=0.6, point_size=2)
+    ## plot points
+    # original numbering
+    for ipoint, sla in enumerate(slaves_orig):
+        mas = masters_orig[ipoint]
+        points = np.vstack((vor.points[sla], vor.points[mas]))
+        plt.plot(points[:,0], points[:,1], color='red')
+    for mechElem_orig in mechElemParticles_orig:
+        pointsME = np.vstack((vor.points[mechElem_orig[0]], vor.points[mechElem_orig[1]]))
+        plt.plot(pointsME[:,0], pointsME[:,1], color='red', linestyle='-')
+    for trsElem in mechElemVerts:
+        pointsTE = np.vstack((vor.vertices[trsElem[0]], vor.vertices[trsElem[1]]))
+        plt.plot(pointsTE[:,0], pointsTE[:,1], color='red')
+    # renumbered things
+    for pair in coupling_renum:
+        coupled_points = np.vstack((RVEnodes_renum[pair[0]], RVEnodes_renum[pair[1]]))
+        plt.plot(coupled_points[:,0], coupled_points[:,1], color='black', linestyle=':')
+    for mechElem in mechElemParticles_renum:
+        pointsME = np.vstack((RVEnodes_renum[mechElem[0]], RVEnodes_renum[mechElem[1]]))
+        plt.plot(pointsME[:,0], pointsME[:,1], color='black', linestyle=':')
+    for trspElem in trspElemNodes:
+        pointsTE = np.vstack((vertices_renum[trspElem[0]], vertices_renum[trspElem[1]]))
+        plt.plot(pointsTE[:,0], pointsTE[:,1], color='black', linestyle=':')
+    theta = np.linspace(0, 2*np.pi, 100)
+    xcirc = maxLim/2*np.cos(theta)
+    ycirc = maxLim/2*np.sin(theta)
+    plt.plot(xcirc,ycirc, color='black',  linewidth=1)
+    plt.axis('equal')
+    plt.xlim([-maxLim, maxLim])
+    plt.ylim([-maxLim, maxLim])
+    plt.show()
+    '''
+
+    savePeriodicBlock(master_folder, coupling_renum, maxLim, RVEnodes_renum, dim)
+
+    particles = np.column_stack((RVEnodes_renum, np.zeros(len(sort_idx))))
+    saveNodes(master_folder, particles, 'Particle', dim, nodesFile)     # nodesFile = 'nodes.inp'
+    saveNodes(master_folder, vertices_renum, 'AuxNode', dim, verticesFile)
+    
+    inpf = open(os.path.join(master_folder, mechElemsFile), 'w')
+    inpf.write("#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n")
+    for k in range(len(mechElemParticles_renum)):
+        inpf.write("LTCBEAM\t%d\t%d\t%d" %(mechElemParticles_renum[k,0], mechElemParticles_renum[k,1], len(trspElemNodes_renum[k]) ))
+        for p in trspElemNodes_renum[k]:
+            inpf.write("\t%d"%(p))
+        inpf.write("\t0\n")
+    inpf.close()
+
+    totalPointCount = len(sort_idx) + len(sort_idc)
+    v_count = len(sort_idc)
+    vertIdxStart = totalPointCount-v_count
+
+    checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
+
+    return node_coords, v_count, [], vertIdxStart, totalPointCount
 
 
 
@@ -2862,7 +3055,7 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport,fem_out
         test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
         print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
     else:
-        test_auxNodeCoords = np.zeros(3)
+        test_auxNodeCoords = np.zeros(dim)
 
     print('Loading back vertices coords...', end='')
     test_verticesCoords = np.genfromtxt(os.path.join(master_folder,verticesFile),  dtype= None, encoding='ascii', usecols=cols)
@@ -2882,8 +3075,12 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport,fem_out
         print('Reassembling MechElems, checking face coplanarity... ')
         maxErr = 0
         wrongElems = 0
+        # print(len(test_solverNodeArray))
+        # print(len(test_nodeCoords))
+        # print(len(test_verticesCoords))
         for mechElem in test_mechElems:
-            #LTCBEAM	200	75	4	449	450	458	451	0	0
+            # LTCBEAM	200	75	4	449	450	458	451	0	0
+            # print(mechElem)
             name = mechElem[0]
             nA = test_solverNodeArray[int(mechElem[1])]
             nB = test_solverNodeArray[int(mechElem[2])]
@@ -2891,8 +3088,6 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport,fem_out
             vertices = []
             for v in range (verticesNr):
                 vertices.append(test_solverNodeArray [int(mechElem[4+v])] )
-            material =  int (mechElem[4+verticesNr])
-
             #checking coplanarity
             allCoplanar, val = checkCoplanarity(vertices, 1e-15)
             if (val > maxErr): maxErr = val

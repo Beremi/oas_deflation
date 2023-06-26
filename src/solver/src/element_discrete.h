@@ -30,6 +30,7 @@ public:
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     std :: vector< Node * >giveVertices() const { return vert; };
+    Node * giveVertex(unsigned i) const { return vert[i]; };
     unsigned giveNumOfVertices() const { return vert.size(); };
     double giveLength() const { return length; }
     double giveArea() const { return area; }

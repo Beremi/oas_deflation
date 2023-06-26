@@ -1,6 +1,7 @@
 #include "vtk_exporter.h"
 #include "element_discrete.h"
 #include "element_ldpm.h"
+#include "solver.h"
 #include "misc.h"
 
 using namespace std;
@@ -142,7 +143,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     data.resize( elems->giveSize() );
     for ( p = 0; p < cell_data_size; p++ ) {
         msize = 1;
-        i = 0;
+        i = 0;        
         for ( vector< Element * > :: const_iterator ee = elems->begin(); ee != elems->end(); ++ee, i++ ) {
             ( * ee )->giveValues(codes [ p ].c_str(), data [ i ]);
             msize = max< size_t >( msize, data [ i ].size() );
@@ -169,9 +170,23 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     for ( ; p < node_data_size + cell_data_size; p++ ) {
         msize = 1;
         i = 0;
-        for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
-            ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), DoFs, data [ i ]);
-            msize = max< size_t >( msize, data [ i ].size() );
+        if (codes[p].compare("residuals")==0){
+            msize = 0;
+            unsigned stDoF = 0;
+            unsigned numDoF = 0;
+            Vector res = solver->giveResiduals();
+            for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
+                stDoF = (*nn)->giveStartingDoF();
+                numDoF = (*nn)->giveNumberOfDoFs();
+                data [ i ] = Vector(numDoF);
+                msize = max< size_t >( msize, numDoF );
+                for(unsigned t=0; t<numDoF; t++) data[i][t] = res[stDoF+t];
+            }
+        }else{
+           for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {            
+                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), DoFs, data [ i ]);
+                msize = max< size_t >( msize, data [ i ].size() );
+            }
         }
         vtkSmartPointer< vtkDoubleArray >pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
         pointDataArray->SetName( codes [ p ].c_str() );
@@ -228,6 +243,12 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 #else
     cout << "VTK library not install, export of Elements skipped" << endl;
 #endif
+}
+
+
+//////////////////////////////////////////////////////////
+void VTKElementExporter :: setSolverPointer(Solver *s) {
+    solver = s;
 }
 
 
@@ -387,6 +408,8 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     vector< unsigned >fcodes;
     vector< unsigned >ncodes;
 
+
+    unsigned nfaces = 0;
     if ( dim == 3 ) {
         celtype = 7;            //polygon
     }
@@ -408,6 +431,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             }
             unstructuredGrid->InsertNextCell(celtype, elindicesA);
             unstructuredGrid->InsertNextCell(celtype, elindicesB);
+            nfaces ++;
         }
     }
     for ( vector< Element * > :: const_iterator ff = elems->begin(); ff != elems->end(); ++ff ) {
@@ -430,6 +454,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                 }
                 unstructuredGrid->InsertNextCell(celtype, elindicesA);
                 unstructuredGrid->InsertNextCell(celtype, elindicesB);
+                nfaces ++;
             }
         }
     }
@@ -484,23 +509,31 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         }
     }
 
-
+    
 
     unstructuredGrid->GetPointData()->AddArray(pointDataArray);
 
     // ****************** cell data
-    data.resize( elems->giveSize() );
+    data.resize(nfaces);
     for ( p = 0; p < cell_data_size; p++ ) {
         msize = 1;
         i = 0;
-        for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElemsRBC.begin(); ee != exportedElemsRBC.end(); ++ee, i++ ) {
+        for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElemsRBC.begin(); ee != exportedElemsRBC.end(); ++ee) {
             ( * ee )->giveValues(codes [ p ].c_str(), data [ i ]);
             msize = max< size_t >( msize, data [ i ].size() );
+            i++;
+        }
+        for ( vector< LDPMTetra * > :: const_iterator ee = exportedElemsTET.begin(); ee != exportedElemsTET.end(); ++ee) {
+            for ( unsigned k = 0; k < tet->giveNumOfFacets(); k++ ) {
+                ( * ee )->giveIPValues(codes [ p ].c_str(), k, data [ i ]);
+                msize = max< size_t >( msize, data [ i ].size() );
+                i++;
+            }
         }
         vtkSmartPointer< vtkDoubleArray >cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
         cellDataArray->SetName( codes [ p ].c_str() );
         cellDataArray->SetNumberOfComponents(msize);
-        cellDataArray->SetNumberOfValues(2 * elems->giveSize() * msize);
+        cellDataArray->SetNumberOfValues(2 * nfaces * msize);
         i = 0;
         for ( vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d, i++ ) {
             for ( j = 0; j < min< size_t >( msize, d->size() ); j++ ) {

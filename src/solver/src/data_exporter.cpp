@@ -1035,9 +1035,14 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 void ExporterContainer :: setSolver(Solver *s) {
     for ( auto &exp : exporters ) {
         SolverGauge *sg = dynamic_cast< SolverGauge * >( exp );
+        VTKElementExporter *vtkee = dynamic_cast< VTKElementExporter * >( exp );
         if ( sg ) {
             sg->setSolverPointer(s);
         }
+        if ( vtkee ) {
+            vtkee->setSolverPointer(s);
+        }
+
     }
 }
 

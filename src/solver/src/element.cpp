@@ -209,6 +209,12 @@ Matrix Element :: giveStiffnessMatrix(std :: string matrixType) const {
         D = stats [ i ]->giveStiffnessTensor(matrixType);
         K += Bs [ i ].transpose() * D * ( Bs [ i ] * inttype->giveIPWeight(i) );
     }
+    /*
+    // This check works only if flag "-ffast-math" is removed from CMake
+    if (std::isnan(K.template maxCoeff<Eigen::PropagateNaN>())){
+        cout << "ELEMENT " << idx << " ("<< name <<") has NaN in stiffness matrix" << endl;
+    }
+    */        
     return K;
 }
 
@@ -461,7 +467,7 @@ Point Element :: findNaturalCoords(const Point *x) const{
         double err=errcoords.norm();
         Point grad, prevgrad;
         double step=1e-5;
-        unsigned maxit = 5000;
+        unsigned maxit = 1000;
         unsigned it = 0;
         while (err>1e-6 && it<maxit){
             testnatcoords = natcoords;            
@@ -479,9 +485,16 @@ Point Element :: findNaturalCoords(const Point *x) const{
             it ++;
         }
         if(it==maxit){
-            cerr << "Error in " << name << ": Natural coordinates were not found" << endl;
+            cerr << "Error in " << name << ": Natural coordinates were not found, error " << err << endl;
+            cerr << "coords: " << (*x)[0] << " "<< (*x)[1] << " "<< (*x)[2] << endl;
+            cerr << "natcoords: " << natcoords[0] << " " << natcoords[1] << " " << natcoords[2] << endl;
+            cerr << "found coords: " << glocoords[0] << " "<< glocoords[1] << " "<< glocoords[2] << endl;
+            cerr << "elem nodes: " << endl;
+            for(auto &n:nodes){
+                cerr << n->givePoint()[0] << " " << n->givePoint()[1] << " " << n->givePoint()[2] << endl;
+            }
             exit(1);
-        }   
+        } 
     }    
     return natcoords;
 }

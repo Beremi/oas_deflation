@@ -2229,11 +2229,37 @@ def create2dCoupledRVE(maxLim, minDist, trials, powerTes ):
 
 def create2dCircRVE(maxLim, minDist, trials, powerTes):
     print('Creating 2d circular periodic RVE.')
-    ### sampling of nodes
-    ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, radii = asssemble2dCircRVE(maxLim, minDist, trials, powerTes )
 
-    return 0
+    ### sampling of nodes
+    all_node_coords, all_node_coords_polar, mechBC_merged, mechInitC_merged, radii  = asssemble2dCircRVE(maxLim, minDist, trials, powerTes )
+
+    print ('Conducting Voronoi tesselation...', end ='')
+    vor = Voronoi(all_node_coords)
+    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    print('done.')
+
+    # fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
+    # plt.show()
+
+    ########################################################################
+    functions = []
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #1 loading function, single force top right, bilinear
+    fn1 = utilitiesNumeric.sawToothConstFunc(value = -5e-4, period = 4)
+    functions.append (fn1)
+
+    mechIC_merged = []
+
+    ########################################################################
+    ### transport not needed so far
+    transportBC_merged = []
+    transportIC_merged = []
+
+    return all_node_coords, all_node_coords_polar, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, radii
 
 
 def assembleTwoNodeSpringTest (maxLim, idt):
@@ -6878,12 +6904,11 @@ def asssemble2dPeriodicShear (maxLim, minDist, trials, powerTes):
 
 
     nNds = np.asarray(nNds)
-    if True:
-
+    # if True:
         #ax.auto_scale_xyz([-maxLim[0], 2*maxLim[0]], [-maxLim[1], 2*maxLim[1]], [-maxLim[2], 2*maxLim[2]])
         #ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2], color='r')
-        plt.scatter(nNds[:,0], nNds[:,1],  color='r')
-        plt.show()
+        # plt.scatter(nNds[:,0], nNds[:,1],  color='r')
+        # plt.show()
 
 
 
@@ -7007,25 +7032,17 @@ def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
     mechBC_merged = []
     mechInitC_merged = []
 
-    print('assembling 2d periodic circular RVE')
+    print('Assembling 2d periodic circular RVE.')
 
     ########### getting nodes and radii
     node_coords = np.zeros( (1, dim) )
     node_coords_polar = np.zeros( (1, dim) )
     radii = np.zeros( 1 )
-    node_coords, per_node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True, periodic_distance=True)
+    node_coords, polar_node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True, periodic_distance=True)
 
     node_coords = np.asarray(node_coords)
 
-
-    nNds = np.vstack((      # all the nodes (RVE + periodic)
-        node_coords,
-        per_node_coords
-    ))
-
-
-
-    return nNds, mechBC_merged, mechInitC_merged, radii#, masters
+    return node_coords, polar_node_coords, mechBC_merged, mechInitC_merged, radii#, masters
 
 
 
