@@ -30,12 +30,15 @@ void IntegrationType :: init(const vector< Node * > &nodes, const vector< vector
 // SINGLE POINT INTEGRATION FOR DISCRETE MODELS
 //////////////////////////////////////////////////////////
 void IntegrDiscrete1 :: init() {
-    ip_locs.resize(1);
-    ip_locs [ 0 ] = Point(0.5, 0, 0); //this will be rewritten by actual centroid of discrete facet
-    ip_weights.resize(1);
-    ip_weights [ 0 ] = 1.;
+    
 }
 
+//////////////////////////////////////////////////////////
+void IntegrDiscrete1 :: setNumIP(unsigned n) {
+    ip_locs.resize(n);
+    ip_weights.resize(n);
+    
+}
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // FOUR POINT INTEGRATION IN SQUARE

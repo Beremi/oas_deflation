@@ -18,6 +18,8 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) : Element(dim) {
     vtk_cell_type = 3;
     shafunc = new Linear1DLineShapeF();
     inttype = new IntegrDiscrete1();
+    projectArea = true;
+    intPoints = "centroid";
 }
 
 //////////////////////////////////////////////////////////
@@ -71,6 +73,14 @@ void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnod
         vert [ i ] = fullnodes->giveNode(num2);
     }
     iss >> num;
+    string param;
+    while ( iss >> param ) {
+        if ( param.compare("integration") == 0 ) {
+            iss >> intPoints;
+        } else if ( param.compare("area_projection") == 0 ) {
+            iss >> projectArea;
+        }
+    }
     mat = fullmatrs->giveMaterial(num);
 }
 
@@ -101,9 +111,9 @@ Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     //MyMatrix B
     Matrix B = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );
     Particle *a = static_cast< Particle * >( nodes [ 0 ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix Aa = a->giveRigidBodyMotionMatrix(x) * ( -1. );
     a = static_cast< Particle * >( nodes [ 1 ] );
-    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) );
+    Matrix Ab = a->giveRigidBodyMotionMatrix(x);
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -116,105 +126,120 @@ Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 void RigidBodyContact :: setIntegrationPointsAndWeights() {
-    stats.resize(1);
+    normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
+    length = normal.norm();
+    normal = normal / length;
 
-    Point t(0, 0, 0);
     if ( ndim == 2 ) {
-        // NOTE the following taken from few lines upper
         if ( !( vert.size() == 2 ) ) {
             cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
             exit(1);
         }
-        inttype->setIPLocation(0, ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.);
-        /////////////////////////////////////////////////////////
-        t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
-        area = t.norm();
-    } else {
-        //JM: Coplanarity check for vertices on the face
-        //JM: checking coplanarity of every consecutive 4 nodes
-        double maxErr = 0.0;
-        double currErr = 0.0;
-        //
-        for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
-            currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
-            if ( abs(currErr) > maxErr ) {
-                maxErr = abs(currErr);
-            }
+
+        t1 = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
+        area = t1.norm();
+        Point faceNormal = Point(-t1[1]/area,t1[0]/area,0);
+        if (projectArea){
+            area = abs(faceNormal.dot(normal))*area;
+            t1 += normal*t1.dot(normal);
+            t1 /= t1.norm();  
         }
-        //JM: also checking if the beam midpoint is coplanar with the face
-        Point midPoint = ( nodes [ 1 ]->givePoint() + nodes [ 0 ]->givePoint() ) / 2.;
-        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), midPoint);
-        if ( abs(currErr) > maxErr ) {
-            maxErr = abs(currErr);
-        }
-        //
-        if ( maxErr > 1e-4 ) {
-            cerr << "Vertices are not coplanar!!! Coplanarity error: " << maxErr << endl;
+        
+        unsigned n;
+        if(intPoints.compare("centroid")==0){
+            n = 1;
+        } else if(is_positive_integer(intPoints)){
+            n = stoi(intPoints);
+        } else {
+            cerr << "RigidBodyContact Error: unknown value of intPoints parameter: " << intPoints << endl;
             exit(1);
         }
 
-        //JM: face normal vector made from first 3 vertices
-        Point n = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() );
-        n /= n.norm();
-
-        //JM: Perpendicularity check of the beam and face directions
-        //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
-        //JM: perpendicularity check: cross (beam, face)=>0
-        double prp = ( n ).dot(t);
-        if ( prp > 1e-8 ) {
-            cerr << "Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
-            //  exit(1);
+        centroid = (vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
+        IntegrDiscrete1* it = dynamic_cast<IntegrDiscrete1*>(inttype);
+        it->setNumIP(n);
+        for(unsigned i=0; i<inttype->giveNumIP(); i++){
+            inttype->setIPLocation(i,centroid+t1*(length*(i+0.5)/n-length/2.));
+            inttype->setIPWeight(i, length * area / (ndim*n));
         }
 
-        //JM: finding position of the SINGLE integration point -> center of gravity of the face polygon
-        //JM: average point of the polygon for triangulation
+    } else {
+
         Point avgPoint = Point(0.0, 0.0, 0.0);
         for ( unsigned int i = 0; i < vert.size(); i++ ) {
             avgPoint += vert [ i ]->givePoint();
         }
         avgPoint /= vert.size();
 
-        //JM: integration point coordinates as an average of CGs of face triangles weighted by areas
-        Point centroid = Point(0.0, 0.0, 0.0);
+        double diff = 1e6;
+
+        unsigned iter= 0;
+        unsigned int j = 0;
+        double ai = 0.0;
+        while (diff>1e-10) {
+            centroid = Point(0.0, 0.0, 0.0);
+            area = 0.0;
+            for ( unsigned int i = 0; i < vert.size(); i++ ) {
+                j = i + 1;
+                if ( i == vert.size() - 1 ) {
+                    j = 0;
+                }
+                //triangle area computed as a_i = norm(cross(AB, AC)) / 2
+                ai = ( ( vert [ i ]->givePoint() - avgPoint ).cross(vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
+                area += ai;
+                //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
+                centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
+            }
+            if (area>1e-20) centroid /= area;
+            else centroid = avgPoint;
+            iter ++;
+            diff = (centroid-avgPoint).norm();
+            avgPoint = centroid;
+        }
+
+        Vector ais(vert.size()); //projected areas of individual triangles
+        Point ni;
         area = 0.0;
         perimeter = 0;
-        double ai = 0.0;
-        unsigned int j = 0;
+        j = 0;
         for ( unsigned int i = 0; i < vert.size(); i++ ) {
             j = i + 1;
             if ( i == vert.size() - 1 ) {
                 j = 0;
             }
-            //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( ( vert [ i ]->givePoint() - avgPoint ).cross(vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
-            area += ai;
-            perimeter += ( vert [ i ]->givePoint() - vert [ j ]->givePoint() ).norm();
-            //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
-            centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;
-        }
-        if (area>1e-20) centroid /= area;
-        else centroid = avgPoint;
-        inttype->setIPLocation(0, centroid);
+            ni = ( vert [ i ]->givePoint() - centroid ).cross(vert [ j ]->givePoint() - centroid);
+            ais[i] = ni.norm()/2;
+            ni.normalize();
+            ais[i] *= ni.dot(normal);
+            area += ais[i];
+            ni = (vert [ i ]->givePoint() - vert [ j ]->givePoint());   //just for periemeter
+            ni += normal*(normal.dot(ni));
+            perimeter += ni[0];
+        }   
 
-        //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
-        if ( abs(currErr) > 1e-6 ) {
-            cerr << "Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
+        IntegrDiscrete1* it = dynamic_cast<IntegrDiscrete1*>(inttype);
+        if(intPoints.compare("centroid")==0){
+            it->setNumIP(1);
+            inttype->setIPLocation(0,centroid);
+            inttype->setIPWeight(0, length * area / ndim);            
+        } else if(intPoints.compare("triangles")==0){
+            it->setNumIP(vert.size());
+            j = 0;
+            for ( unsigned int i = 0; i < vert.size(); i++ ) {
+                j = i + 1;
+                if ( i == vert.size() - 1 ) {
+                    j = 0;
+                }
+                inttype->setIPWeight(i, length * ais[i] / ndim);    
+                inttype->setIPLocation(i,( centroid + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 );
+            }   
+        } else {
+            cerr << "RigidBodyContact Error: unknown value of intPoints parameter: " << intPoints << endl;
             exit(1);
         }
     }
 
-    normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
-    length = normal.norm();
-    normal = normal / length;
-    if ( abs( normal.dot(t) ) > 1e-8 ) {
-        cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
-        cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
-        cerr << "Error: normal and contact vector are not parallel, error " << normal.dot(t) << " normal v." << normal.x() << " " << normal.y() << " contact v. " << t.x() << " " << t.y() << endl;
-        // exit(1);
-    }
-
-    // Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130
+    // Matrices according to habilitation of Jan Elias (2017, page 42): https://www.vutbr.cz/www_base/vutdisk.php?i=103116a130 integration triangles
     // MyMatrix R;
     if ( ndim == 2 ) {
         t1 = Point(-normal.y(), normal.x(), 0.0);
@@ -256,9 +281,11 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         exit(EXIT_FAILURE);
     }
 
-    inttype->setIPWeight(0, length * area / ndim);
-
-    stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
+    stats.resize(inttype->giveNumIP());
+    
+    for (unsigned i=0; i< inttype->giveNumIP(); i++){
+        stats[i] = mat->giveNewMaterialStatus(this, i);
+    }
     volume = area * length / ndim;
 }
 
@@ -488,7 +515,7 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
     if ( validSnum > 0 ) {
         volumetricStrain /= validSnum;
     }
-    stats [ 0 ]->setParameterValue("volumetric_strain", volumetricStrain);
+    for (auto &s:stats) s->setParameterValue("volumetric_strain", volumetricStrain);
 
     return Element :: giveStrain(i, DoFs);
 };
@@ -713,7 +740,7 @@ Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
     }
     pressure /= area;
     if ( active ) {
-        stats [ 0 ]->setParameterValue("normal_stress", pressure);
+        for (auto &s:stats) s->setParameterValue("normal_stress", pressure);
         return RigidBodyContact :: giveStrain(i, DoFs);
     } else {
         return Vector :: Zero( ( this->ndim - 1 ) * 3);
@@ -1025,7 +1052,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
 
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
-        //JM: perpendicularity check: cross (beam, face)=>0
+        //JM: perpendicularity check: cross (beam, face)=>0 integration triangles
         double prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(t);
         if ( prp > 1e-8 ) {
             cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
