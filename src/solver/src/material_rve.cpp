@@ -132,7 +132,9 @@ void DiscreteTransportRVEMaterialStatus :: applyEigenStrains() {
         for ( unsigned v = 0; v < ndim; v++ ) {
             eigstr [ 0 ] -= local_strain [ v ] * normal(v);
         }
-        e->giveMatStatus(0)->setEigenStrain(eigstr);
+        for(unsigned k=0; k<e->giveNumIP(); k++){
+            e->giveMatStatus(k)->setEigenStrain(eigstr);    
+        }
     }
 }
 
@@ -671,7 +673,10 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
             }
         }
         num++;
-        elems->giveElement(i)->giveMatStatus(0)->setEigenStrain(eigstr);
+        Element *e = elems->giveElement(i);
+        for(unsigned k=0; k<e->giveNumIP(); k++){
+            e->giveMatStatus(k)->setEigenStrain(eigstr);    
+        }
     }
 }
 
@@ -687,10 +692,12 @@ void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
     RigidBodyContact *e;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-        factor  = e->giveArea() * e->giveLength() * e->giveMatStatus(0)->giveTempStress();
-        for ( unsigned v = 0; v < ndim; v++ ) {
-            for ( unsigned r = 0; r < local_strain.size(); r++ ) {
-                local_stress [ r ] += factor [ v ] * ( * projectors ) [ v ] [ num ] [ r ];
+        for(unsigned k=0; k<e->giveNumIP(); k++){
+            factor  = e->giveIPWeight(k) * ndim * e->giveMatStatus(k)->giveTempStress();
+            for ( unsigned v = 0; v < ndim; v++ ) {
+                for ( unsigned r = 0; r < local_strain.size(); r++ ) {
+                    local_stress [ r ] += factor [ v ] * ( * projectors ) [ v ] [ num ] [ r ];
+                }
             }
         }
         num++;
@@ -861,9 +868,11 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocal(string ty
         unsigned num = 0;
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
             e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-            stiff  = e->giveMatStatus(0)->giveStiffnessTensor(type);
-            for ( unsigned v = 0; v < dim; v++ ) {
-                Keff += dyadicProduct( ( * projectors ) [ v ] [ num ], ( * projectors ) [ v ] [ num ] ) * e->giveLength() * e->giveArea() * stiff(v, v);
+            for(unsigned k=0; k<e->giveNumIP(); k++){
+                stiff  = e->giveMatStatus(k)->giveStiffnessTensor(type);
+                for ( unsigned v = 0; v < dim; v++ ) {
+                    Keff += dyadicProduct( ( * projectors ) [ v ] [ num ], ( * projectors ) [ v ] [ num ] ) * dim *  e->giveIPWeight(k) * stiff(v, v);
+                }
             }
             num++;
             volume += e->giveVolume();
@@ -921,10 +930,12 @@ Point DiscreteMechanicalRVEMaterialStatus :: calculateCentroid() {  //only for m
     double totalweight = 0;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-        ms = static_cast< VectMechMaterialStatus * >( e->giveMatStatus(0) );
-        weight = e->giveVolume() * ms->giveDensity();
-        totalweight += weight;
-        centroid += e->giveIPLoc(0) * weight;
+        for(unsigned k=0; k<e->giveNumIP(); k++){
+            ms = static_cast< VectMechMaterialStatus * >( e->giveMatStatus(k) );
+            weight = e->giveIPWeight(k) * ms->giveDensity();
+            totalweight += weight;
+            centroid += e->giveIPLoc(k) * weight;
+        }
     }
     centroid /= totalweight;
     return centroid;
