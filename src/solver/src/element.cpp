@@ -517,6 +517,10 @@ MaterialTestElement :: MaterialTestElement(unsigned dim) : Element(dim) {
     vtk_cell_type = 1;
     shafunc = new Linear1DLineShapeF();
     inttype = new IntegrDiscrete1();
+    IntegrDiscrete1* it = dynamic_cast<IntegrDiscrete1*>(inttype);
+    it->setNumIP(1);
+    it->setIPLocation(0,Point(0,0,0));
+    it->setIPWeight(0,1);
 }
 
 

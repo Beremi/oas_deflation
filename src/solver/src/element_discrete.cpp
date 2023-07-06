@@ -132,7 +132,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
 
     if ( ndim == 2 ) {
         if ( !( vert.size() == 2 ) ) {
-            cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;
+            cerr << "Error: exactly 2 vertices must be involved, " << vert.size() << " provided" << endl;            
             exit(1);
         }
 
