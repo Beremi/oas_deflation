@@ -268,3 +268,9 @@ Matrix tetraInertia3D(const Point *a, const Point *b, const Point *c, const Poin
 double tetraVolumeSigned(const Point *a, const Point *b, const Point *c, const Point *d) {
     return ( ( * a ) - ( * d ) ).dot( ( ( * b ) - ( * d ) ).cross( ( * c ) - ( * d ) ) ) / 6.;
 }
+
+bool is_positive_integer(const std::string& s)
+{
+    return !s.empty() && std::find_if(s.begin(), 
+        s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
+}

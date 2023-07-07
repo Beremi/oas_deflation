@@ -39,6 +39,7 @@ public:
     IntegrDiscrete1() { name = "IntegrDiscrete1"; };
     virtual ~IntegrDiscrete1() {};
     virtual void init();
+    void setNumIP(unsigned n);
 };
 
 //////////////////////////////////////////////////////////

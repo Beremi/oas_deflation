@@ -68,6 +68,7 @@ public:
     std :: string giveName() const { return name; }
     size_t giveNumIP() const { return inttype->giveNumIP(); };
     Point giveIPLoc(unsigned k) const { return inttype->giveIPLocation(k); };
+    double giveIPWeight(unsigned k) const { return inttype->giveIPWeight(k); };
     virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
     std :: vector< Node * >giveNodes() const { return nodes; }
     Node *giveNode(unsigned k) const { return nodes [ k ]; }
