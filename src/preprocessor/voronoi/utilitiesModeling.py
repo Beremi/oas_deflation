@@ -284,8 +284,7 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             boundB1 = np.array(  [ maxLim[1]-20-5    , maxLim[3]-20e-5 ] )
             matZ.append (boundB1)
             materialZones.append(matZ)
-            print('MZMZMMZMZMZM')
-            print(materialZones)
+            
         if (dim==3):
             boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
             matZ.append (boundA)
