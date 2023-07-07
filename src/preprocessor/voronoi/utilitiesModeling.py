@@ -275,16 +275,15 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
 
     if (model=='hangingfraczone'):
         if (dim==2):
-            boundA = np.array(  [ maxLim[0]+20e-5             , maxLim[2]-20e-5 ] )
+            boundA = np.array(  [ maxLim[0]+10e-5             , maxLim[2]-10e-5 ] )
             matZ.append (boundA)
-            boundB = np.array(  [ maxLim[1]-20e-5    , maxLim[3]-20e-5 ] )
+            boundB = np.array(  [ maxLim[1]-10e-5    , maxLim[3]-10e-5 ] )
             matZ.append (boundB)
-            boundA1 = np.array(  [ maxLim[0]+20e-5             , maxLim[2]-20e-5    ] )
+            boundA1 = np.array(  [ maxLim[0]+10e-5             , maxLim[2]-10e-5    ] )
             matZ.append (boundA1)
-            boundB1 = np.array(  [ maxLim[1]-20-5    , maxLim[3]-20e-5 ] )
+            boundB1 = np.array(  [ maxLim[1]-10-5    , maxLim[3]-10e-5 ] )
             matZ.append (boundB1)
             materialZones.append(matZ)
-            print('MZMZMMZMZMZM')
             print(materialZones)
         if (dim==3):
             boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )

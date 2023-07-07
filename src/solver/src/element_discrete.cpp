@@ -138,11 +138,16 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
 
         t1 = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t1.norm();
-        Point faceNormal = Point(-t1[1]/area,t1[0]/area,0);
+        Point faceNormal;
+        if (area<1e-14){
+            faceNormal = Point(-t1[1]/1e-14,t1[0]/1e-14,0);
+        }else{
+            faceNormal = Point(-t1[1]/area,t1[0]/area,0);
+        }
         if (projectArea){
             area = abs(faceNormal.dot(normal))*area;
             t1 += normal*t1.dot(normal);
-            t1 /= t1.norm();  
+            t1 /= max(t1.norm(),1e-14);  
         }
         
         unsigned n;

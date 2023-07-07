@@ -34,7 +34,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     } else if ( solver_type == "EigenLDLT" ) {
         Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >simplicial_ldlt_solver;
         x = simplicial_ldlt_solver.compute(A).solve(b);
-        cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
+        //cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
         result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
     } else if ( solver_type == "EigenLLT" ) {
         Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
