@@ -124,6 +124,7 @@ class Model:
         self.fracZoneHeight = None
         self.fracZoneOverhang = None
         self.fem = False
+        self.baseMinDist = self.fineWidth = fineHeight = None
 
 
         self.masterSolver = self.masterMaterials = self.masterFunctions = False
@@ -159,6 +160,13 @@ class Model:
                 self.fineWidth = float(r[i+1])
             if (r[i]=='gradientRegDepth'):
                 self.gradientRegDepth = float(r[i+1])
+
+            if (r[i]=='baseMinDist'):
+                self.baseMinDist = float(r[i+1])
+            if (r[i]=='fineWidth'):
+                self.fineWidth = float(r[i+1])
+            if (r[i]=='fineHeight'):
+                self.fineHeight = float(r[i+1])
 
             if (r[i]=='defaultFilesFolder'):
                 self.defaultFilesFolder = str(r[i+1])
@@ -693,7 +701,7 @@ class Model:
     def run_2d_CFRAC_Clover(self, node_coords_init=None):
         self.activeTransport = False
 
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2d_CFRAC_Clover(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, -1, 1)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2d_CFRAC_Clover(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, self.baseMinDist,self.fineWidth,self.fineHeight, -1, 1)
 
         self.materialZones= []
         if self.activeTransport == False:
