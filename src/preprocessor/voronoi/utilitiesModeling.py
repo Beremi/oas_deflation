@@ -284,7 +284,6 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
             boundB1 = np.array(  [ maxLim[1]-10-5    , maxLim[3]-10e-5 ] )
             matZ.append (boundB1)
             materialZones.append(matZ)
-            print(materialZones)
         if (dim==3):
             boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
             matZ.append (boundA)
@@ -1454,14 +1453,14 @@ def create3dCoupledArtificialCrack(maxLim, minDist, trials, notchH):
 
 
 
-def create2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter, interfaceMinDist=-1, roughMinDistCoef=1):
+def create2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter,baseMinDist,fineWidth,fineHeight, interfaceMinDist=-1, roughMinDistCoef=1):
     print('Creating CFRAC clover model...')
     dim=2
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
     sampleBorders = True
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter,baseMinDist,fineWidth,fineHeight)
 
 
     print('Conducting Voronoi tesselation...', end = '')
@@ -4536,7 +4535,7 @@ def assemble2DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,
     return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates
 
 
-def assemble2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter):
+def assemble2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter, baseMinDist,fineWidth,fineHeight):
     print('2d clover')
     dim = 2
     node_coords = []
@@ -4620,16 +4619,35 @@ def assemble2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter):
 
     #pointGenerators.generateNodesRect(maxLim, minDist, 2, trials, node_coords)
 
-    #left
+    #original model
+    #left gradient
     interBounds = np.array([     indent,      indent , maxLim[0]/3,              maxLim[1]])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist*3, bottomMinDist = minDist, gradienDirection=0)
-
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = baseMinDist, bottomMinDist = baseMinDist/2, gradienDirection=0)
     interBounds = np.array([     maxLim[0]/3,      indent , maxLim[0]/3*2,              maxLim[1]])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True)
-
+    pointGenerators.generateNodesRect(interBounds, baseMinDist/2, dim, trials, node_coords, useLowBound=True)
+    #right gradient
     interBounds = np.array([     maxLim[0]/3*2,      indent , maxLim[0],              maxLim[1]])
-    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = minDist*3, gradienDirection=0)
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = baseMinDist/2, bottomMinDist = baseMinDist, gradienDirection=0)
 
+    # sparse model
+    #bounds = np.array([     indent,      indent , maxLim[0],              maxLim[1]])
+    #pointGenerators.generateNodesRect(bounds, baseMinDist, dim, trials, node_coords, useLowBound=True)
+
+    #left gradient
+    interBounds = np.array([     maxLim[0]/2-fineWidth-5*baseMinDist,      indent , maxLim[0]/2-fineWidth,              indent + fineHeight ])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = baseMinDist, bottomMinDist = minDist, gradienDirection=0)
+
+    #right gradient
+    interBounds = np.array([     maxLim[0]/2+fineWidth,      indent , maxLim[0]/2+fineWidth+5*baseMinDist,              indent + fineHeight ])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist, bottomMinDist = baseMinDist, gradienDirection=0)
+
+    #fine center
+    bounds = np.array([      maxLim[0]/2-fineWidth,      indent ,  maxLim[0]/2+fineWidth,              indent + fineHeight])
+    pointGenerators.generateNodesRect(bounds, minDist, dim, trials, node_coords, useLowBound=True)
+
+    #top gradient
+    interBounds = np.array([      maxLim[0]/2-fineWidth,      indent + fineHeight ,  maxLim[0]/2+fineWidth,              fineHeight+5*baseMinDist])
+    pointGenerators.generateNodesRect(interBounds, minDist, dim, trials, node_coords, useLowBound=True, topMinDist = minDist , bottomMinDist = baseMinDist, gradienDirection=1)
 
     #remove points from rebars
     newNodes = []
