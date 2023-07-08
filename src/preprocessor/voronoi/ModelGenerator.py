@@ -703,7 +703,7 @@ class Model:
 
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2d_CFRAC_Clover(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, self.baseMinDist,self.fineWidth,self.fineHeight, -1, 1)
 
-        self.materialZones= utilitiesModeling.assembleMaterialZones (self.maxLim[0]/2-self.fineWidth, 2, model='box', maxLim=self.maxLim)
+        self.materialZones= utilitiesModeling.assembleMaterialZones (self.maxLim[0]/2-self.fineWidth, 2, model='box', maxLim=[self.fineWidth,self.fineHeight])
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
             self.govNodesTrspt=[]
