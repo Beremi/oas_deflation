@@ -26,17 +26,16 @@ JointDoF :: JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * >
 //////////////////////////////////////////////////////////
 void JointDoF :: readFromLine(std :: istringstream &iss, NodeContainer *nodes) {
     // # type      node    direction   numMasters master1 multiplier1 master2...
-    unsigned intn, intmas;
+    unsigned intn, intmas, dir;
     double mult;
     iss >> intn;
     slaveNode = nodes->giveNode(intn);
-    iss >> intn;
-    direction = intn;
+    iss >> direction;
     iss >> intn;
     for ( unsigned i = 0; i < intn; i++ ) {
-        iss >> intmas >> mult;
+        iss >> intmas >> dir >> mult;
         masters.push_back( nodes->giveNode(intmas) );
-        directions.push_back(0);
+        directions.push_back(dir);
         time_fns.push_back(nullptr);
         multipliers.push_back(mult);
     }
@@ -262,13 +261,13 @@ void ConstraintContainer :: readFromFile(const std :: string filename, const uns
                     std :: cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << std :: endl;
                     exit(EXIT_FAILURE);
                 }
-                inputfile.close();
-                std :: cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << std :: endl;
-            } else {
-                std :: cerr << "Error: unable to open input file '" <<  filename <<  "'" << std :: endl;
-                exit(1);
             }
         }
+        std :: cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << std :: endl;
+        inputfile.close();
+    } else {
+        std :: cerr << "Error: unable to open input file '" <<  filename <<  "'" << std :: endl;
+        exit(1);
     }
 }
 
