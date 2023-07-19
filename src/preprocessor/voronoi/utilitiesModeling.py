@@ -5124,7 +5124,7 @@ def assemble2d_box_with_periodic_nodes(maxLim, minDist, trials):
     oldlen = len(node_coords)
     nodeA = np.array([minDist*0.4, indent])
     nodeB = np.array([maxLim[0]-minDist*0.4, indent])
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.6, dim, node_coords, trials*20, catchCorners=True, equidist=False)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.5, dim, node_coords, trials*20, catchCorners=True, equidist=False)
     newnodes = np.copy(node_coords[oldlen:])
     for k in newnodes:
         k[1] = maxLim[1]-indent
@@ -5132,15 +5132,16 @@ def assemble2d_box_with_periodic_nodes(maxLim, minDist, trials):
     nodeA = np.array([indent, minDist*0.4])
     nodeB = np.array([indent, maxLim[1]-minDist*0.4])
     oldlen = len(node_coords)
-    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.6, dim, node_coords, trials*20, catchCorners=True, equidist=False)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.5, dim, node_coords, trials*20, catchCorners=True, equidist=False)
     newnodes = np.copy(node_coords[oldlen:])
     for k in newnodes:
         k[0] = maxLim[0]-indent
         node_coords.append(k)  
 
     node_coords = np.array(node_coords)
-    radii = np.zeros(len(node_coords))+minDist*0.3
+    radii = np.zeros(len(node_coords))+minDist*0.4
 
+    print("MAX LIM", maxLim)
     #pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
     node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, 2, trials, node_coords, np.array(radii), allow_domain_overlap = False, periodic_distance=False)
 
