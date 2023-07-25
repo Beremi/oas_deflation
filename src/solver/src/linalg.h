@@ -57,4 +57,5 @@ Matrix tetraInertia3D(const Point *a, const Point *b, const Point *c, const Poin
 
 bool is_positive_integer(const std::string& s);
 
+void giveGaussIntegrationPointAndWeights(unsigned n,Vector &locs, Vector &weis);
 #endif /* _LINALG_H */

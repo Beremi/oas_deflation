@@ -274,3 +274,42 @@ bool is_positive_integer(const std::string& s)
     return !s.empty() && std::find_if(s.begin(), 
         s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
 }
+
+void giveGaussIntegrationPointAndWeights(unsigned n,Vector &locs, Vector &weis){
+    locs.resize(n);
+    weis.resize(n);
+    if(n==1){
+        locs[0] = 0;
+        weis[0] = 2;
+    } else if(n==2){
+        locs[0] = - 1./sqrt(3);
+        locs[1] = - locs[0];
+        weis[0] = weis[1] = 1;
+    } else if(n==3){
+        locs[0] = -sqrt(3./5.);
+        locs[1] = 0;
+        locs[2] = -locs[0];
+        weis[0] = weis[2] = 5./9.;
+        weis[1] = 8./9.;
+    } else if(n==4){
+        locs[0] = -sqrt(3./7.+2./7.*sqrt(6./5.));
+        locs[1] = -sqrt(3./7.-2./7.*sqrt(6./5.));
+        locs[2] = -locs[1];
+        locs[3] = -locs[0];
+        weis[0] = weis[3] = (18.-sqrt(30.))/36;
+        weis[1] = weis[2] = (18.+sqrt(30.))/36;
+    } else if(n==5){
+        locs[0] = -sqrt(5.+2.*sqrt(10./7.))/3;
+        locs[1] = -sqrt(5.-2.*sqrt(10./7.))/3;
+        locs[2] = 0.;
+        locs[3] = -locs[1];
+        locs[4] = -locs[0];
+        weis[0] = weis[4] = (322.-13.*sqrt(70.))/900;
+        weis[1] = weis[3] = (322.+13.*sqrt(70.))/900;
+        weis[2] = 128./225.;
+    } else {
+        cerr << "Gauss integration for n=" << n << " not implemented" << endl;
+        exit(1);
+    }
+}
+

@@ -157,6 +157,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     FiberMaterial *newmat = new FiberMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("VectMechMaterialWithRotationalStiffness") == 0 ) {
+                    VectMechMaterialWithRotationalStiffness *newmat = new VectMechMaterialWithRotationalStiffness(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);

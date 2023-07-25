@@ -163,11 +163,21 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         centroid = (vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
         IntegrDiscrete1* it = dynamic_cast<IntegrDiscrete1*>(inttype);
         it->setNumIP(n);
-        for(unsigned i=0; i<inttype->giveNumIP(); i++){
-            inttype->setIPLocation(i,centroid+t1*(length*(i+0.5)/n-length/2.));
-            inttype->setIPWeight(i, length * area / (ndim*n));
+        //Gauss integration
+        if (n<6){
+            Vector locs, weis; 
+            giveGaussIntegrationPointAndWeights(n,locs, weis);
+            for(unsigned i=0; i<inttype->giveNumIP(); i++){
+                inttype->setIPLocation(i,centroid+t1*area*locs[i]/2.);
+                inttype->setIPWeight(i, length * area * weis[i]/2. / ndim);
+            }
+        }else{ //equidistant
+            for(unsigned i=0; i<inttype->giveNumIP(); i++){
+                inttype->setIPLocation(i,centroid+t1*area*((i+0.5)/n-0.5));
+                inttype->setIPWeight(i, length * area / (ndim*n));
+            }
         }
-
+        
     } else {
 
         Point avgPoint = Point(0.0, 0.0, 0.0);
@@ -613,6 +623,51 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
         cerr << "Error in " << name << ": dyadic product of vectors of different length in function extrapolateIPValuesToNodes" << endl;
         exit(1);
     }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// RBSN ELEMENT with rotational stiffness
+RigidBodyContactWithRotationalStiffness :: RigidBodyContactWithRotationalStiffness(const unsigned dim) : RigidBodyContact(dim) {
+    name = "RigidBodyContactWithRotationalStiffness";
+}
+
+//////////////////////////////////////////////////////////
+
+Matrix RigidBodyContactWithRotationalStiffness :: giveBMatrix(const Point *x) const {
+    Matrix B0 = RigidBodyContact :: giveBMatrix(x);
+    Matrix C0;
+    if (ndim==2){
+        C0 = Matrix :: Zero( 1, 6 * ( ndim - 1 ) );
+        C0(0,2) = -1/length;
+        C0(0,5) =  1./length;
+    } else if(ndim==3){
+        C0 = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );  
+        for(unsigned i=0; i<3; i++){
+            C0(i,3+i) = -1/length;
+            C0(i,9+i) =  1/length;
+        }
+        C0 = R * C0;
+    }
+    Matrix B = Matrix :: Zero(B0.rows()+C0.rows(), B0.cols()); 
+    B << B0, C0;
+    return B;
+}
+
+//////////////////////////////////////////////////////////
+void RigidBodyContactWithRotationalStiffness :: setIntegrationPointsAndWeights() {
+    RigidBodyContact :: setIntegrationPointsAndWeights();
+    if(ndim==3){
+        cerr << "RigidBodyContactWithRotationalStiffness Error: not implemented in 3D" << endl;
+        exit(1);
+    }
+    I = pow(area/inttype->giveNumIP(),3)/12.;    
+}
+
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyContactWithRotationalStiffness :: giveStiffnessMatrix(string matrixType) const {
+    return RigidBodyContact :: giveStiffnessMatrix(matrixType);
 }
 
 //////////////////////////////////////////////////////////

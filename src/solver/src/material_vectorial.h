@@ -140,4 +140,36 @@ public:
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim; }
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Vect MECHANICAL LINEAR MATERIAL with ROTATIONAL STIFFNESS
+
+class VectMechMaterialWithRotationalStiffness;
+class VectMechMaterialWithRotationalStiffnessStatus : public VectMechMaterialStatus
+{
+protected:
+public:
+    VectMechMaterialWithRotationalStiffnessStatus(VectMechMaterialWithRotationalStiffness *m, Element *e, unsigned ipnum);
+    virtual ~VectMechMaterialWithRotationalStiffnessStatus() {};
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    double giveDensity() const;
+    virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
+    virtual bool giveValues(std :: string code, Vector &result) const;
+};
+
+//////////////////////////////////////////////////////////
+class VectMechMaterialWithRotationalStiffness : public VectMechMaterial
+{
+protected:
+    double beta;
+public:
+    VectMechMaterialWithRotationalStiffness(unsigned dimension) : VectMechMaterial(dimension) { name = "Vect mechanical material with rotational stiffness"; };
+    ~VectMechMaterialWithRotationalStiffness() {};
+    virtual void readFromLine(std :: istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    double giveBeta() const { return beta; }
+    virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim + (dim==3) ? 3 : 1; }
+};
+
 #endif /* _MATERIAL_Vect_H */

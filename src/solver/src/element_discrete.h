@@ -64,6 +64,21 @@ public:
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// RBSN ELEMENT
+class RigidBodyContactWithRotationalStiffness : public RigidBodyContact
+{
+protected:
+    double I;
+public:
+    RigidBodyContactWithRotationalStiffness(const unsigned dim);
+    ~RigidBodyContactWithRotationalStiffness() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveStiffnessMatrix(std::string matrixType) const;
+    virtual void setIntegrationPointsAndWeights();
+    double giveMomentOfInertia() const { return I;}
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
