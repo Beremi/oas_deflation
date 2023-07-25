@@ -114,7 +114,7 @@ void BrittleMaterial :: readFromLine(istringstream &iss) {
     bool bft;
     bft = false;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("ft") == 0 ) {
             bft = true;
             iss >> ft;
@@ -188,7 +188,7 @@ Matrix ContactMaterialStatus :: giveStiffnessTensor(string type) const {
 Vector ContactMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_normal_strain = strain [ 0 ];
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     if ( temp_normal_strain < 0 ) {
         ContactMaterial *m = static_cast< ContactMaterial * >( mat );
         stress [ 0 ] = strain [ 0 ] * m->giveE0();
@@ -222,7 +222,7 @@ void ContactMaterial :: readFromLine(istringstream &iss) {
 
     string param;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("friction_coef") == 0 ) {
             iss >> friction_coef;
         }

@@ -32,7 +32,7 @@ public:
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
     std :: vector< Node * >giveVertices() const { return vert; };
-    Node * giveVertex(unsigned i) const { return vert[i]; };
+    Node *giveVertex(unsigned i) const { return vert [ i ]; };
     unsigned giveNumOfVertices() const { return vert.size(); };
     double giveLength() const { return length; }
     double giveArea() const { return area; }
@@ -70,14 +70,14 @@ public:
 class RigidBodyContactWithRotationalStiffness : public RigidBodyContact
 {
 protected:
-    double I;
+    double Inertia;
 public:
     RigidBodyContactWithRotationalStiffness(const unsigned dim);
     ~RigidBodyContactWithRotationalStiffness() {};
     virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveStiffnessMatrix(std::string matrixType) const;
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual void setIntegrationPointsAndWeights();
-    double giveMomentOfInertia() const { return I;}
+    double giveMomentOfInertia() const { return Inertia; }
 };
 
 //////////////////////////////////////////////////////////
@@ -111,7 +111,7 @@ public:
 
     void init();
 
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
@@ -136,8 +136,8 @@ public:
 
     void init();
 
-    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;

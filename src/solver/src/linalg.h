@@ -55,7 +55,7 @@ double tetraVolumeSigned(const Point *a, const Point *b, const Point *c, const P
 
 Matrix tetraInertia3D(const Point *a, const Point *b, const Point *c, const Point *d);
 
-bool is_positive_integer(const std::string& s);
+bool is_positive_integer(const std :: string &s);
 
-void giveGaussIntegrationPointAndWeights(unsigned n,Vector &locs, Vector &weis);
+void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis);
 #endif /* _LINALG_H */

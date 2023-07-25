@@ -169,7 +169,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveBeta() const { return beta; }
-    virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim + (dim==3) ? 3 : 1; }
+    virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim + ( dim == 3 ) ? 3 : 1; }
 };
 
 #endif /* _MATERIAL_Vect_H */

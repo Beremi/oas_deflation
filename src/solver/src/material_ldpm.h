@@ -14,7 +14,7 @@ private:
     double Kt, Ks, L, nt;
     double RAND_H;
     double crackOpening, temp_crackOpening;
-    double temp_volumetricStrain, volumetricStrain, deVdt,deNdt;
+    double temp_volumetricStrain, volumetricStrain, deVdt, deNdt;
     double virtual_damage;
     Vector updt_mech_strain; //last strain without eigenstrain
     Vector temp_mech_strain; //current strain without eigenstrain
@@ -41,7 +41,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
     virtual void initializeStressAndStrainVector(unsigned num);
-    double giveSigmaBCDiff(double relt,double* transSigmaBC);
+    double giveSigmaBCDiff(double relt, double *transSigmaBC);
 };
 
 

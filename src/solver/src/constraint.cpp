@@ -34,7 +34,7 @@ void JointDoF :: readFromLine(std :: istringstream &iss, NodeContainer *nodes) {
     iss >> intn;
     for ( unsigned i = 0; i < intn; i++ ) {
         iss >> intmas >> dir >> mult;
-        masters.push_back( nodes->giveNode(intmas) );
+        masters.push_back(nodes->giveNode(intmas) );
         directions.push_back(dir);
         time_fns.push_back(nullptr);
         multipliers.push_back(mult);
@@ -102,12 +102,12 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
         jd = constraints->giveConstraint(j);
         va = dynamic_cast< VolumetricAverage * >( jd );
         if ( !va ) {
-            excludedNodes.push_back( jd->giveSlaveNode() );
+            excludedNodes.push_back(jd->giveSlaveNode() );
             jdm = jd->giveMasterNodes();
-            excludedNodes.insert( excludedNodes.end(), jdm.begin(), jdm.end() );
-            excudedDirs.push_back( jd->giveSlaveDir() );
+            excludedNodes.insert(excludedNodes.end(), jdm.begin(), jdm.end() );
+            excudedDirs.push_back(jd->giveSlaveDir() );
             jdd = jd->giveMasterDirs();
-            excudedDirs.insert( excudedDirs.end(), jdd.begin(), jdd.end() );
+            excudedDirs.insert(excudedDirs.end(), jdd.begin(), jdd.end() );
         }
     }
 
@@ -139,7 +139,7 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
 void VolumetricAverage :: init(Solver *solver) {
     //collect all slaves from other joint DoFs
     std :: vector< unsigned >otherslaves;
-    otherslaves.resize( constraints->giveSize() );
+    otherslaves.resize(constraints->giveSize() );
     JointDoF *jd;
     for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
         jd = constraints->giveConstraint(j);
@@ -157,7 +157,7 @@ void VolumetricAverage :: init(Solver *solver) {
     unsigned r;
     unsigned s = nodes.size();
     std :: vector< double >m;
-    m.resize( nodes.size() );
+    m.resize(nodes.size() );
     DiscreteTrsprtElem *et;
     RigidBodyContact *em;
     for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
@@ -165,14 +165,14 @@ void VolumetricAverage :: init(Solver *solver) {
         em = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
         if ( et ) {
             for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find( nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
+                r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
                 if ( r < s ) {
                     m [ r ] += et->giveVolumeAssociatedWithNode(p);
                 }
             }
         } else if ( em ) {
             for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find( nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
+                r = ( std :: find(nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
                 if ( r < s ) {
                     m [ r ] += em->giveVolumeAssociatedWithNode(p);
                 }
@@ -210,9 +210,9 @@ void VolumetricAverage :: init(Solver *solver) {
             for ( auto &k:jdmults ) {
                 k *= m [ i ];
             }
-            masters.insert( masters.end(), jdmasters.begin(), jdmasters.end() );
-            directions.insert( directions.end(), jddirs.begin(), jddirs.end() );
-            multipliers.insert( multipliers.end(), jdmults.begin(), jdmults.end() );
+            masters.insert(masters.end(), jdmasters.begin(), jdmasters.end() );
+            directions.insert(directions.end(), jddirs.begin(), jddirs.end() );
+            multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end() );
         }
     }
     JointDoF :: init(solver);
@@ -244,7 +244,7 @@ void ConstraintContainer :: readFromFile(const std :: string filename, const uns
     ( void ) ndim;
     unsigned origsize = constraints.size();
     std :: string line, ConstrType;
-    std :: ifstream inputfile( filename.c_str() );
+    std :: ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -330,7 +330,7 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     unsigned j, numM; // column index = master DoF
     for ( auto const &jD : constraints ) {
         // jD->print();
-        i = nodes->giveDoFid( jD->giveSlaveDoF() );
+        i = nodes->giveDoFid(jD->giveSlaveDoF() );
         //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", numFreeDoFs = " << numFreeDoFs << '\n';
         // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
         // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
@@ -349,10 +349,10 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
         }
         numM = jD->giveNumOfDoFMasters();
         for ( unsigned ind = 0; ind < numM; ind++ ) {
-            j = nodes->giveDoFid( jD->giveMasterDoF(ind) );
+            j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
-                tripletList.push_back( Ttripletd( i, j, jD->giveMasterMultiplier(ind) ) );
+                tripletList.push_back(Ttripletd(i, j, jD->giveMasterMultiplier(ind) ) );
             }
         }
     }
@@ -361,11 +361,11 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     ///////////////////////////////////////////////////
     for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
         // fill the matrix with 1 for each unrestrained DoF (diagonal)
-        tripletList.push_back( Ttripletd(i, i, 1) );
+        tripletList.push_back(Ttripletd(i, i, 1) );
     }
 
-    X.resize( numFreeDoFs, numFreeDoFs - constraints.size() );
-    X.setFromTriplets( tripletList.begin(), tripletList.end() );
+    X.resize(numFreeDoFs, numFreeDoFs - constraints.size() );
+    X.setFromTriplets(tripletList.begin(), tripletList.end() );
     X.makeCompressed();
     // // JK - left for testing:
     // for ( auto const &cn : this->constraints ){

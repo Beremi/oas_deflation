@@ -108,8 +108,8 @@ bool FatigueShearMaterialStatus :: giveValues(string code, Vector &result) const
 void FatigueShearMaterialStatus :: init() {
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
-    strain_slip_multiplier = pow( rbc->giveLength(), int( m->useSlip() ) );
-    regularization_multiplier_area = pow( rbc->giveArea(), int( m->useSlip() ) );
+    strain_slip_multiplier = pow(rbc->giveLength(), int( m->useSlip() ) );
+    regularization_multiplier_area = pow(rbc->giveArea(), int( m->useSlip() ) );
     checkReturnMap = m->checkReturnMap();
     useAnaliticalLambda = m->analyticalLambda();
     newIter = m->newIterativeApproachOn();
@@ -135,7 +135,7 @@ void FatigueShearMaterialStatus :: init() {
 double get_Lambda(const double &E_b, const double &K, const double &alpha, const double &gamma, const double &omega, const double &s, const double &sPi) {
     // do not use this yet !! ( do not even look at it ;) )
     double dot_lambda_eta_result;
-    dot_lambda_eta_result = -E_b * s * ( pow(omega, 2) - 2 * omega + 1 ) * sqrt( pow(E_b, 2) * pow(omega - 1, 2) * pow(s - sPi, 2) - 2 * E_b * alpha * gamma * omega * ( omega - 1 ) * ( s - sPi ) + 2 * E_b * alpha * gamma * ( omega - 1 ) * ( s - sPi ) + pow(alpha, 2) * pow(gamma, 2) * pow(omega, 2) - 2 * pow(alpha, 2) * pow(gamma, 2) * omega + pow(alpha, 2) * pow(gamma, 2) ) / ( ( pow(E_b, 2) * ( omega - 1 ) * ( s - sPi ) - E_b * K * omega * ( omega - 1 ) * ( s - sPi ) + E_b * K * ( omega - 1 ) * ( s - sPi ) - E_b * alpha * gamma * omega + E_b * alpha * gamma - E_b * gamma * omega * ( omega - 1 ) * ( s - sPi ) + E_b * gamma * ( omega - 1 ) * ( s - sPi ) + K * alpha * gamma * pow(omega, 2) - 2 * K * alpha * gamma * omega + K * alpha * gamma + alpha * pow(gamma, 2) * pow(omega, 2) - 2 * alpha * pow(gamma, 2) * omega + alpha * pow(gamma, 2) ) * fabs(omega - 1) );
+    dot_lambda_eta_result = -E_b * s * ( pow(omega, 2) - 2 * omega + 1 ) * sqrt(pow(E_b, 2) * pow(omega - 1, 2) * pow(s - sPi, 2) - 2 * E_b * alpha * gamma * omega * ( omega - 1 ) * ( s - sPi ) + 2 * E_b * alpha * gamma * ( omega - 1 ) * ( s - sPi ) + pow(alpha, 2) * pow(gamma, 2) * pow(omega, 2) - 2 * pow(alpha, 2) * pow(gamma, 2) * omega + pow(alpha, 2) * pow(gamma, 2) ) / ( ( pow(E_b, 2) * ( omega - 1 ) * ( s - sPi ) - E_b * K * omega * ( omega - 1 ) * ( s - sPi ) + E_b * K * ( omega - 1 ) * ( s - sPi ) - E_b * alpha * gamma * omega + E_b * alpha * gamma - E_b * gamma * omega * ( omega - 1 ) * ( s - sPi ) + E_b * gamma * ( omega - 1 ) * ( s - sPi ) + K * alpha * gamma * pow(omega, 2) - 2 * K * alpha * gamma * omega + K * alpha * gamma + alpha * pow(gamma, 2) * pow(omega, 2) - 2 * alpha * pow(gamma, 2) * omega + alpha * pow(gamma, 2) ) * fabs(omega - 1) );
     return dot_lambda_eta_result;
 }
 
@@ -146,7 +146,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
 
-    Vector stress = Vector :: Zero(strain.size() );
+    Vector stress = Vector :: Zero( strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -179,7 +179,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
     Point sgn1;
     double dLambda;
     double omega_dot;//rate of shear damage (to be multiplied by lambda and added to current damageShear)
-    omega_dot = pow(1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow(Ynext / m->giveS(), m->giveR() );
+    omega_dot = pow( 1 - damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow( Ynext / m->giveS(), m->giveR() );
 
     if ( true ) { // here will be more options like new return mapping etc.
         // sub-stepping process - long step is cutted in a certain number of substeps
@@ -235,7 +235,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                 sgn1 = h / h.norm();
 
                 if ( useAnaliticalLambda ) {
-                    dLambda = get_Lambda(stiffT, m->giveKin(), this->alphaKin.norm(), m->giveGamma(), this->damageShear, this->temp_slip.norm(), this->sPi.norm() );
+                    dLambda = get_Lambda( stiffT, m->giveKin(), this->alphaKin.norm(), m->giveGamma(), this->damageShear, this->temp_slip.norm(), this->sPi.norm() );
                 } else {
                     dLambda = f_trial / ( ( stiffT / ( 1 - temp_damageShear ) ) + m->giveGamma() + m->giveKin() );
                     // dLambda =  dot((temp_slip - slip) * stiffT, sgn1) / (( stiffT / (1 - damageShear) + m->giveKin() + m->giveGamma() ));
@@ -250,9 +250,9 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                     omega_dot = 0.0;//increment of shear damage
                 } else {
                     //increment of shear damage as the derivative of phi wrt thermodyn force
-                    omega_dot = pow(1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow(Ynext / m->giveS(), m->giveR() );
+                    omega_dot = pow( 1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow( Ynext / m->giveS(), m->giveR() );
                 }
-                temp_damageShear = fmax(0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );     //limited by <0,1)
+                temp_damageShear = fmax( 0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );     //limited by <0,1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
                 temp_zIso += dLambda;
@@ -291,7 +291,7 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
 
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -342,7 +342,7 @@ void FatigueShearMaterialStatus :: update() {
     prev_slip = slip;
     prev_temporarily_killed = temporarily_killed;
 
-    work_tot += ( temp_slip - slip ).dot( ( temp_stressT + stressT ) * 0.5 );
+    work_tot += ( temp_slip - slip ).dot( ( temp_stressT + stressT ) * 0.5);
 
     damageShear = temp_damageShear;
     sPi = temp_sPi;
@@ -428,14 +428,14 @@ Matrix FatigueShearMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 std :: string FatigueShearMaterialStatus :: giveLineToSave() const {
-    return "slip " + to_string_sci( this->slip.y() ) + " " +
-           to_string_sci( this->slip.z() ) +
-           " slip_free " + to_string_sci( this->slip_free.y() ) + " " +
-           to_string_sci( this->slip_free.z() ) +
-           " sPi " + to_string_sci( this->sPi.y() ) + " " +
-           to_string_sci( this->sPi.z() ) +
-           " alphaKin " + to_string_sci( this->alphaKin.y() ) + " " +
-           to_string_sci( this->alphaKin.z() ) +
+    return "slip " + to_string_sci(this->slip.y() ) + " " +
+           to_string_sci(this->slip.z() ) +
+           " slip_free " + to_string_sci(this->slip_free.y() ) + " " +
+           to_string_sci(this->slip_free.z() ) +
+           " sPi " + to_string_sci(this->sPi.y() ) + " " +
+           to_string_sci(this->sPi.z() ) +
+           " alphaKin " + to_string_sci(this->alphaKin.y() ) + " " +
+           to_string_sci(this->alphaKin.z() ) +
            " damageShear " + to_string_sci(this->damageShear) +
            " zIso " + to_string_sci(this->zIso) +
            " temporarily_killed " + to_string_sci(this->temporarily_killed);
@@ -444,7 +444,7 @@ std :: string FatigueShearMaterialStatus :: giveLineToSave() const {
 void FatigueShearMaterialStatus :: readFromLine(istringstream &iss) {
     std :: string param;
     double y, z;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("slip") == 0 ) {
             iss >> y >> z;
             this->slip = Point(0, y, z);
@@ -488,7 +488,7 @@ void FatigueShearMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool btau, bkin, bgam, bs, bc, br, bm, bat;
     btau = bkin = bgam = bs = bc = br = bm = bat = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("tauBar") == 0 ) {
             btau = true;
             iss >> tauBar;
@@ -663,7 +663,7 @@ bool DamagePlasticMaterialStatus :: giveValues(string code, Vector &result) cons
 void DamagePlasticMaterialStatus :: init() {
     RigidBodyContact *rbc = static_cast< RigidBodyContact * >( element );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
-    strain_displ_multiplier = pow( rbc->giveLength(), int( m->useDispl() ) );
+    strain_displ_multiplier = pow(rbc->giveLength(), int( m->useDispl() ) );
     damage_residuum = m->giveDamageResiduum();
 
     damage = temp_damage = prev_damage = 0;
@@ -699,7 +699,7 @@ void DamagePlasticMaterialStatus :: init() {
 Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     ( void ) timeStep;
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
@@ -737,7 +737,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
                 temp_rN = rN;
             } else {
                 // update tensile internal variables
-                temp_damage = fmin( 1 - 1e-10, fmax( 0, 1 - 1 / ( 1 + m->giveAd() * ( temp_Y - Y_n0 ) ) ) );
+                temp_damage = fmin(1 - 1e-10, fmax(0, 1 - 1 / ( 1 + m->giveAd() * ( temp_Y - Y_n0 ) ) ) );
                 temp_rN = -temp_damage;
                 temp_alphaN = alphaN;
                 temp_zN = zN;
@@ -753,7 +753,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
                                   exp( ( -Kt / m->giveTensileStrength() ) *
                                        ( ( temp_epsN - epsNP ) - m->giveElasticLimit() ) );
                 double dam = 1 - sigma_eq / ( m->giveE0() * ( temp_epsN - epsNP ) );
-                temp_damage = fmin( 1, fmax(damage, dam) );
+                temp_damage = fmin(1, fmax(damage, dam) );
             }
         }
 
@@ -806,7 +806,7 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
 //////////////////////////////////////////////////////////
 Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
@@ -941,7 +941,7 @@ std :: string DamagePlasticMaterialStatus :: giveLineToSave() const {
 void DamagePlasticMaterialStatus :: readFromLine(istringstream &iss) {
     // TODO finish this
     std :: string param;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("epsN") == 0 ) {
             iss >> this->epsN;
         } else if ( param.compare("epsNP") == 0 ) {
@@ -976,7 +976,7 @@ void DamagePlasticMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bfc, bft, bgam, bkin, bAd, bm, bGt, bKt;
     bfc = bft = bgam = bkin = bAd = bm = bGt = bKt = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("fc") == 0 ) {
             bfc = true;
             iss >> fc;
@@ -1114,7 +1114,7 @@ void FatigueMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     Vector res;
     for ( size_t i = 0; i < ( size_t ) strain.size(); i++ ) {
         if ( i == 0 ) {//normal direction (damage plastic material)
@@ -1142,7 +1142,7 @@ Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep
 
 //////////////////////////////////////////////////////////
 Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     //Normal stress
     stress [ 0 ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ 0 ];
@@ -1314,7 +1314,7 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
     Point I(1, 1, 1);
 
     Y = eps * ( -1 ) * m->giveG() - eps * eps.sum() * m->giveAlphaDam() -
-        Point( pow(eps.x(), 2), pow(eps.y(), 2), pow(eps.z(), 2) ) * 2 * m->giveBetaDam();
+        Point(pow(eps.x(), 2), pow(eps.y(), 2), pow(eps.z(), 2) ) * 2 * m->giveBetaDam();
 
     if ( Y.x() < 0 ) {
         Y.x() = ( 0 );                ///< only positive part needed
@@ -1333,13 +1333,13 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
 
     if ( treshold_func > 0 ) {
         double yield_func = ( m->giveG() / sqrt(2) ) * eps_plus.norm() - ( m->giveC0() - m->giveC1() * damage.sum() );
-        temp_damage = damage + eps_plus * ( 1 / sqrt( 2 * eps_plus.squaredNorm() ) ) *
+        temp_damage = damage + eps_plus * ( 1 / sqrt(2 * eps_plus.squaredNorm() ) ) *
                       ( eps_plus.dot(eps_plus - eps_plus_prev) / ( m->giveC1() * eps_plus.sum() ) ) *
-                      pow( yield_func / m->giveK(), m->giveN() );
+                      pow(yield_func / m->giveK(), m->giveN() );
 
-        temp_damage << ( fmax( 0, fmin(temp_damage.x(), 1) ),
-                         fmax( 0, fmin(temp_damage.y(), 1) ),
-                         fmax( 0, fmin(temp_damage.z(), 1) ) );
+        temp_damage << ( fmax(0, fmin(temp_damage.x(), 1) ),
+                         fmax(0, fmin(temp_damage.y(), 1) ),
+                         fmax(0, fmin(temp_damage.z(), 1) ) );
     } else {
         temp_damage = damage;
     }
@@ -1350,7 +1350,7 @@ Vector AllicheMaterialStatus :: giveStress(const Vector &strain, double timeStep
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
     calculateDamage(strain);
 
     // NOTE use of damage as Point makes its calclulation more simple, but here it becomes quite messy
@@ -1367,7 +1367,7 @@ Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strai
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     stress [ 0 ] = ( 1 - temp_damage.x() ) * m->giveE0() * strain [ 0 ];
     for ( unsigned i = 1; i < strain.size(); i++ ) {
@@ -1431,7 +1431,7 @@ void AllicheMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bC0, bC1, bK, bG, bAl, bBe, bN;
     bC0 = bC1 = bK = bG = bAl = bBe = bN = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("C0") == 0 ) {
             bC0 = true;
             iss >> C0;
@@ -1547,7 +1547,7 @@ Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type) const {
 //////////////////////////////////////////////////////////
 Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
     for ( unsigned i = 0; i < strain.size(); i++ ) {
@@ -1569,7 +1569,7 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeSte
         Point deltaEps = ( ( sigmaPiTilda - alphaKin * m->giveGamma() ) / ( ( sigmaPiTilda - alphaKin * m->giveGamma() ).norm() ) ) * deltaPi;
         temp_epsPi = epsPi + deltaEps;
         temp_Y = 0.5 * m->giveE0() * pow(epsN, 2) + 0.5 * m->giveE2() * ( epsT - temp_epsPi ).squaredNorm();
-        temp_damage = fmax( 0, fmin(damage + ( temp_Y / m->giveS() ) * deltaPi, 1) );
+        temp_damage = fmax(0, fmin(damage + ( temp_Y / m->giveS() ) * deltaPi, 1) );
         temp_zIso = zIso + deltaPi * ( 1 - temp_damage );
         temp_alphaKin = alphaKin + deltaEps * ( 1 - temp_damage );
     } else {
@@ -1592,7 +1592,7 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeSte
 //////////////////////////////////////////////////////////
 Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero( strain.size() );
+    Vector stress = Vector :: Zero(strain.size() );
 
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
 
@@ -1643,7 +1643,7 @@ void DesmoratMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bS0, bK, bG, bS;
     bS0 = bK = bG = bS = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("Sigma0") == 0 ) {
             bS0 = true;
             iss >> Sigma0;
