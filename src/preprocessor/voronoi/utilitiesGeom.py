@@ -837,7 +837,7 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
 
     totalPointCount = len(nodes_out) + len(aux_nodes) + len(vertices_out)
 
-    print('SACING DOMEME')
+
     #checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
 
@@ -1213,17 +1213,17 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
 
     # Mechanical Elements
     #######################################################################################################
-    
+
     print ('Periodic model, filtering ridges...', end = '')
     # voronoi points inside the RVE (maxLim = circ diameter)
     inside_idcs = list(range(len(node_coords)))[:len(node_coords)//2]
     is_positive = np.where(vor.points[:,0]>=0)[0]
-    
+
     mechElemParticles_orig = np.zeros((0,2)).astype(int)
     mechElemVerts = []
 
     print('\nPocet nodu, se kterymi pocital voronoj: %d' %len(vor.points))
-            
+
     maxIdx = vor.ridge_points.max()
     print('Nejvyssi index nodu v ridges: %d' %maxIdx)
 
@@ -1258,8 +1258,8 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
             if ridge[0] not in masters_orig and ridge[1] not in slaves_orig:
                 islave = ridge[1]; imaster = islave - nnodes
                 coupling_orig.append([imaster, islave]); RVEnodes_orig.add(islave)
-                slaves_orig.append(islave); masters_orig.append(imaster) 
-    
+                slaves_orig.append(islave); masters_orig.append(imaster)
+
             mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
             mechElemVerts.append(vor.ridge_vertices[int(ir)])
 
@@ -1270,7 +1270,7 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     ## ver. B: select only regions on the boundary of the RVE
     # from shapely.geometry import Point
     # from shapely.geometry.polygon import Polygon
-    
+
     # boundary_regions = []
     # iregions = []
 
@@ -1368,7 +1368,7 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     particles = np.column_stack((RVEnodes_renum, np.zeros(len(sort_idx))))
     saveNodes(master_folder, particles, 'Particle', dim, nodesFile)     # nodesFile = 'nodes.inp'
     saveNodes(master_folder, vertices_renum, 'AuxNode', dim, verticesFile)
-    
+
     inpf = open(os.path.join(master_folder, mechElemsFile), 'w')
     inpf.write("#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n")
     for k in range(len(mechElemParticles_renum)):
@@ -2260,7 +2260,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                     fmt='LTCBEAM\t%d\t%d\t%d'
                 if coupled == True:
                     fmt='LTCBEAMCoupled\t%d\t%d\t%d'
-                print('LTCBEAM ',ro[0], '\t0')
+                #print('LTCBEAM ',ro[0], '\t0')
                 np.savetxt(fl,  ro, delimiter='\t', fmt=fmt+'\t%d'*(ro.shape[1]-3)+ '\t0')
 
             if i >= trueMechElements:
