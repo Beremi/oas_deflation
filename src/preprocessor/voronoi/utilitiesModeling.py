@@ -275,16 +275,16 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
 
     if (model=='hangingfraczone'):
         if (dim==2):
-            boundA = np.array(  [ maxLim[0]+20e-5             , maxLim[2]-20e-5 ] )
+            boundA = np.array(  [ maxLim[0]+10e-5             , maxLim[2]-10e-5 ] )
             matZ.append (boundA)
-            boundB = np.array(  [ maxLim[1]-20e-5    , maxLim[3]-20e-5 ] )
+            boundB = np.array(  [ maxLim[1]-10e-5    , maxLim[3]-10e-5 ] )
             matZ.append (boundB)
-            boundA1 = np.array(  [ maxLim[0]+20e-5             , maxLim[2]-20e-5    ] )
+            boundA1 = np.array(  [ maxLim[0]+10e-5             , maxLim[2]-10e-5    ] )
             matZ.append (boundA1)
-            boundB1 = np.array(  [ maxLim[1]-20-5    , maxLim[3]-20e-5 ] )
+            boundB1 = np.array(  [ maxLim[1]-10-5    , maxLim[3]-10e-5 ] )
             matZ.append (boundB1)
             materialZones.append(matZ)
-
+            
         if (dim==3):
             boundA = np.array(  [ maxLim[0]+1e-5             , maxLim[2]-1e-5     , -1e-8] )
             matZ.append (boundA)
@@ -1578,6 +1578,35 @@ def create2d_Hanging_FracZone(maxLim, minDist, trials):
 
 
     return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, [], functions
+
+def create2d_box_with_periodic_nodes(maxLim, minDist, trials):
+    print('Creating 2d frac zone...')
+    dim=2
+
+    ### sampling of nodes
+    ### direct setting of mechanicalBCs
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii  = assemble2d_box_with_periodic_nodes(maxLim, minDist, trials)
+
+    print('Conducting Power tesselation...', end = '')
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, dim, maxLim)
+    print('done.')
+
+
+    #### Defining functions
+    #0 constant zero
+    fn = utilitiesNumeric.constantFunc(0)
+    functions.append (fn)
+
+    #2 mech loading function
+    func2 = []
+    func2.append( np.array([0,0]) )
+    func2.append( np.array([1, 3e-5]) )
+    fn2 = utilitiesNumeric.generalFunc(func2)
+    functions.append (fn2)
+
+
+    return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, [], functions, radii
 
 
 
@@ -5114,6 +5143,56 @@ def assemble2d_Hanging_FracZone(maxLim, minDist, trials):
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
 
     return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
+
+def assemble2d_box_with_periodic_nodes(maxLim, minDist, trials):
+    dim = 2
+    node_coords = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+    functions = []
+
+    indent = 1e-8
+
+    oldlen = len(node_coords)
+    nodeA = np.array([minDist*0.4, indent])
+    nodeB = np.array([maxLim[0]-minDist*0.4, indent])
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.5, dim, node_coords, trials*20, catchCorners=True, equidist=False)
+    newnodes = np.copy(node_coords[oldlen:])
+    for k in newnodes:
+        k[1] = maxLim[1]-indent
+        node_coords.append(k)
+    nodeA = np.array([indent, minDist*0.4])
+    nodeB = np.array([indent, maxLim[1]-minDist*0.4])
+    oldlen = len(node_coords)
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist*0.5, dim, node_coords, trials*20, catchCorners=True, equidist=False)
+    newnodes = np.copy(node_coords[oldlen:])
+    for k in newnodes:
+        k[0] = maxLim[0]-indent
+        node_coords.append(k)
+
+    node_coords = np.array(node_coords)
+    radii = np.zeros(len(node_coords))+minDist*0.4
+
+    print("MAX LIM", maxLim)
+    #pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+    node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, 2, trials, node_coords, np.array(radii), allow_domain_overlap = False, periodic_distance=False)
+
+    leftRigidPlateMechBC = np.array([0, 0,0,   -1,-1,-1])
+    leftRigidPlate = utilitiesMech.RigidPlate(-1, 2, None, directIdcs=True )
+    rigidPlates.append(leftRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2-0.01, 0.011]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, leftRigidPlateMechBC))
+
+    rightRigidPlateMechBC = np.array([1, 0,0,   -1,-1,-1])
+    rightRigidPlate = utilitiesMech.RigidPlate(-1, 2, None, directIdcs=True )
+    rigidPlates.append(rightRigidPlate)
+    govNodes.append(np.array([ maxLim[0]/2+0.01, 0.011]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
+
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii
 
 
 

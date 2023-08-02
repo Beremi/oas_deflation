@@ -22,7 +22,7 @@ void Block :: readFromLine(istringstream &iss) {
     string param;
     bool ba = false;
     bool bb = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("min_point") == 0 ) {
             iss >> x >> y;
             if ( dim == 3 ) {
@@ -80,7 +80,7 @@ void Circle :: readFromLine(istringstream &iss) {
     string param;
     bool bcenter = false;
     bool brad = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("center") == 0 ) {
             iss >> x >> y;
             mainPoint = Point(x, y, 0);
@@ -134,7 +134,7 @@ void Sphere :: readFromLine(istringstream &iss) {
     string param;
     bool bcenter = false;
     bool brad = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("center") == 0 ) {
             iss >> x >> y >> z;
             mainPoint = Point(x, y, z);
@@ -221,7 +221,7 @@ void Cylinder :: readFromLine(std :: istringstream &iss) {
     bool bbcenter = false;
     bool btcenter = false;
     bool brad = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("center_bottom") == 0 ) {
             iss >> x >> y >> z;
             A = Point(x, y, z);
@@ -303,8 +303,8 @@ bool isInCircle(const Point &P, const Point &center, const double &radius,
 // point q lies on line segment 'pr'
 bool onSegment(const Point &p, const Point &q, const Point &r)
 {
-    if ( q.x() <= max( p.x(), r.x() ) && q.x() >= min( p.x(), r.x() ) &&
-         q.y() <= max( p.y(), r.y() ) && q.y() >= min( p.y(), r.y() ) ) {
+    if ( q.x() <= max(p.x(), r.x() ) && q.x() >= min(p.x(), r.x() ) &&
+         q.y() <= max(p.y(), r.y() ) && q.y() >= min(p.y(), r.y() ) ) {
         return true;
     }
     return false;
@@ -418,7 +418,7 @@ void RegionContainer :: readFromFile(const std :: string &filename, unsigned d) 
     dim = d;
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -481,7 +481,7 @@ bool RegionContainer :: isLocationValid(const Point p, const vector< unsigned >i
 void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions, unsigned dim) {
     size_t origsize = regions.size();
     string line, regionType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -493,11 +493,11 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
                 if ( regionType.compare("box") == 0 || regionType.compare("rectangle") == 0 ) {
                     auto newregion = std :: make_unique< Block >(dim);
                     newregion->readFromLine(iss);
-                    regions.push_back( std :: move(newregion) );
+                    regions.push_back(std :: move(newregion) );
                 } else if ( regionType.compare("circle") == 0 || regionType.compare("sphere") == 0 ) {
                     auto newregion = std :: make_unique< Sphere >();
                     newregion->readFromLine(iss);
-                    regions.push_back( std :: move(newregion) );
+                    regions.push_back(std :: move(newregion) );
                 } else {
                     cerr << "Error: region type '" <<  regionType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -530,7 +530,7 @@ bool isInsideRegions(const std :: vector< std :: unique_ptr< Region > > &regions
     for ( auto const &reg : regions ) {
         inside = 0;
         for ( auto const &n : el->giveNodes() ) {
-            if ( reg->isInside( n->givePoint() ) ) {
+            if ( reg->isInside(n->givePoint() ) ) {
                 inside++;  // must be in the same region, not in two neighboring
             }
         }

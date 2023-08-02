@@ -201,7 +201,7 @@ void VectTrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
     bool bturtuosity, bbiot;
     bturtuosity = bbiot = false;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("crack_turtuosity") == 0 ) {
             bturtuosity = true;
             iss >> crack_turtuosity;
@@ -261,7 +261,7 @@ double VectMechMaterialStatus :: giveDensity() const {
 
 //////////////////////////////////////////////////////////
 Vector VectMechMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
-    return VectMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+    return giveStressWithFrozenIntVars(strain, timeStep);
 };
 
 //////////////////////////////////////////////////////////
@@ -269,7 +269,7 @@ Vector VectMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &stra
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -342,7 +342,7 @@ void VectMechMaterial :: readFromLine(istringstream &iss) {
     bool bE0, balpha, bdensity;
     bE0 = balpha = bdensity = false;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("E0") == 0 ) {
             bE0 = true;
             iss >> E0;
@@ -374,5 +374,93 @@ void VectMechMaterial :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 MaterialStatus *VectMechMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
     VectMechMaterialStatus *newStatus = new VectMechMaterialStatus(this, e, ipnum); //needs to be deleted manually
+    return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// VECTORIAL MECHANICAL ELASTIC MATERIAL WITH ROTATIONAL STIFFNESS
+//////////////////////////////////////////////////////////
+
+VectMechMaterialWithRotationalStiffnessStatus :: VectMechMaterialWithRotationalStiffnessStatus(VectMechMaterialWithRotationalStiffness *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
+    name = "discrete mechanical mat. status";
+    mat = m;
+}
+
+//////////////////////////////////////////////////////////
+Matrix VectMechMaterialWithRotationalStiffnessStatus :: giveStiffnessTensor(string type) const {
+    ( void ) type;
+    unsigned ss = mat->giveStrainSize();
+    VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
+    RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );
+    double A = rbcr->giveArea();
+    double I = rbcr->giveMomentOfInertia();
+    double l = rbcr->giveLength();
+    double nIP = rbcr->giveNumIP();
+    Matrix D = Matrix :: Zero(ss, ss);
+    D(0, 0) = m->giveE0();
+    size_t i = 1;
+    for ( ; i < m->giveDimension(); i++ ) {
+        D(i, i) =  m->giveAlpha() * m->giveE0();
+    }
+    for ( ; i < ss; i++ ) {
+        D(i, i) =  m->giveBeta() * m->giveE0() * l * I / A;
+    }
+    return D;
+}
+
+//////////////////////////////////////////////////////////
+Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
+    temp_strain = addEigenStrain(strain);
+    VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
+    temp_stress.resize(strain.size() );
+    temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
+    unsigned dim = m->giveDimension();
+    RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );
+    double A = rbcr->giveArea();
+    double I = rbcr->giveMomentOfInertia();
+    double l = rbcr->giveLength();
+    double nIP = rbcr->giveNumIP();
+    size_t i = 1;
+    for ( ; i < dim; i++ ) {
+        temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
+    }
+    for ( ; i < strain.size(); i++ ) {
+        temp_stress [ i ] = m->giveBeta() * m->giveE0() * temp_strain [ i ] * l * I / A;
+    }
+    return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+bool VectMechMaterialWithRotationalStiffnessStatus ::  giveValues(string code, Vector &result) const {
+    return MaterialStatus :: giveValues(code, result);
+}
+
+//////////////////////////////////////////////////////////
+void VectMechMaterialWithRotationalStiffness :: readFromLine(istringstream &iss) {
+    VectMechMaterial :: readFromLine(iss);
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+
+    string param;
+    bool bbeta;
+    bbeta = false;
+
+    while (  iss >> param ) {
+        if ( param.compare("beta") == 0 ) {
+            bbeta = true;
+            iss >> beta;
+        }
+    }
+    if ( !bbeta ) {
+        cerr << name << ": material parameter 'beta' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *VectMechMaterialWithRotationalStiffness :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    VectMechMaterialWithRotationalStiffnessStatus *newStatus = new VectMechMaterialWithRotationalStiffnessStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
 };

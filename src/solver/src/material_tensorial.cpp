@@ -67,7 +67,7 @@ double TensTrsprtMaterialStatus :: calculatePressureDependentPermeability(double
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -119,7 +119,7 @@ void TensTrsprtMaterial :: readFromLine(istringstream &iss) {
     bool bcapacity, bpermeability, bviscosity, bdensity;
     bcapacity = bpermeability = bviscosity = bdensity = false;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("capacity") == 0 ) {
             bcapacity = true;
             iss >> capacity;
@@ -236,7 +236,7 @@ void TensHeatConductionMaterial :: readFromLine(istringstream &iss) {
     bool bcapacity, bconductivity, bdensity;
     bcapacity = bconductivity = bdensity = false;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("capacity") == 0 ) {
             bcapacity = true;
             iss >> capacity;
@@ -371,7 +371,7 @@ void TensMechMaterial :: readFromLine(istringstream &iss) {
     bool bE, bnu, bdensity;
     bE = bnu = bdensity = false;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("E") == 0 ) {
             bE = true;
             iss >> E;
@@ -477,7 +477,7 @@ void TensCosseratMechMaterial :: readFromLine(istringstream &iss) {
     bool blc, bmuc;
     blc = bmuc = false;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("lc") == 0 ) {
             blc = true;
             iss >> lc;

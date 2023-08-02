@@ -59,7 +59,7 @@ public:
     virtual void solve() {};
     virtual void giveValues(std :: string code, Vector &result) const;
     virtual void rebuild();
-    Vector giveResiduals() const {return residuals;};
+    Vector giveResiduals() const { return residuals; };
 };
 
 //////////////////////////////////////////////////////////

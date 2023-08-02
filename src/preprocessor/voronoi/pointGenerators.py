@@ -1802,7 +1802,6 @@ def generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords, trials, cat
             #Adding node coords
             if (tr < trials):
                 node_coords.append(coords)
-
     else:
         #print('Equid')
         mD = minDist

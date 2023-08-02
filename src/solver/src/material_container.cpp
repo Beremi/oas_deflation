@@ -43,7 +43,7 @@ Material *MaterialContainer :: giveMaterial(unsigned const mat) {
 void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
     size_t origsize = matrs.size();
     string line, matType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     unsigned id = 0;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
@@ -128,7 +128,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                 } else if ( matType.compare("FatigueMaterial") == 0 ) {
                     FatigueMaterial *newmat = new FatigueMaterial(dim);
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( FatigueShearMaterial * ) newmat);
+                    matrs.push_back( ( FatigueShearMaterial * ) newmat );
                 } else if ( matType.compare("Slide32Material") == 0 ) {
                     Slide32Material *newmat = new Slide32Material(dim);
                     newmat->readFromLine(iss);
@@ -155,6 +155,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("FiberMaterial") == 0 ) {
                     FiberMaterial *newmat = new FiberMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("VectMechMaterialWithRotationalStiffness") == 0 ) {
+                    VectMechMaterialWithRotationalStiffness *newmat = new VectMechMaterialWithRotationalStiffness(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else {

@@ -432,6 +432,8 @@ class Model:
             self.run_2d_CFRAC_TDCB()
         if self.modelType == '3d_CFRAC_TDCB':
             self.run_3d_CFRAC_TDCB()
+        if self.modelType == '2d_box_with_periodic_nodes':
+            self.run_2d_box_with_periodic_nodes()
         if self.modelType == '2d_Hanging_FracZone':
             self.run_2d_Hanging_FracZone()
         if self.modelType == '3d_Hanging_FracZone':
@@ -714,7 +716,7 @@ class Model:
 
         (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create2d_CFRAC_Clover(self.maxLim, self.minDist, self.trials, self.holeMinDist, self.holeDiameter, self.baseMinDist,self.fineWidth,self.fineHeight, -1, 1)
 
-        self.materialZones= utilitiesModeling.assembleMaterialZones (self.maxLim[0]/2-self.fineWidth, 2, model='box', maxLim=self.maxLim)
+        self.materialZones= utilitiesModeling.assembleMaterialZones (self.maxLim[0]/2-self.fineWidth, 2, model='box', maxLim=[self.fineWidth,self.fineHeight])
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
             self.govNodesTrspt=[]
@@ -766,6 +768,22 @@ class Model:
             self.govNodesTrsptBC = []
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('hangingfraczone')
+
+    def run_2d_box_with_periodic_nodes(self, node_coords_init=None):
+        self.activeTransport = False
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create2d_box_with_periodic_nodes(self.maxLim, self.minDist, self.trials)
+
+        #coords = np.asarray(self.node_coords)
+        #lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),np.amax(coords[:,1])]
+
+        #self.materialZones= utilitiesModeling.assembleMaterialZones (0, 2, model='hangingfraczone', maxLim=lims)
+
+        #if self.activeTransport == False:
+        #    self.rigidPlatesTrspt = []
+        #    self.govNodesTrspt=[]
+        #    self.govNodesTrsptBC = []
+
+        
 
     def run_3d_Hanging_FracZone(self, node_coords_init=None):
         self.activeTransport = False

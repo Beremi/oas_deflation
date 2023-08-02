@@ -40,7 +40,7 @@ public:
     double giveArea(unsigned i) const { return areas [ i ]; }
     Point giveNormal(unsigned i) const { return normals [ i ]; }
     std :: vector< Node * >giveVertices() const { return vert; };
-    Node * giveVertex(unsigned i) const { return vert[i]; };
+    Node *giveVertex(unsigned i) const { return vert [ i ]; };
     unsigned giveNumOfVertices() const { return vert.size(); };
 
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);

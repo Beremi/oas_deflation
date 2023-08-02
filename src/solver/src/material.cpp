@@ -66,7 +66,19 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 
 //////////////////////////////////////////////////////////
 bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
-    if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
+    if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
+        result.resize( temp_strain.size() );
+        for ( unsigned i = 0; i < result.size(); i++ ) {
+            result [ i ] = temp_stress [ i ];
+        }
+        return true;
+    } else if ( code.compare("strain") == 0  || code.compare("strains") == 0 ) {
+        result.resize( temp_strain.size() );
+        for ( unsigned i = 0; i < result.size(); i++ ) {
+            result [ i ] = temp_strain [ i ];
+        }
+        return true;
+    } else if ( code.compare("materialID") == 0 || code.compare("materialId") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
         return true;
@@ -122,7 +134,7 @@ CoupledMaterialStatus :: CoupledMaterialStatus(Material *m, Element *e, unsigned
 
 
     vector< Material * >mats = cm->giveMaterials();
-    stats.resize( mats.size() );
+    stats.resize(mats.size() );
     for ( unsigned i = 0; i < mats.size(); i++ ) {
         stats [ i ] = mats [ i ]->giveNewMaterialStatus(e, ipnum);
     }

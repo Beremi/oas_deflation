@@ -119,7 +119,7 @@ bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result)
             result.resize(1);
             result [ 0 ] = DoFs [ firstDoF + converted ];
             return true;
-        } else  {
+        } else {
             cerr << name << "Error: Requested DoFid exceeded number of DoFs: " << code << endl;
             exit(1);
         }
@@ -172,7 +172,7 @@ unsigned Node :: giveOrderOfEnergyConjugateCode(string code) const {
     if ( !* pEnd ) {
         if ( converted < nDoFs ) {
             return firstDoF + converted;
-        } else  {
+        } else {
             cerr << name << "Error: Requested DoFid exceeded number of DoFs: " << code << endl;
             exit(1);
         }
@@ -186,7 +186,7 @@ unsigned Node :: giveOrderOfEnergyConjugateCode(string code) const {
 //////////////////////////////////////////////////////////
 // MECHANICAL NODE - translational DoFs
 void Node :: init() {
-    nDoFs = std :: reduce( physicalFieldsDoFNum.begin(), physicalFieldsDoFNum.end() );
+    nDoFs = std :: reduce(physicalFieldsDoFNum.begin(), physicalFieldsDoFNum.end() );
 };
 
 //////////////////////////////////////////////////////////
@@ -352,7 +352,7 @@ Point Particle :: calculateRigidBodyMotionPoint(const Point *x, const Vector &Do
 
 //////////////////////////////////////////////////////////
 Matrix Particle :: giveRigidBodyMotionMatrix(const Point *x) const {
-    Matrix A = Matrix :: Zero( dim, 3 * ( dim - 1 ) );
+    Matrix A = Matrix :: Zero(dim, 3 * ( dim - 1 ) );
     if ( dim == 3 ) {
         A(0, 0) = A(1, 1) = A(2, 2) = 1;
         A(1, 3) = point.z() - x->z();

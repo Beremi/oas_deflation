@@ -98,7 +98,7 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
     string param;
     bool btec = false;
     bool binitemp = false;
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("therm_exp_coeff") == 0 ) {
             btec = true;
             iss >> tec;
@@ -125,7 +125,7 @@ MaterialStatus *ThermoMechanicalMaterial :: giveNewMaterialStatus(Element *e, un
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterialStatus ::  addTemperatureEffectToMechanics() {
     ThermoMechanicalMaterial *tmm = static_cast< ThermoMechanicalMaterial * >( mat );
-    Vector eig = Vector :: Zero( mat->giveDimension() );
+    Vector eig = Vector :: Zero(mat->giveDimension() );
     eig [ 0 ] = ( temperature - tmm->giveInitialTemperature() ) * tmm->giveThermalExpansionCoeff();
     stats [ 0 ]->setEigenStrain(eig);
 };

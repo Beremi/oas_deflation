@@ -130,17 +130,6 @@ public:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 template< typename T >
 std :: string to_string_sci(const T a_value)
 {

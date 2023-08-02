@@ -101,7 +101,7 @@ void CoulombFrictionMaterial :: readFromLine(istringstream &iss) {
     bis = bfa = false;
     string param;
 
-    while (  iss >> param ) { 
+    while (  iss >> param ) {
         if ( param.compare("initStiffness") == 0 ) {
             bis = true;
             iss >> init_stiffness;
