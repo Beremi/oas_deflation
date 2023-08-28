@@ -1367,19 +1367,29 @@ except:
     """
 
 
-def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist, node_coords, trials):
+def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist, node_coords, trials,gradient_radius=0,maxMinDist=1):
     print ('Generating a 3d cylinder segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
-
+    
     tr=0
     while (tr<trials):
         tr = 0;
         #
         distIsGood = False
         while (distIsGood == False):
-            coords = randPointInCilinder(center, radius, height, directionDim)
-            #
-            distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
-            #
+            if gradient_radius>0:
+                coords = randPointInCilinder(center, radius+gradient_radius, height, directionDim)
+                rel_radius = np.linalg.norm(center[0:2]-coords[0:2])
+                if rel_radius<radius:
+                    distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords[0:3])
+                else:
+                    dist_coef = (rel_radius-radius)/(gradient_radius)
+                    mD = minDist + dist_coef * (maxMinDist-minDist)
+                    distIsGood = utilitiesGeom.checkMutDistancesCdist(3, mD, node_coords, coords[0:3])
+            else:
+                coords = randPointInCilinder(center, radius, height, directionDim)
+                #
+                distIsGood = utilitiesGeom.checkMutDistancesCdist(3, minDist, node_coords, coords)
+                #
             if (distIsGood == False):
                 tr += 1
             if (tr > trials): break
@@ -1388,14 +1398,14 @@ def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDis
         #Adding node coords
         if (tr < trials):
             node_coords.append(coords)
-
+"""
 try:
     from point_generators_cython import generateNodesOrtoCilinder3dRand_cython as generateNodesOrtoCilinder3dRand
     print('Using Cython version of point generator - generateNodesOrtoCilinder3dRand.')
 except:
     print('''Using Python version of generator. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
-
+"""
 
 
 def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, minDist, node_coords, trials, angleLimitA=None, angleLimitB=None, mirrorIndent=None, equia
@@ -1705,9 +1715,9 @@ def randPointInCilinder(center, radius, height, directionDim):
         point[1] = height * np.random.uniform()
         point[2] = radius * np.sin(angle) * rn
     if (directionDim == 2):
-        point[0] = radius * np.cos(angle) * rn
-        point[1] = radius * np.sin(angle) * rn
-        point[2] = height * np.random.uniform()
+        point[0] += radius * np.cos(angle) * rn
+        point[1] += radius * np.sin(angle) * rn
+        point[2] += height * np.random.uniform()
 
     return point
 

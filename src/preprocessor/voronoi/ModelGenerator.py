@@ -276,8 +276,12 @@ class Model:
             if (r[i]=='dmgBand'):
                 self.dmgBand = float(r[i+1])
 
+            if (r[i]=='shotRad'):
+                self.shotRad = float(r[i+1])
             if (r[i]=='cylinderRad'):
                 self.cylinderRad = float(r[i+1])
+            if (r[i]=='gradientRadius'):
+                self.gradientRadius = float(r[i+1])
             if (r[i]=='cylinderHeight'):
                 self.cylinderHeight = float(r[i+1])
             if (r[i]=='notchRadLeft'):
@@ -397,6 +401,9 @@ class Model:
 
         if self.modelType == '3d_cube':
             self.run_3d_cube()
+
+        if self.modelType == '3d_balbet':
+            self.run_3d_balbet()
 
         if self.modelType == '3d_consolidation':
             self.run_3d_consolidation()
@@ -540,6 +547,10 @@ class Model:
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dCube(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
         self.materialZones=None
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('box3d', maxLim=self.maxLim)
+
+    def run_3d_balbet(self, node_coords_init=None):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dBalbet(self.maxLim, self.minDist, self.trials, self.powerTes, shotRadius=self.shotRad, shotGradientRadius=self.gradientRadius, roughMinDistCoef=self.roughMinDistCoef, coupled=self.coupled, node_coords_init=node_coords_init )
+        self.materialZones=None
 
 
     def run_3d_consolidation(self, node_coords_init=None):
