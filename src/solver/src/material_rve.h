@@ -182,6 +182,7 @@ protected:
     Matrix precompElastic, precompDamping, precompInertia;
     Point centroid;
     std :: vector< std :: vector< Vector > >projectors;
+    bool project_curvature;
 
 public:
     DiscreteMechanicalRVEMaterial(unsigned dimension);
@@ -197,6 +198,8 @@ public:
     Point giveCentroid() { return centroid; };
     std :: vector< std :: vector< Vector > > *giveProjectors() { return & projectors; };
     bool isNonlinear() const { return nonlinear; };
+    bool projectCurvature() const {return project_curvature;};
+    virtual void readFromLine(std :: istringstream &iss);
 };
 
 //////////////////////////////////////////////////////////

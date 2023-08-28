@@ -54,6 +54,7 @@ void Model :: init(const bool &initial) {     //initialization
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
     exporters.init(initial);
     bconds.setInitialDoFFields(solver);
+    cout << "Model succesfully initialized" << endl;
     // exporters.updateAllTimeAndStepToSave(solver->giveTime(), solver->giveStepNumber());  // needed especially in adaptivity
 }
 
