@@ -10,34 +10,35 @@ class FiberMaterial;
 class FiberMaterialStatus : public TensMechMaterialStatus
 {
 private:
-    double crack_opening, temp_crack_opening, incrementOfCrack, maxCrackOpening;
+    double crackOpening, temp_crackOpening, maxCrackOpening, incrementOfCrack;
     Vector crackOpeningVector;
-
-    double right_pullout, temp_rightPullout, left_pullout, temp_leftPullout;
-
-    double bridgingForce, temp_bridgingForce, rightForce, leftForce;
-    Vector stress;
-
-    double spallingLength, temp_spallingLength, deflectionAngle, fiberForce;
-    Vector w, nf;
-
-    int debondedFiber, temp_debondedFiber, pulloutOfFiber, temp_pulloutOfFiber, ruptureOfFiber, temp_ruptureOfFiber, closingCrack, temp_closingCrack;
-
+    
+    double rightPullout, temp_rightPullout, leftPullout, temp_leftPullout;
+    
+    double bridgingForce, temp_bridgingForce, fiberForce, temp_fiberForce; 
+    double rightForce, leftForce;
+    
+    double inclineAngle, deflectionAngle, spallingLength, temp_spallingLength; 
+    Vector w, mf;
+    
+    int debondedFiber, temp_debondedFiber, pulledOutFiber, temp_pulledOutFiber, rupturedFiber, temp_rupturedFiber, closingCrack, temp_closingCrack;
+    
     double df, rightLe, leftLe;
-    Point fiberNormal;
+    
+    Point fiberNormal, contactNormal;
     Vector fiberNormalLocal;
-
     double contactLength;
-    Point contactNormal;
 
-    double inclineAngle;
-
-    double right_F0, left_F0, limit_rightPullout, limit_leftPullout;
-
-    double A, B, C, v0, v_Fmax, Fmax, AA, BB, CC, v21, v22, v2Bonded_Fmax, v2Debonded_Fmax;
-    double Le1, F01, v1, vd1, Le2, F02, v2, vd2;
+    double right_F0, left_F0;
+    double criticalRightPullout, criticalLeftPullout;
+    
+    double Le1, F01, v1, vd1, Le2, F02, v2, vd2, limitPullout;
     double bridgingForce1, bridgingForce2;
-
+    
+    double A1, B1, C1, v1_Fmax, Fmax; 
+    double A2, B2, C2, v2_Fmax1, v2_Fmax2, v2_pullingOutFmax, v2_debondingFmax;
+    
+    
 public:
     FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum);
     virtual ~FiberMaterialStatus() {};
@@ -72,11 +73,27 @@ public:
     virtual void init(MaterialContainer *matcont);
 };
 
-double bridgingForce_bonded(double v, double vd, double df, double Ef, double tau0, double Gd);
-double derivF_bonded(double v, double vd, double df, double Ef, double tau0, double Gd);
-double bridgingForce_debonded(double v, double vd, double Le, double F0, double df, double betaf);
-double derivF_debonded(double v, double vd, double Le, double F0, double df, double betaf);
-double bridgingForce_unloading(double deltaX, double deltaY, double x);
-double derivF_unloading(double deltaX, double deltaY);
+//////////////////////////////////////////////////////////
+// ------- EQUATIONS FOR FIBER CONSTITUTIVE LAW ------- //
+//////////////////////////////////////////////////////////
+//------------------------------------------------------//
+//                   DEBONDING STAGE                    //
+//------------------------------------------------------//
+// -------- ORIGINAL EQUATIONS FROM LITERATURE -------- // with zero crack, there is non-zero bridging force in fiber due to the fracture energy Gd
+//double bridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd );
+//double derivBridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd );
+// ---------------- MODIFIED EQUATIONS ---------------- // linear distribution of Gd
+double bridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd );
+double derivBridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd );
+//------------------------------------------------------//
+//                  PULLING OUT STAGE                   //
+//------------------------------------------------------//
+double bridgingForcePullingOut( double v, double vd, double Le, double F0, double df, double betaf );
+double derivBridgingForcePullingOut( double v, double vd, double Le, double F0, double df, double betaf );
+//------------------------------------------------------//
+//                   UNLOADING STAGE                    //
+//------------------------------------------------------//
+double bridgingForceUnloading( double deltaX, double deltaY, double x );
+double derivBridgingForceUnloading( double deltaX, double deltaY );
 
 #endif /* _LDPM_MATERIAL_H */

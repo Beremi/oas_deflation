@@ -10,50 +10,45 @@ using namespace std;
 
 FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigned ipnum) : TensMechMaterialStatus(m, e, ipnum) {
     name = "fiber mat. status";
-    crack_opening = 0;
-    temp_crack_opening = 0;
+    crackOpening = temp_crackOpening = maxCrackOpening = 0;
     incrementOfCrack = 0;
-    maxCrackOpening = 0;
-    crackOpeningVector = Vector :: Zero( contactNormal.size() );
-
-    right_pullout = 0;
-    temp_rightPullout = 0;
-    left_pullout = 0;
-    temp_leftPullout = 0;
-
-    bridgingForce = 0;
-    temp_bridgingForce = 0;
+    crackOpeningVector = Vector :: Zero(contactNormal.size());
+        
+    rightPullout = temp_rightPullout = 0;
+    leftPullout = temp_leftPullout = 0;
+        
+    bridgingForce = temp_bridgingForce = 0;
+    fiberForce = temp_fiberForce = 0;
     rightForce = leftForce = 0;
-    temp_stress = Vector :: Zero( contactNormal.size() );
-
-    spallingLength = 0;
-    w = nf = Vector :: Zero( contactNormal.size() );
-    deflectionAngle = 0;
-    fiberForce = 0;
-
-    debondedFiber = 0;
-    temp_debondedFiber = 0;
-    pulloutOfFiber = 0;
-    temp_pulloutOfFiber = 0;
-    ruptureOfFiber = 0;
-    temp_ruptureOfFiber = 0;
-    closingCrack = 0;
-    temp_closingCrack = 0;
+    temp_stress = Vector :: Zero(contactNormal.size());
+    
+    deflectionAngle = spallingLength = temp_spallingLength = 0;
+    w = mf = Vector :: Zero(contactNormal.size());
+    
+    debondedFiber = temp_debondedFiber = 0;
+    pulledOutFiber = temp_pulledOutFiber = 0;
+    rupturedFiber = temp_rupturedFiber = 0;
+    closingCrack = temp_closingCrack = 0;
+    
 }
 
 //////////////////////////////////////////////////////////
 bool FiberMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("tempLeftPullout") == 0 || code.compare("left_pullout") == 0 ) {
+    if ( code.compare("tempLeftPullout") == 0 || code.compare("leftPullout") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_leftPullout;
         return true;
-    } else if ( code.compare("tempRightPullout") == 0 || code.compare("right_pullout") == 0 ) {
+    } else if ( code.compare("tempRightPullout") == 0 || code.compare("rightPullout") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_rightPullout;
         return true;
-    } else if ( code.compare("tempBridgingForce") == 0 || code.compare("bridging_force") == 0 ) {
+    } else if ( code.compare("tempBridgingForce") == 0 || code.compare("bridgingForce") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_bridgingForce;
+        return true;
+    } else if ( code.compare("tempFiberForce") == 0 || code.compare("fiberForce") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = temp_fiberForce;
         return true;
     } else {
         return TensMechMaterialStatus :: giveValues(code, result);
@@ -61,87 +56,94 @@ bool FiberMaterialStatus :: giveValues(string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
-void FiberMaterialStatus :: init() {
-    //  temp_stress = Vector :: Zero(contactNormal.size() );
-    //  crackOpeningVector = Vector :: Zero(contactNormal.size() );
+void FiberMaterialStatus :: init() { 
 
-    Fiber *fibElement = static_cast< Fiber * >( element );
-    df = fibElement->giveDiameter();
-    rightLe = fibElement->giveRightLength(idx);
-    leftLe = fibElement->giveLeftLength(idx);
-
-    fiberNormal = fibElement->giveDirVector();
-
-    RigidBodyContact *mechElement = static_cast< RigidBodyContact * >( fibElement->giveRBContact(idx) );
-    contactLength = mechElement->giveLength();
-    contactNormal = mechElement->giveNormal();
-
-    fiberNormalLocal = mechElement->transformToLocal(fiberNormal);
-
-    FiberMaterial *fibMaterial = static_cast< FiberMaterial * >( mat );
-    double Ef = fibMaterial->giveEf();
-    double tau0 = fibMaterial->giveTau0();
-    double Gd = fibMaterial->giveGd();
-    double betaf = fibMaterial->giveBetaf();
+    FiberMaterial* fibMaterial = static_cast < FiberMaterial* > ( mat );
+    double Ef = fibMaterial -> giveEf();    
+    double tau0 = fibMaterial -> giveTau0();
+    double Gd = fibMaterial -> giveGd();
+    double betaf = fibMaterial -> giveBetaf();
+    
+    Fiber* fibElement = static_cast < Fiber* > ( element );
+    df = fibElement -> giveDiameter();
+    rightLe = fibElement -> giveRightLength( idx );
+    leftLe = fibElement -> giveLeftLength( idx );
+    fiberNormal = fibElement -> giveDirVector();
+    
+    RigidBodyContact* mechElement = static_cast < RigidBodyContact* > ( fibElement -> giveRBContact(idx) );
+    fiberNormalLocal = mechElement -> transformToLocal( fiberNormal );
+    contactNormal = mechElement -> giveNormal();
+    contactLength = mechElement -> giveLength();
 
     right_F0 = M_PI * df * tau0 * rightLe;
     left_F0 = M_PI * df * tau0 * leftLe;
-    limit_rightPullout = 2. * tau0 * pow(rightLe, 2) / ( Ef * df ) + sqrt(8. * Gd * pow(rightLe, 2) / ( Ef * df ) );
-    limit_leftPullout = 2. * tau0 * pow(leftLe, 2) / ( Ef * df ) + sqrt(8. * Gd * pow(leftLe, 2) / ( Ef * df ) );
-
-    if ( rightLe > leftLe ) {
+    criticalRightPullout = 2. * tau0 * pow(rightLe,2) / ( Ef * df ) + sqrt( 8. * Gd * pow(rightLe,2) / ( Ef * df ) );
+    criticalLeftPullout = 2. * tau0 * pow(leftLe,2) / ( Ef * df ) + sqrt( 8. * Gd * pow(leftLe,2) / ( Ef * df ) );
+    
+    if ( abs(rightLe - leftLe) > 1e-12 and rightLe > leftLe ) {
         Le1 = leftLe;
         F01 = left_F0;
-        vd1 = limit_leftPullout;
+        vd1 = criticalLeftPullout;
         Le2 = rightLe;
         F02 = right_F0;
-        vd2 = limit_rightPullout;
-    } else if ( rightLe <= leftLe ) {
+        vd2 = criticalRightPullout;
+        limitPullout = Le1 + vd1; // at least one side of the fiber is fully pulled out of matrix
+    } else {
         Le1 = rightLe;
         F01 = right_F0;
-        vd1 = limit_rightPullout;
+        vd1 = criticalRightPullout;
         Le2 = leftLe;
         F02 = left_F0;
-        vd2 = limit_leftPullout;
+        vd2 = criticalLeftPullout;
+        limitPullout = Le1 + vd1;
     }
-    // pullout v0 -> debonded curve reaches F=0
-    v0 = Le1 + vd1;
+    
     if ( betaf > 0 ) {
-        A = -betaf;
-        B = Le1 * betaf - df + 2. * betaf * vd1;
-        C = Le1 * df - Le1 * betaf * vd1 + vd1 * df - betaf * pow(vd1, 2);
-        v_Fmax = -B / ( 2. * A ); // pullout where parabole reaches the max. bridging force
-        Fmax = bridgingForce_debonded(v_Fmax, vd1, Le1, F01, df, betaf);
-
-        AA = -betaf;
-        BB = Le2 * betaf - df + 2. * betaf * vd2;
-        CC = Le2 * df - Le2 * betaf * vd2 + vd2 * df - betaf * pow(vd2, 2) - Fmax * Le2 * df / F02;
-        v21 = ( -BB + sqrt(pow(BB, 2) - 4. * AA * CC) ) / ( 2. * AA );
-        v22 = ( -BB - sqrt(pow(BB, 2) - 4. * AA * CC) ) / ( 2. * AA );
-        if ( v21 <= v22 ) {
-            v2Debonded_Fmax = v21;
+        A1 = -betaf;
+        B1 = Le1 * betaf - df + 2. * betaf * vd1;
+        C1 = Le1 * df - Le1 * betaf * vd1 + vd1 * df - betaf * pow(vd1, 2);
+        v1_Fmax = -B1 / ( 2. * A1 );
+        Fmax = bridgingForcePullingOut( v1_Fmax, vd1, Le1, F01, df, betaf );
+        
+        A2 = -betaf;
+        B2 = Le2 * betaf - df + 2. * betaf * vd2;
+        C2 = Le2 * df - Le2 * betaf * vd2 + vd2 * df - betaf * pow(vd2,2) - Fmax * Le2 * df / F02;
+        v2_Fmax1 = ( -B2 + sqrt(pow(B2,2) - 4. * A2 * C2) ) / ( 2. * A2 );
+        v2_Fmax2 = ( -B2 - sqrt(pow(B2,2) - 4. * A2 * C2) ) / ( 2. * A2 );
+        if ( v2_Fmax1 < v2_Fmax2 ) {
+            v2_pullingOutFmax = v2_Fmax1;
         } else {
-            v2Debonded_Fmax = v22;
+            v2_pullingOutFmax = v2_Fmax2;
         }
+        
+        v2_debondingFmax = pow(Fmax,2) * 2. / ( pow(M_PI,2) * Ef * pow(df,3) * ( tau0 + Gd / vd2 ) );
+    }
+    
+    inclineAngle = acos( (fiberNormal).dot(contactNormal) );
+    if ( inclineAngle > M_PI / 2. ) {
+        inclineAngle = M_PI - inclineAngle;
     }
 }
 
 //////////////////////////////////////////////////////////
 void FiberMaterialStatus :: update() {
-    crack_opening = temp_crack_opening;
 
-    if ( crack_opening > maxCrackOpening ) {
-        maxCrackOpening = crack_opening;
+    crackOpening = temp_crackOpening;
+    if ( crackOpening > maxCrackOpening ) {
+        maxCrackOpening = crackOpening;
     } else {
-        maxCrackOpening = maxCrackOpening;
+        maxCrackOpening = maxCrackOpening; 
     }
-
-    right_pullout = temp_rightPullout;
-    left_pullout = temp_leftPullout;
+    
+    rightPullout = temp_rightPullout;
+    leftPullout = temp_leftPullout;
+    
     bridgingForce = temp_bridgingForce;
+    fiberForce = temp_fiberForce;
+    
     debondedFiber = temp_debondedFiber;
-    pulloutOfFiber = temp_pulloutOfFiber;
-    ruptureOfFiber = temp_ruptureOfFiber;
+    pulledOutFiber = temp_pulledOutFiber;
+    rupturedFiber = temp_rupturedFiber;
     closingCrack = temp_closingCrack;
 
     MaterialStatus :: update();
@@ -153,38 +155,57 @@ void FiberMaterialStatus :: resetTemporaryVariables() {
 }
 
 //////////////////////////////////////////////////////////
-double bridgingForce_bonded(double v, double vd, double df, double Ef, double tau0, double Gd) {
-    return sqrt(0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd * v / vd ) );
+// ------- EQUATIONS FOR FIBER CONSTITUTIVE LAW ------- //
+//////////////////////////////////////////////////////////
+//------------------------------------------------------//
+//                   DEBONDING STAGE                    //
+//------------------------------------------------------//
+// -------- ORIGINAL EQUATIONS FROM LITERATURE -------- // with zero crack, there is non-zero bridging force in fiber due to the fracture energy Gd
+//double bridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd ) {
+//    return sqrt( 0.5 * pow(M_PI,2) * Ef * pow(df,3) * ( tau0 * v + Gd ) );
+//}
+//double derivBridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd ) {
+//    return 0.5 / sqrt( 0.5 * pow(M_PI,2) * Ef * pow(df,3) * ( tau0 * v + Gd ) ) * ( 0.5 * pow(M_PI,2) * Ef * pow(df,3) * tau0 );
+//}
+// ---------------- MODIFIED EQUATIONS ---------------- // linear distribution of Gd
+double bridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd ) {
+    return sqrt( 0.5 * pow(M_PI,2) * Ef * pow(df,3) * ( tau0 * v + Gd * v / vd ) );
 }
-double derivF_bonded(double v, double vd, double df, double Ef, double tau0, double Gd) {
-    return 0.5 / sqrt(0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd * v / vd ) ) * ( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 + Gd / vd ) );
+double derivBridgingForceDebonding( double v, double vd, double df, double Ef, double tau0, double Gd ) {
+    return 0.5 / sqrt( 0.5 * pow(M_PI,2) * Ef * pow(df,3) * ( tau0 * v + Gd * v / vd ) ) * ( 0.5 * pow(M_PI,2) * Ef * pow(df,3) * ( tau0 + Gd / vd ) );
 }
-double bridgingForce_debonded(double v, double vd, double Le, double F0, double df, double betaf) {
+//------------------------------------------------------//
+//                  PULLING-OUT STAGE                   //
+//------------------------------------------------------//
+double bridgingForcePullingOut( double v, double vd, double Le, double F0, double df, double betaf ) {
     return F0 * ( 1 - ( v - vd ) / Le ) * ( 1 +  betaf * ( v - vd ) / df );
 }
-double derivF_debonded(double v, double vd, double Le, double F0, double df, double betaf) {
-    return F0 / ( Le * df ) * ( Le * betaf - df - 2. * v * betaf + 2. * vd * betaf );
+double derivBridgingForcePullingOut( double v, double vd, double Le, double F0, double df, double betaf ) {
+    return F0 / ( Le * df ) * ( Le * betaf - df - 2. * v * betaf + 2. * vd * betaf ); 
 }
-double bridgingForce_unloading(double deltaX, double deltaY, double x) {   // linear curve to zero
-    return deltaY / deltaX * x;
+//------------------------------------------------------//
+//                   UNLOADING STAGE                    //
+//------------------------------------------------------//
+double bridgingForceUnloading( double deltaX, double deltaY, double x ) { // linear curve to zero 
+    return deltaY / deltaX * x; 
 }
-double derivF_unloading(double deltaX, double deltaY) {
-    return deltaY / deltaX;
+double derivBridgingForceUnloading( double deltaX, double deltaY ) {
+    return deltaY / deltaX; 
 }
 
 //////////////////////////////////////////////////////////
 Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
     unsigned ss = mat->giveStrainSize();
-
+    
     Matrix stiffness = Matrix :: Zero(ss, ss);
 
-    if ( temp_bridgingForce < 1e-12 ) {
+    if ( temp_bridgingForce > 1e-12 and temp_rightPullout > 1e-12 ) {
         double alpha1, alpha2;
         alpha1 = temp_bridgingForce / ( temp_rightPullout / contactLength );
         alpha2 = temp_bridgingForce / ( temp_leftPullout / contactLength );
-        stiffness(0, 0) = stiffness(1, 1) = stiffness(2, 2) = alpha1 * alpha2 / ( alpha1 + alpha2 );
-    }
+        stiffness(0,0) = stiffness(1,1) = stiffness(2,2) = alpha1 * alpha2 / ( alpha1 + alpha2 );
+    } 
 
     //cout << "FiberMaterialStatus::giveStiffnessTensor" << endl;
     cout.flush();
@@ -195,213 +216,197 @@ Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const {
 Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) strain;
     ( void ) timeStep;
-
-    FiberMaterial *fibMaterial = static_cast< FiberMaterial * >( mat );
-    double Ef = fibMaterial->giveEf();
-    double Gd = fibMaterial->giveGd();
-    double tau0 = fibMaterial->giveTau0();
-    double betaf = fibMaterial->giveBetaf();
-    double ft = fibMaterial->giveFt();
-    double Ksn = fibMaterial->giveKsn();   // snubbing coefficient
-    double Ksp = fibMaterial->giveKsp();   // spalling coefficient
-    double Krup = fibMaterial->giveKrup();   // rupture coefficien
-
-    Fiber *fibElement = static_cast< Fiber * >( element );
-    CSLMaterialStatus *CSLMatStatus = static_cast< CSLMaterialStatus * >( fibElement->giveRBContact(idx)->giveMatStatus(0) );
-    crackOpeningVector = CSLMatStatus->giveCrackOpeningVector();
-
-    if ( crackOpeningVector [ 0 ] < 0 ) {
-        crackOpeningVector [ 0 ] = 0;
+            
+    FiberMaterial* fibMaterial = static_cast < FiberMaterial* > ( mat );
+    double Ef = fibMaterial -> giveEf();
+    double Gd = fibMaterial -> giveGd();
+    double tau0 = fibMaterial -> giveTau0();
+    double betaf = fibMaterial -> giveBetaf();
+    double ft = fibMaterial -> giveFt();
+    double Ksn = fibMaterial -> giveKsn(); // snubbing coefficient
+    double Ksp = fibMaterial -> giveKsp(); // spalling coefficient
+    double Krup = fibMaterial -> giveKrup(); // rupture coefficient
+ 
+    Fiber* fibElement = static_cast < Fiber* > ( element );
+    CSLMaterialStatus* CSLMatStatus = static_cast < CSLMaterialStatus* > ( fibElement -> giveRBContact(idx) -> giveMatStatus(0) );
+    
+    crackOpeningVector = CSLMatStatus -> giveCrackOpeningVector();
+    if ( crackOpeningVector[ 0 ] < 0 ) {
+        crackOpeningVector[ 0 ] = 0;
     }
-
-    temp_crack_opening = crackOpeningVector.norm();
-    incrementOfCrack = temp_crack_opening - crack_opening;
-
-    int iteration = 0;
-    int limit_iteration = 150;
-    double tolerance = 1e-8;
-    // ---------------------- FIBER PULLOUTS --------------------------------------------------
-    temp_rightPullout = right_pullout + incrementOfCrack / 2.;
-    temp_leftPullout = left_pullout + incrementOfCrack / 2.;
-    // ---------------------- BRIDGING FORCE --------------------------------------------------
-    if ( temp_crack_opening < 1e-12 ) { // fiber does not bridge the crack
-        temp_bridgingForce = 0;
+    temp_crackOpening = crackOpeningVector.norm();
+    incrementOfCrack = temp_crackOpening - crackOpening;
+    
+    int iteration = 0; 
+    int limIteration = 150; 
+    
+// --------------- PULLOUTS OF THE FIBER -----------------
+    temp_rightPullout = rightPullout + incrementOfCrack / 2.;
+    temp_leftPullout = leftPullout + incrementOfCrack / 2.;
+    
+// ----------------- BRIDGING FORCE ---------------------- NOTE: considering fiber perpendicular to the contact/crack face
+    if ( temp_crackOpening <= 1e-12 ) { // fiber does not bridge the crack
         temp_rightPullout = temp_leftPullout = 0;
-    } else if ( pulloutOfFiber == 1 or ruptureOfFiber == 1 ) { // fiber was pulled out or ruptured in the previous step
+        temp_bridgingForce = 0;         
+    } else if ( pulledOutFiber == 1 or rupturedFiber == 1 ) { // fiber was pulled out of matrix or ruptured in the previous step
         temp_bridgingForce = 0;
-        temp_rightPullout = right_pullout;
-        temp_leftPullout = left_pullout;
-        if ( pulloutOfFiber == 1 ) {
-            temp_pulloutOfFiber = 1;
-        } else if ( ruptureOfFiber == 1 ) {
-            temp_ruptureOfFiber = 1;
+        temp_rightPullout = rightPullout;
+        temp_leftPullout = leftPullout;
+        if ( pulledOutFiber == 1 ) {
+            temp_pulledOutFiber = 1;
+        } else if ( rupturedFiber == 1 ) {
+            temp_rupturedFiber = 1;
         }
     } else if ( incrementOfCrack > 0 ) { // crack is opening
-        if ( closingCrack == 1 and maxCrackOpening >= temp_crack_opening ) { // crack was closing in past and now is opening again
-            while ( iteration <= limit_iteration ) {
-                rightForce = bridgingForce_unloading(right_pullout, bridgingForce, temp_rightPullout);
-                leftForce = bridgingForce_unloading(left_pullout, bridgingForce, temp_leftPullout);
-                if ( rightForce <= 0 or leftForce <= 0 ) { // check if the crack is not fully closed
-                    temp_bridgingForce = 0;
-                    temp_rightPullout = temp_leftPullout = 0;
-                    temp_crack_opening = 0;
-                    cout << "TOTO BY NEMALO NASTAT UZ VOBEC !!!" << endl;
-                    exit(1);
-                    break;
+        if ( closingCrack == 1 and maxCrackOpening >= temp_crackOpening ) { // crack was closing in the past and now is opening again, but the crack does not reach the max. opening from the past
+            while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
+                rightForce = bridgingForceUnloading( rightPullout, bridgingForce, temp_rightPullout );
+                leftForce = bridgingForceUnloading( leftPullout, bridgingForce, temp_leftPullout );
+                if ( abs(rightForce - leftForce) < 1e-9 ) {
+                     temp_bridgingForce = rightForce;
+                     break;
+                } else {
+                     temp_leftPullout = temp_leftPullout - ( bridgingForceUnloading( leftPullout, bridgingForce, temp_leftPullout ) - bridgingForceUnloading( rightPullout, bridgingForce, temp_crackOpening - temp_leftPullout ) ) / ( derivBridgingForceUnloading( leftPullout, bridgingForce ) + derivBridgingForceUnloading( rightPullout, bridgingForce ) );
+                     temp_rightPullout = temp_crackOpening - temp_leftPullout;
                 }
-                if ( abs(rightForce - leftForce) <= tolerance ) {
-                    temp_bridgingForce = rightForce;
-                    break;
-                } else if ( abs(rightForce - leftForce) > tolerance ) {
-                    temp_leftPullout = temp_leftPullout - ( bridgingForce_unloading(left_pullout, bridgingForce, temp_leftPullout) - bridgingForce_unloading(right_pullout, bridgingForce, temp_crack_opening - temp_leftPullout) ) / ( derivF_unloading(left_pullout, bridgingForce) + derivF_unloading(right_pullout, bridgingForce) );
-                    temp_rightPullout = temp_crack_opening - temp_leftPullout;
-                }
-                iteration += 1;
+              iteration += 1;
             }
-            if ( iteration > limit_iteration ) {
-                cout << " WARNING1: Fiber force equilibrium was not found ! Limit iteration was reached ! " << endl;
+            if ( iteration > limIteration ) {
+                cout << " FIBER ERROR (1): Force equilibrium was not found ! Limit iteration was reached ! " << endl;
                 exit(1);
             }
-        } else if ( temp_rightPullout <= limit_rightPullout and temp_leftPullout <= limit_leftPullout ) { // both sides of the fiber are still bonded
-            temp_bridgingForce = bridgingForce_bonded(temp_rightPullout, limit_rightPullout, df, Ef, tau0, Gd);
-        } else if ( abs(rightLe - leftLe) < 1e-12 ) { // both sides of the fiber are equal and fully debonded
-            temp_bridgingForce = bridgingForce_debonded(temp_rightPullout, limit_rightPullout, rightLe, right_F0, df, betaf);
-            if ( temp_rightPullout >= v0 or temp_bridgingForce <= 0 ) { // check if the fiber is not fully pulled out
+        } else if ( temp_rightPullout <= criticalRightPullout and temp_leftPullout <= criticalLeftPullout ) { // both sides of the fiber are in debonding stage
+            temp_bridgingForce = bridgingForceDebonding( temp_rightPullout, criticalRightPullout, df, Ef, tau0, Gd );
+        } else if ( abs(rightLe - leftLe) <= 1e-12 ) { // both sides of the fiber are equal and fully debonded
+            temp_bridgingForce = bridgingForcePullingOut( temp_rightPullout, criticalRightPullout, rightLe, right_F0, df, betaf );
+            if ( temp_rightPullout >= limitPullout or temp_bridgingForce <= 0 ) { // check if the fiber is not fully pulled out of the matrix
                 temp_bridgingForce = 0;
-                temp_pulloutOfFiber = 1;
-                if ( temp_rightPullout < v0 ) { // for betaf << 0
-                    temp_rightPullout = temp_crack_opening / 2.;
-                    temp_leftPullout = temp_crack_opening / 2.;
+                temp_pulledOutFiber = 1;
+                if ( temp_rightPullout < limitPullout ) { // for case with betaf << 0
+                    temp_rightPullout = temp_crackOpening / 2.;
+                    temp_leftPullout = temp_crackOpening / 2.;
                 } else {
-                    temp_rightPullout = temp_leftPullout = v0;
+                    temp_rightPullout = temp_leftPullout = limitPullout;
                 }
             }
-        } else if ( rightLe != leftLe ) { // shorter side of the fiber (1) is debonded, longer (2) is unloading
+        } else if ( rightLe != leftLe ) { // shorter side of the fiber (1) is pulling-out of the matrix, longer (2) is unloading
             if ( rightLe < leftLe ) {
                 v1 = temp_rightPullout;
-                v2 = temp_leftPullout;
+                v2 = temp_leftPullout;                 
             } else if ( rightLe > leftLe ) {
                 v1 = temp_leftPullout;
-                v2 = temp_rightPullout;
+                v2 = temp_rightPullout;                
             }
-
             if ( debondedFiber == 0 ) {
-                while ( iteration <= limit_iteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
-                    bridgingForce1 = bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf);
-                    bridgingForce2 = bridgingForce_unloading(vd1, bridgingForce_bonded(vd1, vd1, df, Ef, tau0, Gd), v2);
-                    if ( v1 >= v0 or bridgingForce1 <= 0 ) { // check if the shorter side of the fiber is not fully pulled out
+                while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
+                    bridgingForce1 = bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf );
+                    bridgingForce2 = bridgingForceUnloading( vd1, bridgingForceDebonding( vd1, vd1, df, Ef, tau0, Gd ), v2 );
+                    if ( v1 >= limitPullout or bridgingForce1 <= 0 ) { // check if the shorter side of the fiber is not fully pulled out of the matrix
                         temp_bridgingForce = 0;
-                        temp_pulloutOfFiber = 1;
-                        if ( v1 < v0 ) { // for betaf << 0
-                            v1 = temp_crack_opening;
-                            v2 = 0;
+                        temp_pulledOutFiber = 1;
+                        v2 = 0;
+                        if ( v1 < limitPullout ) { // for case with betaf << 0
+                            v1 = temp_crackOpening;
                         } else {
-                            v1 = v0;
-                            v2 = 0;
+                            v1 = limitPullout;
                         }
                         break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) <= tolerance ) {
+                    } else if ( abs(bridgingForce1 - bridgingForce2) < 1e-9 ) {
                         temp_bridgingForce = bridgingForce1;
-                        if ( temp_bridgingForce > bridgingForce_bonded(vd1, vd1, df, Ef, tau0, Gd) ) {   // longer (2) is bonded
+                        if ( temp_bridgingForce > bridgingForceDebonding( vd1, vd1, df, Ef, tau0, Gd ) ) { // longer side of the fiber (2) is in debonding stage
                             temp_debondedFiber = 1;
                         }
                         break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) > tolerance ) {
-                        v1 = v1 - ( bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf) - bridgingForce_unloading(vd1, bridgingForce_bonded(vd1, vd1, df, Ef, tau0, Gd), temp_crack_opening - v1) ) / ( derivF_debonded(v1, vd1, Le1, F01, df, betaf) + derivF_unloading(vd1, bridgingForce_bonded(vd1, vd1, df, Ef, tau0, Gd) ) );
-                        v2 = temp_crack_opening - v1;
+                    } else {
+                        v1 = v1 - ( bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) - bridgingForceUnloading( vd1, bridgingForceDebonding( vd1, vd1, df, Ef, tau0, Gd ), temp_crackOpening - v1 ) ) / ( derivBridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) + derivBridgingForceUnloading( vd1, bridgingForceDebonding( vd1, vd1, df, Ef, tau0, Gd ) ) );
+                        v2 = temp_crackOpening - v1;
                     }
-                    iteration += 1;
+                  iteration += 1;
                 }
             }
-
             if ( debondedFiber == 1 or temp_debondedFiber == 1 ) {
-                while ( iteration <= limit_iteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
-                    bridgingForce1 = bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf);
-                    bridgingForce2 = bridgingForce_bonded(v2, vd2, df, Ef, tau0, Gd);
-                    if ( abs(bridgingForce1 - bridgingForce2) <= tolerance ) {
+                while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
+                    bridgingForce1 = bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf );
+                    bridgingForce2 = bridgingForceDebonding( v2, vd2, df, Ef, tau0, Gd );
+                    if ( abs(bridgingForce1 - bridgingForce2) < 1e-9 ) {
                         temp_bridgingForce = bridgingForce1;
                         temp_debondedFiber = 1;
-                        if ( temp_bridgingForce > bridgingForce_bonded(vd2, vd2, df, Ef, tau0, Gd) ) {
+                        if ( temp_bridgingForce > bridgingForceDebonding( vd2, vd2, df, Ef, tau0, Gd ) ) { // longer side of the fiber (2) is in pulling-out stage
                             temp_debondedFiber = 2;
-                        } else if ( v1 > v_Fmax ) {
+                        } else if ( v1 > v1_Fmax ) {
                             temp_debondedFiber = 3;
                         }
-                        break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) > tolerance ) {
-                        v1 = v1 - ( bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf) - bridgingForce_bonded(temp_crack_opening - v1, vd2, df, Ef, tau0, Gd) ) / ( derivF_debonded(v1, vd1, Le1, F01, df, betaf) + derivF_bonded(temp_crack_opening - v1, vd2, df, Ef, tau0, Gd) );
-                        v2 = temp_crack_opening - v1;
+                       break;
+                    } else {
+                        v1 = v1 - ( bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) - bridgingForceDebonding( temp_crackOpening - v1, vd2, df, Ef, tau0, Gd ) ) / ( derivBridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) + derivBridgingForceDebonding( temp_crackOpening - v1, vd2, df, Ef, tau0, Gd ) );
+                        v2 = temp_crackOpening - v1;
                     }
-                    iteration += 1;
+                  iteration += 1;
                 }
             }
-
             if ( debondedFiber == 2 or temp_debondedFiber == 2 ) {
-                while ( iteration <= limit_iteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
-                    bridgingForce1 = bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf);
-                    bridgingForce2 = bridgingForce_debonded(v2, vd2, Le2, F02, df, betaf);
-                    if ( abs(bridgingForce1 - bridgingForce2) <= tolerance ) {
+                while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
+                    bridgingForce1 = bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf );
+                    bridgingForce2 = bridgingForcePullingOut( v2, vd2, Le2, F02, df, betaf );
+                    if ( abs(bridgingForce1 - bridgingForce2) < 1e-9 ) {
                         temp_bridgingForce = bridgingForce1;
                         temp_debondedFiber = 2;
-                        if ( v1 > v_Fmax ) {
-                            temp_debondedFiber = 4;
-                        }
+                        if ( v1 > v1_Fmax ) {
+                            temp_debondedFiber = 4;  
+                        }  
                         break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) > tolerance ) {
-                        v1 = v1 - ( bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf) - bridgingForce_debonded(temp_crack_opening - v1, vd2, Le2, F02, df, betaf) ) / ( derivF_debonded(v1, vd1, Le1, F01, df, betaf) + derivF_debonded(temp_crack_opening - v1, vd2, Le2, F02, df, betaf) );
-                        v2 = temp_crack_opening - v1;
+                    } else {
+                        v1 = v1 - ( bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) - bridgingForcePullingOut( temp_crackOpening - v1, vd2, Le2, F02, df, betaf ) ) / ( derivBridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) + derivBridgingForcePullingOut( temp_crackOpening - v1, vd2, Le2, F02, df, betaf ) );
+                        v2 = temp_crackOpening - v1;
                     }
-                    iteration += 1;
+                  iteration += 1; 
                 }
             }
-
             if ( debondedFiber == 3 or temp_debondedFiber == 3 ) {
-                while ( iteration <= limit_iteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
-                    v2Bonded_Fmax = pow(Fmax, 2) * 2. / ( pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 + Gd / vd2 ) );
-                    bridgingForce1 = bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf);
-                    bridgingForce2 = bridgingForce_unloading(v2Bonded_Fmax, Fmax, v2);
-                    if ( bridgingForce1 <= 0 ) { // check if the shorter side of the fiber is not fully pulled out
+                while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
+                    bridgingForce1 = bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf );
+                    bridgingForce2 = bridgingForceUnloading( v2_debondingFmax, Fmax, v2 );
+                    if ( bridgingForce1 <= 0 ) { // check if the shorter side of the fiber is not fully pulled out of the matrix
                         temp_bridgingForce = 0;
-                        v1 = v0;
+                        v1 = limitPullout;
                         v2 = 0;
-                        temp_pulloutOfFiber = 1;
+                        temp_pulledOutFiber = 1;
                         break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) <= tolerance ) {
-                        temp_bridgingForce = bridgingForce1;
+                    } else if ( abs(bridgingForce1 - bridgingForce2) < 1e-9 ) {
+                        temp_bridgingForce = bridgingForce1; 
                         temp_debondedFiber = 3;
-                        break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) > tolerance ) {
-                        v1 = v1 - ( bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf) - bridgingForce_unloading(v2Bonded_Fmax, Fmax, temp_crack_opening - v1) ) / ( derivF_debonded(v1, vd1, Le1, F01, df, betaf) + derivF_unloading(v2Bonded_Fmax, Fmax) );
-                        v2 = temp_crack_opening - v1;
+                        break; 
+                    } else {
+                        v1 = v1 - ( bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) - bridgingForceUnloading( v2_debondingFmax, Fmax, temp_crackOpening - v1 ) ) / ( derivBridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) + derivBridgingForceUnloading( v2_debondingFmax, Fmax ) );
+                        v2 = temp_crackOpening - v1;
                     }
-                    iteration += 1;
+                  iteration += 1;
                 }
             }
-
             if ( debondedFiber == 4 or temp_debondedFiber == 4 ) {
-                while ( iteration <= limit_iteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
-                    bridgingForce1 = bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf);
-                    bridgingForce2 = bridgingForce_unloading(v2Debonded_Fmax, Fmax, v2);
-                    if ( v1 >= v0 or bridgingForce1 <= 0 ) { // check if the shorter side of the fiber is not fully pulled out
+                while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
+                    bridgingForce1 = bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf );
+                    bridgingForce2 = bridgingForceUnloading( v2_pullingOutFmax, Fmax, v2 );
+                    if ( v1 >= limitPullout or bridgingForce1 <= 0 ) { // check if the shorter side of the fiber is not fully pulled out of the matrix
                         temp_bridgingForce = 0;
-                        v1 = v0;
+                        v1 = limitPullout;
                         v2 = 0;
-                        temp_pulloutOfFiber = 1;
+                        temp_pulledOutFiber = 1;
                         break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) <= tolerance ) {
-                        temp_bridgingForce = bridgingForce1;
+                    } else if ( abs(bridgingForce1 - bridgingForce2) < 1e-9 ) {
+                        temp_bridgingForce = bridgingForce1; 
                         temp_debondedFiber = 4;
-                        break;
-                    } else if ( abs(bridgingForce1 - bridgingForce2) > tolerance ) {
-                        v1 = v1 - ( bridgingForce_debonded(v1, vd1, Le1, F01, df, betaf) - bridgingForce_unloading(v2Debonded_Fmax, Fmax, temp_crack_opening - v1) ) / ( derivF_debonded(v1, vd1, Le1, F01, df, betaf) + derivF_unloading(v2Debonded_Fmax, Fmax) );
-                        v2 = temp_crack_opening - v1;
+                        break; 
+                    } else {
+                        v1 = v1 - ( bridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) - bridgingForceUnloading( v2_pullingOutFmax, Fmax, temp_crackOpening - v1 ) ) / ( derivBridgingForcePullingOut( v1, vd1, Le1, F01, df, betaf ) + derivBridgingForceUnloading( v2_pullingOutFmax, Fmax ) );
+                        v2 = temp_crackOpening - v1;
                     }
-                    iteration += 1;
+                  iteration += 1;
                 }
             }
-
-            if ( iteration > limit_iteration ) {
-                cout << " WARNING2: Fiber force equilibrium was not found ! Limit iteration was reached ! " << endl;
-                exit(1);
+            if ( iteration > limIteration ) {
+                cout << " FIBER ERROR (2): Force equilibrium was not found ! Limit iteration was reached ! " << endl; 
+                exit(1); 
             } else if ( rightLe < leftLe ) {
                 temp_rightPullout = v1;
                 temp_leftPullout = v2;
@@ -410,100 +415,74 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
                 temp_rightPullout = v2;
             }
         }
-    } else if ( incrementOfCrack <= 0 ) { // crack is closing or stayed as opened as in the previous step
-        temp_closingCrack = 1;
-        while ( iteration <= limit_iteration ) {
-            rightForce = bridgingForce_unloading(right_pullout, bridgingForce, temp_rightPullout);
-            leftForce = bridgingForce_unloading(left_pullout, bridgingForce, temp_leftPullout);
-            if ( abs(rightForce - leftForce) <= tolerance ) {
+    } else if ( incrementOfCrack <= 0 ) { // crack is closing or stayed as opened as in the previous step 
+        temp_closingCrack = 1;       
+        while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
+            rightForce = bridgingForceUnloading( rightPullout, bridgingForce, temp_rightPullout ); 
+            leftForce = bridgingForceUnloading( leftPullout, bridgingForce, temp_leftPullout );
+            if ( abs(rightForce - leftForce) < 1e-9 ) {
                 temp_bridgingForce = rightForce;
                 if ( temp_bridgingForce < 0 ) { // check if the crack is not fully closed
                     temp_bridgingForce = 0;
                     temp_rightPullout = temp_leftPullout = 0;
-                    temp_crack_opening = 0;
-                    cout << "TOTO BY NEMALO NASTAT !!!" << endl;
+                    temp_crackOpening = 0;
+                    cout << " FIBER ERROR: Crack should not be fully closed ! " << endl;
                     exit(1);
                 }
                 break;
-            } else if ( abs(rightForce - leftForce) > tolerance ) {
-                temp_leftPullout = temp_leftPullout - ( bridgingForce_unloading(left_pullout, bridgingForce, temp_leftPullout) - bridgingForce_unloading(right_pullout, bridgingForce, temp_crack_opening - temp_leftPullout) ) / ( derivF_unloading(left_pullout, bridgingForce) + derivF_unloading(right_pullout, bridgingForce) );
-                temp_rightPullout = temp_crack_opening - temp_leftPullout;
+            } else {
+                temp_leftPullout = temp_leftPullout - ( bridgingForceUnloading( leftPullout, bridgingForce, temp_leftPullout ) - bridgingForceUnloading( rightPullout, bridgingForce, temp_crackOpening - temp_leftPullout ) ) / ( derivBridgingForceUnloading( leftPullout, bridgingForce ) + derivBridgingForceUnloading( rightPullout, bridgingForce ) ); 
+                temp_rightPullout = temp_crackOpening - temp_leftPullout;
             }
-            iteration += 1;
+          iteration += 1;
         }
-        if ( iteration > limit_iteration ) {
-            cout << " WARNING3: Fiber force equilibrium was not found ! Limit iteration was reached ! " << endl;
+        if ( iteration > limIteration ) { 
+            cout << " FIBER ERROR (3): Force equilibrium was not found ! Limit iteration was reached ! " << endl; 
             exit(1);
         }
     }
-    // -------------------------- STRESS VECTOR ---------------------------------------------------
-
-    inclineAngle = acos( ( fiberNormal ).dot(contactNormal) );
-    if ( inclineAngle > M_PI / 2. and temp_bridgingForce > 0 ) {
-        contactNormal = contactNormal * ( -1. );
-        inclineAngle = acos( ( fiberNormal ).dot(contactNormal) );
-    }
-
-    if ( temp_bridgingForce < 1e-12 ) {
-        temp_stress = Vector :: Zero( contactNormal.size() );
-    } else if ( inclineAngle < 1e-12 ) { // WITHOUT SNUBBING MODEL - NO MICROEFFECT AT EXIT POINTS
-        temp_stress = temp_bridgingForce * crackOpeningVector / temp_crack_opening;
-    } else if ( inclineAngle != 0 ) { // SNUBBING MODEL - CONSIDERING MICROEFFECT AT EXIT POINTS
+   
+// ------------------- STRESS VECTOR --------------------- NOTE: fiberForce is modified bridgingForce due to incline of the fiber
+    if ( temp_bridgingForce <= 1e-12 ) {
+        temp_fiberForce = 0;
+        temp_stress = Vector :: Zero(contactNormal.size());
+    } else if ( inclineAngle <= 1e-12 or crackOpeningVector[ 0 ] <= 1e-12 ) { // without SNUBBING MODEL - no microeffect at exit points
+        temp_fiberForce = temp_bridgingForce;
+        temp_stress = temp_fiberForce * crackOpeningVector / temp_crackOpening;
+    } else if ( inclineAngle > 1e-12 ) { // with SNUBBING MODEL - considering microeffect at exit points
         iteration = 0;
-        while ( iteration <= limit_iteration ) {
-            if ( fiberNormalLocal [ 0 ] < 0 ) {
-                fiberNormalLocal = fiberNormalLocal * ( -1. );
-            }
-
+        if ( fiberNormalLocal[ 0 ] < 0 ) {
+            fiberNormalLocal = fiberNormalLocal * ( -1. );
+        }
+        while ( iteration <= limIteration ) {
             w = crackOpeningVector + 2. * spallingLength * fiberNormalLocal;
-
-            nf = w / w.norm();
-
-            deflectionAngle = acos(fiberNormalLocal.dot(nf) );
-
-            fiberForce = temp_bridgingForce * exp(Ksn * deflectionAngle);
-
-            temp_stress = fiberForce * nf;
-
-            temp_spallingLength = ( temp_stress(0) * sin(inclineAngle / 2.) ) / ( Ksp * ft * df * pow(cos(inclineAngle / 2.), 2) );
-
-            if ( ( abs(temp_spallingLength - spallingLength) ) < 1e-12 ) { // ABSOLUTE ERROR OF SPALLING LENGTH
-                temp_bridgingForce = fiberForce;
+            mf = w / w.norm();
+            deflectionAngle = acos( fiberNormalLocal.dot(mf) );
+            temp_fiberForce = temp_bridgingForce * exp( Ksn * deflectionAngle );
+            temp_stress = temp_fiberForce * mf;
+            temp_spallingLength = ( temp_stress(0) * sin( inclineAngle / 2. ) ) / ( Ksp * ft * df * pow(cos( inclineAngle / 2. ),2) );
+            if ( (abs( temp_spallingLength - spallingLength )) / temp_spallingLength < 1e-6 ) { // relative error of the spalling length
                 break;
             } else {
                 spallingLength = temp_spallingLength;
             }
-            iteration += 1;
+          iteration += 1;
         }
-
-        if ( iteration > limit_iteration ) {
-            cout << " FIBER ERROR: LIMIT ITERATION FOR SNUBBING MODEL WAS REACHED ! " << endl;
-            cout << " temp_bridgingForce " << temp_bridgingForce << endl;
-            cout << " fiberNormal " << fiberNormal << endl;
-            cout << " contactNormal " << contactNormal << endl;
-            cout << " fiberNormalLocal " << fiberNormalLocal << endl;
-            cout << " crackOpeningVector " << crackOpeningVector << endl;
-            cout << " " << endl;
-            cout << " inclineAngle " << inclineAngle << endl;
-            cout << " spallingLength " << spallingLength << endl;
-            cout << " w " << w << endl;
-            cout << " nf " << nf << endl;
-            cout << " deflectionAngle " << deflectionAngle << endl;
-            cout << " fiberForce " << fiberForce << endl;
-            cout << " temp_stress " << temp_stress << endl;
-
-            exit(1);
+        if ( iteration > limIteration ) {
+            cout << " FIBER ERROR (4): Limit iteration for snubbing model was reached ! " << endl;                  
+            exit(1); 
         }
     }
-    // -------------------------- RUPTURE CONDITION ---------------------------------------------------
-    double fiberStress = 4. * temp_bridgingForce / M_PI / pow(df, 2);
-    double limitStress = ft * exp(-Krup * deflectionAngle);
-    if ( fiberStress > limitStress ) {
-        temp_bridgingForce = 0;
-        temp_stress = Vector :: Zero( contactNormal.size() );
-        temp_ruptureOfFiber = 1;
-    }
-
+    
+// -------------------------- RUPTURE CONDITION ---------------------------------------------------
+    double temp_fiberStress = 4. * temp_fiberForce / M_PI / pow(df,2);
+    double limitFiberStress = ft * exp( -Krup * deflectionAngle );
+    if ( temp_fiberStress > limitFiberStress ){
+        //temp_bridgingForce = temp_fiberForce = 0;
+        //temp_stress = Vector :: Zero(contactNormal.size());
+        //temp_rupturedFiber = 1;
+    } 
+          
     //cout << "FiberMaterialStatus::giveStress" << endl;
     cout.flush();
     return temp_stress;
@@ -514,9 +493,9 @@ Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, 
     ( void ) strain;
     ( void ) timeStep;
 
-    temp_crack_opening = strain.norm() * contactLength;
+    temp_crackOpening = strain.norm() * contactLength;
 
-    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic") * temp_crack_opening;
+    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic") * temp_crackOpening;
 
     //cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
     cout.flush();
@@ -525,8 +504,8 @@ Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, 
 
 //////////////////////////////////////////////////////////
 void FiberMaterialStatus :: setParameterValue(string code, double value) {
-    if ( code.compare("crack_opening") == 0 ) {
-        crack_opening = value;
+    if ( code.compare("crackOpening") == 0 ) {
+        crackOpening = value;
     } else {
         MaterialStatus :: setParameterValue(code, value);
     }
@@ -555,7 +534,7 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     bool bft, bGd, btau0, bbetaf, bEf, bKsn, bKsp, bKrup;
     bft = bGd = btau0 = bbetaf = bEf = bKsn = bKsp = bKrup = false;
 
-    while (  iss >> param ) {
+    while (  iss >> param ) { 
         if ( param.compare("Ef") == 0 ) {
             bEf = true;
             iss >> Ef;
@@ -620,8 +599,7 @@ void FiberMaterial :: readFromLine(istringstream &iss) {
     if ( !bKrup ) {
         cerr << name << ": material parameter 'Krup' was not specified" << endl;
         exit(EXIT_FAILURE);
-    }
-    ;
+    };
 };
 
 //////////////////////////////////////////////////////////
