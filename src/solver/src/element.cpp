@@ -182,7 +182,7 @@ void Element :: giveValues(std :: string code, Vector &result) const {
     } else if ( code.compare("kinetic_energy") == 0 ) {
         result.resize(1);
         result [ 0 ] = 0;
-    } else if ( code.compare("material_ID") == 0 ) {
+    } else if ( code.compare("material_ID") == 0 or code.compare("materialID") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
     } else {  //TODO: should be weighted average

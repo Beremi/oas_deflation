@@ -228,8 +228,11 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             ais [ i ] = ni.norm() / 2;
             ni.normalize();
             ais [ i ] *= ni.dot(normal);
-            if( ais[i] < 1e-9) cout << "RigidBodyContact Warning: negative area, incorrect orientation of verices, corrected automatically" << endl;  
-            area += std::abs(ais [ i ]);
+            if( ais[i] < 1e-12){
+                cout << "RigidBodyContact Warning: negative area, incorrect orientation of verices, corrected automatically" << endl;  
+                ais [ i ] = std::abs(ais [ i ]);
+            }
+            area += ais [ i ];
             ni = ( vert [ i ]->givePoint() - vert [ j ]->givePoint() );   //just for periemeter
             ni += normal * ( normal.dot(ni) );
             perimeter += ni [ 0 ];
