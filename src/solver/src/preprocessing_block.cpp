@@ -2,6 +2,7 @@
 #include "model.h"
 #include "material_vectorial.h"
 #include "element_ldpm.h"
+#include "solver_implicit.h"
 
 // #include "misc.h"  // TODO JK: this include causes linking error
 using namespace std;

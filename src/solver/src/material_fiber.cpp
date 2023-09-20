@@ -34,19 +34,19 @@ FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigne
 
 //////////////////////////////////////////////////////////
 bool FiberMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("tempLeftPullout") == 0 || code.compare("leftPullout") == 0 ) {
+    if ( code.compare("templeftpullout") == 0 || code.compare("leftpullout") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_leftPullout;
         return true;
-    } else if ( code.compare("tempRightPullout") == 0 || code.compare("rightPullout") == 0 ) {
+    } else if ( code.compare("temprightpullout") == 0 || code.compare("rightpullout") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_rightPullout;
         return true;
-    } else if ( code.compare("tempBridgingForce") == 0 || code.compare("bridgingForce") == 0 ) {
+    } else if ( code.compare("tempbridgingforce") == 0 || code.compare("bridgingforce") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_bridgingForce;
         return true;
-    } else if ( code.compare("tempFiberForce") == 0 || code.compare("fiberForce") == 0 ) {
+    } else if ( code.compare("tempfiberforce") == 0 || code.compare("fiberforce") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_fiberForce;
         return true;

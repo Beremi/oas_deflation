@@ -4,6 +4,7 @@
 #include "element_discrete.h"
 #include "boundary_condition.h"
 #include "solver.h"
+#include "solver_implicit.h"
 #include <fstream>
 
 //////////////////////////////////////////////////////////

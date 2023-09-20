@@ -29,6 +29,17 @@ void Fiber :: init() {
 }
 
 //////////////////////////////////////////////////////////
+void Fiber :: giveValues(string code, Vector &result) const {
+    if ( code.compare("length") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = length;
+    } else {
+        Element :: giveValues(code, result);
+    }
+}
+
+
+//////////////////////////////////////////////////////////
 void Fiber :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num;
     iss >> num;
