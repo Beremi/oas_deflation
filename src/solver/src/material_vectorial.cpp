@@ -404,7 +404,7 @@ Matrix VectMechMaterialWithRotationalStiffnessStatus :: giveStiffnessTensor(stri
         D(i, i) =  m->giveAlpha() * m->giveE0();
     }
     for ( ; i < ss; i++ ) {
-        D(i, i) =  m->giveBeta() * m->giveE0() * l * I / A;
+        D(i, i) =  m->giveBeta() * m->giveE0() * I  * rbcr->giveNumIP()  / A;
     }
     return D;
 }
@@ -427,7 +427,7 @@ Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenInt
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
     }
     for ( ; i < strain.size(); i++ ) {
-        temp_stress [ i ] = m->giveBeta() * m->giveE0() * temp_strain [ i ] * l * I / A;
+        temp_stress [ i ] =  m->giveBeta() * m->giveE0() * temp_strain [ i ] * I * rbcr->giveNumIP() / A ;
     }
     return temp_stress;
 };
