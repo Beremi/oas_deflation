@@ -41,6 +41,8 @@ bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, std :: vector< Vect
 
 bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
 
+bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b);
+
 double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD);
 
 Matrix dyadicProduct(const Vector &a, const Vector &b);

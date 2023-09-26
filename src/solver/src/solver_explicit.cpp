@@ -7,7 +7,9 @@ using namespace std;
 
 //////////////////////////////////////////////////////////
 TransientCentralDifferenceMechanicalSolver :: TransientCentralDifferenceMechanicalSolver(){
-
+    name = "TransientCentralDifferenceMechanicalSolver";
+    show_period = 1e3;
+    showTime = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -16,42 +18,143 @@ TransientCentralDifferenceMechanicalSolver :: ~TransientCentralDifferenceMechani
 
 //////////////////////////////////////////////////////////
 void TransientCentralDifferenceMechanicalSolver :: init(std :: string init_r_file, std :: string init_v_file, const bool initial){
+
     Solver :: init(init_r_file, init_v_file, initial);
 
-    v_old = Vector :: Zero(totalDoFnum);
+    v_red_old = Vector :: Zero(freeDoFnum);
+    v_red = Vector :: Zero(freeDoFnum);
+    a_red = Vector :: Zero(freeDoFnum);  
+
     v = Vector :: Zero(totalDoFnum);
-    accel = Vector :: Zero(totalDoFnum);  
+    a = Vector :: Zero(totalDoFnum);  
+
+    
+    elems->prepareMassMatrix(M);
+    elems->updateMassMatrix(M);
+    if ( nodes->giveConstraints()->isActive() ) {
+        nodes->giveConstraints()->transformToConstraintSpace(M);
+    }
 
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-    nodes->addRHS_nodalLoad(load, time); //add nodal load      
+    nodes->addRHS_nodalLoad(load, time); //add nodal load   
+
+    //compute actions at the end of the last time step
+    elems->integrateDampingForces(v, f_dam);
+    elems->integrateInertiaForces(a, f_acc);
+    computeInternalExternalForces(r, load, 0, dt);
+    residuals -= f_dam + f_acc;
+
+    // Compute the ordering permutation vector from the structural pattern of A
+    solver.analyzePattern(M); 
+    // Compute the numerical factorization 
+    solver.factorize(M); 
+    
 }
+
+//////////////////////////////////////////////////////////
+void TransientCentralDifferenceMechanicalSolver :: computeAcceleration(){
+    nodes->giveReducedForceArray(residuals, f);
+    //LinalgLUSolver(M,a_red,f);     
+    //Use the factors to solve the linear system 
+    a_red = solver.solve(f); 
+}
+
+//////////////////////////////////////////////////////////
+void TransientCentralDifferenceMechanicalSolver :: runBeforeEachStep() {
+    Solver :: runBeforeEachStep();
+    trial_r = r;
+    if (step%show_period==0) {
+        cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
+        showTime = true;
+    } else{
+        showTime = false;
+    }
+}
+
+//////////////////////////////////////////////////////////
+Solver *TransientCentralDifferenceMechanicalSolver :: readFromFile(const string filename) {
+    string param, line;
+    bool bdt, bttime;
+    bdt = bttime = false;
+    ifstream inputfile(filename.c_str() );
+    if ( inputfile.is_open() ) {
+        while ( getline(inputfile >> std :: ws, line) ) {
+            if ( line.empty() || ( line.at(0) == '#' ) ) {
+                continue;
+            }
+            istringstream iss(line);
+            iss >> param;
+            if ( param.compare("time_step") == 0 ) {
+                bdt = true;
+                iss >> initdt;
+                dt = initdt;
+            } else if ( param.compare("total_time") == 0 ) {
+                bttime = true;
+                iss >> termination_time;
+            } else if ( param.compare("show_every") == 0 ) {
+                iss >> show_period;
+            } else if ( param.compare("init_time") == 0 ) {
+                iss >> this->init_time;
+            } else if ( param.compare("init_step") == 0 ) {
+                iss >> this->init_step;
+            } else if ( param.compare("solver_type") == 0 ) {
+                iss >> symsolver_type;
+            }
+        }
+        inputfile.close();
+    }
+    if ( !bdt ) {
+        cerr << name << ": solver parameter 'time_step' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bttime ) {
+        cerr << name << ": solver parameter 'total_time' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    return this;
+};
 
 //////////////////////////////////////////////////////////
 void TransientCentralDifferenceMechanicalSolver :: solve(){
     //according to Belytschko, Liu, Moran, page 71
-
-    /*
-    elems->integrateDampingForces(v, f_dam);
-    elems->integrateInertiaForces(a, f_acc);
-    computeInternalExternalForces(r);
-    residuals -= f_dam + f_acc;
     
-    //computeAcceleration();
+    computeAcceleration();
 
-    v_old = v;
-    v = dt*accel + v_old;
-    ddr = dt*v;
+    v_red_old = v_red;
+    if (time == dt){
+        v_red = 0.5*dt*a_red + v_red_old;
+    }else{
+        v_red = dt*a_red + v_red_old;
+    }
+    ddr = dt*v_red;
 
+    //update DoFs
+    updateFieldVariables();  
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     nodes->addRHS_nodalLoad(load, time); //add nodal load
 
-    //update DoFs
-    updateFieldVariables();
-    //compute residuals
-    computeInternalExternalForces(trial_r, load, frozen, dt);
+    //update velocity and acceleration
+    nodes->giveFullDoFArray(v_red, v);
+    nodes->giveFullDoFArray(a_red, a);
+    vector< double >blocked = bcs->giveBlockedDoFValues(time);
+    double new_v;
+    for (auto &k: blocked) {        
+        new_v = (trial_r[k] - r[k])/dt;
+        a [ k ] = (new_v - v[k])/dt;
+        v [ k ] = new_v;
+    }
 
-    computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...   
-    */
+    //DOES NOT SUPPORT CONSTRAINT WITH CONJUGATE VARIABLES AND FUNCTIONS
+    nodes->giveConstraints()->calculateDependentDoFs(v);
+    nodes->giveConstraints()->calculateDependentDoFs(a);
+
+    //compute residuals
+    elems->integrateDampingForces(v, f_dam);
+    elems->integrateInertiaForces(a, f_acc);
+    computeInternalExternalForces(r, load, 0, dt);
+    residuals -= f_dam + f_acc;
 }
 
 //////////////////////////////////////////////////////////

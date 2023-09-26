@@ -77,7 +77,7 @@ void Model :: solve() {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
         exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
-        if ( printTime ) {
+        if ( printTime && solver->showStepTime()) {
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;
             std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl;

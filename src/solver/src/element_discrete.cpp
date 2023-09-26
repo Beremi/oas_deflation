@@ -165,7 +165,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         IntegrDiscrete1 *it = dynamic_cast< IntegrDiscrete1 * >( inttype );
         it->setNumIP(n);
         //Gauss integration, not used
-        if ( n < 0 ) {
+        if ( false && n < 5 ) {
             Vector locs, weis;
             giveGaussIntegrationPointAndWeights(n, locs, weis);
             for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {

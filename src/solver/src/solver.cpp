@@ -12,6 +12,7 @@ using namespace std;
 Solver :: Solver() {
     name = "basic solver";
     time = init_time;
+    showTime = true;
 }
 
 
@@ -80,6 +81,11 @@ Solver *Solver :: readFromFile(const string filename) {
             return newsolver;
         } else if ( param.compare("TransientNonLinearMechanicalSolver") == 0 ) {
             TransientNonLinearMechanicalSolver *newsolver = new TransientNonLinearMechanicalSolver();
+            newsolver->readFromFile(filename);
+            cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+            return newsolver;
+        } else if ( param.compare("TransientCentralDifferenceMechanicalSolver") == 0 ) {
+            TransientCentralDifferenceMechanicalSolver *newsolver = new TransientCentralDifferenceMechanicalSolver();
             newsolver->readFromFile(filename);
             cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
             return newsolver;
@@ -202,6 +208,14 @@ void Solver :: giveValues(string code, Vector &result) const {
     } else {
         result.resize(0);
     }
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep) {
+    nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
+    elems->integrateInternalForces(rr, f_int, frozen, timeStep);
+    nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext);     //give prescribed DoFs
+    residuals = f_ext - f_int;
 }
 
 //////////////////////////////////////////////////////////

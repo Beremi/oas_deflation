@@ -29,7 +29,10 @@ protected:
     bool terminated, fully_converged;
     std :: string symsolver_type = "EigenConj";
 
+    bool showTime;
+
     virtual void updateFieldVariables();
+    virtual void computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep);
 
 public:
     Solver();
@@ -60,6 +63,7 @@ public:
     virtual void giveValues(std :: string code, Vector &result) const;
     virtual void rebuild();
     Vector giveResiduals() const { return residuals; };
+    bool showStepTime()const{return showTime;};
 };
 
 

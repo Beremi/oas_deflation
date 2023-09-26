@@ -156,14 +156,6 @@ void SteadyStateLinearSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep) {
-    nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
-    elems->integrateInternalForces(rr, f_int, frozen, timeStep);
-    nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext);     //give prescribed DoFs
-    residuals = f_ext - f_int;
-}
-
-//////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runBeforeEachStep() {
     Solver :: runBeforeEachStep();
     trial_r = r;
