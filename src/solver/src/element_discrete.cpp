@@ -20,6 +20,7 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) : Element(dim) {
     inttype = new IntegrDiscrete1();
     projectArea = true;
     intPoints = "centroid";
+    userDefinedCentroid = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -78,6 +79,11 @@ void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnod
     while ( iss >> param ) {
         if ( param.compare("integration") == 0 ) {
             iss >> intPoints;
+        } else if ( param.compare("centroid") == 0 && ndim == 3) {
+            userDefinedCentroid = true;
+            double x,y,z;
+            iss >> x >> y >> z;
+            userCentroid = Point(x,y,z);
         } else if ( param.compare("area_projection") == 0 ) {
             iss >> projectArea;
         }
@@ -185,6 +191,10 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
         avgPoint /= vert.size();
 
+        if (userDefinedCentroid) {
+            avgPoint = userCentroid;
+        }
+
         double diff = 1e6;
 
         unsigned iter = 0;
@@ -212,6 +222,11 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             iter++;
             diff = ( centroid - avgPoint ).norm();
             avgPoint = centroid;
+        }
+
+        if (userDefinedCentroid) {
+            avgPoint = userCentroid;
+            centroid = userCentroid;
         }
 
         Vector ais( vert.size() ); //projected areas of individual triangles

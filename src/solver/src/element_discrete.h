@@ -12,11 +12,12 @@ class RigidBodyContact : public Element
 protected:
     std :: vector< Node * >vert;
     double length, area, perimeter;
-    Point normal, centroid;
+    Point normal, centroid, userCentroid;
     Point t1, t2;
     Matrix R;
-    bool projectArea;
+    bool projectArea, userDefinedCentroid;
     std :: string intPoints;
+    
 
     Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;

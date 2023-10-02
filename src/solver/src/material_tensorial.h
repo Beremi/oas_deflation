@@ -109,6 +109,7 @@ public:
     virtual double giveMassConstant() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
+    virtual Matrix giveMassTensor() const;
 };
 
 //////////////////////////////////////////////////////////

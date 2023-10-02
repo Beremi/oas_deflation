@@ -340,6 +340,13 @@ void TensMechMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
+Matrix TensMechMaterialStatus :: giveMassTensor() const {
+    TensMechMaterial *m = static_cast< TensMechMaterial * >( mat );
+    unsigned dimension = mat->giveDimension();
+    return Eigen::MatrixXd::Identity(dimension,dimension)*m->giveDensity();
+}
+
+//////////////////////////////////////////////////////////
 TensMechMaterialStatus :: TensMechMaterialStatus(TensMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "tensorial mechanical mat. status";
 }
