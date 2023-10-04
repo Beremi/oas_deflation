@@ -10,10 +10,8 @@ class TransientCentralDifferenceMechanicalSolver : public Solver
 {
 protected:
     Vector v_red_old, v_red, a_red, v, a;    
-    CoordinateIndexedSparseMatrix M, Minv;
-
-    Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int> > solver;
-
+    Vector lumpedM;
+    CoordinateIndexedSparseMatrix M;
     unsigned show_period;
 private:
 public:
@@ -25,6 +23,7 @@ public:
     void computeAcceleration();
     virtual Solver *readFromFile(const std::string filename);
     virtual void runBeforeEachStep();
+    void lumpMassMatrix();
 };
 
 #endif /* _SOLVER_EXPLICIT_H */

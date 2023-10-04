@@ -34,29 +34,57 @@ void TransientCentralDifferenceMechanicalSolver :: init(std :: string init_r_fil
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(M);
     }
+    lumpMassMatrix();
 
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     nodes->addRHS_nodalLoad(load, time); //add nodal load   
 
     //compute actions at the end of the last time step
-    elems->integrateDampingForces(v, f_dam);
-    elems->integrateInertiaForces(a, f_acc);
+    //elems->integrateDampingForces(v, f_dam);
+    //elems->integrateInertiaForces(a, f_acc);
     computeInternalExternalForces(r, load, 0, dt);
     residuals -= f_dam + f_acc;
-
-    // Compute the ordering permutation vector from the structural pattern of A
-    solver.analyzePattern(M); 
-    // Compute the numerical factorization 
-    solver.factorize(M); 
-    
+   
 }
+
+//////////////////////////////////////////////////////////
+void TransientCentralDifferenceMechanicalSolver :: lumpMassMatrix(){
+    lumpedM = Vector::Zero(freeDoFnum);    
+
+
+    cout << "lumping of the mass matrix" << endl;
+
+    unsigned rowstart, rowend;
+    unsigned mainFullDoFid, mainDir;
+    unsigned ndim = 0;
+    unsigned fullDoFid, dir, mainPhysField;
+    vector< unsigned > pf = nodes->givePhysicalFieldsOfDoFs();
+    for(unsigned i=0; i<freeDoFnum; i++){
+        rowstart = M.outerIndexPtr()[i];
+        rowend = (i+1==freeDoFnum) ? M.nonZeros() : M.outerIndexPtr()[i+1];
+        mainFullDoFid = nodes->giveInvDoFid(i);
+        mainDir = mainFullDoFid - nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveStartingDoF();
+        mainPhysField = pf[mainFullDoFid];
+        if(mainPhysField==0) ndim = nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveDimension();
+        for(unsigned k=rowstart; k<rowend; k++){
+            fullDoFid =  nodes->giveInvDoFid(M.innerIndexPtr()[k]);
+            if(mainPhysField!=pf[fullDoFid]) continue; //cannot some different fields
+            if(mainPhysField==0){   //mechanics
+                dir = fullDoFid - nodes->giveNodePointerOfDoFID(fullDoFid)->giveStartingDoF();
+                if ((mainDir<ndim && dir>=ndim) || (dir<ndim && mainDir>=ndim)) continue; //mixing rotations and translations
+            }
+            lumpedM[i] += M.valuePtr()[k];
+        } 
+    }
+}
+
 
 //////////////////////////////////////////////////////////
 void TransientCentralDifferenceMechanicalSolver :: computeAcceleration(){
     nodes->giveReducedForceArray(residuals, f);
-    //LinalgLUSolver(M,a_red,f);     
-    //Use the factors to solve the linear system 
-    a_red = solver.solve(f); 
+    for(unsigned i=0; i<freeDoFnum; i++){
+        a_red[i] = f[i]/lumpedM[i];
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -123,12 +151,13 @@ void TransientCentralDifferenceMechanicalSolver :: solve(){
     computeAcceleration();
 
     v_red_old = v_red;
-    if (time == dt){
+    if (time == dt){ //the first time step, only half velocity action
         v_red = 0.5*dt*a_red + v_red_old;
     }else{
         v_red = dt*a_red + v_red_old;
     }
     ddr = dt*v_red;
+
 
     //update DoFs
     updateFieldVariables();  
@@ -152,9 +181,8 @@ void TransientCentralDifferenceMechanicalSolver :: solve(){
 
     //compute residuals
     elems->integrateDampingForces(v, f_dam);
-    elems->integrateInertiaForces(a, f_acc);
-    computeInternalExternalForces(r, load, 0, dt);
-    residuals -= f_dam + f_acc;
+    computeInternalExternalForces(trial_r, load, 0, dt);
+    residuals -= f_dam;
 }
 
 //////////////////////////////////////////////////////////

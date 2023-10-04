@@ -60,6 +60,7 @@ public:
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
+    virtual Vector giveLumpedMassMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
     std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;

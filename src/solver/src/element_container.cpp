@@ -479,6 +479,26 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
      */
 }
 
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateLumpedMassMatrix(Vector &M) const{
+    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    M = Vector :: Zero(nfreeDoFs);
+    vector< unsigned >elDoFs;
+    Vector m;
+    unsigned DoFi;
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        m = ( * e )->giveLumpedMassMatrix();
+        elDoFs = ( * e )->giveDoFs();
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            DoFi = nodes->giveDoFid(elDoFs [ i ]);
+            if ( DoFi < nfreeDoFs ) {
+                M[DoFi] += m[i];
+            }
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const {
     updateStructuralMatrix(K, 0, param);

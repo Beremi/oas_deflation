@@ -290,6 +290,12 @@ Matrix Element :: giveMassMatrix() const {
 }
 
 //////////////////////////////////////////////////////////
+Vector Element :: giveLumpedMassMatrix() const {
+    Matrix M = giveMassMatrix();    
+    return M.rowwise().sum();
+}
+
+//////////////////////////////////////////////////////////
 Vector Element :: integrateLoad(BodyLoad *vl, double time) const {
     unsigned nDoFs = DoFids.size();
     Vector load = Vector :: Zero(nDoFs);

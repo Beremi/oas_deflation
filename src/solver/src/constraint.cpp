@@ -400,7 +400,6 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
      * }*/
 }
 
-
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) const {
     // bool all explanation: if false (by default), only multipliers are taken into account, if true,  also timeFunction-dependent parts
