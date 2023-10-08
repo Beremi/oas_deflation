@@ -38,7 +38,6 @@ void Fiber :: giveValues(string code, Vector &result) const {
     }
 }
 
-
 //////////////////////////////////////////////////////////
 void Fiber :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num;

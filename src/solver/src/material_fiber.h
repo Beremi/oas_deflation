@@ -23,7 +23,7 @@ private:
     
     int debondedFiber, temp_debondedFiber, pulledOutFiber, temp_pulledOutFiber, rupturedFiber, temp_rupturedFiber, closingCrack, temp_closingCrack;
     
-    double df, rightLe, leftLe;
+    double df, rightLe, leftLe, fiberLength;
     
     Point fiberNormal, contactNormal;
     Vector fiberNormalLocal;

@@ -50,6 +50,10 @@ bool FiberMaterialStatus :: giveValues(string code, Vector &result) const {
         result.resize(1);
         result [ 0 ] = temp_fiberForce;
         return true;
+    } else if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = temp_crackOpening;
+        return true; 
     } else {
         return TensMechMaterialStatus :: giveValues(code, result);
     }
@@ -68,6 +72,7 @@ void FiberMaterialStatus :: init() {
     df = fibElement -> giveDiameter();
     rightLe = fibElement -> giveRightLength( idx );
     leftLe = fibElement -> giveLeftLength( idx );
+    fiberLength = fibElement -> giveLength( );
     fiberNormal = fibElement -> giveDirVector();
     
     RigidBodyContact* mechElement = static_cast < RigidBodyContact* > ( fibElement -> giveRBContact(idx) );
@@ -194,19 +199,22 @@ double derivBridgingForceUnloading( double deltaX, double deltaY ) {
 }
 
 //////////////////////////////////////////////////////////
-Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const {
+Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const { 
     ( void ) type;
     unsigned ss = mat->giveStrainSize();
     
-    Matrix stiffness = Matrix :: Zero(ss, ss);
+    Matrix stiffness = Matrix :: Zero(3,3);
 
-    if ( temp_bridgingForce > 1e-12 and temp_rightPullout > 1e-12 ) {
-        double alpha1, alpha2;
-        alpha1 = temp_bridgingForce / ( temp_rightPullout / contactLength );
-        alpha2 = temp_bridgingForce / ( temp_leftPullout / contactLength );
-        stiffness(0,0) = stiffness(1,1) = stiffness(2,2) = alpha1 * alpha2 / ( alpha1 + alpha2 );
-    } 
+    if ( temp_fiberForce > 1e-12 ) {
+        Vector alpha1 = temp_stress / ( temp_leftPullout / leftLe );
+       
+        Vector alpha2 = temp_stress / ( temp_rightPullout / rightLe );
 
+        stiffness(0,0) = alpha1[ 0 ] * alpha2[ 0 ] / ( alpha1[ 0 ] + alpha2[ 0 ] );
+        stiffness(1,1) = alpha1[ 1 ] * alpha2[ 1 ] / ( alpha1[ 1 ] + alpha2[ 1 ] );
+        stiffness(2,2) = alpha1[ 2 ] * alpha2[ 2 ] / ( alpha1[ 2 ] + alpha2[ 2 ] );
+    }
+    
     //cout << "FiberMaterialStatus::giveStiffnessTensor" << endl;
     cout.flush();
     return stiffness;
@@ -215,8 +223,8 @@ Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const {
 //////////////////////////////////////////////////////////
 Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     ( void ) strain;
-    ( void ) timeStep;
-            
+    ( void ) timeStep;  
+
     FiberMaterial* fibMaterial = static_cast < FiberMaterial* > ( mat );
     double Ef = fibMaterial -> giveEf();
     double Gd = fibMaterial -> giveGd();
@@ -244,11 +252,8 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
     temp_rightPullout = rightPullout + incrementOfCrack / 2.;
     temp_leftPullout = leftPullout + incrementOfCrack / 2.;
     
-// ----------------- BRIDGING FORCE ---------------------- NOTE: considering fiber perpendicular to the contact/crack face
-    if ( temp_crackOpening <= 1e-12 ) { // fiber does not bridge the crack
-        temp_rightPullout = temp_leftPullout = 0;
-        temp_bridgingForce = 0;         
-    } else if ( pulledOutFiber == 1 or rupturedFiber == 1 ) { // fiber was pulled out of matrix or ruptured in the previous step
+// ----------------- BRIDGING FORCE ---------------------- NOTE: considering fiber perpendicular to the contact/crack face         
+    if ( pulledOutFiber == 1 or rupturedFiber == 1 ) { // fiber was pulled out of matrix or ruptured in the previous step
         temp_bridgingForce = 0;
         temp_rightPullout = rightPullout;
         temp_leftPullout = leftPullout;
@@ -257,6 +262,9 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
         } else if ( rupturedFiber == 1 ) {
             temp_rupturedFiber = 1;
         }
+    } else if ( temp_crackOpening <= 1e-12 ) { // fiber does not bridge the crack
+        temp_rightPullout = temp_leftPullout = 0;
+        temp_bridgingForce = 0; 
     } else if ( incrementOfCrack > 0 ) { // crack is opening
         if ( closingCrack == 1 and maxCrackOpening >= temp_crackOpening ) { // crack was closing in the past and now is opening again, but the crack does not reach the max. opening from the past
             while ( iteration <= limIteration ) { // Newton iteration v_new = v_old - f(v_old)/f'(v_old)
@@ -288,7 +296,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
                 } else {
                     temp_rightPullout = temp_leftPullout = limitPullout;
                 }
-            }
+            }            
         } else if ( rightLe != leftLe ) { // shorter side of the fiber (1) is pulling-out of the matrix, longer (2) is unloading
             if ( rightLe < leftLe ) {
                 v1 = temp_rightPullout;
@@ -445,7 +453,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
 // ------------------- STRESS VECTOR --------------------- NOTE: fiberForce is modified bridgingForce due to incline of the fiber
     if ( temp_bridgingForce <= 1e-12 ) {
         temp_fiberForce = 0;
-        temp_stress = Vector :: Zero(contactNormal.size());
+        temp_stress = Vector :: Zero(strain.size());
     } else if ( inclineAngle <= 1e-12 or crackOpeningVector[ 0 ] <= 1e-12 ) { // without SNUBBING MODEL - no microeffect at exit points
         temp_fiberForce = temp_bridgingForce;
         temp_stress = temp_fiberForce * crackOpeningVector / temp_crackOpening;
@@ -467,22 +475,22 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
                 spallingLength = temp_spallingLength;
             }
           iteration += 1;
-        }
+        } 
         if ( iteration > limIteration ) {
             cout << " FIBER ERROR (4): Limit iteration for snubbing model was reached ! " << endl;                  
             exit(1); 
         }
-    }
+    }    
     
 // -------------------------- RUPTURE CONDITION ---------------------------------------------------
-    double temp_fiberStress = 4. * temp_fiberForce / M_PI / pow(df,2);
+    double temp_fiberStress = 4. * temp_fiberForce / M_PI / pow(df,2);    
     double limitFiberStress = ft * exp( -Krup * deflectionAngle );
     if ( temp_fiberStress > limitFiberStress ){
-        //temp_bridgingForce = temp_fiberForce = 0;
-        //temp_stress = Vector :: Zero(contactNormal.size());
-        //temp_rupturedFiber = 1;
+        temp_bridgingForce = temp_fiberForce = 0;
+        temp_stress = Vector :: Zero(strain.size());
+        temp_rupturedFiber = 1;
     } 
-          
+    
     //cout << "FiberMaterialStatus::giveStress" << endl;
     cout.flush();
     return temp_stress;
@@ -493,9 +501,19 @@ Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, 
     ( void ) strain;
     ( void ) timeStep;
 
-    temp_crackOpening = strain.norm() * contactLength;
+    //temp_crackOpening = strain.norm() * contactLength; 
+    //Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic") * temp_crackOpening;
 
-    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic") * temp_crackOpening;
+    Fiber* fibElement = static_cast < Fiber* > ( element );
+    CSLMaterialStatus* CSLMatStatus = static_cast < CSLMaterialStatus* > ( fibElement -> giveRBContact(idx) -> giveMatStatus(0) );
+    
+    crackOpeningVector = CSLMatStatus -> giveCrackOpeningVector();
+    if ( crackOpeningVector[ 0 ] < 0 ) {
+        crackOpeningVector[ 0 ] = 0;
+    }
+    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic") * crackOpeningVector;
+    
+    //Vector stressWithFrozenIntVars = giveStress( strain, timeStep );
 
     //cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
     cout.flush();
@@ -516,6 +534,8 @@ void FiberMaterialStatus :: setParameterValue(string code, double value) {
 
 FiberMaterial :: FiberMaterial(unsigned dimension) : TensMechMaterial(dimension) {
     name = "fiber material";
+    strainsize = dimension;
+
     // if variables not specified on the input, use default multipliers
     Ef = Gd = tau0 = betaf = ft = Ksn = Ksp = Krup = 0;
 }
