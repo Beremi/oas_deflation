@@ -454,7 +454,7 @@ Matrix TensCosseratMechMaterialStatus :: giveStiffnessTensor(string type) const 
         if ( m->isPlaneStress() ) {
             cerr << name << " error: dimension " << dimension << ", Cosserat plane stress not implemented" << endl;
             exit(1);
-        } else {  //plane strain ACTUALLY NOT IMPLEMENTED YET
+        } else {  //plane strain
             D(0, 0) = D(1, 1) = lammeL + 2. * lammeM;
             D(0, 1) = D(1, 0) = lammeL;
             D(2, 2) = D(3, 3) = lammeM + m->giveCosseratShearParam();

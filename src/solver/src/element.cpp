@@ -138,6 +138,9 @@ void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result)
         for ( unsigned k = 0; k < ndim; k++ ) {
             result [ k ] = ( * h ) [ k ];
         }
+    } else if ( code.compare("weight") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = inttype->giveIPWeight(ipnum);
     } else if ( code.compare("x") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->x();
