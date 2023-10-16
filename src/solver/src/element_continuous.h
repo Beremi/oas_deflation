@@ -86,6 +86,7 @@ public:
     virtual ~CosseratQuad() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveMassMatrix() const;
 };
 
 

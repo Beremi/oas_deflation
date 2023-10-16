@@ -354,14 +354,14 @@ TensMechMaterialStatus :: TensMechMaterialStatus(TensMechMaterial *m, Element *e
 //////////////////////////////////////////////////////////
 bool TensMechMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
-        unsigned size = ( element->giveDimension() - 1 ) * 3;
+        unsigned size = temp_stress.size();
         result.resize(size);
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
         }
         return true;
     } else if ( code.compare("strain") == 0 || code.compare("strains") == 0 ) {
-        unsigned size = ( element->giveDimension() - 1 ) * 3;
+        unsigned size = temp_strain.size();
         result.resize(size);
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_strain [ p ];

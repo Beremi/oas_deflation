@@ -225,6 +225,22 @@ Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+Matrix CosseratQuad :: giveMassMatrix() const {
+    Matrix H = MechanicalQuad::giveMassMatrix();
+    //the micro inertia effect are wrong as they are based on density. Better delete them.
+    for(unsigned i=0; i<4; i++){
+        for(unsigned j=0; j<4; j++){
+            H(3*i+2,3*j+2) = 0;
+            H(3*i+1,3*j+2) = 0;
+            H(3*i+2,3*j+1) = 0;
+        }
+    }
+    //cout << "---------------------" << endl;
+    //cout << H << endl;
+    return H;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK COSSERAT MECHANICAL ELEMENT
 CosseratBrick :: CosseratBrick() {
