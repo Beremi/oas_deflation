@@ -198,7 +198,7 @@ public:
     Point giveCentroid() { return centroid; };
     std :: vector< std :: vector< Vector > > *giveProjectors() { return & projectors; };
     bool isNonlinear() const { return nonlinear; };
-    bool projectCurvature() const {return project_curvature;};
+    bool projectCurvature() const { return project_curvature; };
     virtual void readFromLine(std :: istringstream &iss);
 };
 

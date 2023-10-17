@@ -70,15 +70,15 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
 
     for ( unsigned i = 0; i < 12; i++ ) {
         //true face normal
-        Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() ).cross(vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
+        Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() ).cross( vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
         n /= n.norm();
         //contact vector
         normals [ i ] = nodes [ nodecodes [ 2 * i + 1 ] ]->givePoint() - nodes [ nodecodes [ 2 * i ] ]->givePoint();
         lengths [ i ] = normals [ i ].norm();
         normals [ i ] /= lengths [ i ];
         inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
-        areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
-        areas [ i ] *= abs( n.dot(normals [ i ]) ); //projection of area
+        areas [ i ] = triArea3D(vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
+        areas [ i ] *= abs(n.dot(normals [ i ]) );  //projection of area
 
         Point t1, t2;
         //t1 = inttype->giveIPLocation(i)-vert [ 0 ]->givePoint();   this is wrong for irregular TET
@@ -88,12 +88,12 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
             t1 = arbit.cross(normals [ i ]);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs(normals [ i ].x() ) > 1e-3 ) {
+            if ( abs( normals [ i ].x() ) > 1e-3 ) {
                 t1 = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
-            } else if ( abs(normals [ i ].y() ) > 1e-3 ) {
+            } else if ( abs( normals [ i ].y() ) > 1e-3 ) {
                 t1 = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
             } else {
-                t1 = Point(1, 0, -normals [ i ].x() / normals [ i ].z() );
+                t1 = Point( 1, 0, -normals [ i ].x() / normals [ i ].z() );
             }
         }
         t1.normalize();
@@ -138,7 +138,7 @@ void LDPMTetra :: init() {
         k = ( i + 2 ) % 4;
         l = ( i + 3 ) % 4;
         averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
-        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross(nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross( nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
         volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
         sign = volume / abs(volume);
         for ( unsigned v = 0; v < 3; v++ ) {
@@ -160,9 +160,9 @@ Matrix LDPMTetra :: giveBMatrix(unsigned k) const {
     unsigned nB = nodecodes [ 2 * k + 1 ];
     Matrix B = Matrix :: Zero(3, 24);
     Particle *a = static_cast< Particle * >( nodes [ nA ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
     a = static_cast< Particle * >( nodes [ nB ] );
-    Matrix Ab = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
+    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
 
     for ( unsigned i = 0; i < 3; i++ ) {
         for ( unsigned j = 0; j < 6; j++ ) {

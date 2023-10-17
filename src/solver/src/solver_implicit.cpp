@@ -36,7 +36,6 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
-
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 }
@@ -80,7 +79,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -423,13 +422,13 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         full_ddrPF [ pff ] += pow(full_ddr [ i ], 2);
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
         energyPF [ pff ] += abs(residuals [ i ] * full_ddr [ i ]);
-        W_int [ pff ] += abs(0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-        W_ext [ pff ] += abs(0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        W_int [ pff ] += abs( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        W_ext [ pff ] += abs( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
         W_kin [ pff ] += 0.; //TODO: correct kinetic energy
     }
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
-        resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
         eneErr += energyPF [ i ] / max(max(max(W_ext [ i ], W_int [ i ]), W_kin [ i ]), EPS2 [ i ]);
     }
@@ -877,7 +876,7 @@ void TransientLinearTransportSolver :: rebuild() {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -930,7 +929,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 
     double num;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1088,14 +1087,14 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: computeForcesAtStepEnd(const bool frozen) {
     elems->integrateDampingForces(v, f_dam);
-    elems->integrateInertiaForces( a, f_acc );
+    elems->integrateInertiaForces(a, f_acc);
     computeInternalExternalForces(trial_r, load, frozen, dt);
     residuals -= f_dam + f_acc;
 }

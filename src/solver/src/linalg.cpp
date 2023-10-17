@@ -173,22 +173,20 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
 }
 
 bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b) {
+    //return LinalgSymmetricSolver(A, x, b, x, 1e-12, 2, "EigenConj");
 
-    
-    //return LinalgSymmetricSolver(A, x, b, x, 1e-12, 2, "EigenConj"); 
 
-    
     //Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int> > solver;
-    
+
     // fill A and b;
     // Compute the ordering permutation vector from the structural pattern of A
-    //solver.analyzePattern(A); 
-    
-    // Compute the numerical factorization 
-    //solver.factorize(A); 
-    
-    //Use the factors to solve the linear system 
-    //x = solver.solve(b); 
+    //solver.analyzePattern(A);
+
+    // Compute the numerical factorization
+    //solver.factorize(A);
+
+    //Use the factors to solve the linear system
+    //x = solver.solve(b);
 
     return 0;
 }
@@ -202,7 +200,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot(AC.cross(AD) );
+    double coplanarityError = AB.dot( AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -316,15 +314,15 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         weis [ 0 ] = weis [ 2 ] = 5. / 9.;
         weis [ 1 ] = 8. / 9.;
     } else if ( n == 4 ) {
-        locs [ 0 ] = -sqrt( 3. / 7. + 2. / 7. * sqrt(6. / 5.) );
-        locs [ 1 ] = -sqrt( 3. / 7. - 2. / 7. * sqrt(6. / 5.) );
+        locs [ 0 ] = -sqrt(3. / 7. + 2. / 7. * sqrt(6. / 5.) );
+        locs [ 1 ] = -sqrt(3. / 7. - 2. / 7. * sqrt(6. / 5.) );
         locs [ 2 ] = -locs [ 1 ];
         locs [ 3 ] = -locs [ 0 ];
         weis [ 0 ] = weis [ 3 ] = ( 18. - sqrt(30.) ) / 36;
         weis [ 1 ] = weis [ 2 ] = ( 18. + sqrt(30.) ) / 36;
     } else if ( n == 5 ) {
-        locs [ 0 ] = -sqrt( 5. + 2. * sqrt(10. / 7.) ) / 3;
-        locs [ 1 ] = -sqrt( 5. - 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 0 ] = -sqrt(5. + 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 1 ] = -sqrt(5. - 2. * sqrt(10. / 7.) ) / 3;
         locs [ 2 ] = 0.;
         locs [ 3 ] = -locs [ 1 ];
         locs [ 4 ] = -locs [ 0 ];

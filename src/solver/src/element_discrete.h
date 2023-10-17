@@ -17,7 +17,7 @@ protected:
     Matrix R;
     bool projectArea, userDefinedCentroid;
     std :: string intPoints;
-    
+
 
     Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;
@@ -43,7 +43,7 @@ public:
     virtual Vector transformToLocal(const Vector &DoFs) const;
     virtual Vector transformToGlobal(const Vector &DoFs) const;
     Vector transformVectorToXYZ(Vector &result) const;
-
+    virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
     virtual void giveValues(std :: string code, Vector &result) const;
     Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     Point giveNormal() const { return normal; };
@@ -112,7 +112,7 @@ public:
 
     void init();
 
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
@@ -137,8 +137,8 @@ public:
 
     void init();
 
-    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
