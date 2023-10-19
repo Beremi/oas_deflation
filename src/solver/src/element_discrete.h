@@ -17,6 +17,7 @@ protected:
     Matrix R;
     bool projectArea, userDefinedCentroid;
     std :: string intPoints;
+    bool ignoreNegativeAreas; //for boundary elements that are not enclosed
 
 
     Matrix giveRMatrix() const { return R; };

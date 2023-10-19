@@ -21,6 +21,7 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) : Element(dim) {
     projectArea = true;
     intPoints = "centroid";
     userDefinedCentroid = false;
+    ignoreNegativeAreas = false;
 }
 
 
@@ -105,6 +106,8 @@ void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnod
             userCentroid = Point(x, y, z);
         } else if ( param.compare("area_projection") == 0 ) {
             iss >> projectArea;
+        } else if ( param.compare("ignore_negative_area") == 0 ) {
+            ignoreNegativeAreas = true;
         }
     }
     mat = fullmatrs->giveMaterial(num);
@@ -262,9 +265,11 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             ais [ i ] = ni.norm() / 2;
             ni.normalize();
             ais [ i ] *= ni.dot(normal);
-            if ( ais [ i ] < 1e-12 ) {
+            if ( ais [ i ] < 1e-12 && !ignoreNegativeAreas) {
                 cout << "RigidBodyContact Warning: negative area, incorrect orientation of verices, corrected automatically" << endl;
                 ais [ i ] = std :: abs(ais [ i ]);
+            } else {
+                ais [ i ] = 0.;
             }
             area += ais [ i ];
             ni = ( vert [ i ]->givePoint() - vert [ j ]->givePoint() );   //just for periemeter
@@ -630,7 +635,8 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
             result [ d ] [ 1 ] =  area * ipres [ 0 ] * abs(B [ d ]);
         }
-    } else if ( ipres.size() == A.size() ) { //vector times vector of same length, symmetrization
+    } else if ( ipres.size() >= A.size() ) { //vector times vector of same length, symmetrization   
+        ipres.resize(A.size());
         //transform result to xyz
         Vector ipresglobal = transformVectorToXYZ(ipres);
 
