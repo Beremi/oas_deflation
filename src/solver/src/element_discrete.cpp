@@ -190,7 +190,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         centroid = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
-        IntegrDiscrete1 *it = dynamic_cast< IntegrDiscrete1 * >( inttype );
+        IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
         it->setNumIP(n);
         //Gauss integration, not used
         if ( false && n < 5 ) {
@@ -277,7 +277,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             perimeter += ni [ 0 ];
         }
 
-        IntegrDiscrete1 *it = dynamic_cast< IntegrDiscrete1 * >( inttype );
+        IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
         if ( intPoints.compare("centroid") == 0 ) {
             it->setNumIP(1);
             inttype->setIPLocation(0, centroid);
@@ -1100,6 +1100,9 @@ void DiscreteTrsprtElem :: readFromLine(istringstream &iss, NodeContainer *fulln
 
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
+
+    IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
+    it->setNumIP(1);
     stats.resize(1);
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();

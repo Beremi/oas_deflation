@@ -943,6 +943,28 @@ Point DiscreteMechanicalRVEMaterialStatus :: calculateCentroid() {  //only for m
 }
 
 //////////////////////////////////////////////////////////
+double DiscreteMechanicalRVEMaterialStatus :: computeAverageDensity() const {
+
+    ElementContainer *elems = RVE->giveElements();
+
+    //mechanics
+    RigidBodyContact *e;
+    VectMechMaterialStatus *ms;
+    double weight = 0;
+    double volume = 0;
+        
+    for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+        e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
+        for ( unsigned k = 0; k < e->giveNumIP(); k++ ) {
+            ms = static_cast< VectMechMaterialStatus * >( e->giveMatStatus(k) );
+            weight += e->giveIPWeight(k) * ms->giveDensity();
+            volume += e->giveVolume();
+        }
+    }
+    return weight/volume;
+}
+
+//////////////////////////////////////////////////////////
 vector< vector< Vector > >DiscreteMechanicalRVEMaterialStatus :: calculateProjectors(const Point centroid) {   //only for mechanics
     vector< vector< Vector > >projectors;
 
@@ -1101,11 +1123,9 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
                         Keff(i, j) = help_stress [ j ] / factor;
                     }
                 }
-
-
-                cout << Keff << endl;
             }
             macromaterial->setPrecomputedElasticTensor(Keff);
+            macromaterial->setAverageDensity(computeAverageDensity());
             is_precomputed = true; //set back to precomputed to use it
         }
     }
@@ -1281,6 +1301,15 @@ void DiscreteMechanicalRVEMaterialStatus :: calculateTransformationMatrix() {
 }
 
 //////////////////////////////////////////////////////////
+Matrix DiscreteMechanicalRVEMaterialStatus :: giveMassTensor() const {
+    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    Matrix M = Matrix :: Zero(macromat->giveStrainSize(),macromat->giveStrainSize());
+    for (unsigned i=0; i<macromat->giveDimension(); i++) M(i,i) = macromat->giveAverageDensity();
+    return M;
+};
+
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DISCRETE MECHANICAL RVE MATERIAL
 //////////////////////////////////////////////////////////
@@ -1291,6 +1320,7 @@ DiscreteMechanicalRVEMaterial :: DiscreteMechanicalRVEMaterial(unsigned dimensio
     strainsize = dim * dim;
     strainsize += ( dim == 3 ) ? dim * dim : dim; //in 2D only vector
     project_curvature = false;
+    average_density = 0.;
 }
 
 //////////////////////////////////////////////////////////
