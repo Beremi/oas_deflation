@@ -197,6 +197,8 @@ public:
     std :: vector< Node * >giveVertices() const { return vert; };
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
+    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////

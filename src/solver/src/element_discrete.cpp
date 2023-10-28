@@ -1277,6 +1277,44 @@ Matrix DiscreteTrsprtElem :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+void DiscreteTrsprtElem :: giveValues(string code, Vector &result) const {
+    if ( code.compare("normal") == 0 ) {
+        result.resize(ndim);
+        for ( unsigned i = 0; i < ndim; i++ ) {
+            result [ i ] = normal(i);
+        }
+    } else if ( code.compare("volume") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = area * length / ndim;
+    } else if ( code.compare("area") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = area;
+    } else if ( code.compare("length") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = length;
+    } else {
+        Element :: giveValues(code, result);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void DiscreteTrsprtElem :: giveIPValues(std :: string code, unsigned ipnum, Vector &result) const {
+    if ( ipnum >= inttype->giveNumIP() ) {
+        std :: cerr << name <<  " Error: intergration point number " << ipnum << " exceeds number of integration points" << std :: endl;
+        exit(1);
+    }
+    if ( code.compare("location") == 0 ) {
+        result.resize(ndim);
+        Point *h = inttype->giveIPLocationPointer(ipnum);
+        for ( unsigned k = 0; k < ndim; k++ ) {
+            result [ k ] = ( * h ) [ k ];
+        }
+    } else {
+        Element :: giveIPValues(code, ipnum, result);
+    }
+};
+
+//////////////////////////////////////////////////////////
 Matrix DiscreteTrsprtElem :: giveDampingMatrix() const {
     Matrix S = Matrix :: Zero(2, 2);
     double s = area * stats [ 0 ]->giveDampingTensor()(0, 0) * length /  ( 2. * ndim );
