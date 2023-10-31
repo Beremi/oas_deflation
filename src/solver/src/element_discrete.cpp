@@ -265,11 +265,13 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             ais [ i ] = ni.norm() / 2;
             ni.normalize();
             ais [ i ] *= ni.dot(normal);
-            if ( ais [ i ] < 1e-12 && !ignoreNegativeAreas) {
-                cout << "RigidBodyContact Warning: negative area, incorrect orientation of verices, corrected automatically" << endl;
-                ais [ i ] = std :: abs(ais [ i ]);
-            } else {
-                ais [ i ] = 0.;
+            if ( ais [ i ] < 1e-15) {
+                if (!ignoreNegativeAreas) {
+                    cout << "RigidBodyContact Warning: negative area, incorrect orientation of verices, corrected automatically" << endl;
+                    ais [ i ] = std :: abs(ais [ i ]);
+                } else {
+                    ais [ i ] = 0.;
+                }
             }
             area += ais [ i ];
             ni = ( vert [ i ]->givePoint() - vert [ j ]->givePoint() );   //just for periemeter
@@ -584,7 +586,6 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
-    Matrix KK = Element :: giveStiffnessMatrix(matrixType);
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
 }
 

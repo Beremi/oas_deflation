@@ -18,8 +18,6 @@ SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
-    Solver :: init(init_r_file, init_v_file, initial);
-
     //nodes->addRHS_nodalLoad(load, 0); //to correctly account for abrupt initial change of BC
     //nodes->updateDirrichletBC(r, 0); //to correctly account for abrupt initial change of BC
 
@@ -36,6 +34,7 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    Solver :: init(init_r_file, init_v_file, initial);
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 }
@@ -849,6 +848,7 @@ void TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(stri
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 
@@ -1023,6 +1023,7 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    Solver :: init(init_r_file, init_v_file, initial);
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 

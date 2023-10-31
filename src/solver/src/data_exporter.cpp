@@ -176,7 +176,9 @@ void TXTNodalExporter :: init() {
     for ( unsigned i = 0; i < ncod; i++ ) {
         maxsize [ i ] = 0;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-            nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], fakeDoFs, res);
+            if (codes[i].compare("reaction")==0){
+                res.resize(nodes->giveNode(n)->giveNumberOfDoFs());
+            } else nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], fakeDoFs, res);
             maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );    // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
         }
     }
@@ -184,7 +186,6 @@ void TXTNodalExporter :: init() {
 
 //////////////////////////////////////////////////////////
 void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) reactions;
     char buffer[ 100 ];
     Node *nn;
     giveFileName(step, buffer);
@@ -211,7 +212,12 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
             nn = nodes->giveNode(n);
             outputfile << nn->giveID();
             for ( unsigned c = 0; c < codes.size(); c++ ) {
-                nn->giveDoFBasedValues(codes [ c ], DoFs, res);
+                if (codes[c].compare("reaction")==0){
+                    res.resize(nn->giveNumberOfDoFs());
+                    for(unsigned i=0; i<nn->giveNumberOfDoFs(); i++){
+                        res[i] = reactions[nn->giveStartingDoF()+i];
+                    }
+                } else nn->giveDoFBasedValues(codes [ c ], DoFs, res);
                 for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
                     outputfile << "\t" << res [ p ] * multiplier;
                 }
