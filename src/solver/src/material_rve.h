@@ -59,11 +59,13 @@ protected:
 public:
     RVEMaterial(unsigned dimension) : Material(dimension)  { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; start_from_precomputed = true; };
     virtual ~RVEMaterial() {};
+    virtual void init(MaterialContainer *matcont);
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     fs :: path givePathToInputFile() const { return inputfile; };
     void setPathToInputFolder(std :: string f) { inputfile = GlobPaths :: BASEDIR  / f; };
     void enforceLinearity() { nonlinear = false; };
+    bool shouldStayLinear() { return !nonlinear; };
     bool isElasticSolutionVoigt() const { return elastic_sol_is_Voigt; };
     bool shouldStartFromPrecomputed() const { return start_from_precomputed; };
     void setStartFromPrecomputed(bool s) { start_from_precomputed = s; };
@@ -263,6 +265,7 @@ protected:
 public:
     DiscreteCoupledRVEMaterial(unsigned dimension);
     virtual ~DiscreteCoupledRVEMaterial();
+    virtual void init(MaterialContainer *matcont);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void readFromLine(std :: istringstream &iss);
     DiscreteMechanicalRVEMaterial *giveMechanicalRVEmat() { return mechRVEmat; }

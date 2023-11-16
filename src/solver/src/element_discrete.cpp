@@ -1458,8 +1458,8 @@ Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
     for ( auto &f: friends ) {
         elem_crack_opening = 0.;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
-            f->giveIPValues("tempCrackOpening", k, res);
-            elem_crack_opening += abs(res [ 0 ]);
+            f->giveIPValues("crack_opening", k, res);
+            if (res.size()==1)  elem_crack_opening += abs(res [ 0 ]);
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
         if ( ndim == 3 ) {

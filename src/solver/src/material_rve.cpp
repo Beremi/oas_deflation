@@ -98,6 +98,12 @@ void RVEMaterial :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
+void RVEMaterial :: init(MaterialContainer *matcont) {
+    Material::init(matcont);
+    if(!nonlinear) start_from_precomputed = true;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DISCRETE TRANSPORT RVE MATERIAL
 //////////////////////////////////////////////////////////
@@ -1807,6 +1813,15 @@ DiscreteCoupledRVEMaterial :: DiscreteCoupledRVEMaterial(unsigned dimension) : R
     PUCVolume = 0;
 };
 
+
+//////////////////////////////////////////////////////////
+void DiscreteCoupledRVEMaterial :: init(MaterialContainer *matcont) {
+    RVEMaterial::init(matcont);
+    if(!nonlinear) {
+        mechRVEmat->setStartFromPrecomputed(true);
+        trspRVEmat->setStartFromPrecomputed(true);
+    }
+}
 
 //////////////////////////////////////////////////////////
 DiscreteCoupledRVEMaterial :: ~DiscreteCoupledRVEMaterial() {
