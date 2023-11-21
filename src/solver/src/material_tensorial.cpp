@@ -459,7 +459,7 @@ Matrix TensCosseratMechMaterialStatus :: giveStiffnessTensor(string type) const 
             D(0, 1) = D(1, 0) = lammeL;
             D(2, 2) = D(3, 3) = lammeM + m->giveCosseratShearParam();
             D(2, 3) = D(3, 2) = lammeM - m->giveCosseratShearParam();
-            D(4, 4) = D(5, 5) = lammeM * 4. * m->giveCharacteristicLength();
+            D(4, 4) = D(5, 5) = lammeM * 4. * pow(m->giveCharacteristicLength(),2);
         }
     } else {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
