@@ -130,6 +130,20 @@ Build OAS in AppImage format (format for distributing software on Linux)
   appimage-builder --recipe AppImageBuilder.yml --skip-tests
 \endcode
 
+\subsubsection MacOS MacOS
+Build OAS on MacOS (tested on Monterey, Ventura) using Homebrew (https://brew.sh)
+\code{.sh}
+  brew install llvm
+  brew install vtk
+  brew install libomp
+  brew install lapack
+  brew install openblas
+  cmake -DCMAKE_C_COMPILER="/usr/local/opt/llvm/bin/clang" -DCMAKE_CXX_COMPILER="/usr/local/opt/llvm/bin/clang++" -DCMAKE_CXX_FLAGS="-I/usr/local/opt/libomp/include" -DLAPACK_ROOT="/usr/local/opt/lapack" -DBLAS_ROOT="/usr/local/opt/openblas" -DOpenMP_ROOT="/usr/local/opt/libomp" ../OAS
+  # if linker error on Ventura try to add "-Xlinker -ld_classic" to CMAKE_CXX_FLAGS
+\endcode
+\note{Tested with gcc-13 and some other compilers but got error/segmentation fault during different stages after OAS start. The working version was obtained using LLVM.}
+
+
 
 \subsection Builddoc Build Documentation
 -# build documentation
