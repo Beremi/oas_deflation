@@ -104,6 +104,8 @@ double LDPMMaterialStatus :: giveStrengthLimit(double omega) {
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_prev, Vector stress_prev) {
+
+    if (idx==0){ cout << "tension" << endl; }
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
     // new strains & strains + stresses from previous step
@@ -374,20 +376,6 @@ Vector LDPMMaterialStatus :: passZero(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMMaterialStatus :: passThroughZero(const Vector &strain) {
-    Vector intStrain = Vector :: Zero( strain.size() );   // itermediary strains when passing 0
-    Vector intStress = Vector :: Zero( strain.size() );   // itermediary stresses when passing 0
-
-    if ( strain [ 0 ] > 0 ) {  // passing from zero to tension
-        temp_stress = giveTension(strain, updt_strain, intStress);
-    } else if ( strain [ 0 ] <= 0 ) {  // passing from zero to compression
-        temp_stress = giveCompression(strain, intStrain, intStress);
-    }
-
-    return temp_stress;
-}
-
-//////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     temp_strain = strain;
     temp_mech_strain = addEigenStrain(strain);
@@ -398,17 +386,16 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
     double epsNState = temp_mech_strain [ 0 ] * updt_mech_strain [ 0 ];  // gives information about the evolution of normal strains
-    if ( epsNState < -1e-25 ) {  // change of sign of EpsN
+    if ( epsNState < 0 ) {  // change of sign of EpsN
         temp_stress = passZero(temp_mech_strain);
-    } else if ( epsNState > 1e-25 ) {
-        if ( temp_mech_strain [ 0 ] < 0 ) {  // normal evolution in compression
+    } else {
+        if ( min(temp_mech_strain [ 0 ], updt_mech_strain [ 0 ]) <= 0 ) {  // normal evolution in compression            
             temp_stress = giveCompression(temp_mech_strain, updt_mech_strain, updt_stress);
-        } else if ( temp_mech_strain [ 0 ] >= 0 ) {     // normal evolution in tension
+        } else if ( temp_mech_strain [ 0 ] > 0 ) {     // normal evolution in tension
             temp_stress = giveTension(temp_mech_strain, updt_mech_strain, updt_stress);
         }
-    } else if ( updt_mech_strain [ 0 ] > -1e-18 && updt_mech_strain [ 0 ] < 1e-18 ) {   // originally == 0
-        temp_stress = passThroughZero(temp_mech_strain);
-    }
+    } 
+
 
     // if ( temp_stress [ 0 ] < 0 && temp_stress [ 0 ] < m->giveFc0() ) {
     //     temp_crackOpening = ( temp_mech_strain [ 0 ] - ( m->giveFc0() / m->giveE0() ) - ( temp_stress [ 0 ] - m->giveFc0() / m->giveE0() ) ) * L;
@@ -620,7 +607,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
             iss >> kt;
         } else if ( param.compare("beta") == 0 ) {
             iss >> beta;
-        } else if ( param.compare("fc") == 0 ) {
+        } else if ( param.compare("fc") == 0 ) { //NO USE???
             iss >> fc;
         } else if ( param.compare("fc0") == 0 ) {
             bfc0 = true;
@@ -641,7 +628,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
             iss >> Kc3;
         } else if ( param.compare("fs") == 0 ) {
             iss >> fs;
-        } else if ( param.compare("fs0") == 0 ) {
+        } else if ( param.compare("fs0") == 0 ) { //sigma N0, transitional stress
             bfs0 = true;
             iss >> fs0;
         } else if ( param.compare("Et") == 0 ) {

@@ -27,8 +27,12 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     normals.resize(12);
     R.resize(12);
 
-    nodecodes = { 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 2, 3, 0, 1, 0, 3, 1, 3, 0, 1, 0, 2, 1, 2 };
-    vertcodes = { 1, 2, 3, 1, 1, 4, 6, 5, 5, 7, 4, 5, 8, 9, 7, 8, 8, 3, 9, 10, 10, 6, 2, 10 }; //last point is always centroid at position 0
+    nodecodes = { 0, 1, 0, 1, 0, 2, 0, 2, 0, 3, 0, 3, 1, 2, 1, 2, 1, 3, 1, 3, 2, 3, 2, 3};
+    vertcodes = { 8, 1, 1, 7, 2, 9, 7, 2, 3, 9, 8, 3, 10, 4, 4, 7, 5, 10, 8, 5, 10, 6, 6, 9}; //last point is always centroid at position 0
+
+    //OLD NUMBERING
+    //nodecodes = { 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 2, 3, 0, 1, 0, 3, 1, 3, 0, 1, 0, 2, 1, 2 };
+    //vertcodes = { 1, 2, 3, 1, 1, 4, 6, 5, 5, 7, 4, 5, 8, 9, 7, 8, 8, 3, 9, 10, 10, 6, 2, 10 }; //last point is always centroid at position 0
 }
 
 
