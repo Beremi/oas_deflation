@@ -41,10 +41,7 @@ public:
     virtual void setEigenStrain(Vector &x);
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
-    virtual void readFromLine(std :: istringstream &iss) {
-        ( void ) iss;
-        std :: cout << "no internal variables to read, you need to implement this possibility for " << this->name << '\n';
-    };
+    virtual void readFromLine(std :: istringstream &iss);
     virtual Vector giveInternalSource()const { return Vector(0); };
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value) { ( void ) code; ( void ) value; };

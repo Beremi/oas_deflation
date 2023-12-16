@@ -254,6 +254,8 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
 // but at that time, mat_stats are still before init() so all the matStats vould be reset after that
 void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
     this->file_to_load_from.push_back(str);
+    //the commented part belonged to adaptivity feature    
+    /*
     // TODO JK: make the following more universally, now it works only for LD, but the file can be named by any other name
     if ( this->file_to_load_from.size() == 1 ) {
         // if LD file exists, it will be deleted, so rename it
@@ -276,16 +278,14 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
             LD_num++;
         }
     }
+    */
 };
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, double &ini_time_step, double &ini_idc_time, const bool get_time_from_file) {
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
-        unsigned elem_id, stat_id, mat_id, st;
-        double timo, idc_timo, time_step;
-        std :: vector< double >initial_times, ini_time_steps, initial_idc_times;
-        std :: vector< unsigned >initial_steps;
+        unsigned elem_id, stat_id;
         for ( auto const &file_with_stats : this->file_to_load_from ) {
             ifstream inputfile( file_with_stats.c_str() );
             if ( inputfile.is_open() ) {
@@ -295,17 +295,8 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                     }
                     istringstream iss(line);
                     iss >> param;
-                    if ( param.compare("time") == 0 ) {
-                        iss >> timo >> st >> time_step >> idc_timo;
-                        initial_times.push_back(timo);
-                        initial_steps.push_back(st);
-                        ini_time_steps.push_back(time_step);
-                        initial_idc_times.push_back(idc_timo);
-                    } else if ( param.compare("matStat") == 0 ) {
-                        iss >> elem_id >> stat_id >> mat_id;
-                        // std::cout << "line: " << line << '\n';
-                        // std::cout << "elem name: " << this->giveElement(elem_id)->giveName() << '\n';
-                        this->giveElement(elem_id)->changeMaterial( this->materials->giveMaterial(mat_id) );
+                    if ( param.compare("matStat") == 0 ) {
+                        iss >> elem_id >> stat_id;
                         this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
                     }
                 }
@@ -314,25 +305,6 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                 std :: cerr << "there is no such file " << file_with_stats << '\n';
                 exit(EXIT_FAILURE);
             }
-        }
-        if ( get_time_from_file ) {
-            if ( initial_times.size() == 0 ) {
-                std :: cerr << "could not determine the starting time " << '\n';
-                std :: cerr << "there is no line beginning with \'time\'" << '\n';
-                exit(EXIT_FAILURE);
-            }
-            // check if time and step in all the files with matStats
-            for ( unsigned i = 0; i < initial_times.size(); i++ ) {
-                if ( fmax(initial_times [ i ] - initial_times [ 0 ], initial_steps [ i ] - initial_steps [ 0 ]) > 1e-6 ) {
-                    std :: cerr << "times or steps in various files containing matStats differ" << '\n';
-                    exit(EXIT_FAILURE);
-                }
-            }
-            // and set them accordign to values from files
-            ini_step = initial_steps [ 0 ];
-            ini_time = initial_times [ 0 ];
-            ini_time_step = ini_time_steps [ 0 ];
-            ini_idc_time = initial_idc_times [ 0 ];
         }
     }
 }

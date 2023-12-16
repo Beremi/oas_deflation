@@ -333,6 +333,11 @@ void CSLMaterialStatus :: setParameterValue(string code, double value) {
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: readFromLine(istringstream &iss) {
+    VectMechMaterialStatus :: readFromLine(iss);
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+
     std :: string param;
     while (  iss >> param ) {
         if ( param.compare("damage") == 0 ) {

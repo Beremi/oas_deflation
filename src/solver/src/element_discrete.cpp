@@ -69,6 +69,12 @@ void RigidBodyContact :: giveValues(string code, Vector &result) const {
     } else if ( code.compare("volume") == 0 ) {
         result.resize(1);
         result [ 0 ] = area * length / ndim;
+    } else if ( code.compare("volumeA") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = giveVolumeAssociatedWithNode(0);
+    } else if ( code.compare("volumeB") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = giveVolumeAssociatedWithNode(1);
     } else if ( code.compare("area") == 0 ) {
         result.resize(1);
         result [ 0 ] = area;
@@ -95,6 +101,7 @@ void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnod
         vert [ i ] = fullnodes->giveNode(num2);
     }
     iss >> num;
+    mat = fullmatrs->giveMaterial(num);
     string param;
     while ( iss >> param ) {
         if ( param.compare("integration") == 0 ) {
@@ -108,9 +115,9 @@ void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnod
             iss >> projectArea;
         } else if ( param.compare("ignore_negative_area") == 0 ) {
             ignoreNegativeAreas = true;
-        }
+        } 
     }
-    mat = fullmatrs->giveMaterial(num);
+
 }
 
 //////////////////////////////////////////////////////////
@@ -267,7 +274,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             ais [ i ] *= ni.dot(normal);
             if ( ais [ i ] < 1e-15) {
                 if (!ignoreNegativeAreas) {
-                    cout << "RigidBodyContact Warning: negative area, incorrect orientation of verices, corrected automatically" << endl;
+                    cout << "RigidBodyContact Warning: negative area " << ais[i]<< ", incorrect orientation of verices, corrected automatically" << endl;
                     ais [ i ] = std :: abs(ais [ i ]);
                 } else {
                     ais [ i ] = 0.;
