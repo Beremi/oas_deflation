@@ -1127,7 +1127,7 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
                     help_strain [ i ] = 0.;
                     for ( unsigned j = 0; j < strain_size; j++ ) {
                         Keff(i, j) = help_stress [ j ] / factor;
-                    }
+                    }                    
                 }
             }
             macromaterial->setPrecomputedElasticTensor(Keff);

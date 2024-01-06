@@ -588,7 +588,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     // initialize all values to zero (NOTE probably no need in linux, but in windows necessary)
-    nt = kt = beta = fc = Ed = Hc0 = Hc1 = Kc0 = Kc1 = Kc2 = Kc3 = fs = mu0 = muinf = Et = 0;
+    nt = kt = beta = fc = Ed = Hc0 = Hc1 = Kc0 = Kc1 = Kc2 = Kc3 = fs = mu0 = muinf = Et = -1;
 
     string param;
     bool bft, bGt, bfc0, bfs0;
@@ -677,23 +677,23 @@ void LDPMMaterial :: init(MaterialContainer *matcont) {
     ;
 
     // if variables not specified on the input, use default multipliers
-    nt = ( nt == 0 ) ? 0.2 : nt;
-    kt = ( kt == 0 ) ? 0.5 : kt;
-    beta = ( beta == 0 ) ? 0. : beta;
+    nt = ( nt == -1 ) ? 0.2 : nt;
+    kt = ( kt == -1 ) ? 0.5 : kt;
+    beta = ( beta == -1 ) ? 0. : beta;
 
-    fc = ( fc == 0 ) ? 16 * ft : fc;
-    Ed = ( Ed == 0 ) ? 2 * E0 : Ed;
-    Hc0 = ( Hc0 == 0 ) ? 0.6 * E0 : Hc0;
-    Hc1 = ( Hc1 == 0 ) ? 0.1 * E0 : Hc1;
-    Kc0 = ( Kc0 == 0 ) ? 4 : Kc0;
-    Kc1 = ( Kc1 == 0 ) ? 1 : Kc1;
-    Kc2 = ( Kc2 == 0 ) ? 10 : Kc2;
-    Kc3 = ( Kc3 == 0 ) ? 0.1 : Kc3;
+    fc = ( fc == -1 ) ? 16 * ft : fc;
+    Ed = ( Ed == -1 ) ? 2 * E0 : Ed;
+    Hc0 = ( Hc0 == -1 ) ? 0.6 * E0 : Hc0;
+    Hc1 = ( Hc1 == -1 ) ? 0.1 * E0 : Hc1;
+    Kc0 = ( Kc0 == -1 ) ? 4 : Kc0;
+    Kc1 = ( Kc1 == -1 ) ? 1 : Kc1;
+    Kc2 = ( Kc2 == -1 ) ? 10 : Kc2;
+    Kc3 = ( Kc3 == -1 ) ? 0.1 : Kc3;
 
-    fs = ( fs == 0 ) ? 3 * ft : fs;
-    Et = ( Et == 0 ) ? alpha * E0 : Et;
-    mu0 = ( mu0 == 0 ) ? 0.1 : mu0;
-    muinf = ( muinf == 0 ) ? 0.0125 : muinf;
+    fs = ( fs == -1 ) ? 3 * ft : fs;
+    Et = ( Et == -1 ) ? alpha * E0 : Et;
+    mu0 = ( mu0 == -1 ) ? 0.1 : mu0;
+    muinf = ( muinf == -1 ) ? 0.0125 : muinf;
 
-    damage_residuum = ( damage_residuum == 0 ) ? 0. : damage_residuum;
+    damage_residuum = ( damage_residuum == -1 ) ? 0. : damage_residuum;
 };
