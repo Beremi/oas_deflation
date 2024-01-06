@@ -10,10 +10,10 @@ using namespace std;
 
 std :: vector< double >PointToStdVector(const Point &p, unsigned dim = 3) {
     std :: vector< double >vect;
-    vect.push_back( p.x() );
-    vect.push_back( p.y() );
+    vect.push_back(p.x() );
+    vect.push_back(p.y() );
     if ( dim == 3 ) {
-        vect.push_back( p.z() );
+        vect.push_back(p.z() );
     }
     return vect;
 }
@@ -112,18 +112,18 @@ void MaterialRegion :: apply(NodeContainer *nodes, ElementContainer *elems, BCCo
             if ( ( !this->transport && nod->doesMechanics() ) ||
                  ( this->transport && nod->doesTransport() ) ) {
                 // TODO JK: are there any elems that are mechanical and connect transport nodes and same for transport elems?
-                if ( this->reg->isInside(nod->givePoint() ) ) {
+                if ( this->reg->isInside( nod->givePoint() ) ) {
                     if ( this->all_nodes ) {
                         num_nodes_inside++;
                     } else {
-                        el->changeMaterial(mats->giveMaterial(this->material_id) );
+                        el->changeMaterial( mats->giveMaterial(this->material_id) );
                         break;
                     }
                 }
             }
         }
         if ( this->all_nodes && num_nodes_inside == el->giveNodes().size() ) {
-            el->changeMaterial(mats->giveMaterial(this->material_id) );
+            el->changeMaterial( mats->giveMaterial(this->material_id) );
         }
     }
 }
@@ -137,7 +137,7 @@ void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
     initalNodeNum = nodes->giveSize();
-    mn = new MechDoF( dim, 3 * ( dim - 1 ) );
+    mn = new MechDoF(dim, 3 * ( dim - 1 ) );
     nodes->addNode(mn);
 }
 
@@ -351,7 +351,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize( m->giveNumberOfDoFs(), funcs->giveSize() );      //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );       //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -368,7 +368,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
 
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             if ( nodes->giveNode(n)->doesMechanics() && ( dynamic_cast< MechDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-                vm.push_back( nodes->giveNode(n) );
+                vm.push_back(nodes->giveNode(n) );
             }
         }
         if ( vm.size() > 0 ) {
@@ -379,7 +379,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
             MechDoF *pn = new MechDoF(dim, nDoFs);
             nodes->addNode(pn);
 
-            vector< unsigned >dirs( vm.size() );
+            vector< unsigned >dirs(vm.size() );
 
             for ( unsigned vi = 0; vi < nDoFs; vi++ ) {
                 fill(dirs.begin(), dirs.end(), vi);
@@ -815,7 +815,7 @@ void MechanicalSphericalPeriodicBCExperimental :: constrainRegular(NodeContainer
         }
     }
 
-    double diam = sqrt( pow(m_coords [ 0 ] - s_coords [ 0 ], 2) + pow(m_coords [ 1 ] - s_coords [ 1 ], 2) );
+    double diam = sqrt(pow(m_coords [ 0 ] - s_coords [ 0 ], 2) + pow(m_coords [ 1 ] - s_coords [ 1 ], 2) );
 
     dirs.resize(4);
     mults.resize(4);
@@ -871,7 +871,7 @@ void MechanicalSphericalPeriodicBCExperimental :: constrainRotation(NodeContaine
     vector< Node * >vm;
     vector< unsigned >dirs;
     vector< double >mults;
-    double diam = sqrt( pow(m_coords [ 0 ] - s_coords [ 0 ], 2) + pow(m_coords [ 1 ] - s_coords [ 1 ], 2) );
+    double diam = sqrt(pow(m_coords [ 0 ] - s_coords [ 0 ], 2) + pow(m_coords [ 1 ] - s_coords [ 1 ], 2) );
     // constrain movement of master node in the direction of n
     dirs.resize(1);
     mults.resize(1);
@@ -1202,7 +1202,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     cout << "*** computing elastic solution on the periodic model" << endl;
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
-    linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBC() );
+    linS->setContainers(masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBC() );
     linS->setTimeStep(dt);
     linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);
@@ -1453,7 +1453,7 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize( m->giveNumberOfDoFs(), funcs->giveSize() );      //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );       //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -1469,14 +1469,14 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         vector< Node * >vm;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
-                vm.push_back( nodes->giveNode(n) );
+                vm.push_back(nodes->giveNode(n) );
             }
         }
         if ( vm.size() > 0 ) {
             TrsDoF *tn = new TrsDoF(dim, 1);
             nodes->addNode(tn);
 
-            vector< unsigned >dirs( vm.size() );
+            vector< unsigned >dirs(vm.size() );
             va = new VolumetricAverage(vm, dirs, tn, 0, elems, constrs);
             constrs->addConstraint(va);
 
@@ -1510,7 +1510,7 @@ void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCC
 
     MechDoF *master;
     unsigned masterNodeNum = nodes->giveSize();
-    master = new MechDoF( dim, 3 * ( dim - 1 ) );
+    master = new MechDoF(dim, 3 * ( dim - 1 ) );
     nodes->addNode(master);
 
     //export data
@@ -2132,7 +2132,7 @@ void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *elems, BCCon
                 if ( nod == master || !dynamic_cast< MechNode * >( nod ) || dynamic_cast< MechDoF * >( nod ) ) {
                     continue;
                 }
-                connectSlaveMasterExpansion( constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
+                connectSlaveMasterExpansion(constrs, nod, master, this->dim, this->transport, funcs->giveFunction(this->fn_id) );
             }
         }
     }
@@ -2311,10 +2311,10 @@ void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer 
                 } else {
                     // first node is taken as a slave
                     slave = nod;
-                    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
-                        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
+                    if ( * std :: max_element(n_vect.begin(), n_vect.end() ) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() ) ) ) {
+                        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
                     } else {
-                        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
+                        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
                     }
                     slave_dir_vect_value = n_vect [ slave_dir ];
                     for ( unsigned i = 0; i < this->dim; i++ ) {
@@ -2408,10 +2408,10 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
     BoundaryCondition *bc;
     vector< int >dBC, nBC;
     Point diff;
-    dBC.resize( ( dim - 1 ) * 3, -1);
-    nBC.resize( ( dim - 1 ) * 3, fnID);
+    dBC.resize( ( dim - 1 ) * 3, -1 );
+    nBC.resize( ( dim - 1 ) * 3, fnID );
     vector< double >mult;
-    mult.resize( ( dim - 1 ) * 3, 0.);
+    mult.resize( ( dim - 1 ) * 3, 0. );
     Vector normal;
     double area;
     for ( auto &el : * e ) {
@@ -2458,8 +2458,8 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
                 continue;
             }
 
-            area = triArea3D(innodes [ 0 ]->givePointPointer(), innodes [ 1 ]->givePointPointer(), innodes [ 2 ]->givePointPointer() );
-            normal = ( innodes [ 1 ]->givePoint() - innodes [ 0 ]->givePoint() ).cross(innodes [ 2 ]->givePoint() - innodes [ 0 ]->givePoint() );
+            area = triArea3D( innodes [ 0 ]->givePointPointer(), innodes [ 1 ]->givePointPointer(), innodes [ 2 ]->givePointPointer() );
+            normal = ( innodes [ 1 ]->givePoint() - innodes [ 0 ]->givePoint() ).cross( innodes [ 2 ]->givePoint() - innodes [ 0 ]->givePoint() );
             normal /= normal.norm();
             if ( ( innodes [ 0 ]->givePoint() - tet->giveVertex(0)->givePoint() ).dot(normal) < 0. ) {
                 normal *= -1; //must be outward normal
@@ -2505,11 +2505,11 @@ void MechHangingNode :: apply(NodeContainer *n, ElementContainer *e, BCContainer
 
     Element *ee = e->giveElement(elemid);
     unsigned ndim = ee->giveDimension();
-    Point natcoords = ee->findNaturalCoords(n->giveNode(nodeid)->givePointPointer() );
+    Point natcoords = ee->findNaturalCoords( n->giveNode(nodeid)->givePointPointer() );
     Vector weights = ee->giveShapeFunctions(& natcoords);
     vector< Node * >masters = ee->giveNodes();
-    vector< unsigned >dirs(masters.size() );
-    vector< double >mults(masters.size() );
+    vector< unsigned >dirs( masters.size() );
+    vector< double >mults( masters.size() );
 
     for ( unsigned k = 0; k < masters.size(); k++ ) {
         mults [ k ] = weights [ k ];
@@ -2567,7 +2567,7 @@ void PBlockContainer :: init() {
 void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
     unsigned origsize = blocks.size(); //todo: warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of dat
     string line, ftype;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -2692,7 +2692,7 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
                         masterNodes.push_back(master);
                         directions.push_back(2);
                         if ( kslave == 0 ) {
-                            multipliers.push_back( -( slave->givePoint().y() - master->givePoint().y() ) );
+                            multipliers.push_back(-( slave->givePoint().y() - master->givePoint().y() ) );
                         } else {
                             multipliers.push_back( ( slave->givePoint().x() - master->givePoint().x() ) );
                         }
@@ -2703,17 +2703,17 @@ void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *ma
                             directions.push_back(4);
                             multipliers.push_back( ( slave->givePoint().z() - master->givePoint().z() ) );
                             directions.push_back(5);
-                            multipliers.push_back( -( slave->givePoint().y() - master->givePoint().y() ) );
+                            multipliers.push_back(-( slave->givePoint().y() - master->givePoint().y() ) );
                         } else if ( kslave == 1 ) {
                             directions.push_back(3);
-                            multipliers.push_back( -( slave->givePoint().z() - master->givePoint().z() ) );
+                            multipliers.push_back(-( slave->givePoint().z() - master->givePoint().z() ) );
                             directions.push_back(5);
                             multipliers.push_back( ( slave->givePoint().x() - master->givePoint().x() ) );
                         } else {
                             directions.push_back(3);
                             multipliers.push_back( ( slave->givePoint().y() - master->givePoint().y() ) );
                             directions.push_back(4);
-                            multipliers.push_back( -( slave->givePoint().x() - master->givePoint().x() ) );
+                            multipliers.push_back(-( slave->givePoint().x() - master->givePoint().x() ) );
                         }
                     }
                 }
@@ -2753,10 +2753,10 @@ void connectSlaveMasterExpansionFLoad(ConstraintContainer *constrs, Node *slave,
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir;
-    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
-        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
+    if ( * std :: max_element(n_vect.begin(), n_vect.end() ) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() ) ) ) {
+        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
     } else {
-        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
+        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
     }
 
     for ( unsigned i = 0; i < ndim; i++ ) {
@@ -2832,10 +2832,10 @@ void connectSlaveMasterExpansion(ConstraintContainer *constrs, Node *slave, Node
     std :: vector< double >n_vect = PointToStdVector(n, ndim);
 
     unsigned slave_dir;
-    if ( * std :: max_element( n_vect.begin(), n_vect.end() ) >  abs(* std :: min_element( n_vect.begin(), n_vect.end() ) ) ) {
-        slave_dir = std :: distance( n_vect.begin(), std :: max_element( n_vect.begin(), n_vect.end() ) );
+    if ( * std :: max_element(n_vect.begin(), n_vect.end() ) >  abs( * std :: min_element(n_vect.begin(), n_vect.end() ) ) ) {
+        slave_dir = std :: distance(n_vect.begin(), std :: max_element(n_vect.begin(), n_vect.end() ) );
     } else {
-        slave_dir = std :: distance( n_vect.begin(), std :: min_element( n_vect.begin(), n_vect.end() ) );
+        slave_dir = std :: distance(n_vect.begin(), std :: min_element(n_vect.begin(), n_vect.end() ) );
     }
 
     for ( unsigned i = 0; i < ndim; i++ ) {

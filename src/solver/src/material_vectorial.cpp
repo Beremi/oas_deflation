@@ -269,7 +269,7 @@ Vector VectMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &stra
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -414,7 +414,7 @@ Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenInt
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     unsigned dim = m->giveDimension();
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );

@@ -26,7 +26,7 @@ void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionCont
 //////////////////////////////////////////////////////////
 Solver *Solver :: readFromFile(const string filename) {
     string param, paramA, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -102,7 +102,7 @@ void Solver :: setNextStepTime() {
     double nextBCTime = bcs->giveTimeOfNextChange(time);
     double nextCritTime = min(nextExtremeTime, nextBCTime);
 
-    if ( abs(time - bcs->giveTimeOfNextChange(time - 1e-12) ) < 1e-12 ) {
+    if ( abs( time - bcs->giveTimeOfNextChange(time - 1e-12) ) < 1e-12 ) {
         masterModel->jumpToNextStage();
     }
 
@@ -176,7 +176,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     f_int = Vector :: Zero(totalDoFnum);
     f_dam = Vector :: Zero(totalDoFnum);
     f_acc = Vector :: Zero(totalDoFnum);
-    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
 
     trial_r = Vector :: Zero(totalDoFnum);
@@ -201,7 +201,7 @@ void Solver :: giveValues(string code, Vector &result) const {
         result [ 0 ] = time;
     } else if ( code.compare("elapsed_time") == 0 ) {
         result.resize(1);
-        result [ 0 ] = chrono :: duration_cast< std :: chrono :: duration< double > >( std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
+        result [ 0 ] = chrono :: duration_cast< std :: chrono :: duration< double > >(std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
     } else if ( code.compare("number_of_dof") == 0 ) {
         result.resize(1);
         result [ 0 ] = freeDoFnum;
@@ -221,7 +221,7 @@ void Solver :: computeInternalExternalForces(const Vector &rr, const Vector &ll,
 //////////////////////////////////////////////////////////
 void Solver :: rebuild() {
     freeDoFnum = nodes->giveNumFreeDoFs();
-    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
     ddr = Vector :: Zero(freeDoFnum);
 }

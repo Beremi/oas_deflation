@@ -107,7 +107,7 @@ Solver *TransientCentralDifferenceMechanicalSolver :: readFromFile(const string 
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -156,7 +156,7 @@ void TransientCentralDifferenceMechanicalSolver :: solve() {
     v_red_old = v_red;
     if ( time == dt ) { //the first time step, only half velocity action
         v_red = 0.5 * dt * a_red + v_red_old;
-    } else  {
+    } else {
         v_red = dt * a_red + v_red_old;
     }
     ddr = dt * v_red;

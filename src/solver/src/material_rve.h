@@ -43,7 +43,6 @@ public:
     virtual void setReferenceSystemDirections(Matrix r) { axDirs = r; };
     Matrix giveTransformationMatrix() { return transf; };
     Matrix giveReferenceSystemDirections() { return axDirs; };
-
 };
 
 //////////////////////////////////////////////////////////
@@ -206,8 +205,8 @@ public:
     bool isNonlinear() const { return nonlinear; };
     bool projectCurvature() const { return project_curvature; };
     virtual void readFromLine(std :: istringstream &iss);
-    void setAverageDensity(double ad) {average_density=ad;};
-    double giveAverageDensity() const {return average_density;};
+    void setAverageDensity(double ad) { average_density = ad; };
+    double giveAverageDensity() const { return average_density; };
 };
 
 //////////////////////////////////////////////////////////

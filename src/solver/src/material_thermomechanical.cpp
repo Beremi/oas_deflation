@@ -125,7 +125,7 @@ MaterialStatus *ThermoMechanicalMaterial :: giveNewMaterialStatus(Element *e, un
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterialStatus ::  addTemperatureEffectToMechanics() {
     ThermoMechanicalMaterial *tmm = static_cast< ThermoMechanicalMaterial * >( mat );
-    Vector eig = Vector :: Zero( mat->giveDimension() );
+    Vector eig = Vector :: Zero(mat->giveDimension() );
     eig [ 0 ] = ( temperature - tmm->giveInitialTemperature() ) * tmm->giveThermalExpansionCoeff();
     stats [ 0 ]->setEigenStrain(eig);
 };
