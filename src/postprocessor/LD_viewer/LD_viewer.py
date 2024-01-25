@@ -4,7 +4,7 @@ import argparse
 os.environ["ETS_TOOLKIT"] = "qt"
 os.environ["QT_API"] = "pyqt5"
 from traits.api import HasStrictTraits, Instance, File, List, Enum, Button, Str, \
-                        Any, Bool, DelegatesTo, Property, Float
+                        Any, Bool, DelegatesTo, Property, Float, Tuple
 from traitsui.api import Item, Group, View, HSplit, NoButtons, EnumEditor, HGroup,\
                          Handler, VGroup, Tabbed, TextEditor, Label, ListEditor
 from traitsui.message import Message
@@ -194,15 +194,34 @@ class LDFiles(HasStrictTraits):
                                page_name='.name')),
         resizable=True
     )
+             
+
+class FigureSettings(HasStrictTraits):
+    show_legend = Bool()
+    set_xlim = Bool()
+    x_limits = Tuple(np.nan, np.nan)
+    set_ylim = Bool()
+    y_limits = Tuple(np.nan, np.nan)
+    view = View(
+        Item('show_legend', show_label=True),
+        HGroup(Item('set_xlim', show_label=False), 
+               Item('x_limits', show_label=True)),
+        HGroup(Item('set_ylim', show_label=False), 
+               Item('y_limits', show_label=True)),
+        resizable=True
+    )
 
 
 class ControlPanel(HasStrictTraits):
     ldfiles = Instance(LDFiles)
+    figure_settings = Instance(FigureSettings, ())
     figure = Instance(Figure)
 
     draw_button = Button('Draw all')
     reload_button = Button('Reload all')
     clear_button = Button('Clear')
+    
+    get_current_limits = Button('Get current limits')
 
     #clear_axis = Bool(True)
 
@@ -220,7 +239,12 @@ class ControlPanel(HasStrictTraits):
         for lds in self.ldfiles.ldfiles:
             for ld in lds.ld_curves:
                 ld.draw_line(ax)
-        ax.legend()
+        if self.figure_settings.show_legend:
+            ax.legend()
+        if self.figure_settings.set_xlim:
+            ax.set_xlim(self.figure_settings.x_limits)
+        if self.figure_settings.set_ylim:
+            ax.set_ylim(self.figure_settings.y_limits)
         self.figure.canvas.draw()
         print('redrawn all')
 
@@ -228,8 +252,16 @@ class ControlPanel(HasStrictTraits):
         for lds in self.ldfiles.ldfiles:
             lds.reload_button = True
         print('reloaded all')
+        
+    def _get_current_limits_fired(self):
+        ax = self.figure.axes[0]
+        self.figure_settings.x_limits = ax.get_xlim()
+        self.figure_settings.y_limits = ax.get_ylim()
 
     view = View((Item('@ldfiles', show_label=False),
+                 '_',
+                 Item('@figure_settings', show_label=False),
+                 Item('get_current_limits', show_label=False),
                     HGroup(
                         Item('reload_button', show_label=False, springy=True),
                        Item('clear_button', show_label=False, springy=True),
