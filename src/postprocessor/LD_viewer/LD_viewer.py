@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import mplcursors
 
 # HGroup Item hack
 def HItem(value=None, **traits):
@@ -145,7 +146,7 @@ class LDCurve(HasStrictTraits):
         ax.legend()
 
     def draw_line(self, ax):
-        ax.plot(self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale,
+        return ax.plot(self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale,
                 label='{}-{}'.format(self.ldfile.name, self.name), marker='o')
 
     def _copy_to_clipboard_fired(self):
@@ -236,9 +237,12 @@ class ControlPanel(HasStrictTraits):
 
     def _draw_button_fired(self):
         ax = self.figure.axes[0]
+        lines = []
         for lds in self.ldfiles.ldfiles:
             for ld in lds.ld_curves:
-                ld.draw_line(ax)
+                lines = ld.draw_line(ax)
+        cursor = mplcursors.cursor(lines, highlight=True)
+        cursor.connect("add", lambda sel: sel.annotation.set_text(sel.artist.get_label()))
         if self.figure_settings.show_legend:
             ax.legend()
         if self.figure_settings.set_xlim:
