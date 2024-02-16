@@ -88,6 +88,8 @@ public:
     std :: vector< double >giveDimensions() const { return PUCsize; };
     double giveVolume() const;
     virtual void calculateVolume(ElementContainer *elems);
+    std::vector<unsigned> giveMasters() const {return masters;};
+    std::vector<unsigned> giveSlaves() const {return slaves;};
 };
 
 //////////////////////////////////////////////////////////

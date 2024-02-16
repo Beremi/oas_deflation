@@ -7,6 +7,8 @@
 #include <fstream>
 
 
+class ElementContainer; //forward declaration
+
 //////////////////////////////////////////////////////////
 class MaterialContainer
 {
@@ -19,6 +21,7 @@ public:
     void readFromFile(const std :: string filename, unsigned dim);
     void init();
     Material *giveMaterial(unsigned const mat);
+    void runPreparationForStressEvaluation(ElementContainer *elems);
 protected:
 };
 

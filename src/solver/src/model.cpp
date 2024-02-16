@@ -25,7 +25,7 @@ Model :: Model(bool pT) {
     printTime = pT;
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
-    elems.setContainers(& nodes, & bconds);
+    elems.setModel(this);
     solver = nullptr;
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
@@ -221,7 +221,7 @@ void Model :: clear() {
 
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
-    elems.setContainers(& nodes, & bconds);
+    elems.setModel(this);
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 

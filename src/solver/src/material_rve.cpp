@@ -785,6 +785,9 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
 
     transformStress();
 
+    cout << "temp_strain " << temp_strain << endl;
+    cout << "temp_stress " << temp_stress << endl;
+ 
     return temp_stress;
 }
 

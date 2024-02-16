@@ -130,7 +130,7 @@ class VectMechMaterial : public Material
 protected:
     double E0, alpha, density;
 public:
-    VectMechMaterial(unsigned dimension) : Material(dimension) { name = "Vect mechanical material"; };
+    VectMechMaterial(unsigned dimension);
     ~VectMechMaterial() {};
     double giveDensity() { return density; };
     virtual void readFromLine(std :: istringstream &iss);

@@ -28,6 +28,15 @@ void ElementContainer :: clear() {
         }
     }
 }
+
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: setModel(Model *mod) { 
+    model = mod;
+    nodes = model->giveNodes();
+    bconds = model->giveBC(); 
+};
+
 //////////////////////////////////////////////////////////
 void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
     this->materials = matrs;
@@ -492,6 +501,8 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
     vector< unsigned >elDoFs;
     full_f.setZero();  // clear array
 
+    materials->runPreparationForStressEvaluation(this);
+
     for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
             if ( ( * e )->giveSolutionOrder() != so ) {
@@ -643,7 +654,7 @@ Element *ElementContainer :: findClosestElement(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result) {
+void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result) const {
     //delete everythink inside
     size_t p;
     result.clear(); // result.resize(0);
@@ -654,7 +665,7 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
     vector< Vector >res;
     Vector wei;
     unsigned nodeid;
-    for ( vector< Element * > :: iterator ee = elems.begin(); ee != elems.end(); ++ee ) {
+    for ( vector< Element * > :: const_iterator ee = elems.begin(); ee != elems.end(); ++ee ) {
         ( * ee )->extrapolateIPValuesToNodes(code, res, wei);
         size_t reslen = res.size();
         for ( p = 0; p < ( * ee )->giveNumOfNodes(); p++ ) {
@@ -669,6 +680,30 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
             }
         }
     }
+
+    //extract pairs
+    set<pair<unsigned, unsigned>> periodicPairs;
+    for (unsigned i = 0; i<model->givePBlockContainer()->giveSize(); i++){
+        MechanicalPeriodicBC * pb = dynamic_cast<MechanicalPeriodicBC *>(model->givePBlockContainer()->givePBlock(i));
+        if (pb){
+            vector<unsigned> masters = pb->giveMasters();
+            vector<unsigned> slaves = pb->giveSlaves();
+            for (unsigned k=0; k<masters.size(); k++){
+                periodicPairs.insert(make_pair(masters[k],slaves[k]));
+            }
+        }
+    }    
+    //add slaves to masters
+    for (auto p = periodicPairs.begin(); p != periodicPairs.end(); ++p) {  
+        weights[p->first] += weights[p->second];
+        result[p->first] += result[p->second];
+    }
+    //copy masters to slaves
+    for (auto p = periodicPairs.begin(); p != periodicPairs.end(); ++p) {  
+        weights[p->second] = weights[p->first];
+        result[p->second] = result[p->first];
+    }
+
 
     //normalize by number of attached elements
     for ( p = 0; p < nodes->giveSize(); p++ ) {
@@ -709,6 +744,15 @@ void ElementContainer :: giveValues(std :: string code, Vector &result) const {
     } else {
         result.resize(0);
     }
+}
+
+
+//////////////////////////////////////////////////////////
+vector<Vector> ElementContainer :: computePrincipalStresses() const {
+    vector<Vector> tensstress;
+    string code = "stress";
+    extrapolateValuesFromIntegrationPointsToNodes( code, tensstress);
+    return tensstress;
 }
 
 

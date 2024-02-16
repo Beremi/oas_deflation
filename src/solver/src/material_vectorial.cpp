@@ -335,6 +335,12 @@ bool VectMechMaterialStatus ::  giveValues(string code, Vector &result) const {
     }
 }
 
+
+//////////////////////////////////////////////////////////
+VectMechMaterial :: VectMechMaterial(unsigned dimension) : Material(dimension) {
+    name = "Vect mechanical material";    
+}
+
 //////////////////////////////////////////////////////////
 void VectMechMaterial :: readFromLine(istringstream &iss) {
     string param;

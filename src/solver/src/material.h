@@ -58,6 +58,7 @@ protected:
     unsigned idx;
 };
 
+class ElementContainer; //forward declaration
 
 //////////////////////////////////////////////////////////
 class Material
@@ -82,6 +83,7 @@ public:
     void setId(const unsigned &i) { this->idx = i; }
     virtual void init(MaterialContainer *matcont) { ( void ) matcont; };
     bool isProducingInternalSources()const { return produceInternalSources; }
+    virtual void prepareForStressEvaluation(ElementContainer* elems){(void) elems;};
 protected:
     std :: string name;
 };

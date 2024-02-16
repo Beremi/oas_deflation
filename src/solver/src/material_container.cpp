@@ -12,6 +12,8 @@
 #include "material_fiber.h"
 #include "material_thermomechanical.h"
 
+#include "element_container.h"
+
 using namespace std;
 
 //////////////////////////////////////////////////////////
@@ -105,6 +107,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     CSLMaterial *newmat = new CSLMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("CSLMaterialWithTensorialStressUpdate") == 0 ) {
+                    CSLMaterialWithTensorialStressUpdate *newmat = new CSLMaterialWithTensorialStressUpdate(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("LDPMMaterial") == 0 ) {
                     LDPMMaterial *newmat = new LDPMMaterial(dim);
                     newmat->readFromLine(iss);
@@ -174,5 +180,12 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MaterialContainer :: runPreparationForStressEvaluation(ElementContainer *elems) {
+    for ( auto &m : matrs) {
+        m->prepareForStressEvaluation(elems);
     }
 }

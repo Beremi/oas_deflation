@@ -426,7 +426,7 @@ def assembleMaterialZones (elaX, dim, model='box', maxLim=None, D=None, thicknes
         materialZones.append(matZ1)
 
 
-    if (model =='3pb3d'):
+    if (model =='3pb3dX'):
         if limits is not None:
             boundA = np.array(  [ limits[0]    ,  limits[1],  limits[2]  ] )
             matZ.append (boundA)
