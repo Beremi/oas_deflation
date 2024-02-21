@@ -178,6 +178,14 @@ void TXTNodalExporter :: init() {
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             if ( codes [ i ].compare("reaction") == 0 ) {
                 res.resize( nodes->giveNode(n)->giveNumberOfDoFs() );
+            } else if (codes [ i ].rfind("extrapolated", 0) == 0 ) {
+                vector< Vector > results;
+                elems->extrapolateValuesFromIntegrationPointsToNodes(codes[i].substr(12), results);
+                unsigned maxs = 0;
+                for (auto &p: results) {
+                    if (maxs<p.size()) maxs = p.size();
+                }
+                res.resize( maxs );
             } else {
                 nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], fakeDoFs, res);
             }
@@ -207,18 +215,32 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
         }
         outputfile << "\n";
 
+        vector < vector < Vector > > rrres;
+        for ( unsigned c = 0; c < codes.size(); c++ ) {
+            if (codes [ c ].rfind("extrapolated", 0) == 0 ) {
+                vector < Vector > rres;
+                elems->extrapolateValuesFromIntegrationPointsToNodes(codes[c].substr(12), rres);
+                rrres.push_back(rres);
+            }
+        }
+
         outputfile << std :: scientific;
         outputfile.precision(precision);
         Vector res;
+        unsigned expid;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             nn = nodes->giveNode(n);
             outputfile << nn->giveID();
+            expid = 0;
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 if ( codes [ c ].compare("reaction") == 0 ) {
                     res.resize( nn->giveNumberOfDoFs() );
                     for ( unsigned i = 0; i < nn->giveNumberOfDoFs(); i++ ) {
                         res [ i ] = reactions [ nn->giveStartingDoF() + i ];
                     }
+                } else if (codes [ c ].rfind("extrapolated", 0) == 0 ) {
+                    res = rrres[expid][n];
+                    expid ++;
                 } else {
                     nn->giveDoFBasedValues(codes [ c ], DoFs, res);
                 }

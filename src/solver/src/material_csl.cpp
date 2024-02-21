@@ -461,6 +461,7 @@ bool CSLMaterialWithTensorialStressUpdateStatus :: giveValues(string code, Vecto
 Vector CSLMaterialWithTensorialStressUpdateStatus :: giveEigenStrainFromTensorialStress() {
     CSLMaterialWithTensorialStressUpdate *m = static_cast<CSLMaterialWithTensorialStressUpdate*>(mat);
     Vector ts = m->giveAveragePrincipalStress(element->giveNode(0)->giveID(),element->giveNode(1)->giveID());
+
     Vector eigenvalues;
     vector< Vector > eigenvectors;
     LinalgEigenSolver(ts, eigenvalues, eigenvectors);
@@ -486,13 +487,13 @@ Vector CSLMaterialWithTensorialStressUpdateStatus :: giveEigenStrainFromTensoria
 
 
 //////////////////////////////////////////////////////////
-Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStress(const Vector &strain, double timeStep) {
-    return CSLMaterialStatus :: giveStress(strain-giveEigenStrainFromTensorialStress(), timeStep);
+Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStress(const Vector &strain, double timeStep) {  
+    return CSLMaterialStatus :: giveStress(strain+giveEigenStrainFromTensorialStress(), timeStep);
 }
 
 //////////////////////////////////////////////////////////
 Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    return CSLMaterialStatus :: giveStressWithFrozenIntVars(strain-giveEigenStrainFromTensorialStress(), timeStep);
+    return CSLMaterialStatus :: giveStressWithFrozenIntVars(strain+giveEigenStrainFromTensorialStress(), timeStep);
 }
 
 //////////////////////////////////////////////////////////
