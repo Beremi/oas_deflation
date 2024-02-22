@@ -30,8 +30,13 @@ Element :: ~Element() {
 //////////////////////////////////////////////////////////
 void Element :: initIntegration() {
     shafunc->init(nodes);
-    inttype->init();
+    if (inttype->giveInitType()==0){
+        inttype->init();}
+    else{
+        inttype->init(nodes);
+    }
 };
+
 
 //////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {

@@ -8,25 +8,25 @@ using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 2D QUADRILATERAL TRANSPORT ELEMENT
-TrsprtQuad :: TrsprtQuad() : Element(2) {
-    numOfNodes = 4;
-    name = "TrsprtQuad";
-    vtk_cell_type = 9;
-    shafunc = new Linear2DQuadShapeF();
-    inttype = new IntegrQuad4();
+// 2D TRIANGULAR TRANSPORT ELEMENT
+TrsprtTriangle :: TrsprtTriangle() : Element(2) {
+    numOfNodes = 3;
+    name = "TrsprtTriangle";
+    vtk_cell_type = 5;
+    shafunc = new Linear2DTriShapeF();
+    inttype = new IntegrTri3();
     physicalFields [ 1 ] = true; //transport
 }
 
 //////////////////////////////////////////////////////////
-Matrix TrsprtQuad :: giveBMatrix(const Point *x) const {
+Matrix TrsprtTriangle :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, phiG);
     return phiG;
 }
 
 //////////////////////////////////////////////////////////
-Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
+Matrix TrsprtTriangle :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(DoFids.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H = Matrix :: Zero(1, DoFids.size() );
@@ -38,7 +38,7 @@ Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
 
 
 //////////////////////////////////////////////////////////
-Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs) {
+Vector TrsprtTriangle :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector strain = Element :: giveStrain(i, DoFs);
 
     //pressure at integration point for material model
@@ -46,6 +46,30 @@ Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs) {
     stats [ i ]->setParameterValue("pressure", pf [ 0 ]);
 
     return strain;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D QUADRILATERAL TRANSPORT ELEMENT
+TrsprtQuad :: TrsprtQuad() {
+    numOfNodes = 4;
+    name = "TrsprtQuad";
+    vtk_cell_type = 10;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D TETRA TRANSPORT ELEMENT
+TrsprtTetra :: TrsprtTetra() {
+    ndim = 3;
+    name = "TrsprtTetra";
+    numOfNodes = 4;
+    vtk_cell_type = 10;
+    shafunc = new Linear3DTetraShapeF();
+    inttype = new IntegrTetra4();
+    physicalFields [ 1 ] = true; //transport
 }
 
 //////////////////////////////////////////////////////////
@@ -110,18 +134,18 @@ Vector TrsprtTemprtrCoupledBrick :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 2D QUADRILATERAL MECHANICAL ELEMENT
-MechanicalQuad :: MechanicalQuad() : Element(2) {
-    numOfNodes = 4;
-    name = "MechanicalQuad";
-    vtk_cell_type = 9;
-    shafunc = new Linear2DQuadShapeF();
-    inttype = new IntegrQuad4();
-    physicalFields [ 1 ] = true; //transport
+// 2D TIANGULAR MECHANICAL ELEMENT
+MechanicalTriangle :: MechanicalTriangle() : Element(2) {
+    numOfNodes = 3;
+    name = "MechanicalTriangle";
+    vtk_cell_type = 5;
+    shafunc = new Linear2DTriShapeF();
+    inttype = new IntegrTri3(); //ONE IP suffices, but it does not work in extrapolation routine
+    physicalFields [ 0 ] = true; //mechanics
 }
 
 //////////////////////////////////////////////////////////
-Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
+Matrix MechanicalTriangle :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, phiG);
     Matrix B = Matrix :: Zero(3, DoFids.size() );
@@ -135,7 +159,7 @@ Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
+Matrix MechanicalTriangle :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H = Matrix :: Zero(ndim, DoFids.size() );
@@ -149,19 +173,30 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 3D BRICK MECHANICAL ELEMENT
-MechanicalBrick :: MechanicalBrick() {
+// 2D QUADRILATERAL MECHANICAL ELEMENT
+MechanicalQuad :: MechanicalQuad() {
+    numOfNodes = 4;
+    name = "MechanicalQuad";
+    vtk_cell_type = 9;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D TETRAHEDRAL MECHANICAL ELEMENT
+MechanicalTetra :: MechanicalTetra() {
     ndim = 3;
     name = "MechanicalBrick";
     numOfNodes = 8;
-    vtk_cell_type = 12;
-    shafunc = new Linear3DBrickShapeF();
-    inttype = new IntegrBrick8();
+    vtk_cell_type = 10;
+    shafunc = new Linear3DTetraShapeF();
+    inttype = new IntegrTetra4();
     physicalFields [ 0 ] = true; //mechanics
 }
 
 //////////////////////////////////////////////////////////
-Matrix MechanicalBrick :: giveBMatrix(const Point *x) const {
+Matrix MechanicalTetra :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, phiG);
     Matrix B = Matrix :: Zero(6, DoFids.size() );
@@ -171,6 +206,18 @@ Matrix MechanicalBrick :: giveBMatrix(const Point *x) const {
         B(2, 3 * i + 2)   =   B(3, 3 * i + 1)  =   B(4, 3 * i)     =   phiG(2, i);
     }
     return B;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK MECHANICAL ELEMENT
+MechanicalBrick :: MechanicalBrick() {
+    ndim = 3;
+    name = "MechanicalBrick";
+    numOfNodes = 8;
+    vtk_cell_type = 12;
+    shafunc = new Linear3DBrickShapeF();
+    inttype = new IntegrBrick8();
 }
 
 //////////////////////////////////////////////////////////

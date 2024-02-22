@@ -212,38 +212,50 @@ void Linear3DBrickShapeF :: giveShapeFGradNatural(const Point *x, Matrix &phiGra
 //////////////////////////////////////////////////////////
 // 2D TRIANGLE LINEAR
 //////////////////////////////////////////////////////////
-void Linear2DTriShapeF :: init(vector< Node * > &nodes) {
-    ShapeFunc :: init(nodes);
-    area = triArea2D(points [ 0 ], points [ 1 ], points [ 2 ]);
-}
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// 2D TRIANGLE LINEAR
-//////////////////////////////////////////////////////////
-void Linear2DTriShapeF :: init(vector< Point * > &p) {
-    ShapeFunc :: init(p);
-    area = triArea2D(points [ 0 ], points [ 1 ], points [ 2 ]);
-}
-
-//////////////////////////////////////////////////////////
-void Linear2DTriShapeF :: giveShapeF(const Point *x, Vector &phi) const {
-    phi [ 0 ] = triArea2D(x, points [ 1 ], points [ 2 ]) / area;
-    phi [ 1 ] = triArea2D(x, points [ 2 ], points [ 0 ]) / area;
-    phi [ 2 ] = triArea2D(x, points [ 0 ], points [ 1 ]) / area;
+void Linear2DTriShapeF :: giveShapeF(const Point *x, Vector &phi) const {                          
+    phi [ 0 ] = 1.-x->x()-x->y();
+    phi [ 1 ] = x->x();
+    phi [ 2 ] = x->y();
 };
 
 //////////////////////////////////////////////////////////
-void Linear2DTriShapeF :: giveShapeFGrad(const Point *x, Matrix &phiGrad) const {
+void Linear2DTriShapeF :: giveShapeFGradNatural(const Point *x, Matrix &phiGrad) const {
     ( void ) x;
-    phiGrad(0, 0) = 0.5 * ( points [ 1 ]->y() - points [ 2 ]->y() ) / area;
-    phiGrad(1, 0) = 0.5 * ( points [ 2 ]->x() - points [ 1 ]->x() ) / area;
-    phiGrad(0, 1) = 0.5 * ( points [ 2 ]->y() - points [ 0 ]->y() ) / area;
-    phiGrad(1, 1) = 0.5 * ( points [ 0 ]->x() - points [ 2 ]->x() ) / area;
-    phiGrad(0, 2) = 0.5 * ( points [ 0 ]->y() - points [ 1 ]->y() ) / area;
-    phiGrad(1, 2) = 0.5 * ( points [ 1 ]->x() - points [ 0 ]->x() ) / area;
+    phiGrad(0, 0) = -1.;
+    phiGrad(1, 0) = -1.;
+    phiGrad(0, 1) = 1.;
+    phiGrad(1, 1) = 0.;
+    phiGrad(0, 2) = 0.;
+    phiGrad(1, 2) = 1.;
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+//  3D LINEAR SHAPE FUNCTIONS FOR TETRAHEDRON
+//////////////////////////////////////////////////////////
+void Linear3DTetraShapeF :: giveShapeF(const Point *x, Vector &phi) const {                          
+    phi [ 0 ] = 1. - x->x() - x->y() - x->z();
+    phi [ 1 ] = x->x();
+    phi [ 2 ] = x->y();
+    phi [ 3 ] = x->z();
+};
+
+//////////////////////////////////////////////////////////
+void Linear3DTetraShapeF :: giveShapeFGradNatural(const Point *x, Matrix &phiGrad) const {
+    ( void ) x;
+    phiGrad(0, 0) = -1.;
+    phiGrad(1, 0) = -1.;
+    phiGrad(2, 0) = -1.;
+    phiGrad(0, 1) = 1.;
+    phiGrad(1, 1) = 0.;
+    phiGrad(2, 1) = 0.;
+    phiGrad(0, 2) = 0.;
+    phiGrad(1, 2) = 1.;
+    phiGrad(2, 2) = 0.;
+    phiGrad(0, 3) = 0.;
+    phiGrad(1, 3) = 0.;
+    phiGrad(2, 3) = 1.;
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

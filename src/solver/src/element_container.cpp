@@ -83,8 +83,16 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     DiscreteTrsprtCoupledElem *newelem = new DiscreteTrsprtCoupledElem(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("TrsprtTri") == 0 ) {
+                    TrsprtTriangle *newelem = new TrsprtTriangle();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("TrsprtQuad") == 0 ) {
                     TrsprtQuad *newelem = new TrsprtQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("TrsprtTet") == 0 ) {
+                    TrsprtTetra *newelem = new TrsprtTetra();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TrsprtBrick") == 0 ) {
@@ -95,8 +103,16 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     TrsprtTemprtrCoupledBrick *newelem = new TrsprtTemprtrCoupledBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("MechanicalTri") == 0 ) {
+                    MechanicalTriangle *newelem = new MechanicalTriangle();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("MechanicalQuad") == 0 ) {
                     MechanicalQuad *newelem = new MechanicalQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("MechanicalTet") == 0 ) {
+                    MechanicalTetra *newelem = new MechanicalTetra();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MechanicalBrick") == 0 ) {
@@ -292,6 +308,7 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, double &ini_time_step, double &ini_idc_time, const bool get_time_from_file) {
+    (void) ini_time;    (void) ini_step;    (void) ini_time_step;    (void) ini_idc_time;    (void) get_time_from_file;
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
         unsigned elem_id, stat_id;
@@ -694,14 +711,14 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
         }
     }    
     //add slaves to masters
-    for (auto p = periodicPairs.begin(); p != periodicPairs.end(); ++p) {  
-        weights[p->first] += weights[p->second];
-        result[p->first] += result[p->second];
+    for (auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q) {  
+        weights[q->first] += weights[q->second];
+        result[q->first] += result[q->second];
     }
     //copy masters to slaves
-    for (auto p = periodicPairs.begin(); p != periodicPairs.end(); ++p) {  
-        weights[p->second] = weights[p->first];
-        result[p->second] = result[p->first];
+    for (auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q) {  
+        weights[q->second] = weights[q->first];
+        result[q->second] = result[q->first];
     }
 
 
