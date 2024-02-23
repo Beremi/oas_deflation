@@ -81,12 +81,12 @@ void IntegrBrick8 :: init() {
 //////////////////////////////////////////////////////////
 void IntegrTetra4 :: init() {
     ip_locs.resize(4);
-    double a=0.58541020;
-    double b=0.13819660;
-    ip_locs [ 0 ] = Point(b, b, b);
-    ip_locs [ 1 ] = Point(a, b, b);
-    ip_locs [ 2 ] = Point(b, a, b);
-    ip_locs [ 3 ] = Point(b, b, a);
+    double a= ( 5. + 3. * sqrt(5.) ) / 20.;
+    double b = ( 5. - sqrt(5.) ) / 20.;
+    ip_locs [ 0 ] = Point(a, b, b);
+    ip_locs [ 1 ] = Point(b, a, b);
+    ip_locs [ 2 ] = Point(b, b, a);
+    ip_locs [ 3 ] = Point(b, b, b);
     ip_weights.resize(4);
     for ( unsigned i = 0; i < 4; i++ ) {
         ip_weights [ i ] = 1. / 24.;

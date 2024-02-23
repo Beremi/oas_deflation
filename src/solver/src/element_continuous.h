@@ -41,6 +41,7 @@ protected:
 public:
     TrsprtTetra();
     virtual ~TrsprtTetra() {};
+    virtual void init();
 };
 
 //////////////////////////////////////////////////////////
@@ -105,6 +106,7 @@ public:
     MechanicalTetra();
     virtual ~MechanicalTetra() {};
     virtual Matrix giveBMatrix(const Point *x) const;
+    virtual void init();
 };
 
 //////////////////////////////////////////////////////////
@@ -116,6 +118,7 @@ protected:
 public:
     MechanicalBrick();
     virtual ~MechanicalBrick() {};
+    virtual void init();
 };
 
 

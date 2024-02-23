@@ -18,6 +18,7 @@ SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
+    (void) init_v_file; (void) initial;
     //nodes->addRHS_nodalLoad(load, 0); //to correctly account for abrupt initial change of BC
     //nodes->updateDirrichletBC(r, 0); //to correctly account for abrupt initial change of BC
 

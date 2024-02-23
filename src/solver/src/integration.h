@@ -15,7 +15,6 @@ protected:
     std :: string name;
     std :: vector< Point >ip_locs;
     std :: vector< double >ip_weights;
-    unsigned inittype;
 public:
     IntegrationType() { name = "basic integration type"; }
     virtual ~IntegrationType() {};
@@ -25,7 +24,6 @@ public:
     void setIPLocation(unsigned i, Point p) { ip_locs [ i ] = p; };
     Point giveIPLocation(unsigned i) const { return ip_locs [ i ]; };
     Point *giveIPLocationPointer(unsigned i) { return & ( ip_locs [ i ] ); };
-    unsigned giveInitType() const {return inittype;};
     virtual void init();
     virtual void init(const std :: vector< Node * > &nodes);
     virtual void init(const std :: vector< Node * > &nodes, const std :: vector< std :: vector< unsigned > > &faces, Point *centroid);
@@ -37,7 +35,7 @@ public:
 class IntegrDiscrete1 : public IntegrationType
 {
 public:
-    IntegrDiscrete1() { name = "IntegrDiscrete1"; inittype=0;};
+    IntegrDiscrete1() { name = "IntegrDiscrete1";};
     virtual ~IntegrDiscrete1() {};
     virtual void init();
     void setNumIP(unsigned n);
@@ -49,7 +47,7 @@ public:
 class IntegrQuad4 : public IntegrationType
 {
 public:
-    IntegrQuad4() { name = "IntegrQuad4"; inittype=0;};
+    IntegrQuad4() { name = "IntegrQuad4";};
     virtual ~IntegrQuad4() {};
     virtual void init();
 };
@@ -60,7 +58,7 @@ public:
 class IntegrTri1 : public IntegrationType
 {
 public:
-    IntegrTri1() { name = "IntegrTri1"; inittype=0;};
+    IntegrTri1() { name = "IntegrTri1";};
     virtual ~IntegrTri1() {};
     virtual void init();
 };
@@ -71,7 +69,7 @@ public:
 class IntegrTri3 : public IntegrationType
 {
 public:
-    IntegrTri3() { name = "IntegrTri3"; inittype=0;};
+    IntegrTri3() { name = "IntegrTri3";};
     virtual ~IntegrTri3() {};
     virtual void init();
 };
@@ -84,7 +82,7 @@ class IntegrPolygon : public IntegrationType
 {
     std :: string ip_type;
 public:
-    IntegrPolygon(std :: string type) { name = "IntegrPolygon"; ip_type = type; inittype=2;};
+    IntegrPolygon(std :: string type) { name = "IntegrPolygon"; ip_type = type;};
     virtual ~IntegrPolygon() {};
     virtual void init(const std :: vector< Node * > &nodes, const std :: vector< std :: vector< unsigned > > &faces, Point *centroid);
 };
@@ -96,7 +94,7 @@ public:
 class IntegrBrick8 : public IntegrationType
 {
 public:
-    IntegrBrick8() { name = "IntegrBrick8"; inittype=0;};
+    IntegrBrick8() { name = "IntegrBrick8";};
     virtual ~IntegrBrick8() {};
     virtual void init();
 };
@@ -107,7 +105,7 @@ public:
 class IntegrTetra4 : public IntegrationType
 {
 public:
-    IntegrTetra4() { name = "IntegrTetra1"; inittype=0;};
+    IntegrTetra4() { name = "IntegrTetra4";};
     virtual ~IntegrTetra4() {};
     virtual void init();
 };
@@ -118,7 +116,7 @@ public:
 class IntegrLDPM12 : public IntegrationType
 {
 public:
-    IntegrLDPM12() { name = "IntegrLLDPM12"; inittype=0;};
+    IntegrLDPM12() { name = "IntegrLLDPM12";};
     virtual ~IntegrLDPM12() {};
     virtual void init();
 };
@@ -129,7 +127,7 @@ public:
 class IntegrFiber : public IntegrationType
 {
 public:
-    IntegrFiber() { name = "IntegrFiber"; inittype=0;};
+    IntegrFiber() { name = "IntegrFiber";};
     virtual ~IntegrFiber() {};
     virtual void init();
     void addNewIP(Point location);

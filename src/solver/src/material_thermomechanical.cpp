@@ -93,7 +93,7 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
     //iss.clear(); // clear string stream
     //iss.seekg(0, iss.beg); //reset position in string stream
 
-    VectMechMaterial *vmm = static_cast< VectMechMaterial * >( mats [ 0 ] );
+    //VectMechMaterial *vmm = static_cast< VectMechMaterial * >( mats [ 0 ] );
 
     string param;
     bool btec = false;

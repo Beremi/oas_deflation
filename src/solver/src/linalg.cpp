@@ -173,6 +173,7 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
 }
 
 bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b) {
+    (void) A; (void) x; (void) b;
     //return LinalgSymmetricSolver(A, x, b, x, 1e-12, 2, "EigenConj");
 
 
@@ -286,7 +287,7 @@ Matrix tetraInertia3D(const Point *a, const Point *b, const Point *c, const Poin
 }
 
 double tetraVolumeSigned(const Point *a, const Point *b, const Point *c, const Point *d) {
-    return ( ( * a ) - ( * d ) ).dot( ( ( * b ) - ( * d ) ).cross( ( * c ) - ( * d ) ) ) / 6.;
+    return ( ( * d ) - ( * a ) ).dot( ( ( * b ) - ( * d ) ).cross( ( * c ) - ( * d ) ) ) / 6.;
 }
 
 bool is_positive_integer(const std :: string &s)

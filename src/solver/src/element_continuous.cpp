@@ -72,6 +72,18 @@ TrsprtTetra :: TrsprtTetra() {
     physicalFields [ 1 ] = true; //transport
 }
 
+
+//////////////////////////////////////////////////////////
+void TrsprtTetra :: init(){
+    //check orientation of vertices
+    if (tetraVolumeSigned(nodes[0]->givePointPointer(),nodes[1]->givePointPointer(),nodes[2]->givePointPointer(),nodes[3]->givePointPointer())<0.){
+        Node* a = nodes[3];
+        nodes[3] = nodes[2];
+        nodes[2] = a;        
+    }
+    TrsprtTriangle::init();
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK TRANSPORT ELEMENT
@@ -84,7 +96,6 @@ TrsprtBrick :: TrsprtBrick() {
     inttype = new IntegrBrick8();
     physicalFields [ 1 ] = true; //transport
 }
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -187,12 +198,23 @@ MechanicalQuad :: MechanicalQuad() {
 // 3D TETRAHEDRAL MECHANICAL ELEMENT
 MechanicalTetra :: MechanicalTetra() {
     ndim = 3;
-    name = "MechanicalBrick";
-    numOfNodes = 8;
+    name = "MechanicalTetra";
+    numOfNodes = 4;
     vtk_cell_type = 10;
     shafunc = new Linear3DTetraShapeF();
     inttype = new IntegrTetra4();
     physicalFields [ 0 ] = true; //mechanics
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalTetra :: init(){
+    //check orientation of vertices
+    if (tetraVolumeSigned(nodes[0]->givePointPointer(),nodes[1]->givePointPointer(),nodes[2]->givePointPointer(),nodes[3]->givePointPointer())<0.){
+        Node* a = nodes[3];
+        nodes[3] = nodes[2];
+        nodes[2] = a;        
+    }
+    Element::init();
 }
 
 //////////////////////////////////////////////////////////
@@ -218,6 +240,11 @@ MechanicalBrick :: MechanicalBrick() {
     vtk_cell_type = 12;
     shafunc = new Linear3DBrickShapeF();
     inttype = new IntegrBrick8();
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalBrick :: init(){
+    Element::init();
 }
 
 //////////////////////////////////////////////////////////

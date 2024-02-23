@@ -30,11 +30,7 @@ Element :: ~Element() {
 //////////////////////////////////////////////////////////
 void Element :: initIntegration() {
     shafunc->init(nodes);
-    if (inttype->giveInitType()==0){
-        inttype->init();}
-    else{
-        inttype->init(nodes);
-    }
+    inttype->init();
 };
 
 

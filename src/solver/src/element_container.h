@@ -13,10 +13,10 @@ class ElementContainer
 {
 private:
     std :: vector< Element * >elems;
-    NodeContainer *nodes;
-    BCContainer *bconds;
-    MaterialContainer *materials;
-    Model *model;
+    NodeContainer *nodes = nullptr;;
+    BCContainer *bconds = nullptr;;
+    MaterialContainer *materials = nullptr;
+    Model *model = nullptr;;
     unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType) const;
