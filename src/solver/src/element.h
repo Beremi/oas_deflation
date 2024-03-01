@@ -60,6 +60,7 @@ public:
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Matrix giveDampingMatrix() const;
     virtual Matrix giveMassMatrix() const;
+    virtual Vector giveLumpedMassMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
     std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;
@@ -79,10 +80,10 @@ public:
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
     virtual Matrix giveBMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); }; //at arbitrary point
-    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix(inttype->giveIPLocationPointer(i) ); };    //at integration point i
+    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix(inttype->giveIPLocationPointer(i) ); };     //at integration point i
     Matrix giveStoredBMatrix(unsigned i) { return Bs [ i ]; };
     virtual Matrix giveHMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); };
-    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix(inttype->giveIPLocationPointer(i) ); };    //at integration point i
+    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix(inttype->giveIPLocationPointer(i) ); };     //at integration point i
     Matrix giveStoredHMatrix(unsigned i) { return Hs [ i ]; };
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);

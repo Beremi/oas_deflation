@@ -252,7 +252,7 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
                     //increment of shear damage as the derivative of phi wrt thermodyn force
                     omega_dot = pow( 1 - temp_damageShear, m->giveC() ) * ( m->giveTauBar() / ( m->giveTauBar() - sensititvity_param * eff_stress ) ) * pow( Ynext / m->giveS(), m->giveR() );
                 }
-                temp_damageShear = fmax( 0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );     //limited by <0,1)
+                temp_damageShear = fmax( 0, fmin(1 - 1e-10, temp_damageShear + dLambda * omega_dot) );      //limited by <0,1)
                 // if ( temp_damageShear < damageShear) temp_damageShear = damageShear;
 
                 temp_zIso += dLambda;

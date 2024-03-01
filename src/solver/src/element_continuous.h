@@ -8,16 +8,40 @@ class BodyLoad; //forward declaration
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// 2D TRIANGULAR TRANSPORT ELEMENT
+class TrsprtTriangle : public Element
+{
+protected:
+public:
+    TrsprtTriangle();
+    virtual ~TrsprtTriangle() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // 2D QUADRILATERAL TRANSPORT ELEMENT
-class TrsprtQuad : public Element
+class TrsprtQuad : public TrsprtTriangle
 {
 protected:
 public:
     TrsprtQuad();
     virtual ~TrsprtQuad() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D TETRA TRANSPORT ELEMENT
+class TrsprtTetra : public TrsprtTriangle
+{
+protected:
+
+public:
+    TrsprtTetra();
+    virtual ~TrsprtTetra() {};
+    virtual void init();
 };
 
 //////////////////////////////////////////////////////////
@@ -47,30 +71,54 @@ public:
     virtual Matrix giveHMatrix(const Point *x) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D TRIANGULAR MECHANICAL ELEMENT
+class MechanicalTriangle : public Element
+{
+protected:
+public:
+    MechanicalTriangle();
+    virtual ~MechanicalTriangle() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual Matrix giveHMatrix(const Point *x) const;
+};
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D QUADRILATERAL MECHANICAL ELEMENT
-class MechanicalQuad : public Element
+class MechanicalQuad : public MechanicalTriangle
 {
 protected:
 public:
     MechanicalQuad();
     virtual ~MechanicalQuad() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
-    virtual Matrix giveHMatrix(const Point *x) const;
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D TETRAHEDRAL MECHANICAL ELEMENT
+class MechanicalTetra : public MechanicalTriangle
+{
+protected:
+public:
+    MechanicalTetra();
+    virtual ~MechanicalTetra() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual void init();
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 3D BRICK MECHANICAL ELEMENT
-class MechanicalBrick : public MechanicalQuad
+class MechanicalBrick : public MechanicalTetra
 {
 protected:
 public:
     MechanicalBrick();
     virtual ~MechanicalBrick() {};
-    virtual Matrix giveBMatrix(const Point *x) const;
+    virtual void init();
 };
 
 
@@ -86,6 +134,7 @@ public:
     virtual ~CosseratQuad() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual Matrix giveMassMatrix() const;
 };
 
 

@@ -12,11 +12,13 @@ class RigidBodyContact : public Element
 protected:
     std :: vector< Node * >vert;
     double length, area, perimeter;
-    Point normal, centroid;
+    Point normal, centroid, userCentroid;
     Point t1, t2;
     Matrix R;
-    bool projectArea;
+    bool projectArea, userDefinedCentroid;
     std :: string intPoints;
+    bool ignoreNegativeAreas; //for boundary elements that are not enclosed
+
 
     Matrix giveRMatrix() const { return R; };
     virtual void checkNodeType() const;
@@ -42,7 +44,7 @@ public:
     virtual Vector transformToLocal(const Vector &DoFs) const;
     virtual Vector transformToGlobal(const Vector &DoFs) const;
     Vector transformVectorToXYZ(Vector &result) const;
-
+    virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
     virtual void giveValues(std :: string code, Vector &result) const;
     Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     Point giveNormal() const { return normal; };
@@ -195,6 +197,8 @@ public:
     std :: vector< Node * >giveVertices() const { return vert; };
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
+    virtual void giveValues(std :: string code, Vector &result) const;
+    virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////

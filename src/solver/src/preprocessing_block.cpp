@@ -2,6 +2,7 @@
 #include "model.h"
 #include "material_vectorial.h"
 #include "element_ldpm.h"
+#include "solver_implicit.h"
 
 // #include "misc.h"  // TODO JK: this include causes linking error
 using namespace std;
@@ -350,7 +351,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );      //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );       //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -1452,7 +1453,7 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );      //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );       //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -2482,11 +2483,11 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
 //////////////////////////////////////////////////////////
 void MechHangingNode :: readFromLine(istringstream &iss, unsigned d) {
     ( void ) d;
-    if ( iss >> nodeid ) {} else                      {
+    if ( iss >> nodeid ) {} else {
         std :: cerr << "Error in MechHangingNode: nodeid not found" << '\n';
         exit(EXIT_FAILURE);
     }
-    if ( iss >> elemid ) {} else                      {
+    if ( iss >> elemid ) {} else {
         std :: cerr << "Error in MechHangingNode: elemid not found" << '\n';
         exit(EXIT_FAILURE);
     }

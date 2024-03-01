@@ -172,6 +172,27 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
     return true;
 }
 
+bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b) {
+    (void) A; (void) x; (void) b;
+    //return LinalgSymmetricSolver(A, x, b, x, 1e-12, 2, "EigenConj");
+
+
+    //Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int> > solver;
+
+    // fill A and b;
+    // Compute the ordering permutation vector from the structural pattern of A
+    //solver.analyzePattern(A);
+
+    // Compute the numerical factorization
+    //solver.factorize(A);
+
+    //Use the factors to solve the linear system
+    //x = solver.solve(b);
+
+    return 0;
+}
+
+
 
 
 //JM: Coplanarity check of 4 points (for 3d faces)
@@ -266,7 +287,7 @@ Matrix tetraInertia3D(const Point *a, const Point *b, const Point *c, const Poin
 }
 
 double tetraVolumeSigned(const Point *a, const Point *b, const Point *c, const Point *d) {
-    return ( ( * a ) - ( * d ) ).dot( ( ( * b ) - ( * d ) ).cross( ( * c ) - ( * d ) ) ) / 6.;
+    return ( ( * d ) - ( * a ) ).dot( ( ( * b ) - ( * d ) ).cross( ( * c ) - ( * d ) ) ) / 6.;
 }
 
 bool is_positive_integer(const std :: string &s)

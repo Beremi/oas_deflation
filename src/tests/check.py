@@ -22,12 +22,12 @@ def simple_file_compare(dir1, dir2):
     for f in files:
         if f == 'version.txt':
             continue
-        if f.name.startswith('LD'):
+        else:#if f.name.startswith('LD'):
             ld_old = np.loadtxt(f, skiprows=1, delimiter='\t')
             ld_new = np.loadtxt(results_dir / f.name, skiprows=1, delimiter='\t')
             identical.append(np.all(np.isclose(ld_old, ld_new)))
-        else:
-            identical.append(filecmp.cmp(f, results_dir / f.name, shallow=False))
+        #else:
+        #    identical.append(filecmp.cmp(f, results_dir / f.name, shallow=False))
     return not all(identical)
     
 

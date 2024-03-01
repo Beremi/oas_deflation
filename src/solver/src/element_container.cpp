@@ -28,6 +28,15 @@ void ElementContainer :: clear() {
         }
     }
 }
+
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: setModel(Model *mod) { 
+    model = mod;
+    nodes = model->giveNodes();
+    bconds = model->giveBC(); 
+};
+
 //////////////////////////////////////////////////////////
 void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
     this->materials = matrs;
@@ -74,8 +83,16 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     DiscreteTrsprtCoupledElem *newelem = new DiscreteTrsprtCoupledElem(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("TrsprtTri") == 0 ) {
+                    TrsprtTriangle *newelem = new TrsprtTriangle();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("TrsprtQuad") == 0 ) {
                     TrsprtQuad *newelem = new TrsprtQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("TrsprtTet") == 0 ) {
+                    TrsprtTetra *newelem = new TrsprtTetra();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("TrsprtBrick") == 0 ) {
@@ -86,8 +103,16 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     TrsprtTemprtrCoupledBrick *newelem = new TrsprtTemprtrCoupledBrick();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("MechanicalTri") == 0 ) {
+                    MechanicalTriangle *newelem = new MechanicalTriangle();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("MechanicalQuad") == 0 ) {
                     MechanicalQuad *newelem = new MechanicalQuad();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("MechanicalTet") == 0 ) {
+                    MechanicalTetra *newelem = new MechanicalTetra();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MechanicalBrick") == 0 ) {
@@ -254,38 +279,39 @@ void ElementContainer :: saveElemStatsToFile(const string &filepath, const std :
 // but at that time, mat_stats are still before init() so all the matStats vould be reset after that
 void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
     this->file_to_load_from.push_back(str);
-    // TODO JK: make the following more universally, now it works only for LD, but the file can be named by any other name
-    if ( this->file_to_load_from.size() == 1 ) {
-        // if LD file exists, it will be deleted, so rename it
-        unsigned LD_num = 0;
-        std :: string fnm = "LD";
-        // NOTE here GlobPaths :: RESULTDIR would be usefull
-        std :: string fnm_ini = ( masterModel->resultDir / ( fnm + ".out" ) ).string();
-        std :: string fnm_fin;
-        while ( LD_num < 1000 ) {
-            fnm_fin = ( masterModel->resultDir / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
-            if ( !fs :: exists(fnm_fin) ) {
-                if ( fs :: exists(fnm_ini) ) {
-                    std :: rename(fnm_ini.c_str(), fnm_fin.c_str() );
-                    std :: cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
-                    break;
-                } else {
-                    std :: cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
-                }
-            }
-            LD_num++;
-        }
-    }
+    //the commented part belonged to adaptivity feature
+    /*
+     * // TODO JK: make the following more universally, now it works only for LD, but the file can be named by any other name
+     * if ( this->file_to_load_from.size() == 1 ) {
+     *  // if LD file exists, it will be deleted, so rename it
+     *  unsigned LD_num = 0;
+     *  std :: string fnm = "LD";
+     *  // NOTE here GlobPaths :: RESULTDIR would be usefull
+     *  std :: string fnm_ini = ( masterModel->resultDir / ( fnm + ".out" ) ).string();
+     *  std :: string fnm_fin;
+     *  while ( LD_num < 1000 ) {
+     *      fnm_fin = ( masterModel->resultDir / ( fnm + std :: to_string(LD_num) + ".out" ) ).string();
+     *      if ( !fs :: exists(fnm_fin) ) {
+     *          if ( fs :: exists(fnm_ini) ) {
+     *              std :: rename( fnm_ini.c_str(), fnm_fin.c_str() );
+     *              std :: cout << "file \'" << fnm_ini << "\' from previous calculation succesfully renamed to \'" << fnm_fin << '\'' << '\n';
+     *              break;
+     *          } else {
+     *              std :: cerr << "could not rename \'" << fnm_ini << "\', file does not exists" << '\n';
+     *          }
+     *      }
+     *      LD_num++;
+     *  }
+     * }
+     */
 };
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, double &ini_time_step, double &ini_idc_time, const bool get_time_from_file) {
+    (void) ini_time;    (void) ini_step;    (void) ini_time_step;    (void) ini_idc_time;    (void) get_time_from_file;
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
-        unsigned elem_id, stat_id, mat_id, st;
-        double timo, idc_timo, time_step;
-        std :: vector< double >initial_times, ini_time_steps, initial_idc_times;
-        std :: vector< unsigned >initial_steps;
+        unsigned elem_id, stat_id;
         for ( auto const &file_with_stats : this->file_to_load_from ) {
             ifstream inputfile(file_with_stats.c_str() );
             if ( inputfile.is_open() ) {
@@ -295,17 +321,8 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                     }
                     istringstream iss(line);
                     iss >> param;
-                    if ( param.compare("time") == 0 ) {
-                        iss >> timo >> st >> time_step >> idc_timo;
-                        initial_times.push_back(timo);
-                        initial_steps.push_back(st);
-                        ini_time_steps.push_back(time_step);
-                        initial_idc_times.push_back(idc_timo);
-                    } else if ( param.compare("matStat") == 0 ) {
-                        iss >> elem_id >> stat_id >> mat_id;
-                        // std::cout << "line: " << line << '\n';
-                        // std::cout << "elem name: " << this->giveElement(elem_id)->giveName() << '\n';
-                        this->giveElement(elem_id)->changeMaterial(this->materials->giveMaterial(mat_id) );
+                    if ( param.compare("matStat") == 0 ) {
+                        iss >> elem_id >> stat_id;
                         this->giveElement(elem_id)->giveMatStatus(stat_id)->readFromLine(iss);
                     }
                 }
@@ -314,25 +331,6 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
                 std :: cerr << "there is no such file " << file_with_stats << '\n';
                 exit(EXIT_FAILURE);
             }
-        }
-        if ( get_time_from_file ) {
-            if ( initial_times.size() == 0 ) {
-                std :: cerr << "could not determine the starting time " << '\n';
-                std :: cerr << "there is no line beginning with \'time\'" << '\n';
-                exit(EXIT_FAILURE);
-            }
-            // check if time and step in all the files with matStats
-            for ( unsigned i = 0; i < initial_times.size(); i++ ) {
-                if ( fmax(initial_times [ i ] - initial_times [ 0 ], initial_steps [ i ] - initial_steps [ 0 ]) > 1e-6 ) {
-                    std :: cerr << "times or steps in various files containing matStats differ" << '\n';
-                    exit(EXIT_FAILURE);
-                }
-            }
-            // and set them accordign to values from files
-            ini_step = initial_steps [ 0 ];
-            ini_time = initial_times [ 0 ];
-            ini_time_step = ini_time_steps [ 0 ];
-            ini_idc_time = initial_idc_times [ 0 ];
         }
     }
 }
@@ -479,6 +477,26 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
      */
 }
 
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateLumpedMassMatrix(Vector &M) const {
+    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    M = Vector :: Zero(nfreeDoFs);
+    vector< unsigned >elDoFs;
+    Vector m;
+    unsigned DoFi;
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        m = ( * e )->giveLumpedMassMatrix();
+        elDoFs = ( * e )->giveDoFs();
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            DoFi = nodes->giveDoFid(elDoFs [ i ]);
+            if ( DoFi < nfreeDoFs ) {
+                M [ DoFi ] += m [ i ];
+            }
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const {
     updateStructuralMatrix(K, 0, param);
@@ -499,6 +517,8 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f.setZero();  // clear array
+
+    materials->runPreparationForStressEvaluation(this);
 
     for ( unsigned so = 0; so <= max_sol_order; so++ ) {
         for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
@@ -651,7 +671,7 @@ Element *ElementContainer :: findClosestElement(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result) {
+void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string code, vector< Vector > &result) const {
     //delete everythink inside
     size_t p;
     result.clear(); // result.resize(0);
@@ -662,7 +682,7 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
     vector< Vector >res;
     Vector wei;
     unsigned nodeid;
-    for ( vector< Element * > :: iterator ee = elems.begin(); ee != elems.end(); ++ee ) {
+    for ( vector< Element * > :: const_iterator ee = elems.begin(); ee != elems.end(); ++ee ) {
         ( * ee )->extrapolateIPValuesToNodes(code, res, wei);
         size_t reslen = res.size();
         for ( p = 0; p < ( * ee )->giveNumOfNodes(); p++ ) {
@@ -677,6 +697,30 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
             }
         }
     }
+
+    //extract pairs
+    set<pair<unsigned, unsigned>> periodicPairs;
+    for (unsigned i = 0; i<model->givePBlockContainer()->giveSize(); i++){
+        MechanicalPeriodicBC * pb = dynamic_cast<MechanicalPeriodicBC *>(model->givePBlockContainer()->givePBlock(i));
+        if (pb){
+            vector<unsigned> masters = pb->giveMasters();
+            vector<unsigned> slaves = pb->giveSlaves();
+            for (unsigned k=0; k<masters.size(); k++){
+                periodicPairs.insert(make_pair(masters[k],slaves[k]));
+            }
+        }
+    }    
+    //add slaves to masters
+    for (auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q) {  
+        weights[q->first] += weights[q->second];
+        result[q->first] += result[q->second];
+    }
+    //copy masters to slaves
+    for (auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q) {  
+        weights[q->second] = weights[q->first];
+        result[q->second] = result[q->first];
+    }
+
 
     //normalize by number of attached elements
     for ( p = 0; p < nodes->giveSize(); p++ ) {
@@ -717,6 +761,15 @@ void ElementContainer :: giveValues(std :: string code, Vector &result) const {
     } else {
         result.resize(0);
     }
+}
+
+
+//////////////////////////////////////////////////////////
+vector<Vector> ElementContainer :: computePrincipalStresses() const {
+    vector<Vector> tensstress;
+    string code = "stress";
+    extrapolateValuesFromIntegrationPointsToNodes( code, tensstress);
+    return tensstress;
 }
 
 

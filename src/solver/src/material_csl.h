@@ -9,7 +9,7 @@
 class CSLMaterial;
 class CSLMaterialStatus : public VectMechMaterialStatus
 {
-private:
+protected:
     double omega0, maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
     // MyVector temp_strain;
     double damage, temp_damage;
@@ -42,10 +42,10 @@ public:
     Vector giveCrackOpeningVector() const;
 };
 
-
+//////////////////////////////////////////////////////////
 class CSLMaterial : public VectMechMaterial
 {
-private:
+protected:
     double ft, Gt;
     double fs, Gs, fc, Kc, beta, mu, nc, lam0;
     double Lcrs, Lcrt;
@@ -75,6 +75,40 @@ public:
 };
 
 //////////////////////////////////////////////////////////
+// CSL MATERIAL with update by tensorial stress
+
+class CSLMaterialWithTensorialStressUpdate;
+class CSLMaterialWithTensorialStressUpdateStatus : public CSLMaterialStatus
+{
+public:
+    CSLMaterialWithTensorialStressUpdateStatus(CSLMaterialWithTensorialStressUpdate *m, Element *e, unsigned ipnum);
+    virtual ~CSLMaterialWithTensorialStressUpdateStatus() {};
+    virtual bool giveValues(std :: string code, Vector &result) const;
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+private:
+    Vector giveEigenStrainFromTensorialStress();
+};
+
+//////////////////////////////////////////////////////////
+class CSLMaterialWithTensorialStressUpdate : public CSLMaterial
+{
+private:
+    double poisson;
+    std::vector<Vector> tensstress;
+public:
+    CSLMaterialWithTensorialStressUpdate(unsigned dimension);
+    virtual ~CSLMaterialWithTensorialStressUpdate() {};
+    virtual void readFromLine(std :: istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    double givePoissonNumber() { return poisson; }
+    virtual void init(MaterialContainer *matcont);
+    virtual void prepareForStressEvaluation(ElementContainer* elems);
+    Vector giveAveragePrincipalStress(unsigned Anode, unsigned Bnode);
+};
+
+
+//////////////////////////////////////////////////////////
 //COUPLED CSL MATERIAL
 class CoupledCSLMaterial;
 class CoupledCSLMaterialStatus : public CSLMaterialStatus
@@ -95,6 +129,7 @@ public:
     virtual void setParameterValue(std :: string code, double value);
 };
 
+//////////////////////////////////////////////////////////
 class CoupledCSLMaterial : public CSLMaterial
 {
 private:
@@ -107,5 +142,6 @@ public:
     virtual void init(MaterialContainer *matcont);
     double giveBiotCoeff() const { return biotCoeff; };
 };
+
 
 #endif /* _CSL_MATERIAL_H */

@@ -1058,7 +1058,7 @@ def generateNodesRectPeriodic_cython(double[:] maxLim,
         tr = 0
         distIsGood = False
         while (not distIsGood) and (tr < trials):
-            print(tr)
+            #print(tr)
             #for d in range(dim):
             #    coords[d] = dist(gen) * maxLim[d]
             for d in range(dim):
@@ -1082,7 +1082,7 @@ def generateNodesRectPeriodic_cython(double[:] maxLim,
                 distInt = distInt**0.5
 
                 if (distInt < minDist):
-                    print(distInt)
+                    #print(distInt)
                     distIsGood = False
                     tr += 1
                     break

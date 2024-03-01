@@ -45,8 +45,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
                 iss >> val;
                 times_to_save.push_back(val);
             }
-            sort( times_to_save.begin(), times_to_save.end() );   // sort times
-            times_to_save.erase( std :: unique( times_to_save.begin(), times_to_save.end() ), times_to_save.end() );     // store only unique values
+            sort( times_to_save.begin(), times_to_save.end() );    // sort times
+            times_to_save.erase( std :: unique( times_to_save.begin(), times_to_save.end() ), times_to_save.end() );       // store only unique values
         } else if ( param.compare("saveSteps") == 0 ) {
             iss >> num;
             unsigned val = 0;
@@ -54,8 +54,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
                 iss >> val;
                 steps_to_save.push_back(val);
             }
-            sort( steps_to_save.begin(), steps_to_save.end() );   // sort steps
-            steps_to_save.erase( std :: unique( steps_to_save.begin(), steps_to_save.end() ), steps_to_save.end() );     // store only unique values
+            sort( steps_to_save.begin(), steps_to_save.end() );    // sort steps
+            steps_to_save.erase( std :: unique( steps_to_save.begin(), steps_to_save.end() ), steps_to_save.end() );       // store only unique values
         } else if ( param.compare("timeShift") == 0 ) {
             iss >> saveTime_last;
         } else if ( param.compare("stepShift") == 0 ) {
@@ -176,15 +176,26 @@ void TXTNodalExporter :: init() {
     for ( unsigned i = 0; i < ncod; i++ ) {
         maxsize [ i ] = 0;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-            nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], fakeDoFs, res);
-            maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );    // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
+            if ( codes [ i ].compare("reaction") == 0 ) {
+                res.resize( nodes->giveNode(n)->giveNumberOfDoFs() );
+            } else if (codes [ i ].rfind("extrapolated", 0) == 0 ) {
+                vector< Vector > results;
+                elems->extrapolateValuesFromIntegrationPointsToNodes(codes[i].substr(12), results);
+                unsigned maxs = 0;
+                for (auto &p: results) {
+                    if (maxs<p.size()) maxs = p.size();
+                }
+                res.resize( maxs );
+            } else {
+                nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], fakeDoFs, res);
+            }
+            maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );     // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
         }
     }
 }
 
 //////////////////////////////////////////////////////////
 void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) reactions;
     char buffer[ 100 ];
     Node *nn;
     giveFileName(step, buffer);
@@ -204,14 +215,35 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
         }
         outputfile << "\n";
 
+        vector < vector < Vector > > rrres;
+        for ( unsigned c = 0; c < codes.size(); c++ ) {
+            if (codes [ c ].rfind("extrapolated", 0) == 0 ) {
+                vector < Vector > rres;
+                elems->extrapolateValuesFromIntegrationPointsToNodes(codes[c].substr(12), rres);
+                rrres.push_back(rres);
+            }
+        }
+
         outputfile << std :: scientific;
         outputfile.precision(precision);
         Vector res;
+        unsigned expid;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             nn = nodes->giveNode(n);
             outputfile << nn->giveID();
+            expid = 0;
             for ( unsigned c = 0; c < codes.size(); c++ ) {
-                nn->giveDoFBasedValues(codes [ c ], DoFs, res);
+                if ( codes [ c ].compare("reaction") == 0 ) {
+                    res.resize( nn->giveNumberOfDoFs() );
+                    for ( unsigned i = 0; i < nn->giveNumberOfDoFs(); i++ ) {
+                        res [ i ] = reactions [ nn->giveStartingDoF() + i ];
+                    }
+                } else if (codes [ c ].rfind("extrapolated", 0) == 0 ) {
+                    res = rrres[expid][n];
+                    expid ++;
+                } else {
+                    nn->giveDoFBasedValues(codes [ c ], DoFs, res);
+                }
                 for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
                     outputfile << "\t" << res [ p ] * multiplier;
                 }

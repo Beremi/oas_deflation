@@ -38,6 +38,7 @@ public:
     double giveLeftLength(unsigned id) const { return positions [ id ]; };
     double giveRightLength(unsigned id) const { return length - positions [ id ]; };
     RigidBodyContact *giveRBContact(unsigned i)const { return contacts [ i ]; };
+    virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 #endif /* _ELEMENT_FIBER_H */

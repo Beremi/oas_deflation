@@ -340,6 +340,13 @@ void TensMechMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
+Matrix TensMechMaterialStatus :: giveMassTensor() const {
+    TensMechMaterial *m = static_cast< TensMechMaterial * >( mat );
+    unsigned dimension = mat->giveDimension();
+    return Eigen :: MatrixXd :: Identity(dimension, dimension) * m->giveDensity();
+}
+
+//////////////////////////////////////////////////////////
 TensMechMaterialStatus :: TensMechMaterialStatus(TensMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "tensorial mechanical mat. status";
 }
@@ -347,14 +354,14 @@ TensMechMaterialStatus :: TensMechMaterialStatus(TensMechMaterial *m, Element *e
 //////////////////////////////////////////////////////////
 bool TensMechMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
-        unsigned size = ( element->giveDimension() - 1 ) * 3;
+        unsigned size = temp_stress.size();
         result.resize(size);
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_stress [ p ];
         }
         return true;
     } else if ( code.compare("strain") == 0 || code.compare("strains") == 0 ) {
-        unsigned size = ( element->giveDimension() - 1 ) * 3;
+        unsigned size = temp_strain.size();
         result.resize(size);
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_strain [ p ];
@@ -447,12 +454,12 @@ Matrix TensCosseratMechMaterialStatus :: giveStiffnessTensor(string type) const 
         if ( m->isPlaneStress() ) {
             cerr << name << " error: dimension " << dimension << ", Cosserat plane stress not implemented" << endl;
             exit(1);
-        } else {  //plane strain ACTUALLY NOT IMPLEMENTED YET
+        } else {  //plane strain
             D(0, 0) = D(1, 1) = lammeL + 2. * lammeM;
             D(0, 1) = D(1, 0) = lammeL;
             D(2, 2) = D(3, 3) = lammeM + m->giveCosseratShearParam();
             D(2, 3) = D(3, 2) = lammeM - m->giveCosseratShearParam();
-            D(4, 4) = D(5, 5) = lammeM * 4. * m->giveCharacteristicLength();
+            D(4, 4) = D(5, 5) = lammeM * 4. * pow(m->giveCharacteristicLength(), 2);
         }
     } else {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;

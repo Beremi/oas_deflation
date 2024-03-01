@@ -1,6 +1,8 @@
 #include "material_csl.h"
 #include "element_discrete.h"
 #include "element_ldpm.h"
+#include "element_container.h"
+
 
 using namespace std;
 
@@ -167,9 +169,9 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
     if ( strain.size() == 2 ) {
         epsT = abs(strain [ 1 ]);                //2D
     } else {
-        epsT = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );      //3D
+        epsT = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );       //3D
     }
-    double epsEQ = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );      //equivalent strain
+    double epsEQ = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );       //equivalent strain
 
     if ( epsEQ > 0 && damage < 1.0 ) {
         double omega, S0, chi, K0, strEQ;
@@ -333,6 +335,11 @@ void CSLMaterialStatus :: setParameterValue(string code, double value) {
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: readFromLine(istringstream &iss) {
+    VectMechMaterialStatus :: readFromLine(iss);
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+
     std :: string param;
     while (  iss >> param ) {
         if ( param.compare("damage") == 0 ) {
@@ -434,6 +441,123 @@ void CSLMaterial :: init(MaterialContainer *matcont) {
     Lcrt = 2 * E0 * Gt / pow(ft, 2);
     Lcrs = 2 * alpha * E0 * Gs / pow(fs, 2);
 };
+
+
+//////////////////////////////////////////////////////////
+// CSL MATERIAL STATUS WITH TANSORIAL STIFFNESS UPDATE
+
+CSLMaterialWithTensorialStressUpdateStatus :: CSLMaterialWithTensorialStressUpdateStatus(CSLMaterialWithTensorialStressUpdate *m, Element *e, unsigned ipnum) : CSLMaterialStatus(m, e, ipnum) {
+    name = "CSL mat. with tensorial stress update status";
+}
+
+//////////////////////////////////////////////////////////
+bool CSLMaterialWithTensorialStressUpdateStatus :: giveValues(string code, Vector &result) const {
+    //if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
+        return CSLMaterialStatus :: giveValues(code, result);
+    //}
+}
+
+//////////////////////////////////////////////////////////
+Vector CSLMaterialWithTensorialStressUpdateStatus :: giveEigenStrainFromTensorialStress() {
+    CSLMaterialWithTensorialStressUpdate *m = static_cast<CSLMaterialWithTensorialStressUpdate*>(mat);
+    Vector ts = m->giveAveragePrincipalStress(element->giveNode(0)->giveID(),element->giveNode(1)->giveID());
+
+    Vector eigenvalues;
+    vector< Vector > eigenvectors;
+    LinalgEigenSolver(ts, eigenvalues, eigenvectors);
+    unsigned dim = m->giveDimension();
+    Vector augstress(dim);
+
+    Matrix dirs(dim,dim);
+    for (unsigned i=0; i<dim; i++){
+        dirs.row(i) = eigenvectors[i]; 
+    }
+    Vector res(dim);
+    if (dim==2){
+        res[0] = eigenvalues[1];
+        res[1] = eigenvalues[0];
+    } else if (dim==3){
+        res[0] = eigenvalues[1] + eigenvalues[2];
+        res[1] = eigenvalues[0] + eigenvalues[2];
+        res[2] = eigenvalues[0] + eigenvalues[1];
+    }
+    RigidBodyContact * rbc = static_cast<RigidBodyContact * > (element);
+    return ( (dirs.transpose() * res.asDiagonal() * dirs) * rbc->giveNormal() ) * (m->givePoissonNumber() / ((1.-temp_damage) * m->giveE0()));
+}
+
+
+//////////////////////////////////////////////////////////
+Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStress(const Vector &strain, double timeStep) {  
+    return CSLMaterialStatus :: giveStress(strain+giveEigenStrainFromTensorialStress(), timeStep);
+}
+
+//////////////////////////////////////////////////////////
+Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    return CSLMaterialStatus :: giveStressWithFrozenIntVars(strain+giveEigenStrainFromTensorialStress(), timeStep);
+}
+
+//////////////////////////////////////////////////////////
+// CSL MATERIAL WITH TENSORIAL STRESS UPDATE
+//////////////////////////////////////////////////////////
+
+CSLMaterialWithTensorialStressUpdate::CSLMaterialWithTensorialStressUpdate(unsigned dimension) : CSLMaterial(dimension) { 
+    name = "CSL material with tensorial stress update";
+};
+
+//////////////////////////////////////////////////////////
+void CSLMaterialWithTensorialStressUpdate::prepareForStressEvaluation(ElementContainer* elems){    
+    tensstress = elems->computePrincipalStresses();
+}
+
+
+//////////////////////////////////////////////////////////
+Vector CSLMaterialWithTensorialStressUpdate::giveAveragePrincipalStress(unsigned Anode, unsigned Bnode){    
+    return (tensstress[Anode] + tensstress[Bnode])/2.;
+}
+
+//////////////////////////////////////////////////////////
+void CSLMaterialWithTensorialStressUpdate :: readFromLine(istringstream &iss) {
+    CSLMaterial :: readFromLine(iss); //read elastic parameters
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+
+   
+
+    string param;
+    bool bnu;
+    bnu = false;
+
+    while (  iss >> param ) {
+        if ( param.compare("nu") == 0 ) {
+            bnu = true;
+            iss >> poisson;
+        }
+    }
+    if ( !bnu ) {
+        cerr << name << ": material parameter 'nu' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *CSLMaterialWithTensorialStressUpdate :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    CSLMaterialWithTensorialStressUpdateStatus *newStatus = new CSLMaterialWithTensorialStressUpdateStatus(this, e, ipnum); //needs to be deleted manually
+    return newStatus;
+};
+
+
+//////////////////////////////////////////////////////////
+void CSLMaterialWithTensorialStressUpdate :: init(MaterialContainer *matcont) {
+    CSLMaterial :: init(matcont);
+
+    if (alpha!=1.){
+        cerr << "WARNING: " << name << " alpha parameter is forced to be 1, your value " << alpha << "has been overwritten." << endl;
+        alpha = 1.;
+    }    
+};
+
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

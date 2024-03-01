@@ -20,7 +20,28 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) : Element(dim) {
     inttype = new IntegrDiscrete1();
     projectArea = true;
     intPoints = "centroid";
+    userDefinedCentroid = false;
+    ignoreNegativeAreas = false;
 }
+
+
+//////////////////////////////////////////////////////////
+void RigidBodyContact :: giveIPValues(std :: string code, unsigned ipnum, Vector &result) const {
+    if ( ipnum >= inttype->giveNumIP() ) {
+        std :: cerr << name <<  " Error: intergration point number " << ipnum << " exceeds number of integration points" << std :: endl;
+        exit(1);
+    }
+    if ( code.compare("location") == 0 ) {
+        result.resize(ndim);
+        Point *h = inttype->giveIPLocationPointer(ipnum);
+        for ( unsigned k = 0; k < ndim; k++ ) {
+            result [ k ] = ( * h ) [ k ];
+        }
+    } else {
+        Element :: giveIPValues(code, ipnum, result);
+    }
+};
+
 
 //////////////////////////////////////////////////////////
 void RigidBodyContact :: giveValues(string code, Vector &result) const {
@@ -48,6 +69,12 @@ void RigidBodyContact :: giveValues(string code, Vector &result) const {
     } else if ( code.compare("volume") == 0 ) {
         result.resize(1);
         result [ 0 ] = area * length / ndim;
+    } else if ( code.compare("volumeA") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = giveVolumeAssociatedWithNode(0);
+    } else if ( code.compare("volumeB") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = giveVolumeAssociatedWithNode(1);
     } else if ( code.compare("area") == 0 ) {
         result.resize(1);
         result [ 0 ] = area;
@@ -74,15 +101,22 @@ void RigidBodyContact :: readFromLine(istringstream &iss, NodeContainer *fullnod
         vert [ i ] = fullnodes->giveNode(num2);
     }
     iss >> num;
+    mat = fullmatrs->giveMaterial(num);
     string param;
     while ( iss >> param ) {
         if ( param.compare("integration") == 0 ) {
             iss >> intPoints;
+        } else if ( param.compare("centroid") == 0 && ndim == 3 ) {
+            userDefinedCentroid = true;
+            double x, y, z;
+            iss >> x >> y >> z;
+            userCentroid = Point(x, y, z);
         } else if ( param.compare("area_projection") == 0 ) {
             iss >> projectArea;
+        } else if ( param.compare("ignore_negative_area") == 0 ) {
+            ignoreNegativeAreas = true;
         }
     }
-    mat = fullmatrs->giveMaterial(num);
 }
 
 //////////////////////////////////////////////////////////
@@ -142,7 +176,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         Point faceNormal;
         if ( area < 1e-14 ) {
             faceNormal = Point(-t1 [ 1 ] / 1e-14, t1 [ 0 ] / 1e-14, 0);
-        } else  {
+        } else {
             faceNormal = Point(-t1 [ 1 ] / area, t1 [ 0 ] / area, 0);
         }
         if ( projectArea ) {
@@ -162,17 +196,17 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         centroid = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
-        IntegrDiscrete1 *it = dynamic_cast< IntegrDiscrete1 * >( inttype );
+        IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
         it->setNumIP(n);
-        //Gauss integration
-        if ( n < 6 ) {
+        //Gauss integration, not used
+        if ( false && n < 5 ) {
             Vector locs, weis;
             giveGaussIntegrationPointAndWeights(n, locs, weis);
             for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
                 inttype->setIPLocation(i, centroid + t1 * area * locs [ i ] / 2.);
                 inttype->setIPWeight(i, length * area * weis [ i ] / 2. / ndim);
             }
-        } else  { //equidistant
+        } else {  //equidistant
             for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
                 inttype->setIPLocation( i, centroid + t1 * area * ( ( i + 0.5 ) / n - 0.5 ) );
                 inttype->setIPWeight( i, length * area / ( ndim * n ) );
@@ -184,6 +218,10 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             avgPoint += vert [ i ]->givePoint();
         }
         avgPoint /= vert.size();
+
+        if ( userDefinedCentroid ) {
+            avgPoint = userCentroid;
+        }
 
         double diff = 1e6;
 
@@ -214,7 +252,12 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             avgPoint = centroid;
         }
 
-        Vector ais( vert.size() ); //projected areas of individual triangles
+        if ( userDefinedCentroid ) {
+            avgPoint = userCentroid;
+            centroid = userCentroid;
+        }
+
+        Vector ais( vert.size() );  //projected areas of individual triangles
         Point ni;
         area = 0.0;
         perimeter = 0;
@@ -228,13 +271,21 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             ais [ i ] = ni.norm() / 2;
             ni.normalize();
             ais [ i ] *= ni.dot(normal);
+            if ( ais [ i ] < 1e-15 ) {
+                if ( !ignoreNegativeAreas ) {
+                    cout << "RigidBodyContact Warning: negative area " << ais [ i ] << ", incorrect orientation of verices, corrected automatically" << endl;
+                    ais [ i ] = std :: abs(ais [ i ]);
+                } else {
+                    ais [ i ] = 0.;
+                }
+            }
             area += ais [ i ];
             ni = ( vert [ i ]->givePoint() - vert [ j ]->givePoint() );   //just for periemeter
             ni += normal * ( normal.dot(ni) );
             perimeter += ni [ 0 ];
         }
 
-        IntegrDiscrete1 *it = dynamic_cast< IntegrDiscrete1 * >( inttype );
+        IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
         if ( intPoints.compare("centroid") == 0 ) {
             it->setNumIP(1);
             inttype->setIPLocation(0, centroid);
@@ -337,18 +388,18 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
         Point *B = nodes [ 1 ]->givePointPointer();
         Point *C = vert [ 0 ]->givePointPointer();
         Point *D = vert [ 1 ]->givePointPointer();
-        Point cg0 = ( ( * A ) + ( * C ) + ( * D ) ) / 3.;
-        Point cg1 = ( ( * B ) + ( * C ) + ( * D ) ) / 3.;
+        Point cg0 = ( nodes [ 0 ]->givePoint() + vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 3.;
+        Point cg1 = ( nodes [ 1 ]->givePoint() + vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 3.;
         Point null(0, 0, 0);
-        Point C_ = ( * C ) - ( * A );
-        Point D_ = ( * D ) - ( * A );
-        Point C__ = ( * C ) - ( * B );
-        Point D__ = ( * D ) - ( * B );
         // MassMatrix
         M(0, 0) = M(1, 1) = m0;
         M(3, 3) = M(4, 4) = m1;
+        Point C_ = ( * C ) - ( * A );
+        Point D_ = ( * D ) - ( * A );
         M(2, 2) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node A[0,0]
-        M(5, 5) = density * ( triInertia2D(& null, & C__, & D__) );  // Inertia relative to the node B[0,0]
+        C_ = ( * C ) - ( * B );
+        D_ = ( * D ) - ( * B );
+        M(5, 5) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node B[0,0]
         M(0, 2) = M(2, 0) = -m0 * ( cg0.y() - A->y() );
         M(1, 2) = M(2, 1) = +m0 * ( cg0.x() - A->x() );
         M(3, 5) = M(5, 3) = -m1 * ( cg1.y() - B->y() );
@@ -356,70 +407,52 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
     } else if ( ndim == 3 ) {
         // Define points
         Point *A = nodes [ 0 ]->givePointPointer();
-        Point *B = nodes [ 1 ]->givePointPointer();
-        Point *FaceCentroid = inttype->giveIPLocationPointer(0);
         // Mass
         M(0, 0) = M(1, 1) = M(2, 2) = m0;
         M(6, 6) = M(7, 7) = M(8, 8) = m1;
-        size_t n = vert.size();
-        for ( unsigned i = 0; i < n; i++ ) {
-            Point *C = vert [ i ]->givePointPointer();
-            Point *D;
-            if ( i == 0 ) {
-                D = vert [ n - 1 ]->givePointPointer();
-            } else {
-                D = vert [ i - 1 ]->givePointPointer();
+        Point *D, cg, A_, C_, D_, centroid_;
+        Point null(0, 0, 0);
+        Point *C = vert [ vert.size() - 1 ]->givePointPointer();
+        double tetraVolume;
+        for ( unsigned i = 0; i < vert.size(); i++ ) {
+            D = C;
+            C = vert [ i ]->givePointPointer();
+            for ( unsigned k = 0; k < 2; k++ ) {
+                A = nodes [ k ]->givePointPointer();
+                cg = ( ( * A ) + ( * C ) + ( * D ) + centroid ) / 4.;
+                tetraVolume = abs( tetraVolumeSigned(A, C, D, & centroid) );
+
+                // Inertia matrix relative to the centroid [0,0,0]
+                A_ = ( * A ) - cg;
+                C_ = ( * C ) - cg;
+                D_ = ( * D ) - cg;
+                centroid_ = centroid - cg;
+                Matrix I = tetraInertia3D(& A_, & C_, & D_, & centroid_);
+
+                // MassMatrix
+                M(6 * k + 3, 6 * k + 3) += density * ( I(0, 0) + tetraVolume * ( pow( ( cg.y() - A->y() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
+                M(6 * k + 4, 6 * k + 4) += density * ( I(1, 1) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
+                M(6 * k + 5, 6 * k + 5) += density * ( I(2, 2) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.y() - A->y() ), 2 ) ) );
+                M(6 * k + 3, 6 * k + 4) += density * ( I(0, 1) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.y() - A->y() ) ) );
+                M(6 * k + 3, 6 * k + 5) += density * ( I(0, 2) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.z() - A->z() ) ) );
+                M(6 * k + 4, 6 * k + 5) += density * ( I(1, 2) - tetraVolume * ( ( cg.y() - A->y() ) * ( cg.z() - A->z() ) ) );
+
+                M(6 * k, 6 * k + 4)   += tetraVolume * density * ( cg.z() - A->z() );
+                M(6 * k, 6 * k + 5)   -= tetraVolume * density * ( cg.y() - A->y() );
+                M(6 * k + 1, 6 * k + 3) -= tetraVolume * density * ( cg.z() - A->z() );
+                M(6 * k + 1, 6 * k + 5) += tetraVolume * density * ( cg.x() - A->x() );
+                M(6 * k + 2, 6 * k + 3) += tetraVolume * density * ( cg.y() - A->y() );
+                M(6 * k + 2, 6 * k + 4) -= tetraVolume * density * ( cg.x() - A->x() );
             }
-            Point cg0 = ( ( * A ) + ( * C ) + ( * D ) + ( * FaceCentroid ) ) / 4.;
-            Point cg1 = ( ( * B ) + ( * C ) + ( * D ) + ( * FaceCentroid ) ) / 4.;
-            // Volume of tetrahedron
-            double tetraVolume0 = tetraVolumeSigned(A, C, D, FaceCentroid);
-            double tetraVolume1 = tetraVolumeSigned(B, C, D, FaceCentroid);
-            //cout << tetraVolume0 << endl;
-            // Inertia matrix relative to the centroid [0,0,0]
-            Point A__ = ( * A ) - cg0;
-            Point C__ = ( * C ) - cg0;
-            Point D__ = ( * D ) - cg0;
-            Point FaceCentroid__ = ( * FaceCentroid ) - cg0;
-            Point B___ = ( * B ) - cg1;
-            Point C___ = ( * C ) - cg1;
-            Point D___ = ( * D ) - cg1;
-            Point FaceCentroid___ = ( * FaceCentroid ) - cg1;
-            Matrix Icg0 = tetraInertia3D(& A__, & C__, & D__, & FaceCentroid__);
-            Matrix Icg1 = tetraInertia3D(& B___, & C___, & D___, & FaceCentroid___);
-
-            // MassMatrix
-            M(3, 3) += density * ( Icg0(0, 0) + tetraVolume0 * ( pow( ( cg0.y() - A->y() ), 2 ) + pow( ( cg0.z() - A->z() ), 2 ) ) );
-            M(4, 4) += density * ( Icg0(1, 1) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2 ) + pow( ( cg0.z() - A->z() ), 2 ) ) );
-            M(5, 5) += density * ( Icg0(2, 2) + tetraVolume0 * ( pow( ( cg0.x() - A->x() ), 2 ) + pow( ( cg0.y() - A->y() ), 2 ) ) );
-            M(3, 4) = M(4, 3) += density * ( Icg0(0, 1) - tetraVolume0 * ( ( cg0.x() - A->x() ) * ( cg0.y() - A->y() ) ) );
-            M(3, 5) = M(5, 3) += density * ( Icg0(0, 2) - tetraVolume0 * ( ( cg0.x() - A->x() ) * ( cg0.z() - A->z() ) ) );
-            M(4, 5) = M(5, 4) += density * ( Icg0(1, 2) - tetraVolume0 * ( ( cg0.y() - A->y() ) * ( cg0.z() - A->z() ) ) );
-
-            M(9, 9) += density * ( Icg1(0, 0) + tetraVolume1 * ( pow( ( cg1.y() - B->y() ), 2 ) + pow( ( cg1.z() - B->z() ), 2 ) ) );
-            M(10, 10) += density * ( Icg1(1, 1) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2 ) + pow( ( cg1.z() - B->z() ), 2 ) ) );
-            M(11, 11) += density * ( Icg1(2, 2) + tetraVolume1 * ( pow( ( cg1.x() - B->x() ), 2 ) + pow( ( cg1.y() - B->y() ), 2 ) ) );
-            M(9, 10) = M(10, 9) += density * ( Icg1(0, 1) - tetraVolume1 * ( ( cg1.x() - B->x() ) * ( cg1.y() - B->y() ) ) );
-            M(9, 11) = M(11, 9) += density * ( Icg1(0, 2) - tetraVolume1 * ( ( cg1.x() - B->x() ) * ( cg1.z() - B->z() ) ) );
-            M(10, 11) = M(11, 10) += density * ( Icg1(1, 2) - tetraVolume1 * ( ( cg1.y() - B->y() ) * ( cg1.z() - B->z() ) ) );
-
-            M(0, 4) = M(4, 0) += +( tetraVolume0 * density ) * ( cg0.z() - A->z() );
-            M(0, 5) = M(5, 0) += -( tetraVolume0 * density ) * ( cg0.y() - A->y() );
-            M(1, 3) = M(3, 1) += -( tetraVolume0 * density ) * ( cg0.z() - A->z() );
-            M(1, 5) = M(5, 1) += +( tetraVolume0 * density ) * ( cg0.x() - A->x() );
-            M(2, 3) = M(3, 2) += +( tetraVolume0 * density ) * ( cg0.y() - A->y() );
-            M(2, 4) = M(4, 2) += -( tetraVolume0 * density ) * ( cg0.x() - A->x() );
-
-            M(6, 10) = M(10, 6) += +( tetraVolume1 * density ) * ( cg0.z() - B->z() );
-            M(6, 11) = M(11, 6) += -( tetraVolume1 * density ) * ( cg0.y() - B->y() );
-            M(7, 9) = M(9, 7) += -( tetraVolume1 * density ) * ( cg0.z() - B->z() );
-            M(7, 11) = M(11, 7) += +( tetraVolume1 * density ) * ( cg0.x() - B->x() );
-            M(8, 9) = M(9, 8) += +( tetraVolume1 * density ) * ( cg0.y() - B->y() );
-            M(8, 10) = M(10, 8) += -( tetraVolume1 * density ) * ( cg0.x() - B->x() );
+        }
+        //symmetric
+        for ( unsigned k = 0; k < 6; k++ ) {
+            for ( unsigned l = max( k + 1, unsigned( 3 ) ); l < 6; l++ ) {
+                M(l, k) = M(k, l);
+                M(l + 6, k + 6) = M(k + 6, l + 6);
+            }
         }
     }
-    //    cout << M << endl;
-    //    exit(1);
     return M;
 }
 
@@ -541,7 +574,6 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
-    Matrix KK = Element :: giveStiffnessMatrix(matrixType);
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
 }
 
@@ -592,7 +624,8 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
             result [ d ] [ 0 ] =  area * ipres [ 0 ] * abs(A [ d ]);
             result [ d ] [ 1 ] =  area * ipres [ 0 ] * abs(B [ d ]);
         }
-    } else if ( ipres.size() == A.size() ) { //vector times vector of same length, symmetrization
+    } else if ( ipres.size() >= A.size() ) { //vector times vector of same length, symmetrization
+        ipres.resize( A.size() );
         //transform result to xyz
         Vector ipresglobal = transformVectorToXYZ(ipres);
 
@@ -1056,6 +1089,8 @@ void DiscreteTrsprtElem :: readFromLine(istringstream &iss, NodeContainer *fulln
 
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
+    IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
+    it->setNumIP(1);
     stats.resize(1);
 
     normal = nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint();
@@ -1230,6 +1265,44 @@ Matrix DiscreteTrsprtElem :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+void DiscreteTrsprtElem :: giveValues(string code, Vector &result) const {
+    if ( code.compare("normal") == 0 ) {
+        result.resize(ndim);
+        for ( unsigned i = 0; i < ndim; i++ ) {
+            result [ i ] = normal(i);
+        }
+    } else if ( code.compare("volume") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = area * length / ndim;
+    } else if ( code.compare("area") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = area;
+    } else if ( code.compare("length") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = length;
+    } else {
+        Element :: giveValues(code, result);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void DiscreteTrsprtElem :: giveIPValues(std :: string code, unsigned ipnum, Vector &result) const {
+    if ( ipnum >= inttype->giveNumIP() ) {
+        std :: cerr << name <<  " Error: intergration point number " << ipnum << " exceeds number of integration points" << std :: endl;
+        exit(1);
+    }
+    if ( code.compare("location") == 0 ) {
+        result.resize(ndim);
+        Point *h = inttype->giveIPLocationPointer(ipnum);
+        for ( unsigned k = 0; k < ndim; k++ ) {
+            result [ k ] = ( * h ) [ k ];
+        }
+    } else {
+        Element :: giveIPValues(code, ipnum, result);
+    }
+};
+
+//////////////////////////////////////////////////////////
 Matrix DiscreteTrsprtElem :: giveDampingMatrix() const {
     Matrix S = Matrix :: Zero(2, 2);
     double s = area * stats [ 0 ]->giveDampingTensor()(0, 0) * length /  ( 2. * ndim );
@@ -1390,8 +1463,10 @@ Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
     for ( auto &f: friends ) {
         elem_crack_opening = 0.;
         for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
-            f->giveIPValues("tempCrackOpening", k, res);
-            elem_crack_opening += abs(res [ 0 ]);
+            f->giveIPValues("crack_opening", k, res);
+            if ( res.size() == 1 ) {
+                elem_crack_opening += abs(res [ 0 ]);
+            }
         }
         crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
         if ( ndim == 3 ) {

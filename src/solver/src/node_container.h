@@ -14,7 +14,9 @@ class NodeContainer
 {
 private:
     std :: vector< Node * >nodes;
-    std :: vector< unsigned >DoFid;         //mapping from particle order to DoF order for all DoFs
+    std :: vector< unsigned >DoFid;         //mapping from full DoF order to free DoF order for all DoFs
+    std :: vector< unsigned >invDoFid;      //mapping from free DoF order to full DoF order for free DoFs
+    std :: vector< unsigned >DoF2nodes;     //mapping from full DoF order to nodes
     std :: vector< unsigned >loadedDoFs;
     std :: vector< unsigned >bodyForceDoFs;
     std :: vector< unsigned >blockedDoFid;
@@ -38,6 +40,9 @@ public:
     Node *giveNode(unsigned const num) const;
     size_t giveSize() { return nodes.size(); };
     unsigned giveDoFid(unsigned i) const { return DoFid [ i ]; }
+    unsigned giveInvDoFid(unsigned i) const { return invDoFid [ i ]; }
+    unsigned giveNodeNumberOfDoFID(unsigned i) const { return DoF2nodes [ i ]; };
+    Node *giveNodePointerOfDoFID(unsigned i) const { return nodes [ DoF2nodes [ i ] ]; };
     void establishDoFArray(BCContainer *BC);
     unsigned giveTotalNumDoFs() const { return totalDoFs; };
     unsigned giveNumFreeDoFs() const { return freeDoFs; };

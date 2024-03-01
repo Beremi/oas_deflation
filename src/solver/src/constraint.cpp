@@ -4,6 +4,7 @@
 #include "element_discrete.h"
 #include "boundary_condition.h"
 #include "solver.h"
+#include "solver_implicit.h"
 #include <fstream>
 
 //////////////////////////////////////////////////////////
@@ -398,7 +399,6 @@ void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMa
      *  //K.makeCompressed();
      * }*/
 }
-
 
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const double time_now, const bool all) const {

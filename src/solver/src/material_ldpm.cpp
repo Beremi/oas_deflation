@@ -104,6 +104,9 @@ double LDPMMaterialStatus :: giveStrengthLimit(double omega) {
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_prev, Vector stress_prev) {
+    if ( idx == 0 ) {
+        cout << "tension" << endl;
+    }
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
     // new strains & strains + stresses from previous step
@@ -119,7 +122,7 @@ Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_pre
         epsT_prev = sqrt(pow(strain_prev [ 1 ], 2) + pow(strain_prev [ 2 ], 2) );
         strT_prev = sqrt(pow(stress_prev [ 1 ], 2) + pow(stress_prev [ 2 ], 2) );
     }
-    double epsEff = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );      // effective strains
+    double epsEff = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );       // effective strains
     double epsEff_prev;
 
     if ( epsN_prev < 1e-18 ) {
@@ -134,7 +137,7 @@ Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_pre
     // new max strains
     temp_maxEpsN = max(maxEpsN, epsN);
     temp_maxEpsT = max(maxEpsT, epsT);
-    double temp_maxEpsEff = sqrt(pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );      // max effective strains
+    double temp_maxEpsEff = sqrt(pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );       // max effective strains
 
     // elasticity
     double dEps = epsEff - epsEff_prev;
@@ -164,7 +167,7 @@ Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_pre
     // effective stress
     double strElastic = strEff_prev + dStrElastic;
     double strEff = max( 0.0, min(strElastic, strBt) );
-    Vector intStress = Vector :: Zero(strain.size() );         // vector to collect stress
+    Vector intStress = Vector :: Zero(strain.size() );          // vector to collect stress
 
     if ( epsEff > 10e-20 ) {
         intStress [ 0 ] = strEff * strain [ 0 ] / epsEff;
@@ -314,7 +317,7 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
         }
     }
 
-    Vector intStress = Vector :: Zero(strain.size() );         // vector to collect stress
+    Vector intStress = Vector :: Zero(strain.size() );          // vector to collect stress
     intStress [ 0 ] = min(0., max(-sigmaBC, strNElastic) );
 
     // SHEAR
@@ -353,8 +356,8 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: passZero(const Vector &strain) {
-    Vector intStrain = Vector :: Zero(strain.size() );   // itermediary strains when passing 0
-    Vector intStress = Vector :: Zero(strain.size() );   // itermediary stresses when passing 0
+    Vector intStrain = Vector :: Zero(strain.size() );    // itermediary strains when passing 0
+    Vector intStress = Vector :: Zero(strain.size() );    // itermediary stresses when passing 0
 
     intStrain [ 0 ] = 0;
     intStrain [ 1 ] = updt_strain [ 1 ] + ( strain [ 1 ] - updt_strain [ 1 ] ) * ( -updt_strain [ 0 ] ) / ( strain [ 0 ] - updt_strain [ 0 ] );
@@ -374,20 +377,6 @@ Vector LDPMMaterialStatus :: passZero(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMMaterialStatus :: passThroughZero(const Vector &strain) {
-    Vector intStrain = Vector :: Zero(strain.size() );   // itermediary strains when passing 0
-    Vector intStress = Vector :: Zero(strain.size() );   // itermediary stresses when passing 0
-
-    if ( strain [ 0 ] > 0 ) {  // passing from zero to tension
-        temp_stress = giveTension(strain, updt_strain, intStress);
-    } else if ( strain [ 0 ] <= 0 ) {  // passing from zero to compression
-        temp_stress = giveCompression(strain, intStrain, intStress);
-    }
-
-    return temp_stress;
-}
-
-//////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     temp_strain = strain;
     temp_mech_strain = addEigenStrain(strain);
@@ -398,17 +387,16 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
     double epsNState = temp_mech_strain [ 0 ] * updt_mech_strain [ 0 ];  // gives information about the evolution of normal strains
-    if ( epsNState < -1e-25 ) {  // change of sign of EpsN
+    if ( epsNState < 0 ) {  // change of sign of EpsN
         temp_stress = passZero(temp_mech_strain);
-    } else if ( epsNState > 1e-25 ) {
-        if ( temp_mech_strain [ 0 ] < 0 ) {  // normal evolution in compression
+    } else {
+        if ( min(temp_mech_strain [ 0 ], updt_mech_strain [ 0 ]) <= 0 ) {  // normal evolution in compression
             temp_stress = giveCompression(temp_mech_strain, updt_mech_strain, updt_stress);
-        } else if ( temp_mech_strain [ 0 ] >= 0 ) {     // normal evolution in tension
+        } else if ( temp_mech_strain [ 0 ] > 0 ) {     // normal evolution in tension
             temp_stress = giveTension(temp_mech_strain, updt_mech_strain, updt_stress);
         }
-    } else if ( updt_mech_strain [ 0 ] > -1e-18 && updt_mech_strain [ 0 ] < 1e-18 ) {   // originally == 0
-        temp_stress = passThroughZero(temp_mech_strain);
     }
+
 
     // if ( temp_stress [ 0 ] < 0 && temp_stress [ 0 ] < m->giveFc0() ) {
     //     temp_crackOpening = ( temp_mech_strain [ 0 ] - ( m->giveFc0() / m->giveE0() ) - ( temp_stress [ 0 ] - m->giveFc0() / m->giveE0() ) ) * L;
@@ -443,8 +431,8 @@ void LDPMMaterialStatus :: giveVirtualDamage() {
         strT = sqrt(pow(temp_stress [ 1 ], 2) + pow(temp_stress [ 2 ], 2) );
     }
 
-    temp_epsEff = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );      // effective strains
-    temp_strEff = sqrt(pow(strN, 2) + pow(strT, 2) / m->giveAlpha() );       // effective stress
+    temp_epsEff = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );       // effective strains
+    temp_strEff = sqrt(pow(strN, 2) + pow(strT, 2) / m->giveAlpha() );        // effective stress
 
     double temp_E;
     if ( epsN < -m->giveFc0() ) {
@@ -601,7 +589,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     // initialize all values to zero (NOTE probably no need in linux, but in windows necessary)
-    nt = kt = beta = fc = Ed = Hc0 = Hc1 = Kc0 = Kc1 = Kc2 = Kc3 = fs = mu0 = muinf = Et = 0;
+    nt = kt = beta = fc = Ed = Hc0 = Hc1 = Kc0 = Kc1 = Kc2 = Kc3 = fs = mu0 = muinf = Et = -1;
 
     string param;
     bool bft, bGt, bfc0, bfs0;
@@ -620,7 +608,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
             iss >> kt;
         } else if ( param.compare("beta") == 0 ) {
             iss >> beta;
-        } else if ( param.compare("fc") == 0 ) {
+        } else if ( param.compare("fc") == 0 ) { //NO USE???
             iss >> fc;
         } else if ( param.compare("fc0") == 0 ) {
             bfc0 = true;
@@ -641,7 +629,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
             iss >> Kc3;
         } else if ( param.compare("fs") == 0 ) {
             iss >> fs;
-        } else if ( param.compare("fs0") == 0 ) {
+        } else if ( param.compare("fs0") == 0 ) { //sigma N0, transitional stress
             bfs0 = true;
             iss >> fs0;
         } else if ( param.compare("Et") == 0 ) {
@@ -690,23 +678,23 @@ void LDPMMaterial :: init(MaterialContainer *matcont) {
     ;
 
     // if variables not specified on the input, use default multipliers
-    nt = ( nt == 0 ) ? 0.2 : nt;
-    kt = ( kt == 0 ) ? 0.5 : kt;
-    beta = ( beta == 0 ) ? 0. : beta;
+    nt = ( nt == -1 ) ? 0.2 : nt;
+    kt = ( kt == -1 ) ? 0.5 : kt;
+    beta = ( beta == -1 ) ? 0. : beta;
 
-    fc = ( fc == 0 ) ? 16 * ft : fc;
-    Ed = ( Ed == 0 ) ? 2 * E0 : Ed;
-    Hc0 = ( Hc0 == 0 ) ? 0.6 * E0 : Hc0;
-    Hc1 = ( Hc1 == 0 ) ? 0.1 * E0 : Hc1;
-    Kc0 = ( Kc0 == 0 ) ? 4 : Kc0;
-    Kc1 = ( Kc1 == 0 ) ? 1 : Kc1;
-    Kc2 = ( Kc2 == 0 ) ? 10 : Kc2;
-    Kc3 = ( Kc3 == 0 ) ? 0.1 : Kc3;
+    fc = ( fc == -1 ) ? 16 * ft : fc;
+    Ed = ( Ed == -1 ) ? 2 * E0 : Ed;
+    Hc0 = ( Hc0 == -1 ) ? 0.6 * E0 : Hc0;
+    Hc1 = ( Hc1 == -1 ) ? 0.1 * E0 : Hc1;
+    Kc0 = ( Kc0 == -1 ) ? 4 : Kc0;
+    Kc1 = ( Kc1 == -1 ) ? 1 : Kc1;
+    Kc2 = ( Kc2 == -1 ) ? 10 : Kc2;
+    Kc3 = ( Kc3 == -1 ) ? 0.1 : Kc3;
 
-    fs = ( fs == 0 ) ? 3 * ft : fs;
-    Et = ( Et == 0 ) ? alpha * E0 : Et;
-    mu0 = ( mu0 == 0 ) ? 0.1 : mu0;
-    muinf = ( muinf == 0 ) ? 0.0125 : muinf;
+    fs = ( fs == -1 ) ? 3 * ft : fs;
+    Et = ( Et == -1 ) ? alpha * E0 : Et;
+    mu0 = ( mu0 == -1 ) ? 0.1 : mu0;
+    muinf = ( muinf == -1 ) ? 0.0125 : muinf;
 
-    damage_residuum = ( damage_residuum == 0 ) ? 0. : damage_residuum;
+    damage_residuum = ( damage_residuum == -1 ) ? 0. : damage_residuum;
 };

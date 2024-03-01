@@ -1,0 +1,6 @@
+This code has been built from version cafa122fa9-dirty : 2024-02-23 14:26
+OS name: Linux
+OS sub-type: 5.15.0-94-generic
+OS build ID: #104-Ubuntu SMP Tue Jan 9 15:25:40 UTC 2024
+OS platform: x86_64
+Build type: Release

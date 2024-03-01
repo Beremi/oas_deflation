@@ -21,7 +21,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
 from traits.api import Any, Instance
-from traitsui.qt4.editor import Editor
+from traitsui.qt.editor import Editor
 from traitsui.basic_editor_factory import BasicEditorFactory
 from traitsui.api import Handler
 
@@ -118,7 +118,6 @@ if __name__ == "__main__":
             def onselect(eclick, erelease):
                 print("eclick: {}, erelease: {}".format(eclick,erelease))
 
-            self.rs = RectangleSelector(self.axes, onselect,
-                                        drawtype='box',useblit=True)
+            self.rs = RectangleSelector(self.axes, onselect,useblit=True)
 
     Test().configure_traits()

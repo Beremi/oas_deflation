@@ -25,7 +25,7 @@ Model :: Model(bool pT) {
     printTime = pT;
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
-    elems.setContainers(& nodes, & bconds);
+    elems.setModel(this);
     solver = nullptr;
     initialFieldFile = "";
     initialTimeDerFieldFile = "";
@@ -54,6 +54,7 @@ void Model :: init(const bool &initial) {     //initialization
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
     exporters.init(initial);
     bconds.setInitialDoFFields(solver);
+    cout << "Model succesfully initialized" << endl;
     // exporters.updateAllTimeAndStepToSave(solver->giveTime(), solver->giveStepNumber());  // needed especially in adaptivity
 }
 
@@ -76,7 +77,7 @@ void Model :: solve() {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
         exporters.exportData(solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
-        if ( printTime ) {
+        if ( printTime && solver->showStepTime() ) {
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;
             std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl;
@@ -220,7 +221,7 @@ void Model :: clear() {
 
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
-    elems.setContainers(& nodes, & bconds);
+    elems.setModel(this);
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 

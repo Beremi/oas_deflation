@@ -11,7 +11,7 @@
 class LDPMTetra : public Element
 {
 protected:
-    std :: vector< Node * >vert;
+    std :: vector< Node * >vert; //cent, 0-1, 0-2, 0-3, 1-2, 1-3, 2-3, 0-1-2, 0-1-3, 0-2-3, 1-2-3
     Vector lengths, areas, volumes;
     std :: vector< Point >normals;
     std :: vector< Matrix >R;
@@ -22,8 +22,8 @@ protected:
 
     //std :: vector< Simplex * >simplices;
 
-    std :: vector< unsigned >nodecodes;   //coonectivity of facets between nodes
-    std :: vector< unsigned >vertcodes;   //coonectivity of facets between vertices
+    std :: vector< unsigned >nodecodes;   //connectivity of facets between nodes
+    std :: vector< unsigned >vertcodes;   //connectivity of facets between vertices
 
     Vector volWeights; //factors to caluclate volumetric strain
 

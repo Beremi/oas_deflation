@@ -29,6 +29,8 @@ set (solver_files
     node_container.cpp
     node.cpp
     solver.cpp
+    solver_explicit.cpp
+    solver_implicit.cpp
     vtk_exporter.cpp
     exporter_model.cpp
     constraint.cpp

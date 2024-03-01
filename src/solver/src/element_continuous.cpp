@@ -8,25 +8,25 @@ using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 2D QUADRILATERAL TRANSPORT ELEMENT
-TrsprtQuad :: TrsprtQuad() : Element(2) {
-    numOfNodes = 4;
-    name = "TrsprtQuad";
-    vtk_cell_type = 9;
-    shafunc = new Linear2DQuadShapeF();
-    inttype = new IntegrQuad4();
+// 2D TRIANGULAR TRANSPORT ELEMENT
+TrsprtTriangle :: TrsprtTriangle() : Element(2) {
+    numOfNodes = 3;
+    name = "TrsprtTriangle";
+    vtk_cell_type = 5;
+    shafunc = new Linear2DTriShapeF();
+    inttype = new IntegrTri3();
     physicalFields [ 1 ] = true; //transport
 }
 
 //////////////////////////////////////////////////////////
-Matrix TrsprtQuad :: giveBMatrix(const Point *x) const {
+Matrix TrsprtTriangle :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, phiG);
     return phiG;
 }
 
 //////////////////////////////////////////////////////////
-Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
+Matrix TrsprtTriangle :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(DoFids.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H = Matrix :: Zero(1, DoFids.size() );
@@ -38,7 +38,7 @@ Matrix TrsprtQuad :: giveHMatrix(const Point *x) const {
 
 
 //////////////////////////////////////////////////////////
-Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs) {
+Vector TrsprtTriangle :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector strain = Element :: giveStrain(i, DoFs);
 
     //pressure at integration point for material model
@@ -46,6 +46,42 @@ Vector TrsprtQuad :: giveStrain(unsigned i, const Vector &DoFs) {
     stats [ i ]->setParameterValue("pressure", pf [ 0 ]);
 
     return strain;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 2D QUADRILATERAL TRANSPORT ELEMENT
+TrsprtQuad :: TrsprtQuad() {
+    numOfNodes = 4;
+    name = "TrsprtQuad";
+    vtk_cell_type = 10;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D TETRA TRANSPORT ELEMENT
+TrsprtTetra :: TrsprtTetra() {
+    ndim = 3;
+    name = "TrsprtTetra";
+    numOfNodes = 4;
+    vtk_cell_type = 10;
+    shafunc = new Linear3DTetraShapeF();
+    inttype = new IntegrTetra4();
+    physicalFields [ 1 ] = true; //transport
+}
+
+
+//////////////////////////////////////////////////////////
+void TrsprtTetra :: init(){
+    //check orientation of vertices
+    if (tetraVolumeSigned(nodes[0]->givePointPointer(),nodes[1]->givePointPointer(),nodes[2]->givePointPointer(),nodes[3]->givePointPointer())<0.){
+        Node* a = nodes[3];
+        nodes[3] = nodes[2];
+        nodes[2] = a;        
+    }
+    TrsprtTriangle::init();
 }
 
 //////////////////////////////////////////////////////////
@@ -60,7 +96,6 @@ TrsprtBrick :: TrsprtBrick() {
     inttype = new IntegrBrick8();
     physicalFields [ 1 ] = true; //transport
 }
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -110,18 +145,18 @@ Vector TrsprtTemprtrCoupledBrick :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 2D QUADRILATERAL MECHANICAL ELEMENT
-MechanicalQuad :: MechanicalQuad() : Element(2) {
-    numOfNodes = 4;
-    name = "MechanicalQuad";
-    vtk_cell_type = 9;
-    shafunc = new Linear2DQuadShapeF();
-    inttype = new IntegrQuad4();
-    physicalFields [ 1 ] = true; //transport
+// 2D TIANGULAR MECHANICAL ELEMENT
+MechanicalTriangle :: MechanicalTriangle() : Element(2) {
+    numOfNodes = 3;
+    name = "MechanicalTriangle";
+    vtk_cell_type = 5;
+    shafunc = new Linear2DTriShapeF();
+    inttype = new IntegrTri3(); //ONE IP suffices, but it does not work in extrapolation routine
+    physicalFields [ 0 ] = true; //mechanics
 }
 
 //////////////////////////////////////////////////////////
-Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
+Matrix MechanicalTriangle :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, phiG);
     Matrix B = Matrix :: Zero(3, DoFids.size() );
@@ -135,7 +170,7 @@ Matrix MechanicalQuad :: giveBMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
+Matrix MechanicalTriangle :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H = Matrix :: Zero(ndim, DoFids.size() );
@@ -149,19 +184,41 @@ Matrix MechanicalQuad :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// 3D BRICK MECHANICAL ELEMENT
-MechanicalBrick :: MechanicalBrick() {
+// 2D QUADRILATERAL MECHANICAL ELEMENT
+MechanicalQuad :: MechanicalQuad() {
+    numOfNodes = 4;
+    name = "MechanicalQuad";
+    vtk_cell_type = 9;
+    shafunc = new Linear2DQuadShapeF();
+    inttype = new IntegrQuad4();
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D TETRAHEDRAL MECHANICAL ELEMENT
+MechanicalTetra :: MechanicalTetra() {
     ndim = 3;
-    name = "MechanicalBrick";
-    numOfNodes = 8;
-    vtk_cell_type = 12;
-    shafunc = new Linear3DBrickShapeF();
-    inttype = new IntegrBrick8();
+    name = "MechanicalTetra";
+    numOfNodes = 4;
+    vtk_cell_type = 10;
+    shafunc = new Linear3DTetraShapeF();
+    inttype = new IntegrTetra4();
     physicalFields [ 0 ] = true; //mechanics
 }
 
 //////////////////////////////////////////////////////////
-Matrix MechanicalBrick :: giveBMatrix(const Point *x) const {
+void MechanicalTetra :: init(){
+    //check orientation of vertices
+    if (tetraVolumeSigned(nodes[0]->givePointPointer(),nodes[1]->givePointPointer(),nodes[2]->givePointPointer(),nodes[3]->givePointPointer())<0.){
+        Node* a = nodes[3];
+        nodes[3] = nodes[2];
+        nodes[2] = a;        
+    }
+    Element::init();
+}
+
+//////////////////////////////////////////////////////////
+Matrix MechanicalTetra :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, phiG);
     Matrix B = Matrix :: Zero(6, DoFids.size() );
@@ -171,6 +228,23 @@ Matrix MechanicalBrick :: giveBMatrix(const Point *x) const {
         B(2, 3 * i + 2)   =   B(3, 3 * i + 1)  =   B(4, 3 * i)     =   phiG(2, i);
     }
     return B;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D BRICK MECHANICAL ELEMENT
+MechanicalBrick :: MechanicalBrick() {
+    ndim = 3;
+    name = "MechanicalBrick";
+    numOfNodes = 8;
+    vtk_cell_type = 12;
+    shafunc = new Linear3DBrickShapeF();
+    inttype = new IntegrBrick8();
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalBrick :: init(){
+    Element::init();
 }
 
 //////////////////////////////////////////////////////////
@@ -217,10 +291,26 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
 Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(3, DoFids.size() );      //2 transl, 1 rot
+    Matrix H = Matrix :: Zero(3, DoFids.size() );       //2 transl, 1 rot
     for ( unsigned j = 0; j < numOfNodes; j++ ) {
         H(0, 3 * j) = H(1, 3 * j + 1) = H(1, 3 * j + 2) = phi(j);
     }
+    return H;
+}
+
+//////////////////////////////////////////////////////////
+Matrix CosseratQuad :: giveMassMatrix() const {
+    Matrix H = MechanicalQuad :: giveMassMatrix();
+    //the micro inertia effect are wrong as they are based on density. Better delete them.
+    for ( unsigned i = 0; i < 4; i++ ) {
+        for ( unsigned j = 0; j < 4; j++ ) {
+            H(3 * i + 2, 3 * j + 2) = 0;
+            H(3 * i + 1, 3 * j + 2) = 0;
+            H(3 * i + 2, 3 * j + 1) = 0;
+        }
+    }
+    //cout << "---------------------" << endl;
+    //cout << H << endl;
     return H;
 }
 
@@ -244,7 +334,7 @@ Matrix CosseratBrick :: giveBMatrix(const Point *x) const {
     shafunc->giveShapeFGrad(x, phiG);
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix B = Matrix :: Zero(18, DoFids.size() );      //9 strains, 9 curvatures
+    Matrix B = Matrix :: Zero(18, DoFids.size() );       //9 strains, 9 curvatures
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         //strains
         // 00 08 06
@@ -274,7 +364,7 @@ Matrix CosseratBrick :: giveBMatrix(const Point *x) const {
 Matrix CosseratBrick :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(6, DoFids.size() );      //3 transl, 3 rot
+    Matrix H = Matrix :: Zero(6, DoFids.size() );       //3 transl, 3 rot
     for ( unsigned v = 0; v < ndim; v++ ) {
         for ( unsigned j = 0; j < numOfNodes; j++ ) {
             H(v, 6 * j + v) = H(3 + v, 6 * j + 3 + v) = phi(j);
@@ -304,7 +394,7 @@ Matrix CoupledCosseratTransportQuad :: giveBMatrix(const Point *x) const {
     shafunc->giveShapeFGrad(x, phiG);
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix B = Matrix :: Zero(8, DoFids.size() );      //4 strains, 2 curvatures, 2 pressure gradients
+    Matrix B = Matrix :: Zero(8, DoFids.size() );       //4 strains, 2 curvatures, 2 pressure gradients
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         //strains
         // 00 03
@@ -332,7 +422,7 @@ Matrix CoupledCosseratTransportQuad :: giveBMatrix(const Point *x) const {
 Matrix CoupledCosseratTransportQuad :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(4, DoFids.size() );      //2 transl, 1 rot, 1 pressure
+    Matrix H = Matrix :: Zero(4, DoFids.size() );       //2 transl, 1 rot, 1 pressure
     for ( unsigned j = 0; j < numOfNodes; j++ ) {
         H(0, 4 * j) = H(1, 4 * j + 1) = H(2, 4 * j + 2) = H(3, 4 * j + 3) = phi(j);
     }
@@ -408,7 +498,7 @@ Matrix CoupledCosseratTransportBrick :: giveBMatrix(const Point *x) const {
     shafunc->giveShapeFGrad(x, phiG);
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix B = Matrix :: Zero(21, DoFids.size() );      //9 strains, 9 curvatures, 3 pressure gradients
+    Matrix B = Matrix :: Zero(21, DoFids.size() );       //9 strains, 9 curvatures, 3 pressure gradients
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         //strains
         // 00 08 06
@@ -443,7 +533,7 @@ Matrix CoupledCosseratTransportBrick :: giveBMatrix(const Point *x) const {
 Matrix CoupledCosseratTransportBrick :: giveHMatrix(const Point *x) const {
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(7, DoFids.size() );      //3 transl, 3 rot, 1 pressure
+    Matrix H = Matrix :: Zero(7, DoFids.size() );       //3 transl, 3 rot, 1 pressure
     for ( unsigned j = 0; j < numOfNodes; j++ ) {
         for ( unsigned v = 0; v < ndim; v++ ) {
             H(v, 7 * j + v) = H(3 + v, 7 * j + 3 + v) = phi(j);

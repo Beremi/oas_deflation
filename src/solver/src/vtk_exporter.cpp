@@ -184,7 +184,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
                     data [ i ] [ t ] = res [ stDoF + t ];
                 }
             }
-        } else  {
+        } else {
             for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
                 ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), DoFs, data [ i ]);
                 msize = max< size_t >(msize, data [ i ].size() );
@@ -426,8 +426,8 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                 pp = p->givePointPointer();
                 elindicesA->InsertNextId(pointID);
                 elindicesB->InsertNextId(pointID + 1);
-                points->InsertNextPoint(pp->x(), pp->y(), pp->z() );      //every node twice
-                points->InsertNextPoint(pp->x(), pp->y(), pp->z() );      //every node twice
+                points->InsertNextPoint(pp->x(), pp->y(), pp->z() );       //every node twice
+                points->InsertNextPoint(pp->x(), pp->y(), pp->z() );       //every node twice
                 pointID++;
                 pointID++;
             }
@@ -449,8 +449,8 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                     pp = vertices [ p ]->givePointPointer();
                     elindicesA->InsertNextId(pointID);
                     elindicesB->InsertNextId(pointID + 1);
-                    points->InsertNextPoint(pp->x(), pp->y(), pp->z() );          //every node twice
-                    points->InsertNextPoint(pp->x(), pp->y(), pp->z() );          //every node twice
+                    points->InsertNextPoint(pp->x(), pp->y(), pp->z() );           //every node twice
+                    points->InsertNextPoint(pp->x(), pp->y(), pp->z() );           //every node twice
                     pointID++;
                     pointID++;
                 }

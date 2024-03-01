@@ -33,6 +33,7 @@ void Element :: initIntegration() {
     inttype->init();
 };
 
+
 //////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {
     stats.resize(inttype->giveNumIP() );
@@ -134,10 +135,27 @@ void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result)
     }
     if ( code.compare("location") == 0 ) {
         result.resize(ndim);
-        Point *h = inttype->giveIPLocationPointer(ipnum);
         for ( unsigned k = 0; k < ndim; k++ ) {
-            result [ k ] = ( * h ) [ k ];
+            result [ k ] = 0;
         }
+        Vector phi(4);
+        shafunc->giveShapeF(inttype->giveIPLocationPointer(ipnum), phi);
+        for ( unsigned n = 0; n < inttype->giveNumIP(); n++ ) {
+            Point *nn = nodes [ n ]->givePointPointer();
+            for ( unsigned k = 0; k < ndim; k++ ) {
+                result [ k ] += ( * nn ) [ k ] * phi [ n ];
+            }
+        }
+        /*
+         * result.resize(ndim);
+         * Point *h = inttype->giveIPLocationPointer(ipnum);
+         * for ( unsigned k = 0; k < ndim; k++ ) {
+         *  result [ k ] = ( * h ) [ k ];
+         * }
+         */
+    } else if ( code.compare("weight") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = inttype->giveIPWeight(ipnum);
     } else if ( code.compare("x") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->x();
@@ -182,7 +200,7 @@ void Element :: giveValues(std :: string code, Vector &result) const {
     } else if ( code.compare("kinetic_energy") == 0 ) {
         result.resize(1);
         result [ 0 ] = 0;
-    } else if ( code.compare("material_ID") == 0 ) {
+    } else if ( code.compare("material_ID") == 0 or code.compare("materialID") == 0 ) {
         result.resize(1);
         result [ 0 ] = mat->giveId();
     } else {  //TODO: should be weighted average
@@ -287,6 +305,12 @@ Matrix Element :: giveMassMatrix() const {
         M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
     return M;
+}
+
+//////////////////////////////////////////////////////////
+Vector Element :: giveLumpedMassMatrix() const {
+    Matrix M = giveMassMatrix();
+    return M.rowwise().sum();
 }
 
 //////////////////////////////////////////////////////////

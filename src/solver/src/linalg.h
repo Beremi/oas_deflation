@@ -37,9 +37,11 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
 
-bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
+bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, std :: vector< Vector > &eigevectors);
 
-bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, std :: vector< Vector > &eigevalues);
+bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, std :: vector< Vector > &eigevectors);
+
+bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b);
 
 double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, const Point &ptD);
 

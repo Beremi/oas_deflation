@@ -58,11 +58,13 @@ protected:
 public:
     RVEMaterial(unsigned dimension) : Material(dimension)  { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; start_from_precomputed = true; };
     virtual ~RVEMaterial() {};
+    virtual void init(MaterialContainer *matcont);
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     fs :: path givePathToInputFile() const { return inputfile; };
     void setPathToInputFolder(std :: string f) { inputfile = GlobPaths :: BASEDIR  / f; };
     void enforceLinearity() { nonlinear = false; };
+    bool shouldStayLinear() { return !nonlinear; };
     bool isElasticSolutionVoigt() const { return elastic_sol_is_Voigt; };
     bool shouldStartFromPrecomputed() const { return start_from_precomputed; };
     void setStartFromPrecomputed(bool s) { start_from_precomputed = s; };
@@ -173,6 +175,8 @@ public:
     void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; };
     virtual bool giveValues(std :: string code, Vector &result) const;
+    virtual Matrix giveMassTensor() const;
+    double computeAverageDensity() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -182,6 +186,8 @@ protected:
     Matrix precompElastic, precompDamping, precompInertia;
     Point centroid;
     std :: vector< std :: vector< Vector > >projectors;
+    bool project_curvature;
+    double average_density;
 
 public:
     DiscreteMechanicalRVEMaterial(unsigned dimension);
@@ -197,6 +203,10 @@ public:
     Point giveCentroid() { return centroid; };
     std :: vector< std :: vector< Vector > > *giveProjectors() { return & projectors; };
     bool isNonlinear() const { return nonlinear; };
+    bool projectCurvature() const { return project_curvature; };
+    virtual void readFromLine(std :: istringstream &iss);
+    void setAverageDensity(double ad) { average_density = ad; };
+    double giveAverageDensity() const { return average_density; };
 };
 
 //////////////////////////////////////////////////////////
@@ -254,6 +264,7 @@ protected:
 public:
     DiscreteCoupledRVEMaterial(unsigned dimension);
     virtual ~DiscreteCoupledRVEMaterial();
+    virtual void init(MaterialContainer *matcont);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual void readFromLine(std :: istringstream &iss);
     DiscreteMechanicalRVEMaterial *giveMechanicalRVEmat() { return mechRVEmat; }

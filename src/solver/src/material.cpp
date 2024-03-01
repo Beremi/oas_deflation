@@ -65,6 +65,26 @@ bool MaterialStatus :: isElastic(const bool &now) const {
 }
 
 //////////////////////////////////////////////////////////
+void MaterialStatus :: readFromLine(istringstream &iss) {
+    std :: string param;
+    unsigned num;
+    while (  iss >> param ) {
+        if ( param.compare("eigenstrain") == 0 ) {
+            iss >> num;
+            if ( num != mat->giveStrainSize() ) {
+                cerr << "Error: strain size is " << mat->giveStrainSize() << " but eigenstrain of size " << num << " provided" << endl;
+                exit(1);
+            }
+            Vector eigs = Vector :: Zero(num);
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> eigs [ i ];
+            }
+            setEigenStrain(eigs);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
 bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
         result.resize( temp_strain.size() );

@@ -109,6 +109,7 @@ public:
     virtual double giveMassConstant() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
+    virtual Matrix giveMassTensor() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -119,7 +120,7 @@ protected:
     bool planeStress;
 
 public:
-    TensMechMaterial(unsigned dimension) : Material(dimension) { name = "elastic tensorial mechanical material"; planeStress = true; };
+    TensMechMaterial(unsigned dimension) : Material(dimension) { name = "elastic tensorial mechanical material"; planeStress = true; strainsize = ( dim - 1 ) * 3; };
     ~TensMechMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -127,7 +128,7 @@ public:
     double givePoissonsRatio() const { return nu; }
     double giveDensity() const { return density; };
     bool isPlaneStress() { return planeStress; };
-    virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = ( dim - 1 ) * 3; }
+    virtual void init(MaterialContainer *matcont) { Material :: init(matcont);  }
 };
 
 //////////////////////////////////////////////////////////

@@ -65,20 +65,18 @@ public:
     virtual void giveShapeF(const Point *x, Vector &phi) const;
 };
 
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // 2D LINEAR SHAPE FUNCTIONS IN TRIANGLE
 class Linear2DTriShapeF : public ShapeFunc
 {
-    double area;
+protected:
+    virtual void giveShapeFGradNatural(const Point *x, Matrix &phiGradNat) const;
 public:
-    Linear2DTriShapeF() { name = "2D linear shape functions for Triangle"; ndim = 2;  is_natural = false; };
+    Linear2DTriShapeF() { name = "2D linear shape functions for Triangle"; ndim = 2;  is_natural = true; };
     virtual ~Linear2DTriShapeF() {};
-    virtual void init(std :: vector< Node * > &nodes);
-    virtual void init(std :: vector< Point * > &points);
     virtual void giveShapeF(const Point *x, Vector &phi) const;
-    virtual void giveShapeFGrad(const Point *x, Matrix &phiGrad) const;
-    double giveArea()const { return area; };
 };
 
 //////////////////////////////////////////////////////////
@@ -125,6 +123,19 @@ public:
     void setFacesAndNormals(std :: vector< std :: vector< unsigned > > &f, std :: vector< Point >n) { normals = n; faces = f; nfaces = faces.size(); }
 };
 
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// 3D LINEAR SHAPE FUNCTIONS IN TETRAHEDRON
+class Linear3DTetraShapeF : public ShapeFunc
+{
+protected:
+    virtual void giveShapeFGradNatural(const Point *x, Matrix &phiGradNat) const;
+public:
+    Linear3DTetraShapeF() { name = "3D linear shape functions for Tetra"; ndim = 3;  is_natural = true; };
+    virtual ~Linear3DTetraShapeF() {};
+    virtual void giveShapeF(const Point *x, Vector &phi) const;
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

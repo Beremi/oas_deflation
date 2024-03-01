@@ -1,6 +1,6 @@
 #include "exporter_model.h"
 #include "model.h"
-#include "solver.h"
+#include "solver_implicit.h"
 #include <cstdio>
 
 using namespace std;
