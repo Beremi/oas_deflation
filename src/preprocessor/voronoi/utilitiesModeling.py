@@ -8075,7 +8075,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
     node_coords = np.asarray(node_coords)
-    if True:
+    if False:
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
