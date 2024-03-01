@@ -111,6 +111,8 @@ class Model:
         self.notchDepth = None
         self.RWTHQuarter = False
         self.elasticZone = 0
+        self.supportWidth = None
+        self.span = None
 
         self.node_indices_dogbone = []
         self.interfaceVertexIndices = []
@@ -125,13 +127,15 @@ class Model:
         self.fracZoneOverhang = None
         self.fem = False
         self.baseMinDist = self.fineWidth = fineHeight = None
-
+        self.gapWidth = 0
 
         self.masterSolver = self.masterMaterials = self.masterFunctions = False
 
         self.supportDivision = None
-
+        self.blank = 0
         for i in range (len(r)):
+            if (r[i]=='blank'):
+                self.blank = int(r[i+1])
             if (r[i]=='supportDivision'):
                 self.supportDivision = int(r[i+1])
             if (r[i]=='holeMinDist'):
@@ -150,6 +154,11 @@ class Model:
                 self.rebarCount = int(r[i+1])
             if (r[i]=='rebarDepth'):
                 self.rebarDepth = float(r[i+1])
+            if (r[i]=='supportWidth'):
+                self.supportWidth = float(r[i+1])
+            if (r[i]=='span'):
+                self.span = float(r[i+1])
+
             if (r[i]=='interfaceMinDist'):
                 self.interfaceMinDist = float(r[i+1])
             if (r[i]=='fineRingThickness'):
@@ -158,6 +167,8 @@ class Model:
                 self.fineRegDepth = float(r[i+1])
             if (r[i]=='fineWidth'):
                 self.fineWidth = float(r[i+1])
+            if (r[i]=='gapWidth'):
+                self.gapWidth = float(r[i+1])
             if (r[i]=='gradientRegDepth'):
                 self.gradientRegDepth = float(r[i+1])
 
@@ -363,7 +374,7 @@ class Model:
             self.run_3d_BiparvaTubeTransport()
 
         if self.modelType == '2d_notched3pb':
-            self.run_2d_notched3pb(node_coords_init=node_coords_init)
+            self.run_2d_notched3pb(node_coords_init=node_coords_init, modelnr=modelnr)
         if self.modelType == '3d_notched3pb':
             self.run_3d_notched3pb(node_coords_init=node_coords_init, modelnr=modelnr)
 
@@ -447,6 +458,9 @@ class Model:
         if self.modelType == '3d_TubeInnerPressure':
             self.run_3d_TubeInnerPressure()
 
+        if self.modelType == '3d_tubeSplit':
+            self.run_3d_TubeSplit()
+
         if self.modelType == '2d_coupledRVE':
             self.run_2d_coupledRVE()
 
@@ -485,39 +499,29 @@ class Model:
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3d_singleContact', maxLim=self.maxLim )
         materialZones = None
 
-    def run_2d_notched3pb(self, node_coords_init=None):
-        supportWidth = self.maxLim[0] / 20
+    def run_2d_notched3pb(self, node_coords_init=None,modelnr=-1):
 
-        # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
-        #na kazdou stranu se prida pulka podpory
-        self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
-        #print('rozsireni modelu')
+        if self.supportWidth==None:
+            self.supportWidth=self.maxLim[0]/20
 
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
-        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes, loading=self.loading)
+        self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes, loading=self.loading, gapWidth=self.gapWidth,supportWidth=self.supportWidth,Xoverhang=self.Xoverhang)
+
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb2d', maxLim=self.maxLim)
         if self.loading == "4pb":
             self.materialZones = utilitiesModeling.assembleMaterialZones(0, 2, model='4pb2d', maxLim=self.maxLim, minDist=self.minDist)
 
     def run_3d_notched3pb(self, node_coords_init=None,modelnr=-1):
-        print('running notched')
-        #width of the supports, nemenit, je i v assemble3DSSBeamBending !!!!
-        supportWidth = self.maxLim[0] / 20
+        if self.supportWidth==None:
+            self.supportWidth=self.maxLim[0]/20
 
-        if modelnr ==0 :
-            # hned tady na zacatku se model rozsiri o sirku podpor, aby skutecne rozpeti podpor se rovnalo zadanemu X lim
-            #na kazdou stranu se prida pulka podpory
-            self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
-            #print('rozsireni modelu')
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes, roughMinDistCoef=self.roughMinDistCoef, supportDivision=self.supportDivision,gapWidth=self.gapWidth, blank=self.blank,powerTes=self.powerTes,supportWidth=self.supportWidth,span=self.span)
 
-        #(self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged)
-        #(self.node_coords, self.mechBC_merged, self.mechInitC_merged,  self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.trsprtBC_merged)
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes, roughMinDistCoef=self.roughMinDistCoef, supportDivision=self.supportDivision)
-        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim,notch=[self.notchH,self.minDist])
 
 
 
-        self.materialZones = utilitiesModeling.assembleMaterialZones(0, 2, model='3pb3d', maxLim=self.maxLim, minDist=self.minDist)
+        self.materialZones = []#utilitiesModeling.assembleMaterialZones(0, 2, model='3pb3d', maxLim=self.maxLim, minDist=self.minDist)
 
         if self.elasticZone ==1:
             lim = np.array([
@@ -624,7 +628,7 @@ class Model:
         #maxLim = np.array([0.25,0.06,0.05])
         print(self.maxLim)
         self.materialZones = utilitiesModeling.assembleMaterialZones (self.minDist*2, self.dimension, model='box', maxLim=self.maxLim)
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dReinhardtTension(self.maxLim, self.minDist, self.trials, fracZoneWidth=self.fracZoneWidth)
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes, self.govNodesMechBC, self.rigidPlates) = utilitiesModeling.create3dReinhardtTension(self.maxLim, self.minDist, self.trials, fracZoneWidth=self.fracZoneWidth,roughCoef=self.roughMinDistCoef,gapWidth=self.gapWidth)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('reinhardt3d', maxLim=self.maxLim)
 
     def run_3d_RWTHShearCylinder(self):
@@ -674,6 +678,10 @@ class Model:
         (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.interfaceVertexIndices)  = utilitiesModeling.create3dTubeInnerPressure(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim, self.activeTransport, self.powerTes)
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('cylinder3d', maxLim=self.maxLim)
 
+    def run_3d_TubeSplit(self):
+        self.maxLim = np.array([self.cylinderHeight, self.cylinderRad, self.cylinderRad])
+        (self.node_coords, self.mechBC_merged,  self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.vor, self.areas, self.functions, self.radii, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.notches)  = utilitiesModeling.create3dTubeSplit(self.cylinderRad, self.cylinderHeight, self.tubeThickness, self.minDist, self.trials, self.maxLim,notchWidth=self.notchWidth, notchH=self.notchH)
+        self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('tubesplit', maxLim=self.maxLim,props=[self.cylinderRad,self.tubeThickness, self.notchWidth])
 
 
     def run_2d_coupledArtificialCrack(self):
@@ -783,7 +791,7 @@ class Model:
         #    self.govNodesTrspt=[]
         #    self.govNodesTrsptBC = []
 
-        
+
 
     def run_3d_Hanging_FracZone(self, node_coords_init=None):
         self.activeTransport = False

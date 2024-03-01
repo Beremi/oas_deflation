@@ -192,9 +192,13 @@ def generateParticlesOrtoSurface(nodeA, nodeB, minDiam, maxDiam, volumeRatio, di
     return node_coords, radii
 
 
-def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii, allow_domain_overlap = False, periodic_distance=False):
+def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii, allow_domain_overlap = False, periodic_distance=False,useLowBound=False):
         gap = 0.1
         Volume = np.prod(maxLim)
+        if useLowBound==True:
+            topBound = maxLim[0:dim]
+            lowBound = maxLim[dim:2*dim]
+            Volume = np.prod(topBound-lowBound)
         d = np.flipud(np.linspace(minDiam*0.5,maxDiam,30))
         if(dim==2):
             freq = fuller2D(d, maxDiam)
@@ -240,8 +244,14 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
         iters = 0
         di = 0
         radius = maxDiam/2.
+
+
         while (2*radius>minDiam and iters<trials):
-                if (allow_domain_overlap): point = np.random.rand(dim)*maxLim
+                if (allow_domain_overlap):
+                    if useLowBound==True:
+                        point = randPointInRectangle(dim, maxLim,useLowBound=useLowBound)
+                    else:
+                        point = np.random.rand(dim)*maxLim
                 else: point = np.random.rand(dim)*(maxLim-radius*2) + radius
 
                 approved = False
@@ -256,7 +266,7 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
                 if ( approved) :
                     node_coords = np.vstack((node_coords, point));
                     radii = np.hstack((radii, radius));
-                    iters = 0
+
                     if (dim==2):  saturation += np.pi*np.power(radius,2)/Volume
                     elif (dim==3): saturation += np.pi/6*np.power(radius*2.,3)/Volume
 
@@ -265,9 +275,10 @@ def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, no
                         #print (' di %d' %di)
                     radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.;
 
-                    sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
+                    sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)) + ' Trials: '+str(iters)+'_______'    )
 
                     sys.stdout.flush()
+                    iters = 0
 
                 else: iters += 1
 
@@ -607,6 +618,16 @@ def ortho_grid(n, nvar):
 
     return X, ortho_grid
 
+
+def generate_flat_orthogonal_grid(num_points_x, num_points_z, node_coords,constants=[0,0,0],sizes=[1,1,1]):
+    x_coords = np.linspace(0, 1, num_points_x)*sizes[0]+constants[0]
+    z_coords = np.linspace(0, 1, num_points_z)*sizes[2]+constants[2]
+
+    for z in z_coords:
+        for x in x_coords:
+            node_coords.append((x, constants[1], z))
+
+    return node_coords
 
 def generateOrtogrid(maxLim, minDist, dim, node_coords, size):
     print ('Generating orthogonal grid...', end='')
@@ -1369,7 +1390,7 @@ except:
 
 def generateNodesOrtoCilinder3dRand(center, radius, height, directionDim, minDist, node_coords, trials,gradient_radius=0,maxMinDist=1):
     print ('Generating a 3d cylinder segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
-    
+
     tr=0
     while (tr<trials):
         tr = 0;

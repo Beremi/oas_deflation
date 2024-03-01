@@ -118,19 +118,28 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None,notch=None):
             notch_height = notch[0]
             notch_width = notch[1]
             leftnotchpoints = []
+            leftnotchweights = []
             rightnotchpoints = []
-            for p in data:
+            rightnotchweights = []
+
+            for i,p in enumerate(data):
                 if p[0]<sizes[0]/2 and p[0]>sizes[0]/2-notch_width*1.1 and p[1]<sizes[1]*notch_height:
                     leftnotchpoints.append( [p[0]+1e-5, p[1],p[2] ])
+                    if len(weights>0):
+                        leftnotchweights.append(weights[i])
+
                 if p[0]>sizes[0]/2 and p[0]<sizes[0]/2+notch_width*1.1 and p[1]<sizes[1]*notch_height:
                     rightnotchpoints.append( [p[0]-1e-5, p[1],p[2] ])
+                    if len(weights>0):
+                        rightnotchweights.append(weights[i])
 
-            print(leftnotchpoints)
-            print(rightnotchpoints)
             data=np.asarray(data)
             leftnotchpoints=np.asarray(leftnotchpoints)
             rightnotchpoints=np.asarray(rightnotchpoints)
             data = np.vstack((data,leftnotchpoints,rightnotchpoints))
+
+            weights = np.hstack((weights,np.asarray(leftnotchweights)))
+            weights = np.hstack((weights,np.asarray(rightnotchweights)))
 
         dataOut =  np.vstack((data,
             np.array([0,0,0]) + data * np.array([-1,1,1]),

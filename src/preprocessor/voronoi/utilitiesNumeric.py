@@ -127,9 +127,10 @@ def runPowerPlain (node_coords, radii, dim, maxLim, Xtop=0, shifts=0):
 
 
 ##run power, mirrored data
-def runMirroredPower (node_coords, radii, dim, maxLim, Xtop=0, shifts=0, nomirror = False):
+def runMirroredPower (node_coords, radii, dim, maxLim, Xtop=0, shifts=0, nomirror = False, notch=None):
+
     if nomirror == False:
-        points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii)#[:,:dim]
+        points, radii = voronoi.mirror_dataBeam(node_coords, dim, maxLim, shifts, weights=radii,notch=notch)#[:,:dim]
     else:
         points = np.copy(node_coords)
 

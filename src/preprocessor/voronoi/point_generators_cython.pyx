@@ -161,7 +161,7 @@ def generateNodesRect_cython(double[:] maxLim,
             sys.stdout.write("\033[F") #back to previous line
             sys.stdout.write("\033[K") #clear line
             if gradienDirection ==-1:
-                print('Expected %d, generated points %s, trials %s.' %(expectedNodeCount,generatedPoints, tr))
+                print('Expected %s, generated points %s, trials %s.' %(expectedNodeCount,generatedPoints, tr))
             else:
                 print('Generated points %s, trials %s.' %(generatedPoints, tr))
 
@@ -256,7 +256,7 @@ def generateNodesOrtoSurface3dRand_cython(double[:] nodeA,double[:] nodeB,
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.cdivision(True)
 def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double minDiam, double maxDiam, double volumeRatio, int dim, int trials,
-                          np.ndarray[np.float64_t, ndim=2] node_coords, np.ndarray[np.float64_t, ndim=1] radii, bool allow_domain_overlap=False, bool periodic_distance=False):
+                          np.ndarray[np.float64_t, ndim=2] node_coords, np.ndarray[np.float64_t, ndim=1] radii, bool allow_domain_overlap=False, bool periodic_distance=False,useLowBound=False):
         cdef:
             double gap = 0.1
             vector[double] diam, freq, point
@@ -271,6 +271,18 @@ def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double
             double min_dist2 = 1.0e30
             int node_coords_input_len = node_coords.shape[0]
             int generatedPoints = 0, p = 0, i = 0
+            vector[double] topBound, lowBound
+
+        if useLowBound == True:
+            topBound = maxLim[0:dim]
+            lowBound = maxLim[dim:2*dim]
+            Volume = 1
+            for d in range(dim):
+                Volume*= (topBound[d]-lowBound[d])
+        else:
+            for d in range(dim):
+                Volume *= maxLim[d]
+        print(Volume)
 
         if node_coords_input_len > 0:
             for i in range(node_coords_input_len):
@@ -284,8 +296,7 @@ def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double
         for d in range(dim):
             point.push_back(0.0)
 
-        for d in range(dim):
-            Volume *= maxLim[d]
+
 
         cdef int diam_len = 30
         for i in range(diam_len):
@@ -311,10 +322,14 @@ def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double
                 for d in range(dim):
                     point[d] = random.random() * maxLim[d]
                     #point[d] = rnd[d] * maxLim[d]
+                else:
+                    for d in range(dim):
+                        point[d] = maxLim[3+d] + random.random()*(maxLim[d] - maxLim[3+d])
             else:
                 for d in range(dim):
                     #point[d] = rnd[d] * (maxLim[d] - radius * 2) + radius
                     point[d] = random.random() * (maxLim[d] - radius * 2) + radius
+
 
             approved = False
             if ( (node_coords_input_len + generatedPoints)==0):
