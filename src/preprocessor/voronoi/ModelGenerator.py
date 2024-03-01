@@ -501,8 +501,8 @@ class Model:
 
     def run_2d_notched3pb(self, node_coords_init=None,modelnr=-1):
 
-        if self.supportWidth==None:
-            self.supportWidth=self.maxLim[0]/20
+        self.supportWidth=self.maxLim[0]/20
+        self.maxLim[0] = self.maxLim[0] + 2 * 0.5 * supportWidth
 
         (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.notches, self.govNodes,
         self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged)     = utilitiesModeling.create2dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, node_coords_init=node_coords_init, activeTransport=self.activeTransport, coupled=self.coupled, specifiedNodes=self.specifiedNodes, loading=self.loading, gapWidth=self.gapWidth,supportWidth=self.supportWidth,Xoverhang=self.Xoverhang)
