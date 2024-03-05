@@ -70,7 +70,22 @@ void LDPMTetra :: checkNodeType() const {
 //////////////////////////////////////////////////////////
 void LDPMTetra :: setIntegrationPointsAndWeights() {
     stats.resize(12);
-
+/*
+      if (idx==1961 || idx==4762){
+       cout << "ELEMENT " << idx << " ("<< name <<") has NaN in stiffness matrix" << endl;
+        cout << "nodes"<< endl;        
+       cout << nodes[0]->givePoint() << endl;
+       cout << nodes[1]->givePoint() << endl;
+       cout << nodes[2]->givePoint() << endl;
+       cout << nodes[3]->givePoint() << endl;
+        cout << "areas"<< endl;
+       cout << areas << endl;
+        cout << "volumes"<< endl;
+       cout << volumes << endl;    
+        cout << "stiffness"<< endl;
+       cout << Element :: giveStiffnessMatrix(matrixType) * ndim << endl; 
+      }     
+*/
 
     for ( unsigned i = 0; i < 12; i++ ) {
         //true face normal
@@ -82,7 +97,9 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         normals [ i ] /= lengths [ i ];
         inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
         areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
-        areas [ i ] *= abs( n.dot(normals [ i ]) );  //projection of area
+        if (n.norm()!=n.norm()){ //NaN test
+            areas [ i ] *= abs( n.dot(normals [ i ]) );  //projection of area
+        }
 
         Point t1, t2;
         //t1 = inttype->giveIPLocation(i)-vert [ 0 ]->givePoint();   this is wrong for irregular TET
