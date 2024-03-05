@@ -70,22 +70,6 @@ void LDPMTetra :: checkNodeType() const {
 //////////////////////////////////////////////////////////
 void LDPMTetra :: setIntegrationPointsAndWeights() {
     stats.resize(12);
-/*
-      if (idx==1961 || idx==4762){
-       cout << "ELEMENT " << idx << " ("<< name <<") has NaN in stiffness matrix" << endl;
-        cout << "nodes"<< endl;        
-       cout << nodes[0]->givePoint() << endl;
-       cout << nodes[1]->givePoint() << endl;
-       cout << nodes[2]->givePoint() << endl;
-       cout << nodes[3]->givePoint() << endl;
-        cout << "areas"<< endl;
-       cout << areas << endl;
-        cout << "volumes"<< endl;
-       cout << volumes << endl;    
-        cout << "stiffness"<< endl;
-       cout << Element :: giveStiffnessMatrix(matrixType) * ndim << endl; 
-      }     
-*/
 
     for ( unsigned i = 0; i < 12; i++ ) {
         //true face normal

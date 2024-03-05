@@ -104,9 +104,6 @@ double LDPMMaterialStatus :: giveStrengthLimit(double omega) {
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_prev, Vector stress_prev) {
-    if ( idx == 0 ) {
-        cout << "tension" << endl;
-    }
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
     // new strains & strains + stresses from previous step
@@ -412,6 +409,8 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
     giveVirtualDamage();
 
+    //Vector stressx =  giveStressWithFrozenIntVars(strain,timeStep);
+    //cout << temp_stress[0] << " " << stressx[0] << " | "  << temp_stress[1] << " " << stressx[1] << " | " << temp_stress[2] << " " << stressx[2] << endl;
     return temp_stress;
 }
 
@@ -526,6 +525,7 @@ void LDPMMaterialStatus :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+
     ( void ) timeStep;
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
