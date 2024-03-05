@@ -72,7 +72,7 @@ class Model:
         self.tpbwedgeheight = 0.2
 
         self.loading = '3pb'
-
+        self.gradientZoneWidth=0
         self.functions = []
         self.radii = []
         self.totalNodeCount = -1
@@ -158,6 +158,8 @@ class Model:
                 self.supportWidth = float(r[i+1])
             if (r[i]=='span'):
                 self.span = float(r[i+1])
+            if (r[i]=='gradientZoneWidth'):
+                self.gradientZoneWidth = float(r[i+1])
 
             if (r[i]=='interfaceMinDist'):
                 self.interfaceMinDist = float(r[i+1])
@@ -515,7 +517,7 @@ class Model:
         if self.supportWidth==None:
             self.supportWidth=self.maxLim[0]/20
 
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes, roughMinDistCoef=self.roughMinDistCoef, supportDivision=self.supportDivision,gapWidth=self.gapWidth, blank=self.blank,powerTes=self.powerTes,supportWidth=self.supportWidth,span=self.span)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.rigidPlatesTrspt, self.govNodesTrspt, self.govNodesTrsptBC, self.radii, self.notches)  = utilitiesModeling.create3dSSBeamUnifLoad(self.maxLim, self.minDist, self.trials, notch=self.notchH, loadWidth=self.loadWidth, fracZoneWidth = self.fracZoneWidth, orthogonalFracZone=self.orthogonalFracZone, notchWidth=self.notchWidth, coupled=self.coupled, node_coords_init=node_coords_init, specifiedNodes=self.specifiedNodes, roughMinDistCoef=self.roughMinDistCoef, supportDivision=self.supportDivision,gapWidth=self.gapWidth, blank=self.blank,powerTes=self.powerTes,supportWidth=self.supportWidth,span=self.span,gradientZoneWidth=self.gradientZoneWidth)
 
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('3pb3d', maxLim=self.maxLim,notch=[self.notchH,self.minDist])
 
