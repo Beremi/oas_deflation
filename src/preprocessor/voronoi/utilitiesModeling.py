@@ -7372,10 +7372,13 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         print("Span has to be larger than XSIZE or none.")
         return
 
+    if maxLim[0]/2 - fracZoneWidth/2 < 0:
+        fracZoneWidth = maxLim[0]
+
     if maxLim[0]/2 - fracZoneWidth/2 - gradientZoneWidth < 0:
-        print(maxLim[0]/2 - fracZoneWidth/2 - gradientZoneWidth )
-        print("XSIZE/2 - fracZoneWidth/2 - gradientZoneWidth has to be > 0")
-        return
+        fullgradientZoneWidth = gradientZoneWidth
+        gradientZoneWidth = maxLim[0]/2 - fracZoneWidth/2
+        roughMinDistCoef = roughMinDistCoef/fullgradientZoneWidth*gradientZoneWidth
 
     if span is None:
         span = maxLim[0]
