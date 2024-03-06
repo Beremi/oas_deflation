@@ -482,7 +482,12 @@ Vector CSLMaterialWithTensorialStressUpdateStatus :: giveEigenStrainFromTensoria
         res[2] = eigenvalues[0] + eigenvalues[1];
     }
     RigidBodyContact * rbc = static_cast<RigidBodyContact * > (element);
-    return ( (dirs.transpose() * res.asDiagonal() * dirs) * rbc->giveNormal() ) * (m->givePoissonNumber() / ((1.-temp_damage) * m->giveE0()));
+    Vector p = ( (dirs.transpose() * res.asDiagonal() * dirs) * rbc->giveNormal() ) * (m->givePoissonNumber() / ((1.-temp_damage) * m->giveE0()));
+    Vector q(dim);
+    q[0] = rbc->giveNormal().dot(p);
+    q[1] = rbc->giveT1().dot(p);
+    if (dim==3)  q[2] = rbc->giveT2().dot(p);
+    return q;
 }
 
 
