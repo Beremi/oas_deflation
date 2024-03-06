@@ -112,11 +112,14 @@ Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
     Vector ints = Vector :: Zero(1);
     VectTrsprtCoupledMaterial *m = static_cast< VectTrsprtCoupledMaterial * >( mat );
 
+       
     ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
-    if ( crackVolumeRate > 0 || temp_crackVolume > 0 ) {
+    if ( crackVolumeRate > 0 || pressureRate > 0 ) {
         DiscreteTrsprtElem *trs = static_cast< DiscreteTrsprtElem * >( element );
         double vol = trs->giveVolume();
-        ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
+        if (temp_crackVolume>0){
+            ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
+        }
         ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
     }
     return ints * m->giveDensity();
@@ -401,8 +404,6 @@ Matrix VectMechMaterialWithRotationalStiffnessStatus :: giveStiffnessTensor(stri
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );
     double A = rbcr->giveArea();
     double I = rbcr->giveMomentOfInertia();
-    double l = rbcr->giveLength();
-    double nIP = rbcr->giveNumIP();
     Matrix D = Matrix :: Zero(ss, ss);
     D(0, 0) = m->giveE0();
     size_t i = 1;
@@ -426,13 +427,11 @@ Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenInt
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );
     double A = rbcr->giveArea();
     double I = rbcr->giveMomentOfInertia();
-    double l = rbcr->giveLength();
-    double nIP = rbcr->giveNumIP();
     size_t i = 1;
     for ( ; i < dim; i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
     }
-    for ( ; i < strain.size(); i++ ) {
+    for ( ; i < (size_t)strain.size(); i++ ) {
         temp_stress [ i ] =  m->giveBeta() * m->giveE0() * temp_strain [ i ] * I *rbcr->giveNumIP() / A;
     }
     return temp_stress;

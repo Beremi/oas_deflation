@@ -1055,6 +1055,7 @@ DiscreteTrsprtElem :: DiscreteTrsprtElem(const unsigned dim) : Element(dim) {
     inttype = new IntegrDiscrete1();
     vtk_cell_type = 3;
     physicalFields [ 1 ] = true; //transport
+    ignoreNegativeAreas = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -1179,6 +1180,14 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
             ai = ( ( vert [ i ]->givePoint() - avgPoint ).cross(vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
+            if ( ai < 1e-15 ) {
+                if ( !ignoreNegativeAreas ) {
+                    cout << "DiscreteTrsprtElem Warning: negative area " << ai << ", incorrect orientation of verices, corrected automatically" << endl;
+                    ai = std :: abs(ai);
+                } else {
+                    ai = 0.;
+                }
+            }
             area += ai;
             //triangle cg_i is an average of simplex vertices, adding to CG coordinates multiplied by a_i weight
             centroid += ( avgPoint + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0 * ai;

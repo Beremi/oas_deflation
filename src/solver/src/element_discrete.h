@@ -17,7 +17,7 @@ protected:
     Matrix R;
     bool projectArea, userDefinedCentroid;
     std :: string intPoints;
-    bool ignoreNegativeAreas; //for boundary elements that are not enclosed
+    bool ignoreNegativeAreas;
 
 
     Matrix giveRMatrix() const { return R; };
@@ -172,6 +172,7 @@ protected:
     Point normal;
     double length, area;
     bool BolanderCapacityMatrix;
+    bool ignoreNegativeAreas;
 
     virtual void checkNodeAndMaterialType() const;
     virtual void setIntegrationPointsAndWeights();
