@@ -387,19 +387,13 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     if ( epsNState < 0 ) {  // change of sign of EpsN
         temp_stress = passZero(temp_mech_strain);
     } else {
-        if ( min(temp_mech_strain [ 0 ], updt_mech_strain [ 0 ]) <= 0 ) {  // normal evolution in compression
-            temp_stress = giveCompression(temp_mech_strain, updt_mech_strain, updt_stress);
-        } else if ( temp_mech_strain [ 0 ] > 0 ) {     // normal evolution in tension
+        //if ( min(temp_mech_strain [ 0 ], updt_mech_strain[0])<= 0 ) {  // normal evolution in compression
+        if ( temp_mech_strain [ 0 ] > 0 || updt_mech_strain [ 0 ] > 0 ) {     // normal evolution in tension
             temp_stress = giveTension(temp_mech_strain, updt_mech_strain, updt_stress);
+        } else {
+            temp_stress = giveCompression(temp_mech_strain, updt_mech_strain, updt_stress);
         }
     }
-
-
-    // if ( temp_stress [ 0 ] < 0 && temp_stress [ 0 ] < m->giveFc0() ) {
-    //     temp_crackOpening = ( temp_mech_strain [ 0 ] - ( m->giveFc0() / m->giveE0() ) - ( temp_stress [ 0 ] - m->giveFc0() / m->giveE0() ) ) * L;
-    // } else {
-    //     temp_crackOpening = ( temp_mech_strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
-    // }
 
     if ( temp_stress [ 0 ] > 0 ) {
         temp_crackOpening = ( temp_mech_strain [ 0 ] - ( temp_stress [ 0 ] / m->giveE0() ) ) * L;
@@ -407,10 +401,8 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
         temp_crackOpening = 0;
     }
 
-    giveVirtualDamage();
+    //giveVirtualDamage();
 
-    //Vector stressx =  giveStressWithFrozenIntVars(strain,timeStep);
-    //cout << temp_stress[0] << " " << stressx[0] << " | "  << temp_stress[1] << " " << stressx[1] << " | " << temp_stress[2] << " " << stressx[2] << endl;
     return temp_stress;
 }
 
