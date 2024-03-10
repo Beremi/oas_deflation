@@ -8,7 +8,7 @@ using namespace std;
 // SHAPE FUNCTIONS - MASTER CLASS
 //////////////////////////////////////////////////////////
 void ShapeFunc :: init(vector< Node * > &nodes) {
-    points.resize( nodes.size() );
+    points.resize(nodes.size() );
     unsigned k = 0;
     for ( auto &n: nodes ) {
         points [ k ] = n->givePointPointer();
@@ -51,7 +51,7 @@ void ShapeFunc :: giveJacobiM(const Matrix &phiGradNat, Matrix &JacobiM) const {
 
 //////////////////////////////////////////////////////////
 void ShapeFunc :: giveJacobiM(const Point *x, Matrix &JacobiM) const {
-    Matrix phiGradNat = Matrix :: Zero(ndim, points.size() );
+    Matrix phiGradNat = Matrix :: Zero( ndim, points.size() );
     giveShapeFGradNatural(x, phiGradNat);
     JacobiM.setZero();
     Point *n;
@@ -212,8 +212,8 @@ void Linear3DBrickShapeF :: giveShapeFGradNatural(const Point *x, Matrix &phiGra
 //////////////////////////////////////////////////////////
 // 2D TRIANGLE LINEAR
 //////////////////////////////////////////////////////////
-void Linear2DTriShapeF :: giveShapeF(const Point *x, Vector &phi) const {                          
-    phi [ 0 ] = 1.-x->x()-x->y();
+void Linear2DTriShapeF :: giveShapeF(const Point *x, Vector &phi) const {
+    phi [ 0 ] = 1. - x->x() - x->y();
     phi [ 1 ] = x->x();
     phi [ 2 ] = x->y();
 };
@@ -233,7 +233,7 @@ void Linear2DTriShapeF :: giveShapeFGradNatural(const Point *x, Matrix &phiGrad)
 //////////////////////////////////////////////////////////
 //  3D LINEAR SHAPE FUNCTIONS FOR TETRAHEDRON
 //////////////////////////////////////////////////////////
-void Linear3DTetraShapeF :: giveShapeF(const Point *x, Vector &phi) const {                          
+void Linear3DTetraShapeF :: giveShapeF(const Point *x, Vector &phi) const {
     phi [ 0 ] = 1. - x->x() - x->y() - x->z();
     phi [ 1 ] = x->x();
     phi [ 2 ] = x->y();
@@ -265,11 +265,11 @@ void Linear2DPolygonShapeF :: init(vector< Node * > &nodes) {
     ShapeFunc :: init(nodes);
 
     unsigned n = points.size();
-    angles.resize( points.size() );
+    angles.resize(points.size() );
     for ( unsigned i = 0; i < points.size(); i++ ) {
-        angles [ i ] = atan2(points [ i ]->y() - centroid.y(), points [ i ]->x() - centroid.x() );
+        angles [ i ] = atan2( points [ i ]->y() - centroid.y(), points [ i ]->x() - centroid.x() );
     }
-    triangles.resize( faces.size() );
+    triangles.resize(faces.size() );
     vector< Point * >trinodes;
     trinodes.resize(3);
     trinodes [ 2 ] = & centroid;
@@ -296,7 +296,7 @@ void Linear2DPolygonShapeF :: init(vector< Node * > &nodes) {
 
 //////////////////////////////////////////////////////////
 unsigned Linear2DPolygonShapeF :: findFaceNumber(const Point *x) const {
-    double alpha = atan2(x->y() - centroid.y(), x->x() - centroid.x() );
+    double alpha = atan2( x->y() - centroid.y(), x->x() - centroid.x() );
     double a, b;
     unsigned face;
     for ( face = 0; face < faces.size(); face++ ) {
@@ -340,7 +340,7 @@ void Linear2DPolygonShapeF :: giveFullShapeFGrad(const Point *x, Matrix &phiGrad
     for ( unsigned i = 0; i < 2; i++ ) {
         phiGrad(i, faces [ t ] [ 0 ])  = triphiGrad(i, 0);
         phiGrad(i, faces [ t ] [ 1 ])  = triphiGrad(i, 1);
-        phiGrad(i, faces.size() ) = triphiGrad(i, 2);     //centroid
+        phiGrad( i, faces.size() ) = triphiGrad(i, 2);     //centroid
     }
 };
 
@@ -386,7 +386,7 @@ void Wachspress2DShapeF :: giveShapeF(const Point *x, Vector &phi) const {
     Point oldNormal = normals [ numOfNodes - 1 ];
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         h [ i ] = abs( ( * points [ faces [ i ] [ 0 ] ] - * x ).dot(normals [ i ]) );
-        phi [ i ] = abs(oldNormal.x() * normals [ i ].y() - oldNormal.y() * normals [ i ].x() );
+        phi [ i ] = abs( oldNormal.x() * normals [ i ].y() - oldNormal.y() * normals [ i ].x() );
         oldNormal = normals [ i ];
     }
     double oldh = h [ numOfNodes - 1 ];

@@ -28,7 +28,7 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     R.resize(12);
 
     nodecodes = { 0, 1, 0, 1, 0, 2, 0, 2, 0, 3, 0, 3, 1, 2, 1, 2, 1, 3, 1, 3, 2, 3, 2, 3 };
-    vertcodes = { 8, 1, 1, 7, 2, 9, 7, 2, 3, 9, 8, 3, 10, 4, 4, 7, 5, 10, 8, 5, 10, 6, 6, 9 }; //last point is always centroid at position 0
+    vertcodes = { 8, 1, 1, 7, 2, 9, 7, 2, 9, 3, 3, 8, 10, 4, 4, 7, 5, 10, 8, 5, 10, 6, 6, 9 }; //last point is always centroid at position 0
 
     //OLD NUMBERING
     //nodecodes = { 1, 2, 1, 3, 2, 3, 0, 2, 0, 3, 2, 3, 0, 1, 0, 3, 1, 3, 0, 1, 0, 2, 1, 2 };
@@ -73,16 +73,16 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
 
     for ( unsigned i = 0; i < 12; i++ ) {
         //true face normal
-        Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() ).cross(vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
+        Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() ).cross( vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
         n /= n.norm();
         //contact vector
         normals [ i ] = nodes [ nodecodes [ 2 * i + 1 ] ]->givePoint() - nodes [ nodecodes [ 2 * i ] ]->givePoint();
         lengths [ i ] = normals [ i ].norm();
         normals [ i ] /= lengths [ i ];
         inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
-        areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
-        if (n.norm()==n.norm()){ //NaN test
-            areas [ i ] *= abs( n.dot(normals [ i ]) );  //projection of area
+        areas [ i ] = triArea3D(vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
+        if ( n.norm() == n.norm() ) { //NaN test
+            areas [ i ] *= abs(n.dot(normals [ i ]) );   //projection of area
         }
 
         Point t1, t2;
@@ -93,12 +93,12 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
             t1 = arbit.cross(normals [ i ]);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs(normals [ i ].x() ) > 1e-3 ) {
+            if ( abs( normals [ i ].x() ) > 1e-3 ) {
                 t1 = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
-            } else if ( abs(normals [ i ].y() ) > 1e-3 ) {
+            } else if ( abs( normals [ i ].y() ) > 1e-3 ) {
                 t1 = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
             } else {
-                t1 = Point(1, 0, -normals [ i ].x() / normals [ i ].z() );
+                t1 = Point( 1, 0, -normals [ i ].x() / normals [ i ].z() );
             }
         }
         t1.normalize();
@@ -144,7 +144,7 @@ void LDPMTetra :: init() {
         k = ( i + 2 ) % 4;
         l = ( i + 3 ) % 4;
         averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
-        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross(nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross( nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
         volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
         sign = volume / abs(volume);
         for ( unsigned v = 0; v < 3; v++ ) {
@@ -160,8 +160,10 @@ void LDPMTetra :: init() {
     }
 
     double faceVolume = 0;
-    for(unsigned i=0; i<12; i++) faceVolume += areas[i]*lengths[i]/ndim;
-    if (abs(faceVolume-volume)/max(faceVolume,volume)>1e-6){
+    for ( unsigned i = 0; i < 12; i++ ) {
+        faceVolume += areas [ i ] * lengths [ i ] / ndim;
+    }
+    if ( abs(faceVolume - volume) / max(faceVolume, volume) > 1e-6 ) {
         cerr << "LDPM Tetra Error: " << idx << " - total volume is " << volume << ", volume from faces is " << faceVolume << endl;
         //for(unsigned i=0; i<12; i++) cout << areas[i]*lengths[i]/ndim << endl;
         //exit(1);
@@ -175,9 +177,9 @@ Matrix LDPMTetra :: giveBMatrix(unsigned k) const {
     unsigned nB = nodecodes [ 2 * k + 1 ];
     Matrix B = Matrix :: Zero(3, 24);
     Particle *a = static_cast< Particle * >( nodes [ nA ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
+    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
     a = static_cast< Particle * >( nodes [ nB ] );
-    Matrix Ab = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
+    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
 
     for ( unsigned i = 0; i < 3; i++ ) {
         for ( unsigned j = 0; j < 6; j++ ) {
@@ -243,8 +245,136 @@ Vector LDPMTetra :: integrateInternalSources() {
 //////////////////////////////////////////////////////////
 Matrix LDPMTetra :: giveMassMatrix() const {
     Matrix M = Matrix :: Zero(24, 24);
-    return M;
+    VectMechMaterialStatus *mechstat;
+    double density;
+    double tetvol;
+    Matrix tetI;
+    unsigned nodeID;
+    Point tetcentr, diff;
+    vector< Point * >tetnodes(4);
+    vector< Point >reltetnodes(4);
+    tetnodes [ 3 ] = vert [ 0 ]->givePointPointer();
+
+    for ( unsigned i = 0; i < 12; i++ ) {
+        mechstat = static_cast< VectMechMaterialStatus * >( stats [ 0 ] );
+        density = mechstat->giveDensity();
+        for ( unsigned j = 0; j < 2; j++ ) {
+            nodeID = nodecodes [ 2 * i + j ];
+            tetnodes [ 0 ] = nodes [ nodeID ]->givePointPointer();
+            tetnodes [ 1 ] = vert [ vertcodes [ 2 * i + j ] ]->givePointPointer();
+            tetnodes [ 2 ] = vert [ vertcodes [ 2 * i + 1 - j ] ]->givePointPointer();
+            tetcentr = ( ( * tetnodes [ 0 ] ) + ( * tetnodes [ 1 ] ) + ( * tetnodes [ 2 ] ) + ( * tetnodes [ 3 ] ) ) / 4;
+            for ( unsigned k = 0; k < 4; k++ ) {
+                reltetnodes [ k ] = ( * tetnodes [ k ] ) - tetcentr;
+            }
+            tetvol = tetraVolumeSigned(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
+            tetI = tetraInertia3D(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
+            for ( unsigned k = 0; k < 3; k++ ) {
+                M(nodeID * 6 + k, nodeID * 6 + k) += density * tetvol / 2.;            //division by 2 because of final transposition
+            }
+            diff = tetcentr - ( * tetnodes [ 0 ] );
+            M(nodeID * 6, nodeID * 6 + 4) += density * tetvol * diff [ 2 ];
+            M(nodeID * 6, nodeID * 6 + 5) -= density * tetvol * diff [ 1 ];
+            M(nodeID * 6 + 1, nodeID * 6 + 3) -= density * tetvol * diff [ 2 ];
+            M(nodeID * 6 + 1, nodeID * 6 + 5) += density * tetvol * diff [ 0 ];
+            M(nodeID * 6 + 2, nodeID * 6 + 3) += density * tetvol * diff [ 1 ];
+            M(nodeID * 6 + 2, nodeID * 6 + 4) -= density * tetvol * diff [ 0 ];
+            M(nodeID * 6 + 3, nodeID * 6 + 3) += 0.5 * density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            M(nodeID * 6 + 4, nodeID * 6 + 4) += 0.5 * density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            M(nodeID * 6 + 5, nodeID * 6 + 5) += 0.5 * density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 1 ] ), 2) ) );
+            M(nodeID * 6 + 3, nodeID * 6 + 4) += density * ( tetI(0, 1) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 1 ] ) ) );
+            M(nodeID * 6 + 3, nodeID * 6 + 5) += density * ( tetI(0, 2) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 2 ] ) ) );
+            M(nodeID * 6 + 4, nodeID * 6 + 5) += density * ( tetI(1, 2) - tetvol * ( ( diff [ 1 ] ) * ( diff [ 2 ] ) ) );
+        }
+    }
+    return M + M.transpose();
 }
+
+
+/*
+ * //////////////////////////////////////////////////////////
+ * Matrix RigidBodyContact :: giveMassMatrix() const {
+ *  Matrix M = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+ *  VectMechMaterialStatus *mechstat = static_cast< VectMechMaterialStatus * >( stats [ 0 ] );
+ *  double density = mechstat->giveDensity();
+ *  double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
+ *  double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
+ *  if ( ndim == 2 ) {
+ *      // Define points
+ *      Point *A = nodes [ 0 ]->givePointPointer();
+ *      Point *B = nodes [ 1 ]->givePointPointer();
+ *      Point *C = vert [ 0 ]->givePointPointer();
+ *      Point *D = vert [ 1 ]->givePointPointer();
+ *      Point cg0 = ( nodes [ 0 ]->givePoint() + vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 3.;
+ *      Point cg1 = ( nodes [ 1 ]->givePoint() + vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 3.;
+ *      Point null(0, 0, 0);
+ *      // MassMatrix
+ *      M(0, 0) = M(1, 1) = m0;
+ *      M(3, 3) = M(4, 4) = m1;
+ *      Point C_ = ( * C ) - ( * A );
+ *      Point D_ = ( * D ) - ( * A );
+ *      M(2, 2) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node A[0,0]
+ *      C_ = ( * C ) - ( * B );
+ *      D_ = ( * D ) - ( * B );
+ *      M(5, 5) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node B[0,0]
+ *      M(0, 2) = M(2, 0) = -m0 * ( cg0.y() - A->y() );
+ *      M(1, 2) = M(2, 1) = +m0 * ( cg0.x() - A->x() );
+ *      M(3, 5) = M(5, 3) = -m1 * ( cg1.y() - B->y() );
+ *      M(4, 5) = M(5, 4) = +m1 * ( cg1.x() - B->x() );
+ *  } else if ( ndim == 3 ) {
+ *      // Define points
+ *      Point *A = nodes [ 0 ]->givePointPointer();
+ *      // Mass
+ *      M(0, 0) = M(1, 1) = M(2, 2) = m0;
+ *      M(6, 6) = M(7, 7) = M(8, 8) = m1;
+ *      Point *D, cg, A_, C_, D_, centroid_;
+ *      Point null(0, 0, 0);
+ *      Point *C = vert [ vert.size() - 1 ]->givePointPointer();
+ *      double tetraVolume;
+ *      for ( unsigned i = 0; i < vert.size(); i++ ) {
+ *          D = C;
+ *          C = vert [ i ]->givePointPointer();
+ *          for ( unsigned k = 0; k < 2; k++ ) {
+ *              A = nodes [ k ]->givePointPointer();
+ *              cg = ( ( * A ) + ( * C ) + ( * D ) + centroid ) / 4.;
+ *              tetraVolume = abs( tetraVolumeSigned(A, C, D, & centroid) );
+ *
+ *              // Inertia matrix relative to the centroid [0,0,0]
+ *              A_ = ( * A ) - cg;
+ *              C_ = ( * C ) - cg;
+ *              D_ = ( * D ) - cg;
+ *              centroid_ = centroid - cg;
+ *              Matrix I = tetraInertia3D(& A_, & C_, & D_, & centroid_);
+ *
+ *              // MassMatrix
+ *              M(6 * k + 3, 6 * k + 3) += density * ( I(0, 0) + tetraVolume * ( pow( ( cg.y() - A->y() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
+ *              M(6 * k + 4, 6 * k + 4) += density * ( I(1, 1) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
+ *              M(6 * k + 5, 6 * k + 5) += density * ( I(2, 2) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.y() - A->y() ), 2 ) ) );
+ *              M(6 * k + 3, 6 * k + 4) += density * ( I(0, 1) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.y() - A->y() ) ) );
+ *              M(6 * k + 3, 6 * k + 5) += density * ( I(0, 2) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.z() - A->z() ) ) );
+ *              M(6 * k + 4, 6 * k + 5) += density * ( I(1, 2) - tetraVolume * ( ( cg.y() - A->y() ) * ( cg.z() - A->z() ) ) );
+ *
+ *              M(6 * k, 6 * k + 4)   += tetraVolume * density * ( cg.z() - A->z() );
+ *              M(6 * k, 6 * k + 5)   -= tetraVolume * density * ( cg.y() - A->y() );
+ *              M(6 * k + 1, 6 * k + 3) -= tetraVolume * density * ( cg.z() - A->z() );
+ *              M(6 * k + 1, 6 * k + 5) += tetraVolume * density * ( cg.x() - A->x() );
+ *              M(6 * k + 2, 6 * k + 3) += tetraVolume * density * ( cg.y() - A->y() );
+ *              M(6 * k + 2, 6 * k + 4) -= tetraVolume * density * ( cg.x() - A->x() );
+ *          }
+ *      }
+ *      //symmetric
+ *      for ( unsigned k = 0; k < 6; k++ ) {
+ *          for ( unsigned l = max( k + 1, unsigned( 3 ) ); l < 6; l++ ) {
+ *              M(l, k) = M(k, l);
+ *              M(l + 6, k + 6) = M(k + 6, l + 6);
+ *          }
+ *      }
+ *  }
+ *  return M;
+ * }
+ *
+ */
+
 
 //////////////////////////////////////////////////////////
 vector< unsigned >LDPMTetra :: giveFacetVertCodes(unsigned k) const {

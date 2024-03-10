@@ -95,7 +95,7 @@ class CSLMaterialWithTensorialStressUpdate : public CSLMaterial
 {
 private:
     double poisson;
-    std::vector<Vector> tensstress;
+    std :: vector< Vector >tensstress;
 public:
     CSLMaterialWithTensorialStressUpdate(unsigned dimension);
     virtual ~CSLMaterialWithTensorialStressUpdate() {};
@@ -103,7 +103,7 @@ public:
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double givePoissonNumber() { return poisson; }
     virtual void init(MaterialContainer *matcont);
-    virtual void prepareForStressEvaluation(ElementContainer* elems);
+    virtual void prepareForStressEvaluation(ElementContainer *elems);
     Vector giveAveragePrincipalStress(unsigned Anode, unsigned Bnode);
 };
 

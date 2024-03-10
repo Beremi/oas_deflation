@@ -7,24 +7,23 @@ using namespace std;
 // CONJUGATE GRADIENT SOLVER
 //////////////////////////////////////////////////////////
 
-ConjGradSolver::ConjGradSolver(){
+ConjGradSolver :: ConjGradSolver() {
     name = "EigenConj";
     relMaxIT = 1.;
     precision = 1e-12;
 }
 
 //////////////////////////////////////////////////////////
-ConjGradSolver::~ConjGradSolver(){
-}
+ConjGradSolver :: ~ConjGradSolver() {}
 
 //////////////////////////////////////////////////////////
-void ConjGradSolver::setPrecisionAndRelMaxIters(double p, double rmi){
+void ConjGradSolver :: setPrecisionAndRelMaxIters(double p, double rmi) {
     relMaxIT = rmi;
     precision = p;
 }
 
 //////////////////////////////////////////////////////////
-bool ConjGradSolver::factorize(const CoordinateIndexedSparseMatrix &A){
+bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -32,11 +31,11 @@ bool ConjGradSolver::factorize(const CoordinateIndexedSparseMatrix &A){
     //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
     //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
 
-    cgK.setMaxIterations(relMaxIT*A.cols());
+    cgK.setMaxIterations( relMaxIT * A.cols() );
     cgK.setTolerance(precision);
     cgK.compute(A);
-    initialGuess = Vector::Zero(A.cols());
-    maxIT = relMaxIT*A.cols();
+    initialGuess = Vector :: Zero( A.cols() );
+    maxIT = relMaxIT * A.cols();
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -50,7 +49,7 @@ bool ConjGradSolver::factorize(const CoordinateIndexedSparseMatrix &A){
 
 
 //////////////////////////////////////////////////////////
-bool ConjGradSolver::solve(Vector &x, const Vector &b){
+bool ConjGradSolver :: solve(Vector &x, const Vector &b) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -79,20 +78,19 @@ bool ConjGradSolver::solve(Vector &x, const Vector &b){
 // LDLT SOLVER
 //////////////////////////////////////////////////////////
 
-LDLTSolver::LDLTSolver(){
+LDLTSolver :: LDLTSolver() {
     name = "LDLTSolver";
 }
 
 //////////////////////////////////////////////////////////
-LDLTSolver::~LDLTSolver(){
-}
+LDLTSolver :: ~LDLTSolver() {}
 
 //////////////////////////////////////////////////////////
-bool LDLTSolver::factorize(const CoordinateIndexedSparseMatrix &A){
+bool LDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
-    
+
     ldlt.compute(A);
 
 #if PRINT_DEBUG_TIME
@@ -107,7 +105,7 @@ bool LDLTSolver::factorize(const CoordinateIndexedSparseMatrix &A){
 
 
 //////////////////////////////////////////////////////////
-bool LDLTSolver::solve(Vector &x, const Vector &b){
+bool LDLTSolver :: solve(Vector &x, const Vector &b) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -130,20 +128,19 @@ bool LDLTSolver::solve(Vector &x, const Vector &b){
 // LU SOLVER
 //////////////////////////////////////////////////////////
 
-LUSolver::LUSolver(){
+LUSolver :: LUSolver() {
     name = "LUSolver";
 }
 
 //////////////////////////////////////////////////////////
-LUSolver::~LUSolver(){
-}
+LUSolver :: ~LUSolver() {}
 
 //////////////////////////////////////////////////////////
-bool LUSolver::factorize(const CoordinateIndexedSparseMatrix &A){
+bool LUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
-    
+
     lu.compute(A);
 
 #if PRINT_DEBUG_TIME
@@ -158,7 +155,7 @@ bool LUSolver::factorize(const CoordinateIndexedSparseMatrix &A){
 
 
 //////////////////////////////////////////////////////////
-bool LUSolver::solve(Vector &x, const Vector &b){
+bool LUSolver :: solve(Vector &x, const Vector &b) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -181,20 +178,19 @@ bool LUSolver::solve(Vector &x, const Vector &b){
 // LLT SOLVER
 //////////////////////////////////////////////////////////
 
-LLTSolver::LLTSolver(){
+LLTSolver :: LLTSolver() {
     name = "LLTSolver";
 }
 
 //////////////////////////////////////////////////////////
-LLTSolver::~LLTSolver(){
-}
+LLTSolver :: ~LLTSolver() {}
 
 //////////////////////////////////////////////////////////
-bool LLTSolver::factorize(const CoordinateIndexedSparseMatrix &A){
+bool LLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
-    
+
     llt.compute(A);
 
 #if PRINT_DEBUG_TIME
@@ -209,7 +205,7 @@ bool LLTSolver::factorize(const CoordinateIndexedSparseMatrix &A){
 
 
 //////////////////////////////////////////////////////////
-bool LLTSolver::solve(Vector &x, const Vector &b){
+bool LLTSolver :: solve(Vector &x, const Vector &b) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -234,35 +230,35 @@ bool LLTSolver::solve(Vector &x, const Vector &b){
 
 
 /*
-
-
-
-    } else if ( solver_type == "EigenLDLT" ) {
-        Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >simplicial_ldlt_solver;
-        x = simplicial_ldlt_solver.compute(A).solve(b);
-        //cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
-        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
-        result = 1;
-    } else if ( solver_type == "EigenLLT" ) {
-        Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
-        x = simplicial_llt_solver.compute(A).solve(b);
-        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
-        result = 1;
-    } else if ( solver_type == "EigenSparseLU" ) {
-        Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
-        sparseLU_solver.analyzePattern(A);
-        sparseLU_solver.factorize(A);
-
-        x = sparseLU_solver.solve(b);
-        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
-        result = 1;
-
-
-}
-
-
-
-*/
+ *
+ *
+ *
+ *  } else if ( solver_type == "EigenLDLT" ) {
+ *      Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >simplicial_ldlt_solver;
+ *      x = simplicial_ldlt_solver.compute(A).solve(b);
+ *      //cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
+ *      //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+ *      result = 1;
+ *  } else if ( solver_type == "EigenLLT" ) {
+ *      Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
+ *      x = simplicial_llt_solver.compute(A).solve(b);
+ *      //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+ *      result = 1;
+ *  } else if ( solver_type == "EigenSparseLU" ) {
+ *      Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
+ *      sparseLU_solver.analyzePattern(A);
+ *      sparseLU_solver.factorize(A);
+ *
+ *      x = sparseLU_solver.solve(b);
+ *      //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+ *      result = 1;
+ *
+ *
+ * }
+ *
+ *
+ *
+ */
 
 
 
@@ -440,7 +436,9 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
 }
 
 bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b) {
-    (void) A; (void) x; (void) b;
+    ( void ) A;
+    ( void ) x;
+    ( void ) b;
     //return LinalgSymmetricSolver(A, x, b, x, 1e-12, 2, "EigenConj");
 
 
@@ -468,7 +466,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot(AC.cross(AD) );
+    double coplanarityError = AB.dot( AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -582,15 +580,15 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         weis [ 0 ] = weis [ 2 ] = 5. / 9.;
         weis [ 1 ] = 8. / 9.;
     } else if ( n == 4 ) {
-        locs [ 0 ] = -sqrt( 3. / 7. + 2. / 7. * sqrt(6. / 5.) );
-        locs [ 1 ] = -sqrt( 3. / 7. - 2. / 7. * sqrt(6. / 5.) );
+        locs [ 0 ] = -sqrt(3. / 7. + 2. / 7. * sqrt(6. / 5.) );
+        locs [ 1 ] = -sqrt(3. / 7. - 2. / 7. * sqrt(6. / 5.) );
         locs [ 2 ] = -locs [ 1 ];
         locs [ 3 ] = -locs [ 0 ];
         weis [ 0 ] = weis [ 3 ] = ( 18. - sqrt(30.) ) / 36;
         weis [ 1 ] = weis [ 2 ] = ( 18. + sqrt(30.) ) / 36;
     } else if ( n == 5 ) {
-        locs [ 0 ] = -sqrt( 5. + 2. * sqrt(10. / 7.) ) / 3;
-        locs [ 1 ] = -sqrt( 5. - 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 0 ] = -sqrt(5. + 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 1 ] = -sqrt(5. - 2. * sqrt(10. / 7.) ) / 3;
         locs [ 2 ] = 0.;
         locs [ 3 ] = -locs [ 1 ];
         locs [ 4 ] = -locs [ 0 ];

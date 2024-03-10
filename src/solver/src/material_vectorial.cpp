@@ -112,12 +112,12 @@ Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
     Vector ints = Vector :: Zero(1);
     VectTrsprtCoupledMaterial *m = static_cast< VectTrsprtCoupledMaterial * >( mat );
 
-       
+
     ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
     if ( crackVolumeRate > 0 || pressureRate > 0 ) {
         DiscreteTrsprtElem *trs = static_cast< DiscreteTrsprtElem * >( element );
         double vol = trs->giveVolume();
-        if (temp_crackVolume>0){
+        if ( temp_crackVolume > 0 ) {
             ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
         }
         ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
@@ -272,7 +272,7 @@ Vector VectMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &stra
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
-    temp_stress.resize(strain.size() );
+    temp_stress.resize( strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -341,7 +341,7 @@ bool VectMechMaterialStatus ::  giveValues(string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 VectMechMaterial :: VectMechMaterial(unsigned dimension) : Material(dimension) {
-    name = "Vect mechanical material";    
+    name = "Vect mechanical material";
 }
 
 //////////////////////////////////////////////////////////
@@ -421,7 +421,7 @@ Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenInt
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
-    temp_stress.resize(strain.size() );
+    temp_stress.resize( strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     unsigned dim = m->giveDimension();
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );
@@ -431,7 +431,7 @@ Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenInt
     for ( ; i < dim; i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
     }
-    for ( ; i < (size_t)strain.size(); i++ ) {
+    for ( ; i < ( size_t ) strain.size(); i++ ) {
         temp_stress [ i ] =  m->giveBeta() * m->giveE0() * temp_strain [ i ] * I *rbcr->giveNumIP() / A;
     }
     return temp_stress;

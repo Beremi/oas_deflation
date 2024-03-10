@@ -113,7 +113,7 @@ public:
 
     void init();
 
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
@@ -138,8 +138,8 @@ public:
 
     void init();
 
-    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
-    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual Matrix giveStiffnessMatrix(std :: string matrixType) const { ( void ) matrixType; return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual Matrix giveDampingMatrix() const { return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
     // virtual MyVector giveInternalForces(const MyVector &DoFs, bool frozen, double timeStep);
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;

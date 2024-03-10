@@ -65,6 +65,7 @@ public:
     virtual void rebuild();
     Vector giveResiduals() const { return residuals; };
     bool showStepTime()const { return showTime; };
+    virtual double computeKineticEnergy() const {return 0;};
 };
 
 

@@ -36,10 +36,10 @@ void Element :: initIntegration() {
 
 //////////////////////////////////////////////////////////
 void Element :: setIntegrationPointsAndWeights() {
-    stats.resize(inttype->giveNumIP() );
+    stats.resize( inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
-        inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian( inttype->giveIPLocationPointer(k) ) );
+        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k) ) );
     }
 };
 
@@ -82,8 +82,8 @@ void Element :: init() {
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
 
-    Bs.resize(inttype->giveNumIP() );
-    Hs.resize(inttype->giveNumIP() );
+    Bs.resize( inttype->giveNumIP() );
+    Hs.resize( inttype->giveNumIP() );
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
         Bs [ k ] = giveBMatrix(k);
         Hs [ k ] = giveHMatrix(k);
@@ -91,13 +91,13 @@ void Element :: init() {
 
     //set stress and strain vectors at integration points
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        stats [ k ]->initializeStressAndStrainVector( Bs [ k ].rows() );
+        stats [ k ]->initializeStressAndStrainVector(Bs [ k ].rows() );
     }
 }
 
 //////////////////////////////////////////////////////////
 std :: vector< unsigned >Element :: giveDoFsInDirection(unsigned dir) const {
-    std :: vector< unsigned >DoFinDir(nodes.size() );
+    std :: vector< unsigned >DoFinDir( nodes.size() );
     for ( unsigned i = 0; i < nodes.size(); i++ ) {
         DoFinDir [ i ] = nodes [ i ]->giveStartingDoF() + dir;
     }
@@ -207,7 +207,7 @@ void Element :: giveValues(std :: string code, Vector &result) const {
         //average values from IP
         if ( inttype->giveNumIP() > 0 ) {
             stats [ 0 ]->giveValues(code, result);
-            Vector res2( result.size() );
+            Vector res2(result.size() );
             for ( unsigned i = 1; i < inttype->giveNumIP(); i++ ) {
                 stats [ i ]->giveValues(code, res2);
                 result += res2;
@@ -245,7 +245,7 @@ Vector Element :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF = Vector :: Zero(DoFids.size() );
+    Vector intF = Vector :: Zero( DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( frozen ) {
@@ -272,7 +272,7 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
 
 //////////////////////////////////////////////////////////
 Vector Element :: integrateInternalSources() {
-    Vector intS = Vector :: Zero(DoFids.size() );
+    Vector intS = Vector :: Zero( DoFids.size() );
     Vector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         intmats = stats [ i ]->giveInternalSource();
@@ -342,7 +342,7 @@ void Element :: changeMaterial(Material *newmat) {
 
 //////////////////////////////////////////////////////////
 bool Element :: giveGlobalCoords(Point *x, const Point *xn) const {
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(xn, phi);
     * x = Point(0, 0, 0);
     for ( unsigned n = 0; n < nodes.size(); n++ ) {
@@ -361,8 +361,8 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     for ( auto &n: nodes ) {
         p = n->givePointPointer();
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxc(c) = std :: max(maxc(c), ( * p )(c) );
-            minc(c) = std :: min(minc(c), ( * p )(c) );
+            maxc(c) = std :: max( maxc(c), ( * p )(c) );
+            minc(c) = std :: min( minc(c), ( * p )(c) );
         }
     }
     for ( unsigned c = 0; c < ndim; c++ ) {
@@ -392,7 +392,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
     diff = aux - ( * x );
     while ( maxerror > 1e-4 && i < max_i ) {
         for ( unsigned c = 0; c < ndim; c++ ) {
-            if ( abs(diff(c) / size(c) ) < 1e-8 ) {
+            if ( abs( diff(c) / size(c) ) < 1e-8 ) {
                 continue;
             }
             if ( diffC(c) > 1e-16 ) {
@@ -407,7 +407,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
         diffC = aux - center;
         maxerror = 0.;
         for ( unsigned c = 0; c < ndim; c++ ) {
-            maxerror = std :: max(maxerror, abs(diff(c) / size(c) ) );
+            maxerror = std :: max( maxerror, abs( diff(c) / size(c) ) );
         }
         i++;
     }
@@ -427,7 +427,7 @@ bool Element :: isPointInside(Point *xn, const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
-    Vector elemDoFs = Vector :: Zero(DoFids.size() );
+    Vector elemDoFs = Vector :: Zero( DoFids.size() );
     for ( unsigned i = 0; i < DoFids.size(); i++ ) {
         elemDoFs [ i ] = FullDoFs [ DoFids [ i ] ];
     }
@@ -436,11 +436,11 @@ Vector Element :: giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const {
 
 //////////////////////////////////////////////////////////
 void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > &result, Vector &weights) const {
-    Vector phi = Vector :: Zero(nodes.size() );
-    Vector res = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
+    Vector res = Vector :: Zero( nodes.size() );
     double jacobian;
     Vector ipres;
-    Matrix M = Matrix :: Zero(nodes.size(), nodes.size() );
+    Matrix M = Matrix :: Zero( nodes.size(), nodes.size() );
 
     if ( inttype->giveNumIP() == 0 ) {
         std :: cerr << "Error in function extrapolateIPValuesToNodes: zero number of integration points" << std :: endl;
@@ -453,16 +453,16 @@ void Element :: extrapolateIPValuesToNodes(std :: string code, vector< Vector > 
 
     std :: vector< Vector >rhs(reslen);
     for ( unsigned h = 0; h < reslen; h++ ) {
-        rhs [ h ] = Vector :: Zero( nodes.size() );
-        result [ h ] = Vector :: Zero( nodes.size() );
+        rhs [ h ] = Vector :: Zero(nodes.size() );
+        result [ h ] = Vector :: Zero(nodes.size() );
     }
-    weights.resize(nodes.size() );
+    weights.resize( nodes.size() );
     weights.setOnes(); //for(auto &h: weights) h = 1;
 
 
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         shafunc->giveShapeF(inttype->giveIPLocationPointer(i), phi);
-        jacobian = shafunc->giveJacobian( inttype->giveIPLocationPointer(i) );
+        jacobian = shafunc->giveJacobian(inttype->giveIPLocationPointer(i) );
         giveIPValues(code, i, ipres);
         for ( unsigned k = 0; k < nodes.size(); k++ ) {
             for ( unsigned h = 0; h < reslen; h++ ) {
@@ -526,7 +526,7 @@ Point Element :: findNaturalCoords(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveShapeFunctions(const Point *x) const {
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
     return phi;
 }
@@ -544,7 +544,7 @@ MaterialTestElement :: MaterialTestElement(unsigned dim) : Element(dim) {
     inttype = new IntegrDiscrete1();
     IntegrDiscrete1 *it = dynamic_cast< IntegrDiscrete1 * >( inttype );
     it->setNumIP(1);
-    it->setIPLocation( 0, Point(0, 0, 0) );
+    it->setIPLocation(0, Point(0, 0, 0) );
     it->setIPWeight(0, 1);
 }
 
@@ -552,7 +552,7 @@ MaterialTestElement :: MaterialTestElement(unsigned dim) : Element(dim) {
 //////////////////////////////////////////////////////////
 void MaterialTestElement :: setIntegrationPointsAndWeights() {
     stats.resize(1);
-    inttype->setIPLocation( 0, Point(0., 0., 0.) );
+    inttype->setIPLocation(0, Point(0., 0., 0.) );
     inttype->setIPWeight(0, 1);
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);
 }
@@ -560,7 +560,7 @@ void MaterialTestElement :: setIntegrationPointsAndWeights() {
 //////////////////////////////////////////////////////////
 Matrix MaterialTestElement :: giveBMatrix(const Point *x) const {
     ( void ) x;
-    Matrix B = Matrix :: Identity( DoFids.size(), DoFids.size() );
+    Matrix B = Matrix :: Identity(DoFids.size(), DoFids.size() );
     return B;
 }
 
@@ -568,7 +568,7 @@ Matrix MaterialTestElement :: giveBMatrix(const Point *x) const {
 Matrix MaterialTestElement :: giveHMatrix(const Point *x) const {
     ( void ) x;
     unsigned numOfIntSources = 7;  //TODO: THIS IS WRONG, NEEDS TO BE TREATED AUTOMATICALLY
-    Matrix H = Matrix :: Zero( numOfIntSources, DoFids.size() );
+    Matrix H = Matrix :: Zero(numOfIntSources, DoFids.size() );
     return H;
 }
 

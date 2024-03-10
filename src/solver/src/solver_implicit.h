@@ -10,7 +10,7 @@ protected:
     double conj_grad_precision;
     double conj_grad_relative_maxit;
     CoordinateIndexedSparseMatrix Keff, K;
-    LinAlgSolver* linalgsolver;
+    LinAlgSolver *linalgsolver;
     std :: string symsolver_type = "EigenConj";
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
@@ -79,7 +79,7 @@ class TransientLinearTransportSolver : public SteadyStateNonLinearSolver /// sol
 protected:
     double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
-    Vector v, v_old;
+    Vector v,v_old;
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void computeKeff();
@@ -135,6 +135,7 @@ public:
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
+    virtual double computeKineticEnergy() const;
 };
 
 //////////////////////////////////////////////////////////

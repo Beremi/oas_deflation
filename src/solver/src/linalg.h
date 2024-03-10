@@ -38,73 +38,73 @@ const static Eigen :: IOFormat VectorSemicolonFmt(Eigen :: FullPrecision, Eigen 
 // SOLVER FOR LINEAR ALGEBRA, BASE CLASS
 class LinAlgSolver
 {
-    protected: 
-        std::string name;
-    public:
-        LinAlgSolver(){};
-        virtual ~LinAlgSolver(){};
-        virtual bool factorize(const CoordinateIndexedSparseMatrix &A){(void)A; name = "null solver, base class"; return false;};
-        virtual bool solve(Vector &x, const Vector &b){(void)x; (void)b; return false;};    
-        std::string giveName()const {return name;};
-};        
+protected:
+    std :: string name;
+public:
+    LinAlgSolver() {};
+    virtual ~LinAlgSolver() {};
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A) { ( void ) A; name = "null solver, base class"; return false; };
+    virtual bool solve(Vector &x, const Vector &b) { ( void ) x; ( void ) b; return false; };
+    std :: string giveName()const { return name; };
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SOLVER FOR LINEAR ALGEBRA, CONJUGATE GRADIENTS
-class ConjGradSolver: public LinAlgSolver
+class ConjGradSolver : public LinAlgSolver
 {
-    protected: 
-        Vector initialGuess;
-        double relMaxIT, maxIT, precision;
-        Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper > cgK;
-        //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
-    public:
-        ConjGradSolver();
-        virtual ~ConjGradSolver();
-        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
-        virtual bool solve(Vector &x, const Vector &b);    
-        void setPrecisionAndRelMaxIters(double p, double rmi);
-}; 
+protected:
+    Vector initialGuess;
+    double relMaxIT, maxIT, precision;
+    Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper >cgK;
+    //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
+public:
+    ConjGradSolver();
+    virtual ~ConjGradSolver();
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+    void setPrecisionAndRelMaxIters(double p, double rmi);
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SOLVER FOR LINEAR ALGEBRA, LDLT SOLVER
-class LDLTSolver: public LinAlgSolver
+class LDLTSolver : public LinAlgSolver
 {
-    protected: 
-        Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > > ldlt;
-    public:
-        LDLTSolver();
-        virtual ~LDLTSolver();
-        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
-        virtual bool solve(Vector &x, const Vector &b);  
-}; 
+protected:
+    Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >ldlt;
+public:
+    LDLTSolver();
+    virtual ~LDLTSolver();
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SOLVER FOR LINEAR ALGEBRA, LDLT SOLVER
-class LLTSolver: public LinAlgSolver
+class LLTSolver : public LinAlgSolver
 {
-    protected: 
-        Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > > llt;
-    public:
-        LLTSolver();
-        virtual ~LLTSolver();
-        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
-        virtual bool solve(Vector &x, const Vector &b);  
+protected:
+    Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >llt;
+public:
+    LLTSolver();
+    virtual ~LLTSolver();
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
 };
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SOLVER FOR LINEAR ALGEBRA, LU SOLVER
-class LUSolver: public LinAlgSolver
+class LUSolver : public LinAlgSolver
 {
-    protected: 
-        Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > > lu;
-    public:
-        LUSolver();
-        virtual ~LUSolver();
-        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
-        virtual bool solve(Vector &x, const Vector &b);  
+protected:
+    Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >lu;
+public:
+    LUSolver();
+    virtual ~LUSolver();
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
 };
 
 //////////////////////////////////////////////////////////

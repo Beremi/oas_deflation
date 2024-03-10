@@ -13,10 +13,13 @@ class ElementContainer
 {
 private:
     std :: vector< Element * >elems;
-    NodeContainer *nodes = nullptr;;
-    BCContainer *bconds = nullptr;;
+    NodeContainer *nodes = nullptr;
+    ;
+    BCContainer *bconds = nullptr;
+    ;
     MaterialContainer *materials = nullptr;
-    Model *model = nullptr;;
+    Model *model = nullptr;
+    ;
     unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType) const;
@@ -24,7 +27,7 @@ private:
     std :: vector< std :: string >file_to_load_from;
 
 public:
-    ElementContainer() { model = nullptr;};
+    ElementContainer() { model = nullptr; };
     ~ElementContainer();
     void setModel(Model *mod);
     void readFromFile(const std :: string filename, const unsigned ndim, MaterialContainer *matrs);
@@ -59,7 +62,7 @@ public:
     void assignFibersToElems();
     void giveValues(std :: string code, Vector &result) const;
     void sumFromElements(std :: string code, Vector &result) const;
-    std::vector<Vector> computePrincipalStresses() const;
+    std :: vector< Vector >computePrincipalStresses() const;
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }
