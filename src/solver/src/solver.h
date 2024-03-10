@@ -27,7 +27,8 @@ protected:
     int step;
     unsigned init_step = 0;  ///> when starting from previously calculated results
     bool terminated, fully_converged;
-    std :: string symsolver_type = "EigenConj";
+
+    Vector W_ext, W_int, W_kin;
 
     bool showTime;
 

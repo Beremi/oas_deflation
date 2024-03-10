@@ -33,6 +33,82 @@ typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor >CoordinateInd
 
 const static Eigen :: IOFormat VectorSemicolonFmt(Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, BASE CLASS
+class LinAlgSolver
+{
+    protected: 
+        std::string name;
+    public:
+        LinAlgSolver(){};
+        virtual ~LinAlgSolver(){};
+        virtual bool factorize(const CoordinateIndexedSparseMatrix &A){(void)A; name = "null solver, base class"; return false;};
+        virtual bool solve(Vector &x, const Vector &b){(void)x; (void)b; return false;};    
+        std::string giveName()const {return name;};
+};        
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, CONJUGATE GRADIENTS
+class ConjGradSolver: public LinAlgSolver
+{
+    protected: 
+        Vector initialGuess;
+        double relMaxIT, maxIT, precision;
+        Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper > cgK;
+        //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
+    public:
+        ConjGradSolver();
+        virtual ~ConjGradSolver();
+        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+        virtual bool solve(Vector &x, const Vector &b);    
+        void setPrecisionAndRelMaxIters(double p, double rmi);
+}; 
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, LDLT SOLVER
+class LDLTSolver: public LinAlgSolver
+{
+    protected: 
+        Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > > ldlt;
+    public:
+        LDLTSolver();
+        virtual ~LDLTSolver();
+        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+        virtual bool solve(Vector &x, const Vector &b);  
+}; 
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, LDLT SOLVER
+class LLTSolver: public LinAlgSolver
+{
+    protected: 
+        Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > > llt;
+    public:
+        LLTSolver();
+        virtual ~LLTSolver();
+        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+        virtual bool solve(Vector &x, const Vector &b);  
+};
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, LU SOLVER
+class LUSolver: public LinAlgSolver
+{
+    protected: 
+        Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > > lu;
+    public:
+        LUSolver();
+        virtual ~LUSolver();
+        virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+        virtual bool solve(Vector &x, const Vector &b);  
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, std :: string solver_type);
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);

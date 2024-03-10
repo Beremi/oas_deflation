@@ -14,7 +14,9 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
 }
 
 //////////////////////////////////////////////////////////
-SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {}
+SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {
+    delete linalgsolver;
+}
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
@@ -53,6 +55,7 @@ void SteadyStateLinearSolver :: computeKeff() {
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Keff);
     }
+    factorizeLinearSystem();
 }
 
 //////////////////////////////////////////////////////////
@@ -63,11 +66,15 @@ void SteadyStateLinearSolver :: reset() {
     computeForcesAtIntegrationTime(true);
     nodes->giveReducedForceArray(residuals, f);
 
+    /*
     if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
         std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
         std :: cerr << "solver restart did not work" << endl;
         exit(1);
     }
+    */
+    linalgsolver->solve(ddr, f);
+
     updateFieldVariables();
     computeForcesAtIntegrationTime(true);
 
@@ -129,12 +136,15 @@ void SteadyStateLinearSolver :: solve() {
     computeForcesAtIntegrationTime(true);
 
     //solve linear system
+    /*
     nodes->giveReducedForceArray(residuals, f);
     if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
         terminated = true;
         cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
         return;
-    }
+    }   
+    */
+    linalgsolver->solve(ddr, f);
 
     /*
      * cout << "----- K ----" << endl;
@@ -164,6 +174,29 @@ void SteadyStateLinearSolver :: runBeforeEachStep() {
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runAfterEachStep() {
     Solver :: runAfterEachStep();
+}
+
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: factorizeLinearSystem() {
+    if (linalgsolver==nullptr){
+        if (symsolver_type == "EigenConj"){
+            ConjGradSolver* cgs = new ConjGradSolver(); 
+            cgs->setPrecisionAndRelMaxIters(conj_grad_precision, conj_grad_relative_maxit);
+            linalgsolver = cgs;
+        } else if  (symsolver_type == "EigenLDLT"){
+            linalgsolver = new LDLTSolver(); 
+        } else if  (symsolver_type == "EigenLLT"){
+            linalgsolver = new LLTSolver(); 
+        } else if  (symsolver_type == "EigenSparseLU"){
+            linalgsolver = new LUSolver(); 
+        } else {
+            cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
+            exit(1);
+        }
+    }
+    
+    linalgsolver->factorize(Keff);
 }
 
 //////////////////////////////////////////////////////////
@@ -262,13 +295,13 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 maxResErr = maxEneErr = maxDisErr;
             } else if ( param.compare("stiffness_matrix_update") == 0 ) {
                 iss >> valueIN;
-                stiffnessMatrixUpdate = int( valueIN + 0.5 );
+                stiffnessMatrixUpdate = int( valueIN );
             } else if ( param.compare("mass_matrix_update") == 0 ) {
                 iss >> valueIN;
-                massMatrixUpdate = int( valueIN + 0.5 );
+                massMatrixUpdate = int( valueIN );
             } else if ( param.compare("damping_matrix_update") == 0 ) {
                 iss >> valueIN;
-                dampingMatrixUpdate = int( valueIN + 0.5 );
+                dampingMatrixUpdate = int( valueIN );
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
@@ -387,7 +420,7 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
 
 //////////////////////////////////////////////////////////
 bool SteadyStateNonLinearSolver :: updateSystemMatrices(string matrixType, unsigned iteration) {
-    if ( stiffnessMatrixUpdate == 0 || ( stiffnessMatrixUpdate > 0 && iteration % stiffnessMatrixUpdate == 0 ) ) {
+    if ( stiffnessMatrixUpdate == 0 || ( stiffnessMatrixUpdate > 0 && iteration % abs(stiffnessMatrixUpdate) == 0 ) ) {
         elems->updateStiffnessMatrix(K, matrixType);
         return true;
     } else {
@@ -462,12 +495,16 @@ void SteadyStateNonLinearSolver :: reset() {
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
 
+            /*
             if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                 std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                 it = maxIt;
                 resErr = 1e10;
                 break;
             }
+            */
+    
+            linalgsolver->solve(ddr, f);
 
             //update DoFs
             updateFieldVariables();
@@ -570,6 +607,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 computeForcesAtIntegrationTime(true);
                 nodes->giveReducedForceArray(residuals, f);
 
+                /*
                 if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
@@ -582,6 +620,9 @@ void SteadyStateNonLinearSolver :: solve() {
                     resErr = 1e10;
                     break;
                 }
+                */
+                linalgsolver->solve(ddr, f_last_iter);
+                linalgsolver->solve(ddf, f - f_last_iter);
 
                 if ( !restart_now ) {
                     nodes->giveFullDoFArray(ddr, full_ddr);
@@ -600,12 +641,15 @@ void SteadyStateNonLinearSolver :: solve() {
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
                 }
             } else {         //direct controll
+                /*
                 if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
                     std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
                     it = maxIt;
                     resErr = 1e10;
                     break;
                 }
+                */
+                linalgsolver->solve(ddr, f);
             }
 
             //update DoFs
@@ -893,6 +937,7 @@ void TransientLinearTransportSolver :: computeKeff() {
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Keff);
     }
+    factorizeLinearSystem();
 }
 
 //////////////////////////////////////////////////////////
@@ -1039,6 +1084,7 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
     Vector v_red = Vector :: Zero(freeDoFnum);
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
+    //terminated = !linalgsolver->solve(ddr, f_last_iter);
     a = Vector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, a);
 }
@@ -1069,6 +1115,7 @@ void TransientLinearMechanicalSolver :: computeKeff() {
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Keff);
     }
+    factorizeLinearSystem();
 }
 
 //////////////////////////////////////////////////////////

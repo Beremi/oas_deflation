@@ -10,6 +10,8 @@ protected:
     double conj_grad_precision;
     double conj_grad_relative_maxit;
     CoordinateIndexedSparseMatrix Keff, K;
+    LinAlgSolver* linalgsolver;
+    std :: string symsolver_type = "EigenConj";
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, -1); };
@@ -26,6 +28,7 @@ public:
     virtual void solve();
     virtual void reset();
     virtual void rebuild();
+    virtual void factorizeLinearSystem();
 };
 
 //////////////////////////////////////////////////////////
@@ -34,7 +37,7 @@ class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 protected:
     unsigned it, restarts; //number of iterations, number of restarts
     double dtmax, dtmin;  // for adaptive step
-    Vector W_ext_old, W_int_old, W_ext, W_int, W_kin, EPS2;
+    Vector W_ext_old, W_int_old, EPS2;
     double disErr, resErr, eneErr;
     double maxDisErr, maxResErr, maxEneErr;
     double limitDisErr, limitResErr, limitEneErr;

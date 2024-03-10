@@ -405,7 +405,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     Point *pp;
     unsigned pointID = 0;
     RigidBodyContact *rbc;
-    LDPMTetra *tet;
+    LDPMTetra *tetra;
     unsigned celtype = 3;     //line
     vector< unsigned >fcodes;
     vector< unsigned >ncodes;
@@ -437,12 +437,12 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         }
     }
     for ( vector< Element * > :: const_iterator ff = elems->begin(); ff != elems->end(); ++ff ) {
-        tet = dynamic_cast< LDPMTetra * >( * ff );
-        if ( tet ) {
-            exportedElemsTET.push_back(tet);
-            vertices = tet->giveVertices();
-            for ( unsigned i = 0; i < tet->giveNumOfFacets(); i++ ) {
-                fcodes = tet->giveFacetVertCodes(i);
+        tetra = dynamic_cast< LDPMTetra * >( * ff );
+        if ( tetra ) {
+            exportedElemsTET.push_back(tetra);
+            vertices = tetra->giveVertices();
+            for ( unsigned i = 0; i < tetra->giveNumOfFacets(); i++ ) {
+                fcodes = tetra->giveFacetVertCodes(i);
                 vtkSmartPointer< vtkIdList >elindicesA = vtkSmartPointer< vtkIdList > :: New();
                 vtkSmartPointer< vtkIdList >elindicesB = vtkSmartPointer< vtkIdList > :: New();
                 for ( auto &p:fcodes ) {
@@ -457,7 +457,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
                 unstructuredGrid->InsertNextCell(celtype, elindicesA);
                 unstructuredGrid->InsertNextCell(celtype, elindicesB);
                 nfaces++;
-            }
+            }            
         }
     }
     unstructuredGrid->SetPoints(points);
@@ -491,9 +491,11 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             }
         }
     }
-    for ( vector< LDPMTetra * > :: const_iterator ee = exportedElemsTET.begin(); ee != exportedElemsTET.end(); ++ee ) {
+
+
+    for ( const auto & tet: exportedElemsTET) {
         vertices = tet->giveVertices();
-        elemnodes = ( * ee )->giveNodes();
+        elemnodes = tet->giveNodes();
         for ( unsigned h = 0; h < tet->giveNumOfFacets(); h++ ) {
             fcodes = tet->giveFacetVertCodes(h);
             ncodes = tet->giveFacetNodeCodes(h);
@@ -511,8 +513,6 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         }
     }
 
-
-
     unstructuredGrid->GetPointData()->AddArray(pointDataArray);
 
     // ****************** cell data
@@ -525,9 +525,9 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
             msize = max< size_t >(msize, data [ i ].size() );
             i++;
         }
-        for ( vector< LDPMTetra * > :: const_iterator ee = exportedElemsTET.begin(); ee != exportedElemsTET.end(); ++ee ) {
+    for ( const auto & tet: exportedElemsTET) {
             for ( unsigned k = 0; k < tet->giveNumOfFacets(); k++ ) {
-                ( * ee )->giveIPValues(codes [ p ].c_str(), k, data [ i ]);
+                tet->giveIPValues(codes [ p ].c_str(), k, data [ i ]);
                 msize = max< size_t >(msize, data [ i ].size() );
                 i++;
             }

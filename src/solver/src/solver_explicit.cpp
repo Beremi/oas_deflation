@@ -128,8 +128,6 @@ Solver *TransientCentralDifferenceMechanicalSolver :: readFromFile(const string 
                 iss >> this->init_time;
             } else if ( param.compare("init_step") == 0 ) {
                 iss >> this->init_step;
-            } else if ( param.compare("solver_type") == 0 ) {
-                iss >> symsolver_type;
             }
         }
         inputfile.close();

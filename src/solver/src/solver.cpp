@@ -13,6 +13,9 @@ Solver :: Solver() {
     name = "basic solver";
     time = init_time;
     showTime = true;
+    W_ext = Vector :: Zero(numPhysicalFields);
+    W_int = Vector :: Zero(numPhysicalFields);
+    W_kin = Vector :: Zero(numPhysicalFields);
 }
 
 
@@ -205,6 +208,15 @@ void Solver :: giveValues(string code, Vector &result) const {
     } else if ( code.compare("number_of_dof") == 0 ) {
         result.resize(1);
         result [ 0 ] = freeDoFnum;
+    } else if ( code.compare("IntEnergyMech") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = W_int[0];
+    } else if ( code.compare("ExtEnergyMech") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = W_ext[0];
+    } else if ( code.compare("KinEnergyMech") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = W_kin[0];
     } else {
         result.resize(0);
     }

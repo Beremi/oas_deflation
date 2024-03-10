@@ -81,7 +81,7 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         normals [ i ] /= lengths [ i ];
         inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
         areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
-        if (n.norm()!=n.norm()){ //NaN test
+        if (n.norm()==n.norm()){ //NaN test
             areas [ i ] *= abs( n.dot(normals [ i ]) );  //projection of area
         }
 
@@ -132,6 +132,7 @@ void LDPMTetra :: init() {
         exit(1);
     }
 
+
     //weights for volumetric calculations
     volWeights.resize(12);
     Point volumeChangeWeights;
@@ -150,11 +151,20 @@ void LDPMTetra :: init() {
             volWeights [ 3 * i + v ] = sign * volumeChangeWeights(v)  / 3; //divided by ndim, othewise total trace of strain vector would be returned
         }
     }
+
     volume = abs(volume);
     averageSide /= 4;
     if ( volume < 1e-25 ) {
         cerr << name << "Error: wrong geometry" << endl;
         exit(1);
+    }
+
+    double faceVolume = 0;
+    for(unsigned i=0; i<12; i++) faceVolume += areas[i]*lengths[i]/ndim;
+    if (abs(faceVolume-volume)/max(faceVolume,volume)>1e-6){
+        cerr << "LDPM Tetra Error: " << idx << " - total volume is " << volume << ", volume from faces is " << faceVolume << endl;
+        //for(unsigned i=0; i<12; i++) cout << areas[i]*lengths[i]/ndim << endl;
+        //exit(1);
     }
 }
 

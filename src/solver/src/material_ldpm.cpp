@@ -401,7 +401,7 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
         temp_crackOpening = 0;
     }
 
-    //giveVirtualDamage();
+    giveVirtualDamage();
 
     return temp_stress;
 }
@@ -479,7 +479,7 @@ Matrix LDPMMaterialStatus :: giveStiffnessTensor(string type) const {
         return stiff;
     } else if ( type.compare("secant") == 0 ) {
         //LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-        //return stiff * max( 1 - virtual_damage, m->giveDamageResiduum() );
+        //stiff(0,0) *= max( 1 - virtual_damage, m->giveDamageResiduum() );
         return stiff;
     } else {
         cerr << "Error: LDPMMaterialStatus does not provide '" << type << "' stiffness";
