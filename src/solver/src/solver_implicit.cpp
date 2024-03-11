@@ -454,17 +454,16 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         f_accPF [ pff ] += pow(f_acc [ i ], 2);
         full_ddrPF [ pff ] += pow(full_ddr [ i ], 2);
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
-        energyPF [ pff ] += abs(residuals [ i ] * full_ddr [ i ]);
-        W_int [ pff ] += abs( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-        W_ext [ pff ] += abs( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-        //W_kin [ pff ] += 0.5 * pow(v [ i ], 2) * ;
+        energyPF [ pff ] -= residuals [ i ] * full_ddr [ i ];
+        W_int [ pff ] -= ( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        W_ext [ pff ] -= ( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
     }  
 
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
         resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += energyPF [ i ] / max(max(max(W_ext [ i ], W_int [ i ]), W_kin [ i ]), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max(max(abs(W_ext [ i ]), abs(W_int [ i ])), abs(W_kin [ i ])), EPS2 [ i ]);
     }
     resErr = sqrt(resErr);
     disErr = sqrt(disErr);
