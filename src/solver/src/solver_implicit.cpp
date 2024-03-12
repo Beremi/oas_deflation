@@ -454,11 +454,11 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         f_accPF [ pff ] += pow(f_acc [ i ], 2);
         full_ddrPF [ pff ] += pow(full_ddr [ i ], 2);
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
-        energyPF [ pff ] -= residuals [ i ] * full_ddr [ i ];
-        W_int [ pff ] -= ( 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
-        W_ext [ pff ] -= ( 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( r [ i ] - trial_r [ i ] ) );
+        energyPF [ pff ] += residuals [ i ] * full_ddr [ i ];
+        W_int [ pff ] += 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
+        W_ext [ pff ] += 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
     }  
-
+ 
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
         resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
@@ -838,8 +838,6 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
         SteadyStateLinearSolver :: runAfterEachStep();
 
-        W_int_old = W_int;
-        W_ext_old = W_ext;
         W_int_old = W_int;
         W_ext_old = W_ext;
         cout << "----------------------------------------------------" << endl;
