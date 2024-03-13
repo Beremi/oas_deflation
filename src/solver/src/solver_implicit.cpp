@@ -95,6 +95,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             }
             istringstream iss(line);
             iss >> param;
+            cout << param << endl;
             if ( param.compare("time_step") == 0 ) {
                 bdt = true;
                 iss >> initdt;
