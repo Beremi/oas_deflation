@@ -10,7 +10,7 @@ protected:
     double conj_grad_precision;
     double conj_grad_relative_maxit;
     CoordinateIndexedSparseMatrix Keff, K;
-    LinAlgSolver *linalgsolver;
+    std::unique_ptr<LinAlgSolver> linalgsolver;
     std :: string symsolver_type = "EigenConj";
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation

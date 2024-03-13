@@ -15,7 +15,7 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
 
 //////////////////////////////////////////////////////////
 SteadyStateLinearSolver :: ~SteadyStateLinearSolver() {
-    delete linalgsolver;
+    //delete linalgsolver;
 }
 
 //////////////////////////////////////////////////////////
@@ -183,15 +183,15 @@ void SteadyStateLinearSolver :: runAfterEachStep() {
 void SteadyStateLinearSolver :: factorizeLinearSystem() {
     if ( linalgsolver == nullptr ) {
         if ( symsolver_type == "EigenConj" ) {
-            ConjGradSolver *cgs = new ConjGradSolver();
+            std::unique_ptr<ConjGradSolver> cgs = std::make_unique< ConjGradSolver >();
             cgs->setPrecisionAndRelMaxIters(conj_grad_precision, conj_grad_relative_maxit);
-            linalgsolver = cgs;
+            linalgsolver = std::move(cgs);
         } else if  ( symsolver_type == "EigenLDLT" ) {
-            linalgsolver = new LDLTSolver();
+            linalgsolver = std::make_unique< LDLTSolver >();
         } else if  ( symsolver_type == "EigenLLT" ) {
-            linalgsolver = new LLTSolver();
+            linalgsolver = std::make_unique< LLTSolver >();
         } else if  ( symsolver_type == "EigenSparseLU" ) {
-            linalgsolver = new LUSolver();
+            linalgsolver = std::make_unique< LUSolver >();
         } else {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
             exit(1);
