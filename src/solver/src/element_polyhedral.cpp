@@ -35,7 +35,7 @@ void TranspPolygonal :: readFromLine(istringstream &iss, NodeContainer *fullnode
 //////////////////////////////////////////////////////////
 void TranspPolygonal :: prepareGeometry() {
     //estimate centroid
-    Point cpoint;
+    Point cpoint = Point(0,0,0);
     for ( const auto n: nodes ) {
         cpoint += n->givePoint();
     }
@@ -264,8 +264,7 @@ Matrix TranspVirtPolygonal :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
-    Matrix M = TranspPolygonal :: giveDampingMatrix();
+void TranspVirtPolygonal :: computeDampingMatrix() {
     double cap = 0;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         cap += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor()(0, 0);
@@ -285,7 +284,7 @@ Matrix TranspVirtPolygonal :: giveDampingMatrix() const {
      * return M;
      */
 
-    return ( W1 + ( W2.transpose() * W2 ) * volume ) * cap;
+    dampC =  ( W1 + ( W2.transpose() * W2 ) * volume ) * cap;
 }
 
 //////////////////////////////////////////////////////////

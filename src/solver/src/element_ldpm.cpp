@@ -223,8 +223,8 @@ Matrix LDPMTetra :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 
-Matrix LDPMTetra :: giveDampingMatrix() const {
-    return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
+void LDPMTetra :: computeDampingMatrix() {
+    dampC = giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
 }
 
 //////////////////////////////////////////////////////////
@@ -243,8 +243,8 @@ Vector LDPMTetra :: integrateInternalSources() {
 }
 
 //////////////////////////////////////////////////////////
-Matrix LDPMTetra :: giveMassMatrix() const {
-    Matrix M = Matrix :: Zero(24, 24);
+void LDPMTetra :: computeMassMatrix() {
+    massM = Matrix :: Zero(24, 24);
     VectMechMaterialStatus *mechstat;
     double density;
     double tetvol;
@@ -270,110 +270,25 @@ Matrix LDPMTetra :: giveMassMatrix() const {
             tetvol = tetraVolumeSigned(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
             tetI = tetraInertia3D(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
             for ( unsigned k = 0; k < 3; k++ ) {
-                M(nodeID * 6 + k, nodeID * 6 + k) += density * tetvol / 2.;            //division by 2 because of final transposition
+                massM(nodeID * 6 + k, nodeID * 6 + k) += density * tetvol / 2.;            //division by 2 because of final transposition
             }
             diff = tetcentr - ( * tetnodes [ 0 ] );
-            M(nodeID * 6, nodeID * 6 + 4) += density * tetvol * diff [ 2 ];
-            M(nodeID * 6, nodeID * 6 + 5) -= density * tetvol * diff [ 1 ];
-            M(nodeID * 6 + 1, nodeID * 6 + 3) -= density * tetvol * diff [ 2 ];
-            M(nodeID * 6 + 1, nodeID * 6 + 5) += density * tetvol * diff [ 0 ];
-            M(nodeID * 6 + 2, nodeID * 6 + 3) += density * tetvol * diff [ 1 ];
-            M(nodeID * 6 + 2, nodeID * 6 + 4) -= density * tetvol * diff [ 0 ];
-            M(nodeID * 6 + 3, nodeID * 6 + 3) += 0.5 * density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
-            M(nodeID * 6 + 4, nodeID * 6 + 4) += 0.5 * density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
-            M(nodeID * 6 + 5, nodeID * 6 + 5) += 0.5 * density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 1 ] ), 2) ) );
-            M(nodeID * 6 + 3, nodeID * 6 + 4) += density * ( tetI(0, 1) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 1 ] ) ) );
-            M(nodeID * 6 + 3, nodeID * 6 + 5) += density * ( tetI(0, 2) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 2 ] ) ) );
-            M(nodeID * 6 + 4, nodeID * 6 + 5) += density * ( tetI(1, 2) - tetvol * ( ( diff [ 1 ] ) * ( diff [ 2 ] ) ) );
+            massM(nodeID * 6, nodeID * 6 + 4) += density * tetvol * diff [ 2 ];
+            massM(nodeID * 6, nodeID * 6 + 5) -= density * tetvol * diff [ 1 ];
+            massM(nodeID * 6 + 1, nodeID * 6 + 3) -= density * tetvol * diff [ 2 ];
+            massM(nodeID * 6 + 1, nodeID * 6 + 5) += density * tetvol * diff [ 0 ];
+            massM(nodeID * 6 + 2, nodeID * 6 + 3) += density * tetvol * diff [ 1 ];
+            massM(nodeID * 6 + 2, nodeID * 6 + 4) -= density * tetvol * diff [ 0 ];
+            massM(nodeID * 6 + 3, nodeID * 6 + 3) += 0.5 * density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            massM(nodeID * 6 + 4, nodeID * 6 + 4) += 0.5 * density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            massM(nodeID * 6 + 5, nodeID * 6 + 5) += 0.5 * density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 1 ] ), 2) ) );
+            massM(nodeID * 6 + 3, nodeID * 6 + 4) += density * ( tetI(0, 1) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 1 ] ) ) );
+            massM(nodeID * 6 + 3, nodeID * 6 + 5) += density * ( tetI(0, 2) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 2 ] ) ) );
+            massM(nodeID * 6 + 4, nodeID * 6 + 5) += density * ( tetI(1, 2) - tetvol * ( ( diff [ 1 ] ) * ( diff [ 2 ] ) ) );
         }
     }
-    return M + M.transpose();
+    massM +=  massM.transpose();
 }
-
-
-/*
- * //////////////////////////////////////////////////////////
- * Matrix RigidBodyContact :: giveMassMatrix() const {
- *  Matrix M = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
- *  VectMechMaterialStatus *mechstat = static_cast< VectMechMaterialStatus * >( stats [ 0 ] );
- *  double density = mechstat->giveDensity();
- *  double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
- *  double m1 = giveVolumeAssociatedWithNode(1) * density; ///mass
- *  if ( ndim == 2 ) {
- *      // Define points
- *      Point *A = nodes [ 0 ]->givePointPointer();
- *      Point *B = nodes [ 1 ]->givePointPointer();
- *      Point *C = vert [ 0 ]->givePointPointer();
- *      Point *D = vert [ 1 ]->givePointPointer();
- *      Point cg0 = ( nodes [ 0 ]->givePoint() + vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 3.;
- *      Point cg1 = ( nodes [ 1 ]->givePoint() + vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 3.;
- *      Point null(0, 0, 0);
- *      // MassMatrix
- *      M(0, 0) = M(1, 1) = m0;
- *      M(3, 3) = M(4, 4) = m1;
- *      Point C_ = ( * C ) - ( * A );
- *      Point D_ = ( * D ) - ( * A );
- *      M(2, 2) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node A[0,0]
- *      C_ = ( * C ) - ( * B );
- *      D_ = ( * D ) - ( * B );
- *      M(5, 5) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node B[0,0]
- *      M(0, 2) = M(2, 0) = -m0 * ( cg0.y() - A->y() );
- *      M(1, 2) = M(2, 1) = +m0 * ( cg0.x() - A->x() );
- *      M(3, 5) = M(5, 3) = -m1 * ( cg1.y() - B->y() );
- *      M(4, 5) = M(5, 4) = +m1 * ( cg1.x() - B->x() );
- *  } else if ( ndim == 3 ) {
- *      // Define points
- *      Point *A = nodes [ 0 ]->givePointPointer();
- *      // Mass
- *      M(0, 0) = M(1, 1) = M(2, 2) = m0;
- *      M(6, 6) = M(7, 7) = M(8, 8) = m1;
- *      Point *D, cg, A_, C_, D_, centroid_;
- *      Point null(0, 0, 0);
- *      Point *C = vert [ vert.size() - 1 ]->givePointPointer();
- *      double tetraVolume;
- *      for ( unsigned i = 0; i < vert.size(); i++ ) {
- *          D = C;
- *          C = vert [ i ]->givePointPointer();
- *          for ( unsigned k = 0; k < 2; k++ ) {
- *              A = nodes [ k ]->givePointPointer();
- *              cg = ( ( * A ) + ( * C ) + ( * D ) + centroid ) / 4.;
- *              tetraVolume = abs( tetraVolumeSigned(A, C, D, & centroid) );
- *
- *              // Inertia matrix relative to the centroid [0,0,0]
- *              A_ = ( * A ) - cg;
- *              C_ = ( * C ) - cg;
- *              D_ = ( * D ) - cg;
- *              centroid_ = centroid - cg;
- *              Matrix I = tetraInertia3D(& A_, & C_, & D_, & centroid_);
- *
- *              // MassMatrix
- *              M(6 * k + 3, 6 * k + 3) += density * ( I(0, 0) + tetraVolume * ( pow( ( cg.y() - A->y() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
- *              M(6 * k + 4, 6 * k + 4) += density * ( I(1, 1) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
- *              M(6 * k + 5, 6 * k + 5) += density * ( I(2, 2) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.y() - A->y() ), 2 ) ) );
- *              M(6 * k + 3, 6 * k + 4) += density * ( I(0, 1) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.y() - A->y() ) ) );
- *              M(6 * k + 3, 6 * k + 5) += density * ( I(0, 2) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.z() - A->z() ) ) );
- *              M(6 * k + 4, 6 * k + 5) += density * ( I(1, 2) - tetraVolume * ( ( cg.y() - A->y() ) * ( cg.z() - A->z() ) ) );
- *
- *              M(6 * k, 6 * k + 4)   += tetraVolume * density * ( cg.z() - A->z() );
- *              M(6 * k, 6 * k + 5)   -= tetraVolume * density * ( cg.y() - A->y() );
- *              M(6 * k + 1, 6 * k + 3) -= tetraVolume * density * ( cg.z() - A->z() );
- *              M(6 * k + 1, 6 * k + 5) += tetraVolume * density * ( cg.x() - A->x() );
- *              M(6 * k + 2, 6 * k + 3) += tetraVolume * density * ( cg.y() - A->y() );
- *              M(6 * k + 2, 6 * k + 4) -= tetraVolume * density * ( cg.x() - A->x() );
- *          }
- *      }
- *      //symmetric
- *      for ( unsigned k = 0; k < 6; k++ ) {
- *          for ( unsigned l = max( k + 1, unsigned( 3 ) ); l < 6; l++ ) {
- *              M(l, k) = M(k, l);
- *              M(l + 6, k + 6) = M(k + 6, l + 6);
- *          }
- *      }
- *  }
- *  return M;
- * }
- *
- */
 
 
 //////////////////////////////////////////////////////////

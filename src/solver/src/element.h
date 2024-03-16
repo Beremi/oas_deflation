@@ -31,11 +31,16 @@ protected:
     Material *mat;
     std :: vector< Matrix >Bs;     //stored B matrices
     std :: vector< Matrix >Hs;     //stored H matrices
+    Matrix massM;           //stored mass matrix
+    Matrix dampC;           //stored damping matrix
     std :: vector< MaterialStatus * >stats;
     std :: vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
     virtual void setIntegrationPointsAndWeights();
     virtual void initIntegration();
+    virtual void computeMassMatrix();
+    virtual void computeDampingMatrix();
+    
 
     ShapeFunc *shafunc;
     IntegrationType *inttype;
@@ -58,9 +63,9 @@ public:
     void updateMaterialStatuses();
     void resetMaterialStatuses();
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual Matrix giveDampingMatrix() const;
-    virtual Matrix giveMassMatrix() const;
-    virtual Vector giveLumpedMassMatrix() const;
+    virtual Matrix giveMassMatrix();
+    virtual Matrix giveDampingMatrix();
+    virtual Vector giveLumpedMassMatrix();
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
     std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;

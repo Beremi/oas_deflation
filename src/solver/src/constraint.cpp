@@ -438,10 +438,8 @@ void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
         for ( auto const &jD : constraints ) {
             for ( unsigned i = 0; i < jD->giveNumOfDoFMasters(); i++ ) {
                 fullForces [ jD->giveMasterDoF(i) ] += fullForces [ jD->giveSlaveDoF() ] * ( jD->giveMasterMultiplier(i) );
-                // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
-                // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept
-                // fullForces [ jD->giveSlaveDoF() ] = 0.0;
             }
+            fullForces [ jD->giveSlaveDoF() ] = 0;
         }
     }
 }

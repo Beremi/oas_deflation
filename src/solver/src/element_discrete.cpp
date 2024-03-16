@@ -376,8 +376,8 @@ Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveMassMatrix() const {
-    Matrix M = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+void RigidBodyContact :: computeMassMatrix() {
+    massM = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
     VectMechMaterialStatus *mechstat = static_cast< VectMechMaterialStatus * >( stats [ 0 ] );
     double density = mechstat->giveDensity();
     double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
@@ -392,24 +392,24 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
         Point cg1 = ( nodes [ 1 ]->givePoint() + vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 3.;
         Point null(0, 0, 0);
         // MassMatrix
-        M(0, 0) = M(1, 1) = m0;
-        M(3, 3) = M(4, 4) = m1;
+        massM(0, 0) = massM(1, 1) = m0;
+        massM(3, 3) = massM(4, 4) = m1;
         Point C_ = ( * C ) - ( * A );
         Point D_ = ( * D ) - ( * A );
-        M(2, 2) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node A[0,0]
+        massM(2, 2) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node A[0,0]
         C_ = ( * C ) - ( * B );
         D_ = ( * D ) - ( * B );
-        M(5, 5) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node B[0,0]
-        M(0, 2) = M(2, 0) = -m0 * ( cg0.y() - A->y() );
-        M(1, 2) = M(2, 1) = +m0 * ( cg0.x() - A->x() );
-        M(3, 5) = M(5, 3) = -m1 * ( cg1.y() - B->y() );
-        M(4, 5) = M(5, 4) = +m1 * ( cg1.x() - B->x() );
+        massM(5, 5) = density * ( triInertia2D(& null, & C_, & D_) );  // Inertia relative to the node B[0,0]
+        massM(0, 2) = massM(2, 0) = -m0 * ( cg0.y() - A->y() );
+        massM(1, 2) = massM(2, 1) = +m0 * ( cg0.x() - A->x() );
+        massM(3, 5) = massM(5, 3) = -m1 * ( cg1.y() - B->y() );
+        massM(4, 5) = massM(5, 4) = +m1 * ( cg1.x() - B->x() );
     } else if ( ndim == 3 ) {
         // Define points
         Point *A = nodes [ 0 ]->givePointPointer();
         // Mass
-        M(0, 0) = M(1, 1) = M(2, 2) = m0;
-        M(6, 6) = M(7, 7) = M(8, 8) = m1;
+        massM(0, 0) = massM(1, 1) = massM(2, 2) = m0;
+        massM(6, 6) = massM(7, 7) = massM(8, 8) = m1;
         Point *D, cg, A_, C_, D_, centroid_;
         Point null(0, 0, 0);
         Point *C = vert [ vert.size() - 1 ]->givePointPointer();
@@ -430,30 +430,29 @@ Matrix RigidBodyContact :: giveMassMatrix() const {
                 Matrix I = tetraInertia3D(& A_, & C_, & D_, & centroid_);
 
                 // MassMatrix
-                M(6 * k + 3, 6 * k + 3) += density * ( I(0, 0) + tetraVolume * ( pow( ( cg.y() - A->y() ), 2) + pow( ( cg.z() - A->z() ), 2) ) );
-                M(6 * k + 4, 6 * k + 4) += density * ( I(1, 1) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2) + pow( ( cg.z() - A->z() ), 2) ) );
-                M(6 * k + 5, 6 * k + 5) += density * ( I(2, 2) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2) + pow( ( cg.y() - A->y() ), 2) ) );
-                M(6 * k + 3, 6 * k + 4) += density * ( I(0, 1) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.y() - A->y() ) ) );
-                M(6 * k + 3, 6 * k + 5) += density * ( I(0, 2) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.z() - A->z() ) ) );
-                M(6 * k + 4, 6 * k + 5) += density * ( I(1, 2) - tetraVolume * ( ( cg.y() - A->y() ) * ( cg.z() - A->z() ) ) );
+                massM(6 * k + 3, 6 * k + 3) += density * ( I(0, 0) + tetraVolume * ( pow( ( cg.y() - A->y() ), 2) + pow( ( cg.z() - A->z() ), 2) ) );
+                massM(6 * k + 4, 6 * k + 4) += density * ( I(1, 1) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2) + pow( ( cg.z() - A->z() ), 2) ) );
+                massM(6 * k + 5, 6 * k + 5) += density * ( I(2, 2) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2) + pow( ( cg.y() - A->y() ), 2) ) );
+                massM(6 * k + 3, 6 * k + 4) += density * ( I(0, 1) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.y() - A->y() ) ) );
+                massM(6 * k + 3, 6 * k + 5) += density * ( I(0, 2) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.z() - A->z() ) ) );
+                massM(6 * k + 4, 6 * k + 5) += density * ( I(1, 2) - tetraVolume * ( ( cg.y() - A->y() ) * ( cg.z() - A->z() ) ) );
 
-                M(6 * k, 6 * k + 4)   += tetraVolume * density * ( cg.z() - A->z() );
-                M(6 * k, 6 * k + 5)   -= tetraVolume * density * ( cg.y() - A->y() );
-                M(6 * k + 1, 6 * k + 3) -= tetraVolume * density * ( cg.z() - A->z() );
-                M(6 * k + 1, 6 * k + 5) += tetraVolume * density * ( cg.x() - A->x() );
-                M(6 * k + 2, 6 * k + 3) += tetraVolume * density * ( cg.y() - A->y() );
-                M(6 * k + 2, 6 * k + 4) -= tetraVolume * density * ( cg.x() - A->x() );
+                massM(6 * k, 6 * k + 4)   += tetraVolume * density * ( cg.z() - A->z() );
+                massM(6 * k, 6 * k + 5)   -= tetraVolume * density * ( cg.y() - A->y() );
+                massM(6 * k + 1, 6 * k + 3) -= tetraVolume * density * ( cg.z() - A->z() );
+                massM(6 * k + 1, 6 * k + 5) += tetraVolume * density * ( cg.x() - A->x() );
+                massM(6 * k + 2, 6 * k + 3) += tetraVolume * density * ( cg.y() - A->y() );
+                massM(6 * k + 2, 6 * k + 4) -= tetraVolume * density * ( cg.x() - A->x() );
             }
         }
         //symmetric
         for ( unsigned k = 0; k < 6; k++ ) {
             for ( unsigned l = max(k + 1, unsigned( 3 ) ); l < 6; l++ ) {
-                M(l, k) = M(k, l);
-                M(l + 6, k + 6) = M(k + 6, l + 6);
+                massM(l, k) = massM(k, l);
+                massM(l + 6, k + 6) = massM(k + 6, l + 6);
             }
         }
     }
-    return M;
 }
 
 //////////////////////////////////////////////////////////
@@ -578,8 +577,8 @@ Matrix RigidBodyContact :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContact :: giveDampingMatrix() const {
-    return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
+void RigidBodyContact :: computeDampingMatrix() {
+    dampC = giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
 }
 
 //////////////////////////////////////////////////////////
@@ -1312,16 +1311,15 @@ void DiscreteTrsprtElem :: giveIPValues(std :: string code, unsigned ipnum, Vect
 };
 
 //////////////////////////////////////////////////////////
-Matrix DiscreteTrsprtElem :: giveDampingMatrix() const {
-    Matrix S = Matrix :: Zero(2, 2);
+void DiscreteTrsprtElem :: computeDampingMatrix() {
+    dampC = Matrix :: Zero(2, 2);
     double s = area * stats [ 0 ]->giveDampingTensor()(0, 0) * length /  ( 2. * ndim );
 
-    S(0, 0) = S(1, 1) = s; //finite volume
+    dampC(0, 0) = dampC(1, 1) = s; //finite volume
     if ( BolanderCapacityMatrix ) { //from Bolander's papers
-        S(0, 0) = S(1, 1) = 2. / 3. * s;
-        S(1, 0) = S(0, 1) = s / 3.;
+        dampC(0, 0) = dampC(1, 1) = 2. / 3. * s;
+        dampC(1, 0) = dampC(0, 1) = s / 3.;
     }
-    return S;
 }
 
 //////////////////////////////////////////////////////////
@@ -1627,9 +1625,8 @@ Matrix RigidBodyContactWithHeatConduction :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContactWithHeatConduction :: giveMassMatrix() const {
-    Matrix M = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
-    return M;
+void RigidBodyContactWithHeatConduction :: computeMassMatrix() {
+    massM = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
 }
 
 //////////////////////////////////////////////////////////
@@ -1638,6 +1635,6 @@ Matrix RigidBodyContactWithHeatConduction :: giveStiffnessMatrix(string matrixTy
 }
 
 //////////////////////////////////////////////////////////
-Matrix RigidBodyContactWithHeatConduction :: giveDampingMatrix() const {
-    return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
+void RigidBodyContactWithHeatConduction :: computeDampingMatrix() {
+    dampC = giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
 }

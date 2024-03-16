@@ -299,19 +299,18 @@ Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix CosseratQuad :: giveMassMatrix() const {
-    Matrix H = MechanicalQuad :: giveMassMatrix();
+void CosseratQuad :: computeMassMatrix() {
+    MechanicalQuad :: computeMassMatrix();
     //the micro inertia effect are wrong as they are based on density. Better delete them.
     for ( unsigned i = 0; i < 4; i++ ) {
         for ( unsigned j = 0; j < 4; j++ ) {
-            H(3 * i + 2, 3 * j + 2) = 0;
-            H(3 * i + 1, 3 * j + 2) = 0;
-            H(3 * i + 2, 3 * j + 1) = 0;
+            massM(3 * i + 2, 3 * j + 2) = 0;
+            massM(3 * i + 1, 3 * j + 2) = 0;
+            massM(3 * i + 2, 3 * j + 1) = 0;
         }
     }
     //cout << "---------------------" << endl;
     //cout << H << endl;
-    return H;
 }
 
 //////////////////////////////////////////////////////////
@@ -544,9 +543,8 @@ Matrix CoupledCosseratTransportBrick :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix CoupledCosseratTransportBrick :: giveDampingMatrix() const {
-    //return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
-    return Element :: giveDampingMatrix();
+void CoupledCosseratTransportBrick :: computeDampingMatrix() {
+    Element :: computeDampingMatrix();
 }
 
 //////////////////////////////////////////////////////////
@@ -658,9 +656,9 @@ Vector CoupledCosseratBrickWithDependentUpperZLayer :: integrateInternalSources(
 
 
 //////////////////////////////////////////////////////////
-Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveDampingMatrix() const {
+void CoupledCosseratBrickWithDependentUpperZLayer :: computeDampingMatrix() {
     unsigned nDoFs = DoFids.size();
-    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
+    dampC = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     unsigned q;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
@@ -670,15 +668,14 @@ Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveDampingMatrix() const
             q = i - 4;
         }
         c = stats [ q ]->giveDampingTensor();
-        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+        dampC += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
-    return M;
 }
 
 //////////////////////////////////////////////////////////
-Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveMassMatrix() const {
+void CoupledCosseratBrickWithDependentUpperZLayer :: computeMassMatrix() {
     unsigned nDoFs = DoFids.size();
-    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
+    massM = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     unsigned q;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
@@ -688,9 +685,8 @@ Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveMassMatrix() const {
             q = i - 4;
         }
         c = stats [ q ]->giveMassTensor();
-        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+        massM += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
-    return M;
 }
 
 //////////////////////////////////////////////////////////

@@ -11,6 +11,7 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
     conj_grad_precision = 1e-14;
     conj_grad_relative_maxit = 0.85;
+    isTimeReal = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -95,7 +96,6 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             }
             istringstream iss(line);
             iss >> param;
-            cout << param << endl;
             if ( param.compare("time_step") == 0 ) {
                 bdt = true;
                 iss >> initdt;
@@ -147,19 +147,15 @@ void SteadyStateLinearSolver :: solve() {
      * }
      */
     linalgsolver->solve(ddr, f);
-
+   
     /*
      * cout << "----- K ----" << endl;
-     * K.print();
+     * Keff.print();
      * cout << "----- d ----" << endl;
      * for(auto p:ddr ) cout << p<< endl;
      * cout << "----- f ----" << endl;
      * for(auto p:f ) cout << p<< endl;
      */
-    // if ( ConjGrad(K, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit) == false ) {
-    // if (terminated == true);
-    //     cerr << "Conjugate gradients did not converge" << endl;
-    // }
 
     updateFieldVariables(); //calculate master fields at the step end
     computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
@@ -181,6 +177,9 @@ void SteadyStateLinearSolver :: runAfterEachStep() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: factorizeLinearSystem() {
+
+    cout << "factorizing system matrix" << endl;
+
     if ( linalgsolver == nullptr ) {
         if ( symsolver_type == "EigenConj" ) {
             std::unique_ptr<ConjGradSolver> cgs = std::make_unique< ConjGradSolver >();
@@ -196,7 +195,7 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
             exit(1);
         }
-    }
+    }    
     linalgsolver->factorize(Keff);
 }
 
@@ -208,11 +207,6 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     name = "SteadyStateNonLinearSolver";
     idc = nullptr;
 
-    W_ext_old = Vector :: Zero(numPhysicalFields);
-    W_int_old = Vector :: Zero(numPhysicalFields);
-    W_ext = Vector :: Zero(numPhysicalFields);
-    W_int = Vector :: Zero(numPhysicalFields);
-    W_kin = Vector :: Zero(numPhysicalFields);
     EPS2.resize(4);
     EPS2 [ 0 ] = 1e-20; //mechanics
     EPS2 [ 1 ] = 1e-12; //transport
@@ -399,7 +393,7 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
     } else if ( code.compare("restarts") == 0 ) {
         result.resize(1);
         result [ 0 ] = restarts;
-    } else if ( code.compare("error_dofs") == 0 ) {
+    } else if ( code.compare("error_dofs") == 0 || code.compare("error_displacements") == 0 ) {
         result.resize(1);
         result [ 0 ] = disErr;
     } else if ( code.compare("error_residuals") == 0 ) {
@@ -432,6 +426,8 @@ bool SteadyStateNonLinearSolver :: updateSystemMatrices(string matrixType, unsig
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: evaluateErrors() {
+    computeTotalInternalAndExternalAndKineticEnergy();
+
     vector< unsigned >pf  = nodes->givePhysicalFieldsOfDoFs();
     Vector f_extPF = Vector :: Zero(numPhysicalFields);
     Vector f_intPF = Vector :: Zero(numPhysicalFields);
@@ -441,10 +437,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
     Vector full_ddrPF = Vector :: Zero(numPhysicalFields);
     Vector trial_rPF = Vector :: Zero(numPhysicalFields);
     Vector energyPF = Vector :: Zero(numPhysicalFields);
-    W_int = W_int_old;
-    W_ext = W_ext_old;
-    W_kin[0] = computeKineticEnergy();
-
+    
     unsigned pff;
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
         pff = pf [ i ];
@@ -456,8 +449,6 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         full_ddrPF [ pff ] += pow(full_ddr [ i ], 2);
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
         energyPF [ pff ] += residuals [ i ] * full_ddr [ i ];
-        W_int [ pff ] += 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
-        W_ext [ pff ] += 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
     }  
  
     resErr = disErr = eneErr = 0;
@@ -839,8 +830,6 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
         SteadyStateLinearSolver :: runAfterEachStep();
 
-        W_int_old = W_int;
-        W_ext_old = W_ext;
         cout << "----------------------------------------------------" << endl;
 
         if ( idc ) {
@@ -849,6 +838,7 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
     }
 }
 
+//////////////////////////////////////////////////////////
 double SteadyStateNonLinearSolver :: giveIDCtime(const bool converged) {
     if ( converged ) {
         return this->idc_time_converged;
@@ -862,6 +852,7 @@ double SteadyStateNonLinearSolver :: giveIDCtime(const bool converged) {
 TransientLinearTransportSolver :: TransientLinearTransportSolver() {
     name = "TransientLinearTransportSolver";
     applySpectralRadius(0.8);
+    isTimeReal = true;
 }
 
 //////////////////////////////////////////////////////////
@@ -919,7 +910,8 @@ void TransientLinearTransportSolver :: rebuild() {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    Vector ll = load_old * alpha_f + load * ( 1. - alpha_f ); 
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1134,7 +1126,8 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), load_old * alpha_f + load * ( 1. - alpha_f ), frozen, dt * ( 1. - alpha_f ) );
+    Vector ll = load_old * alpha_f + load * ( 1. - alpha_f ); 
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 
@@ -1170,9 +1163,13 @@ bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, 
 }
 
 //////////////////////////////////////////////////////////
-double TransientLinearMechanicalSolver :: computeKineticEnergy() const {
-    return (M*v).dot(v)/2.;
+void TransientLinearMechanicalSolver :: computeTotalKineticEnergy(){
+    Vector vel = (trial_r - r)/dt;
+    W_kin [ 0 ] = (M*vel).dot(vel)/2.;
+    //W_kin [ 0 ] = (M*v).dot(v)/2.; //TODO: not stable, shall be revised
 }
+
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

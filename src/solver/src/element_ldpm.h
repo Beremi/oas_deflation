@@ -28,6 +28,8 @@ protected:
     Vector volWeights; //factors to caluclate volumetric strain
 
     double volumetricStrain;
+    virtual void computeMassMatrix();
+    virtual void computeDampingMatrix();
 
 public:
     LDPMTetra(unsigned ndim);
@@ -45,8 +47,6 @@ public:
 
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual Matrix giveDampingMatrix() const;
-    virtual Matrix giveMassMatrix() const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector integrateInternalSources();

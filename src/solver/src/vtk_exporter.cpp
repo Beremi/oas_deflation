@@ -438,7 +438,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     }
     for ( vector< Element * > :: const_iterator ff = elems->begin(); ff != elems->end(); ++ff ) {
         tetra = dynamic_cast< LDPMTetra * >( * ff );
-        if ( tetra ) {
+        if ( tetra && tetra->giveID()==1611) {
             exportedElemsTET.push_back(tetra);
             vertices = tetra->giveVertices();
             for ( unsigned i = 0; i < tetra->giveNumOfFacets(); i++ ) {

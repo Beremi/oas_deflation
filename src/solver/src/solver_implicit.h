@@ -37,7 +37,7 @@ class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 protected:
     unsigned it, restarts; //number of iterations, number of restarts
     double dtmax, dtmin;  // for adaptive step
-    Vector W_ext_old, W_int_old, EPS2;
+    Vector EPS2;
     double disErr, resErr, eneErr;
     double maxDisErr, maxResErr, maxEneErr;
     double limitDisErr, limitResErr, limitEneErr;
@@ -120,7 +120,7 @@ class TransientLinearMechanicalSolver : public TransientNonLinearTransportSolver
 protected:
     CoordinateIndexedSparseMatrix M;
     Vector a, a_old;
-
+    virtual void computeTotalKineticEnergy();
     virtual void applySpectralRadius(double rhoinfty);
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
@@ -135,7 +135,6 @@ public:
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
-    virtual double computeKineticEnergy() const;
 };
 
 //////////////////////////////////////////////////////////

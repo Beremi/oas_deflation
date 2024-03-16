@@ -311,15 +311,16 @@ void NodeContainer :: giveReducedForceArray(Vector &fullf, Vector &f) const {
 }
 
 //////////////////////////////////////////////////////////
-void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, const Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
+void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, Vector &load, Vector &f_dam, Vector &f_acc, Vector &f_ext) const {
     // #constr_new
     this->giveConstraints()->calculateMasterForces(f_int);
     this->giveConstraints()->calculateMasterForces(f_dam);
     this->giveConstraints()->calculateMasterForces(f_acc);
+    this->giveConstraints()->calculateMasterForces(load);
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
-        if ( DoFid [ k ] >= freeDoFs ) {
+        if ( DoFid [ k ] >= freeDoFs + constrDoFs) {
             f_ext [ k ] = f_int [ k ] + f_dam [ k ] + f_acc [ k ];
         }
     }

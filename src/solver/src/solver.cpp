@@ -15,7 +15,10 @@ Solver :: Solver() {
     showTime = true;
     W_ext = Vector :: Zero(numPhysicalFields);
     W_int = Vector :: Zero(numPhysicalFields);
+    W_ext_old = Vector :: Zero(numPhysicalFields);
+    W_int_old = Vector :: Zero(numPhysicalFields);
     W_kin = Vector :: Zero(numPhysicalFields);
+    isTimeReal = false;
 }
 
 
@@ -143,6 +146,9 @@ void Solver :: runAfterEachStep() {
     if ( dt < 1e-12 ) {
         terminated = true;
     }
+
+    W_int_old = W_int;
+    W_ext_old = W_ext;
 }
 
 //////////////////////////////////////////////////////////
@@ -188,6 +194,8 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     full_ddr = Vector :: Zero(totalDoFnum);
     f_int_old = Vector :: Zero(totalDoFnum);
     f_ext_old = Vector :: Zero(totalDoFnum);
+
+
 }
 
 //////////////////////////////////////////////////////////
@@ -223,7 +231,7 @@ void Solver :: giveValues(string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep) {
+void Solver :: computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep) {
     nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
     elems->integrateInternalForces(rr, f_int, frozen, timeStep);
     nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext);     //give prescribed DoFs
@@ -236,4 +244,20 @@ void Solver :: rebuild() {
     pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
     ddr = Vector :: Zero(freeDoFnum);
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: computeTotalInternalAndExternalAndKineticEnergy() {
+    W_int = W_int_old;
+    W_ext = W_ext_old;
+    
+    unsigned pff;
+    vector< unsigned >pf  = nodes->givePhysicalFieldsOfDoFs();
+    for ( unsigned i = 0; i < totalDoFnum; i++ ) {
+        pff = pf [ i ];
+        W_int [ pff ] += 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
+        W_ext [ pff ] += 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
+    }  
+
+    computeTotalKineticEnergy();
 }

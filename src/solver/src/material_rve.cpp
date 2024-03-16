@@ -1817,6 +1817,7 @@ DiscreteCoupledRVEMaterial :: DiscreteCoupledRVEMaterial(unsigned dimension) : R
     produceInternalSources = true;
     start_from_precomputed = true;
     PUCVolume = 0;
+    dampMatUpdate = true;
 };
 
 

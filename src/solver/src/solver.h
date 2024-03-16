@@ -26,14 +26,17 @@ protected:
     unsigned freeDoFnum, totalDoFnum;
     int step;
     unsigned init_step = 0;  ///> when starting from previously calculated results
+    bool isTimeReal;
     bool terminated, fully_converged;
 
-    Vector W_ext, W_int, W_kin;
+    Vector W_ext, W_int, W_kin, W_int_old, W_ext_old;
+    virtual void computeTotalKineticEnergy(){};
+    virtual void computeTotalInternalAndExternalAndKineticEnergy();
 
     bool showTime;
 
     virtual void updateFieldVariables();
-    virtual void computeInternalExternalForces(const Vector &rr, const Vector &ll, const bool frozen, double timeStep);
+    virtual void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep);
 
 public:
     Solver();
@@ -65,7 +68,6 @@ public:
     virtual void rebuild();
     Vector giveResiduals() const { return residuals; };
     bool showStepTime()const { return showTime; };
-    virtual double computeKineticEnergy() const {return 0;};
 };
 
 

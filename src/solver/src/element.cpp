@@ -93,6 +93,9 @@ void Element :: init() {
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ]->initializeStressAndStrainVector(Bs [ k ].rows() );
     }
+
+    computeDampingMatrix();    
+    computeMassMatrix();
 }
 
 //////////////////////////////////////////////////////////
@@ -284,33 +287,49 @@ Vector Element :: integrateInternalSources() {
 
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveDampingMatrix() const {
+void Element :: computeDampingMatrix() {
     unsigned nDoFs = DoFids.size();
-    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
+    dampC = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveDampingTensor();
-        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+        dampC += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
-    return M;
 }
 
 //////////////////////////////////////////////////////////
-Matrix Element :: giveMassMatrix() const {
+Matrix Element :: giveDampingMatrix() {
+    if (mat->requiresDampingsMatrixUpdate()){
+        computeDampingMatrix();    
+    }
+    return dampC;
+}
+
+//////////////////////////////////////////////////////////
+void Element :: computeMassMatrix() {
     unsigned nDoFs = DoFids.size();
-    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
+    massM = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveMassTensor();
-        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+        massM += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
-    return M;
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveLumpedMassMatrix() const {
-    Matrix M = giveMassMatrix();
-    return M.rowwise().sum();
+Matrix Element :: giveMassMatrix() {
+    if (mat->requiresMassMatrixUpdate()){
+        computeMassMatrix();    
+    }
+    return massM;
+}
+
+//////////////////////////////////////////////////////////
+Vector Element :: giveLumpedMassMatrix() {
+    if (mat->requiresMassMatrixUpdate()){
+        computeMassMatrix();    
+    }
+    return massM.rowwise().sum();
 }
 
 //////////////////////////////////////////////////////////
