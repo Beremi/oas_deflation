@@ -1300,7 +1300,7 @@ bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, 
 void TransientLinearMechanicalSolver :: computeTotalKineticEnergy(){
     Vector vel = (trial_r - r)/dt;
     W_kin [ 0 ] = (M*vel).dot(vel)/2.;
-    W_kin [ 1 ] = (M*v).dot(v)/2.; //TODO: not stable, shall be revised
+    //W_kin [ 1 ] = (M*v).dot(v)/2.; //TODO: not stable, shall be revised
 }
 
 
