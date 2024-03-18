@@ -80,8 +80,11 @@ protected:
     double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
     Vector v,v_old;
+    unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark  
 
     virtual void applySpectralRadius(double rhoinfty);
+    virtual void checkIntegrationParams();
+    virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
     virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration);
@@ -122,6 +125,8 @@ protected:
     Vector a, a_old;
     virtual void computeTotalKineticEnergy();
     virtual void applySpectralRadius(double rhoinfty);
+    virtual void checkIntegrationParams();
+    virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
     virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration);
