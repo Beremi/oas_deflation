@@ -1166,8 +1166,8 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: checkIntegrationParams(){
     if (timeIntM==0){   //generalized alpha
-        if (alpha_m>0.5 || alpha_f>0.5 || alpha_m<0 || alpha_f < 0 ) {
-            cerr << "Solver Error: Generalized-alpha method requires alpha_m<=0.5 and alpha_f<=0.5"<< endl;
+        if (alpha_m>1 || alpha_f>1 || alpha_m<0 || alpha_f < 0 ) {
+            cerr << "Solver Error: Generalized-alpha method requires alpha_m<=1 and alpha_f<=1"<< endl;
             exit(1);
         }    
         if (abs(gamma-0.5)>0.5) {
