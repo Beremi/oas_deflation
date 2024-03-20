@@ -31,10 +31,10 @@ bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
     //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
 
-    cgK.setMaxIterations( relMaxIT * A.cols() );
+    cgK.setMaxIterations(relMaxIT * A.cols() );
     cgK.setTolerance(precision);
     cgK.compute(A);
-    initialGuess = Vector :: Zero( A.cols() );
+    initialGuess = Vector :: Zero(A.cols() );
     maxIT = relMaxIT * A.cols();
 
 #if PRINT_DEBUG_TIME
@@ -466,7 +466,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot( AC.cross(AD) );
+    double coplanarityError = AB.dot(AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -580,15 +580,15 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         weis [ 0 ] = weis [ 2 ] = 5. / 9.;
         weis [ 1 ] = 8. / 9.;
     } else if ( n == 4 ) {
-        locs [ 0 ] = -sqrt(3. / 7. + 2. / 7. * sqrt(6. / 5.) );
-        locs [ 1 ] = -sqrt(3. / 7. - 2. / 7. * sqrt(6. / 5.) );
+        locs [ 0 ] = -sqrt( 3. / 7. + 2. / 7. * sqrt(6. / 5.) );
+        locs [ 1 ] = -sqrt( 3. / 7. - 2. / 7. * sqrt(6. / 5.) );
         locs [ 2 ] = -locs [ 1 ];
         locs [ 3 ] = -locs [ 0 ];
         weis [ 0 ] = weis [ 3 ] = ( 18. - sqrt(30.) ) / 36;
         weis [ 1 ] = weis [ 2 ] = ( 18. + sqrt(30.) ) / 36;
     } else if ( n == 5 ) {
-        locs [ 0 ] = -sqrt(5. + 2. * sqrt(10. / 7.) ) / 3;
-        locs [ 1 ] = -sqrt(5. - 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 0 ] = -sqrt( 5. + 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 1 ] = -sqrt( 5. - 2. * sqrt(10. / 7.) ) / 3;
         locs [ 2 ] = 0.;
         locs [ 3 ] = -locs [ 1 ];
         locs [ 4 ] = -locs [ 0 ];

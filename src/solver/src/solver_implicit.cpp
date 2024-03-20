@@ -88,7 +88,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -147,7 +147,7 @@ void SteadyStateLinearSolver :: solve() {
      * }
      */
     linalgsolver->solve(ddr, f);
-   
+
     /*
      * cout << "----- K ----" << endl;
      * Keff.print();
@@ -177,25 +177,24 @@ void SteadyStateLinearSolver :: runAfterEachStep() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: factorizeLinearSystem() {
-
     cout << "factorizing system matrix" << endl;
 
     if ( linalgsolver == nullptr ) {
         if ( symsolver_type == "EigenConj" ) {
-            std::unique_ptr<ConjGradSolver> cgs = std::make_unique< ConjGradSolver >();
+            std :: unique_ptr< ConjGradSolver >cgs = std :: make_unique< ConjGradSolver >();
             cgs->setPrecisionAndRelMaxIters(conj_grad_precision, conj_grad_relative_maxit);
-            linalgsolver = std::move(cgs);
+            linalgsolver = std :: move(cgs);
         } else if  ( symsolver_type == "EigenLDLT" ) {
-            linalgsolver = std::make_unique< LDLTSolver >();
+            linalgsolver = std :: make_unique< LDLTSolver >();
         } else if  ( symsolver_type == "EigenLLT" ) {
-            linalgsolver = std::make_unique< LLTSolver >();
+            linalgsolver = std :: make_unique< LLTSolver >();
         } else if  ( symsolver_type == "EigenSparseLU" ) {
-            linalgsolver = std::make_unique< LUSolver >();
+            linalgsolver = std :: make_unique< LUSolver >();
         } else {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
             exit(1);
         }
-    }    
+    }
     linalgsolver->factorize(Keff);
 }
 
@@ -437,7 +436,7 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
     Vector full_ddrPF = Vector :: Zero(numPhysicalFields);
     Vector trial_rPF = Vector :: Zero(numPhysicalFields);
     Vector energyPF = Vector :: Zero(numPhysicalFields);
-    
+
     unsigned pff;
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
         pff = pf [ i ];
@@ -449,13 +448,13 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         full_ddrPF [ pff ] += pow(full_ddr [ i ], 2);
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
         energyPF [ pff ] += residuals [ i ] * full_ddr [ i ];
-    }  
- 
+    }
+
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
-        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max(max(abs(W_ext [ i ]), abs(W_int [ i ])), abs(W_kin [ i ])), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
     }
     resErr = sqrt(resErr);
     disErr = sqrt(disErr);
@@ -860,8 +859,8 @@ TransientLinearTransportSolver :: TransientLinearTransportSolver() {
 void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty) {
     //set up the generalized-alpha method according to Chung and Hulbert 1993
     if ( abs(rhoinfty - 0.5) > 0.5 ) {
-       cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
-       exit(1);
+        cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
+        exit(1);
     }
 
     //according to Chung and Hulbert, 1993, JAM
@@ -871,39 +870,39 @@ void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty) {
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: checkIntegrationParams(){
-    if (timeIntM==0){   //generalized alpha
+void TransientLinearTransportSolver :: checkIntegrationParams() {
+    if ( timeIntM == 0 ) {  //generalized alpha
         //TODO
-    } else if (timeIntM==1){    //HHT method
+    } else if ( timeIntM == 1 ) {   //HHT method
         //TODO
-    } else if (timeIntM==2){    //Newmark method
-        if (alpha_m!=0 || alpha_f != 0) {
-            cerr << "Solver Error: Newmark method requires alpha_m=alpha_f = 0"<< endl;
+    } else if ( timeIntM == 2 ) {   //Newmark method
+        if ( alpha_m != 0 || alpha_f != 0 ) {
+            cerr << "Solver Error: Newmark method requires alpha_m=alpha_f = 0" << endl;
             exit(1);
-        }        
-        if (abs(gamma-0.5)>0.5) {
-            cerr << "Solver Error: Newmark method requires gamma withn interva 0-1"<< endl;
+        }
+        if ( abs(gamma - 0.5) > 0.5 ) {
+            cerr << "Solver Error: Newmark method requires gamma withn interva 0-1" << endl;
             exit(1);
-        }    
-        if (abs(beta-0.25)>0.25) {
-            cerr << "Solver Error: Newmark method requires gamma withn interva 0-0.5"<< endl;
+        }
+        if ( abs(beta - 0.25) > 0.25 ) {
+            cerr << "Solver Error: Newmark method requires gamma withn interva 0-0.5" << endl;
             exit(1);
-        }   
+        }
     } else {
         cerr << "Solver Error: unknowns method for time integration" << endl;
         exit(1);
     }
 }
 //////////////////////////////////////////////////////////
-void TransientLinearTransportSolver :: setDefaultIntegrationParams(){
-    if (timeIntM==0){   //generalized alpha
+void TransientLinearTransportSolver :: setDefaultIntegrationParams() {
+    if ( timeIntM == 0 ) {  //generalized alpha
         applySpectralRadius(0.8);
-    } else if (timeIntM==1){    //HHT method
+    } else if ( timeIntM == 1 ) {   //HHT method
         alpha_m = 0;
-        alpha_f = 0;        
+        alpha_f = 0;
         gamma = 0.5;
-    } else if (timeIntM==2){    //Newmark method
-        alpha_m = alpha_f = 0;        
+    } else if ( timeIntM == 2 ) {   //Newmark method
+        alpha_m = alpha_f = 0;
         gamma = 0.5;
     } else {
         cerr << "Solver Error: unknowns method for time integration" << endl;
@@ -925,7 +924,6 @@ void TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(stri
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool initial) {
-
     checkIntegrationParams();
 
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
@@ -954,8 +952,8 @@ void TransientLinearTransportSolver :: rebuild() {
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
-    Vector ll = load_old * alpha_f + load * ( 1. - alpha_f ); 
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1009,7 +1007,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 
     double num;
     string param, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1018,7 +1016,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
             istringstream iss(line);
             iss >> param;
             if ( param.compare("integration_method") == 0 ) {
-                iss >> param;   
+                iss >> param;
                 if ( param.compare("newmark") == 0 ) {
                     timeIntM = 2;
                 } else if ( param.compare("hht") == 0 ) {
@@ -1152,8 +1150,8 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
 void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
     //set up the generalized-alpha method according to Chung and Hulbert 1993
     if ( abs(rhoinfty - 0.5) > 0.5 ) {
-       cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
-       exit(1);
+        cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
+        exit(1);
     }
     //according to Chung and Hulbert, 1993, JAM
     alpha_m = ( 2. * rhoinfty - 1. ) / ( 1. + rhoinfty );
@@ -1163,68 +1161,67 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: checkIntegrationParams(){
-    if (timeIntM==0){   //generalized alpha
-        if (alpha_m>1 || alpha_f>1 || alpha_m<0 || alpha_f < 0 ) {
-            cerr << "Solver Error: Generalized-alpha method requires alpha_m<=1 and alpha_f<=1"<< endl;
+void TransientLinearMechanicalSolver :: checkIntegrationParams() {
+    if ( timeIntM == 0 ) {  //generalized alpha
+        if ( alpha_m > 1 || alpha_f > 1 || alpha_m < 0 || alpha_f < 0 ) {
+            cerr << "Solver Error: Generalized-alpha method requires alpha_m<=1 and alpha_f<=1" << endl;
             exit(1);
-        }    
-        if (abs(gamma-0.5)>0.5) {
-            cerr << "Solver Error: Generalized-alpha method requires gamma withn interva 0-1"<< endl;
+        }
+        if ( abs(gamma - 0.5) > 0.5 ) {
+            cerr << "Solver Error: Generalized-alpha method requires gamma withn interva 0-1" << endl;
             exit(1);
-        }    
-        if (beta>0.5 || beta<0.25+0.5*(alpha_f-alpha_m)) {
-            cerr << "Solver Error: Generalized-alpha method requires beta withn interva 0.25+0.5(alpha_f-alpha_m) " << beta<< endl;
+        }
+        if ( beta > 0.5 || beta < 0.25 + 0.5 * ( alpha_f - alpha_m ) ) {
+            cerr << "Solver Error: Generalized-alpha method requires beta withn interva 0.25+0.5(alpha_f-alpha_m) " << beta << endl;
             exit(1);
-        }             
-
-    } else if (timeIntM==1){    //HHT method
-        if (alpha_m!=0) {
-            cerr << "Solver Error: HHT method requires alpha_m=0"<< endl;
+        }
+    } else if ( timeIntM == 1 ) {   //HHT method
+        if ( alpha_m != 0 ) {
+            cerr << "Solver Error: HHT method requires alpha_m=0" << endl;
             exit(1);
-        }  
-        if ( alpha_f>1./3. || alpha_f < 0 ) {
-            cerr << "Solver Error: HHT method requires alpha_f inside interva 0-1./3"<< endl;
+        }
+        if ( alpha_f > 1. / 3. || alpha_f < 0 ) {
+            cerr << "Solver Error: HHT method requires alpha_f inside interva 0-1./3" << endl;
             exit(1);
-        }    
-        if (abs(gamma-0.5)>0.5) {
-            cerr << "Solver Error: HHT method requires gamma withn interva 0-1"<< endl;
+        }
+        if ( abs(gamma - 0.5) > 0.5 ) {
+            cerr << "Solver Error: HHT method requires gamma withn interva 0-1" << endl;
             exit(1);
-        }    
-        if (beta>0.5 || beta<0.25+0.5*(alpha_f)) {
-            cerr << "Solver Error: HHT method requires beta withn interva 0.25+0.5*alpha_f"<< endl;
+        }
+        if ( beta > 0.5 || beta < 0.25 + 0.5 * ( alpha_f ) ) {
+            cerr << "Solver Error: HHT method requires beta withn interva 0.25+0.5*alpha_f" << endl;
             exit(1);
-        }     
-    } else if (timeIntM==2){    //Newmark method
-        if (alpha_m!=0 || alpha_f != 0) {
-            cerr << "Solver Error: Newmark method requires alpha_m=alpha_f = 0 " << alpha_m << " " << alpha_f<< endl;
+        }
+    } else if ( timeIntM == 2 ) {   //Newmark method
+        if ( alpha_m != 0 || alpha_f != 0 ) {
+            cerr << "Solver Error: Newmark method requires alpha_m=alpha_f = 0 " << alpha_m << " " << alpha_f << endl;
             exit(1);
-        }        
-        if (abs(gamma-0.5)>0.5) {
-            cerr << "Solver Error: Newmark method requires gamma withn interva 0-1"<< endl;
+        }
+        if ( abs(gamma - 0.5) > 0.5 ) {
+            cerr << "Solver Error: Newmark method requires gamma withn interva 0-1" << endl;
             exit(1);
-        }    
-        if (abs(beta-0.25)>0.25) {
-            cerr << "Solver Error: Newmark method requires gamma withn interva 0-0.5"<< endl;
+        }
+        if ( abs(beta - 0.25) > 0.25 ) {
+            cerr << "Solver Error: Newmark method requires gamma withn interva 0-0.5" << endl;
             exit(1);
-        }   
+        }
     } else {
         cerr << "Solver Error: unknowns method for time integration" << endl;
         exit(1);
     }
 }
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: setDefaultIntegrationParams(){
-    if (timeIntM==0){   //generalized alpha
+void TransientLinearMechanicalSolver :: setDefaultIntegrationParams() {
+    if ( timeIntM == 0 ) {  //generalized alpha
         applySpectralRadius(0.8);
-    } else if (timeIntM==1){    //HHT method
+    } else if ( timeIntM == 1 ) {   //HHT method
         alpha_m = 0.;
-        alpha_f = 0.2;        
-        gamma = 0.5+alpha_f;
-        beta = 0.25*pow(1+alpha_f,2);
-    } else if (timeIntM==2){    //Newmark method
+        alpha_f = 0.2;
+        gamma = 0.5 + alpha_f;
+        beta = 0.25 * pow(1 + alpha_f, 2);
+    } else if ( timeIntM == 2 ) {   //Newmark method
         alpha_m = 0.;
-        alpha_f = 0.;        
+        alpha_f = 0.;
         gamma = 0.5;
         beta = 0.25;
     } else {
@@ -1259,8 +1256,8 @@ void TransientLinearMechanicalSolver :: updateFieldVariables() {
 void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
-    Vector ll = load_old * alpha_f + load * ( 1. - alpha_f ); 
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 
@@ -1296,7 +1293,7 @@ bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, 
 }
 
 //////////////////////////////////////////////////////////
-void TransientLinearMechanicalSolver :: computeTotalKineticEnergy(){
+void TransientLinearMechanicalSolver :: computeTotalKineticEnergy() {
     W_kin [ 0 ] = elems->integrateKineticEnergy(v);
 }
 

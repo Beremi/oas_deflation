@@ -74,7 +74,7 @@ protected:
     std :: string name;
 
 public:
-    Material(unsigned dimension) { name = "basic material"; produceInternalSources = false; dim = dimension; dampMatUpdate = false; massMatUpdate = false;};
+    Material(unsigned dimension) { name = "basic material"; produceInternalSources = false; dim = dimension; dampMatUpdate = false; massMatUpdate = false; };
     virtual ~Material();
     virtual void readFromLine(std :: istringstream &iss) { ( void ) iss; };
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum) { MaterialStatus *newStatus = new MaterialStatus(this, e, ipnum); return newStatus; };
@@ -87,8 +87,8 @@ public:
     virtual void init(MaterialContainer *matcont) { ( void ) matcont; };
     bool isProducingInternalSources()const { return produceInternalSources; }
     virtual void prepareForStressEvaluation(ElementContainer *elems) { ( void ) elems; };
-    bool requiresMassMatrixUpdate() const {return massMatUpdate;};
-    bool requiresDampingsMatrixUpdate() const {return dampMatUpdate;};
+    bool requiresMassMatrixUpdate() const { return massMatUpdate; };
+    bool requiresDampingsMatrixUpdate() const { return dampMatUpdate; };
 };
 
 

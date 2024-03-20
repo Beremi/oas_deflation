@@ -52,7 +52,7 @@ public:
     bool doesMechanics() const { return physicalFields [ 0 ]; };
     bool doesTransport() const { return physicalFields [ 1 ]; };
     bool doesTemperature() const { return physicalFields [ 2 ]; };
-    virtual bool giveDoFBasedValues(std :: string code, const Solver * solver, Vector &result) const;
+    virtual bool giveDoFBasedValues(std :: string code, const Solver *solver, Vector &result) const;
     unsigned giveRelativeDoFPhysicalFieldNum(unsigned k) const;
     unsigned giveAbsoluteDoFPhysicalFieldNum(unsigned k) const;
     std :: vector< unsigned >givePhysicalFieldsDoFNum() const { return physicalFieldsDoFNum; };
@@ -200,7 +200,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
-    virtual bool giveDoFBasedValues(std :: string code, const Solver* solver, Vector &result) const;
+    virtual bool giveDoFBasedValues(std :: string code, const Solver *solver, Vector &result) const;
     virtual unsigned giveOrderOfEnergyConjugateCode(std :: string code) const;
     virtual std :: string giveLineToSave() const;
     Vector calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const;

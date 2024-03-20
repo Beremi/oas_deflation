@@ -40,7 +40,7 @@ protected:
     virtual void initIntegration();
     virtual void computeMassMatrix();
     virtual void computeDampingMatrix();
-    
+
 
     ShapeFunc *shafunc;
     IntegrationType *inttype;
@@ -86,10 +86,10 @@ public:
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
     virtual Matrix giveBMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); }; //at arbitrary point
-    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix( inttype->giveIPLocationPointer(i) ); };     //at integration point i
+    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix(inttype->giveIPLocationPointer(i) ); };      //at integration point i
     Matrix giveStoredBMatrix(unsigned i) { return Bs [ i ]; };
     virtual Matrix giveHMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); };
-    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix( inttype->giveIPLocationPointer(i) ); };     //at integration point i
+    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix(inttype->giveIPLocationPointer(i) ); };      //at integration point i
     Matrix giveStoredHMatrix(unsigned i) { return Hs [ i ]; };
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);

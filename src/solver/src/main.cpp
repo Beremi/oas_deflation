@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 
     fs :: path input = fs :: absolute(master_filename);
     if ( !fs :: exists(input) ) {
-        fprintf( stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str() );
+        fprintf(stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str() );
         exit(EXIT_FAILURE);
     }
     GlobPaths :: BASEDIR = input.parent_path();
@@ -61,14 +61,14 @@ int main(int argc, char **argv) {
     std :: chrono :: duration< double >elapsed_seconds;
     masterModel = new Model(PRINT_TIME);
     if ( PRINT_TIME ) {
-        std :: time_t time_now = std :: chrono :: system_clock :: to_time_t(masterModel->giveStartTime() );
+        std :: time_t time_now = std :: chrono :: system_clock :: to_time_t( masterModel->giveStartTime() );
         string nowstring = ctime(& time_now);
         std :: cout << "######### start of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;
     }
 
 
 
-    masterModel->readFromFile( input.string() );
+    masterModel->readFromFile(input.string() );
 
     // check if exists or create directory for results
     if ( !fs :: exists(masterModel->resultDir) ) {

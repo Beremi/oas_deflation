@@ -31,7 +31,7 @@ protected:
     bool terminated, fully_converged;
 
     Vector W_ext, W_int, W_kin, W_int_old, W_ext_old;
-    virtual void computeTotalKineticEnergy(){};
+    virtual void computeTotalKineticEnergy() {};
     virtual void computeTotalInternalAndExternalAndKineticEnergy();
 
     bool showTime;
@@ -52,9 +52,9 @@ public:
     Vector giveDoFValues() const { return r; }
     Vector giveTrialDoFValues() const { return trial_r; }
     Vector giveExternalForces() const { return f_ext; }
-    double giveTrialDoFValue(unsigned k) const { return trial_r[k]; }    
-    double giveDoFVelocity(unsigned k) const { return v[k]; }
-    double giveExternalForce(unsigned k) const { return f_ext[k]; }
+    double giveTrialDoFValue(unsigned k) const { return trial_r [ k ]; }
+    double giveDoFVelocity(unsigned k) const { return v [ k ]; }
+    double giveExternalForce(unsigned k) const { return f_ext [ k ]; }
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };

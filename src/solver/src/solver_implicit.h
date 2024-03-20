@@ -10,7 +10,7 @@ protected:
     double conj_grad_precision;
     double conj_grad_relative_maxit;
     CoordinateIndexedSparseMatrix Keff, K;
-    std::unique_ptr<LinAlgSolver> linalgsolver;
+    std :: unique_ptr< LinAlgSolver >linalgsolver;
     std :: string symsolver_type = "EigenConj";
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
@@ -80,7 +80,7 @@ protected:
     double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
     Vector v_old;
-    unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark  
+    unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void checkIntegrationParams();

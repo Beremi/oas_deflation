@@ -42,7 +42,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
     this->materials = matrs;
     size_t origsize = elems.size();
     string line, elemType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -317,7 +317,7 @@ void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_st
         string line, param;
         unsigned elem_id, stat_id;
         for ( auto const &file_with_stats : this->file_to_load_from ) {
-            ifstream inputfile( file_with_stats.c_str() );
+            ifstream inputfile(file_with_stats.c_str() );
             if ( inputfile.is_open() ) {
                 while ( getline(inputfile >> std :: ws, line) ) {
                     if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -348,7 +348,7 @@ void ElementContainer :: init() {
         ( * e )->setID(num);
         ( * e )->init();
         ( * e )->initMaterialStatuses();
-        max_sol_order = max( max_sol_order, ( * e )->giveSolutionOrder() );
+        max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
     }
 
     //update neighborhood information
@@ -390,13 +390,13 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        tripletList.push_back( Ttripletd(DoFi, DoFi, 0.0) );
+                        tripletList.push_back(Ttripletd(DoFi, DoFi, 0.0) );
                     }
                 } else {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        tripletList.push_back( Ttripletd(DoFi, DoFj, 0.0) );
-                        tripletList.push_back( Ttripletd(DoFj, DoFi, 0.0) );
+                        tripletList.push_back(Ttripletd(DoFi, DoFj, 0.0) );
+                        tripletList.push_back(Ttripletd(DoFj, DoFi, 0.0) );
                     }
                 }
             }
@@ -405,7 +405,7 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
 
     if ( nfreeDoFs > 0 ) {
         K.resize(nfreeDoFs, nfreeDoFs);
-        K.setFromTriplets( tripletList.begin(), tripletList.end() );
+        K.setFromTriplets(tripletList.begin(), tripletList.end() );
         K.makeCompressed();
     }
 }
@@ -530,7 +530,7 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
                 continue;                                  //correct order must be used;
             }
             elDoFs = ( * e )->giveDoFs();
-            elDoFvalues.resize( elDoFs.size() );
+            elDoFvalues.resize(elDoFs.size() );
             elDoFvalues.setZero();
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
@@ -547,11 +547,11 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
 double ElementContainer :: integrateKineticEnergy(const Vector &velocity) const {
     Vector elVelocities;
     vector< unsigned >elDoFs;
-    double W_kin = 0;    
+    double W_kin = 0;
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
-        elVelocities.resize( elDoFs.size() );
+        elVelocities.resize(elDoFs.size() );
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elVelocities [ i ] = velocity [ elDoFs [ i ] ];
         }
@@ -568,7 +568,7 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
-        elDoFvalues.resize( elDoFs.size() );
+        elDoFvalues.resize(elDoFs.size() );
         elDoFvalues.setZero();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
@@ -616,7 +616,7 @@ void ElementContainer :: findElementFriends() {
 
 //////////////////////////////////////////////////////////
 Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const {
-    std :: sort( node_ids.begin(), node_ids.end() );
+    std :: sort(node_ids.begin(), node_ids.end() );
     // std::cout << "this elem should connect nodes";
     // for ( auto const &nid : node_ids ) {
     //   std::cout << " " << nid;
@@ -631,12 +631,12 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
                     // std::cout << "this elem connects nodes";
                     for ( auto const &n : el->giveNodes() ) {
                         // std::cout << " " << this->nodes->giveNodeId(n);
-                        elem_node_ids.push_back( this->nodes->giveNodeId(n) );
+                        elem_node_ids.push_back(this->nodes->giveNodeId(n) );
                     }
                     // std::cout << '\n';
                     if ( elem_node_ids.size() == node_ids.size() ) { ///< for other than rbc elems
                         // std::cout << "and what about here?" << '\n';
-                        std :: sort( elem_node_ids.begin(), elem_node_ids.end() );
+                        std :: sort(elem_node_ids.begin(), elem_node_ids.end() );
                         for ( unsigned i = 0; i < node_ids.size(); i++ ) {
                             if ( elem_node_ids [ i ] != node_ids [ i ] ) {
                                 break;
@@ -696,8 +696,8 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
     //delete everythink inside
     size_t p;
     result.clear(); // result.resize(0);
-    result.resize( nodes->giveSize() );
-    Vector weights = Vector :: Zero( nodes->giveSize() );
+    result.resize(nodes->giveSize() );
+    Vector weights = Vector :: Zero(nodes->giveSize() );
 
     //fill with data
     vector< Vector >res;
@@ -713,7 +713,7 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
                 result [ nodeid ].resize(reslen);
                 result [ nodeid ].setZero();
             }
-            for ( size_t m = 0; m < min< size_t >( reslen, result [ nodeid ].size() ); m++ ) {
+            for ( size_t m = 0; m < min< size_t >(reslen, result [ nodeid ].size() ); m++ ) {
                 result [ nodeid ] [ m ] += res [ m ] [ p ];
             }
         }
@@ -727,7 +727,7 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
             vector< unsigned >masters = pb->giveMasters();
             vector< unsigned >slaves = pb->giveSlaves();
             for ( unsigned k = 0; k < masters.size(); k++ ) {
-                periodicPairs.insert( make_pair(masters [ k ], slaves [ k ]) );
+                periodicPairs.insert(make_pair(masters [ k ], slaves [ k ]) );
             }
         }
     }
@@ -757,7 +757,7 @@ void ElementContainer :: sumFromElements(std :: string code, Vector &result) con
         e->giveValues(code, help);
         if ( help.size() > result.size() ) {
             size_t oldsize = result.size();
-            result.resize(help.size() );
+            result.resize( help.size() );
             for ( size_t i = oldsize; i < ( size_t ) result.size(); i++ ) {
                 result [ i ] = 0.;
             }
@@ -835,7 +835,7 @@ void ElementContainer :: assignFibersToElems() {
                 //detect bbox intersection
                 bintersect = true;
                 for ( unsigned i = 0; i < ndim; i++ ) {
-                    if ( min( ( * a ) [ i ], ( * b ) [ i ]) > bbox [ 2 * i + 1 ] || max( ( * a ) [ i ], ( * b ) [ i ]) < bbox [ 2 * i ] ) {
+                    if ( min( ( * a ) [ i ], ( * b ) [ i ] ) > bbox [ 2 * i + 1 ] || max( ( * a ) [ i ], ( * b ) [ i ] ) < bbox [ 2 * i ] ) {
                         bintersect = false;
                         break;
                     }
@@ -856,8 +856,8 @@ void ElementContainer :: assignFibersToElems() {
                 //check that it is inside the facet
                 //according to https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
                 bintersect = false;
-                auxA = intersec + dirvec * ( 5 * sqrt(rbc->giveArea() ) );
-                auxB = intersec - dirvec * ( 5 * sqrt(rbc->giveArea() ) );
+                auxA = intersec + dirvec * ( 5 * sqrt( rbc->giveArea() ) );
+                auxB = intersec - dirvec * ( 5 * sqrt( rbc->giveArea() ) );
                 for ( unsigned i = 0; i < verts.size() && !bintersect; i++ ) {
                     s = verts [ i ]->givePointPointer();
                     if ( i == 0 ) {
