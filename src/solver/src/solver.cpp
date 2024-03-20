@@ -195,6 +195,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     f_int_old = Vector :: Zero(totalDoFnum);
     f_ext_old = Vector :: Zero(totalDoFnum);
 
+    v = Vector :: Zero(totalDoFnum);
 
 }
 

@@ -159,6 +159,9 @@ void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result)
     } else if ( code.compare("weight") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPWeight(ipnum);
+    } else if ( code.compare("id") == 0 || code.compare("element_id") == 0) {
+        result.resize(1);
+        result [ 0 ] = idx;
     } else if ( code.compare("x") == 0 ) {
         result.resize(1);
         result [ 0 ] = inttype->giveIPLocationPointer(ipnum)->x();
@@ -272,6 +275,13 @@ Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double tim
     }
     return intF;
 }
+
+
+//////////////////////////////////////////////////////////
+double Element :: giveKineticEnergy(const Vector &velocity) const {
+    return 0.5*(velocity.dot(massM*velocity));
+}
+
 
 //////////////////////////////////////////////////////////
 Vector Element :: integrateInternalSources() {

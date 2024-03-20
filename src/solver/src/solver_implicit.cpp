@@ -941,7 +941,6 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
         cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
         exit(1);
     }
-    v = Vector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, v);
 }
 
@@ -1298,9 +1297,7 @@ bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, 
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: computeTotalKineticEnergy(){
-    Vector vel = (trial_r - r)/dt;
-    W_kin [ 0 ] = (M*vel).dot(vel)/2.;
-    //W_kin [ 1 ] = (M*v).dot(v)/2.; //TODO: not stable, shall be revised
+    W_kin [ 0 ] = elems->integrateKineticEnergy(v);
 }
 
 

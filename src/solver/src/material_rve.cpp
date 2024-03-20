@@ -50,7 +50,7 @@ void RVEMaterialStatus :: update() {
     Solver *solver = RVE->giveSolver();
     Solver *masterSolver = masterModel->giveSolver();
     solver->runAfterEachStep();   //update material statuses
-    RVE->giveExporters()->exportData( masterSolver->giveStepNumber(), masterSolver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), masterSolver->isTerminated() );
+    RVE->giveExporters()->exportData( masterSolver->giveStepNumber(), masterSolver->giveTime(), masterSolver->isTerminated() );
 }
 
 //////////////////////////////////////////////////////////

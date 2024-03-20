@@ -48,6 +48,7 @@ public:
     void prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const;
     void updateMassMatrix(CoordinateIndexedSparseMatrix &M) const;
     void updateLumpedMassMatrix(Vector &M) const;
+    double integrateKineticEnergy(const Vector &velocity) const;
     void integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep);                        ///< return internal forces with temporary update of internal variables
     void integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep);  ///< return internal forces based on current state of internal variables
     void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep);          ///< return internal forces with or without frozen internal variables

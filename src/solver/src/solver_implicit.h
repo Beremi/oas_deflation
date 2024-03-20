@@ -79,7 +79,7 @@ class TransientLinearTransportSolver : public SteadyStateNonLinearSolver /// sol
 protected:
     double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
-    Vector v,v_old;
+    Vector v_old;
     unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark  
 
     virtual void applySpectralRadius(double rhoinfty);

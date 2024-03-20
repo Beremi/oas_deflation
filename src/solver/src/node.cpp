@@ -2,6 +2,7 @@
 #include "boundary_condition.h"
 #include "element_discrete.h"
 #include "simplex.h"
+#include "solver.h"
 
 using namespace std;
 
@@ -47,11 +48,25 @@ std :: string Node :: giveLineToSave() const {
 }
 
 //////////////////////////////////////////////////////////
-bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+bool Node :: giveDoFBasedValues(string code, const Solver *solver, Vector &result) const {
     if ( code.compare("id") == 0 ) {
         result.resize(1);
         result [ 0 ] = id;
         return true;
+    }
+
+    if ( code.compare("reactions") == 0 ) {
+            result.resize(nDoFs);
+            for (unsigned i=0;  i < nDoFs; i++ ) {
+                result [ i ] = solver->giveExternalForce(firstDoF+i);
+            }
+            return true;
+    } else if ( code.compare("velocity") == 0 ) {
+            result.resize(nDoFs);
+            for (unsigned i=0;  i < nDoFs; i++ ) {
+                result [ i ] = solver->giveDoFVelocity(firstDoF+i);
+            }
+            return true;
     }
 
     //mechanics
@@ -61,7 +76,7 @@ bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result)
             result.resize(3); //always 3 components to show it in VTK
             unsigned i;
             for ( i = 0; i < dim; i++ ) {
-                result [ i ] = DoFs [ initialDoF + i ];
+                result [ i ] = solver->giveTrialDoFValue( initialDoF + i );
             }
             for ( ; i < 3; i++ ) {
                 result [ i ] = 0;
@@ -69,15 +84,15 @@ bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result)
             return true;
         } else if ( code.compare("ux") == 0 ) {
             result.resize(1);
-            result [ 0 ] = DoFs [ initialDoF ];
+            result [ 0 ] = solver->giveTrialDoFValue(  initialDoF );
             return true;
         } else if ( dim > 1 && code.compare("uy") == 0 ) {
             result.resize(1);
-            result [ 0 ] = DoFs [ initialDoF + 1 ];
+            result [ 0 ] = solver->giveTrialDoFValue( initialDoF + 1 );
             return true;
         } else if ( dim > 2 && code.compare("uz") == 0 ) {
             result.resize(1);
-            result [ 0 ] = DoFs [ initialDoF + 2 ];
+            result [ 0 ] = solver->giveTrialDoFValue( initialDoF + 2 );
             return true;
         }
     }
@@ -87,7 +102,7 @@ bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result)
     if ( physicalFields [ 1 ] ) {
         if ( code.compare("pressure") == 0 ) {
             result.resize(1);
-            result [ 0 ] = DoFs [ initialDoF ];
+            result [ 0 ] = solver->giveTrialDoFValue( initialDoF );
             return true;
         }
     }
@@ -97,7 +112,7 @@ bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result)
     if ( physicalFields [ 2 ] ) {
         if ( code.compare("temperature") == 0 ) {
             result.resize(1);
-            result [ 0 ] = DoFs [ initialDoF ];
+            result [ 0 ] = solver->giveTrialDoFValue( initialDoF );
             return true;
         }
     }
@@ -107,7 +122,7 @@ bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result)
     if ( physicalFields [ 3 ] ) {
         if ( code.compare("humidity") == 0 ) {
             result.resize(1);
-            result [ 0 ] = DoFs [ initialDoF ];
+            result [ 0 ] = solver->giveTrialDoFValue( initialDoF );
             return true;
         }
     }
@@ -117,7 +132,7 @@ bool Node :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result)
     if ( !* pEnd ) {
         if ( converted < nDoFs ) {
             result.resize(1);
-            result [ 0 ] = DoFs [ firstDoF + converted ];
+            result [ 0 ] = solver->giveTrialDoFValue( firstDoF + converted );
             return true;
         } else {
             cerr << name << "Error: Requested DoFid exceeded number of DoFs: " << code << endl;
@@ -373,31 +388,31 @@ Matrix Particle :: giveRigidBodyMotionMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-bool Particle :: giveDoFBasedValues(string code, const Vector &DoFs, Vector &result) const {
+bool Particle :: giveDoFBasedValues(string code, const Solver * solver, Vector &result) const {
     if ( code.compare("rotation") == 0  || code.compare("rotations") == 0  ) {
         result.resize(2 * dim - 3);
         for ( unsigned i = 0; i < 2 * dim - 3; i++ ) {
-            result [ i ] = DoFs [ firstDoF + dim + i ];
+            result [ i ] = solver->giveTrialDoFValue ( firstDoF + dim + i );
         }
         return true;
     } else if ( dim == 2 && code.compare("rotz") == 0 ) {
         result.resize(1);
-        result [ 0 ] = DoFs [ firstDoF + 2 ];
+        result [ 0 ] = solver->giveTrialDoFValue ( firstDoF + 2 );
         return true;
     } else if ( dim == 3 && code.compare("rotx") == 0 ) {
         result.resize(1);
-        result [ 0 ] = DoFs [ firstDoF + 3 ];
+        result [ 0 ] = solver->giveTrialDoFValue ( firstDoF + 3 );
         return true;
     } else if ( dim == 3 && code.compare("roty") == 0 ) {
         result.resize(1);
-        result [ 0 ] = DoFs [ firstDoF + 4 ];
+        result [ 0 ] = solver->giveTrialDoFValue ( firstDoF + 4 );
         return true;
     } else if ( dim == 3 && code.compare("rotz") == 0 ) {
         result.resize(1);
-        result [ 0 ] = DoFs [ firstDoF + 5 ];
+        result [ 0 ] = solver->giveTrialDoFValue ( firstDoF + 5 );
         return true;
     }
-    return Node :: giveDoFBasedValues(code, DoFs, result);
+    return Node :: giveDoFBasedValues(code, solver, result);
 }
 
 //////////////////////////////////////////////////////////

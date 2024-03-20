@@ -544,6 +544,23 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
 }
 
 //////////////////////////////////////////////////////////
+double ElementContainer :: integrateKineticEnergy(const Vector &velocity) const {
+    Vector elVelocities;
+    vector< unsigned >elDoFs;
+    double W_kin = 0;    
+
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        elDoFs = ( * e )->giveDoFs();
+        elVelocities.resize( elDoFs.size() );
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            elVelocities [ i ] = velocity [ elDoFs [ i ] ];
+        }
+        W_kin += ( * e )->giveKineticEnergy(elVelocities);
+    }
+    return W_kin;
+}
+
+//////////////////////////////////////////////////////////
 void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;

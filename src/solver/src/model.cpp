@@ -72,11 +72,11 @@ void Model :: jumpToNextStage() {
 void Model :: solve() {
     //solution
     signal(SIGINT, my_handler);
-    exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
+    exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->isTerminated() );
     while ( !solver->isTerminated() && TERMINATED == 0 ) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->giveDoFValues(), solver->giveNodalForces(), solver->isTerminated() );
+        exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->isTerminated() );
         if ( printTime && solver->showStepTime() ) {
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;

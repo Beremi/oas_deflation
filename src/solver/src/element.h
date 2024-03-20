@@ -67,6 +67,7 @@ public:
     virtual Matrix giveDampingMatrix();
     virtual Vector giveLumpedMassMatrix();
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    double giveKineticEnergy(const Vector &velocity) const;
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
     std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };

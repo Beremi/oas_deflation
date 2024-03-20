@@ -102,8 +102,7 @@ void VTKExporter :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) reactions;
+void VTKElementExporter :: exportData(unsigned step, fs :: path resultDir) const {
 
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
     char buffer[ 100 ];
@@ -112,6 +111,9 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
     // Element *ee;
 
 #ifdef __VTK_MODULE
+    
+    Vector DoFs = solver->giveTrialDoFValues();
+
     vtkSmartPointer< vtkUnstructuredGrid >unstructuredGrid = vtkSmartPointer< vtkUnstructuredGrid > :: New();
 
     vtkSmartPointer< vtkPoints >points = vtkSmartPointer< vtkPoints > :: New();
@@ -186,7 +188,7 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             }
         } else {
             for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
-                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), DoFs, data [ i ]);
+                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), solver, data [ i ]);
                 msize = max< size_t >( msize, data [ i ].size() );
             }
         }
@@ -247,21 +249,12 @@ void VTKElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
 #endif
 }
 
-
-//////////////////////////////////////////////////////////
-void VTKElementExporter :: setSolverPointer(Solver *s) {
-    solver = s;
-}
-
-
 //////////////////////////////////////////////////////////
 
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
+void VTKRB2DExporter :: exportData(unsigned step, fs :: path resultDir) const {
     ( void ) step;
-    ( void ) DoFs;
-    ( void ) reactions;
     ( void ) resultDir;
     /*
      * // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
@@ -388,11 +381,12 @@ void VTKRB2DExporter :: exportData(unsigned step, const Vector &DoFs, const Vect
 
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) reactions;
+void VTKRCExporter :: exportData(unsigned step, fs :: path resultDir) const {
 
     char buffer[ 100 ];
     giveFileName(step, buffer);
+
+    Vector DoFs = solver->giveTrialDoFValues();
 
 #ifdef __VTK_MODULE
     vtkSmartPointer< vtkUnstructuredGrid >unstructuredGrid = vtkSmartPointer< vtkUnstructuredGrid > :: New();
@@ -438,7 +432,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
     }
     for ( vector< Element * > :: const_iterator ff = elems->begin(); ff != elems->end(); ++ff ) {
         tetra = dynamic_cast< LDPMTetra * >( * ff );
-        if ( tetra && tetra->giveID()==1611) {
+        if ( tetra ) {
             exportedElemsTET.push_back(tetra);
             vertices = tetra->giveVertices();
             for ( unsigned i = 0; i < tetra->giveNumOfFacets(); i++ ) {
@@ -561,7 +555,7 @@ void VTKRCExporter :: exportData(unsigned step, const Vector &DoFs, const Vector
         i = 0;
         for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
             if ( static_cast< Particle * >( * nn ) ) {
-                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), DoFs, data [ i ]);
+                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), solver, data [ i ]);
                 msize = max< size_t >( msize, data [ i ].size() );
             } else {
                 data [ i ].resize(0);
