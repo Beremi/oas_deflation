@@ -1149,8 +1149,8 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
     //set up the generalized-alpha method according to Chung and Hulbert 1993
-    if ( abs(rhoinfty - 0.5) > 0.5 ) {
-        cerr << "Error in solver: spectral radius must be inside interval [0,1]" << endl;
+    if ( rhoinfty < 0.5 || rhoinfty > 1 ) {
+        cerr << "Error in solver: spectral radius must be inside interval 0.5-1" << endl;
         exit(1);
     }
     //according to Chung and Hulbert, 1993, JAM
@@ -1163,16 +1163,16 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: checkIntegrationParams() {
     if ( timeIntM == 0 ) {  //generalized alpha
-        if ( alpha_m > 1 || alpha_f > 1 || alpha_m < 0 || alpha_f < 0 ) {
-            cerr << "Solver Error: Generalized-alpha method requires alpha_m<=1 and alpha_f<=1" << endl;
+        if ( alpha_m > 0.5 || alpha_f > 0.5 || alpha_m < 0 || alpha_f < 0 ) {
+            cerr << "Solver Error: Generalized-alpha method requires alpha_m and alpha_f within interval 0-0.5, instead these parameters are " << alpha_m << " and " << alpha_f << endl;
             exit(1);
         }
         if ( abs(gamma - 0.5) > 0.5 ) {
-            cerr << "Solver Error: Generalized-alpha method requires gamma withn interva 0-1" << endl;
+            cerr << "Solver Error: Generalized-alpha method requires gamma withn interva 0-1, but gamma is set to " << gamma << endl;
             exit(1);
         }
         if ( beta > 0.5 || beta < 0.25 + 0.5 * ( alpha_f - alpha_m ) ) {
-            cerr << "Solver Error: Generalized-alpha method requires beta withn interva 0.25+0.5(alpha_f-alpha_m) " << beta << endl;
+            cerr << "Solver Error: Generalized-alpha method requires beta withn interva 0.25+0.5(alpha_f-alpha_m), but gamma is set to " << beta << endl;
             exit(1);
         }
     } else if ( timeIntM == 1 ) {   //HHT method
@@ -1194,15 +1194,15 @@ void TransientLinearMechanicalSolver :: checkIntegrationParams() {
         }
     } else if ( timeIntM == 2 ) {   //Newmark method
         if ( alpha_m != 0 || alpha_f != 0 ) {
-            cerr << "Solver Error: Newmark method requires alpha_m=alpha_f = 0 " << alpha_m << " " << alpha_f << endl;
+            cerr << "Solver Error: Newmark method requires alpha_m=alpha_f = 0, instead these parameters are " << alpha_m << " and " << alpha_f << endl;
             exit(1);
         }
         if ( abs(gamma - 0.5) > 0.5 ) {
-            cerr << "Solver Error: Newmark method requires gamma withn interva 0-1" << endl;
+            cerr << "Solver Error: Newmark method requires gamma withn interva 0-1, but gamma is set to " << gamma << endl;
             exit(1);
         }
         if ( abs(beta - 0.25) > 0.25 ) {
-            cerr << "Solver Error: Newmark method requires gamma withn interva 0-0.5" << endl;
+            cerr << "Solver Error: Newmark method requires beta withn interva 0-0.5, but beta is set to " << beta << endl;
             exit(1);
         }
     } else {
@@ -1220,10 +1220,11 @@ void TransientLinearMechanicalSolver :: setDefaultIntegrationParams() {
         gamma = 0.5 + alpha_f;
         beta = 0.25 * pow(1 + alpha_f, 2);
     } else if ( timeIntM == 2 ) {   //Newmark method
+        //according to Klaus-Jürgen Bathe and Gunwoo Noh 2012
         alpha_m = 0.;
         alpha_f = 0.;
-        gamma = 0.5;
-        beta = 0.25;
+        gamma = 11./20.;
+        beta = 3./10.;
     } else {
         cerr << "Solver Error: unknowns method for time integration" << endl;
         exit(1);

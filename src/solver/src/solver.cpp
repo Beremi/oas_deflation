@@ -225,7 +225,6 @@ void Solver :: giveValues(string code, Vector &result) const {
     } else if ( code.compare("KinEnergyMech") == 0 ) {
         result.resize(1);
         result [ 0 ] = W_kin [ 0 ];
-        //result [ 1 ] = W_kin [ 1 ];
     } else {
         result.resize(0);
     }
