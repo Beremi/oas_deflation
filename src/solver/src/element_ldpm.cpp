@@ -270,7 +270,7 @@ void LDPMTetra :: computeMassMatrix() {
             tetvol = tetraVolumeSigned(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
             tetI = tetraInertia3D(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
             for ( unsigned k = 0; k < 3; k++ ) {
-                massM(nodeID * 6 + k, nodeID * 6 + k) += density * tetvol / 2.;            //division by 2 because of final transposition
+                massM(nodeID * 6 + k, nodeID * 6 + k) += density * tetvol;
             }
             diff = tetcentr - ( * tetnodes [ 0 ] );
             massM(nodeID * 6, nodeID * 6 + 4) += density * tetvol * diff [ 2 ];
@@ -279,15 +279,25 @@ void LDPMTetra :: computeMassMatrix() {
             massM(nodeID * 6 + 1, nodeID * 6 + 5) += density * tetvol * diff [ 0 ];
             massM(nodeID * 6 + 2, nodeID * 6 + 3) += density * tetvol * diff [ 1 ];
             massM(nodeID * 6 + 2, nodeID * 6 + 4) -= density * tetvol * diff [ 0 ];
-            massM(nodeID * 6 + 3, nodeID * 6 + 3) += 0.5 * density * ( abs( tetI(0, 0) ) + tetvol * ( pow( ( diff [ 1 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );            //division by 2 because of final transposition
-            massM(nodeID * 6 + 4, nodeID * 6 + 4) += 0.5 * density * ( abs( tetI(1, 1) ) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );            //division by 2 because of final transposition
-            massM(nodeID * 6 + 5, nodeID * 6 + 5) += 0.5 * density * ( abs( tetI(2, 2) ) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 1 ] ), 2 ) ) );            //division by 2 because of final transposition
+            massM(nodeID * 6 + 3, nodeID * 6 + 3) += density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            massM(nodeID * 6 + 4, nodeID * 6 + 4) += density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            massM(nodeID * 6 + 5, nodeID * 6 + 5) += density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 1 ] ), 2) ) );
             massM(nodeID * 6 + 3, nodeID * 6 + 4) += density * ( tetI(0, 1) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 1 ] ) ) );
             massM(nodeID * 6 + 3, nodeID * 6 + 5) += density * ( tetI(0, 2) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 2 ] ) ) );
             massM(nodeID * 6 + 4, nodeID * 6 + 5) += density * ( tetI(1, 2) - tetvol * ( ( diff [ 1 ] ) * ( diff [ 2 ] ) ) );
         }
     }
-    massM +=  massM.transpose();
+    for (nodeID=0; nodeID<4; nodeID ++){	
+        massM(nodeID * 6 + 4, nodeID * 6) = massM(nodeID * 6, nodeID * 6 + 4);
+        massM(nodeID * 6 + 5, nodeID * 6) = massM(nodeID * 6, nodeID * 6 + 5);
+        massM(nodeID * 6 + 3, nodeID * 6 + 1) = massM(nodeID * 6 + 1, nodeID * 6 + 3);
+        massM(nodeID * 6 + 5, nodeID * 6 + 1) = massM(nodeID * 6 + 1, nodeID * 6 + 5);
+        massM(nodeID * 6 + 3, nodeID * 6 + 2) = massM(nodeID * 6 + 2, nodeID * 6 + 3);
+        massM(nodeID * 6 + 4, nodeID * 6 + 2) = massM(nodeID * 6 + 2, nodeID * 6 + 4);
+        massM(nodeID * 6 + 4, nodeID * 6 + 3) = massM(nodeID * 6 + 3, nodeID * 6 + 4);
+        massM(nodeID * 6 + 5, nodeID * 6 + 3) = massM(nodeID * 6 + 3, nodeID * 6 + 5);
+        massM(nodeID * 6 + 5, nodeID * 6 + 4) = massM(nodeID * 6 + 4, nodeID * 6 + 5);
+	}
 }
 
 

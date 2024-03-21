@@ -261,3 +261,8 @@ void Solver :: computeTotalInternalAndExternalAndKineticEnergy() {
 
     computeTotalKineticEnergy();
 }
+
+//////////////////////////////////////////////////////////
+double Solver :: giveExternalForce(unsigned k) const {     
+    return f_ext [ k ]; 
+}

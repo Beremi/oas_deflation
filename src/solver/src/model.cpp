@@ -52,6 +52,8 @@ void Model :: init(const bool &initial) {     //initialization
         initialTimeDerFieldFile = ( baseDir / initialTimeDerFieldFile ).string();
     }
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
+    exporters.setResultDirectory(resultDir);
+    exporters.setSolver(solver);
     exporters.init(initial);
     bconds.setInitialDoFFields(solver);
     cout << "Model succesfully initialized" << endl;
@@ -194,9 +196,6 @@ void Model :: readFromFile(const string filename, const bool &initial) {
     }
 
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
-
-    exporters.setResultDirectory(resultDir);
-    exporters.setSolver(solver);
 }
 
 

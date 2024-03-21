@@ -51,10 +51,10 @@ public:
     bool convergedToTolerance() const { return fully_converged; };
     Vector giveDoFValues() const { return r; }
     Vector giveTrialDoFValues() const { return trial_r; }
-    Vector giveExternalForces() const { return f_ext; }
+    Vector giveExternalForces() const {  return f_ext; }
     double giveTrialDoFValue(unsigned k) const { return trial_r [ k ]; }
     double giveDoFVelocity(unsigned k) const { return v [ k ]; }
-    double giveExternalForce(unsigned k) const { return f_ext [ k ]; }
+    double giveExternalForce(unsigned k) const;
     Vector giveNodalForces() { return f_ext; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
