@@ -180,11 +180,11 @@ void TXTNodalExporter :: init() {
     Vector res;
     for ( unsigned i = 0; i < ncod; i++ ) {
         maxsize [ i ] = 0;
-        if ( codes [ i ].compare("extrapolated") == 0 ) {
+        if ( codes [ i ].rfind("extrapolated", 0) == 0 ) {
             vector< Vector >results;
             elems->extrapolateValuesFromIntegrationPointsToNodes(codes [ i ].substr(12), results); ///TOO LONG, only once
             for ( auto &p: results ) {
-                maxsize [ i ] = max(size_t( p.size() ), maxsize [ i ]);
+                maxsize [ i ] =max< size_t >( p.size(), maxsize [ i ]);
             }
         } else {
             for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
