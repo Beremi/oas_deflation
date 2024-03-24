@@ -137,16 +137,17 @@ void SteadyStateLinearSolver :: solve() {
     updateFieldVariables();      //with ddr=0
     computeForcesAtIntegrationTime(true);
 
+    nodes->giveReducedForceArray(residuals, f);
     //solve linear system
     /*
-     * nodes->giveReducedForceArray(residuals, f);
+     * 
      * if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
      *  terminated = true;
      *  cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
      *  return;
      * }
      */
-    //linalgsolver->solve(ddr, f);
+    linalgsolver->solve(ddr, f);
 
     /*
      * cout << "----- K ----" << endl;
