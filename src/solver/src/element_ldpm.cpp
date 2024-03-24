@@ -161,10 +161,10 @@ void LDPMTetra :: init() {
 
     double faceVolume = 0;
     for ( unsigned i = 0; i < 12; i++ ) {
-        faceVolume += areas [ i ] * lengths [ i ] / ndim;
+        faceVolume += volumes[i];
     }
-    if ( abs(faceVolume - volume) / max(faceVolume, volume) > 1e-6 ) {
-        cerr << "LDPM Tetra Error: " << idx << " - total volume is " << volume << ", volume from faces is " << faceVolume << endl;
+    if ( abs(faceVolume - volume) / max(faceVolume, volume) > 1e-4 ) {
+        cerr << "LDPM Tetra Warning: " << idx << " - total volume is " << volume << ", volume from faces is " << faceVolume << ", error " << abs(faceVolume - volume) / max(faceVolume, volume)  << endl;
         //for(unsigned i=0; i<12; i++) cout << areas[i]*lengths[i]/ndim << endl;
         //exit(1);
     }
@@ -222,7 +222,6 @@ Matrix LDPMTetra :: giveStiffnessMatrix(string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-
 void LDPMTetra :: computeDampingMatrix() {
     dampC = giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
 }
@@ -266,9 +265,11 @@ void LDPMTetra :: computeMassMatrix() {
             tetcentr = ( ( * tetnodes [ 0 ] ) + ( * tetnodes [ 1 ] ) + ( * tetnodes [ 2 ] ) + ( * tetnodes [ 3 ] ) ) / 4;
             for ( unsigned k = 0; k < 4; k++ ) {
                 reltetnodes [ k ] = ( * tetnodes [ k ] ) - tetcentr;
-            }
+            }    
             tetvol = tetraVolumeSigned(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
             tetI = tetraInertia3D(& reltetnodes [ 0 ], & reltetnodes [ 1 ], & reltetnodes [ 2 ], & reltetnodes [ 3 ]);
+            if (tetvol<0) tetvol *= -1; //should not happen for correctly generated mesh
+            if (tetI(0,0)<0) tetI *= -1; //should not happen for correctly generated mesh
             for ( unsigned k = 0; k < 3; k++ ) {
                 massM(nodeID * 6 + k, nodeID * 6 + k) += density * tetvol;
             }

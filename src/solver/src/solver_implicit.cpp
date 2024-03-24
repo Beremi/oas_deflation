@@ -146,7 +146,7 @@ void SteadyStateLinearSolver :: solve() {
      *  return;
      * }
      */
-    linalgsolver->solve(ddr, f);
+    //linalgsolver->solve(ddr, f);
 
     /*
      * cout << "----- K ----" << endl;
