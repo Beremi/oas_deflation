@@ -243,6 +243,7 @@ void DoFDependentOnConjugates :: init(Solver *solver) {
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: readFromFile(const std :: string filename, const unsigned ndim, NodeContainer *nodecont) {
     ( void ) ndim;
+    std :: cout << "Input file '" <<  filename;
     unsigned origsize = constraints.size();
     std :: string line, ConstrType;
     std :: ifstream inputfile(filename.c_str() );
@@ -264,7 +265,7 @@ void ConstraintContainer :: readFromFile(const std :: string filename, const uns
                 }
             }
         }
-        std :: cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << std :: endl;
+        std::cout << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << std :: endl;
         inputfile.close();
     } else {
         std :: cerr << "Error: unable to open input file '" <<  filename <<  "'" << std :: endl;

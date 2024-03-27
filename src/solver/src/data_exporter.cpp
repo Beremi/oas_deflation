@@ -903,6 +903,7 @@ ExporterContainer :: ~ExporterContainer() {
  * - %VTKRCExporter - for other parameters see VTKRCExporter::readFromLine
  */
 void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
+    cout << "Input file '" <<  filename;
     size_t origsize = exporters.size();
     string line, exptype;
     ifstream inputfile(filename.c_str() );
@@ -990,7 +991,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << exporters.size() - origsize << " exporters found" << endl;
+        cout << "' succesfully loaded; " << exporters.size() - origsize << " exporters found" << endl;
     } else {
         cerr << "Error ExporterContainer: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);

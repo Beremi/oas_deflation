@@ -33,6 +33,7 @@ void NodeContainer :: addNode(Node *n) {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: readFromFile(const string filename, const int dim) {
+    cout << "Input file '" <<  filename;
     size_t origsize = nodes.size();
     string line, nodeType;
     ifstream inputfile(filename.c_str() );
@@ -95,7 +96,7 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << nodes.size() - origsize << " nodes found" << endl;
+        cout << "' succesfully loaded; " << nodes.size() - origsize << " nodes found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);

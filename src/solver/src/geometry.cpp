@@ -479,6 +479,7 @@ bool RegionContainer :: isLocationValid(const Point p, const vector< unsigned >i
 //TO BE USE IN ADAPTIVITY
 ///////////////////////////////////////////////////////////////////////////////
 void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr< Region > > &regions, unsigned dim) {
+    cout << "Input file '" <<  filename;
     size_t origsize = regions.size();
     string line, regionType;
     ifstream inputfile(filename.c_str() );
@@ -505,7 +506,7 @@ void readRegions(const std :: string &filename, std :: vector< std :: unique_ptr
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << regions.size() - origsize << " regions found" << endl;
+        cout << "' succesfully loaded; " << regions.size() - origsize << " regions found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);

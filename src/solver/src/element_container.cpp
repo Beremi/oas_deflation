@@ -39,6 +39,7 @@ void ElementContainer :: setModel(Model *mod) {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
+    cout << "Input file '" <<  filename;
     this->materials = matrs;
     size_t origsize = elems.size();
     string line, elemType;
@@ -195,7 +196,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << elems.size() - origsize << " elements found" << endl;
+        cout << "' succesfully loaded; " << elems.size() - origsize << " elements found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);

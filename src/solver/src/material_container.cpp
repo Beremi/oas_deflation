@@ -43,6 +43,7 @@ Material *MaterialContainer :: giveMaterial(unsigned const mat) {
 
 //////////////////////////////////////////////////////////
 void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
+    cout << "Input file '" <<  filename;
     size_t origsize = matrs.size();
     string line, matType;
     ifstream inputfile(filename.c_str() );
@@ -176,7 +177,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
             id++;
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << matrs.size() - origsize << " materials found" << endl;
+        cout << "' succesfully loaded; " << matrs.size() - origsize << " materials found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);

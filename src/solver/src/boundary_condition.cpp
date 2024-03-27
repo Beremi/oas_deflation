@@ -294,6 +294,7 @@ void BCContainer :: clear() {
 
 //////////////////////////////////////////////////////////
 void BCContainer :: readFromFile(const string filename, NodeContainer *nodes, ElementContainer *elems) {
+    cout << "Input file '" <<  filename;
     size_t origBCsize = BC.size();
     size_t origLoadsize = loads.size();
     string line, aux;
@@ -320,7 +321,7 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes, El
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << BC.size() - origBCsize << " boundary conditions and " << loads.size() - origLoadsize << " volume loads found" << endl;
+        cout << "' succesfully loaded; " << BC.size() - origBCsize << " boundary conditions and " << loads.size() - origLoadsize << " volume loads found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);

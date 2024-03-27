@@ -326,6 +326,7 @@ FunctionContainer :: ~FunctionContainer() {
 
 //////////////////////////////////////////////////////////
 void FunctionContainer :: readFromFile(const string filename) {
+    cout << "Input file '" <<  filename;
     size_t origsize = functions.size();
     string line, ftype;
     ifstream inputfile(filename.c_str() );
@@ -378,7 +379,7 @@ void FunctionContainer :: readFromFile(const string filename) {
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << functions.size() - origsize << " functions found" << endl;
+        cout << "' succesfully loaded; " << functions.size() - origsize << " functions found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
