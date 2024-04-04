@@ -203,7 +203,6 @@ double LDPMMaterialStatus :: giveSigmaBCDiff(double relt, double *sigmaBC) {
     if ( rDV - m->giveKc1() > 0 ) {
         dHcdt = ( m->giveHc0() - m->giveHc1() ) / pow(1 + m->giveKc2() * max(0., rDV - m->giveKc1() ), 2) * m->giveKc2() * drDVdt;
     }
-    ;
     double dsc1dt = ( epsC1 - epsC0 ) * dHcdt;
     double deDVdt  = deVdt + m->giveBeta() * deDdt;
     double dsBCdt = dsc1dt * exp( ( -epsDV - epsC1 ) * Hc / sigmaC1) + sigmaC1 * exp( ( -epsDV - epsC1 ) * Hc / sigmaC1) * ( -deDVdt * Hc * sigmaC1 + ( -epsDV - epsC1 ) * dHcdt * sigmaC1 - ( -epsDV - epsC1 ) * Hc * dsc1dt ) / pow(sigmaC1, 2);
@@ -211,6 +210,7 @@ double LDPMMaterialStatus :: giveSigmaBCDiff(double relt, double *sigmaBC) {
 
     //cout << temp_strain[0] << "\t" << rDV << "\t" << deviatoricStrain << "\t" << Hc << "\t" << sigmaBC << endl;
     //cout << 1 << "\t" << drDVdt/deNdt << "\t" << deDdt/deNdt << "\t" << dHcdt/deNdt <<  "\t" << dsBCdt/deNdt << endl;
+    
     return dsBCdt / deNdt;
 }
 
@@ -291,23 +291,46 @@ Vector LDPMMaterialStatus :: giveCompression(const Vector &strain, Vector strain
         //check evolution of sigma bc derivative in time
         if ( deNdt > 0 ) {
             double transSigmaBC;
-            if ( giveSigmaBCDiff(1, & transSigmaBC) < -m->giveEd() && giveSigmaBCDiff(0, & transSigmaBC) > -m->giveEd() ) {
-                double transt = ( -m->giveEd() - giveSigmaBCDiff(0, & transSigmaBC) ) / ( giveSigmaBCDiff(1, & transSigmaBC) - giveSigmaBCDiff(0, & transSigmaBC) );
+            double d0 = giveSigmaBCDiff(0, & transSigmaBC);
+            double d1 = giveSigmaBCDiff(1, & transSigmaBC);
+            if ( d1 < -m->giveEd() && d0 > -m->giveEd() ) {          
+                //Newton method
+                double transt = ( -m->giveEd() - d0 ) / ( d1 - d0 );
                 double err = giveSigmaBCDiff(transt, & transSigmaBC) + m->giveEd();
-                unsigned itmax = 100;
+                unsigned itmax = 20;
                 unsigned it = 0;
                 double diff;
-
-                while ( fabs(err) / m->giveEd() > 1e-6 && it < itmax ) {
-                    diff = ( ( giveSigmaBCDiff(transt + 1e-8, & transSigmaBC) + m->giveEd() ) - ( giveSigmaBCDiff(transt, & transSigmaBC) + m->giveEd() ) ) / 1e-8;
-                    transt -= err / diff;
-                    err = giveSigmaBCDiff(transt, & transSigmaBC) + m->giveEd();
-                    it++;
+                double Ed = m->giveEd();
+                double shiftt = 1.;
+                while ( abs(shiftt) > 1e-6 && it < itmax ) {
+                    diff = ( ( giveSigmaBCDiff(transt + 1e-8, & transSigmaBC) + Ed ) - ( giveSigmaBCDiff(transt, & transSigmaBC) + Ed ) ) / 1e-8;
+                    shiftt = err / diff;
+                    if (shiftt>0) transt -= min(shiftt, transt);
+                    else transt -= max(shiftt, transt-1);
+                    err = giveSigmaBCDiff(transt, & transSigmaBC) + Ed;
+                    it++;                
+                }
+                if ( it == itmax ) {
+                    //bisection method
+                    it = 0;
+                    itmax = 60;
+                    double t0 = 0.;
+                    double t1 = 1.;
+                    while ( t1-t0 > 1e-6 && it < itmax ) {
+                        transt = (t0+t1)/2.;                    
+                        err = giveSigmaBCDiff(transt, & transSigmaBC);
+                        if (err > -m->giveEd()) t0=transt;
+                        else t1=transt;                        
+                        it++;                
+                    }
                 }
                 if ( it == itmax ) {
                     cerr << "LDPM Material Error: transitional time not found, error " << fabs(err) << endl;
                     exit(1);
                 }
+                
+
+
                 //found transitional time, from that time the evolution of bc should go with slope Ed
                 sigmaBC = transSigmaBC + m->giveEd() * ( 1 - transt ) * deNdt;
             }
