@@ -86,7 +86,7 @@ void CSLMaterialStatus :: init() {
     }
 
     CSLMaterial *m = static_cast< CSLMaterial * >( mat );
-    Ks = 2 * m->giveAlpha() * m->giveE0() / ( m->giveLcrs() / L - 1 );
+    Ks = 2 * m->giveAlphaForDamage() * m->giveE0() / ( m->giveLcrs() / L - 1 );
     Kt = 2 * m->giveE0() / ( m->giveLcrt() / L - 1 );
     nt = log(Kt / ( Kt - Ks ) ) / log(1 - 2 * omega0 / M_PI);
 
@@ -114,11 +114,11 @@ double CSLMaterialStatus :: giveS0tension(double omega) const {
     double sa = .5 * ft * ( pow(fs / ( m->giveMu() * ft ), 2) - 1. );
 
 
-    if ( omega == atan(sqrt(m->giveAlpha() ) / m->giveMu() ) ) {
+    if ( omega == atan(sqrt(m->giveAlphaForDamage() ) / m->giveMu() ) ) {
         // for this anle, the later equation is undetermined, but hyperbola eq. gives this (see Two Scale Study - Cusatis 2007 doi.org/10.1016/j.engfracmech.2006.01.021)
         return .5 * ( ft + 2 * sa ) * ft / ( ( ft + sa ) * s );
     } else {
-        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlpha() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
+        return ( -( ft + sa ) * s + sqrt(pow( ( ft + sa ) * s, 2 ) + ( m->giveAlphaForDamage() * ( c2 / pow(m->giveMu(), 2) ) - s2 ) * ( ft + 2 * sa ) * ft) ) / ( m->giveAlphaForDamage() * ( c2 / pow(m->giveMu(), 2) ) - s2 );
     }
 }
 
@@ -128,7 +128,7 @@ double CSLMaterialStatus :: giveS0compression(double omega) const {
 
     double fc = m->giveFc() * RAND_H;
 
-    return fc / sqrt(pow(sin(omega), 2) + ( m->giveAlpha() * pow(cos(omega), 2) ) / m->giveBeta() );
+    return fc / sqrt(pow(sin(omega), 2) + ( m->giveAlphaForDamage() * pow(cos(omega), 2) ) / m->giveBeta() );
 }
 
 //////////////////////////////////////////////////////////
@@ -171,12 +171,12 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
     } else {
         epsT = sqrt(pow(strain [ 1 ], 2) + pow(strain [ 2 ], 2) );        //3D
     }
-    double epsEQ = sqrt(pow(epsN, 2) + m->giveAlpha() * pow(epsT, 2) );        //equivalent strain
+    double epsEQ = sqrt(pow(epsN, 2) + m->giveAlphaForDamage() * pow(epsT, 2) );        //equivalent strain
 
     if ( epsEQ > 0 && damage < 1.0 ) {
         double omega, S0, chi, K0, strEQ;
         if ( epsT > 0 ) {
-            omega = atan(epsN / ( sqrt(m->giveAlpha() ) * epsT ) );
+            omega = atan(epsN / ( sqrt(m->giveAlphaForDamage() ) * epsT ) );
         } else if ( epsN > 0 ) {
             omega = 0.5 * M_PI;
         } else {
@@ -191,7 +191,7 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             double emax;
             temp_maxEpsN = max(maxEpsN, epsN);
             temp_maxEpsT = max(maxEpsT, epsT);
-            emax = sqrt(pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );
+            emax = sqrt(pow(temp_maxEpsN, 2) + m->giveAlphaForDamage() * pow(temp_maxEpsT, 2) );
             S0 = giveS0tension(omega);
 
             unsigned dim = element->giveDimension();
@@ -268,7 +268,7 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
                 for ( unsigned i = 1; i < temp_stress.size(); i++ ) {
                     sT += pow(temp_stress [ i ], 2);
                 }
-                double strs = sqrt(pow(sN, 2) + ( sT / m->giveAlpha() ) );
+                double strs = sqrt(pow(sN, 2) + ( sT / m->giveAlphaForDamage() ) );
                 if ( strs  < m->giveStressResiduum() ) {
                     double epsN, epsT;
                     epsN = temp_strain [ 0 ];
@@ -276,7 +276,7 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
                     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
                         epsT += pow(temp_strain [ i ], 2);
                     }
-                    double epsEQ = sqrt(pow(epsN, 2) + epsT * m->giveAlpha() );
+                    double epsEQ = sqrt(pow(epsN, 2) + epsT * m->giveAlphaForDamage() );
                     return stiff * ( 1 - m->giveStressResiduum() / ( m->giveE0() * epsEQ ) );
                 } else {
                     return stiff * ( 1 - temp_damage );
@@ -556,12 +556,9 @@ MaterialStatus *CSLMaterialWithTensorialStressUpdate :: giveNewMaterialStatus(El
 
 //////////////////////////////////////////////////////////
 void CSLMaterialWithTensorialStressUpdate :: init(MaterialContainer *matcont) {
+    alphaForDamage = alpha;
+    alpha = 1;
     CSLMaterial :: init(matcont);
-
-    if ( alpha != 1. ) {
-        cerr << "WARNING: " << name << " alpha parameter is forced to be 1, your value " << alpha << "has been overwritten." << endl;
-        alpha = 1.;
-    }
 };
 
 

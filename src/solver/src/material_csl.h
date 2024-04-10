@@ -70,6 +70,7 @@ public:
     double giveLam0() { return lam0; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
+    virtual double giveAlphaForDamage() const { return VectMechMaterial::giveAlpha(); }
 
     virtual void init(MaterialContainer *matcont);
 };
@@ -95,6 +96,7 @@ class CSLMaterialWithTensorialStressUpdate : public CSLMaterial
 {
 private:
     double poisson;
+    double alphaForDamage;
     std :: vector< Vector >tensstress;
 public:
     CSLMaterialWithTensorialStressUpdate(unsigned dimension);
@@ -105,6 +107,7 @@ public:
     virtual void init(MaterialContainer *matcont);
     virtual void prepareForStressEvaluation(ElementContainer *elems);
     Vector giveAveragePrincipalStress(unsigned Anode, unsigned Bnode);
+    virtual double giveAlphaForDamage() const { return alphaForDamage; }
 };
 
 
