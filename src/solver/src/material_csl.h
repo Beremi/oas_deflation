@@ -88,7 +88,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
 private:
-    Vector giveEigenStrainFromTensorialStress();
+    Vector giveEigenStrainFromTensorialStress() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -103,10 +103,10 @@ public:
     virtual ~CSLMaterialWithTensorialStressUpdate() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    double givePoissonNumber() { return poisson; }
+    double givePoissonNumber() const { return poisson; }
     virtual void init(MaterialContainer *matcont);
     virtual void prepareForStressEvaluation(ElementContainer *elems);
-    Vector giveAveragePrincipalStress(unsigned Anode, unsigned Bnode);
+    Vector giveAveragePrincipalStress(unsigned Anode, unsigned Bnode) const;
     virtual double giveAlphaForDamage() const { return alphaForDamage; }
 };
 

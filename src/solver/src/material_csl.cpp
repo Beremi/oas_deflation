@@ -439,7 +439,7 @@ void CSLMaterial :: init(MaterialContainer *matcont) {
     nc = 2;
 
     Lcrt = 2 * E0 * Gt / pow(ft, 2);
-    Lcrs = 2 * alpha * E0 * Gs / pow(fs, 2);
+    Lcrs = 2 * giveAlphaForDamage() * E0 * Gs / pow(fs, 2);
 };
 
 
@@ -458,7 +458,7 @@ bool CSLMaterialWithTensorialStressUpdateStatus :: giveValues(string code, Vecto
 }
 
 //////////////////////////////////////////////////////////
-Vector CSLMaterialWithTensorialStressUpdateStatus :: giveEigenStrainFromTensorialStress() {
+Vector CSLMaterialWithTensorialStressUpdateStatus :: giveEigenStrainFromTensorialStress() const {
     CSLMaterialWithTensorialStressUpdate *m = static_cast< CSLMaterialWithTensorialStressUpdate * >( mat );
     Vector ts = m->giveAveragePrincipalStress(element->giveNode(0)->giveID(), element->giveNode(1)->giveID() );
 
@@ -518,7 +518,7 @@ void CSLMaterialWithTensorialStressUpdate :: prepareForStressEvaluation(ElementC
 
 
 //////////////////////////////////////////////////////////
-Vector CSLMaterialWithTensorialStressUpdate :: giveAveragePrincipalStress(unsigned Anode, unsigned Bnode) {
+Vector CSLMaterialWithTensorialStressUpdate :: giveAveragePrincipalStress(unsigned Anode, unsigned Bnode) const {
     return ( tensstress [ Anode ] + tensstress [ Bnode ] ) / 2.;
 }
 
