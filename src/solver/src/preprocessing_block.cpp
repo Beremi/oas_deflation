@@ -1894,7 +1894,7 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCContai
         connectSlaveMasterRigid(constrs, slave, master, this->dim, activeDirs);
     }
 
-    if ( insideRegions.size() > 0 ) {
+    if ( insideRegions.size() > 0 || outsideRegions.size() > 0 ) {
         for ( auto const &nod : * nodes ) {
             //test for regions
             if ( !regions->isLocationValid(nod->givePoint(), insideRegions, outsideRegions) ) {
