@@ -55,13 +55,17 @@ bool ConjGradSolver :: solve(Vector &x, const Vector &b) {
 #endif
 
     bool result = false;
-    x = cgK.solveWithGuess(b, initialGuess);
-    result = size_t( cgK.iterations() ) < maxIT;
-    if ( !result ) {
-        cerr << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
-        exit(1);
+    if (b.size()>0) {
+        x = cgK.solveWithGuess(b, initialGuess);
+        result = size_t( cgK.iterations() ) < maxIT;
+        if ( !result ) {
+            cerr << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
+            exit(1);
+        }
+        initialGuess = x;
+    } else {
+        result = true;
     }
-    initialGuess = x;
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -110,7 +114,7 @@ bool LDLTSolver :: solve(Vector &x, const Vector &b) {
     auto start = std :: chrono :: system_clock :: now();
 #endif
 
-    x = ldlt.solve(b);
+    if (b.size()>0) x = ldlt.solve(b);
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -160,7 +164,7 @@ bool LUSolver :: solve(Vector &x, const Vector &b) {
     auto start = std :: chrono :: system_clock :: now();
 #endif
 
-    x = lu.solve(b);
+    if (b.size()>0) x = lu.solve(b);
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -210,7 +214,7 @@ bool LLTSolver :: solve(Vector &x, const Vector &b) {
     auto start = std :: chrono :: system_clock :: now();
 #endif
 
-    x = llt.solve(b);
+    if (b.size()>0) x = llt.solve(b);
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
