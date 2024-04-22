@@ -19,6 +19,7 @@ set (solver_files
     material_vectorial.cpp
     material_fiber.cpp
     material_misc.cpp
+    material_plasticity.cpp
     material_slide_3_2.cpp
     material_rve.cpp
     material_csl.cpp

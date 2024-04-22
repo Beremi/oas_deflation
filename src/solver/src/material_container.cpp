@@ -11,6 +11,7 @@
 #include "material_coulomb_friction.h"
 #include "material_fiber.h"
 #include "material_thermomechanical.h"
+#include "material_plasticity.h"
 
 #include "element_container.h"
 
@@ -166,6 +167,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("VectMechMaterialWithRotationalStiffness") == 0 ) {
                     VectMechMaterialWithRotationalStiffness *newmat = new VectMechMaterialWithRotationalStiffness(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("VonMisesPlasticMaterial") == 0 ) {
+                    VonMisesPlasticMaterial *newmat = new VonMisesPlasticMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else {
