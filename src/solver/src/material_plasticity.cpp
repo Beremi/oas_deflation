@@ -21,8 +21,16 @@ VonMisesPlasticMaterialStatus :: VonMisesPlasticMaterialStatus(VonMisesPlasticMa
 
 //////////////////////////////////////////////////////////
 Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    temp_strain = addEigenStrain(strain);
     //HERE COMES THE CONSTITUTIVE ROUTINES
-    return VonMisesPlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+
+    VonMisesPlasticMaterial *vmpm = static_cast<VonMisesPlasticMaterial*>(mat);
+    vmpm->giveHardeningModulus();
+
+
+
+    temp_stress = VonMisesPlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
