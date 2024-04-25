@@ -98,8 +98,9 @@ private:
     double poisson;
     double alphaForDamage;
     std :: vector< Vector >tensstress;
+    CSLMaterialWithTensorialStressUpdate* master_material =nullptr;
 public:
-    CSLMaterialWithTensorialStressUpdate(unsigned dimension);
+    CSLMaterialWithTensorialStressUpdate(unsigned dimension, CSLMaterialWithTensorialStressUpdate* mm);
     virtual ~CSLMaterialWithTensorialStressUpdate() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);

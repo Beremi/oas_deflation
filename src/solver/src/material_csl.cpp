@@ -507,19 +507,22 @@ Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStressWithFrozenIntVars
 // CSL MATERIAL WITH TENSORIAL STRESS UPDATE
 //////////////////////////////////////////////////////////
 
-CSLMaterialWithTensorialStressUpdate :: CSLMaterialWithTensorialStressUpdate(unsigned dimension) : CSLMaterial(dimension) {
+CSLMaterialWithTensorialStressUpdate :: CSLMaterialWithTensorialStressUpdate(unsigned dimension, CSLMaterialWithTensorialStressUpdate* mm) : CSLMaterial(dimension) {
     name = "CSL material with tensorial stress update";
+    master_material = mm;
 };
 
 //////////////////////////////////////////////////////////
 void CSLMaterialWithTensorialStressUpdate :: prepareForStressEvaluation(ElementContainer *elems) {
-    tensstress = elems->computePrincipalStresses();
+    if (not master_material) tensstress = elems->computePrincipalStresses();
+    //else it is already computed by master
 }
 
 
 //////////////////////////////////////////////////////////
 Vector CSLMaterialWithTensorialStressUpdate :: giveAveragePrincipalStress(unsigned Anode, unsigned Bnode) const {
-    return ( tensstress [ Anode ] + tensstress [ Bnode ] ) / 2.;
+    if (not master_material) return ( tensstress [ Anode ] + tensstress [ Bnode ] ) / 2.;
+    else return master_material->giveAveragePrincipalStress(Anode, Bnode);
 }
 
 //////////////////////////////////////////////////////////

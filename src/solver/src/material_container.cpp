@@ -49,13 +49,14 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
     string line, matType;
     ifstream inputfile(filename.c_str() );
     unsigned id = 0;
+    CSLMaterialWithTensorialStressUpdate* CSLMaterialWithTensorialStressUpdateMaster = nullptr;       
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
                 continue;
             }
             istringstream iss(line);
-            iss >> matType;
+            iss >> matType;     
             if ( !( matType.rfind("#", 0) == 0 ) ) {
                 if ( matType.compare("VectMechMaterial") == 0 ) {
                     VectMechMaterial *newmat = new VectMechMaterial(dim);
@@ -110,9 +111,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("CSLMaterialWithTensorialStressUpdate") == 0 ) {
-                    CSLMaterialWithTensorialStressUpdate *newmat = new CSLMaterialWithTensorialStressUpdate(dim);
+                    CSLMaterialWithTensorialStressUpdate *newmat = new CSLMaterialWithTensorialStressUpdate(dim,CSLMaterialWithTensorialStressUpdateMaster);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                    if (CSLMaterialWithTensorialStressUpdateMaster==nullptr) CSLMaterialWithTensorialStressUpdateMaster = newmat;
                 } else if ( matType.compare("LDPMMaterial") == 0 ) {
                     LDPMMaterial *newmat = new LDPMMaterial(dim);
                     newmat->readFromLine(iss);
