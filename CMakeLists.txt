@@ -123,7 +123,7 @@ set (CMAKE_CXX_STANDARD 20)
 set(TARGETNAME OAS)
 
 # detect
-find_package(PythonInterp REQUIRED)
+find_package (Python3 COMPONENTS Interpreter)
 find_package (Eigen3 3.3.9 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
