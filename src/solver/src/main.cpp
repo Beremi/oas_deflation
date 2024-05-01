@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
     ofstream outputfile( ( masterModel->resultDir / "version.txt" ).string() );
     if ( outputfile.is_open() ) {
         outputfile << std :: scientific;
-        outputfile << version_info();
+        outputfile << version_info(true);
         outputfile << endl;
     }
     outputfile.close();
