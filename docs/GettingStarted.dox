@@ -21,8 +21,21 @@ To grab a copy of the latest version of OAS using git access.
 Or download archive file e.g. ZIP https://gitlab.com/kelidas/OAS/-/archive/master/OAS-master.zip .
 
 \subsection Prereqisites Pre-requisites
-The OAS requires the CMake cross-platform build system and C++ compiler
-with STL support (Standard Template Library).
+To build OAS it is needed
+- **CMake** - cross-platform build system
+- **C++ compiler** with STL support (Standard Template Library).
+
+
+\subsubsection Dependencies OAS Dependencies
+- **VTK** is optional dependency but user will lost possibility to export VTU files for postprocessing in ParaView.
+  - VTK is mostly tested with version >9 (but >8.2 should be working too). 
+    If your version is lower or there is no system library than build your own
+    \ref VTK "VTK build".
+- **OpenMP**
+- **Eigen** - if not found in the system path than the one from the thirdparty directory is automatically used
+\note **Lapack, Blas** - optional dependencies for Eigen
+\note Builds are mostly tested on Ubuntu 22.04. 
+List of dependencies can be found in docker/Dockerfile_XXX.
 
 
 \subsection Build Build
@@ -30,7 +43,7 @@ OAS project uses cross-platform building system \c cmake \c (\cite bast_cmake_20
 Examples: https://github.com/dev-cafe/cmake-cookbook/tree/v1.0 .
 Cmake can be used:
 - in terminal (command line)
-- GUI - cmake-gui
+- GUI - cmake-gui (https://cmake.org/)
 - TUI - terminal ccmake (Ubuntu: apt install cmake-curses-gui)
 
 A build directory has to be outside of the source directory.
@@ -48,14 +61,6 @@ The recommended structure
 |   +-- public
 |   +-- ...
 \endcode
-
-\subsubsection Dependencies Dependencies
-Builds are mostly tested on Ubuntu 22.04. 
-Ubuntu dependencies can be found in docker/Dockerfile_XXX.
-VTK is optional dependency but user will lost possibility to export VTU files for postprocessing in ParaView.
-VTK is mostly tested with version >9 (but >8.2 should be working too). 
-If your version is lower or there is no system library than build your own
-\ref VTK "VTK build".
 
 \subsubsection OASBuild OAS build
 
@@ -141,7 +146,7 @@ Build OAS on MacOS (tested on Monterey, Ventura) using Homebrew (https://brew.sh
   cmake -DCMAKE_C_COMPILER="/usr/local/opt/llvm/bin/clang" -DCMAKE_CXX_COMPILER="/usr/local/opt/llvm/bin/clang++" -DCMAKE_CXX_FLAGS="-I/usr/local/opt/libomp/include" -DLAPACK_ROOT="/usr/local/opt/lapack" -DBLAS_ROOT="/usr/local/opt/openblas" -DOpenMP_ROOT="/usr/local/opt/libomp" ../OAS
   # if linker error on Ventura try to add "-Xlinker -ld_classic" to CMAKE_CXX_FLAGS
 \endcode
-\note{Tested with gcc-13 and some other compilers but got error/segmentation fault during different stages after OAS start. The working version was obtained using LLVM.}
+\note Tested with gcc-13 and some other compilers but got error/segmentation fault during different stages after OAS start. The working version was obtained using LLVM.
 
 
 
@@ -239,7 +244,7 @@ OAS -j number_of_threads master.inp
 
 In OAS directory run:
 \code{.sh}
-docker build -f docker/Dockerfile_ubuntu20 .
+docker build -f docker/Dockerfile_ubuntu24 .
 >> Successfully built a99225cc61c5 (this number will change)
 \endcode
 runing container will perform tests:
@@ -255,7 +260,9 @@ docker run -it --entrypoint /bin/bash a992
 
 \section VTK VTK
 - install system VTK library
-    - apt install libvtk-dev (Ubuntu 22.04, version >9)
+    \code{.sh}
+        apt install libvtk-dev (Ubuntu 22.04, version >9)
+    \endcode
 - build own VTK library
     - download VTK (newer version, zip/tar.gz, https://vtk.org/download/)
         - extract archive file

@@ -123,7 +123,7 @@ set (CMAKE_CXX_STANDARD 20)
 set(TARGETNAME OAS)
 
 # detect
-find_package(PythonInterp REQUIRED)
+find_package (Python3 COMPONENTS Interpreter)
 find_package (Eigen3 3.3.9 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
@@ -187,6 +187,7 @@ if (USE_VTK)
         target_compile_definitions(solver PUBLIC __VTK_MODULE)
         list (APPEND EXT_LIBS ${VTK_LIBRARIES})
         list (APPEND MODULE_LIST "VTK")
+        add_definitions(-DVTK_FOUND)
     else ()
         message("-- VTK found: ${VTK_VERSION}")
         target_compile_definitions(solver PUBLIC __VTK_MODULE)
@@ -197,6 +198,7 @@ if (USE_VTK)
             TARGETS ${TARGETNAME} solver
             MODULES ${VTK_LIBRARIES}
             )
+        add_definitions(-DVTK_FOUND)
     endif ()
 endif ()
 
@@ -315,7 +317,8 @@ add_custom_command(
     ${OAS_BINARY_DIR}/generated/version.h
     ALL
   COMMAND
-    ${CMAKE_COMMAND} -D TARGET_NAME=${TARGETNAME} -D TARGET_DIR=${OAS_BINARY_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${OAS_SOURCE_DIR}/version.cmake
+    ${CMAKE_COMMAND} -D TARGET_NAME=${TARGETNAME} -D TARGET_DIR=${OAS_BINARY_DIR} -D SOURCE_DIR=${OAS_SOURCE_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} 
+                     -D VTK_VERSION=${VTK_VERSION} -P ${OAS_SOURCE_DIR}/version.cmake
   WORKING_DIRECTORY
     ${OAS_SOURCE_DIR}
   )
