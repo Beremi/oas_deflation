@@ -31,8 +31,10 @@ public:
     size_t giveMaxSize(unsigned c) const { return maxsize [ c ]; }
     void appendToName(std :: string app) { filename = filename + app; };
     void setSolverPointer(Solver *s);
+    std :: string giveName() { return name; };
 protected:
     unsigned dim;
+    std :: string name;
     std :: string filename;
     unsigned precision;
     std :: vector< std :: string >codes;
@@ -64,7 +66,7 @@ private:
     NodeContainer *nodes;
     ElementContainer *elems;
 public:
-    TXTNodalExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : DataExporter(dimension) { nodes = n; elems = e; };
+    TXTNodalExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : DataExporter(dimension) { nodes = n; elems = e;  name = "TXTNodalExporter";};
     ~TXTNodalExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
@@ -80,7 +82,7 @@ class TXTElementExporter : public DataExporter
 private:
     ElementContainer *elems;
 public:
-    TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
+    TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; name = "TXTElementExporter";};
     ~TXTElementExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
@@ -96,7 +98,7 @@ class TXTIntegrationPointExporter : public DataExporter
 private:
     ElementContainer *elems;
 public:
-    TXTIntegrationPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
+    TXTIntegrationPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e;   name = "TXTIntegrationPointExporter";};
     ~TXTIntegrationPointExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
@@ -110,12 +112,12 @@ protected:
 class Gauge : public DataExporter
 {
 protected:
-    std :: string name;
+    std :: string gname;
 public:
-    Gauge(unsigned dimension) : DataExporter(dimension) {};
+    Gauge(unsigned dimension) : DataExporter(dimension) {   name = "Gauge"; };
     ~Gauge() {};
     virtual void giveFileName(unsigned step, char *buffer) const;
-    std :: string giveName() { return name; };
+    std :: string giveGaugeName() const { return gname;}
 };
 
 //////////////////////////////////////////////////////////
@@ -128,8 +130,8 @@ protected:
     std :: vector< unsigned >DoFs;
     std :: vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc; };
-    ForceGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
+    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc;   name = "ForceGauge";};
+    ForceGauge(std :: string &f, std :: string &gaugename, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(std :: istringstream &iss);
     virtual void exportData(unsigned step, fs :: path resultDir) const;
@@ -143,8 +145,8 @@ public:
 class DoFGauge : public ForceGauge
 {
 public:
-    DoFGauge(NodeContainer *nc, unsigned dimension) : ForceGauge(nc, dimension) {};
-    DoFGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
+    DoFGauge(NodeContainer *nc, unsigned dimension) : ForceGauge(nc, dimension) {  name = "DoFGauge";};
+    DoFGauge(std :: string &f, std :: string &gaugename, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~DoFGauge() {};
     virtual void exportData(unsigned step, fs :: path resultDir) const;
     virtual void init();
@@ -160,7 +162,7 @@ protected:
     std :: vector< unsigned >ipnums;
     ElementContainer *elemcont;
 public:
-    IntegrationPointGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    IntegrationPointGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1;   name = "IntegrationPointGauge";};
     ~IntegrationPointGauge() {};
     void readFromLine(std :: istringstream &iss);
     virtual void exportData(unsigned step, fs :: path resultDir) const;
@@ -175,7 +177,7 @@ class ElementContainerGauge : public Gauge
 protected:
     ElementContainer *elemcont;
 public:
-    ElementContainerGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    ElementContainerGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1;   name = "ElementContainerGauge";};
     ~ElementContainerGauge() {};
     void readFromLine(std :: istringstream &iss);
     virtual void exportData(unsigned step, fs :: path resultDir) const;
@@ -196,7 +198,7 @@ private:
     Point natCoordsA, natCoordsB;
     Element *elemA, *elemB;
 public:
-    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; elemA = nullptr; elemB = nullptr; };
+    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; elemA = nullptr; elemB = nullptr;   name = "DisplacementGauge";};
     ~DisplacementGauge() {};
     void readFromLine(std :: istringstream &iss);
     virtual void exportData(unsigned step, fs :: path resultDir) const;
@@ -211,7 +213,7 @@ class SolverGauge : public Gauge
 {
 private:
 public:
-    SolverGauge(unsigned dimension) : Gauge(dimension) {};
+    SolverGauge(unsigned dimension) : Gauge(dimension) {  name = "SolverGauge";};
     ~SolverGauge() {};
     void readFromLine(std :: istringstream &iss);
     virtual void exportData(unsigned step, fs :: path resultDir) const;

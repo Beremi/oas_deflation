@@ -450,7 +450,7 @@ void Gauge :: giveFileName(unsigned step, char *buffer) const {
  */
 void ForceGauge :: readFromLine(istringstream &iss) {
     iss >> this->filename;
-    iss >> this->name;
+    iss >> this->gname;
     this->codes.resize(1);
     iss >> this->codes [ 0 ];
     unsigned num;
@@ -487,14 +487,15 @@ void ForceGauge :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
+ForceGauge :: ForceGauge(string &f, string &gaugename, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
     nodes = nc;
     filename = f;
-    name = gname;
+    gname = gaugename;
     n = nn;
     codes.resize(1);
     codes [ 0 ] = c;
     multiplier = m;
+    name = "ForceGauge";
 }
 
 //////////////////////////////////////////////////////////
@@ -545,7 +546,7 @@ void ForceGauge :: exportData(unsigned step, fs :: path resultDir) const {
  */
 
 //////////////////////////////////////////////////////////
-DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {}
+DoFGauge :: DoFGauge(string &f, string &gaugename, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gaugename, c, nn, nc, m, dimension) {    name = "DoFGauge";}
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
@@ -611,7 +612,7 @@ void DoFGauge :: exportData(unsigned step, fs :: path resultDir) const {
 // EXPORT OF IP VALUES
 void IntegrationPointGauge :: readFromLine(istringstream &iss) {
     iss >> this->filename;
-    iss >> this->name;
+    iss >> this->gname;
     this->codes.resize(1);
     iss >> this->codes [ 0 ];
     transform(codes [ 0 ].begin(), codes [ 0 ].end(), codes [ 0 ].begin(), :: tolower);
@@ -681,7 +682,7 @@ void IntegrationPointGauge :: exportData(unsigned step, fs :: path resultDir) co
 // EXPORT OF SUMMATIONS AND AVERAGES FROM ELEMENT CONTAINER
 void ElementContainerGauge :: readFromLine(istringstream &iss) {
     iss >> this->filename;
-    iss >> this->name;
+    iss >> this->gname;
     this->codes.resize(1);
     iss >> this->codes [ 0 ];
     DataExporter :: readFromLine(iss);
@@ -742,7 +743,7 @@ void ElementContainerGauge :: exportData(unsigned step, fs :: path resultDir) co
  */
 void DisplacementGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
-    iss >> name;
+    iss >> gname;
     codes.resize(1);
     iss >> codes [ 0 ];
     double x, y, z;
@@ -838,7 +839,7 @@ void DisplacementGauge :: exportData(unsigned step, fs :: path resultDir) const 
 // EXPORT OF SOLVER VALUES
 void SolverGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
-    iss >> name;
+    iss >> gname;
     codes.resize(1);
     iss >> codes [ 0 ];
     DataExporter :: readFromLine(iss);
@@ -1049,10 +1050,10 @@ void ExporterContainer :: init(const bool &initial) {
                 if ( outputfile.good() ) {
                     maxsize = g->giveMaxSize(0);
                     if ( maxsize == 1 ) {
-                        outputfile << "\t" << g->giveName();
+                        outputfile << "\t" << g->giveGaugeName();
                     } else {
                         for ( p = 0; p < maxsize; p++ ) {
-                            outputfile << "\t" << g->giveName() << "_" << p;
+                            outputfile << "\t" << g->giveGaugeName() << "_" << p;
                         }
                     }
                 }

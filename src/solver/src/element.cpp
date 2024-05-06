@@ -94,8 +94,11 @@ void Element :: init() {
         stats [ k ]->initializeStressAndStrainVector( Bs [ k ].rows() );
     }
 
-    computeDampingMatrix();
-    computeMassMatrix();
+    volume  = 0;
+    for ( k = 0; k < inttype->giveNumIP(); k++ ) {
+        volume += giveIPVolume(k);
+    }
+
 }
 
 //////////////////////////////////////////////////////////
@@ -303,13 +306,14 @@ void Element :: computeDampingMatrix() {
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveDampingTensor();
+        cout << Hs [ i ].size() << endl;
         dampC += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
 }
 
 //////////////////////////////////////////////////////////
 Matrix Element :: giveDampingMatrix() {
-    if ( mat->requiresDampingsMatrixUpdate() ) {
+    if ( mat->requiresDampingsMatrixUpdate()  || dampC.rows()==0) {
         computeDampingMatrix();
     }
     return dampC;
@@ -328,7 +332,7 @@ void Element :: computeMassMatrix() {
 
 //////////////////////////////////////////////////////////
 Matrix Element :: giveMassMatrix() {
-    if ( mat->requiresMassMatrixUpdate() ) {
+    if ( mat->requiresMassMatrixUpdate() || massM.rows()==0) {
         computeMassMatrix();
     }
     return massM;
@@ -336,7 +340,7 @@ Matrix Element :: giveMassMatrix() {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveLumpedMassMatrix() {
-    if ( mat->requiresMassMatrixUpdate() ) {
+    if ( mat->requiresMassMatrixUpdate() || massM.rows()==0) {
         computeMassMatrix();
     }
     return massM.rowwise().sum();
@@ -612,3 +616,20 @@ Point Element :: giveApproxCenter() const {
     }
     return c;
 }
+
+//////////////////////////////////////////////////////////
+Point Element :: giveIPLoc(unsigned k) const { 
+    Point nc = inttype->giveIPLocation(k);
+    if (shafunc->isInNaturalCoords()){
+        Vector phi = Vector :: Zero(nodes.size() );
+        shafunc->giveShapeF(&nc, phi);     
+        Point tc = Point(0,0,0);
+        for (unsigned i=0; i<nodes.size(); i++){
+            tc += phi[i]*nodes[i]->givePoint();
+        }
+        return tc;
+    } else {
+        return nc;
+    }
+}
+

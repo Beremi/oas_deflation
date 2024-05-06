@@ -99,7 +99,7 @@ class TensMechMaterial;
 class TensMechMaterialStatus : public MaterialStatus
 {
 protected:
-
+    Matrix giveElasticStiffnessTensor3D() const;
 public:
     TensMechMaterialStatus(TensMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~TensMechMaterialStatus() {};
@@ -110,6 +110,7 @@ public:
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
     virtual Matrix giveMassTensor() const;
+    virtual Matrix giveDampingTensor() const;    
 };
 
 //////////////////////////////////////////////////////////
@@ -155,13 +156,13 @@ protected:
     double lc, muc;
 
 public:
-    TensCosseratMechMaterial(unsigned dimension) : TensMechMaterial(dimension) { name = "elastic Cosserat mechanical material"; planeStress = true; };
+    TensCosseratMechMaterial(unsigned dimension);
     ~TensCosseratMechMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveCharacteristicLength() const { return lc; }
     double giveCosseratShearParam() const { return muc; }
-    virtual void init(MaterialContainer *matcont) { TensMechMaterial :: init(matcont); strainsize = dim * dim; }
+    virtual void init(MaterialContainer *matcont) { TensMechMaterial :: init(matcont);}
 };
 
 #endif /* _MATERIAL_CONTINUOUS_H */

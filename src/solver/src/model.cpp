@@ -35,13 +35,19 @@ Model :: Model(bool pT) {
 //////////////////////////////////////////////////////////
 void Model :: init(const bool &initial) {     //initialization
     if ( initial ) {
+        cout << "initialization of materials" << endl; cout.flush();
         matrs.init();
     }
+    cout << "initialization of elements" << endl; cout.flush();
     elems.init();
+    cout << "initialization of preprocessing blocks" << endl; cout.flush();
     pblocks.init();
+    cout << "initialization of boundary conditions" << endl; cout.flush();
     bconds.init( solver->giveTime() );
+    cout << "initialization of nodes" << endl; cout.flush();
     nodes.init();
     nodes.initSimplices();
+    cout << "initialization of constraints" << endl; cout.flush();
     constr.init(& nodes, & bconds, solver);
     elems.assignFibersToElems();
     elems.findElementFriends();
@@ -51,7 +57,9 @@ void Model :: init(const bool &initial) {     //initialization
     if ( initialTimeDerFieldFile.compare("") != 0 ) {
         initialTimeDerFieldFile = ( baseDir / initialTimeDerFieldFile ).string();
     }
+    cout << "initialization of solver" << endl; cout.flush();
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
+    cout << "initialization of exporters" << endl; cout.flush();
     exporters.setResultDirectory(resultDir);
     exporters.setSolver(solver);
     exporters.init(initial);

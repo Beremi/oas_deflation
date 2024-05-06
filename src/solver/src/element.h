@@ -74,7 +74,7 @@ public:
     virtual void giveValues(std :: string code, Vector &result) const;
     std :: string giveName() const { return name; }
     size_t giveNumIP() const { return inttype->giveNumIP(); };
-    Point giveIPLoc(unsigned k) const { return inttype->giveIPLocation(k); };
+    virtual Point giveIPLoc(unsigned k) const;
     double giveIPWeight(unsigned k) const { return inttype->giveIPWeight(k); };
     virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
     std :: vector< Node * >giveNodes() const { return nodes; }
@@ -104,6 +104,7 @@ public:
     virtual Vector giveMasterVariables(const Point *x, const Vector &DoFs) const { return giveHMatrix(x) * DoFs; };
     Vector giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const;
     double giveVolume() const { return volume; };
+    virtual double giveIPVolume(unsigned i) const { return inttype->giveIPWeight(i); };
 
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
 

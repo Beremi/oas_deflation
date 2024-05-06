@@ -6,6 +6,7 @@
 #include "element_ldpm.h"
 #include <algorithm>
 #include "model.h"
+#include "periodic_bc.h"
 
 using namespace std;
 

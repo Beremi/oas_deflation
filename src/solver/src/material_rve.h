@@ -153,7 +153,9 @@ protected:
     bool checkOttosenCriterion();
 
     Point calculateCentroid();
-    std :: vector< std :: vector< Vector > >calculateProjectors(const Point centroid);
+    std :: vector< std :: vector< Matrix > >calculateProjectors(const Point centroid);
+    std :: vector< Matrix >calculateVectProjector(const Element* e, const Point centroid);
+    std :: vector< Matrix >calculateTensProjector(const Element* e, const Point centroid);
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
 
@@ -168,7 +170,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Matrix giveDampingTensor() const;
+    virtual Matrix giveDampingTensor() const;    
     virtual Matrix giveInertiaTensor() const;
     //virtual unsigned giveStrainSize() const;
     virtual double giveCrackVolume() const;
@@ -185,7 +187,7 @@ class DiscreteMechanicalRVEMaterial : public DiscreteTransportRVEMaterial
 protected:
     Matrix precompElastic, precompDamping, precompInertia;
     Point centroid;
-    std :: vector< std :: vector< Vector > >projectors;
+    std :: vector< std :: vector< Matrix > >projectors;
     bool project_curvature;
     double average_density;
 
@@ -196,12 +198,12 @@ public:
     void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; };
     void setPrecomputedDampingTensor(Matrix dam) { precompDamping = dam; };
     void setPrecomputedInertiaTensor(Matrix ine) { precompInertia = ine; };
-    void setCentroidAndProjectors(Point c, std :: vector< std :: vector< Vector > >p);
+    void setCentroidAndProjectors(Point c, std :: vector< std :: vector< Matrix > >p);
     Matrix givePrecomputedElasticTensor() const { return precompElastic; };
     Matrix givePrecomputedDampingTensor() const { return precompDamping; };
     Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
     Point giveCentroid() { return centroid; };
-    std :: vector< std :: vector< Vector > > *giveProjectors() { return & projectors; };
+    std :: vector< std :: vector< Matrix > > *giveProjectors() { return & projectors; };
     bool isNonlinear() const { return nonlinear; };
     bool projectCurvature() const { return project_curvature; };
     virtual void readFromLine(std :: istringstream &iss);

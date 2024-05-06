@@ -12,7 +12,7 @@ class VTKExporter : public DataExporter
 private:
 
 public:
-    VTKExporter(unsigned dimension) : DataExporter(dimension) { binaryswitch = true; };
+    VTKExporter(unsigned dimension) : DataExporter(dimension) { binaryswitch = true;   name = "VTKExporter";};
     virtual ~VTKExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual void giveFileName(unsigned step, char *buffer) const;
@@ -32,7 +32,7 @@ protected:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKElementExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n; };
+    VTKElementExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKElementExporter"; };
     ~VTKElementExporter() {};
     // virtual void readFromLine(istringstream &iss);
     virtual void exportData(unsigned step, fs :: path resultDir) const;
@@ -50,7 +50,7 @@ private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKRB2DExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n; };
+    VTKRB2DExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRB2DExporter";};
     ~VTKRB2DExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, fs :: path resultDir) const;
@@ -67,7 +67,7 @@ private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKRCExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n; };
+    VTKRCExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRCExporter";};
     ~VTKRCExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
     virtual void exportData(unsigned step, fs :: path resultDir) const;

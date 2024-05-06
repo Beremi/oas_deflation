@@ -2,6 +2,7 @@
 #include "model.h"
 #include "element_discrete.h"
 #include "element_continuous.h"
+#include "periodic_bc.h"
 
 using namespace std;
 
@@ -660,7 +661,7 @@ void DiscreteTransportRVEMaterial :: setMasterMaterial(VectTrsprtMaterialStatus 
 // DISCRETE MECHANICAL RVE MATERIAL
 //////////////////////////////////////////////////////////
 DiscreteMechanicalRVEMaterialStatus :: DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim) : DiscreteTransportRVEMaterialStatus(m, e, ipnum, masterfile, ndim) {
-    name = "mechancial RVE mat. status";
+    name = "mechanical RVE mat. status";
     is_precomputed = true;
     is_master_status = false;
 }
@@ -669,22 +670,15 @@ DiscreteMechanicalRVEMaterialStatus :: DiscreteMechanicalRVEMaterialStatus(RVEMa
 void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
     //set eigenstrains
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    vector< vector< Vector > > *projectors = macromat->giveProjectors();
+    vector< vector< Matrix > > *projectors = macromat->giveProjectors();
     ElementContainer *elems = RVE->giveElements();
-    unsigned num = 0;
+    Element *e;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        Element *e = elems->giveElement(i);
-        unsigned strainsize = e->giveMaterial()->giveStrainSize();
-        Vector eigstr = Vector :: Zero(strainsize);
-        eigstr.setZero();
-        for ( unsigned v = 0; v < strainsize; v++ ) {
-            for ( unsigned r = 0; r < local_strain.size(); r++ ) {
-                eigstr [ v ] -= local_strain [ r ] * ( * projectors ) [ v ] [ num ] [ r ];
-            }
-        }
-        num++;
-        for ( unsigned k = 0; k < e->giveNumIP(); k++ ) {
-            e->giveMatStatus(k)->setEigenStrain(eigstr);
+        if ((( * projectors ) [ i ]).size()==0) continue;
+        e = elems->giveElement(i);
+        for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {  
+            Vector eigstr =  - ( * projectors ) [ i ] [ ip ] * local_strain;
+            e->giveMatStatus(ip)->setEigenStrain( eigstr );            
         }
     }
 }
@@ -692,29 +686,21 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
 /////////////////////////////////./////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    vector< vector< Vector > > *projectors = macromat->giveProjectors();
+    vector< vector< Matrix > > *projectors = macromat->giveProjectors();
     ElementContainer *elems = RVE->giveElements();
     unsigned ndim = macromat->giveDimension();
     double volume = 0.;
-    Vector factor;
-    unsigned num = 0;
-    RigidBodyContact *e;
+    Element *e;
+    local_stress *= 0;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-        for ( unsigned k = 0; k < e->giveNumIP(); k++ ) {
-            factor  = e->giveIPWeight(k) * ndim * e->giveMatStatus(k)->giveTempStress();
-            for ( unsigned v = 0; v < projectors->size(); v++ ) {
-                for ( unsigned r = 0; r < local_strain.size(); r++ ) {
-                    local_stress [ r ] += factor [ v ] * ( * projectors ) [ v ] [ num ] [ r ];
-                }
-            }
+        if ((( * projectors ) [ i ]).size()==0) continue;
+        e = elems->giveElement(i);
+        for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {
+            local_stress += e->giveIPVolume(ip) * e->giveMatStatus(ip)->giveTempStress() * ( * projectors ) [ i ] [ ip ];         
         }
-        num++;
         volume += e->giveVolume();
     }
-    for ( unsigned v = 0; v < local_strain.size(); v++ ) {
-        local_stress [ v ] /= volume;
-    }
+    local_stress /= volume;
 }
 
 
@@ -850,10 +836,12 @@ double DiscreteMechanicalRVEMaterialStatus :: giveCrackVolume() const {
     ElementContainer *elems = RVE->giveElements();
     Vector res;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-        e->giveIPValues("tempCrackOpening", 0, res);
-        if ( res.size() > 0 ) {
-            crackVolume += res [ 0 ] * e->giveArea();
+        e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
+        if (e){
+            e->giveIPValues("tempCrackOpening", 0, res);
+            if ( res.size() > 0 ) {
+                crackVolume += res [ 0 ] * e->giveArea();
+            }
         }
     }
 
@@ -869,24 +857,21 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocal(string ty
         unsigned strain_size = mat->giveStrainSize();
         unsigned dim = mat->giveDimension();
         Matrix Keff = Matrix :: Zero(strain_size, strain_size);
-        vector< vector< Vector > > *projectors = macromat->giveProjectors();
+        vector< vector< Matrix > > *projectors = macromat->giveProjectors();
         ElementContainer *elems = RVE->giveElements();
         double volume = 0;
         Point normal;
         Vector n = Vector :: Zero(dim);
-        RigidBodyContact *e;
+        Element *e;
         volume = 0;
         Matrix stiff;
-        unsigned num = 0;
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-            e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-            for ( unsigned k = 0; k < e->giveNumIP(); k++ ) {
-                stiff  = e->giveMatStatus(k)->giveStiffnessTensor(type);
-                for ( unsigned v = 0; v < e->giveMaterial()->giveStrainSize(); v++ ) {
-                    Keff += dyadicProduct( ( * projectors ) [ v ] [ num ], ( * projectors ) [ v ] [ num ]) * dim *  e->giveIPWeight(k) * stiff(v, v);
-                }
+            if ((( * projectors ) [ i ]).size()==0) continue;
+            e = elems->giveElement(i);
+            for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {
+                stiff  = e->giveMatStatus(ip)->giveStiffnessTensor(type);
+                Keff += e->giveIPVolume(ip) *  (( * projectors ) [ i ] [ ip ]).transpose() * stiff * ( * projectors ) [ i ] [ ip ];
             }
-            num++;
             volume += e->giveVolume();
         }
         Keff /= volume;
@@ -906,6 +891,7 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveDampingTensor() const {
     if ( is_precomputed ) {
         return macromat->givePrecomputedDampingTensor();
     } else {
+        /*
         unsigned ndim = macromat->giveDimension();
         unsigned dof_size = 3 * ( ndim - 1 );
         Matrix Keff = Matrix :: Zero(dof_size, dof_size);
@@ -913,6 +899,8 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveDampingTensor() const {
             Keff(i, i) = 1e-20;
         }
         return Keff;
+        */
+        return Matrix::Zero(1,1);
     }
 }
 
@@ -936,15 +924,28 @@ Point DiscreteMechanicalRVEMaterialStatus :: calculateCentroid() {  //only for m
     ElementContainer *elems = RVE->giveElements();
 
     //mechanics
-    RigidBodyContact *e;
-    VectMechMaterialStatus *ms;
+    Element *e;
+    VectMechMaterial *vms;
+    TensMechMaterial *tms;
+    double density = 0;
     double weight;
     double totalweight = 0;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
-        for ( unsigned k = 0; k < e->giveNumIP(); k++ ) {
-            ms = static_cast< VectMechMaterialStatus * >( e->giveMatStatus(k) );
-            weight = e->giveIPWeight(k) * ms->giveDensity();
+        e = elems->giveElement(i);
+        vms = dynamic_cast< VectMechMaterial * >( e->giveMaterial() );       
+        if (vms){
+            density = vms->giveDensity();
+        } else {
+            tms = dynamic_cast< TensMechMaterial * >( e->giveMaterial() );       
+            if (tms){ 
+                density = tms->giveDensity();
+            } else {
+                cout << "Mechanical RVE contains element with material not derived from MechanicalMaterial" << endl;
+                exit(1);
+            }
+        }
+        for ( unsigned k = 0; k < e->giveNumIP(); k++ ) {           
+            weight = e->giveIPVolume(k) * density;
             totalweight += weight;
             centroid += e->giveIPLoc(k) * weight;
         }
@@ -958,127 +959,212 @@ double DiscreteMechanicalRVEMaterialStatus :: computeAverageDensity() const {
     ElementContainer *elems = RVE->giveElements();
 
     //mechanics
-    RigidBodyContact *e;
-    VectMechMaterialStatus *ms;
+    Element *e;
+    VectMechMaterial *vms;
+    TensMechMaterial *tms;
+    double density = 0;
     double weight = 0;
     double volume = 0;
 
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = static_cast< RigidBodyContact * >( elems->giveElement(i) );
+        e = elems->giveElement(i);
+        vms = dynamic_cast< VectMechMaterial * >( e->giveMaterial() );       
+        if (vms){
+            density = vms->giveDensity();
+        } else {
+            tms = dynamic_cast< TensMechMaterial * >( e->giveMaterial() );       
+            if (tms){ 
+                density = tms->giveDensity();
+            } else {
+                cout << "Mechanical RVE contains element with material not derived from MechanicalMaterial" << endl;
+                exit(1);
+            }
+        }
         for ( unsigned k = 0; k < e->giveNumIP(); k++ ) {
-            ms = static_cast< VectMechMaterialStatus * >( e->giveMatStatus(k) );
-            weight += e->giveIPWeight(k) * ms->giveDensity();
+            weight += e->giveIPWeight(k) * density;
             volume += e->giveVolume();
         }
     }
     return weight / volume;
 }
 
-//////////////////////////////////////////////////////////
-vector< vector< Vector > >DiscreteMechanicalRVEMaterialStatus :: calculateProjectors(const Point centroid) {   //only for mechanics
-    vector< vector< Vector > >projectors;
 
+//////////////////////////////////////////////////////////
+vector< vector< Matrix > >DiscreteMechanicalRVEMaterialStatus :: calculateProjectors(const Point centroid) {   //only for mechanics
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     unsigned ndim = macromat->giveDimension();
     ElementContainer *elems = RVE->giveElements();
-    unsigned projNum = 3 * ( ndim - 1 );
-    projectors.resize(projNum);
-    unsigned strain_size = macromat->giveStrainSize();
-
-    RigidBodyContact *e;
-    Point xc;
-    Point alphaVec = Point(0, 0, 0);
+    Material* emat;
+    VectMechMaterial* vm;
+    TensMechMaterial* tm;
     Point normal;
-    Vector PQ = Vector :: Zero(strain_size);
+    Element * e;
+    vector< vector< Matrix > >projectors(elems->giveSize());
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
-        e = dynamic_cast< RigidBodyContact * >( elems->giveElement(i) );
-        if ( e ) {
-            xc =  e->giveIPLoc(0) - centroid; //here we make corrections to have origin of the reference system at the centroid
-            normal = e->giveNormal();
-            unsigned v = 0;
-            //displacements
-            for ( ; v < ndim; v++ ) {
-                if ( v == 0 ) {
-                    alphaVec = normal;
-                } else if ( v == 1 ) {
-                    alphaVec = e->giveT1();
-                } else if ( v == 2 ) {
-                    alphaVec = e->giveT2();
-                }
-                if ( ndim == 2 ) {
-                    PQ [ 0 ] = normal.x() * alphaVec.x();
-                    PQ [ 1 ] = normal.y() * alphaVec.y();
-                    PQ [ 2 ] = normal.x() * alphaVec.y();
-                    PQ [ 3 ] = normal.y() * alphaVec.x();
-                    //in paper EliCus22, this projection is not active
-                    double factor2D = 0;
-                    if ( macromat->projectCurvature() ) {
-                        factor2D = xc.x() * alphaVec.y() - xc.y() * alphaVec.x();
-                    }
-                    PQ [ 4 ] = factor2D * normal.x();
-                    PQ [ 5 ] = factor2D * normal.y();
-                } else {
-                    PQ [ 0 ] = normal.x() * alphaVec.x();
-                    PQ [ 1 ] = normal.y() * alphaVec.y();
-                    PQ [ 2 ] = normal.z() * alphaVec.z();
-                    PQ [ 3 ] = normal.z() * alphaVec.y();
-                    PQ [ 4 ] = normal.y() * alphaVec.z();
-                    PQ [ 5 ] = normal.z() * alphaVec.x();
-                    PQ [ 6 ] = normal.x() * alphaVec.z();
-                    PQ [ 7 ] = normal.y() * alphaVec.x();
-                    PQ [ 8 ] = normal.x() * alphaVec.y();
-                    //in paper EliCus22, this projection is not active
-                    Point factor3D = Point(0, 0, 0);
-                    if ( macromat->projectCurvature() ) {
-                        factor3D = xc.cross(alphaVec);
-                    }
-                    PQ [ 9 ]  = normal.x() * factor3D.x();
-                    PQ [ 10 ] = normal.y() * factor3D.y();
-                    PQ [ 11 ] = normal.z() * factor3D.z();
-                    PQ [ 12 ] = normal.z() * factor3D.y();
-                    PQ [ 13 ] = normal.y() * factor3D.z();
-                    PQ [ 14 ] = normal.z() * factor3D.x();
-                    PQ [ 15 ] = normal.x() * factor3D.z();
-                    PQ [ 16 ] = normal.y() * factor3D.x();
-                    PQ [ 17 ] = normal.x() * factor3D.y();
-                }
-                projectors [ v ].push_back(PQ);
-            }
-            //rotations
-            for ( ; v < projNum; v++ ) {
-                if ( v - ndim == 0 ) {
-                    alphaVec = normal;
-                } else if ( v - ndim == 1 ) {
-                    alphaVec = e->giveT1();
-                } else if ( v - ndim == 2 ) {
-                    alphaVec = e->giveT2();
-                }
-
-                if ( ndim == 2 ) {
-                    PQ [ 0 ] = PQ [ 1 ] = PQ [ 2 ] = PQ [ 3 ] = 0;
-                    PQ [ 4 ] = normal.x();
-                    PQ [ 5 ] = normal.y();
-                } else {
-                    PQ [ 1 ]  = PQ [ 2 ] = PQ [ 3 ] = PQ [ 4 ] = PQ [ 5 ] = PQ [ 6 ] = PQ [ 7 ] = PQ [ 8 ] = 0;
-                    PQ [ 9 ] = normal.x() * alphaVec.x();
-                    PQ [ 10 ] = normal.y() * alphaVec.y();
-                    PQ [ 11 ] = normal.z() * alphaVec.z();
-                    PQ [ 12 ] = normal.z() * alphaVec.y();
-                    PQ [ 13 ] = normal.y() * alphaVec.z();
-                    PQ [ 14 ] = normal.z() * alphaVec.x();
-                    PQ [ 15 ] = normal.x() * alphaVec.z();
-                    PQ [ 16 ] = normal.y() * alphaVec.x();
-                    PQ [ 17 ] = normal.x() * alphaVec.y();
-                }
-                //in paper EliCus22, this projection is not active
-                if ( !macromat->projectCurvature() ) {
-                    PQ *= 0;
-                }
-                projectors [ v ].push_back(PQ);
-            }
+        e = elems->giveElement(i);
+        emat = e->giveMaterial();        
+        if ( dynamic_cast<VectMechMaterial*>(emat) ) {
+            projectors [ i ] = calculateVectProjector(e, centroid);
+        }else if ( dynamic_cast<TensMechMaterial*>(emat) ) {
+            projectors [ i ] = calculateTensProjector(e, centroid);
         }
     }
     return projectors;
+}
+
+//////////////////////////////////////////////////////////
+vector< Matrix > DiscreteMechanicalRVEMaterialStatus :: calculateVectProjector(const Element* e, const Point centroid) {   //only for mechanics
+    vector<Matrix> projector;
+
+    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    unsigned ndim = macromat->giveDimension();
+    unsigned projNum = e->giveMaterial()->giveStrainSize();
+    unsigned strain_size = macromat->giveStrainSize();
+    projector.resize(e->giveNumIP());
+
+    const RigidBodyContact *rbc;
+    Point xc;
+    Point alphaVec = Point(0, 0, 0);
+    Point normal;
+
+    rbc = static_cast< const RigidBodyContact * >( e );
+    normal = rbc->giveNormal();
+    for (unsigned ip=0; ip<e->giveNumIP(); ip ++){
+        projector[ip] = Matrix::Zero(projNum,strain_size);
+        xc =  rbc->giveIPLoc(ip) - centroid; //here we make corrections to have origin of the reference system at the centroid
+        unsigned v = 0;
+        //displacements
+        for ( ; v < ndim; v++ ) {
+            if ( v == 0 ) {
+                alphaVec = normal;
+            } else if ( v == 1 ) {
+                alphaVec = rbc->giveT1();
+            } else if ( v == 2 ) {
+                alphaVec = rbc->giveT2();
+            }
+            if ( ndim == 2 ) {
+                projector[ip] (v,0 ) =  normal.x() * alphaVec.x();
+                projector[ip] (v,1 ) =  normal.y() * alphaVec.y();
+                projector[ip] (v,2 ) =  normal.x() * alphaVec.y();
+                projector[ip] (v,3 ) =  normal.y() * alphaVec.x();
+                //in paper EliCus22, this projection is not active
+                double factor2D = 0;
+                if ( macromat->projectCurvature() ) {
+                    factor2D = xc.x() * alphaVec.y() - xc.y() * alphaVec.x();
+                    projector[ip] (v,4 ) =  factor2D * normal.x();   
+                    projector[ip] (v,5 ) =  factor2D * normal.y();
+                }
+            } else {
+                projector[ip] (v,0 ) =  normal.x() * alphaVec.x();
+                projector[ip] (v,1 ) =  normal.y() * alphaVec.y();
+                projector[ip] (v,2 ) =  normal.z() * alphaVec.z();
+                projector[ip] (v,3 ) =  normal.z() * alphaVec.y();
+                projector[ip] (v,4 ) =  normal.y() * alphaVec.z();
+                projector[ip] (v,5 ) =  normal.z() * alphaVec.x();
+                projector[ip] (v,6 ) =  normal.x() * alphaVec.z();
+                projector[ip] (v,7 ) =  normal.y() * alphaVec.x();
+                projector[ip] (v,8 ) =  normal.x() * alphaVec.y();
+                //in paper EliCus22, this projection is not active
+                Point factor3D = Point(0, 0, 0);
+                if ( macromat->projectCurvature() ) {
+                    factor3D = xc.cross(alphaVec);
+                    projector[ip] (v,9 )  = normal.x() * factor3D.x();
+                    projector[ip] (v,10 ) =  normal.y() * factor3D.y();
+                    projector[ip] (v,11 ) =  normal.z() * factor3D.z();
+                    projector[ip] (v,12 ) =  normal.z() * factor3D.y();
+                    projector[ip] (v,13 ) =  normal.y() * factor3D.z();
+                    projector[ip] (v,14 ) =  normal.z() * factor3D.x();
+                    projector[ip] (v,15 ) =  normal.x() * factor3D.z();
+                    projector[ip] (v,16 ) =  normal.y() * factor3D.x();
+                    projector[ip] (v,17 ) =  normal.x() * factor3D.y();
+                }
+            }
+        }
+        //rotations
+        for ( ; v < projNum; v++ ) {
+            if ( !macromat->projectCurvature() ) continue;
+            if ( v - ndim == 0 ) {
+                alphaVec = normal;
+            } else if ( v - ndim == 1 ) {
+                alphaVec = rbc->giveT1();
+            } else if ( v - ndim == 2 ) {
+                alphaVec = rbc->giveT2();
+            }
+
+            if ( ndim == 2 ) {
+                projector[ip] (v,4 ) =  normal.x();
+                projector[ip] (v,5 ) =  normal.y();
+            } else {
+                projector[ip] (v,9 ) =  normal.x() * alphaVec.x();
+                projector[ip] (v,10 ) =  normal.y() * alphaVec.y();
+                projector[ip] (v,11 ) =  normal.z() * alphaVec.z();
+                projector[ip] (v,12 ) =  normal.z() * alphaVec.y();
+                projector[ip] (v,13 ) =  normal.y() * alphaVec.z();
+                projector[ip] (v,14 ) =  normal.z() * alphaVec.x();
+                projector[ip] (v,15 ) =  normal.x() * alphaVec.z();
+                projector[ip] (v,16 ) =  normal.y() * alphaVec.x();
+                projector[ip] (v,17 ) =  normal.x() * alphaVec.y();
+            }
+        }
+    }
+    return projector;
+}
+
+//////////////////////////////////////////////////////////
+vector< Matrix > DiscreteMechanicalRVEMaterialStatus :: calculateTensProjector(const Element* e, const Point centroid) {   //only for mechanics
+    vector< Matrix > projector;
+
+    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    unsigned ndim = macromat->giveDimension();
+    unsigned projNum = e->giveMaterial()->giveStrainSize();
+    unsigned strain_size = macromat->giveStrainSize();
+    projector.resize(e->giveNumIP());
+
+    Point xc;
+    for (unsigned ip=0; ip<e->giveNumIP(); ip ++){
+        projector[ip] = Matrix::Zero(projNum,strain_size);
+        xc =  e->giveIPLoc(ip) - centroid; //here we make corrections to have origin of the reference system at the centroid
+        unsigned v = 0;
+        //displacements
+        for ( ; v < ndim*ndim; v++ ) {
+            projector[ip](v,v) =  1.;
+        }            
+        //in paper EliCus22, this projection is not active
+        if ( macromat->projectCurvature() ) {
+            if ( ndim == 2 ) {
+                    projector[ip](0,4 ) = -xc.y();
+                    projector[ip](1,5 ) = xc.x();
+                    projector[ip](2,5 ) = -xc.y();
+                    projector[ip](3,4 ) = xc.x();
+            } else {  
+                projector[ip](0,17 ) = xc.z();
+                projector[ip](0,15 ) = -xc.y();
+                projector[ip](1,13 ) = xc.x();
+                projector[ip](1,16 ) = -xc.z();
+                projector[ip](2,14 ) = xc.y();
+                projector[ip](2,12 ) = -xc.x();
+                projector[ip](3,16 ) = xc.y();
+                projector[ip](3,10 ) = -xc.x();
+                projector[ip](4,11 ) = xc.x();
+                projector[ip](4,14 ) = -xc.z();
+                projector[ip](5,9 )  = xc.y();
+                projector[ip](5,17 ) = -xc.x();
+                projector[ip](6,12 ) = xc.z();
+                projector[ip](6,11 ) = -xc.y();
+                projector[ip](7,15 ) = xc.x();
+                projector[ip](7,9 )  = -xc.z();
+                projector[ip](8,10 ) = xc.z();
+                projector[ip](8,13 ) = -xc.y();                 
+            }
+        }
+        //rotations
+        if ( macromat->projectCurvature() ) {
+            for ( ; v < projNum; v++ ) {
+                projector[ip](v,v ) =  1;
+            }
+        }
+    }
+    return projector;
 }
 
 
@@ -1103,9 +1189,9 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
     Matrix I = macromaterial->givePrecomputedInertiaTensor();
 
     if ( I.size() == 0 ) {
-        DiscreteMechanicalRVEMaterialStatus :: setFromPrecomputedToFullModel();
+        setFromPrecomputedToFullModel();
         Point centroid = calculateCentroid();
-        vector< vector< Vector > >projectors = calculateProjectors(centroid);
+        vector< vector< Matrix > >projectors = calculateProjectors(centroid);
         macromaterial->setCentroidAndProjectors(centroid, projectors);
 
         macromaterial->setPrecomputedDampingTensor(giveDampingTensor() );
@@ -1342,7 +1428,7 @@ MaterialStatus *DiscreteMechanicalRVEMaterial :: giveNewMaterialStatus(Element *
 }
 
 //////////////////////////////////////////////////////////
-void DiscreteMechanicalRVEMaterial :: setCentroidAndProjectors(Point c, vector< vector< Vector > >p) {
+void DiscreteMechanicalRVEMaterial :: setCentroidAndProjectors(Point c, vector< vector< Matrix > >p) {
     centroid = c;
     projectors = p;
 }
