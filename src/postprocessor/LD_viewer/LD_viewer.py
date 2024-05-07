@@ -240,7 +240,7 @@ class ControlPanel(HasStrictTraits):
         lines = []
         for lds in self.ldfiles.ldfiles:
             for ld in lds.ld_curves:
-                lines = ld.draw_line(ax)
+                lines.extend(ld.draw_line(ax))
         cursor = mplcursors.cursor(lines, highlight=True)
         cursor.connect("add", lambda sel: sel.annotation.set_text(sel.artist.get_label()))
         if self.figure_settings.show_legend:
