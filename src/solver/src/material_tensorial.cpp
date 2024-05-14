@@ -325,7 +325,7 @@ Matrix TensMechMaterialStatus :: giveStiffnessTensor(string type) const {
             D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
             D(2, 2) = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
         } else {  //plane strain
-            double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
+            double factor = m->giveElasticModulus() / (( 1. - 2. * m->givePoissonsRatio() ) * ( 1. + m->givePoissonsRatio() ));
             D(0, 0) = D(1, 1) = factor * ( 1. - m->givePoissonsRatio() );
             D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
             D(2, 2) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;

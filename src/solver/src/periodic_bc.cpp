@@ -230,7 +230,8 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
-        dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );        //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+        dBC.resize(m->giveNumberOfDoFs(), -1 );        //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+        for(unsigned k=0; k<dim; k++) dBC[k] = funcs->giveSize(); 
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
@@ -1390,7 +1391,9 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
     vector< double >mults;
     Node *s = nullptr;
     Node *m = nullptr;
-    Point diff, cdiff;
+    Point diff, cdiff2, cdiff1;
+    double dist;
+    Point centroid = Point(PUCsize[0],PUCsize[1],(dim==3) ? PUCsize[2] : 0) / 2.;
     for ( unsigned i = 0; i < masters.size(); i++ ) {
         m = nodes->giveNode(masters [ i ]);
         s = nodes->giveNode(slaves [ i ]);
@@ -1401,15 +1404,15 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
 
 
         diff = s->givePoint() - m->givePoint();
+        cdiff1 = m->givePoint() - centroid;
+        cdiff2 = s->givePoint() - centroid;
+        dist = diff.norm();
         //connect translations
         if ( dim == 3 ) {
-            vm.resize(4);
-            mults.resize(4);
-            dirs.resize(4, 0);
+            vm.resize(10,nodes->giveNode(initalNodeNum));
+            mults.resize(10);
+            dirs.resize(10, 0);
             vm [ 0 ] = m;
-            vm [ 1 ] = nodes->giveNode(initalNodeNum);
-            vm [ 2 ] = nodes->giveNode(initalNodeNum);
-            vm [ 3 ] = nodes->giveNode(initalNodeNum);
             mults [ 0 ] = 1.;
             mults [ 1 ] = diff.x();
             mults [ 2 ] = diff.y();
@@ -1433,13 +1436,25 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
             dirs [ 1 ] = 0;
             dirs [ 2 ] = 7;
             dirs [ 3 ] = 5;
+            dirs [ 4 ] = 15;
+            dirs [ 5 ] = 13;
+            dirs [ 6 ] = 11;
+            dirs [ 7 ] = 17;
+            dirs [ 8 ] = 10;
+            dirs [ 9 ] = 12;
+            mults [ 4 ] = (cdiff1.x()*cdiff1.y()-cdiff2.x()*cdiff2.y());
+            mults [ 5 ] = (cdiff1.y()*cdiff1.y()-cdiff2.y()*cdiff2.y());
+            mults [ 6 ] = (cdiff1.z()*cdiff1.y()-cdiff2.z()*cdiff2.y());
+            mults [ 7 ] = -(cdiff1.x()*cdiff1.z()-cdiff2.x()*cdiff2.z());
+            mults [ 8 ] = -(cdiff1.z()*cdiff1.y()-cdiff2.z()*cdiff2.y());
+            mults [ 9 ] = -(cdiff1.z()*cdiff1.z()-cdiff2.z()*cdiff2.z());
         }else{
             dirs [ 1 ] = 0;
             dirs [ 2 ] = 2;
             dirs [ 3 ] = 4;
             dirs [ 4 ] = 5;
-            mults [ 3 ] = diff.x();
-            mults [ 4 ] = -diff.y();
+            mults [ 3 ] = (cdiff1.x()*cdiff1.y()-cdiff2.x()*cdiff2.y());
+            mults [ 4 ] = (cdiff1.y()*cdiff1.y()-cdiff2.y()*cdiff2.y());
         }
         jd = new JointDoF(s, 0, vm, dirs, mults);
         constrs->addConstraint(jd);
@@ -1449,13 +1464,25 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
             dirs [ 1 ] = 8;
             dirs [ 2 ] = 1;
             dirs [ 3 ] = 3;
+            dirs [ 4 ] = 9;
+            dirs [ 5 ] = 16;
+            dirs [ 6 ] = 14;
+            dirs [ 7 ] = 15;
+            dirs [ 8 ] = 13;
+            dirs [ 9 ] = 11;
+            mults [ 4 ] = (cdiff1.x()*cdiff1.z()-cdiff2.x()*cdiff2.z());
+            mults [ 5 ] = (cdiff1.y()*cdiff1.z()-cdiff2.y()*cdiff2.z());
+            mults [ 6 ] = (cdiff1.z()*cdiff1.z()-cdiff2.z()*cdiff2.z());
+            mults [ 7 ] = -(cdiff1.x()*cdiff1.x()-cdiff2.x()*cdiff2.x());
+            mults [ 8 ] = -(cdiff1.x()*cdiff1.y()-cdiff2.x()*cdiff2.y());
+            mults [ 9 ] = -(cdiff1.x()*cdiff1.z()-cdiff2.x()*cdiff2.z());
         }else{
             dirs [ 1 ] = 3;
             dirs [ 2 ] = 1;
             dirs [ 3 ] = 4;
             dirs [ 4 ] = 5;
-            mults [ 3 ] = -diff.x();
-            mults [ 4 ] = diff.y();
+            mults [ 3 ] = -(cdiff1.x()*cdiff1.x()-cdiff2.x()*cdiff2.x());
+            mults [ 4 ] = -(cdiff1.x()*cdiff1.y()-cdiff2.x()*cdiff2.y());
         }
         jd = new JointDoF(s, 1, vm, dirs, mults);
         constrs->addConstraint(jd);
@@ -1465,6 +1492,18 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
             dirs [ 1 ] = 6;
             dirs [ 2 ] = 4;
             dirs [ 3 ] = 2;
+            dirs [ 4 ] = 17;
+            dirs [ 5 ] = 10;
+            dirs [ 6 ] = 12;
+            dirs [ 7 ] = 9;
+            dirs [ 8 ] = 16;
+            dirs [ 9 ] = 14;
+            mults [ 4 ] = (cdiff1.x()*cdiff1.x()-cdiff2.x()*cdiff2.x());
+            mults [ 5 ] = (cdiff1.y()*cdiff1.x()-cdiff2.y()*cdiff2.x());
+            mults [ 6 ] = (cdiff1.z()*cdiff1.x()-cdiff2.z()*cdiff2.x());
+            mults [ 7 ] = -(cdiff1.x()*cdiff1.y()-cdiff2.x()*cdiff2.y());
+            mults [ 8 ] = -(cdiff1.y()*cdiff1.y()-cdiff2.y()*cdiff2.y());
+            mults [ 9 ] = -(cdiff1.y()*cdiff1.z()-cdiff2.y()*cdiff2.z());
             jd = new JointDoF(s, 2, vm, dirs, mults);
             constrs->addConstraint(jd);
         }        
@@ -1500,8 +1539,8 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
             dirs [ 3 ] = 14;
         }else{
             dirs [ 0 ] = 2;
-            dirs [ 1 ] = 5;
-            dirs [ 2 ] = 4;
+            dirs [ 1 ] = 4;
+            dirs [ 2 ] = 5;
         }
         jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
         constrs->addConstraint(jd);
@@ -1699,7 +1738,7 @@ void CosseratMechanicalPeriodicBC :: readLoading(istringstream &iss) {
                 strainFunc [ 1 ] = hnum;
             } else if ( param.compare("gamma_zz") == 0 ) {
                 strainFunc [ 2 ] = hnum;
-            } else if ( param.compare("gamma_zx") == 0 ) {
+            } else if ( param.compare("gamma_zy") == 0 ) {
                 strainFunc [ 3 ] = hnum;
             } else if ( param.compare("gamma_yz") == 0 ) {
                 strainFunc [ 4 ] = hnum;
@@ -1717,7 +1756,7 @@ void CosseratMechanicalPeriodicBC :: readLoading(istringstream &iss) {
                 strainFunc [ 10 ] = hnum;
             } else if ( param.compare("kappa_zz") == 0 ) {
                 strainFunc [ 11 ] = hnum;
-            } else if ( param.compare("kappa_zx") == 0 ) {
+            } else if ( param.compare("kappa_zy") == 0 ) {
                 strainFunc [ 12 ] = hnum;
             } else if ( param.compare("kappa_yz") == 0 ) {
                 strainFunc [ 13 ] = hnum;

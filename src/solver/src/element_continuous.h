@@ -78,11 +78,18 @@ public:
 class MechanicalTriangle : public Element
 {
 protected:
+    Matrix averageVolumeB;
+    bool b_bar_integration_split;
+    void applyAverageVolumeB(Matrix &B, const Matrix phiG) const;
+    virtual void computeAverageBVolumeMatrix();
+    virtual void setIntegrationPointsAndWeights();
+
 public:
     MechanicalTriangle();
     virtual ~MechanicalTriangle() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
 };
 
 //////////////////////////////////////////////////////////

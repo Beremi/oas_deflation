@@ -153,7 +153,58 @@ MechanicalTriangle :: MechanicalTriangle() : Element(2) {
     shafunc = new Linear2DTriShapeF();
     inttype = new IntegrTri3(); //ONE IP suffices, but it does not work in extrapolation routine
     physicalFields [ 0 ] = true; //mechanics
+    b_bar_integration_split = false;
 }
+
+//////////////////////////////////////////////////////////
+void MechanicalTriangle :: readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+    Element :: readFromLine(iss, fullnodes, fullmatrs);
+
+    //iss.clear(); // clear string stream
+    //iss.seekg(0, iss.beg); //reset position in string stream
+
+    string param;    
+    while (  iss >> param ) {
+        if ( param.compare("b_bar_int") == 0 ) {
+            b_bar_integration_split = true;            
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalTriangle :: setIntegrationPointsAndWeights(){
+    Element :: setIntegrationPointsAndWeights();
+    if (b_bar_integration_split){
+        computeAverageBVolumeMatrix();
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalTriangle :: computeAverageBVolumeMatrix() {
+    Matrix phiG = Matrix :: Zero(ndim, nodes.size() );
+    averageVolumeB = Matrix :: Zero(ndim, nodes.size() );
+    double sumw=0;
+    for ( unsigned ipnum = 0; ipnum < inttype->giveNumIP(); ipnum++ ) {
+        shafunc->giveShapeFGrad(inttype->giveIPLocationPointer(ipnum), phiG);        
+        averageVolumeB += phiG*inttype->giveIPWeight(ipnum);
+        sumw += inttype->giveIPWeight(ipnum);
+    }
+    averageVolumeB /= ndim*sumw;
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalTriangle :: applyAverageVolumeB(Matrix &B, const Matrix phiG) const {
+    int s = 0;
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
+        for (unsigned d=0; d<ndim; d++){
+            for (unsigned dd=0; dd<ndim; dd++){
+                B(dd,s+d) -= phiG(d,i)/ndim - averageVolumeB(d,i);
+            }
+        }
+        s += nodes[i]->giveNumberOfDoFs();
+    }    
+}
+
 
 //////////////////////////////////////////////////////////
 Matrix MechanicalTriangle :: giveBMatrix(const Point *x) const {
@@ -163,8 +214,10 @@ Matrix MechanicalTriangle :: giveBMatrix(const Point *x) const {
 
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         B(0, 2 * i)     =   B(2, 2 * i + 1) =   phiG(0, i);
-        B(1, 2 * i)     =   B(0, 2 * i + 1) =   0.;
         B(1, 2 * i + 1) =   B(2, 2 * i)     =   phiG(1, i);
+    }
+    if(b_bar_integration_split){
+        applyAverageVolumeB(B, phiG);
     }
     return B;
 }
@@ -191,6 +244,7 @@ MechanicalQuad :: MechanicalQuad() {
     vtk_cell_type = 9;
     shafunc = new Linear2DQuadShapeF();
     inttype = new IntegrQuad4();
+    b_bar_integration_split = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -204,6 +258,7 @@ MechanicalTetra :: MechanicalTetra() {
     shafunc = new Linear3DTetraShapeF();
     inttype = new IntegrTetra4();
     physicalFields [ 0 ] = true; //mechanics
+    b_bar_integration_split = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -227,6 +282,9 @@ Matrix MechanicalTetra :: giveBMatrix(const Point *x) const {
         B(1, 3 * i + 1)   =   B(3, 3 * i + 2)  =   B(5, 3 * i)     =   phiG(1, i);
         B(2, 3 * i + 2)   =   B(3, 3 * i + 1)  =   B(4, 3 * i)     =   phiG(2, i);
     }
+    if(b_bar_integration_split){
+        applyAverageVolumeB(B, phiG);
+    }
     return B;
 }
 
@@ -240,6 +298,7 @@ MechanicalBrick :: MechanicalBrick() {
     vtk_cell_type = 12;
     shafunc = new Linear3DBrickShapeF();
     inttype = new IntegrBrick8();
+    b_bar_integration_split = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -258,6 +317,7 @@ CosseratQuad :: CosseratQuad() {
     shafunc = new Linear2DQuadShapeF();
     inttype = new IntegrQuad4();
     physicalFields [ 0 ] = true; //mechanics
+    b_bar_integration_split = false;
 }
 
 
@@ -283,6 +343,9 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
         // 04 05
         B(4, 3 * i + 2) =  phiG(0, i);
         B(5, 3 * i + 2) =  phiG(1, i);
+    }
+    if(b_bar_integration_split){
+        applyAverageVolumeB(B, phiG);
     }
     return B;
 }
