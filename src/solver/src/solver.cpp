@@ -134,6 +134,8 @@ void Solver :: runBeforeEachStep() {
 
 //////////////////////////////////////////////////////////
 void Solver :: runAfterEachStep() {
+    computeTotalInternalAndExternalAndKineticEnergy();
+
     r = trial_r;
     f_int_old = f_int;
     f_ext_old = f_ext;
@@ -146,7 +148,6 @@ void Solver :: runAfterEachStep() {
     if ( dt < 1e-12 ) {
         terminated = true;
     }
-
     W_int_old = W_int;
     W_ext_old = W_ext;
 }
@@ -258,7 +259,6 @@ void Solver :: computeTotalInternalAndExternalAndKineticEnergy() {
         W_int [ pff ] += 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
         W_ext [ pff ] += 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
     }
-
     computeTotalKineticEnergy();
 }
 

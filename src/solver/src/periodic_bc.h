@@ -115,7 +115,7 @@ public:
 class CosseratMechanicalPeriodicBC : public MechanicalPeriodicBC
 {
 protected:
-
+    virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
     virtual void generateNewDoFs(NodeContainer *nodes);
     virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
     virtual void generateExporters(NodeContainer *nodes, ExporterContainer *ex);

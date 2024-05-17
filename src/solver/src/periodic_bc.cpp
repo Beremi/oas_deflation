@@ -247,7 +247,7 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
         vector< Node * >vm;
 
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-            if ( nodes->giveNode(n)->doesMechanics() && ( dynamic_cast< MechDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
+            if ( nodes->giveNode(n)->doesMechanics() &&  dynamic_cast< MechDoF * >( nodes->giveNode(n) )  ) {
                 vm.push_back(nodes->giveNode(n) );
             }
         }
@@ -1348,7 +1348,7 @@ void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCon
         VolumetricAverage *va;
         vector< Node * >vm;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-            if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) == nullptr ) ) {
+            if ( nodes->giveNode(n)->doesTransport() && ( dynamic_cast< TrsDoF * >( nodes->giveNode(n) ) != nullptr ) ) {
                 vm.push_back(nodes->giveNode(n) );
             }
         }
@@ -1392,7 +1392,6 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
     Node *s = nullptr;
     Node *m = nullptr;
     Point diff, cdiff2, cdiff1;
-    double dist;
     Point centroid = Point(PUCsize[0],PUCsize[1],(dim==3) ? PUCsize[2] : 0) / 2.;
     for ( unsigned i = 0; i < masters.size(); i++ ) {
         m = nodes->giveNode(masters [ i ]);
@@ -1406,7 +1405,6 @@ void CosseratMechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, C
         diff = s->givePoint() - m->givePoint();
         cdiff1 = m->givePoint() - centroid;
         cdiff2 = s->givePoint() - centroid;
-        dist = diff.norm();
         //connect translations
         if ( dim == 3 ) {
             vm.resize(10,nodes->giveNode(initalNodeNum));
@@ -1810,6 +1808,68 @@ void CosseratMechanicalPeriodicBC :: readLoading(istringstream &iss) {
                 cout << "Error in " << name << " : loading by " << param << " not implemented yet" << '\n';
                 exit(1);
             }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void CosseratMechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
+    if ( 1 ) {  //last master node cannot move
+        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
+        BoundaryCondition *bc;
+        vector< int >dBC, nBC;
+        dBC.resize(m->giveNumberOfDoFs(), -1 );        //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
+        for(unsigned k=0; k<dim; k++) dBC[k] = funcs->giveSize(); 
+        nBC.resize(m->giveNumberOfDoFs(), -1);
+        bc = new BoundaryCondition(m, dBC, nBC);
+        bcs->addBoundaryCondition(bc);
+
+        //add constant function
+        vector< double >x, y;
+        x.resize(1, 0);
+        y.resize(1, 0);
+        PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+        funcs->addFunction(newf);
+    }
+    if (1) {  //volumetric average for rotations
+        VolumetricAverage *va;
+        vector< Node * >vm;
+
+        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+            if ( nodes->giveNode(n)->doesMechanics() && dynamic_cast< Particle * >( nodes->giveNode(n) ) ) {
+                vm.push_back(nodes->giveNode(n) );
+            }
+        }
+        if ( vm.size() > 0 ) {
+            unsigned skip = dim;
+            unsigned nDoFs = 3;
+            if ( dim == 3 ) {
+                nDoFs = 6;
+            }
+            MechDoF *pn = new MechDoF(dim, nDoFs-skip);
+            nodes->addNode(pn);
+
+            vector< unsigned >dirs(vm.size() );
+
+            for ( unsigned vi = 0; vi < nDoFs-skip; vi++ ) {//only rotations
+                fill(dirs.begin(), dirs.end(), vi+skip);
+                va = new VolumetricAverage(vm, dirs, pn, vi, elems, constrs);
+                constrs->addConstraint(va);
+            }
+
+            BoundaryCondition *bc;
+            vector< int >dBC, nBC;
+            dBC.resize(nDoFs-skip, funcs->giveSize());
+            nBC.resize(nDoFs-skip, -1);
+            bc = new BoundaryCondition(pn, dBC, nBC);
+            bcs->addBoundaryCondition(bc);
+
+            //add constant function
+            vector< double >x, y;
+            x.resize(1, 0);
+            y.resize(1, 0);
+            PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+            funcs->addFunction(newf);
         }
     }
 }

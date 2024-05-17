@@ -54,7 +54,7 @@ public:
     Point giveNormal() const { return normal; };
     Point giveT1() const { return t1; };
     Point giveT2() const { return t2; };
-    double giveVolumeAssociatedWithNode(unsigned nodenum) const;
+    virtual double giveVolumeAssociatedWithNode(unsigned nodenum) const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
@@ -186,7 +186,7 @@ public:
     double giveArea() const { return area; }
     Point giveNormal() const { return normal; }
     double giveLength() const { return length; }
-    double giveVolumeAssociatedWithNode(unsigned nodenum) const;
+    virtual double giveVolumeAssociatedWithNode(unsigned nodenum) const;
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     virtual Matrix giveBMatrix(const Point *x) const;

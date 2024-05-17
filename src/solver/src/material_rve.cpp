@@ -688,7 +688,6 @@ void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     vector< vector< Matrix > > *projectors = macromat->giveProjectors();
     ElementContainer *elems = RVE->giveElements();
-    unsigned ndim = macromat->giveDimension();
     double volume = 0.;
     Element *e;
     local_stress *= 0;
@@ -696,7 +695,7 @@ void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
         if ((( * projectors ) [ i ]).size()==0) continue;
         e = elems->giveElement(i);
         for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {
-            local_stress += e->giveIPVolume(ip) * e->giveMatStatus(ip)->giveTempStress() * ( * projectors ) [ i ] [ ip ];         
+            local_stress += e->giveIPVolume(ip) * ((( * projectors ) [ i ] [ ip ]).transpose() * e->giveMatStatus(ip)->giveTempStress());         
         }
         volume += e->giveVolume();
     }
@@ -992,11 +991,8 @@ double DiscreteMechanicalRVEMaterialStatus :: computeAverageDensity() const {
 //////////////////////////////////////////////////////////
 vector< vector< Matrix > >DiscreteMechanicalRVEMaterialStatus :: calculateProjectors(const Point centroid) {   //only for mechanics
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    unsigned ndim = macromat->giveDimension();
     ElementContainer *elems = RVE->giveElements();
     Material* emat;
-    VectMechMaterial* vm;
-    TensMechMaterial* tm;
     Point normal;
     Element * e;
     vector< vector< Matrix > >projectors(elems->giveSize());
@@ -1132,10 +1128,13 @@ vector< Matrix > DiscreteMechanicalRVEMaterialStatus :: calculateTensProjector(c
         //in paper EliCus22, this projection is not active
         if ( macromat->projectCurvature() ) {
             if ( ndim == 2 ) {
-                    projector[ip](0,4 ) = -xc.y();
+                    projector[ip](0,4 ) = -xc.y();                    
                     projector[ip](1,5 ) = xc.x();
-                    projector[ip](2,5 ) = -xc.y();
-                    projector[ip](3,4 ) = xc.x();
+                    //projector[ip](2,4 ) = xc.y();
+                    projector[ip](2,5 ) = xc.y();
+                    projector[ip](3,4 ) = -xc.x();
+                    //projector[ip](3,5 ) = xc.y();
+
             } else {  
                 projector[ip](0,17 ) = xc.z();
                 projector[ip](0,15 ) = -xc.y();
@@ -1143,18 +1142,19 @@ vector< Matrix > DiscreteMechanicalRVEMaterialStatus :: calculateTensProjector(c
                 projector[ip](1,16 ) = -xc.z();
                 projector[ip](2,14 ) = xc.y();
                 projector[ip](2,12 ) = -xc.x();
-                projector[ip](3,16 ) = xc.y();
-                projector[ip](3,10 ) = -xc.x();
-                projector[ip](4,11 ) = xc.x();
-                projector[ip](4,14 ) = -xc.z();
-                projector[ip](5,9 )  = xc.y();
-                projector[ip](5,17 ) = -xc.x();
-                projector[ip](6,12 ) = xc.z();
-                projector[ip](6,11 ) = -xc.y();
-                projector[ip](7,15 ) = xc.x();
-                projector[ip](7,9 )  = -xc.z();
-                projector[ip](8,10 ) = xc.z();
-                projector[ip](8,13 ) = -xc.y();                 
+
+                //projector[ip](3,16 ) = xc.y();
+                //projector[ip](3,10 ) = -xc.x();               
+                //projector[ip](4,11 ) = xc.x();
+                //projector[ip](4,14 ) = -xc.z();
+                //projector[ip](5,9 )  = xc.y();
+                //projector[ip](5,17 ) = -xc.x();
+                //projector[ip](6,12 ) = xc.z();
+                //projector[ip](6,11 ) = -xc.y();
+                //projector[ip](7,15 ) = xc.x();
+                //projector[ip](7,9 )  = -xc.z();
+                //projector[ip](8,10 ) = xc.z();
+                //projector[ip](8,13 ) = -xc.y();                 
             }
         }
         //rotations

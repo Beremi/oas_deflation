@@ -165,7 +165,7 @@ void MechanicalTriangle :: readFromLine(std :: istringstream &iss, NodeContainer
 
     string param;    
     while (  iss >> param ) {
-        if ( param.compare("b_bar_int") == 0 ) {
+        if ( param.compare("b_bar_int") == 0 ) {            
             b_bar_integration_split = true;            
         }
     }
@@ -175,6 +175,12 @@ void MechanicalTriangle :: readFromLine(std :: istringstream &iss, NodeContainer
 void MechanicalTriangle :: setIntegrationPointsAndWeights(){
     Element :: setIntegrationPointsAndWeights();
     if (b_bar_integration_split){
+        if (ndim==2){
+            TensMechMaterial *tmm = dynamic_cast<TensMechMaterial *>(mat);
+            if (tmm && tmm->isPlaneStress()){
+                cerr << "WARNING: The B-bar integration for plane stress problem is not supported and it is therefore skipped" << endl;
+            }
+        }
         computeAverageBVolumeMatrix();
     }
 }

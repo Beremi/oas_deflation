@@ -7,6 +7,8 @@
 #include "solver_implicit.h"
 #include <fstream>
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Joint Degree of Freedom
@@ -91,7 +93,6 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
     elems = ec;
     constraints = cc;
 
-
     //collect all slaves from other joint DoFs and also all involved DOFs
     std :: vector< Node * >excludedNodes;
     std :: vector< unsigned >excudedDirs;
@@ -159,31 +160,17 @@ void VolumetricAverage :: init(Solver *solver) {
     unsigned s = nodes.size();
     std :: vector< double >m;
     m.resize(nodes.size() );
-    DiscreteTrsprtElem *et;
-    RigidBodyContact *em;
-    for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
-        et = dynamic_cast< DiscreteTrsprtElem * >( elems->giveElement(e) );
-        em = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
-        if ( et ) {
-            for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
-                if ( r < s ) {
-                    m [ r ] += et->giveVolumeAssociatedWithNode(p);
-                }
-            }
-        } else if ( em ) {
-            for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
-                if ( r < s ) {
-                    m [ r ] += em->giveVolumeAssociatedWithNode(p);
-                }
+    for ( auto e = elems->begin();  e != elems->end(); ++e ) {
+        for ( unsigned p = 0; p < (*e)->giveNumOfNodes() ; p++ ) {
+            r = ( std :: find(nodes.begin(), nodes.end(), (*e)->giveNode(p) ) - nodes.begin() );
+            if ( r < s ) {
+                m [ r ] += (*e)->giveVolumeAssociatedWithNode(p);
             }
         }
     }
 
-    //rearange everything and update weights
+    //rearrange everything and update weights
     double factor = m [ slaveid ];
-    std :: cout << slaveid << " " << factor << m.size() << std :: endl;
     double fullVolume = 0;
     for ( auto &ss: m ) {
         fullVolume += ss;
@@ -216,6 +203,8 @@ void VolumetricAverage :: init(Solver *solver) {
             multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end() );
         }
     }
+    time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
+
     JointDoF :: init(solver);
 }
 

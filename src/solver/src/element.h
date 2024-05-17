@@ -113,6 +113,7 @@ public:
     virtual Point giveApproxCenter() const;
     Vector giveShapeFunctions(const Point *x) const;
     Point findNaturalCoords(const Point *x) const;
+    virtual double giveVolumeAssociatedWithNode(unsigned nodenum)const {(void)nodenum; return volume/nodes.size();}
 };
 
 
