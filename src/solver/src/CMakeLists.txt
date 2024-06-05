@@ -10,6 +10,7 @@ set (solver_files
     element_ldpm.cpp
     element_continuous.cpp
     element_polyhedral.cpp
+    element_superelem.cpp
     geometry.cpp
     globals.cpp
     linalg.cpp

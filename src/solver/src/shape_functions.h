@@ -39,6 +39,19 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// NULL SHAPE FUNCTIONS
+class NullShapeF : public ShapeFunc
+{
+protected:
+public:
+    NullShapeF(unsigned dim) { name = "NullShapeF"; ndim = dim;  is_natural = false; };
+    virtual ~NullShapeF() {};
+    virtual void giveShapeF(const Point *x, Vector &phi) const;
+    virtual void giveShapeFGrad(const Point *x, Matrix &phiGrad) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // 1D LINEAR SHAPE FUNCTIONS
 class Linear1DLineShapeF : public ShapeFunc
 {

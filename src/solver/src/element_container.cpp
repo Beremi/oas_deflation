@@ -4,6 +4,7 @@
 #include "element_fiber.h"
 #include "element_polyhedral.h"
 #include "element_ldpm.h"
+#include "element_superelem.h"
 #include <algorithm>
 #include "model.h"
 #include "periodic_bc.h"
@@ -163,6 +164,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     elems.push_back(newelem);
                 } else if ( elemType.compare("RigidBodyContactWithHeatConduction") == 0 ) {
                     RigidBodyContactWithHeatConduction *newelem = new RigidBodyContactWithHeatConduction(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("MLMechElement") == 0 ) {
+                    MLMechElement *newelem = new MLMechElement(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MaterialTestElement") == 0 ) {
