@@ -13,8 +13,8 @@ class MLMechElement : public Element
 protected:
     unsigned poly_degree;
     Matrix stiffmat;
-
-    Matrix readMatrixFromFile(std::string filepath) const;
+    fs::path sm_path;
+    Matrix readStiffMatrixFromFile() const;
 
 public:
     MLMechElement(unsigned dim);

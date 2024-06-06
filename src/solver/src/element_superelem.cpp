@@ -16,9 +16,9 @@ MLMechElement :: MLMechElement(unsigned dim) :Element(dim) {
 }
 
 //////////////////////////////////////////////////////////
-Matrix MLMechElement :: readMatrixFromFile(string filepath) const {
+Matrix MLMechElement :: readStiffMatrixFromFile() const {
     vector<double> matrixEntries;
-    ifstream matrixDataFile(GlobPaths :: BASEDIR  / filepath);
+    ifstream matrixDataFile(sm_path);
     string matrixRowString;
     string matrixEntry;
     int matrixRowNumber = 0;
@@ -65,7 +65,7 @@ void MLMechElement :: readFromLine(std :: istringstream &iss, NodeContainer *ful
         } else if ( param.compare("stiff_mat") == 0 ) {        
             string filepath;    
             iss >> filepath;
-            stiffmat = readMatrixFromFile(filepath);
+            sm_path = GlobPaths :: BASEDIR  / filepath;
         }
     }
 
@@ -88,7 +88,10 @@ void MLMechElement :: init(){
             keep_ind.push_back(8+i*4+j);
         }
     } 
-    stiffmat = stiffmat(keep_ind,keep_ind);    
+
+
+    Matrix A = readStiffMatrixFromFile();
+    stiffmat = A(keep_ind,keep_ind);    
 
     if(outDoFs!=keep_ind.size()){
         cerr << "Error in MLMechElement: there are " << outDoFs << " DoFs on input of the element, but " << keep_ind.size() << " DoFs are required for polynom of degree " << poly_degree << endl;
