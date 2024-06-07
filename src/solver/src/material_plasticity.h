@@ -14,6 +14,8 @@ protected:
     Vector backstress, plasticstrain;
     Vector temp_backstress, temp_plasticstrain;
     double sigmay, temp_sigmay;
+    double outplane_plasticstrain, temp_outplane_plasticstrain;
+    double outplane_backstress, temp_outplane_backstress;
 
 public:
     VonMisesPlasticMaterialStatus(VonMisesPlasticMaterial *m, Element *e, unsigned ipnum);
