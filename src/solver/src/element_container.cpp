@@ -4,7 +4,9 @@
 #include "element_fiber.h"
 #include "element_polyhedral.h"
 #include "element_ldpm.h"
-#include "element_superelem.h"
+#ifdef ML_TORCH_FOUND
+    #include "element_superelem.h"
+#endif // TORCH_FOUND
 #include <algorithm>
 #include "model.h"
 #include "periodic_bc.h"
@@ -167,9 +169,14 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MLMechElement") == 0 ) {
+                #ifdef TORCH_FOUND
                     MLMechElement *newelem = new MLMechElement(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                #else
+                    cerr << "Error: This OAS executable compiled without MLMechElement support." << endl;
+                    exit(EXIT_FAILURE);
+                #endif // TORCH_FOUND
                 } else if ( elemType.compare("MaterialTestElement") == 0 ) {
                     MaterialTestElement *newelem = new MaterialTestElement(ndim);
                     newelem->readFromLine(iss, nodes, matrs);

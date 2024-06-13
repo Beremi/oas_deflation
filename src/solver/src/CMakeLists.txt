@@ -10,7 +10,6 @@ set (solver_files
     element_ldpm.cpp
     element_continuous.cpp
     element_polyhedral.cpp
-    element_superelem.cpp
     geometry.cpp
     globals.cpp
     linalg.cpp
@@ -46,7 +45,18 @@ set (solver_files
     material_htc.cpp
     )
 
+set (superelem_files
+    element_superelem.cpp
+    )
+
 add_library(solver
     ${LIB_TYPE}
     ${solver_files}
     )
+
+if (USE_ML_TORCH)
+    add_library(ml_torch
+        ${LIB_TYPE}
+        ${superelem_files}
+        )
+endif ()

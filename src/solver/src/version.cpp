@@ -39,7 +39,11 @@ std :: string version_info(bool diff) {
     #ifdef EIGEN_USE_BLAS
         s += "BLAS | ";
     #endif
-    
+
+    #ifdef ML_TORCH_FOUND
+        s += "TORCH | ";
+    #endif
+        
     if (diff) s += "\nGit diff: " + GIT_DIFF + "\n";
     
     return s;

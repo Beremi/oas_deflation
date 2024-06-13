@@ -297,6 +297,15 @@ docker run -it --entrypoint /bin/bash a992
   \endcode
 
 
-
+\section Torch Torch for superelem
+- download library from https://pytorch.org/
+- enable Torch for *superelem* in current build configuration
+  \code{.sh}
+    cmake -DUSE_ML_TORCH=ON -DTorch_DIR:PATH=/path_to_torch_library/libtorch/share/cmake/Torch ../OAS
+  \endcode
+- on Windows copy all DLLs from libtorch/lib to the executable file or add libtorch to path (temporarily or permanently)
+  \code{.sh}
+    set PATH=%PATH%;C:\..\libtorch\lib (temporarily in cmd)
+  \endcode
 
 */
