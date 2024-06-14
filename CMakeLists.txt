@@ -250,6 +250,7 @@ target_link_libraries(solver
                      )
 
 if (USE_ML_TORCH)
+  target_compile_definitions (solver PUBLIC -DML_TORCH_FOUND)
   target_link_libraries(ml_torch
                         PRIVATE
                         ${CXX_FILESYSTEM_LIBRARIES}

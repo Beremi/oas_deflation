@@ -169,7 +169,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MLMechElement") == 0 ) {
-                #ifdef TORCH_FOUND
+                #ifdef ML_TORCH_FOUND
                     MLMechElement *newelem = new MLMechElement(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
