@@ -12,7 +12,7 @@ FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigne
     name = "fiber mat. status";
     crackOpening = temp_crackOpening = maxCrackOpening = 0;
     incrementOfCrack = 0;
-    crackOpeningVector = Vector :: Zero(contactNormal.size() );
+    crackOpeningVector = Vector :: Zero( contactNormal.size() );
 
     rightPullout = temp_rightPullout = 0;
     leftPullout = temp_leftPullout = 0;
@@ -20,10 +20,10 @@ FiberMaterialStatus :: FiberMaterialStatus(FiberMaterial *m, Element *e, unsigne
     bridgingForce = temp_bridgingForce = 0;
     fiberForce = temp_fiberForce = 0;
     rightForce = leftForce = 0;
-    temp_stress = Vector :: Zero(contactNormal.size() );
+    temp_stress = Vector :: Zero( contactNormal.size() );
 
     deflectionAngle = spallingLength = temp_spallingLength = 0;
-    w = mf = Vector :: Zero(contactNormal.size() );
+    w = mf = Vector :: Zero( contactNormal.size() );
 
     debondedFiber = temp_debondedFiber = 0;
     pulledOutFiber = temp_pulledOutFiber = 0;
@@ -80,8 +80,8 @@ void FiberMaterialStatus :: init() {
 
     right_F0 = M_PI * df * tau0 * rightLe;
     left_F0 = M_PI * df * tau0 * leftLe;
-    criticalRightPullout = 2. * tau0 * pow(rightLe, 2) / ( Ef * df ) + sqrt( 8. * Gd * pow(rightLe, 2) / ( Ef * df ) );
-    criticalLeftPullout = 2. * tau0 * pow(leftLe, 2) / ( Ef * df ) + sqrt( 8. * Gd * pow(leftLe, 2) / ( Ef * df ) );
+    criticalRightPullout = 2. * tau0 * pow(rightLe, 2) / ( Ef * df ) + sqrt(8. * Gd * pow(rightLe, 2) / ( Ef * df ) );
+    criticalLeftPullout = 2. * tau0 * pow(leftLe, 2) / ( Ef * df ) + sqrt(8. * Gd * pow(leftLe, 2) / ( Ef * df ) );
 
     if ( abs(rightLe - leftLe) > 1e-12 and rightLe > leftLe ) {
         Le1 = leftLe;
@@ -171,10 +171,10 @@ void FiberMaterialStatus :: resetTemporaryVariables() {
 //}
 // ---------------- MODIFIED EQUATIONS ---------------- // linear distribution of Gd
 double bridgingForceDebonding(double v, double vd, double df, double Ef, double tau0, double Gd) {
-    return sqrt( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd * v / vd ) );
+    return sqrt(0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd * v / vd ) );
 }
 double derivBridgingForceDebonding(double v, double vd, double df, double Ef, double tau0, double Gd) {
-    return 0.5 / sqrt( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd * v / vd ) ) * ( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 + Gd / vd ) );
+    return 0.5 / sqrt(0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 * v + Gd * v / vd ) ) * ( 0.5 * pow(M_PI, 2) * Ef * pow(df, 3) * ( tau0 + Gd / vd ) );
 }
 //------------------------------------------------------//
 //                  PULLING-OUT STAGE                   //
@@ -323,7 +323,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
                         }
                         break;
                     } else {
-                        v1 = v1 - ( bridgingForcePullingOut(v1, vd1, Le1, F01, df, betaf) - bridgingForceUnloading(vd1, bridgingForceDebonding(vd1, vd1, df, Ef, tau0, Gd), temp_crackOpening - v1) ) / ( derivBridgingForcePullingOut(v1, vd1, Le1, F01, df, betaf) + derivBridgingForceUnloading( vd1, bridgingForceDebonding(vd1, vd1, df, Ef, tau0, Gd) ) );
+                        v1 = v1 - ( bridgingForcePullingOut(v1, vd1, Le1, F01, df, betaf) - bridgingForceUnloading(vd1, bridgingForceDebonding(vd1, vd1, df, Ef, tau0, Gd), temp_crackOpening - v1) ) / ( derivBridgingForcePullingOut(v1, vd1, Le1, F01, df, betaf) + derivBridgingForceUnloading(vd1, bridgingForceDebonding(vd1, vd1, df, Ef, tau0, Gd) ) );
                         v2 = temp_crackOpening - v1;
                     }
                     iteration += 1;
@@ -450,7 +450,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
     // ------------------- STRESS VECTOR --------------------- NOTE: fiberForce is modified bridgingForce due to incline of the fiber
     if ( temp_bridgingForce <= 1e-12 ) {
         temp_fiberForce = 0;
-        temp_stress = Vector :: Zero(strain.size() );
+        temp_stress = Vector :: Zero( strain.size() );
     } else if ( inclineAngle <= 1e-12 or crackOpeningVector [ 0 ] <= 1e-12 ) { // without SNUBBING MODEL - no microeffect at exit points
         temp_fiberForce = temp_bridgingForce;
         temp_stress = temp_fiberForce * crackOpeningVector / temp_crackOpening;
@@ -462,7 +462,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
         while ( iteration <= limIteration ) {
             w = crackOpeningVector + 2. * spallingLength * fiberNormalLocal;
             mf = w / w.norm();
-            deflectionAngle = acos( fiberNormalLocal.dot(mf) );
+            deflectionAngle = acos(fiberNormalLocal.dot(mf) );
             temp_fiberForce = temp_bridgingForce * exp(Ksn * deflectionAngle);
             temp_stress = temp_fiberForce * mf;
             temp_spallingLength = ( temp_stress(0) * sin(inclineAngle / 2.) ) / ( Ksp * ft * df * pow(cos(inclineAngle / 2.), 2) );
@@ -484,7 +484,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
     double limitFiberStress = ft * exp(-Krup * deflectionAngle);
     if ( temp_fiberStress > limitFiberStress ) {
         temp_bridgingForce = temp_fiberForce = 0;
-        temp_stress = Vector :: Zero(strain.size() );
+        temp_stress = Vector :: Zero( strain.size() );
         temp_rupturedFiber = 1;
     }
 

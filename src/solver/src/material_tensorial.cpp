@@ -67,7 +67,7 @@ double TensTrsprtMaterialStatus :: calculatePressureDependentPermeability(double
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -325,7 +325,7 @@ Matrix TensMechMaterialStatus :: giveStiffnessTensor(string type) const {
             D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
             D(2, 2) = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
         } else {  //plane strain
-            double factor = m->giveElasticModulus() / (( 1. - 2. * m->givePoissonsRatio() ) * ( 1. + m->givePoissonsRatio() ));
+            double factor = m->giveElasticModulus() / ( ( 1. - 2. * m->givePoissonsRatio() ) * ( 1. + m->givePoissonsRatio() ) );
             D(0, 0) = D(1, 1) = factor * ( 1. - m->givePoissonsRatio() );
             D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
             D(2, 2) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
@@ -339,7 +339,7 @@ Matrix TensMechMaterialStatus :: giveStiffnessTensor(string type) const {
 
 //////////////////////////////////////////////////////////
 
-Matrix  TensMechMaterialStatus :: giveElasticStiffnessTensor3D() const{
+Matrix TensMechMaterialStatus :: giveElasticStiffnessTensor3D() const {
     Matrix D = Matrix :: Zero(6, 6);
     TensMechMaterial *m = static_cast< TensMechMaterial * >( mat );
     double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
@@ -431,13 +431,13 @@ MaterialStatus *TensMechMaterial :: giveNewMaterialStatus(Element *e, unsigned i
 //////////////////////////////////////////////////////////
 // ELASTIC COSSERAT MECHANICAL MATERIAL
 
-TensCosseratMechMaterial::TensCosseratMechMaterial(unsigned dimension) : TensMechMaterial(dimension) {
+TensCosseratMechMaterial :: TensCosseratMechMaterial(unsigned dimension) : TensMechMaterial(dimension) {
     name = "elastic Cosserat mechanical material";
-    if (dim==2){
+    if ( dim == 2 ) {
         planeStress = true;
         strainsize = 6;
-    }else if (dim==3){
-        strainsize = 18;        
+    } else if ( dim == 3 )      {
+        strainsize = 18;
     }
 }
 
@@ -488,11 +488,11 @@ Matrix TensCosseratMechMaterialStatus :: giveStiffnessTensor(string type) const 
             D(4, 4) = D(5, 5) = lammeM * 4. * pow(m->giveCharacteristicLength(), 2);
         }
     } else {
-            D(0, 0) = D(1, 1)  = D(2, 2) = lammeL + 2. * lammeM;
-            D(0, 1) = D(1, 0) = D(0, 2) = D(2, 0) = D(2, 1) = D(1, 2) = lammeL;
-            D(3, 3) = D(4, 4) = D(5, 5) = D(6, 6) = D(7, 7) = D(8, 8) = lammeM + m->giveCosseratShearParam();
-            D(4, 3) = D(3, 4) = D(6, 5) = D(5, 6) = D(8, 7) = D(7, 8) = lammeM - m->giveCosseratShearParam();
-            D(9, 9) = D(10, 10) = D(11, 11) = D(12, 12) = D(13, 13) = D(14, 14) = D(15, 15) = D(16, 16) = D(17, 17) = lammeM * 4. * pow(m->giveCharacteristicLength(), 2);
+        D(0, 0) = D(1, 1)  = D(2, 2) = lammeL + 2. * lammeM;
+        D(0, 1) = D(1, 0) = D(0, 2) = D(2, 0) = D(2, 1) = D(1, 2) = lammeL;
+        D(3, 3) = D(4, 4) = D(5, 5) = D(6, 6) = D(7, 7) = D(8, 8) = lammeM + m->giveCosseratShearParam();
+        D(4, 3) = D(3, 4) = D(6, 5) = D(5, 6) = D(8, 7) = D(7, 8) = lammeM - m->giveCosseratShearParam();
+        D(9, 9) = D(10, 10) = D(11, 11) = D(12, 12) = D(13, 13) = D(14, 14) = D(15, 15) = D(16, 16) = D(17, 17) = lammeM * 4. * pow(m->giveCharacteristicLength(), 2);
     }
     return D;
 };

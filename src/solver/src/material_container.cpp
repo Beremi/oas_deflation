@@ -47,16 +47,16 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
     cout << "Input file '" <<  filename;
     size_t origsize = matrs.size();
     string line, matType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     unsigned id = 0;
-    CSLMaterialWithTensorialStressUpdate* CSLMaterialWithTensorialStressUpdateMaster = nullptr;       
+    CSLMaterialWithTensorialStressUpdate *CSLMaterialWithTensorialStressUpdateMaster = nullptr;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
                 continue;
             }
             istringstream iss(line);
-            iss >> matType;     
+            iss >> matType;
             if ( !( matType.rfind("#", 0) == 0 ) ) {
                 if ( matType.compare("VectMechMaterial") == 0 ) {
                     VectMechMaterial *newmat = new VectMechMaterial(dim);
@@ -111,10 +111,12 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("CSLMaterialWithTensorialStressUpdate") == 0 ) {
-                    CSLMaterialWithTensorialStressUpdate *newmat = new CSLMaterialWithTensorialStressUpdate(dim,CSLMaterialWithTensorialStressUpdateMaster);
+                    CSLMaterialWithTensorialStressUpdate *newmat = new CSLMaterialWithTensorialStressUpdate(dim, CSLMaterialWithTensorialStressUpdateMaster);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
-                    if (CSLMaterialWithTensorialStressUpdateMaster==nullptr) CSLMaterialWithTensorialStressUpdateMaster = newmat;
+                    if ( CSLMaterialWithTensorialStressUpdateMaster == nullptr ) {
+                        CSLMaterialWithTensorialStressUpdateMaster = newmat;
+                    }
                 } else if ( matType.compare("LDPMMaterial") == 0 ) {
                     LDPMMaterial *newmat = new LDPMMaterial(dim);
                     newmat->readFromLine(iss);
@@ -138,7 +140,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                 } else if ( matType.compare("FatigueMaterial") == 0 ) {
                     FatigueMaterial *newmat = new FatigueMaterial(dim);
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( FatigueShearMaterial * ) newmat );
+                    matrs.push_back( ( FatigueShearMaterial * ) newmat);
                 } else if ( matType.compare("Slide32Material") == 0 ) {
                     Slide32Material *newmat = new Slide32Material(dim);
                     newmat->readFromLine(iss);

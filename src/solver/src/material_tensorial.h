@@ -110,7 +110,7 @@ public:
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
     virtual Matrix giveMassTensor() const;
-    virtual Matrix giveDampingTensor() const;    
+    virtual Matrix giveDampingTensor() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -162,7 +162,7 @@ public:
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveCharacteristicLength() const { return lc; }
     double giveCosseratShearParam() const { return muc; }
-    virtual void init(MaterialContainer *matcont) { TensMechMaterial :: init(matcont);}
+    virtual void init(MaterialContainer *matcont) { TensMechMaterial :: init(matcont); }
 };
 
 #endif /* _MATERIAL_CONTINUOUS_H */

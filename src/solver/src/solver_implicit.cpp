@@ -88,7 +88,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -140,7 +140,7 @@ void SteadyStateLinearSolver :: solve() {
     nodes->giveReducedForceArray(residuals, f);
     //solve linear system
     /*
-     * 
+     *
      * if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
      *  terminated = true;
      *  cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
@@ -453,9 +453,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
 
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
-        resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max(max(abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
     }
     resErr = sqrt(resErr);
     disErr = sqrt(disErr);
@@ -873,7 +873,9 @@ void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty) {
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: checkIntegrationParams() {
-    if (!check_time_integr_params) return;
+    if ( !check_time_integr_params ) {
+        return;
+    }
 
     if ( timeIntM == 0 ) {  //generalized alpha
         //TODO
@@ -957,7 +959,7 @@ void TransientLinearTransportSolver :: rebuild() {
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1009,11 +1011,11 @@ void TransientLinearTransportSolver :: runAfterEachStep() {
 Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
     SteadyStateNonLinearSolver :: readFromFile(filename);
 
-    
+
 
     double num;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1171,7 +1173,9 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: checkIntegrationParams() {
-    if (!check_time_integr_params) return;
+    if ( !check_time_integr_params ) {
+        return;
+    }
     if ( timeIntM == 0 ) {  //generalized alpha
         if ( alpha_m > 0.5 || alpha_f > 0.5 || alpha_m < 0 || alpha_f < 0 ) {
             cerr << "Solver Error: Generalized-alpha method requires alpha_m and alpha_f within interval 0-0.5, instead these parameters are " << alpha_m << " and " << alpha_f << endl;
@@ -1233,8 +1237,8 @@ void TransientLinearMechanicalSolver :: setDefaultIntegrationParams() {
         //according to Klaus-Jürgen Bathe and Gunwoo Noh 2012
         alpha_m = 0.;
         alpha_f = 0.;
-        gamma = 11./20.;
-        beta = 3./10.;
+        gamma = 11. / 20.;
+        beta = 3. / 10.;
     } else {
         cerr << "Solver Error: unknowns method for time integration" << endl;
         exit(1);
@@ -1268,7 +1272,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 

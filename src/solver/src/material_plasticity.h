@@ -31,7 +31,7 @@ public:
 class VonMisesPlasticMaterial : public TensMechMaterial
 {
 protected:
-    double H, beta, sigma0;    
+    double H, beta, sigma0;
 
 public:
     VonMisesPlasticMaterial(unsigned dimension);

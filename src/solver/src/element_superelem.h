@@ -14,7 +14,7 @@ class MLMechElement : public Element
 protected:
     unsigned poly_degree;
     Matrix stiffmat;
-    fs::path sm_path;
+    fs :: path sm_path;
     Matrix readStiffMatrixFromFile() const;
 
 public:
@@ -30,7 +30,7 @@ public:
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual void giveValues(std :: string code, Vector &result) const;
     virtual Vector integrateInternalSources();
-    double giveVolume() const { return volume; };    
+    double giveVolume() const { return volume; };
 };
 
 #endif  /* _ELEMENT_SUPERELEM_H */

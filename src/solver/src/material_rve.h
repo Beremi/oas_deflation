@@ -33,7 +33,7 @@ protected:
 
     virtual void generateRandomFixedBC() {};
     virtual void generateVolumetricAverageBC() {};
-    std::vector<bool> calculateElemDiscreteness() const;
+    std :: vector< bool >calculateElemDiscreteness() const;
 public:
     RVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~RVEMaterialStatus();
@@ -55,7 +55,7 @@ protected:
     bool elastic_sol_is_Voigt;  //distinguish whether the solution in initial precomputed state is really solved elastically or using Voigt constraint
     bool start_from_precomputed;
 
-    std::vector<bool> is_elem_discrete; 
+    std :: vector< bool >is_elem_discrete;
 
 public:
     RVEMaterial(unsigned dimension) : Material(dimension)  { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; start_from_precomputed = true; };
@@ -70,9 +70,8 @@ public:
     bool isElasticSolutionVoigt() const { return elastic_sol_is_Voigt; };
     bool shouldStartFromPrecomputed() const { return start_from_precomputed; };
     void setStartFromPrecomputed(bool s) { start_from_precomputed = s; };
-    void setElemDiscreteness(std::vector<bool> is_discrete){is_elem_discrete = is_discrete;};
-    std::vector<bool>* giveElemDiscreteness() {return & is_elem_discrete;};
-
+    void setElemDiscreteness(std :: vector< bool >is_discrete) { is_elem_discrete = is_discrete; };
+    std :: vector< bool > *giveElemDiscreteness() { return & is_elem_discrete; };
 };
 
 
@@ -159,8 +158,8 @@ protected:
 
     Point calculateCentroid();
     std :: vector< std :: vector< Matrix > >calculateProjectors(const Point centroid);
-    std :: vector< Matrix >calculateVectProjector(const Element* e, const Point centroid);
-    std :: vector< Matrix >calculateTensProjector(const Element* e, const Point centroid);
+    std :: vector< Matrix >calculateVectProjector(const Element *e, const Point centroid);
+    std :: vector< Matrix >calculateTensProjector(const Element *e, const Point centroid);
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
 
@@ -175,7 +174,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Matrix giveDampingTensor() const;    
+    virtual Matrix giveDampingTensor() const;
     virtual Matrix giveInertiaTensor() const;
     //virtual unsigned giveStrainSize() const;
     virtual double giveCrackVolume() const;
