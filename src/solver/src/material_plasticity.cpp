@@ -9,35 +9,172 @@ using namespace std;
 // VON MISES PLASTICITY
 //////////////////////////////////////////////////////////
 VonMisesPlasticMaterialStatus :: VonMisesPlasticMaterialStatus(VonMisesPlasticMaterial *m, Element *e, unsigned ipnum) : TensMechMaterialStatus(m, e, ipnum) {
-    name = "tensorial mechanical mat. status";
+    name = "tensorial mechanical von Mises plastic mat. status";
     unsigned strainsize = m->giveStrainSize();
     temp_plasticstrain = Vector::Zero(strainsize);
     plasticstrain = Vector::Zero(strainsize);
     temp_backstress = Vector::Zero(strainsize);
     backstress = Vector::Zero(strainsize);
-    sigmay = 0;
-    temp_sigmay = 0;
+    sigmay = m->giveSigma0();
+    temp_sigmay = sigmay;
+    temp_outplane_plasticstrain = 0.;
+    outplane_plasticstrain = 0.;
+    temp_outplane_backstress = 0.;
+    outplane_backstress = 0.;
+
 }
 
 //////////////////////////////////////////////////////////
 Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     temp_strain = addEigenStrain(strain);
-    //HERE COMES THE CONSTITUTIVE ROUTINES
 
     VonMisesPlasticMaterial *vmpm = static_cast<VonMisesPlasticMaterial*>(mat);
-    vmpm->giveHardeningModulus();
+
+    Matrix D;
+    Vector temp_strain_full = Vector::Zero(6);
+    Vector updt_strain_full = Vector::Zero(6);
+    Vector plasticstrain_full = Vector::Zero(6);
+    Vector updt_stress_full = Vector::Zero(6);
+    Vector backstress_full = Vector::Zero(6);
+    
+    unsigned dimension = vmpm->giveDimension();
+    if (dimension == 2){
+        if ( vmpm->isPlaneStress() ) { //Plane Stress - out of plane stress iteration necessary to implement
+            // f = sqrt( pow(sigmaEff[0],2) - sigmaEff[0]*sigmaEff[1] + pow(sigmaEff[1],2) + 3*pow(sigmaEff[2],2))  - temp_sigmay;
+            cerr << name << " error: " <<  "Plane Stress not implemented" << endl;
+            exit(1);
+        } 
+        else {  //Plane Strain
+            D = giveElasticStiffnessTensor3D();
+
+            temp_strain_full [ 0 ] = temp_strain [ 0 ];
+            temp_strain_full [ 1 ] = temp_strain [ 1 ];
+            temp_strain_full [ 5 ] = temp_strain [ 2 ];
+
+            updt_strain_full [ 0 ] = updt_strain [ 0 ];
+            updt_strain_full [ 1 ] = updt_strain [ 1 ];
+            updt_strain_full [ 5 ] = updt_strain [ 2 ];
+
+            plasticstrain_full [ 0 ] = plasticstrain [ 0 ];
+            plasticstrain_full [ 1 ] = plasticstrain [ 1 ];
+            plasticstrain_full [ 5 ] = plasticstrain [ 2 ];
+            plasticstrain_full [ 2 ] = outplane_plasticstrain;
+           
+            updt_stress_full = D * (updt_strain_full - plasticstrain_full);
+
+            backstress_full [ 0 ] = backstress [ 0 ];
+            backstress_full [ 1 ] = backstress [ 1 ];
+            backstress_full [ 5 ] = backstress [ 2 ];
+            backstress_full [ 2 ] = outplane_backstress;
+
+        }
+    }  else if (dimension == 3) { 
+        D = giveStiffnessTensor("elastic");
+
+        temp_strain_full = temp_strain;
+        updt_strain_full = updt_strain;
+        plasticstrain_full = plasticstrain;
+        updt_stress_full = updt_stress;
+        backstress_full = backstress;
+
+    } else {
+        std::cout << "Dimension not supported for Mises plasticity" << "\n";
+    }
+
+    Vector sigmaTrial = updt_stress_full + D * (temp_strain_full - updt_strain_full);
+    Vector sigmaEff = sigmaTrial - backstress_full;
+    Vector sigmaIso = Vector::Zero(6);
+    sigmaIso [ 0 ] = sigmaIso [ 1 ] = sigmaIso [ 2 ] = 1./3. * (sigmaEff[0] + sigmaEff[1] + sigmaEff[2]);
+    Vector n = sigmaEff - sigmaIso; // Deviatoric part
 
 
+    double f;
+    f = sqrt(3.*(1./6.* (pow((sigmaEff[0] - sigmaEff[1]),2) + pow((sigmaEff[0] - sigmaEff[2]),2) + pow((sigmaEff[1] - sigmaEff[2]),2)) + pow(sigmaEff[3],2) + pow(sigmaEff[4],2)+ pow(sigmaEff[5],2))) - temp_sigmay;
 
-    temp_stress = VonMisesPlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
-    return temp_stress;
+
+    if (f <= 0.000001) {  // Elastic regime
+        if (dimension == 2){
+            temp_stress << sigmaTrial [ 0 ], sigmaTrial [ 1 ], sigmaTrial [ 5 ];
+        } else {
+            temp_stress = sigmaTrial;
+        }        
+            
+    } else { // Plastic regime
+        double n_norm = sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2] + 2 * n[3] * n[3] + 2 * n[4] * n[4] + 2 * n[5] * n[5]);
+        Vector N = n / n_norm;
+        double G = vmpm->giveElasticModulus() / (2.*(1.+vmpm->givePoissonsRatio()));
+        double lambda = 1. / (2.*G) * 1. / (1. + (vmpm->giveHardeningModulus() / (3.*G))) * (n_norm - sigmay * sqrt(2./3.));
+
+        Vector N2 = N;
+        N2 [3] = 2* N [3];
+        N2 [4] = 2* N [4];
+        N2 [5] = 2* N [5];
+
+        Vector temp_stress_full = Vector::Zero(6);    
+        Vector temp_backstress_full = Vector::Zero(6);
+        Vector temp_plasticstrain_full = Vector::Zero(6);    
+
+        temp_plasticstrain_full = plasticstrain_full + lambda * N2  ; // N2 namisto N @ P viz Python
+
+        temp_backstress_full = backstress_full + 2./3. * (1-vmpm->giveBetaRatio()) * vmpm->giveHardeningModulus() * lambda * N;
+        temp_sigmay = sigmay + 2./3. * vmpm->giveBetaRatio() * vmpm->giveHardeningModulus() * lambda * sqrt(3./2.);
+        temp_stress_full = sigmaTrial - 2. * G * lambda * N;
+
+        if (dimension == 2){
+            
+            temp_stress << temp_stress_full [ 0 ], temp_stress_full [ 1 ], temp_stress_full [ 5 ];
+            
+            temp_plasticstrain [ 0 ] = temp_plasticstrain_full [ 0 ];
+            temp_plasticstrain [ 1 ] = temp_plasticstrain_full [ 1 ];
+            temp_plasticstrain [ 2 ] = temp_plasticstrain_full [ 5 ];
+
+            temp_backstress [ 0 ] = temp_backstress_full [ 0 ];
+            temp_backstress [ 1 ] = temp_backstress_full [ 1 ];
+            temp_backstress [ 2 ] = temp_backstress_full [ 5 ];
+
+            temp_outplane_plasticstrain = temp_plasticstrain_full [ 2 ];
+            temp_outplane_backstress = temp_backstress_full [ 2 ];
+            
+        } else {
+            temp_stress = temp_stress_full;
+            temp_plasticstrain = temp_plasticstrain_full;
+            temp_backstress = temp_backstress_full;
+        }        
+    }
+    return temp_stress;  
 };
 
 //////////////////////////////////////////////////////////
 Vector VonMisesPlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
-    temp_stress = giveStiffnessTensor("elastic") * (temp_strain - temp_plasticstrain);
+    
+    VonMisesPlasticMaterial *vmpm = static_cast<VonMisesPlasticMaterial*>(mat);
+    
+    unsigned dimension = vmpm->giveDimension();
+    if (dimension == 2){
+
+        Vector temp_strain_full = Vector::Zero(6);
+        Vector temp_plasticstrain_full = Vector::Zero(6);
+        Vector temp_stress_full = Vector::Zero(6);
+        
+        temp_strain_full [ 0 ] = temp_strain [ 0 ];
+        temp_strain_full [ 1 ] = temp_strain [ 1 ];
+        temp_strain_full [ 5 ] = temp_strain [ 2 ];
+
+        temp_plasticstrain_full [ 0 ] = temp_plasticstrain [ 0 ];
+        temp_plasticstrain_full [ 1 ] = temp_plasticstrain [ 1 ];
+        temp_plasticstrain_full [ 5 ] = temp_plasticstrain [ 2 ];
+        temp_plasticstrain_full [ 2 ] = temp_outplane_plasticstrain;
+
+        temp_stress_full = giveElasticStiffnessTensor3D() * (temp_strain_full - temp_plasticstrain_full);
+        
+        temp_stress << temp_stress_full [ 0 ], temp_stress_full [ 1 ], temp_stress_full [ 5 ];
+            
+    } else {
+        temp_stress = giveStiffnessTensor("elastic") * (temp_strain - temp_plasticstrain);
+    }
+
     return temp_stress;
 };
 
@@ -53,6 +190,8 @@ void VonMisesPlasticMaterialStatus :: update() {
     backstress = temp_backstress;
     plasticstrain = temp_plasticstrain;
     sigmay = temp_sigmay;
+    outplane_plasticstrain = temp_outplane_plasticstrain;
+    outplane_backstress = temp_outplane_backstress;
 }
 
 //////////////////////////////////////////////////////////
@@ -74,6 +213,11 @@ bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) co
     } else if ( code.compare("sigmay") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_sigmay;
+        return true;
+   
+    } else if ( code.compare("outplane_backstress") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = temp_outplane_backstress;
         return true;
     } else {
         return TensMechMaterialStatus :: giveValues(code, result);

@@ -56,6 +56,7 @@ endif ()
 option (USE_PREPROCESSOR "Enable preprocessor" ON)
 option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
+option (USE_ML_TORCH "Enable ML Torch" OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" ON)
@@ -149,12 +150,27 @@ include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
 include_directories ("${OAS_BINARY_DIR}")
 set (LIB_TYPE OBJECT) # set (LIB_TYPE SHARED)
 
+
+include_directories ("${OAS_SOURCE_DIR}/src/solver/src")
+add_subdirectory ("${OAS_SOURCE_DIR}/src/solver/src")
+
 if (USE_SOLVER)
-  include_directories ("${OAS_SOURCE_DIR}/src/solver/src")
-  add_subdirectory ("${OAS_SOURCE_DIR}/src/solver/src")
   #list (APPEND MODULE_LIST "solver")
   list (APPEND LIBS $<TARGET_OBJECTS:solver>)
   target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
+endif ()
+
+if (USE_ML_TORCH)
+  find_package(Torch REQUIRED PATHS "${CMAKE_BINARY_DIR}/libtorch")
+  if (NOT TORCH_FOUND)
+    message("-- Torch not found")
+  else ()
+    message("-- Torch (${Torch_VERSION}) found in ${Torch_DIR}.")
+    list (APPEND LIBS $<TARGET_OBJECTS:ml_torch> )
+    target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
+    list (APPEND EXT_LIBS ${TORCH_LIBRARIES})
+    add_definitions(-DML_TORCH_FOUND)
+  endif ()
 endif ()
 
 #file(GLOB SOURCE "${OAS_SOURCE_DIR}/src/solver/src/*.h" "${OAS_SOURCE_DIR}/src/*.cpp")
@@ -232,6 +248,16 @@ target_link_libraries(solver
                       ${EXT_LIBS}
                       #Eigen3::Eigen
                      )
+
+if (USE_ML_TORCH)
+  target_compile_definitions (solver PUBLIC -DML_TORCH_FOUND)
+  target_link_libraries(ml_torch
+                        PRIVATE
+                        ${CXX_FILESYSTEM_LIBRARIES}
+                        ${EXT_LIBS}
+                        #Eigen3::Eigen
+                      )
+endif ()
 
 target_link_libraries(${TARGETNAME}
                       PRIVATE

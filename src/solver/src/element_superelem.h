@@ -2,6 +2,7 @@
 #define _ELEMENT_SUPERELEM_H
 
 #include "element.h"
+#include <torch/script.h>
 
 class ElementContainer; //forward declaration;
 
