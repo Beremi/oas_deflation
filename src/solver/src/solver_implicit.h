@@ -81,6 +81,7 @@ protected:
     CoordinateIndexedSparseMatrix C;
     Vector v_old;
     unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark
+    bool check_time_integr_params;
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void checkIntegrationParams();

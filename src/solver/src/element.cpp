@@ -306,7 +306,6 @@ void Element :: computeDampingMatrix() {
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         c = stats [ i ]->giveDampingTensor();
-        cout << Hs [ i ].size() << endl;
         dampC += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
 }

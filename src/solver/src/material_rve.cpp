@@ -55,6 +55,24 @@ void RVEMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
+vector< bool >RVEMaterialStatus :: calculateElemDiscreteness() const { 
+    ElementContainer *elems = RVE->giveElements();
+    Material* emat;
+    Element * e;
+    vector< bool >is_discrete(elems->giveSize());    
+    for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+        e = elems->giveElement(i);
+        emat = e->giveMaterial();        
+        if ( dynamic_cast<VectMechMaterial*>(emat) ) {
+            is_discrete [ i ] = true;
+        }else if ( dynamic_cast<TensMechMaterial*>(emat) ) {
+            is_discrete [ i ] = false;
+        }
+    }
+    return is_discrete;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GENERAL RVE MATERIAL
 MaterialStatus *RVEMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
@@ -686,16 +704,21 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
 /////////////////////////////////./////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    unsigned ndim = macromat->giveDimension();
     vector< vector< Matrix > > *projectors = macromat->giveProjectors();
+    vector< bool > *is_elem_discrete = macromat->giveElemDiscreteness();
     ElementContainer *elems = RVE->giveElements();
     double volume = 0.;
     Element *e;
     local_stress *= 0;
+    double multipl = 1;
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         if ((( * projectors ) [ i ]).size()==0) continue;
         e = elems->giveElement(i);
-        for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {
-            local_stress += e->giveIPVolume(ip) * ((( * projectors ) [ i ] [ ip ]).transpose() * e->giveMatStatus(ip)->giveTempStress());         
+        if ((*is_elem_discrete)[i]) multipl = ndim;
+        else multipl = 1;
+        for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {            
+            local_stress += multipl * e->giveIPVolume(ip) * ((( * projectors ) [ i ] [ ip ]).transpose() * e->giveMatStatus(ip)->giveTempStress());  
         }
         volume += e->giveVolume();
     }
@@ -746,6 +769,10 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
     //precomputed material
     if ( is_precomputed ) {
         return giveStressPrecomputed(strain, timeStep);
+
+    cout << "temp_strain " << temp_strain << endl;
+    cout << "temp_stress " << temp_stress << endl;
+    exit(1);
     }
 
     cout << "Solving mechanical RVE" << endl;
@@ -769,9 +796,6 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
     collectStresses();
 
     transformStress();
-
-    //cout << "temp_strain " << temp_strain << endl;
-    //cout << "temp_stress " << temp_stress << endl;
 
     return temp_stress;
 }
@@ -990,7 +1014,6 @@ double DiscreteMechanicalRVEMaterialStatus :: computeAverageDensity() const {
 
 //////////////////////////////////////////////////////////
 vector< vector< Matrix > >DiscreteMechanicalRVEMaterialStatus :: calculateProjectors(const Point centroid) {   //only for mechanics
-    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     ElementContainer *elems = RVE->giveElements();
     Material* emat;
     Point normal;
@@ -1143,20 +1166,21 @@ vector< Matrix > DiscreteMechanicalRVEMaterialStatus :: calculateTensProjector(c
                 projector[ip](2,14 ) = xc.y();
                 projector[ip](2,12 ) = -xc.x();
 
-                //projector[ip](3,16 ) = xc.y();
-                //projector[ip](3,10 ) = -xc.x();               
-                //projector[ip](4,11 ) = xc.x();
-                //projector[ip](4,14 ) = -xc.z();
-                //projector[ip](5,9 )  = xc.y();
-                //projector[ip](5,17 ) = -xc.x();
-                //projector[ip](6,12 ) = xc.z();
-                //projector[ip](6,11 ) = -xc.y();
-                //projector[ip](7,15 ) = xc.x();
-                //projector[ip](7,9 )  = -xc.z();
-                //projector[ip](8,10 ) = xc.z();
-                //projector[ip](8,13 ) = -xc.y();                 
+                projector[ip](3,11) = -xc.x();            
+                projector[ip](3,14) =  xc.z();
+                projector[ip](4,16) = -xc.y();
+                projector[ip](4,10) =  xc.x();
+                projector[ip](5,12) = -xc.z();
+                projector[ip](5,11) =  xc.y();
+                projector[ip](6, 9) = -xc.y();
+                projector[ip](6,17) =  xc.x();
+                projector[ip](7,10) = -xc.z();
+                projector[ip](7,13) =  xc.y();
+                projector[ip](8,15) = -xc.x();
+                projector[ip](8, 9) =  xc.z();                 
             }
         }
+
         //rotations
         if ( macromat->projectCurvature() ) {
             for ( ; v < projNum; v++ ) {
@@ -1191,6 +1215,8 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
     if ( I.size() == 0 ) {
         setFromPrecomputedToFullModel();
         Point centroid = calculateCentroid();
+        vector< bool >is_discrete = calculateElemDiscreteness();
+        macromaterial->setElemDiscreteness(is_discrete);
         vector< vector< Matrix > >projectors = calculateProjectors(centroid);
         macromaterial->setCentroidAndProjectors(centroid, projectors);
 

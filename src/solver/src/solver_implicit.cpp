@@ -853,7 +853,8 @@ TransientLinearTransportSolver :: TransientLinearTransportSolver() {
     name = "TransientLinearTransportSolver";
     timeIntM = 0; //generalized-alpha
     isTimeReal = true;
-    applySpectralRadius(0.8);
+    setDefaultIntegrationParams();
+    check_time_integr_params = true;
 }
 
 //////////////////////////////////////////////////////////
@@ -872,6 +873,8 @@ void TransientLinearTransportSolver :: applySpectralRadius(double rhoinfty) {
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: checkIntegrationParams() {
+    if (!check_time_integr_params) return;
+
     if ( timeIntM == 0 ) {  //generalized alpha
         //TODO
     } else if ( timeIntM == 1 ) {   //HHT method
@@ -1006,6 +1009,8 @@ void TransientLinearTransportSolver :: runAfterEachStep() {
 Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
     SteadyStateNonLinearSolver :: readFromFile(filename);
 
+    
+
     double num;
     string param, line;
     ifstream inputfile(filename.c_str() );
@@ -1040,6 +1045,8 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
                 iss >> alpha_m;
             } else if ( param.compare("alpha_f") == 0 ) {
                 iss >> alpha_f;
+            } else if ( param.compare("do_not_check_time_integration_params") == 0 ) {
+                check_time_integr_params = false;
             }
         }
         inputfile.close();
@@ -1095,6 +1102,7 @@ void TransientNonLinearTransportSolver :: solve() {
 // TRANSIENT LINEAR MECHANICAL SOLVER
 TransientLinearMechanicalSolver :: TransientLinearMechanicalSolver() {
     name = "TransientLinearMechanicalSolver";
+    setDefaultIntegrationParams(); //this always call method from TransientLinearMechanicalSolver
 }
 
 //////////////////////////////////////////////////////////
@@ -1163,6 +1171,7 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: checkIntegrationParams() {
+    if (!check_time_integr_params) return;
     if ( timeIntM == 0 ) {  //generalized alpha
         if ( alpha_m > 0.5 || alpha_f > 0.5 || alpha_m < 0 || alpha_f < 0 ) {
             cerr << "Solver Error: Generalized-alpha method requires alpha_m and alpha_f within interval 0-0.5, instead these parameters are " << alpha_m << " and " << alpha_f << endl;
