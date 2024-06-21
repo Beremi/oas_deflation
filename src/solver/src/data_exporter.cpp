@@ -189,8 +189,8 @@ void TXTNodalExporter :: init() {
         } else {
             for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
                 nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], solver, res);
+                maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );      // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
             }
-            maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );      // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
         }
     }
 }

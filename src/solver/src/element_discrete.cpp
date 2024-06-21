@@ -281,8 +281,8 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             }
             area += ais [ i ];
             ni = ( vert [ i ]->givePoint() - vert [ j ]->givePoint() );   //just for periemeter
-            ni += normal * ( normal.dot(ni) );
-            perimeter += ni [ 0 ];
+            ni = ni - normal * ( normal.dot(ni) );
+            perimeter += ni.norm();
         }
 
         IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
@@ -1320,6 +1320,11 @@ void DiscreteTrsprtElem :: computeDampingMatrix() {
         dampC(0, 0) = dampC(1, 1) = 2. / 3. * s;
         dampC(1, 0) = dampC(0, 1) = s / 3.;
     }
+}
+
+//////////////////////////////////////////////////////////
+void DiscreteTrsprtElem :: computeMassMatrix() {
+    massM = Matrix :: Zero(2, 2);
 }
 
 //////////////////////////////////////////////////////////

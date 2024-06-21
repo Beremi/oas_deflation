@@ -930,6 +930,8 @@ void TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(stri
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    Solver :: init(init_r_file, init_v_file, initial);
+
     checkIntegrationParams();
 
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);

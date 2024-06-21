@@ -178,6 +178,7 @@ protected:
     virtual void setIntegrationPointsAndWeights();
 
     virtual void computeDampingMatrix();
+    virtual void computeMassMatrix();
 
 public:
     DiscreteTrsprtElem(const unsigned dim);

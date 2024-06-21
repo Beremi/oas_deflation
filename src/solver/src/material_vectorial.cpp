@@ -128,6 +128,7 @@ Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
 
 //////////////////////////////////////////////////////////
 void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double value) {
+
     if ( code.compare("volumetric_strain") == 0 ) {
         temp_volumetricStrain = value;
     } else if ( code.compare("crack_opening") == 0 ) {
@@ -135,7 +136,7 @@ void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double va
     } else if ( code.compare("crack_volume") == 0 ) {
         temp_crackVolume = value;
     } else {
-        TensTrsprtMaterialStatus :: setParameterValue(code, value);
+        VectTrsprtMaterialStatus :: setParameterValue(code, value);
     }
 }
 
