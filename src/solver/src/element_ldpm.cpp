@@ -17,7 +17,7 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     nodes.resize(4);
     name = "LDPMTetra";
     vtk_cell_type = 10;
-    shafunc = new Linear1DLineShapeF();
+    shafunc = new NullShapeF(3);
     inttype = new IntegrLDPM12();
 
     vert.resize(12);
