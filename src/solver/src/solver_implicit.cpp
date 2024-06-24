@@ -1217,6 +1217,8 @@ void TransientLinearMechanicalSolver :: checkIntegrationParams() {
             cerr << "Solver Error: Generalized-alpha method requires beta withn interva 0.25+0.5(alpha_f-alpha_m), but gamma is set to " << beta << endl;
             exit(1);
         }
+    } else if ( timeIntM == 1 ) {   //WBZ method
+        ////
     } else if ( timeIntM == 2 ) {   //HHT method
         if ( alpha_m != 0 ) {
             cerr << "Solver Error: HHT method requires alpha_m=0" << endl;
