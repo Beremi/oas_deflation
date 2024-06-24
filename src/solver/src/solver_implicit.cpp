@@ -1178,8 +1178,8 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
         //Stability Analysis of Ubiquitous Direct Time Integration Methods, Mohamed Naguib and AF Ghaleb and Faraji Mollaie Amin,  2019
         alpha_m = (rhoinfty-1.) / ( 1. + rhoinfty );
         alpha_f = 0;
-        gamma = 1. / 2. + alpha_f;
-        beta = 1. / 4. * pow(1 + alpha_f, 2);
+        gamma = 1. / 2. - alpha_m;
+        beta = 1. / 4. * pow(1 - alpha_m, 2);
     } else if (timeIntM==2) {  //HHT
         //Stability Analysis of Ubiquitous Direct Time Integration Methods, Mohamed Naguib and AF Ghaleb and Faraji Mollaie Amin,  2019
         alpha_m = 0.;
