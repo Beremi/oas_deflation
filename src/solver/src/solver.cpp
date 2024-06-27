@@ -2,6 +2,7 @@
 #include "solver_implicit.h"
 #include "solver_explicit.h"
 #include "adaptivity.h"
+#include <cstdlib> //random number generator
 #define numPhysicalFields 4
 
 using namespace std;
@@ -21,7 +22,15 @@ Solver :: Solver() {
     isTimeReal = false;
 }
 
+//////////////////////////////////////////////////////////
+Solver :: ~Solver(){
+    for (auto p : pertrubations){
+        delete p;
+    } 
+    pertrubations.clear();
+}
 
+//////////////////////////////////////////////////////////
 void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc) {
     elems = e;
     nodes = n;
@@ -130,10 +139,19 @@ void Solver :: runBeforeEachStep() {
     load_old = load; //copy old load to be used in generalized alpha method
     load.setZero();  //clear nodal load
     ddr.setZero(); //clear step contribution;
+
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: runAfterEachStep() {
+    for(vector<Pertrubation*>::iterator p=pertrubations.begin(); p!=pertrubations.end(); ++p){
+        if ((*p)->shouldBeApplied(time)){
+            nodes->giveFullDoFArray((*p)->pertrube(freeDoFnum), full_ddr);
+            trial_r += full_ddr;
+            cout << "applying pertrubation" << endl;
+        }
+    }
+
     computeTotalInternalAndExternalAndKineticEnergy();
 
     r = trial_r;
@@ -265,4 +283,50 @@ void Solver :: computeTotalInternalAndExternalAndKineticEnergy() {
 //////////////////////////////////////////////////////////
 double Solver :: giveExternalForce(unsigned k) const {
     return f_ext [ k ];
+}
+
+//////////////////////////////////////////////////////////
+bool Pertrubation :: shouldBeApplied(double solverTime) const {            
+    if (!finalized && time<=solverTime) return true;
+    else return false;
+}
+
+//////////////////////////////////////////////////////////
+Vector Pertrubation :: pertrube(unsigned size) {      
+    srand(seed);   
+    Vector rand = Vector::Random(size);
+    finalized = true;
+    return rand*magnitude;
+}
+
+//////////////////////////////////////////////////////////
+void Pertrubation :: readFromLine(std :: istringstream &iss) {  
+    string param;
+    bool btime, bseed, bmag;
+    btime = bseed = bmag = false;
+
+    while (  iss >> param ) {
+        if ( param.compare("time") == 0 ) {
+            btime = true;
+            iss >> time;
+        } else if ( param.compare("seed") == 0 ) {
+            bseed = true;
+            iss >> seed;
+        } else if ( param.compare("magnitude") == 0 ) {
+            bmag = true;
+            iss >> magnitude;
+        } 
+    }
+    if ( !btime ) {
+        cerr << name << ": pertrubation parameter 'time' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }  
+    if ( !bseed ) {
+        cerr << name << ": pertrubation parameter 'seed' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }   
+    if ( !bmag ) {
+        cerr << name << ": pertrubation parameter 'magnitude' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }     
 }

@@ -10,6 +10,8 @@
 #include "node_container.h"
 #include "indirect_displ_control.h"
 
+class Pertrubation; //forward declaration    
+
 //////////////////////////////////////////////////////////
 class Solver
 {
@@ -38,10 +40,12 @@ protected:
 
     virtual void updateFieldVariables();
     virtual void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep);
+    
+    std :: vector <Pertrubation*> pertrubations;
 
 public:
     Solver();
-    virtual ~Solver() {};
+    virtual ~Solver();
     virtual void init(std :: string init_r_file, std :: string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const std :: string filename);
     virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };
@@ -75,5 +79,21 @@ public:
     bool showStepTime()const { return showTime; };
 };
 
+//////////////////////////////////////////////////////////
+class Pertrubation
+{
+protected: 
+    std :: string name;
+    double finalized;
+    double time;
+    double magnitude;
+    double seed;
+public:
+    Pertrubation(){};
+    virtual ~Pertrubation() {finalized=false; name = "Pertrubation";};
+    bool shouldBeApplied(double solverTime) const;
+    Vector pertrube(unsigned size);
+    virtual void readFromLine(std :: istringstream &iss);
+};
 
 #endif /* _SOLVER_H */

@@ -113,6 +113,10 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> this->init_step;
             } else if ( param.compare("solver_type") == 0 ) {
                 iss >> symsolver_type;
+            } else if ( param.compare("pertrubation") == 0 ) {
+                Pertrubation* p = new Pertrubation();
+                p->readFromLine(iss);
+                pertrubations.push_back(p);
             }
         }
         inputfile.close();
