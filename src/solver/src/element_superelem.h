@@ -14,8 +14,11 @@ class MLMechElement : public Element
 protected:
     unsigned poly_degree;
     Matrix stiffmat;
-    fs :: path sm_path;
+    fs::path sm_path;
+    fs::path nm_path;
+    fs::path ml_path;
     Matrix readStiffMatrixFromFile() const;
+    Matrix readDataNormalizationMatrix(int size) const;
 
 public:
     MLMechElement(unsigned dim);
