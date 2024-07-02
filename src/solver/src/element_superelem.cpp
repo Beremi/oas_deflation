@@ -192,6 +192,11 @@ Matrix MLMechElement :: giveStiffnessMatrix(std :: string matrixType) const {
 
 //////////////////////////////////////////////////////////
 Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep){
+    if (frozen){
+    (void) timeStep;
+    return stiffmat*DoFs;
+
+    } else {
     (void) timeStep;
     torch::jit::script::Module module;
     
@@ -206,23 +211,37 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
         exit(1);
     }
     int size = DoFs.size();
+    int size_x = size - 2;
     // std::cout << "\nCheckpoint 00\n" << std::flush;
-    Matrix norm = readDataNormalizationMatrix(size);
     // std::cout << "\nnorm Matrix\n" << norm << "\n" << std::flush;
 
+    // Relative DoFs - with corner0 displacements = 0
+    Vector DoFs_rel = DoFs.cast <double> ();
+    double c0u = DoFs_rel[0];
+    double c0v = DoFs_rel[1];
+
+    for (int i = 0; i < 8; i+=2){
+        DoFs_rel[i] -= c0u;
+    }
+    for (int i = 1; i < 8; i+=2){
+        DoFs_rel[i] -= c0v;
+    }
+
     // Normalization of input DoFs.
+    Matrix norm = readDataNormalizationMatrix(size);
     Vector x_std = norm.row(1);
-    Vector DoFs_norm = DoFs.cast <double> ();
+    Vector DoFs_norm = DoFs_rel.cast <double> ();
     DoFs_norm -= norm.row(0);
     // DoFs_norm = DoFs_norm.array() / norm.row(1).array(); // doesnt work for some reason
     DoFs_norm = DoFs_norm.array() / x_std.array();
+    DoFs_norm.head(size_x) = DoFs_norm.segment(size - size_x, size_x);
 
     // bisymmetric log transformation
-    double Cx = 1 / log(10);
-    Eigen::VectorXd vec1 (size);
-    vec1.fill(1);
-    DoFs_norm = DoFs_norm.array().sign() * (vec1 + (DoFs_norm / Cx).cwiseAbs()).array().log10();
-    DoFs_norm.matrix();
+    // double Cx = 1 / log(10);
+    // Eigen::VectorXd vec1 (size);
+    // vec1.fill(1);
+    // DoFs_norm = DoFs_norm.array().sign() * (vec1 + (DoFs_norm / Cx).cwiseAbs()).array().log10();
+    // DoFs_norm.matrix();
 
 
     // Create a vector of inputs.
@@ -235,7 +254,7 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
     // std::cout << "\nDofsFloat\n" << DoFsFloat << "\n";
   
     // // Create a torch Tensor populated by the DoFs values
-    torch::Tensor inputs_torch = torch::from_blob(DoFsFloat.data(), {1,size}).clone(); // Populates torch Tensor with Eigen Vector/Matrix
+    torch::Tensor inputs_torch = torch::from_blob(DoFsFloat.data(), {1,size_x}).clone(); // Populates torch Tensor with Eigen Vector/Matrix
     inputs.push_back(inputs_torch);
 
     // std::cout << "input tensor_torch\n" << inputs_torch << "\n";
@@ -258,14 +277,14 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
     forces += norm.row(2);
 
     // bisymmetric log inverse transfomration
-    double Cy = 1 / log(10);
-    Eigen::VectorXd vecm1 (size);
-    vecm1.fill(-1);
-    Eigen::VectorXd pow10 (size);
-    for (int i = 0; i < size; i++){
-        pow10[i] = pow(10, fabs(forces[i]));
-    }
-    forces = (forces.array().sign().matrix() * Cy).array() * (vecm1 + pow10).array();
+    // double Cy = 1 / log(10);
+    // Eigen::VectorXd vecm1 (size);
+    // vecm1.fill(-1);
+    // Eigen::VectorXd pow10 (size);
+    // for (int i = 0; i < size; i++){
+    //     pow10[i] = pow(10, fabs(forces[i]));
+    // }
+    // forces = (forces.array().sign().matrix() * Cy).array() * (vecm1 + pow10).array();
 
 
     // std::cout << "\nForces ML\n" << forces << "\n" << std::flush;
@@ -275,9 +294,95 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
 
     // std::cout << "\nDofs\n" << DoFs << "\n";
     // std::cout << "\nStiffmat\n" << stiffmat << "\n";
+    // std::cout << "\nForces Correct\n" << stiffmat*DoFs << "\n";
+
+
+    // std::ofstream outFile("C:/Users/209050/OAS_data/Plasticity/Constrained/RegMesh/Rectangle_D/OutDofForce.txt");
+    // outFile << "" ;
+    // outFile.close();
+
+
+    // std::ofstream outfile("C:/Users/209050/OAS_data/Plasticity/Constrained/RegMesh/Rectangle_D/OutDofForce.txt", std::ios::app);
+    // if (!outfile.is_open()) {
+    //     std::cerr << "Error opening file!" << std::endl;
+    //     // return 1;
+    // }
+
+    // std::ofstream outFL("C:/Users/209050/OAS_data/Plasticity/Constrained/RegMesh/Rectangle_D/OutDoF.txt", std::ios::app);
+
+    // // Write the array to the file
+
+    // string outstirng;
+    // outfile << "DoFs" << "\n";
+    // for (double value : DoFs) {
+    //     outstirng.append(std::to_string(value) + ", ");
+    // }
+    // outstirng.pop_back();
+    // outstirng.pop_back();
+    // outfile << outstirng << "\n";
+    // outFL << outstirng << "\n";
+
+    // outstirng = "";
+
+    // outfile << "DoFs_REL" << "\n";
+    // for (double value : DoFs_rel) {
+    //     outstirng.append(std::to_string(value) + ", ");
+    // }
+    // outstirng.pop_back();
+    // outstirng.pop_back();
+    // outfile << outstirng << "\n";
+    // outFL << outstirng << "\n";
+
+    // outstirng = "";
+    
+    // outfile << "forces" << "\n";
+    // for (double value : forces) {
+    //     outstirng.append(std::to_string(value) + ", ");
+    // }
+    // outstirng.pop_back();
+    // outstirng.pop_back();
+    // outfile << outstirng << "\n";
+    // outstirng = "";
+    
+    // Vector sdf = stiffmat*DoFs - forces;
+    // outfile << "stiffmat*DoFs - forces" << "\n";
+    // for (double value : sdf) {
+    //     outstirng.append(std::to_string(value) + ", ");
+    // }
+    // outstirng.pop_back();
+    // outstirng.pop_back();
+    // outfile << outstirng << "\n";
+    // outstirng = "";
+
+    // Vector sd = stiffmat*DoFs;
+    // outfile << "stiffmat*DoFs" << "\n";
+    // for (double value : sd) {
+    //     outstirng.append(std::to_string(value) + ", ");
+    // }
+    // outstirng.pop_back();
+    // outstirng.pop_back();
+    // outfile << outstirng << "\n";
+    // outstirng = "";
+    // outfile << "\n";
+
+
+    // // outfile << forces << "\n";
+    // // outfile << "stiffmat*DoFs - forces" << "\n";
+    // // outfile << stiffmat*DoFs - forces << "\n";
+    // // outfile << "stiffmat*DoFs" << "\n";
+    // // outfile << stiffmat*DoFs << "\n";
+
+    // // Close the file
+    // outfile.close();
+    // outFL.close();
+
+
 
     return stiffmat*DoFs - forces;
+    // return stiffmat*DoFs;
 
+
+    }
     
 
     // return stiffmat*DoFs;
