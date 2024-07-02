@@ -301,6 +301,28 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
                 inttype->setIPWeight(i, length * ais [ i ] / ndim);
                 inttype->setIPLocation(i, ( centroid + vert [ i ]->givePoint() + vert [ j ]->givePoint() ) / 3.0);
             }
+        } else if ( intPoints.compare("triangles3") == 0 ) { //at medians of triangle
+            it->setNumIP(vert.size()*3);
+            vector<Point> natcoords(3);
+            double s = 1./6.;
+            //medians of triangle in natural coordinate system
+            natcoords[0] = Point(1.-2*s,s,s);
+            natcoords[1] = Point(1.-5*s,s,4*s);
+            natcoords[2] = Point(1.-5*s,4*s,s);
+            
+            j = 0;
+            for ( unsigned int i = 0; i < vert.size(); i++ ) {
+                j = i + 1;
+                if ( i == vert.size() - 1 ) {
+                    j = 0;
+                }
+                inttype->setIPWeight(3*i  , length * ais [ i ] / (3*ndim));
+                inttype->setIPWeight(3*i+1, length * ais [ i ] / (3*ndim));
+                inttype->setIPWeight(3*i+2, length * ais [ i ] / (3*ndim));
+                inttype->setIPLocation(3*i  , centroid*natcoords[0].x() + vert [ i ]->givePoint()*natcoords[0].y() + vert [ j ]->givePoint()*natcoords[0].z());
+                inttype->setIPLocation(3*i+1, centroid*natcoords[1].x() + vert [ i ]->givePoint()*natcoords[1].y() + vert [ j ]->givePoint()*natcoords[1].z());
+                inttype->setIPLocation(3*i+2, centroid*natcoords[2].x() + vert [ i ]->givePoint()*natcoords[2].y() + vert [ j ]->givePoint()*natcoords[2].z());
+            }
         } else {
             cerr << "RigidBodyContact Error: unknown value of intPoints parameter: " << intPoints << endl;
             exit(1);
