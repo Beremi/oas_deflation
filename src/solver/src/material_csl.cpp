@@ -92,12 +92,12 @@ void CSLMaterialStatus :: init() {
 
     if ( Ks < 0 || Kt < 0 ) {
         cerr << "Error in " << name << ": snap back occured" << endl;
-        exit(1);
+        //exit(1);
     }
 
     if ( Kt <= Ks ) {
-        cerr << "Error in " << name << ": Ks is greater than Kt" << endl;
-        exit(1);
+        cerr << "Error in " << name << ": Ks (" <<Ks << ") is greater than Kt (" << Kt << ")" << L << endl;
+        //exit(1);
     }
 }
 
@@ -618,6 +618,9 @@ void CoupledCSLMaterialStatus :: updateStressByBiotEffect(double timeStep) {
     ( void ) timeStep;
     CoupledCSLMaterial *m = static_cast< CoupledCSLMaterial * >( mat );
     temp_stress [ 0 ] -= m->giveBiotCoeff() * avgPressure;
+    if (element->giveID()==0 && idx==0){
+        cout << 0 << " " << 0 << " " << temp_stress [ 0 ] << " " << avgPressure << endl;
+    }
 }
 
 //////////////////////////////////////////////////////////

@@ -2,12 +2,15 @@
 #define _ELEMENT_LDPMTETRA_H
 
 #include "element.h"
+#include "element_discrete.h"
 #include "simplex.h"
 #include  <vector>
 
+class ElementContainer; //forward declaration
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// RBSN ELEMENT
+// LDPM ELEMENT
 class LDPMTetra : public Element
 {
 protected:
@@ -43,6 +46,7 @@ public:
     Point giveNormal(unsigned i) const { return normals [ i ]; }
     std :: vector< Node * >giveVertices() const { return vert; };
     Node *giveVertex(unsigned i) const { return vert [ i ]; };
+    Node *giveCentroid() const { return vert [ 0 ]; };
     unsigned giveNumOfVertices() const { return vert.size(); };
 
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
@@ -54,8 +58,12 @@ public:
     unsigned giveNumOfFacets()const { return 12; };
     std :: vector< unsigned >giveFacetVertCodes(unsigned k) const;
     std :: vector< unsigned >giveFacetNodeCodes(unsigned k) const;
+    unsigned giveOppositeSurfaceVertexToNode(unsigned k) const;
+    std :: vector<unsigned> giveOppositeFacetsToNode(unsigned k) const;
 
-    //virtual void giveValues(std :: string code, Vector &result) const;
+    double giveVolumetricStrain() const {return volumetricStrain;};
+
+    virtual void giveValues(std :: string code, Vector &result) const;
     //Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     //double giveVolumeAssociatedWithNode(unsigned nodenum) const;
 
@@ -63,4 +71,47 @@ public:
     //virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; }; //TODO: discrete elements does not interpolate
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// LDPM COUPLED ELEMENT
+class LDPMCoupledTetra : public LDPMTetra{
+protected:
+
+public:
+    LDPMCoupledTetra();
+    ~LDPMCoupledTetra() {};
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void giveValues(std :: string code, Vector &result) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Discrete LDPM TRANSPORT ELEMENT
+class LDPMCoupledTransport : public DiscreteTrsprtCoupledElem {
+protected:
+    LDPMTetra* tetA;
+    LDPMTetra* tetB;
+    unsigned LDPMTetraIDA,LDPMTetraIDB;
+    ElementContainer *elems;
+    unsigned LDPMsideA, LDPMsideB;
+
+public:
+    LDPMCoupledTransport(ElementContainer *allelems);
+    ~LDPMCoupledTransport() {};
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
+    virtual void init();
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Discrete LDPM TRANSPORT BOUNDARY ELEMENT
+class LDPMCoupledTransportBoundary : public LDPMCoupledTransport {
+protected:
+
+public:
+    LDPMCoupledTransportBoundary(ElementContainer *allelems);
+    ~LDPMCoupledTransportBoundary() {};
+    virtual void init();
+};
 #endif  /* _ELEMENT_LDPMTETRA_H */

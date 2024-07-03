@@ -286,6 +286,44 @@ double Solver :: giveExternalForce(unsigned k) const {
 }
 
 //////////////////////////////////////////////////////////
+Vector Solver :: lumpMatrix(CoordinateIndexedSparseMatrix &Q) const {
+    Vector lumpedQ = Vector :: Zero(freeDoFnum);
+
+
+    cout << "lumping the mass matrix" << endl;
+
+    unsigned rowstart, rowend;
+    unsigned mainFullDoFid, mainDir;
+    unsigned ndim = 0;
+    unsigned fullDoFid, dir, mainPhysField;
+    vector< unsigned >pf = nodes->givePhysicalFieldsOfDoFs();
+    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+        rowstart = Q.outerIndexPtr() [ i ];
+        rowend = ( i + 1 == freeDoFnum ) ? Q.nonZeros() : Q.outerIndexPtr() [ i + 1 ];
+        mainFullDoFid = nodes->giveInvDoFid(i);
+        mainDir = mainFullDoFid - nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveStartingDoF();
+        mainPhysField = pf [ mainFullDoFid ];
+        if ( mainPhysField == 0 ) {
+            ndim = nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveDimension();
+        }
+        for ( unsigned k = rowstart; k < rowend; k++ ) {
+            fullDoFid =  nodes->giveInvDoFid(Q.innerIndexPtr() [ k ]);
+            if ( mainPhysField != pf [ fullDoFid ] ) {
+                continue;                              //cannot some different fields
+            }
+            if ( mainPhysField == 0 ) {  //mechanics
+                dir = fullDoFid - nodes->giveNodePointerOfDoFID(fullDoFid)->giveStartingDoF();
+                if ( ( mainDir < ndim && dir >= ndim ) || ( dir < ndim && mainDir >= ndim ) ) {
+                    continue;                                                             //mixing rotations and translations
+                }
+            }
+            lumpedQ [ i ] += Q.valuePtr() [ k ];
+        }
+    }
+    return lumpedQ;
+}
+
+//////////////////////////////////////////////////////////
 bool Pertrubation :: shouldBeApplied(double solverTime) const {            
     if (!finalized && time<=solverTime) return true;
     else return false;

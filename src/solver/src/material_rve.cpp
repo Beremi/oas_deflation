@@ -290,6 +290,7 @@ void DiscreteTransportRVEMaterialStatus :: setParameterValue(string code, double
 }
 /////////////////////////////////./////////////////////////
 Vector DiscreteTransportRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    cout << "FROZEN" << endl;
     ( void ) timeStep;
 
     temp_strain = strain;
@@ -765,8 +766,9 @@ bool DiscreteMechanicalRVEMaterialStatus ::  giveValues(string code, Vector &res
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    //delete curvatutures according to an updated homogenization theory
 
+    cout << "GIVE STRESS" << endl;
+    //delete curvatutures according to an updated homogenization theory
 
     ( void ) timeStep;
 

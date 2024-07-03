@@ -43,6 +43,8 @@ protected:
     
     std :: vector <Pertrubation*> pertrubations;
 
+    Vector lumpMatrix(CoordinateIndexedSparseMatrix &Q) const;
+
 public:
     Solver();
     virtual ~Solver();

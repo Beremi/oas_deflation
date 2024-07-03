@@ -9,7 +9,7 @@
 class LDPMMaterial;
 class LDPMMaterialStatus : public VectMechMaterialStatus
 {
-private:
+protected:
     double maxEpsT, maxEpsN, temp_maxEpsT, temp_maxEpsN;
     double Kt, Ks, L, nt;
     double RAND_H;
@@ -18,6 +18,8 @@ private:
     double virtual_damage;
     Vector updt_mech_strain; //last strain without eigenstrain
     Vector temp_mech_strain; //current strain without eigenstrain
+    Vector updt_mech_stress; //last stress without other physical processes, solid stress
+    Vector temp_mech_stress; //current stress without other physical processes, solid stress
 
     double giveStrengthLimit(double omega);
     Vector giveTension(const Vector &strain, const Vector strain_prev, const Vector stress_prev);
@@ -44,7 +46,7 @@ public:
     double giveSigmaBCDiff(double relt, double *transSigmaBC);
 };
 
-
+//////////////////////////////////////////////////////////
 class LDPMMaterial : public VectMechMaterial
 {
 private:
@@ -81,5 +83,40 @@ public:
     double giveMuinf() { return muinf; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
+};
+
+//////////////////////////////////////////////////////////
+// COUPLED LDPM MATERIAL
+
+class LDPMCoupledMaterial;
+class LDPMCoupledMaterialStatus : public LDPMMaterialStatus
+{
+private:
+    void updateStressByBiotEffect(double timeStep);
+    double avgPressure;
+public:
+    LDPMCoupledMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
+    ~LDPMCoupledMaterialStatus() {};
+    virtual Vector giveStress(const Vector &strain, double timeStep);
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual bool giveValues(std :: string code, Vector &result) const;
+    virtual void init();
+    virtual void update();
+    virtual void resetTemporaryVariables();
+    virtual void setParameterValue(std :: string code, double value);
+};
+
+//////////////////////////////////////////////////////////
+class LDPMCoupledMaterial : public LDPMMaterial
+{
+private:
+    double biotCoeff;
+public:
+    LDPMCoupledMaterial(unsigned dimension) : LDPMMaterial(dimension) { name = "Coupled LPDM material"; };
+    virtual ~LDPMCoupledMaterial() {};
+    virtual void readFromLine(std :: istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    virtual void init(MaterialContainer *matcont);
+    double giveBiotCoeff() const { return biotCoeff; };
 };
 #endif /* _LDPM_MATERIAL_H */

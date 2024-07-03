@@ -121,6 +121,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     LDPMMaterial *newmat = new LDPMMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("LDPMCoupledMaterial") == 0 ) {
+                    LDPMCoupledMaterial *newmat = new LDPMCoupledMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else if ( matType.compare("CoupledCSLMaterial") == 0 ) {
                     CoupledCSLMaterial *newmat = new CoupledCSLMaterial(dim);
                     newmat->readFromLine(iss);

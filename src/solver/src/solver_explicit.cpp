@@ -32,7 +32,7 @@ void TransientCentralDifferenceMechanicalSolver :: init(std :: string init_r_fil
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(M);
     }
-    lumpMassMatrix();
+    lumpedM = lumpMatrix(M);
 
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     nodes->addRHS_nodalLoad(load, time); //add nodal load
@@ -43,44 +43,6 @@ void TransientCentralDifferenceMechanicalSolver :: init(std :: string init_r_fil
     computeInternalExternalForces(r, load, 0, dt);
     residuals -= f_dam + f_acc;
 }
-
-//////////////////////////////////////////////////////////
-void TransientCentralDifferenceMechanicalSolver :: lumpMassMatrix() {
-    lumpedM = Vector :: Zero(freeDoFnum);
-
-
-    cout << "lumping of the mass matrix" << endl;
-
-    unsigned rowstart, rowend;
-    unsigned mainFullDoFid, mainDir;
-    unsigned ndim = 0;
-    unsigned fullDoFid, dir, mainPhysField;
-    vector< unsigned >pf = nodes->givePhysicalFieldsOfDoFs();
-    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
-        rowstart = M.outerIndexPtr() [ i ];
-        rowend = ( i + 1 == freeDoFnum ) ? M.nonZeros() : M.outerIndexPtr() [ i + 1 ];
-        mainFullDoFid = nodes->giveInvDoFid(i);
-        mainDir = mainFullDoFid - nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveStartingDoF();
-        mainPhysField = pf [ mainFullDoFid ];
-        if ( mainPhysField == 0 ) {
-            ndim = nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveDimension();
-        }
-        for ( unsigned k = rowstart; k < rowend; k++ ) {
-            fullDoFid =  nodes->giveInvDoFid(M.innerIndexPtr() [ k ]);
-            if ( mainPhysField != pf [ fullDoFid ] ) {
-                continue;                              //cannot some different fields
-            }
-            if ( mainPhysField == 0 ) {  //mechanics
-                dir = fullDoFid - nodes->giveNodePointerOfDoFID(fullDoFid)->giveStartingDoF();
-                if ( ( mainDir < ndim && dir >= ndim ) || ( dir < ndim && mainDir >= ndim ) ) {
-                    continue;                                                             //mixing rotations and translations
-                }
-            }
-            lumpedM [ i ] += M.valuePtr() [ k ];
-        }
-    }
-}
-
 
 //////////////////////////////////////////////////////////
 void TransientCentralDifferenceMechanicalSolver :: computeAcceleration() {

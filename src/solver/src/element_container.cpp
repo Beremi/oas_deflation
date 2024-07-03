@@ -68,6 +68,18 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     LDPMTetra *newelem = new LDPMTetra(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMCoupledTetra") == 0 ) {
+                    LDPMCoupledTetra *newelem = new LDPMCoupledTetra();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMCoupledTransport") == 0 ) {
+                    LDPMCoupledTransport *newelem = new LDPMCoupledTransport(this);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMCoupledTransportBoundary") == 0 ) {
+                    LDPMCoupledTransportBoundary *newelem = new LDPMCoupledTransportBoundary(this);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else if ( elemType.compare("CLSBoundaryElem") == 0 || elemType.compare("LTCBoundary") == 0 ) {
                     RigidBodyBoundary *newelem = new RigidBodyBoundary(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
