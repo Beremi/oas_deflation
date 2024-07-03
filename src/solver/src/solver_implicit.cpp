@@ -1158,7 +1158,7 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
     }
     v_old = Vector :: Zero(totalDoFnum);
     a_old = Vector :: Zero(totalDoFnum);
-    elems->prepareMassMatrix(M);
+    elems->prepareMassMatrix(M,lumpMassM);
 
     TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
 }
@@ -1343,14 +1343,8 @@ bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, 
     bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(matrixType, iteration, enforce);
     bool updated1 = false;
     if ( enforce || massMatrixUpdate == 0 || ( massMatrixUpdate > 0 && iteration % abs(massMatrixUpdate) == 0 ) ) {
-        elems->updateMassMatrix(M);        
-        if (lumpMassM) {
-            CoordinateIndexedSparseMatrix Mred(M);
-            nodes->giveConstraints()->transformToConstraintSpace(Mred);
-            Vector lumpedMVec = lumpMatrix(Mred);
-            M = M*0;
-            for (unsigned k=0; k<lumpedMVec.size(); k++) M.coeffRef(k,k) = lumpedMVec[k];
-        }
+        elems->updateMassMatrix(M, lumpMassM); 
+        elems->replaceTrueMassMatricesByLumpedOnes();
         updated1 = true;
     }
     return ( updated0 || updated1 );

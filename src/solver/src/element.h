@@ -65,7 +65,7 @@ public:
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Matrix giveMassMatrix();
     virtual Matrix giveDampingMatrix();
-    virtual Vector giveLumpedMassMatrix();
+    virtual Matrix giveLumpedMassMatrix();
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     double giveKineticEnergy(const Vector &velocity) const;
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
@@ -107,7 +107,7 @@ public:
     virtual double giveIPVolume(unsigned i) const { return inttype->giveIPWeight(i); };
 
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
-
+    void setMassMatrix(Matrix Q) {massM=Q;};
     virtual void collectInformationsFromNeigborhood() {};
     virtual bool isPointInside(Point *xn, const Point *x) const;
     virtual Point giveApproxCenter() const;

@@ -399,7 +399,7 @@ void ElementContainer :: resetMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const {
+void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped) const {
     std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
@@ -418,7 +418,7 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                     if ( DoFi < nfreeDoFs ) {
                         tripletList.push_back( Ttripletd(DoFi, DoFi, 0.0) );
                     }
-                } else {
+                } else if (!lumped) {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
                         tripletList.push_back( Ttripletd(DoFi, DoFj, 0.0) );
@@ -438,21 +438,21 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareStiffnessMatrix(CoordinateIndexedSparseMatrix &K) const {
-    prepareStructuralMatrix(K, 0);
+    prepareStructuralMatrix(K, 0, false);
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareDampingMatrix(CoordinateIndexedSparseMatrix &C) const {
-    prepareStructuralMatrix(C, 1);
+    prepareStructuralMatrix(C, 1, false);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const {
-    prepareStructuralMatrix(M, 2);
+void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const {
+    prepareStructuralMatrix(M, 2, lumped);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const {
+void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped) const {
     if ( K.rows() == 0 ) {
         return;
     }
@@ -469,8 +469,10 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
         } else if ( diffType == 1 ) {
             k = ( * e )->giveDampingMatrix();                    //damping or capacity
-        } else if ( diffType == 2 ) {
-            k = ( * e )->giveMassMatrix();                    //mass
+        } else if ( diffType == 2 && lumped) {
+            k = ( * e )->giveLumpedMassMatrix();                    //mass
+        } else if ( diffType == 2) {
+            k = ( * e )->giveMassMatrix(); 
         } else {
             cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
             exit(1);
@@ -486,7 +488,7 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
                     if ( DoFi < nfreeDoFs ) {
                         K.coeffRef(DoFi, DoFi) += k(i, j);
                     }
-                } else {
+                } else if (!lumped) {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
                         K.coeffRef(DoFi, DoFj) += k(i, j);
@@ -507,7 +509,7 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
      */
 }
 
-
+/*
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateLumpedMassMatrix(Vector &M) const {
     unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
@@ -526,20 +528,21 @@ void ElementContainer :: updateLumpedMassMatrix(Vector &M) const {
         }
     }
 }
+*/
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const {
-    updateStructuralMatrix(K, 0, param);
+    updateStructuralMatrix(K, 0, param, 0);
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateDampingMatrix(CoordinateIndexedSparseMatrix &C) const {
-    updateStructuralMatrix(C, 1, "");
+    updateStructuralMatrix(C, 1, "", 0);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) const {
-    updateStructuralMatrix(M, 2, "");
+void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const {
+    updateStructuralMatrix(M, 2, "", lumped);
 }
 
 //////////////////////////////////////////////////////////
@@ -792,6 +795,11 @@ void ElementContainer :: sumFromElements(std :: string code, Vector &result) con
             result [ i ] += help [ i ];
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: replaceTrueMassMatricesByLumpedOnes(){
+    for ( auto &e: elems ) e->setMassMatrix(e->giveLumpedMassMatrix());
 }
 
 

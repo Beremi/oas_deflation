@@ -21,8 +21,8 @@ private:
     Model *model = nullptr;
     ;
     unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
-    void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const;
-    void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType) const;
+    void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped) const;
+    void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType, bool lumped) const;
     void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
     std :: vector< std :: string >file_to_load_from;
 
@@ -45,9 +45,9 @@ public:
     void updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, std :: string param) const;
     void prepareDampingMatrix(CoordinateIndexedSparseMatrix &C) const;
     void updateDampingMatrix(CoordinateIndexedSparseMatrix &C) const;
-    void prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const;
-    void updateMassMatrix(CoordinateIndexedSparseMatrix &M) const;
-    void updateLumpedMassMatrix(Vector &M) const;
+    void prepareMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const;
+    void updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const;
+    //void updateLumpedMassMatrix(Vector &M) const;
     double integrateKineticEnergy(const Vector &velocity) const;
     void integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep);                        ///< return internal forces with temporary update of internal variables
     void integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep);  ///< return internal forces based on current state of internal variables
@@ -64,6 +64,7 @@ public:
     void giveValues(std :: string code, Vector &result) const;
     void sumFromElements(std :: string code, Vector &result) const;
     std :: vector< Vector >computePrincipalStresses() const;
+    void replaceTrueMassMatricesByLumpedOnes();
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }

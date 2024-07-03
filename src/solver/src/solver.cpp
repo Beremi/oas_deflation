@@ -285,6 +285,7 @@ double Solver :: giveExternalForce(unsigned k) const {
     return f_ext [ k ];
 }
 
+/*
 //////////////////////////////////////////////////////////
 Vector Solver :: lumpMatrix(CoordinateIndexedSparseMatrix &Q) const {
     Vector lumpedQ = Vector :: Zero(freeDoFnum);
@@ -322,6 +323,7 @@ Vector Solver :: lumpMatrix(CoordinateIndexedSparseMatrix &Q) const {
     }
     return lumpedQ;
 }
+*/
 
 //////////////////////////////////////////////////////////
 bool Pertrubation :: shouldBeApplied(double solverTime) const {            

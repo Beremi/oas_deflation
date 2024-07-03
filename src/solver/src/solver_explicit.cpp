@@ -27,12 +27,12 @@ void TransientCentralDifferenceMechanicalSolver :: init(std :: string init_r_fil
     a = Vector :: Zero(totalDoFnum);
 
 
-    elems->prepareMassMatrix(M);
-    elems->updateMassMatrix(M);
+    elems->prepareMassMatrix(M,1);
+    elems->updateMassMatrix(M,1);
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(M);
     }
-    lumpedM = lumpMatrix(M);
+    lumpedM = M.diagonal();
 
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     nodes->addRHS_nodalLoad(load, time); //add nodal load

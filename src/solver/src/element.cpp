@@ -333,12 +333,39 @@ Matrix Element :: giveMassMatrix() {
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveLumpedMassMatrix() {
+Matrix Element :: giveLumpedMassMatrix() {
     if ( mat->requiresMassMatrixUpdate() || massM.rows() == 0 ) {
         computeMassMatrix();
     }
-    return massM.rowwise().sum();
+
+    //cannot mix rotations and translations
+    unsigned nDoFs = DoFids.size();
+    vector<bool> indicateRot(nDoFs);
+    unsigned k = 0;
+    for(auto &nn:nodes){
+        for(unsigned p=0; p<nn->giveNumberOfDoFs(); p++){
+            if (physicalFields [ k ] == 0 && p>ndim){
+                indicateRot[k] = true;
+            }else{
+                indicateRot[k] = false;
+            }    
+            k+=1;    
+        }
+    }
+    
+    Matrix lumpedMassM = Matrix::Zero(nDoFs,nDoFs);
+    for ( unsigned i = 0; i < nDoFs; i++ ) {
+        lumpedMassM(i,i) += massM(i,i);
+        for ( unsigned j = i+1; j < nDoFs; j++ ) {
+            if (physicalFields [ i ] == physicalFields [ j ]){
+                //if (physicalFields [ i ]!=0 || indicateRot[i]==indicateRot[j]) lumpedMassM[i] += massM.coeff(i,j);
+                if (physicalFields [ i ]!=0 || (!indicateRot[i] && !indicateRot[j])) lumpedMassM(i,i) += massM(i,j); //rotations only at the diagonal
+            }
+        }
+    }
+    return lumpedMassM;
 }
+
 
 //////////////////////////////////////////////////////////
 Vector Element :: integrateLoad(BodyLoad *vl, double time) const {
