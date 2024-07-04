@@ -47,9 +47,17 @@ void LDPMMaterialStatus :: initializeStressAndStrainVector(unsigned num) {
 
 //////////////////////////////////////////////////////////
 bool LDPMMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
+    if (code.compare("normal_crack_opening") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_crackOpening;
+        return true;
+    } else if (code.compare("total_crack_opening") == 0 ) {
+        LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
+        result.resize(1);
+        result [ 0 ] = pow(temp_crackOpening,2);
+        result [ 0 ] += pow( temp_mech_strain [ 1 ] - ( temp_mech_stress [ 1 ] / (m->giveE0()*m->giveAlpha() ) ) * L, 2);        
+        result [ 0 ] += pow( temp_mech_strain [ 2 ] - ( temp_mech_stress [ 2 ] / (m->giveE0()*m->giveAlpha() ) ) * L, 2);   
+        result [ 0 ] = sqrt( result [ 0 ] );
         return true;
     } else if ( code.compare("volumetric_strain") == 0 ) {
         result.resize(1);
