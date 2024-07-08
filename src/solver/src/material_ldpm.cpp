@@ -55,8 +55,8 @@ bool LDPMMaterialStatus :: giveValues(string code, Vector &result) const {
         LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = pow(temp_crackOpening,2);
-        result [ 0 ] += pow( temp_mech_strain [ 1 ] - ( temp_mech_stress [ 1 ] / (m->giveE0()*m->giveAlpha() ) ) * L, 2);        
-        result [ 0 ] += pow( temp_mech_strain [ 2 ] - ( temp_mech_stress [ 2 ] / (m->giveE0()*m->giveAlpha() ) ) * L, 2);   
+        result [ 0 ] += pow( (temp_mech_strain [ 1 ] - temp_mech_stress [ 1 ] / (m->giveE0()*m->giveAlpha() ) ) * L, 2);        
+        result [ 0 ] += pow( (temp_mech_strain [ 2 ] - temp_mech_stress [ 2 ] / (m->giveE0()*m->giveAlpha() ) ) * L, 2);   
         result [ 0 ] = sqrt( result [ 0 ] );
         return true;
     } else if ( code.compare("volumetric_strain") == 0 ) {
@@ -828,15 +828,27 @@ void LDPMCoupledMaterial :: readFromLine(istringstream &iss) {
 
     string param;
     bool bbiot = false;
+    bool bturtuosity = false;
 
     while (  iss >> param ) {
-        if ( param.compare("biot_coeff") == 0 ) {
+        if ( param.compare("crack_turtuosity") == 0 ) {
+            bturtuosity = true;
+            iss >> crack_turtuosity;
+        } else if ( param.compare("biot_coeff") == 0 ) {
             bbiot = true;
             iss >> biotCoeff;
+        } else if ( param.compare("reference_pressure") == 0 ) {
+            iss >> refP;
+        } else if ( param.compare("Kw") == 0 ) {
+            iss >> Kw;
         }
     }
     if ( !bbiot ) {
         cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    if ( !bbiot ) {
+        cerr << bturtuosity << ": material parameter 'crack_turtuosity' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
 }

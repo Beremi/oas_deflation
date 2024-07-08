@@ -110,7 +110,7 @@ public:
 class LDPMCoupledMaterial : public LDPMMaterial
 {
 private:
-    double biotCoeff;
+    double biotCoeff, Kw, refP, crack_turtuosity; //biot coefficient, biot modulus, reference pressure
 public:
     LDPMCoupledMaterial(unsigned dimension) : LDPMMaterial(dimension) { name = "Coupled LPDM material"; };
     virtual ~LDPMCoupledMaterial() {};
