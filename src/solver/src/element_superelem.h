@@ -32,7 +32,7 @@ public:
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Matrix giveMassMatrix();
     virtual Matrix giveDampingMatrix();
-    virtual Vector giveLumpedMassMatrix();
+    virtual Matrix giveLumpedMassMatrix();
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual void giveValues(std :: string code, Vector &result) const;
     virtual Vector integrateInternalSources();
