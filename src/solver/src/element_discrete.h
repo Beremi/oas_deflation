@@ -86,6 +86,18 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// RBSN ELEMENT - rotations do not contribute to openings, tractions do not contribute to couples
+class RigidBodyContactWithDecoupledRotationsAndTranslations : public RigidBodyContactWithRotationalStiffness
+{
+protected:
+public:
+    RigidBodyContactWithDecoupledRotationsAndTranslations(const unsigned dim);
+    ~RigidBodyContactWithDecoupledRotationsAndTranslations() {};
+    virtual Matrix giveBMatrix(const Point *x) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
 class RigidBodyContact; //forward declaration
 class RigidBodyContactCoupled : public RigidBodyContact
@@ -173,6 +185,7 @@ protected:
     double length, area;
     bool BolanderCapacityMatrix;
     bool ignoreNegativeAreas;
+    bool projectArea;
 
     virtual void checkNodeAndMaterialType() const;
     virtual void setIntegrationPointsAndWeights();
