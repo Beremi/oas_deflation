@@ -15,47 +15,6 @@ MLMechElement :: MLMechElement(unsigned dim) : Element(dim) {
     inttype = new EmptyIntegration();
     physicalFields [ 0 ] = true; //mechanics
 }
-// #define MAXBUFSIZE  ((int) 1e6)
-// Matrix MLMechElement :: readDataNormalizationMatrix() const {
-//     std::cout << "\nCheckpoint A0\n" << std::flush;
-//     int cols = 0, rows = 0;
-//     double buff[MAXBUFSIZE];
-
-//     // Read numbers from file into buffer.
-//     ifstream infile;
-//     infile.open("C:/Users/209050/OAS_data/Plasticity/ML/ML_Torch_first_RT/data_normalization.txt");
-//     std::cout << "\nCheckpoint A1\n" << std::flush;
-//     while (! infile.eof())
-//         {
-//         string line;
-//         getline(infile, line);
-
-//         int temp_cols = 0;
-//         stringstream stream(line);
-//         while(! stream.eof())
-//             stream >> buff[cols*rows+temp_cols++];
-
-//         if (temp_cols == 0)
-//             continue;
-
-//         if (cols == 0)
-//             cols = temp_cols;
-
-//         rows++;
-//         }
-
-//     infile.close();
-
-//     rows--;
-
-//     // Populate matrix with numbers.
-//     Matrix result(rows,cols);
-//     for (int i = 0; i < rows; i++)
-//         for (int j = 0; j < cols; j++)
-//             result(i,j) = buff[ cols*i+j ];
-
-//     return result;
-// }
 
 //////////////////////////////////////////////////////////
 Matrix MLMechElement :: readDataNormalizationMatrix(int size) const {
@@ -182,6 +141,14 @@ void MLMechElement :: init() {
         cerr << "Error in MLMechElement: there are " << outDoFs << " DoFs on input of the element, but " << keep_ind.size() << " DoFs are required for polynom of degree " << poly_degree << endl;
         exit(1);
     }
+
+    // load pytorch libtorch model
+    module = torch::jit::load(ml_path.string()); 
+
+    // load normalization matrix
+    int size = keep_ind.size();
+    norm = readDataNormalizationMatrix(size);
+
 }
 
 //////////////////////////////////////////////////////////
@@ -198,18 +165,7 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
 
     } else {
     (void) timeStep;
-    torch::jit::script::Module module;
     
-    // load libtorch model (pytorch neural network model)
-    try{
-        // module = torch::jit::load("C:/Users/209050/OAS_data/Plasticity/ML/ML_Torch_first_RT/traced_model_p2.pt"); 
-        module = torch::jit::load(ml_path.string()); 
-
-        }
-    catch (const c10::Error& e) {
-        std::cerr << "error loading the Torch model\n";
-        exit(1);
-    }
     int size = DoFs.size();
     int size_x = size - 2;
     // std::cout << "\nCheckpoint 00\n" << std::flush;
@@ -228,7 +184,6 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
     }
 
     // Normalization of input DoFs.
-    Matrix norm = readDataNormalizationMatrix(size);
     Vector x_std = norm.row(1);
     Vector DoFs_norm = DoFs_rel.cast <double> ();
     DoFs_norm -= norm.row(0);
