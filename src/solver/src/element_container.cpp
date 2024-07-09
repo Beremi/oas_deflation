@@ -214,6 +214,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     RigidBodyContactWithRotationalStiffness *newelem = new RigidBodyContactWithRotationalStiffness(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("RigidBodyContactWithDecoupledRotationsAndTranslations") == 0 ) {
+                    RigidBodyContactWithDecoupledRotationsAndTranslations *newelem = new RigidBodyContactWithDecoupledRotationsAndTranslations(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);

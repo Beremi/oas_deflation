@@ -728,6 +728,30 @@ Matrix RigidBodyContactWithRotationalStiffness :: giveStiffnessMatrix(string mat
 }
 
 //////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// RBSN ELEMENT with rotational stiffness
+RigidBodyContactWithDecoupledRotationsAndTranslations :: RigidBodyContactWithDecoupledRotationsAndTranslations(const unsigned dim):RigidBodyContactWithRotationalStiffness(dim) {
+    name = "RigidBodyContactWithDecoupledRotationsAndTranslations";
+}
+
+//////////////////////////////////////////////////////////
+Matrix RigidBodyContactWithDecoupledRotationsAndTranslations :: giveBMatrix(const Point *x) const {
+    Matrix B = RigidBodyContactWithRotationalStiffness :: giveBMatrix(x);
+    //delete coupling terms
+    if ( ndim == 2 ) {
+        B(0,2) = 0; B(1,2) = 0; B(0,5) = 0; B(1,5) = 0; 
+    } else if ( ndim == 3 ) {
+        for (unsigned p=0; p<3; p++){
+            for (unsigned q=0; q<3; q++){
+                B(p,3+q) = 0;
+                B(p,9+q) = 0;
+            }
+        }
+    }
+    return B;
+}
+
+//////////////////////////////////////////////////////////
 // COUPLED RBSN ELEMENT
 RigidBodyContactCoupled :: RigidBodyContactCoupled(const unsigned dim) : RigidBodyContact(dim) {
     name = "LTCBEAMCoupled";
@@ -1077,6 +1101,7 @@ DiscreteTrsprtElem :: DiscreteTrsprtElem(const unsigned dim) : Element(dim) {
     vtk_cell_type = 3;
     physicalFields [ 1 ] = true; //transport
     ignoreNegativeAreas = false;
+    projectArea = true;
 }
 
 //////////////////////////////////////////////////////////
@@ -1132,6 +1157,11 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         t = vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint();
         area = t.norm();
         t = t / area;
+
+        //project area
+        Point faceNormal = Point(-t.y(), t.x(), 0);
+        area = abs(faceNormal.dot(normal) ) * area;
+
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
@@ -1175,11 +1205,13 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         //JM: Perpendicularity check of the beam and face directions
         //JM: normal of the face surface taken from first 3 vertices is (B - A) x (C - A)
         //JM: perpendicularity check: cross (beam, face)=>0 integration triangles
-        double prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(t);
-        if ( prp > 1e-8 ) {
-            cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
-            //  exit(1);
-        }
+        //double prp = ( nodes [ 1 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(t);
+        //if ( prp > 1e-8 ) {
+        //    cerr << "TRSPRT: Face surface is not perpendicular to beam direction!!! Error: " << prp << endl;
+        //    //  exit(1);
+        //}
+        
+        
 
         //JM: finding position of the SINGLE integration point -> center of gravity of the face polygon
         //JM: average point of the polygon for triangulation
@@ -1194,13 +1226,17 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         area = 0.0;
         double ai = 0.0;
         unsigned int j = 0;
+        Point ni;
         for ( unsigned int i = 0; i < vert.size(); i++ ) {
             j = i + 1;
             if ( i == vert.size() - 1 ) {
                 j = 0;
             }
             //triangle area computed as a_i = norm(cross(AB, AC)) / 2
-            ai = ( ( vert [ i ]->givePoint() - avgPoint ).cross(vert [ j ]->givePoint() - avgPoint) ).norm() / 2.;
+            ni = ( vert [ i ]->givePoint() - avgPoint ).cross(vert [ j ]->givePoint() - avgPoint);
+            ai = ni.norm() / 2.;
+            ni.normalize();
+            ai *= ni.dot(normal);
             if ( ai < 1e-15 ) {
                 if ( !ignoreNegativeAreas ) {
                     cout << "DiscreteTrsprtElem Warning: negative area " << ai << ", incorrect orientation of verices, corrected automatically" << endl;
@@ -1224,6 +1260,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         }
     }
 
+    /*
     if ( abs( normal.dot(t) ) > 1e-5 ) {
         cout << vert [ 0 ]->givePoint().x() << " " <<  vert [ 0 ]->givePoint().y() <<  " X " << vert [ 1 ]->givePoint().x() << " " <<  vert [ 1 ]->givePoint().y() << endl;
         cout << nodes [ 0 ]->givePoint().x() << " " <<  nodes [ 0 ]->givePoint().y() <<  " X " << nodes [ 1 ]->givePoint().x() << " " <<  nodes [ 1 ]->givePoint().y() << endl;
@@ -1240,6 +1277,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         cout << endl;
         //exit(1);
     }
+    */
 
     inttype->setIPWeight(0, length * area / ndim);
     stats [ 0 ] = mat->giveNewMaterialStatus(this, 0);

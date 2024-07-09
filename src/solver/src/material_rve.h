@@ -192,8 +192,11 @@ protected:
     Matrix precompElastic, precompDamping, precompInertia;
     Point centroid;
     std :: vector< std :: vector< Matrix > >projectors;
+    Matrix cauchyToCosserat;
     bool project_curvature;
     double average_density;
+    bool convert_from_cauchy;
+    Matrix CauchyToCosseratMatrix;
 
 public:
     DiscreteMechanicalRVEMaterial(unsigned dimension);
@@ -213,6 +216,11 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     void setAverageDensity(double ad) { average_density = ad; };
     double giveAverageDensity() const { return average_density; };
+    Vector strainToCosserat(Vector strain);
+    Vector stressToCauchy(Vector stress);
+    Matrix matrixToCauchy(Matrix matrix);
+    bool isConvertingFromCauchy() const {return convert_from_cauchy;};
+    void setConversionFromCauchy(bool convert) {convert_from_cauchy=convert;};
 };
 
 //////////////////////////////////////////////////////////
