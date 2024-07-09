@@ -19,6 +19,9 @@ protected:
     fs::path ml_path;
     Matrix readStiffMatrixFromFile() const;
     Matrix readDataNormalizationMatrix(int size) const;
+    torch::jit::script::Module module; 
+    Matrix norm;
+    
 
 public:
     MLMechElement(unsigned dim);

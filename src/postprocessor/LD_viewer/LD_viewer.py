@@ -1,4 +1,5 @@
 import os
+import time
 import pathlib
 import argparse
 os.environ["ETS_TOOLKIT"] = "qt"
@@ -15,6 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import mplcursors
+import asyncio
+from threading import Thread, Event
 
 # HGroup Item hack
 def HItem(value=None, **traits):
@@ -211,6 +214,18 @@ class FigureSettings(HasStrictTraits):
                Item('y_limits', show_label=True)),
         resizable=True
     )
+        
+
+class ReloadingThread(Thread):
+
+    def run(self):
+        while not self.event.is_set():
+            self.controler._reload_button_fired()
+            self.controler._clear_button_fired()
+            self.controler._draw_button_fired()
+            self.event.wait(timeout=self.controler.time_to_sleep)
+            #time.sleep(self.controler.time_to_sleep)
+        return
 
 
 class ControlPanel(HasStrictTraits):
@@ -223,6 +238,23 @@ class ControlPanel(HasStrictTraits):
     clear_button = Button('Clear')
     
     get_current_limits = Button('Get current limits')
+        
+    reloading_thread = Instance(Thread)
+    event = Instance(Event, ())
+    
+    time_to_sleep = Float(60)
+    start_stop_reloading = Button('Start/Stop autoreloading')
+
+    def _start_stop_reloading_fired(self):
+        if self.reloading_thread and self.reloading_thread.is_alive():
+            self.reloading_thread.event.set()
+        else:
+            self.reloading_thread = ReloadingThread()
+            #self.reloading_thread.time_to_sleep = self.time_to_sleep
+            self.reloading_thread.controler = self
+            self.reloading_thread.event = self.event
+            self.reloading_thread.event.clear()
+            self.reloading_thread.start()
 
     #clear_axis = Bool(True)
 
@@ -262,14 +294,16 @@ class ControlPanel(HasStrictTraits):
         self.figure_settings.x_limits = ax.get_xlim()
         self.figure_settings.y_limits = ax.get_ylim()
 
-    view = View((Item('@ldfiles', show_label=False),
-                 '_',
-                 Item('@figure_settings', show_label=False),
-                 Item('get_current_limits', show_label=False),
-                    HGroup(
-                        Item('reload_button', show_label=False, springy=True),
+    view = View(Item('@ldfiles', show_label=False),
+                '_',
+                Item('@figure_settings', show_label=False),
+                Item('get_current_limits', show_label=False),
+                HGroup(
+                       Item('reload_button', show_label=False, springy=True),
                        Item('clear_button', show_label=False, springy=True),
-                       Item('draw_button', show_label=False, springy=True)),),
+                       Item('draw_button', show_label=False, springy=True)),
+                HGroup(Item('time_to_sleep', enabled_when='reloading_thread.event.is_set()'),
+                       Item('start_stop_reloading', show_label=False)),
                 resizable=True
             )
 
@@ -279,6 +313,14 @@ class TC_Handler(Handler):
     def object_title_changed(self, info):
         if info.initialized:
             info.ui.title = info.object.title
+            
+    def close(self, info, is_OK):
+        if ( info.object.panel.reloading_thread
+            and info.object.panel.reloading_thread.is_alive() ):
+            info.object.panel.reloading_thread.event.set()
+            while info.object.panel.reloading_thread.is_alive():
+                time.sleep(0.1)
+        return True
 
 
 class LDViewer(HasStrictTraits):
@@ -301,7 +343,7 @@ class LDViewer(HasStrictTraits):
    #     super().__init__(**traits)
    #     if pathlib.Path('LD.out').exists():
    #         self.panel.ldfilesld_file = 'LD.out'
-
+    
     view = View(Item('title', label='window title'),
                 HSplit('@panel',
                        Item('figure', show_label=False, editor=MPLFigureEditor(), dock='vertical', width=0.8),
