@@ -715,10 +715,9 @@ Matrix RigidBodyContactWithRotationalStiffness :: giveBMatrix(const Point *x) co
 void RigidBodyContactWithRotationalStiffness :: setIntegrationPointsAndWeights() {
     RigidBodyContact :: setIntegrationPointsAndWeights();
     if ( ndim == 3 ) {
-        cerr << "RigidBodyContactWithRotationalStiffness Error: not implemented in 3D" << endl;
-        exit(1);
+        Inertia = 0;
     }
-    Inertia = pow(area / inttype->giveNumIP(), 3) / 12.;
+    else Inertia = pow(area / inttype->giveNumIP(), 3) / 12.;
 }
 
 
