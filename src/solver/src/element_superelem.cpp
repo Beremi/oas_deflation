@@ -410,8 +410,8 @@ Matrix MLMechElement :: giveDampingMatrix() {
 }
 
 //////////////////////////////////////////////////////////
-Vector MLMechElement :: giveLumpedMassMatrix() {
+Matrix MLMechElement :: giveLumpedMassMatrix() {
     cout << "MLMechElement :: giveBMatrix should not be called" << endl;
     exit(1);
-    return Vector :: Zero(0);
+    return Matrix :: Zero(0, 0);
 }
