@@ -1344,7 +1344,7 @@ bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, 
     bool updated1 = false;
     if ( enforce || massMatrixUpdate == 0 || ( massMatrixUpdate > 0 && iteration % abs(massMatrixUpdate) == 0 ) ) {
         elems->updateMassMatrix(M, lumpMassM); 
-        elems->replaceTrueMassMatricesByLumpedOnes();
+        if (lumpMassM) elems->replaceTrueMassMatricesByLumpedOnes();
         updated1 = true;
     }
     return ( updated0 || updated1 );
