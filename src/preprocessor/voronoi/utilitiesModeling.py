@@ -560,7 +560,7 @@ def createSingleSpringTestModel(length, master_folder):
     #     fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
     #     plt.show()
 
-    print(node_coords)
+    #print(node_coords)
     node_coords = np.asarray(node_coords)
     # if SHOW_PLOT:
     #     fig, ax = plt.subplots()
@@ -613,13 +613,13 @@ def create_3d_SingleContat(length, master_folder,maxLim):
 
 
     node_coords, mechBC_merged,  govNodes, govNodesMechBC, rigidPlates = assemble3D_singleContact(maxLim, idt)
-    print(node_coords)
+    #print(node_coords)
     print('Conducting Voronoi tesselation...', end = '')
     vor, areas = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
     print('done.')
 
     node_coords = np.asarray(node_coords)
-    print(mechBC_merged)
+    #print(mechBC_merged)
 
     return node_coords, mechBC_merged,  vor, areas, functions,[], [], rigidPlates
 
@@ -647,14 +647,14 @@ def createDiamondTestModel(width, height):
 
     node_coords,  mechBC_merged = assembleDiamondTest(maxLim, idtW, idtH)
 
-    print(node_coords)
+    #print(node_coords)
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim, shifts=shifts)
     print('done.')
 
     #print(vor.points)
-    print(areas)
+    #print(areas)
 
     if SHOW_PLOT:
         fig = voronoi.voronoi_plot_2d(vor, show_vertices = True)
@@ -671,7 +671,7 @@ def createDiamondTestModel(width, height):
     boundB = np.array(  [ maxLim[0] +shifts[0] + idt , maxLim[1] +shifts[0]  + idt  ]  )
     allVrtcs = utilitiesGeom.returnSelectedPts(boundA, boundB, vor.vertices)
 
-    print(allVrtcs)
+    #print(allVrtcs)
     for i in range (len(allVrtcs)):
         trsBC = utilitiesMech.transportBC(allVrtcs[i], noTrsprtBC)
         transportBC_merged.append(trsBC)
@@ -761,7 +761,7 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,      loadWidth =
 
     #"""
 
-    print(transportBC_merged)
+    #print(transportBC_merged)
 
 
     #return node_coords, mechBC_merged, transportBC_merged,  notches, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions
@@ -2411,6 +2411,7 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, 
     node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates, radii  = assemble2dDogBone(D, minDist, trials, excentricity = excentricity, symmetric = symmetric, edgeMinDistCoef=edgeMinDistCoef, roughDogBone=roughDogBone, roughEdgeDogbone=roughEdgeDogbone, roughMinDistCoef=roughMinDistCoef, interLayerThickness=interLayerThickness, powerTes = powerTes, weakboundary = weakboundary);
 
     node_coords_all = np.asarray(node_coords_all)
+    radii = np.asarray(radii)
 
     """
     fig, ax = plt.subplots()
@@ -2433,10 +2434,10 @@ def create2dDogBone(minDist, trials, D=1.0, excentricity = 50, symmetric=False, 
 
 
     node_coords = np.copy(node_coords_all)
-    areas = []
-    for i in range (node_count): areas.append(0)
-    areas = np.asarray(areas)
-
+    # areas = []
+    # for i in range (node_count): areas.append(0)
+    # areas = np.asarray(areas)
+    areas = np.zeros(node_count)
 
     # if SHOW_PLOT:
     #     fig = voronoi_plot_2d(vor, show_vertices=True, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
@@ -6458,9 +6459,114 @@ def assemble3dCoupledArtificialCrack (maxLim, minDist, trials, slitWidth, notch)
     print('generated nodes %d' %len(node_coords))
     return node_coords, mechBC_merged, mechInitC_merged, [], govNodes, govNodesMechBC, rigidPlates
 
-
-
 def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=0, edgeMinDistCoef = 1.0, roughDogBone=0, roughEdgeDogbone=0, roughMinDistCoef=1, interLayerThickness=2, powerTes = False, weakboundary = 0 ):
+    dim = 2
+    #lists for the model
+    node_coords = []
+    radii = []
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+
+    indent = 1e-6
+
+    oldLen = len(node_coords)
+
+    if powerTes:
+        maxDiam = minDist
+        minDiam = minDist/4
+        boundary_dist = minDiam * 3
+        boundary_radii = minDiam / 2
+    else:
+        boundary_dist = minDist
+
+    #####################nodes of interest
+    node_coords.append(np.array([  D/2,  indent   ])) #top mid
+    node_coords.append(np.array([  D/2,  6/4*D - indent  ]))  #bottom mid
+    #gauges B
+    #if (D==0.1):
+    node_coords.append( np.array([ D/2,         3/4*D-D*0.6/2 ])  )#mid LS
+    node_coords.append( np.array([ D/2,         3/4*D+D*0.6/2 ])  )
+    node_coords.append( np.array([ 0.2*D,       3/4*D-D*0.6/2 ])  ) #left LC (not LC)
+    node_coords.append( np.array([ 0.2*D,       3/4*D+D*0.6/2 ])  )
+    node_coords.append( np.array([ D-0.2*D,     3/4*D-D*0.6/2 ])  )#right LC (not LC)
+    node_coords.append( np.array([ D-0.2*D,     3/4*D+D*0.6/2 ])  )
+
+    #top line of dogbone
+    nodeA = np.array([indent, indent])
+    nodeB = np.array([D-indent, indent])
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, boundary_dist, dim,
+                                            node_coords, trials, False, False)
+
+    #bottom line of dogbone
+    nodeA = np.array([indent,  6/4 * D - indent])
+    nodeB = np.array([D-indent, 6/4 * D - indent])
+    pointGenerators.generateNodesLine2dRand(nodeA, nodeB, boundary_dist, dim,
+                                            node_coords, trials, False, False)
+
+    ##################### CONSTRAINTS AND RIGID PLATES
+    #top rigid plate
+    indentRP = 1e-3
+    topRigidPlateMechBC = np.array([0, 1,-1,   -1,-1,-1])
+    topRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([
+    -indentRP,
+    indentRP+D,
+    -indentRP,
+     +indentRP  ]))
+    rigidPlates.append(topRigidPlate)
+    govNodes.append(np.array([ D/2+D/excentricity, indent ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, topRigidPlateMechBC))
+    #bottom rigid plate
+    bottomRigidPlateMechBC = np.array([0,0,-1,   -1,-1,-1])
+    bottomRigidPlate = utilitiesMech.RigidPlate(-1, 2, np.array([
+    -indentRP,
+    indentRP+D,
+    -indentRP+6/4 * D,
+     +indentRP+6/4 * D  ]))
+    rigidPlates.append(bottomRigidPlate)
+    govNodes.append(np.array([ D/2+D/excentricity, 6/4 * D-indent ]))
+    govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -1, bottomRigidPlateMechBC))
+    #####################
+
+    if powerTes:
+        radii = [boundary_radii] * len(node_coords) # TODO:
+
+    #node_coords, radii =
+        pointGenerators.generateParticlesDogbonePow(D, minDiam, maxDiam, 1, dim, trials,
+                                    node_coords, radii, allow_domain_overlap = False,
+                                    periodic_distance=False,useLowBound=False)
+    else:
+        pointGenerators.generateParticlesDogbone(D, minDist, minDist, 1, dim, trials,
+                                    node_coords, radii, allow_domain_overlap = False,
+                                    periodic_distance=False,useLowBound=False)
+
+    fig, ax = plt.subplots()
+    #draw_dogbone(ax, D)
+
+    #ax.scatter(points[:, 0], points[:, 1])
+    ax.scatter(np.array(node_coords)[:, 0], np.array(node_coords)[:, 1])
+
+    if powerTes:
+        for (x, y), r in zip(node_coords, radii):
+            circle = plt.Circle((x, y), r, fill = False )
+            ax.add_artist(circle)
+    else:
+        for (x, y), r in zip(node_coords, np.ones(len(node_coords)) * minDist/2):
+            circle = plt.Circle((x, y), r, fill = False )
+            ax.add_artist(circle)
+
+    ax.set_aspect('equal')
+    #plt.show()
+
+
+    node_count = len (node_coords)
+    return (node_coords, list(range(len(node_coords))), mechBC_merged, mechInitC_merged,
+            node_count, govNodes, govNodesMechBC, rigidPlates, radii)
+
+
+def assemble2dDogBone_old(D, minDist, trials, excentricity = 50, symmetric=0, edgeMinDistCoef = 1.0, roughDogBone=0, roughEdgeDogbone=0, roughMinDistCoef=1, interLayerThickness=2, powerTes = False, weakboundary = 0 ):
 
     if roughDogBone >0 :
         sampleCircularBorders = False

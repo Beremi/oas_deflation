@@ -35,7 +35,11 @@
 ########### roughEdgeDogbone 0 - presne nasamplovane kruznice
 ########### roughEdgeDogbone 1 - prvky s obema nody v modelu
 ########### roughEdgeDogbone 2 - prvky s obema nody v modelu, ozrcadlene
-##Model 2d_dogbone dogboneD 0.1 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 0 roughEdgeDogbone 2 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 defaultFilesFolder dogboneDefault dmgBand 0 powerTes 0 weakboundary 0.02
+Model 2d_dogbone dogboneD 1.6 minDist 0.008 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 0.1 roughEdgeDogbone 2 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 dmgBand 0 powerTes 1 weakboundary 0 defaultFilesFolder dogboneDefault
+#Model 2d_dogbone dogboneD 1.6 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 0.1 roughEdgeDogbone 2 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 dmgBand 0 powerTes 0 weakboundary 0 defaultFilesFolder dogboneDefault
+########### Model 2d_dogbone dogboneD 0.2 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 12000 elasticZone 0 roughEdgeDogbone 2 nr_models 20 dmgBand 0 powerTes 1 weakboundary 0
+#defaultFilesFolder dogboneDefault
+########### Model 2d_dogbone dogboneD 0.1 minDist 0.008 dogboneExcentricityFrac 50 activeMechanics 1 trials 1200 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 0 elasticZone 0 roughEdgeDogbone 2 randomizeMaterial 1 roughMinDistCoef 1 interLayerThickness 20 nr_models 1 dmgBand 0 powerTes 1 weakboundary 0 B_new_power dogboneDefault
 ###########0.125
 ###########Model 2d_dogbone dogboneD 0.8 minDist 0.006 dogboneExcentricityFrac 50 activeMechanics 1 trials 1000 symmetric 0 edgeMinDistCoef 0.9 roughDogBone 1 elasticZone 1 roughEdgeDogbone 0 randomizeMaterial 1 roughMinDistCoef 5 interLayerThickness 1 nr_models 100 defaultFilesFolder dogboneDefault
 ###########C
@@ -81,7 +85,8 @@
 ###########Model 2d_transportPatchTest Xsize 1.2 Ysize 0.3 minDist 1.005 activeTransport 1
 ###########Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
 ###########Model 3d_BiparvaTubeTransport minDist 0.005 cylinderRad 0.05 cylinderHeight 0.05 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 5000
-Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 20000 ansysOut 1
+###########Model 3d_transportPatchTest Xsize 0.2 Ysize 0.1 Zsize 0.1 minDist 0.005 activeTransport 1 trials 50000
+###########Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tubeThickness 0.04 activeTransport 1 activeMechanics 1 coupled 1 trials 20000 ansysOut 1
 ###########
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
@@ -107,7 +112,8 @@ Model 3d_TubeInnerPressure minDist 0.005 cylinderRad 0.06 cylinderHeight 0.03 tu
 ###########
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 ###########SOLVER SETUP
-Solver	SteadyStateNonLinearSolver	time_step	1.000000e-03	max_time_step	1.000000e-01	min_time_step	1.000000e-05	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	15    tolerance   0.001
+#Solver	SteadyStateNonLinearSolver	time_step	1.000000e-03	max_time_step	1.000000e-01	min_time_step	1.000000e-05	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	15    tolerance   0.001
+Solver	SteadyStateNonLinearSolver	time_step	1.000000e-03	max_time_step	1.000000e-01	min_time_step	1.000000e-05	total_time	1.000000e+00	limit_tolerance	1.000000e-01	maxIt	15    tolerance   0.001    solver_type	EigenLDLT
 ###########
 ###########
 ###########
@@ -121,7 +127,7 @@ Solver	SteadyStateNonLinearSolver	time_step	1.000000e-03	max_time_step	1.000000e
 ###########MATERIALS
 ###########
 ########### CLS material
-Material CSLMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
+Material CSLMaterial young 1.000000e+10	alpha	0.300000 density 2200 ft 21000000.0 Gt 500
 ###########Material CSLMaterial young 55e9 alpha 0.3 density 2200 ft 3090000.0 Gt 100
 ###########Material CSLMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 200
 ###########
@@ -129,9 +135,9 @@ Material CSLMaterial young 21.5e9 alpha 0.3 density 2200 ft 2100000.0 Gt 50
 ###########Material FatigueMaterial E0 35e9 alpha 0.300000 density 2200.0 fc 20e6 ft 3.5e6 KinN 4e9 gammaN 20e9 m -0.2e-6 Ad 4000e-6 tauBar 4.0e6 Kin 0 gamma 10.0e9 S 0.0025e3 a 0
 ###########
 ########### Transport material
-Material TrsprtMaterial	capacity	0.001	density	1.00E+03	permeability	1.00E-18	viscosity	8.90E-04	crack_turtuosity	0.9 biot_coeff 0
+#Material TrsprtMaterial	capacity	0.001	density	1.00E+03	permeability	1.00E-18	viscosity	8.90E-04	crack_turtuosity	0.9 biot_coeff 0
 ###########Elastic material
-Material DisMechMaterial young 21.5e9 alpha 0.3 density 2200
+Material VectMechMaterial	young	5.500000e+10	alpha	0.300000	density	2200.000000
 ###########dalsi CLS
 ###########Material CSLMaterial young 21.5e9 alpha 0.3 density 2200 ft 21000000.0 Gt 500
 ###########dalsi TrsprtMaterial

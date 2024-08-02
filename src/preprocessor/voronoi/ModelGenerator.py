@@ -354,7 +354,7 @@ class Model:
         if dirNam is None:
             self.master_folder = '%s_minDist%.4f_seed%02d' % (self.modelType,self.minDist, self.seed)
         else:
-            self.master_folder = dirNam
+            self.master_folder = dirNam + '_seed%02d' % (self.seed)
 
         try:
             if not os.path.exists(self.master_folder):
@@ -567,12 +567,14 @@ class Model:
         (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness, powerTes = self.powerTes, weakboundary = self.weakboundary)
         self.materialZones=None
         if self.elasticZone > 0:
-            elaHeight = 1/4*self.dogboneD
+            print("ELASTIC ZONE")
+            elaHeight = self.elasticZone * self.dogboneD
             if self.roughDogBone >1:
                 elaHeight = 3/4*self.dogboneD - (self.roughDogBone-1)*self.minDist
             if self.symmetric:
                 if self.dmgBand == 1:
                     elaHeight = 3 / 4 * self.dogboneD - self.minDist / 4
+                    #elaHeight = self.elasticZone * self.dogboneD
 
                 self.materialZones = utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
             else:
@@ -1037,7 +1039,7 @@ class Model:
         df = self.defaultFilesFolder
         print('df %s' %df)
 
-        if df != None:
+        if (df != None) and os.path.exists(df):
             files=os.listdir(df)
             for fname in files:
                 print(os.path.join(self.defaultFilesFolder ,fname))
@@ -1080,6 +1082,28 @@ class Model:
                 sys.exit(1)
 
             linElMaterial = utilitiesMech.linearElasticMaterial(young, alpha, density)
+            self.materials.append(linElMaterial)
+            print('done.')
+
+        if (r[1]=='VectMechMaterial'):
+            #
+            young = None
+            alpha = None
+            density = None
+            #
+            for i in range (len(r)):
+                if (r[i]=='young'):
+                    young = float(r[i+1])
+                if (r[i]=='alpha'):
+                    alpha = float(r[i+1])
+                if (r[i]=='density'):
+                    density = float(r[i+1])
+            #
+            if (young == None or alpha == None or density == None):
+                print ('!! VectMechMaterial incomplete. Exiting. !!')
+                sys.exit(1)
+
+            linElMaterial = utilitiesMech.linearElasticMaterial_old(young, alpha, density)
             self.materials.append(linElMaterial)
             print('done.')
 
@@ -1243,7 +1267,8 @@ class Solver:
     def __init__(self, row):
         print('Setting solver...', end='')
         #setting default solver
-        self.solverType = 'SteadyStateNonLinearSolver'
+        #self.solverType = 'SteadyStateNonLinearSolver'
+        self.solverType = 'EigenLDLT'
         self.time_step = 1e-6
         self.max_time_step = 1e-1
         self.min_time_step = 1e-8
