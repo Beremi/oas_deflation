@@ -969,7 +969,7 @@ def output3Dperiodic(master_folder, node_count, maxLim, vor, node_coords, areas,
         print(' Tohle dela powerTes 1')
         print('Nastane chyba index out of bounds...')
     #print('Stiskni enter!\n')
-    a = input('').split(" ")[0]
+    #a = input('').split(" ")[0]
 
 
     coupledNodesMech = np.zeros((0,2)).astype(int)
@@ -1236,7 +1236,7 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
         print('Tohle dela powerTes 1.')
         print('Nastane chyba index out of bounds...')
     #print('Stiskni enter!\n')
-    a = input('').split(" ")[0]
+    #a = input('').split(" ")[0]
 
     nnodes = len(inside_idcs)     # n of nodes inside of the RVE
     print('actual node count: %d' %nnodes)

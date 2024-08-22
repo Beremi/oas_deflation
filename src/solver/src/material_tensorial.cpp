@@ -46,7 +46,7 @@ Matrix TensTrsprtMaterialStatus :: giveStiffnessTensor(string type) const {
 Matrix TensTrsprtMaterialStatus :: giveDampingTensor() const {
     TensTrsprtMaterial *m = static_cast< TensTrsprtMaterial * >( mat );
     Matrix M = Matrix :: Zero(1, 1);
-    M(0, 0) = -m->giveCapacity() * m->giveDensity();
+    M(0, 0) = -m->giveCapacity(); //density is deleted, the capacity is in s^2/m^2
     return M;
 }
 

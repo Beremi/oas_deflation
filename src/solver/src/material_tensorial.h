@@ -37,7 +37,11 @@ public:
 class TensTrsprtMaterial : public Material
 {
 protected:
-    double permeability, viscosity, capacity, density, a, m;
+    double permeability; //[m2]
+    double viscosity; //[Pa s]
+    double capacity; //[s2/m2]
+    double density; //[kg/m3]
+    double a, m;
 public:
     TensTrsprtMaterial(unsigned dimension) : Material(dimension) { name = "transport material"; a = -1.; m = 0; };
     ~TensTrsprtMaterial() {};
