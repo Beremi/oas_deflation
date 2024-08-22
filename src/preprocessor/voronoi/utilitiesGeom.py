@@ -235,18 +235,16 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     node_indices_dogbone = np.asarray(node_indices_dogbone)
     #print((node_indices_dogbone))
     if len(node_indices_dogbone) > 0:
-        #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
-        #cond = np.all(cond, axis=1)
-        #validRidgeIdxs = np.where(cond)[0]
+        # very memory intensive for large models
+        # cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
+        # cond = np.all(cond, axis=1)
+        # validRidgeIdxs = np.where(cond)[0]
+
         node_indices_dogbone = set(node_indices_dogbone)
         validRidgeIdxs = []
-        for i in range (vor.ridge_points.shape[0]):
-            pr = False
-            for p in range (2):
-                if (vor.ridge_points[i][p] in node_indices_dogbone):
-                    pr=True
-            if (pr):
-               validRidgeIdxs.append(i)
+        for i, row in enumerate(vor.ridge_points):
+            if (row[0] in node_indices_dogbone) and (row[1] in node_indices_dogbone):
+                validRidgeIdxs.append(i)
         validRidgeIdxs = np.asarray(validRidgeIdxs)
     else:
         cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
@@ -1806,21 +1804,22 @@ def saveNodes (master_folder,nodes_out, nodetype, dim, filename, virtualDoF=0):
     #plt.show()
 
 
-    fl=open(os.path.join(master_folder,filename),'w')
+
     if len(nodes_out) > 0:
+        fl=open(os.path.join(master_folder,filename),'w')
         np.savetxt(fl,  nodes_out[:,:num], delimiter='\t',   fmt=fmt,  header = headerLine)
 
-    # "MechDoF/TrsDof X Y [Z] N" kde X, Y a Z jsou souradnice a N je pocet vytvorenych stupnu volnosti.
-    crds = np.array([ 0,0,0])
-    if virtualDoF !=0:
-        for i in range (virtualDoF):
-            if dim == 2:
-                fl.write('MechDoF\t%d\t%d\t1\n' %(crds[0],crds[1]) )
-            if dim == 3:
-                fl.write('MechDoF\t%d\t%d\t%d\t1\n' %(crds[0],crds[1],crds[2]) )
-            crds[0] += 1
+        # "MechDoF/TrsDof X Y [Z] N" kde X, Y a Z jsou souradnice a N je pocet vytvorenych stupnu volnosti.
+        crds = np.array([ 0,0,0])
+        if virtualDoF !=0:
+            for i in range (virtualDoF):
+                if dim == 2:
+                    fl.write('MechDoF\t%d\t%d\t1\n' %(crds[0],crds[1]) )
+                if dim == 3:
+                    fl.write('MechDoF\t%d\t%d\t%d\t1\n' %(crds[0],crds[1],crds[2]) )
+                crds[0] += 1
 
-    fl.close()
+        fl.close()
     print('done.')
     sys.stdout.flush()
 
@@ -1865,8 +1864,6 @@ def createNotchAuxNodes(ridges_out,nodes,aux_nodes,dim,notches=None,auxmecheleme
     print('created %s new notch aux nodes' %len(notchAuxNodes))
     print('created %s new notch aux ridges' %len(aux_mechElemRidges))
     return notchAuxNodes,aux_mechElemRidges
-
-
 
 
 
@@ -1924,9 +1921,9 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
 
             if (int(mechElemRidges[i][0]) >= node_count or int(mechElemRidges[i][1]) >= node_count) :
                 onlyMechNodesConnected = False
-
-            if (dim==2 or mZ[0][0]=='circle' or (mZ[0][0]=='wb' and mZ[1][0]=='wb')):
-                if (mZ[0][0]=='wb' and mZ[1][0]=='wb'):
+                
+            if (dim==2 or str(mZ[0][0])=='circle' or (str(mZ[0][0])=='wb' and str(mZ[1][0])=='wb')):
+                if ((str(mZ[0][0])=='wb') and (str(mZ[1][0])=='wb')):
                     in_boundary = False
                     for boundary in mZ:
                         # print(np.linalg.norm(nodeA[0:2]-boundary[2][0:2]))
@@ -1942,7 +1939,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                         mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
                 #rebars
-                elif (mZ[0][0]=='circle'):
+                elif (str(mZ[0][0])=='circle'):
                     inRebar = False
                     for rebar in range (mZ[0][3]):
                         if (np.linalg.norm(nodeA[0:2]-mZ[rebar][2][0:2]) < mZ[rebar][1] ) and (np.linalg.norm(nodeB[0:2]-mZ[rebar][2][0:2]) < mZ[rebar][1] ):
@@ -1960,7 +1957,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                       mZ[0][2][1] < nodeA[1] < mZ[0][3][1] and
                       mZ[0][2][0] < nodeB[0] < mZ[0][3][0] and
                       mZ[0][2][1] < nodeB[1] < mZ[0][3][1])   ):
-                    print('mz')
+                    #print('mz')
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([1])) )
                 elif len(mZ)>1 and ((mZ[1][0][0] < nodeA[0] < mZ[1][1][0] and
                         mZ[1][0][1] < nodeA[1] < mZ[1][1][1] and
@@ -1971,7 +1968,7 @@ def saveMechanicalElements (master_folder,ridges_out, node_count, dim, nodes, au
                         mZ[1][2][0] < nodeB[0] < mZ[1][3][0] and
                         mZ[1][2][1] < nodeB[1] < mZ[1][3][1])   ):
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i], np.array([1])) )
-                    print('mz')
+                    #print('mz')
                 else:
                     mechElemRidges[i] = np.hstack( (mechElemRidges[i],  np.array([0])) )
 
@@ -3052,8 +3049,12 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport,fem_out
 
     if (os.path.exists(os.path.join(master_folder,auxNodesFile))):
         print('Loading back aux node coords...', end='')
-        test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
-        print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
+        try:
+            test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
+            print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
+        except:
+            print('\t\t %d nodes NOT loaded.' %len(test_auxNodeCoords))
+            test_auxNodeCoords = np.zeros(dim)
     else:
         test_auxNodeCoords = np.zeros(dim)
 
