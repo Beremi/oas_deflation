@@ -167,6 +167,8 @@ protected:
     virtual void transformStress();
     virtual void calculateTransformationMatrix();
 
+    double macro_volumetricStrain;
+
 public:
     DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
@@ -183,6 +185,7 @@ public:
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Matrix giveMassTensor() const;
     double computeAverageDensity() const;
+    virtual void setParameterValue(std::string code, double value);
 };
 
 //////////////////////////////////////////////////////////

@@ -142,6 +142,38 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// Vect MECHANICAL LINEAR MATERIAL WITH VOLUMETRIC-DEVIATORIC SPLIT
+
+class VectMechVolDevSplitMaterial;
+class VectMechVolDevSplitMaterialStatus : public VectMechMaterialStatus
+{
+protected:
+    double temp_volumetricStrain;
+public:
+    VectMechVolDevSplitMaterialStatus(VectMechVolDevSplitMaterial *m, Element *e, unsigned ipnum);
+    virtual ~VectMechVolDevSplitMaterialStatus() {};
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
+    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    double giveDensity() const;
+    virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
+    virtual bool giveValues(std :: string code, Vector &result) const;
+    virtual void setParameterValue(std::string code, double value);
+};
+
+//////////////////////////////////////////////////////////
+class VectMechVolDevSplitMaterial : public VectMechMaterial
+{
+protected:
+public:
+    VectMechVolDevSplitMaterial(unsigned dimension);
+    ~VectMechVolDevSplitMaterial() {};
+    virtual void readFromLine(std :: istringstream &iss);
+    virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim; }
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // Vect MECHANICAL LINEAR MATERIAL with ROTATIONAL STIFFNESS
 
 class VectMechMaterialWithRotationalStiffness;

@@ -682,6 +682,7 @@ DiscreteMechanicalRVEMaterialStatus :: DiscreteMechanicalRVEMaterialStatus(RVEMa
     name = "mechanical RVE mat. status";
     is_precomputed = true;
     is_master_status = false;
+    macro_volumetricStrain = 0;
 }
 
 /////////////////////////////////./////////////////////////
@@ -1435,6 +1436,14 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveMassTensor() const {
     return M;
 };
 
+//////////////////////////////////////////////////////////
+void DiscreteMechanicalRVEMaterialStatus :: setParameterValue(string code, double value) {
+    if ( code.compare("volumetricStrain") == 0 ) {
+        macro_volumetricStrain = value;  //this is unfortunately not active at elements
+    } else {
+        MaterialStatus :: setParameterValue(code, value);
+    }
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

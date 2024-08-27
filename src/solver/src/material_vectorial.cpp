@@ -389,11 +389,120 @@ MaterialStatus *VectMechMaterial :: giveNewMaterialStatus(Element *e, unsigned i
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// VECTORIAL MECHANICAL ELASTIC MATERIAL WITH VOLUMETRIC-DEVIATORIC SPLIT
+//////////////////////////////////////////////////////////
+
+VectMechVolDevSplitMaterialStatus :: VectMechVolDevSplitMaterialStatus(VectMechVolDevSplitMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
+    name = "discrete mechanical mat. status with volumetric-deviatoric split";
+    temp_volumetricStrain = 0;
+}
+
+//////////////////////////////////////////////////////////
+Matrix VectMechVolDevSplitMaterialStatus :: giveStiffnessTensor(string type) const {
+    ( void ) type;
+    unsigned ss = mat->giveStrainSize();
+    VectMechVolDevSplitMaterial *m = static_cast< VectMechVolDevSplitMaterial * >( mat );
+    Matrix D = Matrix :: Zero(ss, ss);
+    D(0, 0) = m->giveE0();
+    for ( size_t i = 1; i < ss; i++ ) {
+        D(i, i) =  m->giveE0();
+    }
+    return D;
+}
+
+//////////////////////////////////////////////////////////
+Vector VectMechVolDevSplitMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
+    temp_strain = addEigenStrain(strain);
+    VectMechVolDevSplitMaterial *m = static_cast< VectMechVolDevSplitMaterial * >( mat );
+    temp_stress.resize( strain.size() );
+    double ED = m->giveE0();
+    double EV = m->giveAlpha();
+
+    temp_stress [ 0 ] = ED * temp_strain [ 0 ] + (EV-ED) * temp_volumetricStrain;
+    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+        temp_stress [ i ] = ED * temp_strain [ i ];
+    }
+
+    return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+void VectMechVolDevSplitMaterialStatus :: setParameterValue(string code, double value) {
+
+    if ( code.compare("volumetric_strain") == 0 ) {
+        temp_volumetricStrain = value;
+    } else {
+        MaterialStatus :: setParameterValue(code, value);
+    }
+}
+
+//////////////////////////////////////////////////////////
+bool VectMechVolDevSplitMaterialStatus ::  giveValues(string code, Vector &result) const {
+    if ( code.compare("volumetric_strain") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = temp_volumetricStrain;
+        return true;
+    } else {
+        return VectMechMaterialStatus :: giveValues(code, result);
+    }
+}
+
+
+//////////////////////////////////////////////////////////
+VectMechVolDevSplitMaterial :: VectMechVolDevSplitMaterial(unsigned dimension) : VectMechMaterial(dimension) {
+    name = "Vect mechanical material with volumetric-deviatoric split";
+}
+
+//////////////////////////////////////////////////////////
+void VectMechVolDevSplitMaterial :: readFromLine(istringstream &iss) {
+    string param;
+
+    bool bED, bEV, bdensity;
+    bED = bEV = bdensity = false;
+
+    while (  iss >> param ) {
+        if ( param.compare("ED") == 0 ) {
+            bED = true;
+            iss >> E0;
+        } else if ( param.compare("EV") == 0 ) {
+            bEV = true;
+            iss >> alpha;
+        } else if ( param.compare("density") == 0 ) {
+            bdensity = true;
+            iss >> density;
+        }
+    }
+    if ( !bED ) {
+        cerr << name << ": material parameter 'ED' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bEV ) {
+        cerr << name << ": material parameter 'EV' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bdensity ) {
+        cerr << name << ": material parameter 'density' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *VectMechVolDevSplitMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    VectMechVolDevSplitMaterialStatus *newStatus = new VectMechVolDevSplitMaterialStatus(this, e, ipnum); //needs to be deleted manually
+    return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // VECTORIAL MECHANICAL ELASTIC MATERIAL WITH ROTATIONAL STIFFNESS
 //////////////////////////////////////////////////////////
 
 VectMechMaterialWithRotationalStiffnessStatus :: VectMechMaterialWithRotationalStiffnessStatus(VectMechMaterialWithRotationalStiffness *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
-    name = "discrete mechanical mat. status";
+    name = "discrete mechanical mat. status with rotational stiffness";
     mat = m;
 }
 

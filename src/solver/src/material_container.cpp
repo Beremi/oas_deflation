@@ -181,6 +181,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     VonMisesPlasticMaterial *newmat = new VonMisesPlasticMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+               } else if ( matType.compare("VectMechVolDevSplitMaterial") == 0 ) {
+                    VectMechVolDevSplitMaterial *newmat = new VectMechVolDevSplitMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
