@@ -9,7 +9,12 @@ os.environ["QT_API"] = "pyqt5"
 from traits.api import HasStrictTraits, Instance, File, List, Enum, Button, Str, \
                         Any, Bool, DelegatesTo, Property, Float, Tuple
 from traitsui.api import Item, Group, View, HSplit, NoButtons, EnumEditor, HGroup,\
-                         Handler, VGroup, Tabbed, TextEditor, Label, ListEditor
+                         Handler, VGroup, Tabbed, TextEditor, Label, ListEditor, TreeEditor, TreeNode
+from traitsui.menu \
+    import Menu, Action, Separator
+from traitsui.qt.tree_editor \
+    import NewAction, CopyAction, CutAction, \
+           PasteAction, DeleteAction, RenameAction
 from traitsui.message import Message
 from traitsui.file_dialog  import open_file, TextInfo, FileInfo, save_file
 from mpl_qt_editor import MPLFigureEditor
@@ -213,11 +218,11 @@ class LDCurve(HasStrictTraits):
                        )
                 )
 
-
 class LDFiles(HasStrictTraits):
+    name = 'ldfiles'
     figure = Instance(Figure)
     add_ldfile = Button('Add new LD file')
-    ldfiles = List  #(Instance('LDFile'))
+    ldfiles = List(LDFile) #(Instance('LDFile'))
 
     def _add_ldfile_fired(self):
         self.ldfiles.append(LDFile(figure=self.figure))
@@ -262,6 +267,63 @@ class ReloadingThread(Thread):
             #time.sleep(self.controler.time_to_sleep)
         return
 
+
+
+ldfile_view = View(VGroup(HGroup(Item('open_button', show_label=False, id='ld_open'),
+                       Item('reload_button', show_label=False),
+                       Item('ld_file', id='ld_file'),#, style='readonly')
+                        ),
+                Item('name'),
+                Item('add_ldcurve', show_label=False),
+                Item('ld_curves', style='custom', show_label=False,
+                editor=ListEditor(use_notebook=True,
+                               deletable=True,
+                               dock_style='tab',
+                               page_name='.name')),
+                ))
+                
+# Tree editor
+tree_editor = TreeEditor(
+    nodes = [
+        TreeNode( node_for  = [ LDFiles ],
+                  auto_open = True,
+                  children = 'ldfiles',
+                  label     = '=LD Files',
+                  add = [ LDFile ],
+                  # menu=Menu( NewAction,
+                  #            Separator(),
+                  #            #def_title_action,
+                  #            #dept_action,
+                  #            Separator(),
+                  #            CopyAction,
+                  #            CutAction,
+                  #            PasteAction,
+                  #            Separator(),
+                  #            DeleteAction,
+                  #            Separator(),
+                  #            RenameAction),
+                  view =  View()),
+        TreeNode( node_for  = [ LDFile ],
+                  auto_open = True,
+                  label     = 'name',
+                  menu=Menu( NewAction,
+                             Separator(),
+                             #def_title_action,
+                             #dept_action,
+                             Separator(),
+                             CopyAction,
+                             CutAction,
+                             PasteAction,
+                             Separator(),
+                             DeleteAction,
+                             Separator(),
+                             RenameAction),
+                  view =  ldfile_view)
+    ],
+    #hide_root=True,
+    orientation="vertical",
+)
+                  
 
 class ControlPanel(HasStrictTraits):
     ldfiles = Instance(LDFiles)
@@ -329,7 +391,7 @@ class ControlPanel(HasStrictTraits):
         self.figure_settings.x_limits = ax.get_xlim()
         self.figure_settings.y_limits = ax.get_ylim()
 
-    view = View(Item('@ldfiles', show_label=False),
+    view = View(Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'),
                 '_',
                 Item('@figure_settings', show_label=False),
                 Item('get_current_limits', show_label=False),
@@ -339,7 +401,8 @@ class ControlPanel(HasStrictTraits):
                        Item('draw_button', show_label=False, springy=True)),
                 HGroup(Item('time_to_sleep', enabled_when='reloading_thread.event.is_set()'),
                        Item('start_stop_reloading', show_label=False)),
-                resizable=True
+                resizable=True,
+                id='control_panel',
             )
 
 
