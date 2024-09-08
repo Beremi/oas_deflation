@@ -771,11 +771,11 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,      loadWidth =
 
 
 
-def create2dCantileverBending(maxLim, minDist, trials ):
+def create2dCantileverBending(maxLim, minDist, trials, nodefile = None ):
     print('Creating 2d cantilever, bending.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechIC_merged  = assemble2DCantileverBending(maxLim, minDist, trials );
+    node_coords, mechBC_merged, mechIC_merged  = assemble2DCantileverBending(maxLim, minDist, trials, nodefile = nodefile );
 
     print('Conducting Voronoi tesselation...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
@@ -4155,7 +4155,7 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
 #
 ######## METHOD FOR CREATING OF A 2D SUPPORTED CANTILEVER MODEL
-def assemble2DCantileverBending (maxLim, minDist, trials):
+def assemble2DCantileverBending (maxLim, minDist, trials, nodefile=None):
     dim = 2
     #lists for the model
     node_coords = []
@@ -4203,13 +4203,19 @@ def assemble2DCantileverBending (maxLim, minDist, trials):
         mechBC_merged.append(mBC)
         #print('adding')
 
-    ##########################################generating of points, homogeneous volume
-    rectBC = np.array([-1,-1,-1,-1,-1,-1])
-    #rect
-    oldLen = len(node_coords)
-    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
-    #
-    newLen = len(node_coords)-1
+    if nodefile:
+        node_coords_file = np.loadtxt(nodefile) 
+        node_coords = np.array(node_coords)
+        node_coords = np.vstack((node_coords,node_coords_file))
+    else:
+
+        ##########################################generating of points, homogeneous volume
+        rectBC = np.array([-1,-1,-1,-1,-1,-1])
+        #rect
+        oldLen = len(node_coords)
+        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+        #
+        newLen = len(node_coords)-1
 
    # print (nrOfPoints)
   #  mBC = utilitiesGeom.mechanicalBC(dim, kvadrBC, oldLen, newLen)

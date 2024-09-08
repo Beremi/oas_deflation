@@ -56,11 +56,11 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
             istringstream iss(line);
             iss >> elemType;
             if ( !( elemType.rfind("#", 0) == 0 ) ) {
-                if ( elemType.compare("CLSElem") == 0 || elemType.compare("LTCBEAM") == 0 ) {
+                if ( elemType.compare("CSLElem") == 0 || elemType.compare("LTCBEAM") == 0 ) {
                     RigidBodyContact *newelem = new RigidBodyContact(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("CLSCoupledElem") == 0 || elemType.compare("LTCBEAMCoupled") == 0 ) {
+                } else if ( elemType.compare("CSLCoupledElem") == 0 || elemType.compare("LTCBEAMCoupled") == 0 ) {
                     RigidBodyContactCoupled *newelem = new RigidBodyContactCoupled(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);

@@ -64,6 +64,7 @@ class Model:
         self.edgeMinDistCoef=1.0
 
         self.node_coords = []
+        self.node_file = None
 
         self.node_coords_polar = []
 
@@ -160,7 +161,8 @@ class Model:
                 self.span = float(r[i+1])
             if (r[i]=='gradientZoneWidth'):
                 self.gradientZoneWidth = float(r[i+1])
-
+            if (r[i]=='nodefile'):
+                self.nodefile = r[i+1]
             if (r[i]=='interfaceMinDist'):
                 self.interfaceMinDist = float(r[i+1])
             if (r[i]=='fineRingThickness'):
@@ -867,7 +869,7 @@ class Model:
 
     def run_2d_cantileverBending(self):
         print('2d_cantilever bending')
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials, nodefile = self.nodefile)
         self.materialZones=None
 
     def run_3d_dam(self):
