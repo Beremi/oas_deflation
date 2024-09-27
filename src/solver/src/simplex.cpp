@@ -81,9 +81,7 @@ void Simplex :: findNeighbors() {
         vertices = rbc->giveVertices();
         for ( auto &v: vertices ) {
             s = v->giveSimplex();
-            if ( s->isValid() ) {
-                neighbors.insert(s);
-            }
+            neighbors.insert(s);
         }
     }
 }
@@ -96,7 +94,10 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
             volstrain += fullDoFs [ DoFs [ i ] ] * DoFweights [ i ];
         }
         volstrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
-    }
+        updated = true;
+    } else {
+        updated = false;
+    }    
     if ( transport ) {
         pressure = fullDoFs [ pressureDoF ];
     }
@@ -104,21 +105,25 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
 
 
 //////////////////////////////////////////////////////////
-void Simplex :: stealVolumetricStrain(const Vector &fullDoFs) {
-    volstrain = 0;
-    if ( !valid ) { //valid simplex taking care of its own
+bool Simplex :: stealVolumetricStrain() {
+    if ( not updated ) {
+        unsigned k=0;
         if ( neighbors.size() > 0 ) {  //steal volumetric strain from neigborhood
             for ( auto &simn: neighbors ) {
-                volstrain += simn->giveVolumetricStrain();
-                //cout << "v " << simn->giveVolumetricStrain() << endl;
+                if (simn->isUpdated()){
+                    k ++;
+                    volstrain += simn->giveVolumetricStrain();
+                }
             }
-            volstrain /= neighbors.size();
-        }
-        //cout << "NN " << neighbors.size() << " "  << "volstrain " << volstrain << endl;
+            if (k>0){
+                volstrain /= k;
+                updated = true;
+            }else{
+                updated = false;
+            }
+        } else updated = true;    
     }
-    if ( transport ) {
-        pressure = fullDoFs [ pressureDoF ];
-    }
+    return updated;    
 }
 
 

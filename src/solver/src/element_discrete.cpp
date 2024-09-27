@@ -578,7 +578,7 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
     double volumetricStrain = 0;
     unsigned validSnum = 0;
     for ( auto &s: simplices ) {
-        if ( s->isUsable() ) {
+        if ( s->isUpdated() ) {
             validSnum++;
             volumetricStrain += s->giveVolumetricStrain();
         }        

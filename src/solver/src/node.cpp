@@ -260,10 +260,11 @@ void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
 }
 
 //////////////////////////////////////////////////////////
-void Node :: stealSimplexVolumetricStrain(const Vector &fullDoFs) {
+bool Node :: stealSimplexVolumetricStrain() {
     if ( simplex ) {
-        simplex->stealVolumetricStrain(fullDoFs);
+        return simplex->stealVolumetricStrain();
     }
+    return true;
 }
 
 //////////////////////////////////////////////////////////
