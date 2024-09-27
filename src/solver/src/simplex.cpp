@@ -96,17 +96,31 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
             volstrain += fullDoFs [ DoFs [ i ] ] * DoFweights [ i ];
         }
         volstrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
-    } else if ( neighbors.size() > 0 ) {  //steal volumetric strain from neigborhood
-        for ( auto &simn: neighbors ) {
-            volstrain += simn->giveVolumetricStrain();
-        }
-        volstrain /= neighbors.size();
     }
-
     if ( transport ) {
         pressure = fullDoFs [ pressureDoF ];
     }
 }
+
+
+//////////////////////////////////////////////////////////
+void Simplex :: stealVolumetricStrain(const Vector &fullDoFs) {
+    volstrain = 0;
+    if ( !valid ) { //valid simplex taking care of its own
+        if ( neighbors.size() > 0 ) {  //steal volumetric strain from neigborhood
+            for ( auto &simn: neighbors ) {
+                volstrain += simn->giveVolumetricStrain();
+                //cout << "v " << simn->giveVolumetricStrain() << endl;
+            }
+            volstrain /= neighbors.size();
+        }
+        //cout << "NN " << neighbors.size() << " "  << "volstrain " << volstrain << endl;
+    }
+    if ( transport ) {
+        pressure = fullDoFs [ pressureDoF ];
+    }
+}
+
 
 //////////////////////////////////////////////////////////
 double Simplex :: giveVolumetricStrain() const {

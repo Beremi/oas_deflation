@@ -64,6 +64,7 @@ public:
     Simplex *addElementToSimplex(RigidBodyContact *rbc);
     void initSimplex();
     void updateSimplexVolumetricStrain(const Vector &fullDoFs);
+    void stealSimplexVolumetricStrain(const Vector &fullDoFs);
     Simplex *giveSimplex() { return simplex; }
     bool hasSimplex()const { return simplex != nullptr; }
     bool hasValidSimplex() const { if ( !simplex ) { return false; } return simplex->isValid(); }

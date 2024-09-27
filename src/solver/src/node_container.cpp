@@ -157,7 +157,7 @@ void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
     //update from neighbours
     for ( auto &n:nodes ) {
         if ( n->hasSimplex() && !n->hasValidSimplex() ) {
-            n->updateSimplexVolumetricStrain(fullDoFs);
+            n->stealSimplexVolumetricStrain(fullDoFs);
         }
     }
 }

@@ -260,6 +260,13 @@ void Node :: updateSimplexVolumetricStrain(const Vector &fullDoFs) {
 }
 
 //////////////////////////////////////////////////////////
+void Node :: stealSimplexVolumetricStrain(const Vector &fullDoFs) {
+    if ( simplex ) {
+        simplex->stealVolumetricStrain(fullDoFs);
+    }
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MASTER DOF - GOVERN DEPENDENT DOFs
 void FreeDoF :: readFromLine(istringstream &iss) {

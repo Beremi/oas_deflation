@@ -34,9 +34,11 @@ public:
     double giveVolumetricStrain() const;
     double givePressure() const;
     void computeVolumetricStrain(const Vector &DoFs);
+    void stealVolumetricStrain(const Vector &DoFs);
     bool isValid() const { return valid; }
     bool hasPressure() const { return transport; }
     std :: vector< RigidBodyContact * >giveElements() { return elems; }
+    bool isUsable() const {return (valid || neighbors.size()>0);};
 };
 
 
