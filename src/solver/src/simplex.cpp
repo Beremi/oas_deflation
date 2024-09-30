@@ -1,5 +1,6 @@
 #include "simplex.h"
 #include "node.h"
+#include "node_container.h"
 #include "element_discrete.h"
 
 using namespace std;
@@ -69,21 +70,30 @@ void Simplex :: init(unsigned ndim) {
 }
 
 //////////////////////////////////////////////////////////
-void Simplex :: findNeighbors() {
+void Simplex :: findNeighbors(NodeContainer * nnodes) {
     //for non-valid simplices, they steal volumetric deformation from neighborhood
     if ( valid ) {
         return;
     }
 
     Simplex *s;
-    vector< Node * >vertices;
-    for ( auto &rbc: elems ) {
-        vertices = rbc->giveVertices();
-        for ( auto &v: vertices ) {
-            s = v->giveSimplex();
-            neighbors.insert(s);
+    bool found;
+    for ( std :: vector< Node * > :: iterator n1 = nnodes->begin(); n1!=nnodes->end(); ++n1){
+        s = (*n1)->giveSimplex();
+        found = false;
+        if ( s && s->isValid() ) {
+            for (auto &n0: nodes){
+                found = s->doesContainParticle(n0);
+                if (found) break;
+            }
+            if (found) neighbors.insert(s);
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+bool Simplex :: doesContainParticle(Particle* p) const {
+    return ( find (nodes.begin(), nodes.end(), p)!= nodes.end());
 }
 
 //////////////////////////////////////////////////////////
@@ -106,7 +116,7 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
 
 //////////////////////////////////////////////////////////
 bool Simplex :: stealVolumetricStrain() {
-    if ( not updated ) {
+    if ( ! updated ) {
         unsigned k=0;
         if ( neighbors.size() > 0 ) {  //steal volumetric strain from neigborhood
             for ( auto &simn: neighbors ) {
@@ -121,7 +131,7 @@ bool Simplex :: stealVolumetricStrain() {
             }else{
                 updated = false;
             }
-        } else updated = true;    
+        } 
     }
     return updated;    
 }

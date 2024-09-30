@@ -141,7 +141,7 @@ void NodeContainer :: initSimplices() {
     for ( auto &n:nodes ) {
         s = n->giveSimplex();
         if ( s && !s->isValid() ) {
-            s->findNeighbors();
+            s->findNeighbors(this);
         }
     }
 }
@@ -155,17 +155,9 @@ void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
         }
     }
     //update from neighbours
-    bool all_updated = false;
-    bool updated;
-    unsigned loops = 0;
-    while (not all_updated && loops<5){
-        loops ++;
-        all_updated = true;
-        for ( auto &n:nodes ) {
-            if ( n->hasSimplex()) {
-                updated = n->stealSimplexVolumetricStrain();
-                if (not updated) all_updated = false;
-            }
+    for ( auto &n:nodes ) {
+        if ( n->hasSimplex()) {
+            n->stealSimplexVolumetricStrain();
         }
     }
 }

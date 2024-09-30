@@ -10,6 +10,7 @@
 class Node; //forward declaration
 class Particle; //forward declaration
 class RigidBodyContact; //forward declaration
+class NodeContainer;  //forward declaration
 
 class Simplex
 {
@@ -30,7 +31,7 @@ public:
     virtual ~Simplex() {};
     void addElement(RigidBodyContact *rbc);
     void init(unsigned ndim);
-    void findNeighbors();
+    void findNeighbors(NodeContainer * nnodes);
     double giveVolumetricStrain() const;
     double givePressure() const;
     void computeVolumetricStrain(const Vector &DoFs);
@@ -39,6 +40,7 @@ public:
     bool hasPressure() const { return transport; }
     std :: vector< RigidBodyContact * >giveElements() { return elems; }
     bool isUpdated() const {return (valid || updated);};
+    bool doesContainParticle(Particle* p) const;
 };
 
 
