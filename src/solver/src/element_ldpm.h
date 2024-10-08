@@ -3,6 +3,7 @@
 
 #include "element.h"
 #include "element_discrete.h"
+#include "element_ldpm.h"
 #include "simplex.h"
 #include  <vector>
 
@@ -16,7 +17,7 @@ class LDPMTetra : public Element
 protected:
     std :: vector< Node * >vert; //cent, 0-1, 0-2, 0-3, 1-2, 1-3, 2-3, 0-1-2, 0-1-3, 0-2-3, 1-2-3
     Vector lengths, areas, volumes;
-    std :: vector< Point >normals;
+    std :: vector< Point >normals, t1s, t2s;
     std :: vector< Matrix >R;
 
     //Matrix giveRMatrix() const { return R; };
@@ -44,6 +45,8 @@ public:
     double giveLength(unsigned i) const { return lengths [ i ]; }
     double giveArea(unsigned i) const { return areas [ i ]; }
     Point giveNormal(unsigned i) const { return normals [ i ]; }
+    Point giveT1(unsigned i) const { return t1s [ i ]; }
+    Point giveT2(unsigned i) const { return t2s [ i ]; }
     std :: vector< Node * >giveVertices() const { return vert; };
     Node *giveVertex(unsigned i) const { return vert [ i ]; };
     Node *giveCentroid() const { return vert [ 0 ]; };

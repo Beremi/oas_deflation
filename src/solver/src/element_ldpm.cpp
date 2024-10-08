@@ -26,6 +26,8 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     volumes.resize(12);
     areas.resize(12);
     normals.resize(12);
+    t1s.resize(12);
+    t2s.resize(12);
     R.resize(12);
 
     nodecodes = { 0, 1, 0, 1, 0, 2, 0, 2, 0, 3, 0, 3,  1, 2, 1, 2, 1,  3, 1, 3,  2, 3, 2, 3 };
@@ -110,34 +112,33 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
             areas [ i ] *= abs(n.dot(normals [ i ]) );    //projection of area
         }
 
-        Point t1, t2;
         //t1 = inttype->giveIPLocation(i)-vert [ 0 ]->givePoint();   this is wrong for irregular TET
         // coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
         if ( ( normals [ i ] - arbit ).norm() < 1e-3 ) {
-            t1 = arbit.cross(normals [ i ]);
+            t1s[ i ] = arbit.cross(normals [ i ]);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
             if ( abs( normals [ i ].x() ) > 1e-3 ) {
-                t1 = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
+                t1s[ i ] = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
             } else if ( abs( normals [ i ].y() ) > 1e-3 ) {
-                t1 = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
+                t1s[ i ] = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
             } else {
-                t1 = Point( 1, 0, -normals [ i ].x() / normals [ i ].z() );
+                t1s[ i ] = Point( 1, 0, -normals [ i ].x() / normals [ i ].z() );
             }
         }
-        t1.normalize();
-        t2 = normals [ i ].cross(t1);
+        t1s[ i ].normalize();
+        t2s[ i ] = normals [ i ].cross(t1s [i] );
         R [ i ] = Matrix :: Zero(3, 3);
         R [ i ](0, 0) = normals [ i ].x();
         R [ i ](0, 1) = normals [ i ].y();
         R [ i ](0, 2) = normals [ i ].z();
-        R [ i ](1, 0) = t1.x();
-        R [ i ](1, 1) = t1.y();
-        R [ i ](1, 2) = t1.z();
-        R [ i ](2, 0) = t2.x();
-        R [ i ](2, 1) = t2.y();
-        R [ i ](2, 2) = t2.z();
+        R [ i ](1, 0) = t1s [ i ].x();
+        R [ i ](1, 1) = t1s [ i ].y();
+        R [ i ](1, 2) = t1s [ i ].z();
+        R [ i ](2, 0) = t2s [ i ].x();
+        R [ i ](2, 1) = t2s [ i ].y();
+        R [ i ](2, 2) = t2s [ i ].z();
 
         volumes [ i ] = areas [ i ] * lengths [ i ] / ndim;
         inttype->setIPWeight(i, lengths [ i ] * areas [ i ] / ndim);
@@ -494,6 +495,7 @@ Vector LDPMCoupledTransport :: giveStrain(unsigned i, const Vector &DoFs) {
 
 //////////////////////////////////////////////////////////
 void LDPMCoupledTransport::readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs){
+    (void) fullnodes;
     iss >> LDPMTetraIDA;
     iss >> LDPMTetraIDB;
     if (LDPMTetraIDA==LDPMTetraIDB){

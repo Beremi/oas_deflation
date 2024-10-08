@@ -302,6 +302,12 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("tolerance") == 0 ) {
                 iss >> maxDisErr;
                 maxResErr = maxEneErr = maxDisErr;
+            } else if ( param.compare("tolerance_residuals") == 0 ) {
+                iss >> maxResErr;
+            } else if ( param.compare("tolerance_energies") == 0 ) {
+                iss >> maxEneErr;
+            } else if ( param.compare("tolerance_increments") == 0 ) {
+                iss >> maxDisErr;
             } else if ( param.compare("stiffness_matrix_update") == 0 ) {
                 iss >> valueIN;
                 stiffnessMatrixUpdate = int( valueIN );

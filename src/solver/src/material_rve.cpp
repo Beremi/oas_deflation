@@ -1,6 +1,7 @@
 #include "material_rve.h"
 #include "model.h"
 #include "element_discrete.h"
+#include "element_ldpm.h"
 #include "element_continuous.h"
 #include "periodic_bc.h"
 
@@ -1046,25 +1047,40 @@ vector< Matrix >DiscreteMechanicalRVEMaterialStatus :: calculateVectProjector(co
     unsigned strain_size = macromat->giveStrainSize();
     projector.resize( e->giveNumIP() );
 
+
     const RigidBodyContact *rbc;
+    const LDPMTetra *tet;
     Point xc;
     Point alphaVec = Point(0, 0, 0);
-    Point normal;
+    Point normal, t1, t2;
 
-    rbc = static_cast< const RigidBodyContact * >( e );
-    normal = rbc->giveNormal();
+    rbc = dynamic_cast< const RigidBodyContact * >( e );
+    tet = dynamic_cast< const LDPMTetra * >( e );
+
     for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {
+        if (rbc) {        
+            normal = rbc->giveNormal();
+            t1 = rbc->giveT1();
+            t2 = rbc->giveT2();
+        } else if (tet){
+            normal = tet->giveNormal(ip);
+            t1 = tet->giveT1(ip);
+            t2 = tet->giveT2(ip);
+        }
+        else continue;
+
+
         projector [ ip ] = Matrix :: Zero(projNum, strain_size);
-        xc =  rbc->giveIPLoc(ip) - centroid; //here we make corrections to have origin of the reference system at the centroid
+        xc =  e->giveIPLoc(ip) - centroid; //here we make corrections to have origin of the reference system at the centroid
         unsigned v = 0;
         //displacements
         for ( ; v < ndim; v++ ) {
             if ( v == 0 ) {
                 alphaVec = normal;
             } else if ( v == 1 ) {
-                alphaVec = rbc->giveT1();
+                alphaVec = t1;
             } else if ( v == 2 ) {
-                alphaVec = rbc->giveT2();
+                alphaVec = t2;
             }
             if ( ndim == 2 ) {
                 projector [ ip ](v, 0) =  normal.x() * alphaVec.x();
@@ -1109,9 +1125,9 @@ vector< Matrix >DiscreteMechanicalRVEMaterialStatus :: calculateVectProjector(co
             if ( v - ndim == 0 ) {
                 alphaVec = normal;
             } else if ( v - ndim == 1 ) {
-                alphaVec = rbc->giveT1();
+                alphaVec = t1;
             } else if ( v - ndim == 2 ) {
-                alphaVec = rbc->giveT2();
+                alphaVec = t2;
             }
 
             if ( ndim == 2 ) {
