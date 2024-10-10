@@ -904,6 +904,7 @@ void TransientLinearTransportSolver :: checkIntegrationParams() {
         exit(1);
     }
 }
+
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: setDefaultIntegrationParams() {
     if ( timeIntM == 0 ) {  //generalized alpha

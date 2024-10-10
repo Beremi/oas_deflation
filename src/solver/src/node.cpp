@@ -48,7 +48,7 @@ std :: string Node :: giveLineToSave() const {
 }
 
 //////////////////////////////////////////////////////////
-bool Node :: giveDoFBasedValues(string code, const Solver *solver, Vector &result) const {
+bool Node :: giveValues(string code, const Solver *solver, Vector &result) const {
     if ( code.compare("id") == 0 ) {
         result.resize(1);
         result [ 0 ] = id;
@@ -65,6 +65,12 @@ bool Node :: giveDoFBasedValues(string code, const Solver *solver, Vector &resul
         result.resize(nDoFs);
         for ( unsigned i = 0; i < nDoFs; i++ ) {
             result [ i ] = solver->giveDoFVelocity(firstDoF + i);
+        }
+        return true;
+    } else if ( code.compare("inertia_force") == 0 ) {
+        result.resize(nDoFs);
+        for ( unsigned i = 0; i < nDoFs; i++ ) {
+            result [ i ] = solver->giveDoFInertiaForce(firstDoF + i);
         }
         return true;
     }
@@ -396,7 +402,7 @@ Matrix Particle :: giveRigidBodyMotionMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-bool Particle :: giveDoFBasedValues(string code, const Solver *solver, Vector &result) const {
+bool Particle :: giveValues(string code, const Solver *solver, Vector &result) const {
     if ( code.compare("rotation") == 0  || code.compare("rotations") == 0  ) {
         result.resize(2 * dim - 3);
         for ( unsigned i = 0; i < 2 * dim - 3; i++ ) {
@@ -420,7 +426,7 @@ bool Particle :: giveDoFBasedValues(string code, const Solver *solver, Vector &r
         result [ 0 ] = solver->giveTrialDoFValue(firstDoF + 5);
         return true;
     }
-    return Node :: giveDoFBasedValues(code, solver, result);
+    return Node :: giveValues(code, solver, result);
 }
 
 //////////////////////////////////////////////////////////

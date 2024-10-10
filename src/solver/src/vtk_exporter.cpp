@@ -187,7 +187,7 @@ void VTKElementExporter :: exportData(unsigned step, fs :: path resultDir) const
             }
         } else {
             for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
-                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), solver, data [ i ]);
+                ( * nn )->giveValues(codes [ p ].c_str(), solver, data [ i ]);
                 msize = max< size_t >( msize, data [ i ].size() );
             }
         }
@@ -311,9 +311,9 @@ void VTKRB2DExporter :: exportData(unsigned step, fs :: path resultDir) const {
      *  outputfile << "<Points>" << '\n';
      *  outputfile << "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">" << '\n';
      *  for ( auto const &n : * nodes ) {
-     *      displ.push_back(Point(n->giveDoFBasedValue("ux", DoFs),
-     *                            n->giveDoFBasedValue("uy", DoFs),
-     *                            dim == 3 ? n->giveDoFBasedValue("uz", DoFs) : 0
+     *      displ.push_back(Point(n->giveValue("ux", DoFs),
+     *                            n->giveValue("uy", DoFs),
+     *                            dim == 3 ? n->giveValue("uz", DoFs) : 0
      *                            ) );  // for 2D this DOF stays for rotation
      *      outputfile << n->givePoint().getX() << "\t" << n->givePoint().getY() << "\t" << n->givePoint().getZ() << '\n';
      *  }
@@ -553,7 +553,7 @@ void VTKRCExporter :: exportData(unsigned step, fs :: path resultDir) const {
         i = 0;
         for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
             if ( static_cast< Particle * >( * nn ) ) {
-                ( * nn )->giveDoFBasedValues(codes [ p ].c_str(), solver, data [ i ]);
+                ( * nn )->giveValues(codes [ p ].c_str(), solver, data [ i ]);
                 msize = max< size_t >( msize, data [ i ].size() );
             } else {
                 data [ i ].resize(0);

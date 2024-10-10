@@ -188,7 +188,7 @@ void TXTNodalExporter :: init() {
             }
         } else {
             for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-                nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], solver, res);
+                nodes->giveNode(n)->giveValues(codes [ i ], solver, res);
                 maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );      // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
             }
         }
@@ -238,7 +238,7 @@ void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
                     res = rrres [ expid ] [ n ];
                     expid++;
                 } else {
-                    nn->giveDoFBasedValues(codes [ c ], solver, res);
+                    nn->giveValues(codes [ c ], solver, res);
                 }
                 for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
                     outputfile << "\t" << res [ p ] * multiplier;
@@ -804,7 +804,7 @@ void DisplacementGauge :: exportData(unsigned step, fs :: path resultDir) const 
                 valueA = mv [ 2 ];
             }
         } else {
-            nodeA->giveDoFBasedValues(codes [ 0 ], solver, res);
+            nodeA->giveValues(codes [ 0 ], solver, res);
             if ( res.size() > 0 ) {
                 valueA = res [ 0 ];
             } else {
@@ -822,7 +822,7 @@ void DisplacementGauge :: exportData(unsigned step, fs :: path resultDir) const 
                 valueB = mv [ 2 ];
             }
         } else {
-            nodeB->giveDoFBasedValues(codes [ 0 ], solver, res);
+            nodeB->giveValues(codes [ 0 ], solver, res);
             if ( res.size() > 0 ) {
                 valueB = res [ 0 ];
             } else {

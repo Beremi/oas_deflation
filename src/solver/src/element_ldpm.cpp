@@ -433,7 +433,7 @@ LDPMCoupledTetra :: LDPMCoupledTetra() : LDPMTetra{3} {
 //////////////////////////////////////////////////////////
 Vector LDPMCoupledTetra :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector res;
-    vert[0]->giveDoFBasedValues("pressure",masterModel->giveSolver(),res);
+    vert[0]->giveValues("pressure",masterModel->giveSolver(),res);
     double pressure = 0;
     if (res.size()==1) pressure=res[0];
     stats [ i ]->setParameterValue("pressure",pressure);

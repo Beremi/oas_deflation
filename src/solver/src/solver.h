@@ -62,6 +62,7 @@ public:
     double giveDoFVelocity(unsigned k) const { return v [ k ]; }
     double giveExternalForce(unsigned k) const;
     Vector giveNodalForces() { return f_ext; }
+    double giveDoFInertiaForce(unsigned i) const { return f_acc[i]; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
