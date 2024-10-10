@@ -23,10 +23,10 @@ Solver :: Solver() {
 }
 
 //////////////////////////////////////////////////////////
-Solver :: ~Solver(){
-    for (auto p : pertrubations){
+Solver :: ~Solver() {
+    for ( auto p : pertrubations ) {
         delete p;
-    } 
+    }
     pertrubations.clear();
 }
 
@@ -41,7 +41,7 @@ void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionCont
 //////////////////////////////////////////////////////////
 Solver *Solver :: readFromFile(const string filename) {
     string param, paramA, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -117,7 +117,7 @@ void Solver :: setNextStepTime() {
     double nextBCTime = bcs->giveTimeOfNextChange(time);
     double nextCritTime = min(nextExtremeTime, nextBCTime);
 
-    if ( abs(time - bcs->giveTimeOfNextChange(time - 1e-12) ) < 1e-12 ) {
+    if ( abs( time - bcs->giveTimeOfNextChange(time - 1e-12) ) < 1e-12 ) {
         masterModel->jumpToNextStage();
     }
 
@@ -139,14 +139,13 @@ void Solver :: runBeforeEachStep() {
     load_old = load; //copy old load to be used in generalized alpha method
     load.setZero();  //clear nodal load
     ddr.setZero(); //clear step contribution;
-
 }
 
 //////////////////////////////////////////////////////////
 void Solver :: runAfterEachStep() {
-    for(vector<Pertrubation*>::iterator p=pertrubations.begin(); p!=pertrubations.end(); ++p){
-        if ((*p)->shouldBeApplied(time)){
-            nodes->giveFullDoFArray((*p)->pertrube(freeDoFnum), full_ddr);
+    for ( vector< Pertrubation * > :: iterator p = pertrubations.begin(); p != pertrubations.end(); ++p ) {
+        if ( ( * p )->shouldBeApplied(time) ) {
+            nodes->giveFullDoFArray( ( * p )->pertrube(freeDoFnum), full_ddr );
             trial_r += full_ddr;
             cout << "applying pertrubation" << endl;
         }
@@ -204,7 +203,7 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     f_int = Vector :: Zero(totalDoFnum);
     f_dam = Vector :: Zero(totalDoFnum);
     f_acc = Vector :: Zero(totalDoFnum);
-    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
 
     trial_r = Vector :: Zero(totalDoFnum);
@@ -231,7 +230,7 @@ void Solver :: giveValues(string code, Vector &result) const {
         result [ 0 ] = time;
     } else if ( code.compare("elapsed_time") == 0 ) {
         result.resize(1);
-        result [ 0 ] = chrono :: duration_cast< std :: chrono :: duration< double > >( std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
+        result [ 0 ] = chrono :: duration_cast< std :: chrono :: duration< double > >(std :: chrono :: system_clock :: now() - masterModel->giveStartTime() ).count();
     } else if ( code.compare("number_of_dof") == 0 ) {
         result.resize(1);
         result [ 0 ] = freeDoFnum;
@@ -260,7 +259,7 @@ void Solver :: computeInternalExternalForces(const Vector &rr, Vector &ll, const
 //////////////////////////////////////////////////////////
 void Solver :: rebuild() {
     freeDoFnum = nodes->giveNumFreeDoFs();
-    pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
+    pbc = Vector :: Zero(totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
     ddr = Vector :: Zero(freeDoFnum);
 }
@@ -286,61 +285,64 @@ double Solver :: giveExternalForce(unsigned k) const {
 }
 
 /*
+ * //////////////////////////////////////////////////////////
+ * Vector Solver :: lumpMatrix(CoordinateIndexedSparseMatrix &Q) const {
+ *  Vector lumpedQ = Vector :: Zero(freeDoFnum);
+ *
+ *
+ *  cout << "lumping the mass matrix" << endl;
+ *
+ *  unsigned rowstart, rowend;
+ *  unsigned mainFullDoFid, mainDir;
+ *  unsigned ndim = 0;
+ *  unsigned fullDoFid, dir, mainPhysField;
+ *  vector< unsigned >pf = nodes->givePhysicalFieldsOfDoFs();
+ *  for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+ *      rowstart = Q.outerIndexPtr() [ i ];
+ *      rowend = ( i + 1 == freeDoFnum ) ? Q.nonZeros() : Q.outerIndexPtr() [ i + 1 ];
+ *      mainFullDoFid = nodes->giveInvDoFid(i);
+ *      mainDir = mainFullDoFid - nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveStartingDoF();
+ *      mainPhysField = pf [ mainFullDoFid ];
+ *      if ( mainPhysField == 0 ) {
+ *          ndim = nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveDimension();
+ *      }
+ *      for ( unsigned k = rowstart; k < rowend; k++ ) {
+ *          fullDoFid =  nodes->giveInvDoFid(Q.innerIndexPtr() [ k ]);
+ *          if ( mainPhysField != pf [ fullDoFid ] ) {
+ *              continue;                              //cannot some different fields
+ *          }
+ *          if ( mainPhysField == 0 ) {  //mechanics
+ *              dir = fullDoFid - nodes->giveNodePointerOfDoFID(fullDoFid)->giveStartingDoF();
+ *              if ( ( mainDir < ndim && dir >= ndim ) || ( dir < ndim && mainDir >= ndim ) ) {
+ *                  continue;                                                             //mixing rotations and translations
+ *              }
+ *          }
+ *          lumpedQ [ i ] += Q.valuePtr() [ k ];
+ *      }
+ *  }
+ *  return lumpedQ;
+ * }
+ */
+
 //////////////////////////////////////////////////////////
-Vector Solver :: lumpMatrix(CoordinateIndexedSparseMatrix &Q) const {
-    Vector lumpedQ = Vector :: Zero(freeDoFnum);
-
-
-    cout << "lumping the mass matrix" << endl;
-
-    unsigned rowstart, rowend;
-    unsigned mainFullDoFid, mainDir;
-    unsigned ndim = 0;
-    unsigned fullDoFid, dir, mainPhysField;
-    vector< unsigned >pf = nodes->givePhysicalFieldsOfDoFs();
-    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
-        rowstart = Q.outerIndexPtr() [ i ];
-        rowend = ( i + 1 == freeDoFnum ) ? Q.nonZeros() : Q.outerIndexPtr() [ i + 1 ];
-        mainFullDoFid = nodes->giveInvDoFid(i);
-        mainDir = mainFullDoFid - nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveStartingDoF();
-        mainPhysField = pf [ mainFullDoFid ];
-        if ( mainPhysField == 0 ) {
-            ndim = nodes->giveNodePointerOfDoFID(mainFullDoFid)->giveDimension();
-        }
-        for ( unsigned k = rowstart; k < rowend; k++ ) {
-            fullDoFid =  nodes->giveInvDoFid(Q.innerIndexPtr() [ k ]);
-            if ( mainPhysField != pf [ fullDoFid ] ) {
-                continue;                              //cannot some different fields
-            }
-            if ( mainPhysField == 0 ) {  //mechanics
-                dir = fullDoFid - nodes->giveNodePointerOfDoFID(fullDoFid)->giveStartingDoF();
-                if ( ( mainDir < ndim && dir >= ndim ) || ( dir < ndim && mainDir >= ndim ) ) {
-                    continue;                                                             //mixing rotations and translations
-                }
-            }
-            lumpedQ [ i ] += Q.valuePtr() [ k ];
-        }
+bool Pertrubation :: shouldBeApplied(double solverTime) const {
+    if ( !finalized && time <= solverTime ) {
+        return true;
+    } else {
+        return false;
     }
-    return lumpedQ;
-}
-*/
-
-//////////////////////////////////////////////////////////
-bool Pertrubation :: shouldBeApplied(double solverTime) const {            
-    if (!finalized && time<=solverTime) return true;
-    else return false;
 }
 
 //////////////////////////////////////////////////////////
-Vector Pertrubation :: pertrube(unsigned size) {      
-    srand(seed);   
-    Vector rand = Vector::Random(size);
+Vector Pertrubation :: pertrube(unsigned size) {
+    srand(seed);
+    Vector rand = Vector :: Random(size);
     finalized = true;
-    return rand*magnitude;
+    return rand * magnitude;
 }
 
 //////////////////////////////////////////////////////////
-void Pertrubation :: readFromLine(std :: istringstream &iss) {  
+void Pertrubation :: readFromLine(std :: istringstream &iss) {
     string param;
     bool btime, bseed, bmag;
     btime = bseed = bmag = false;
@@ -355,18 +357,18 @@ void Pertrubation :: readFromLine(std :: istringstream &iss) {
         } else if ( param.compare("magnitude") == 0 ) {
             bmag = true;
             iss >> magnitude;
-        } 
+        }
     }
     if ( !btime ) {
         cerr << name << ": pertrubation parameter 'time' was not specified" << endl;
         exit(EXIT_FAILURE);
-    }  
+    }
     if ( !bseed ) {
         cerr << name << ": pertrubation parameter 'seed' was not specified" << endl;
         exit(EXIT_FAILURE);
-    }   
+    }
     if ( !bmag ) {
         cerr << name << ": pertrubation parameter 'magnitude' was not specified" << endl;
         exit(EXIT_FAILURE);
-    }     
+    }
 }

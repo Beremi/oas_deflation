@@ -128,7 +128,6 @@ Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
 
 //////////////////////////////////////////////////////////
 void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double value) {
-
     if ( code.compare("volumetric_strain") == 0 ) {
         temp_volumetricStrain = value;
     } else if ( code.compare("crack_opening") == 0 ) {
@@ -273,7 +272,7 @@ Vector VectMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &stra
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -415,11 +414,11 @@ Vector VectMechVolDevSplitMaterialStatus ::  giveStressWithFrozenIntVars(const V
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechVolDevSplitMaterial *m = static_cast< VectMechVolDevSplitMaterial * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     double ED = m->giveE0();
     double EV = m->giveAlpha();
 
-    temp_stress [ 0 ] = ED * temp_strain [ 0 ] + (EV-ED) * temp_volumetricStrain;
+    temp_stress [ 0 ] = ED * temp_strain [ 0 ] + ( EV - ED ) * temp_volumetricStrain;
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = ED * temp_strain [ i ];
     }
@@ -429,7 +428,6 @@ Vector VectMechVolDevSplitMaterialStatus ::  giveStressWithFrozenIntVars(const V
 
 //////////////////////////////////////////////////////////
 void VectMechVolDevSplitMaterialStatus :: setParameterValue(string code, double value) {
-
     if ( code.compare("volumetric_strain") == 0 ) {
         temp_volumetricStrain = value;
     } else {
@@ -531,7 +529,7 @@ Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenInt
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
-    temp_stress.resize( strain.size() );
+    temp_stress.resize(strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     unsigned dim = m->giveDimension();
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );

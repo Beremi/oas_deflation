@@ -31,7 +31,7 @@ public:
     virtual ~Simplex() {};
     void addElement(RigidBodyContact *rbc);
     void init(unsigned ndim);
-    void findNeighbors(NodeContainer * nnodes);
+    void findNeighbors(NodeContainer *nnodes);
     double giveVolumetricStrain() const;
     double givePressure() const;
     void computeVolumetricStrain(const Vector &DoFs);
@@ -39,8 +39,8 @@ public:
     bool isValid() const { return valid; }
     bool hasPressure() const { return transport; }
     std :: vector< RigidBodyContact * >giveElements() { return elems; }
-    bool isUpdated() const {return (valid || updated);};
-    bool doesContainParticle(Particle* p) const;
+    bool isUpdated() const { return ( valid || updated ); };
+    bool doesContainParticle(Particle *p) const;
 };
 
 

@@ -105,7 +105,7 @@ private:
 
 protected:
 public:
-    TrsNode(unsigned dimension) : Node(dimension) { name = "TransportNode"; physicalFields [ 1 ] = true; physicalFieldsDoFNum [ 1 ] = 1; physicalFields [ 0 ] = false; physicalFieldsDoFNum [ 0 ] = 0;};
+    TrsNode(unsigned dimension) : Node(dimension) { name = "TransportNode"; physicalFields [ 1 ] = true; physicalFieldsDoFNum [ 1 ] = 1; physicalFields [ 0 ] = false; physicalFieldsDoFNum [ 0 ] = 0; };
     virtual ~TrsNode() {};
 };
 
@@ -118,7 +118,7 @@ private:
 
 protected:
 public:
-    TempNode(unsigned dimension) : Node(dimension) { name = "TempNode"; physicalFields [ 2 ] = true; physicalFieldsDoFNum [ 2 ] = 1;  physicalFields [ 0 ] = false; physicalFieldsDoFNum [ 0 ] = 0;};
+    TempNode(unsigned dimension) : Node(dimension) { name = "TempNode"; physicalFields [ 2 ] = true; physicalFieldsDoFNum [ 2 ] = 1;  physicalFields [ 0 ] = false; physicalFieldsDoFNum [ 0 ] = 0; };
     virtual ~TempNode() {};
 };
 

@@ -14,14 +14,14 @@ class MLMechElement : public Element
 protected:
     unsigned poly_degree;
     Matrix stiffmat;
-    fs::path sm_path;
-    fs::path nm_path;
-    fs::path ml_path;
+    fs :: path sm_path;
+    fs :: path nm_path;
+    fs :: path ml_path;
     Matrix readStiffMatrixFromFile() const;
     Matrix readDataNormalizationMatrix(int size) const;
-    torch::jit::script::Module module; 
+    torch :: jit :: script :: Module module;
     Matrix norm;
-    
+
 
 public:
     MLMechElement(unsigned dim);

@@ -62,9 +62,9 @@ public:
     std :: vector< unsigned >giveFacetVertCodes(unsigned k) const;
     std :: vector< unsigned >giveFacetNodeCodes(unsigned k) const;
     unsigned giveOppositeSurfaceVertexToNode(unsigned k) const;
-    std :: vector<unsigned> giveOppositeFacetsToNode(unsigned k) const;
+    std :: vector< unsigned >giveOppositeFacetsToNode(unsigned k) const;
 
-    double giveVolumetricStrain() const {return volumetricStrain;};
+    double giveVolumetricStrain() const { return volumetricStrain; };
 
     virtual void giveValues(std :: string code, Vector &result) const;
     //Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
@@ -77,7 +77,8 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // LDPM COUPLED ELEMENT
-class LDPMCoupledTetra : public LDPMTetra{
+class LDPMCoupledTetra : public LDPMTetra
+{
 protected:
 
 public:
@@ -90,11 +91,12 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Discrete LDPM TRANSPORT ELEMENT
-class LDPMCoupledTransport : public DiscreteTrsprtCoupledElem {
+class LDPMCoupledTransport : public DiscreteTrsprtCoupledElem
+{
 protected:
-    LDPMTetra* tetA;
-    LDPMTetra* tetB;
-    unsigned LDPMTetraIDA,LDPMTetraIDB;
+    LDPMTetra *tetA;
+    LDPMTetra *tetB;
+    unsigned LDPMTetraIDA, LDPMTetraIDB;
     ElementContainer *elems;
     unsigned LDPMsideA, LDPMsideB;
 
@@ -109,7 +111,8 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Discrete LDPM TRANSPORT BOUNDARY ELEMENT
-class LDPMCoupledTransportBoundary : public LDPMCoupledTransport {
+class LDPMCoupledTransportBoundary : public LDPMCoupledTransport
+{
 protected:
 
 public:

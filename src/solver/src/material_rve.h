@@ -185,7 +185,7 @@ public:
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Matrix giveMassTensor() const;
     double computeAverageDensity() const;
-    virtual void setParameterValue(std::string code, double value);
+    virtual void setParameterValue(std :: string code, double value);
 };
 
 //////////////////////////////////////////////////////////
@@ -222,8 +222,8 @@ public:
     Vector strainToCosserat(Vector strain);
     Vector stressToCauchy(Vector stress);
     Matrix matrixToCauchy(Matrix matrix);
-    bool isConvertingFromCauchy() const {return convert_from_cauchy;};
-    void setConversionFromCauchy(bool convert) {convert_from_cauchy=convert;};
+    bool isConvertingFromCauchy() const { return convert_from_cauchy; };
+    void setConversionFromCauchy(bool convert) { convert_from_cauchy = convert; };
 };
 
 //////////////////////////////////////////////////////////

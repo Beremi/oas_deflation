@@ -37,8 +37,8 @@ void Simplex :: init(unsigned ndim) {
         valid = true;
 
         //calculate DoF array
-        DoFs.resize( ndim * nodes.size() );
-        DoFweights.resize( ndim * nodes.size() );
+        DoFs.resize(ndim * nodes.size() );
+        DoFweights.resize(ndim * nodes.size() );
         unsigned initDoF;
         unsigned pos = 0;
         Point volumeChangeWeights;
@@ -50,7 +50,7 @@ void Simplex :: init(unsigned ndim) {
             k = ( i + 2 ) % ( ndim + 1 );
             l = ( i + 3 ) % ( ndim + 1 );
             averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
-            volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross( nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+            volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross(nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
             volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
             sign = volume / abs(volume);
             initDoF = nodes [ i ]->giveStartingDoF();
@@ -70,7 +70,7 @@ void Simplex :: init(unsigned ndim) {
 }
 
 //////////////////////////////////////////////////////////
-void Simplex :: findNeighbors(NodeContainer * nnodes) {
+void Simplex :: findNeighbors(NodeContainer *nnodes) {
     //for non-valid simplices, they steal volumetric deformation from neighborhood
     if ( valid ) {
         return;
@@ -78,22 +78,26 @@ void Simplex :: findNeighbors(NodeContainer * nnodes) {
 
     Simplex *s;
     bool found;
-    for ( std :: vector< Node * > :: iterator n1 = nnodes->begin(); n1!=nnodes->end(); ++n1){
-        s = (*n1)->giveSimplex();
+    for ( std :: vector< Node * > :: iterator n1 = nnodes->begin(); n1 != nnodes->end(); ++n1 ) {
+        s = ( * n1 )->giveSimplex();
         found = false;
         if ( s && s->isValid() ) {
-            for (auto &n0: nodes){
+            for ( auto &n0: nodes ) {
                 found = s->doesContainParticle(n0);
-                if (found) break;
+                if ( found ) {
+                    break;
+                }
             }
-            if (found) neighbors.insert(s);
+            if ( found ) {
+                neighbors.insert(s);
+            }
         }
     }
 }
 
 //////////////////////////////////////////////////////////
-bool Simplex :: doesContainParticle(Particle* p) const {
-    return ( find (nodes.begin(), nodes.end(), p)!= nodes.end());
+bool Simplex :: doesContainParticle(Particle *p) const {
+    return ( find(nodes.begin(), nodes.end(), p) != nodes.end() );
 }
 
 //////////////////////////////////////////////////////////
@@ -107,7 +111,7 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
         updated = true;
     } else {
         updated = false;
-    }    
+    }
     if ( transport ) {
         pressure = fullDoFs [ pressureDoF ];
     }
@@ -116,24 +120,24 @@ void Simplex :: computeVolumetricStrain(const Vector &fullDoFs) {
 
 //////////////////////////////////////////////////////////
 bool Simplex :: stealVolumetricStrain() {
-    if ( ! updated ) {
-        unsigned k=0;
+    if ( !updated ) {
+        unsigned k = 0;
         if ( neighbors.size() > 0 ) {  //steal volumetric strain from neigborhood
             for ( auto &simn: neighbors ) {
-                if (simn->isUpdated()){
-                    k ++;
+                if ( simn->isUpdated() ) {
+                    k++;
                     volstrain += simn->giveVolumetricStrain();
                 }
             }
-            if (k>0){
+            if ( k > 0 ) {
                 volstrain /= k;
                 updated = true;
-            }else{
+            } else  {
                 updated = false;
             }
-        } 
+        }
     }
-    return updated;    
+    return updated;
 }
 
 

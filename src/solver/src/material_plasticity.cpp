@@ -42,7 +42,7 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
             // f = sqrt( pow(sigmaEff[0],2) - sigmaEff[0]*sigmaEff[1] + pow(sigmaEff[1],2) + 3*pow(sigmaEff[2],2))  - temp_sigmay;
             cerr << name << " error: " <<  "Plane Stress not implemented" << endl;
             exit(1);
-        } else   { //Plane Strain
+        } else {   //Plane Strain
             D = giveElasticStiffnessTensor3D();
 
             temp_strain_full [ 0 ] = temp_strain [ 0 ];
@@ -65,7 +65,7 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
             backstress_full [ 5 ] = backstress [ 2 ];
             backstress_full [ 2 ] = outplane_backstress;
         }
-    }  else if ( dimension == 3 )  {
+    }  else if ( dimension == 3 ) {
         D = giveStiffnessTensor("elastic");
 
         temp_strain_full = temp_strain;
@@ -85,7 +85,7 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
 
 
     double f;
-    f = sqrt( 3. * ( 1. / 6. * ( pow( ( sigmaEff [ 0 ] - sigmaEff [ 1 ] ), 2 ) + pow( ( sigmaEff [ 0 ] - sigmaEff [ 2 ] ), 2 ) + pow( ( sigmaEff [ 1 ] - sigmaEff [ 2 ] ), 2 ) ) + pow(sigmaEff [ 3 ], 2) + pow(sigmaEff [ 4 ], 2) + pow(sigmaEff [ 5 ], 2) ) ) - temp_sigmay;
+    f = sqrt(3. * ( 1. / 6. * ( pow( ( sigmaEff [ 0 ] - sigmaEff [ 1 ] ), 2) + pow( ( sigmaEff [ 0 ] - sigmaEff [ 2 ] ), 2) + pow( ( sigmaEff [ 1 ] - sigmaEff [ 2 ] ), 2) ) + pow(sigmaEff [ 3 ], 2) + pow(sigmaEff [ 4 ], 2) + pow(sigmaEff [ 5 ], 2) ) ) - temp_sigmay;
 
 
     if ( f <= 0.000001 ) {  // Elastic regime

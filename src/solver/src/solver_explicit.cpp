@@ -27,8 +27,8 @@ void TransientCentralDifferenceMechanicalSolver :: init(std :: string init_r_fil
     a = Vector :: Zero(totalDoFnum);
 
 
-    elems->prepareMassMatrix(M,1);
-    elems->updateMassMatrix(M,1);
+    elems->prepareMassMatrix(M, 1);
+    elems->updateMassMatrix(M, 1);
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(M);
     }
@@ -69,7 +69,7 @@ Solver *TransientCentralDifferenceMechanicalSolver :: readFromFile(const string 
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {

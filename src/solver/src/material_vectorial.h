@@ -157,7 +157,7 @@ public:
     double giveDensity() const;
     virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
     virtual bool giveValues(std :: string code, Vector &result) const;
-    virtual void setParameterValue(std::string code, double value);
+    virtual void setParameterValue(std :: string code, double value);
 };
 
 //////////////////////////////////////////////////////////

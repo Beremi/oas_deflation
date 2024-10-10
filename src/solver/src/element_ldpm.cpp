@@ -41,22 +41,30 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
 }
 
 //////////////////////////////////////////////////////////
-unsigned LDPMTetra :: giveOppositeSurfaceVertexToNode(unsigned k) const{
-    return 10-k;
+unsigned LDPMTetra :: giveOppositeSurfaceVertexToNode(unsigned k) const {
+    return 10 - k;
 }
 
 //////////////////////////////////////////////////////////
-vector<unsigned> LDPMTetra :: giveOppositeFacetsToNode(unsigned k) const{
-    vector<unsigned> f(3);
-    if (k==0){
-        f[0] = 6; f[1] = 8; f[2] = 10;
-    }else if (k==1){
-        f[0] = 2; f[1] = 4; f[2] = 11;
-    }else if (k==2){
-        f[0] = 0; f[1] = 5; f[2] = 9;
-    }else if (k==3){
-        f[0] = 1; f[1] = 3; f[2] = 7;
-    }else{
+vector< unsigned >LDPMTetra :: giveOppositeFacetsToNode(unsigned k) const {
+    vector< unsigned >f(3);
+    if ( k == 0 ) {
+        f [ 0 ] = 6;
+        f [ 1 ] = 8;
+        f [ 2 ] = 10;
+    } else if ( k == 1 )      {
+        f [ 0 ] = 2;
+        f [ 1 ] = 4;
+        f [ 2 ] = 11;
+    } else if ( k == 2 )      {
+        f [ 0 ] = 0;
+        f [ 1 ] = 5;
+        f [ 2 ] = 9;
+    } else if ( k == 3 )      {
+        f [ 0 ] = 1;
+        f [ 1 ] = 3;
+        f [ 2 ] = 7;
+    } else  {
         cerr << "Error " << name << ": node does not exist" << endl;
         exit(1);
     }
@@ -100,35 +108,35 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
 
     for ( unsigned i = 0; i < 12; i++ ) {
         //true face normal
-        Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() ).cross( vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
+        Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() ).cross(vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
         n /= n.norm();
         //contact vector
         normals [ i ] = nodes [ nodecodes [ 2 * i + 1 ] ]->givePoint() - nodes [ nodecodes [ 2 * i ] ]->givePoint();
         lengths [ i ] = normals [ i ].norm();
         normals [ i ] /= lengths [ i ];
         inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
-        areas [ i ] = triArea3D(vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
+        areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
         if ( n.norm() == n.norm() ) { //NaN test
-            areas [ i ] *= abs(n.dot(normals [ i ]) );    //projection of area
+            areas [ i ] *= abs( n.dot(normals [ i ]) );    //projection of area
         }
 
         //t1 = inttype->giveIPLocation(i)-vert [ 0 ]->givePoint();   this is wrong for irregular TET
         // coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
         Point arbit(sqrt(2.), -sqrt(3.), M_PI);
         if ( ( normals [ i ] - arbit ).norm() < 1e-3 ) {
-            t1s[ i ] = arbit.cross(normals [ i ]);
+            t1s [ i ] = arbit.cross(normals [ i ]);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs( normals [ i ].x() ) > 1e-3 ) {
-                t1s[ i ] = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
-            } else if ( abs( normals [ i ].y() ) > 1e-3 ) {
-                t1s[ i ] = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
+            if ( abs(normals [ i ].x() ) > 1e-3 ) {
+                t1s [ i ] = Point(-normals [ i ].y() / normals [ i ].x(), 1, 0);
+            } else if ( abs(normals [ i ].y() ) > 1e-3 ) {
+                t1s [ i ] = Point(0, -normals [ i ].z() / normals [ i ].y(), 1);
             } else {
-                t1s[ i ] = Point( 1, 0, -normals [ i ].x() / normals [ i ].z() );
+                t1s [ i ] = Point(1, 0, -normals [ i ].x() / normals [ i ].z() );
             }
         }
-        t1s[ i ].normalize();
-        t2s[ i ] = normals [ i ].cross(t1s [i] );
+        t1s [ i ].normalize();
+        t2s [ i ] = normals [ i ].cross(t1s [ i ]);
         R [ i ] = Matrix :: Zero(3, 3);
         R [ i ](0, 0) = normals [ i ].x();
         R [ i ](0, 1) = normals [ i ].y();
@@ -170,7 +178,7 @@ void LDPMTetra :: init() {
         k = ( i + 2 ) % 4;
         l = ( i + 3 ) % 4;
         averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
-        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross( nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross(nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
         volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
         sign = volume / abs(volume);
         for ( unsigned v = 0; v < 3; v++ ) {
@@ -203,9 +211,9 @@ Matrix LDPMTetra :: giveBMatrix(unsigned k) const {
     unsigned nB = nodecodes [ 2 * k + 1 ];
     Matrix B = Matrix :: Zero(3, 24);
     Particle *a = static_cast< Particle * >( nodes [ nA ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
+    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
     a = static_cast< Particle * >( nodes [ nB ] );
-    Matrix Ab = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(k) );
+    Matrix Ab = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(k) );
 
     for ( unsigned i = 0; i < 3; i++ ) {
         for ( unsigned j = 0; j < 6; j++ ) {
@@ -310,9 +318,9 @@ void LDPMTetra :: computeMassMatrix() {
             massM(nodeID * 6 + 1, nodeID * 6 + 5) += density * tetvol * diff [ 0 ];
             massM(nodeID * 6 + 2, nodeID * 6 + 3) += density * tetvol * diff [ 1 ];
             massM(nodeID * 6 + 2, nodeID * 6 + 4) -= density * tetvol * diff [ 0 ];
-            massM(nodeID * 6 + 3, nodeID * 6 + 3) += density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );
-            massM(nodeID * 6 + 4, nodeID * 6 + 4) += density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );
-            massM(nodeID * 6 + 5, nodeID * 6 + 5) += density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 1 ] ), 2 ) ) );
+            massM(nodeID * 6 + 3, nodeID * 6 + 3) += density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            massM(nodeID * 6 + 4, nodeID * 6 + 4) += density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 2 ] ), 2) ) );
+            massM(nodeID * 6 + 5, nodeID * 6 + 5) += density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2) + pow( ( diff [ 1 ] ), 2) ) );
             massM(nodeID * 6 + 3, nodeID * 6 + 4) += density * ( tetI(0, 1) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 1 ] ) ) );
             massM(nodeID * 6 + 3, nodeID * 6 + 5) += density * ( tetI(0, 2) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 2 ] ) ) );
             massM(nodeID * 6 + 4, nodeID * 6 + 5) += density * ( tetI(1, 2) - tetvol * ( ( diff [ 1 ] ) * ( diff [ 2 ] ) ) );
@@ -433,10 +441,12 @@ LDPMCoupledTetra :: LDPMCoupledTetra() : LDPMTetra{3} {
 //////////////////////////////////////////////////////////
 Vector LDPMCoupledTetra :: giveStrain(unsigned i, const Vector &DoFs) {
     Vector res;
-    vert[0]->giveValues("pressure",masterModel->giveSolver(),res);
+    vert [ 0 ]->giveValues("pressure", masterModel->giveSolver(), res);
     double pressure = 0;
-    if (res.size()==1) pressure=res[0];
-    stats [ i ]->setParameterValue("pressure",pressure);
+    if ( res.size() == 1 ) {
+        pressure = res [ 0 ];
+    }
+    stats [ i ]->setParameterValue("pressure", pressure);
 
     return LDPMTetra :: giveStrain(i, DoFs);
 };
@@ -450,7 +460,7 @@ void LDPMCoupledTetra :: giveValues(string code, Vector &result) const {
 //////////////////////////////////////////////////////////
 // LDPM TRANSPORT
 //////////////////////////////////////////////////////////
-LDPMCoupledTransport::LDPMCoupledTransport(ElementContainer* allelems):DiscreteTrsprtCoupledElem(3){
+LDPMCoupledTransport :: LDPMCoupledTransport(ElementContainer *allelems) : DiscreteTrsprtCoupledElem(3) {
     elems = allelems;
     name = "LDPMCoupledTransport";
 };
@@ -459,34 +469,35 @@ LDPMCoupledTransport::LDPMCoupledTransport(ElementContainer* allelems):DiscreteT
 Vector LDPMCoupledTransport :: giveStrain(unsigned i, const Vector &DoFs) {
     //crack opening
     /*
-    double crackInNeighborhood = 0;
-    double crackVolume = 0.;
-    double elem_crack_opening;
-
-    for ( auto &f: friends ) {
-        elem_crack_opening = 0.;
-        for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
-            f->giveIPValues("crack_opening", k, res);
-            if ( res.size() == 1 ) {
-                elem_crack_opening += abs(res [ 0 ]);
-            }
-        }
-        crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
-        if ( ndim == 3 ) {
-            crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
-        } else if ( ndim == 2 ) {
-            crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea();
-        }
-        m++;
-    }
-    stats [ 0 ]->setParameterValue("crack_opening", crackInNeighborhood);
-    stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
-    */
+     * double crackInNeighborhood = 0;
+     * double crackVolume = 0.;
+     * double elem_crack_opening;
+     *
+     * for ( auto &f: friends ) {
+     *  elem_crack_opening = 0.;
+     *  for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
+     *      f->giveIPValues("crack_opening", k, res);
+     *      if ( res.size() == 1 ) {
+     *          elem_crack_opening += abs(res [ 0 ]);
+     *      }
+     *  }
+     *  crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
+     *  if ( ndim == 3 ) {
+     *      crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
+     *  } else if ( ndim == 2 ) {
+     *      crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea();
+     *  }
+     *  m++;
+     * }
+     * stats [ 0 ]->setParameterValue("crack_opening", crackInNeighborhood);
+     * stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
+     */
 
     //Biot effect
     double volStrain = tetA->giveVolumetricStrain();
-    if (tetB) { volStrain += tetB->giveVolumetricStrain();
-        volStrain /=2.;
+    if ( tetB ) {
+        volStrain += tetB->giveVolumetricStrain();
+        volStrain /= 2.;
     }
     stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain
 
@@ -494,18 +505,18 @@ Vector LDPMCoupledTransport :: giveStrain(unsigned i, const Vector &DoFs) {
 };
 
 //////////////////////////////////////////////////////////
-void LDPMCoupledTransport::readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs){
-    (void) fullnodes;
+void LDPMCoupledTransport :: readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+    ( void ) fullnodes;
     iss >> LDPMTetraIDA;
     iss >> LDPMTetraIDB;
-    if (LDPMTetraIDA==LDPMTetraIDB){
+    if ( LDPMTetraIDA == LDPMTetraIDB ) {
         cerr << "Error " << name << ": two identical tetrahedras supplied, " << LDPMTetraIDA << endl;
     }
     unsigned num;
     iss >> num;
     mat = fullmatrs->giveMaterial(num);
 
-    
+
     string code;
     while ( iss >> code ) {
         if ( code.compare("BolanderCapacityMatrix") == 0 ) {
@@ -515,70 +526,84 @@ void LDPMCoupledTransport::readFromLine(std :: istringstream &iss, NodeContainer
 }
 
 //////////////////////////////////////////////////////////
-void LDPMCoupledTransport::init(){
-    tetA = dynamic_cast<LDPMTetra*>(elems->giveElement(LDPMTetraIDA));
-    tetB = dynamic_cast<LDPMTetra*>(elems->giveElement(LDPMTetraIDB));
-    if ((!tetA) or (!tetB)){
-        cout << "Error " << name << ": the element numbers are not LDPM tetras"<< endl;
+void LDPMCoupledTransport :: init() {
+    tetA = dynamic_cast< LDPMTetra * >( elems->giveElement(LDPMTetraIDA) );
+    tetB = dynamic_cast< LDPMTetra * >( elems->giveElement(LDPMTetraIDB) );
+    if ( ( !tetA ) or ( !tetB ) ) {
+        cout << "Error " << name << ": the element numbers are not LDPM tetras" << endl;
         exit(1);
-    } 
+    }
     nodes.resize(2);
-    nodes[0]=tetA->giveCentroid();
-    nodes[1]=tetB->giveCentroid();
+    nodes [ 0 ] = tetA->giveCentroid();
+    nodes [ 1 ] = tetB->giveCentroid();
 
     LDPMsideA = 5;
     LDPMsideB = 5;
 
-    vector<Node*> nodesA = tetA->giveNodes();
-    vector<Node*> nodesB = tetB->giveNodes();
+    vector< Node * >nodesA = tetA->giveNodes();
+    vector< Node * >nodesB = tetB->giveNodes();
     bool found;
-    for (unsigned k=0; k<4; k++){
-        found=false;
-        for (unsigned l=0; l<4; l++){
-            if (nodesA[k]==nodesB[l]){
-                found=true;
+    for ( unsigned k = 0; k < 4; k++ ) {
+        found = false;
+        for ( unsigned l = 0; l < 4; l++ ) {
+            if ( nodesA [ k ] == nodesB [ l ] ) {
+                found = true;
                 break;
             }
         }
-        if (!found){
-            if (LDPMsideA!=5){
-                cerr << "Error " << name << ": LDPM tetras are not neighbors, "<< LDPMTetraIDA << " " << LDPMTetraIDB << endl;
-                for (auto a:nodesA) cout << a->giveID() << " ";
+        if ( !found ) {
+            if ( LDPMsideA != 5 ) {
+                cerr << "Error " << name << ": LDPM tetras are not neighbors, " << LDPMTetraIDA << " " << LDPMTetraIDB << endl;
+                for ( auto a:nodesA ) {
+                    cout << a->giveID() << " ";
+                }
                 cout << endl;
-                for (auto a:nodesB) cout << a->giveID() << " ";
+                for ( auto a:nodesB ) {
+                    cout << a->giveID() << " ";
+                }
                 cout << endl;
                 exit(1);
-            } else LDPMsideA=k;
+            } else {
+                LDPMsideA = k;
+            }
         }
     }
-    for (unsigned k=0; k<4; k++){
-        found=false;
-        for (unsigned l=0; l<4; l++){
-            if (nodesB[k]==nodesA[l]){
-                found=true;
+    for ( unsigned k = 0; k < 4; k++ ) {
+        found = false;
+        for ( unsigned l = 0; l < 4; l++ ) {
+            if ( nodesB [ k ] == nodesA [ l ] ) {
+                found = true;
                 break;
             }
         }
-        if (!found){
-            if (LDPMsideB!=5){
-                cerr << "Error " << name << ": LDPM tetras are not neighbors, "<< LDPMTetraIDA << " " << LDPMTetraIDA << endl;
-                for (auto a:nodesA) cout << a->giveID() << " ";
+        if ( !found ) {
+            if ( LDPMsideB != 5 ) {
+                cerr << "Error " << name << ": LDPM tetras are not neighbors, " << LDPMTetraIDA << " " << LDPMTetraIDA << endl;
+                for ( auto a:nodesA ) {
+                    cout << a->giveID() << " ";
+                }
                 cout << endl;
-                for (auto a:nodesB) cout << a->giveID() << " ";
+                for ( auto a:nodesB ) {
+                    cout << a->giveID() << " ";
+                }
                 cout << endl;
                 exit(1);
-            } else LDPMsideB=k;
+            } else {
+                LDPMsideB = k;
+            }
         }
     }
     vert.resize(3);
     unsigned p = 0;
-    for (unsigned k=0; k<4; k++){   
-        if (k==LDPMsideA) continue;
-        vert[p] = nodesA[k];
+    for ( unsigned k = 0; k < 4; k++ ) {
+        if ( k == LDPMsideA ) {
+            continue;
+        }
+        vert [ p ] = nodesA [ k ];
         p++;
     }
 
-    DiscreteTrsprtCoupledElem::init();
+    DiscreteTrsprtCoupledElem :: init();
 }
 
 
@@ -586,31 +611,29 @@ void LDPMCoupledTransport::init(){
 //////////////////////////////////////////////////////////
 // LDPM TRANSPORT BOUNDARY
 //////////////////////////////////////////////////////////
-LDPMCoupledTransportBoundary :: LDPMCoupledTransportBoundary(ElementContainer* allelems):LDPMCoupledTransport(allelems){
+LDPMCoupledTransportBoundary :: LDPMCoupledTransportBoundary(ElementContainer *allelems) : LDPMCoupledTransport(allelems) {
     name = "LDPMCoupledTransportBoundary";
 };
 
 //////////////////////////////////////////////////////////
-void LDPMCoupledTransportBoundary::init(){
-    tetA = dynamic_cast<LDPMTetra*>(elems->giveElement(LDPMTetraIDA));
+void LDPMCoupledTransportBoundary :: init() {
+    tetA = dynamic_cast< LDPMTetra * >( elems->giveElement(LDPMTetraIDA) );
     LDPMsideA = LDPMTetraIDB;
-    
-    nodes.resize(2);
-    nodes[0]=tetA->giveCentroid();
-    nodes[1]=tetA->giveVertex(tetA->giveOppositeSurfaceVertexToNode(LDPMsideA));
 
-    vector<Node*> nodesA = tetA->giveNodes();    
+    nodes.resize(2);
+    nodes [ 0 ] = tetA->giveCentroid();
+    nodes [ 1 ] = tetA->giveVertex( tetA->giveOppositeSurfaceVertexToNode(LDPMsideA) );
+
+    vector< Node * >nodesA = tetA->giveNodes();
     vert.resize(3);
     unsigned p = 0;
-    for (unsigned k=0; k<4; k++){   
-        if (k==LDPMsideA) continue;
-        vert[p] = nodesA[k];
+    for ( unsigned k = 0; k < 4; k++ ) {
+        if ( k == LDPMsideA ) {
+            continue;
+        }
+        vert [ p ] = nodesA [ k ];
         p++;
     }
 
-    DiscreteTrsprtElem::init();
+    DiscreteTrsprtElem :: init();
 }
-
-
-
-

@@ -10,7 +10,7 @@
 #include "node_container.h"
 #include "indirect_displ_control.h"
 
-class Pertrubation; //forward declaration    
+class Pertrubation; //forward declaration
 
 //////////////////////////////////////////////////////////
 class Solver
@@ -40,8 +40,8 @@ protected:
 
     virtual void updateFieldVariables();
     virtual void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep);
-    
-    std :: vector <Pertrubation*> pertrubations;
+
+    std :: vector< Pertrubation * >pertrubations;
 
     //Vector lumpMatrix(CoordinateIndexedSparseMatrix &Q) const;
 
@@ -62,7 +62,7 @@ public:
     double giveDoFVelocity(unsigned k) const { return v [ k ]; }
     double giveExternalForce(unsigned k) const;
     Vector giveNodalForces() { return f_ext; }
-    double giveDoFInertiaForce(unsigned i) const { return f_acc[i]; }
+    double giveDoFInertiaForce(unsigned i) const { return f_acc [ i ]; }
     int giveStepNumber() const { return step; };
     double giveTime() const { return time; };
     int giveTerminationStatus() const { return ( termination_time - time > 1e-15 ); };
@@ -85,15 +85,15 @@ public:
 //////////////////////////////////////////////////////////
 class Pertrubation
 {
-protected: 
+protected:
     std :: string name;
     double finalized;
     double time;
     double magnitude;
     double seed;
 public:
-    Pertrubation(){};
-    virtual ~Pertrubation() {finalized=false; name = "Pertrubation";};
+    Pertrubation() {};
+    virtual ~Pertrubation() { finalized = false; name = "Pertrubation"; };
     bool shouldBeApplied(double solverTime) const;
     Vector pertrube(unsigned size);
     virtual void readFromLine(std :: istringstream &iss);

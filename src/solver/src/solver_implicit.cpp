@@ -89,7 +89,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -115,7 +115,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("solver_type") == 0 ) {
                 iss >> symsolver_type;
             } else if ( param.compare("pertrubation") == 0 ) {
-                Pertrubation* p = new Pertrubation();
+                Pertrubation *p = new Pertrubation();
                 p->readFromLine(iss);
                 pertrubations.push_back(p);
             }
@@ -456,9 +456,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
 
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
-        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max(max(abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
         //cout << energyPF [ i ] << " "  << W_ext [ i ] << " "  << W_int [ i ] << " "  << EPS2 << endl;
     }
     resErr = sqrt(resErr);
@@ -966,7 +966,7 @@ void TransientLinearTransportSolver :: rebuild() {
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1023,7 +1023,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
     double num;
     int valueIN;
     string param, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1136,7 +1136,7 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
 
     int valueIN;
     string param, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1166,7 +1166,7 @@ void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(str
     }
     v_old = Vector :: Zero(totalDoFnum);
     a_old = Vector :: Zero(totalDoFnum);
-    elems->prepareMassMatrix(M,lumpMassM);
+    elems->prepareMassMatrix(M, lumpMassM);
 
     TransientLinearTransportSolver :: prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
 }
@@ -1204,31 +1204,31 @@ void TransientLinearMechanicalSolver :: applySpectralRadius(double rhoinfty) {
         cerr << "Error in solver: spectral radius must be inside interval 0-1" << endl;
         exit(1);
     }
-    if (timeIntM==0){ //generalized alpha
+    if ( timeIntM == 0 ) { //generalized alpha
         //according to Chung and Hulbert, 1993, JAM
         alpha_m = ( 2. * rhoinfty - 1. ) / ( 1. + rhoinfty );
         alpha_f = rhoinfty / ( 1. + rhoinfty );
         gamma = 1. / 2. - alpha_m + alpha_f;
         beta = 1. / 4. * pow(1 - alpha_m + alpha_f, 2);
-    } else if (timeIntM==1){  //WBZ method
+    } else if ( timeIntM == 1 ) { //WBZ method
         //Stability Analysis of Ubiquitous Direct Time Integration Methods, Mohamed Naguib and AF Ghaleb and Faraji Mollaie Amin,  2019
-        alpha_m = (rhoinfty-1.) / ( 1. + rhoinfty );
+        alpha_m = ( rhoinfty - 1. ) / ( 1. + rhoinfty );
         alpha_f = 0;
         gamma = 1. / 2. - alpha_m;
         beta = 1. / 4. * pow(1 - alpha_m, 2);
-    } else if (timeIntM==2) {  //HHT
+    } else if ( timeIntM == 2 ) {  //HHT
         //Stability Analysis of Ubiquitous Direct Time Integration Methods, Mohamed Naguib and AF Ghaleb and Faraji Mollaie Amin,  2019
         alpha_m = 0.;
-        alpha_f = (1.-rhoinfty) / ( 1. + rhoinfty );
+        alpha_f = ( 1. - rhoinfty ) / ( 1. + rhoinfty );
         gamma = 1. / 2. + alpha_f;
         beta = 1. / 4. * pow(1. + alpha_f, 2);
-    } else if (timeIntM==3) {  //Newmark method
+    } else if ( timeIntM == 3 ) {  //Newmark method
         //Stability Analysis of Ubiquitous Direct Time Integration Methods, Mohamed Naguib and AF Ghaleb and Faraji Mollaie Amin,  2019
         //check also Klaus-Jürgen Bathe and Gunwoo Noh 2012
         alpha_m = 0;
         alpha_f = 0;
-        gamma = (3.-rhoinfty)/(2.*rhoinfty+2.);
-        beta = 1./pow(rhoinfty+1.,2);
+        gamma = ( 3. - rhoinfty ) / ( 2. * rhoinfty + 2. );
+        beta = 1. / pow(rhoinfty + 1., 2);
     } else {
         cerr << "Solver Error: unknown method for time integration" << endl;
         exit(1);
@@ -1322,7 +1322,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 
@@ -1351,8 +1351,10 @@ bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, 
     bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(matrixType, iteration, enforce);
     bool updated1 = false;
     if ( enforce || massMatrixUpdate == 0 || ( massMatrixUpdate > 0 && iteration % abs(massMatrixUpdate) == 0 ) ) {
-        elems->updateMassMatrix(M, lumpMassM); 
-        if (lumpMassM) elems->replaceTrueMassMatricesByLumpedOnes();
+        elems->updateMassMatrix(M, lumpMassM);
+        if ( lumpMassM ) {
+            elems->replaceTrueMassMatricesByLumpedOnes();
+        }
         updated1 = true;
     }
     return ( updated0 || updated1 );
