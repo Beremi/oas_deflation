@@ -134,6 +134,9 @@ class Model:
 
         self.supportDivision = None
         self.blank = 0
+
+        self.nodefile = None
+
         for i in range (len(r)):
             if (r[i]=='blank'):
                 self.blank = int(r[i+1])
@@ -869,7 +872,7 @@ class Model:
 
     def run_2d_cantileverBending(self):
         print('2d_cantilever bending')
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials, nodefile = self.nodefile)
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials, self.powerTes, nodefile = self.nodefile)
         self.materialZones=None
 
     def run_3d_dam(self):

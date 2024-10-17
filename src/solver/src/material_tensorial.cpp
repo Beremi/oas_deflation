@@ -510,8 +510,8 @@ void TensCosseratMechMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     string param;
-    bool blc, bmuc;
-    blc = bmuc = false;
+    bool blc, bmuc, bpsize;
+    blc = bmuc = bpsize = false;
 
     while (  iss >> param ) {
         if ( param.compare("lc") == 0 ) {
@@ -520,6 +520,9 @@ void TensCosseratMechMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("muc") == 0 ) {
             bmuc = true;
             iss >> muc;
+        } else if ( param.compare("particle_radius") == 0 ) {
+            bpsize = true;
+            iss >> psize;
         }
     }
     if ( !blc ) {
@@ -528,6 +531,10 @@ void TensCosseratMechMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bmuc ) {
         cerr << name << ": material parameter 'muc' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    if ( !bpsize ) {
+        cerr << name << ": material parameter 'particle_radius' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
 };

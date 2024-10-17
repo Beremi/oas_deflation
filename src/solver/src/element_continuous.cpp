@@ -367,19 +367,20 @@ Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
     return H;
 }
 
+
 //////////////////////////////////////////////////////////
 void CosseratQuad :: computeMassMatrix() {
     MechanicalQuad :: computeMassMatrix();
-    //the micro inertia effect are wrong as they are based on density. Better delete them.
+    TensCosseratMechMaterial *cosmat = static_cast< TensCosseratMechMaterial * >( mat );
     for ( unsigned i = 0; i < 4; i++ ) {
         for ( unsigned j = 0; j < 4; j++ ) {
-            massM(3 * i + 2, 3 * j + 2) = 0;
+            massM(3 * i + 2, 3 * j + 2) *= 0.5*pow(cosmat->giveParticleSize(),2);
             massM(3 * i + 1, 3 * j + 2) = 0;
             massM(3 * i + 2, 3 * j + 1) = 0;
+            massM(3 * i + 1, 3 * j) = 0;
+            massM(3 * i + 2, 3 * j) = 0;
         }
     }
-    //cout << "---------------------" << endl;
-    //cout << H << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -439,6 +440,28 @@ Matrix CosseratBrick :: giveHMatrix(const Point *x) const {
         }
     }
     return H;
+}
+
+//////////////////////////////////////////////////////////
+void CosseratBrick :: computeMassMatrix() {
+    MechanicalBrick :: computeMassMatrix();
+    TensCosseratMechMaterial *cosmat = static_cast< TensCosseratMechMaterial * >( mat );
+    unsigned k = 2*ndim-3; //number of rotations
+    unsigned kk = 3*ndim-3;  //total number of dofs
+    for ( unsigned i = 0; i < 4; i++ ) {
+        for ( unsigned j = 0; j < 4; j++ ) {
+            for (unsigned d=0; d<k; d++){
+                for (unsigned e=0; e<k; e++){
+                    if (e==d) massM(3 * i + e + ndim, 3 * j + d + ndim) *= 0.5*pow(cosmat->giveParticleSize(),2); 
+                    else massM(3 * i + e + ndim, 3 * j + d + ndim) *= 0;
+                }
+                for (unsigned e=0; e<ndim; e++) {
+                    massM(3 * i + d + ndim, 3 * j + e) = 0;
+                    massM(3 * i + e, 3 * j + d + ndim) = 0;
+                }
+            }
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////

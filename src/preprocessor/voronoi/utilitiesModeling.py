@@ -771,14 +771,19 @@ def create2dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1,      loadWidth =
 
 
 
-def create2dCantileverBending(maxLim, minDist, trials, nodefile = None ):
+def create2dCantileverBending(maxLim, minDist, trials, powerTes, nodefile = None ):
+
     print('Creating 2d cantilever, bending.')
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechIC_merged  = assemble2DCantileverBending(maxLim, minDist, trials, nodefile = nodefile );
+    node_coords, radii, mechBC_merged, mechIC_merged  = assemble2DCantileverBending(maxLim, minDist, trials, powerTes, nodefile = nodefile );
 
-    print('Conducting Voronoi tesselation...', end = '')
-    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    if not powerTes:
+        print('Conducting Voronoi tesselation...', end = '')
+        vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, 2, maxLim)
+    else:
+        print('Conducting Power tesselation...', end = '')
+        vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, 2, maxLim)
     print('done.')
 
 
@@ -835,7 +840,7 @@ def create2dCantileverBending(maxLim, minDist, trials, nodefile = None ):
         trsBC = utilitiesMech.transportBC(rightFace[i], rightFaceBC)
         transportBC_merged.append(trsBC)
 
-    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions
+    return node_coords, mechBC_merged, mechIC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, radii
 
 
 def create2dCantileverUniTens(maxLim, minDist, trials):
@@ -1622,9 +1627,9 @@ def create2d_box_with_periodic_nodes(maxLim, minDist, trials):
     ### direct setting of mechanicalBCs
     node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii  = assemble2d_box_with_periodic_nodes(maxLim, minDist, trials)
 
-    print('Conducting Power tesselation...', end = '')
-    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
-    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, dim, maxLim)
+    print('Conducting Power tesselationSSSSSSS...', end = '')
+    vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredPower(node_coords, radii, dim, maxLim)
     print('done.')
 
 
@@ -2173,7 +2178,6 @@ def create3dPeriodicShear(maxLim, minDist, trials, powerTes ):
         volumes = voronoi.voronoi_3d(vor, maxLim)
     else:
         vor, volumes = utilitiesNumeric.runPowerPlain(node_coords, radii, 3, maxLim)
-
     print('done.')
 
     ########################################################################
@@ -4155,7 +4159,7 @@ def create3dTubeInnerPressure( radius, height, thickness, minDist, trials, maxLi
 
 #
 ######## METHOD FOR CREATING OF A 2D SUPPORTED CANTILEVER MODEL
-def assemble2DCantileverBending (maxLim, minDist, trials, nodefile=None):
+def assemble2DCantileverBending (maxLim, minDist, trials, powerTes, nodefile=None):
     dim = 2
     #lists for the model
     node_coords = []
@@ -4173,7 +4177,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials, nodefile=None):
     nodeA = np.array([indent, indent])
     nodeB = np.array([indent, maxLim[1]-indent])
 
-    oldLen = len(node_coords)
+    oldLen = len(node_coords)    
     pointGenerators.generateNodesLine2dRand(nodeA, nodeB, minDist, dim, node_coords,  trials, True, False)
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
@@ -4197,6 +4201,8 @@ def assemble2DCantileverBending (maxLim, minDist, trials, nodefile=None):
     nrOfPoints =  (len(node_coords)) - oldLen
     #print (nrOfPoints)
 
+    
+    radii = np.zeros(len(node_coords))
     #adding mech boundary conditions
     for n in range ( nrOfPoints ):
         mBC = utilitiesMech.mechanicalBC(dim, oldLen + n, lineBC)
@@ -4204,16 +4210,26 @@ def assemble2DCantileverBending (maxLim, minDist, trials, nodefile=None):
         #print('adding')
 
     if nodefile:
-        node_coords_file = np.loadtxt(nodefile) 
+        node_coords_file = np.loadtxt(nodefile)         
         node_coords = np.array(node_coords)
-        node_coords = np.vstack((node_coords,node_coords_file))
+        node_coords = np.vstack((node_coords,node_coords_file[:,:2]))
+        if powerTes:           
+            radii = np.concatenate((radii,node_coords_file[:,2]), axis=0)
+        else: radii = np.zeros(len(node_coords))
     else:
 
         ##########################################generating of points, homogeneous volume
         rectBC = np.array([-1,-1,-1,-1,-1,-1])
         #rect
         oldLen = len(node_coords)
-        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+        if powerTes:
+            node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, 2, trials, np.array(node_coords), np.array(radii), allow_domain_overlap = False, periodic_distance=False)
+        else:
+            pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+            radii = np.zeros(len(node_coords))
+
+
+
         #
         newLen = len(node_coords)-1
 
@@ -4222,7 +4238,7 @@ def assemble2DCantileverBending (maxLim, minDist, trials, nodefile=None):
    # mechBC_merged.append(mBC)
     ####################################################################################################
 
-    return node_coords,  mechBC_merged, mechIC_merged
+    return node_coords, radii, mechBC_merged, mechIC_merged
 
 
 

@@ -157,7 +157,7 @@ public:
 class TensCosseratMechMaterial : public TensMechMaterial
 {
 protected:
-    double lc, muc;
+    double lc, muc, psize;
 
 public:
     TensCosseratMechMaterial(unsigned dimension);
@@ -166,6 +166,7 @@ public:
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveCharacteristicLength() const { return lc; }
     double giveCosseratShearParam() const { return muc; }
+    double giveParticleSize() const { return psize; }
     virtual void init(MaterialContainer *matcont) { TensMechMaterial :: init(matcont); }
 };
 

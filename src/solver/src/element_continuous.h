@@ -150,7 +150,7 @@ public:
 class CosseratBrick : public MechanicalBrick
 {
 protected:
-
+    virtual void computeMassMatrix();
 public:
     CosseratBrick();
     virtual ~CosseratBrick() {};
