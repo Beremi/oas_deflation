@@ -12,6 +12,7 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     conj_grad_precision = 1e-14;
     conj_grad_relative_maxit = 0.85;
     isTimeReal = false;
+    stiffMatType = "elastic";
 }
 
 //////////////////////////////////////////////////////////
@@ -34,7 +35,7 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
     }
     elems->prepareStiffnessMatrix(K);
 
-    updateSystemMatrices("elastic", 0, 1);
+    updateSystemMatrices(stiffMatType, 0, 1);
 }
 
 
@@ -241,6 +242,7 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
 
     it = 0;
     restarts = 0;
+    stiffMatType = "secant";
 }
 
 //////////////////////////////////////////////////////////
@@ -358,6 +360,11 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                     idc = new IndirectDC();
                 }
                 idc->readFromStream(helpuint, inputfile);
+            } else if ( param.compare("stiff_matrix_type") == 0 ) {
+                iss >> stiffMatType;
+                if (stiffMatType.compare("elastic") != 0 && stiffMatType.compare("secant")!=0  && stiffMatType.compare("tangent")!=0){
+                    cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', or 'tangent', entered value is " << stiffMatType << endl;
+                }
             }
         }
         inputfile.close();
@@ -486,7 +493,7 @@ void SteadyStateNonLinearSolver :: reset() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( updateSystemMatrices("secant", it, false) ) {
+            if ( updateSystemMatrices(stiffMatType, it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
@@ -589,7 +596,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( updateSystemMatrices("secant", it, false) ) {
+            if ( updateSystemMatrices(stiffMatType, it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
@@ -860,6 +867,7 @@ TransientLinearTransportSolver :: TransientLinearTransportSolver() {
     setDefaultIntegrationParams();
     check_time_integr_params = true;
     dampingMatrixUpdate = -1;
+    stiffMatType = "elastic";
 }
 
 //////////////////////////////////////////////////////////
@@ -1085,6 +1093,7 @@ bool TransientLinearTransportSolver :: updateSystemMatrices(string matrixType, u
 // TRANSIENT NON-LINEAR TRANSPORT SOLVER
 TransientNonLinearTransportSolver :: TransientNonLinearTransportSolver() {
     name = "TransientNonLinearTransportSolver";
+    stiffMatType = "secant";
 }
 
 //////////////////////////////////////////////////////////
@@ -1120,6 +1129,7 @@ TransientLinearMechanicalSolver :: TransientLinearMechanicalSolver() {
     setDefaultIntegrationParams(); //this always call method from TransientLinearMechanicalSolver
     lumpMassM = false;
     massMatrixUpdate = -1;
+    stiffMatType = "elastic";
 }
 
 //////////////////////////////////////////////////////////
@@ -1372,6 +1382,7 @@ void TransientLinearMechanicalSolver :: computeTotalKineticEnergy() {
 // TRANSIENT NON LINEAR MECHANICAL SOLVER
 TransientNonLinearMechanicalSolver :: TransientNonLinearMechanicalSolver() {
     name = "TransientNonLinearMechanicalSolver";
+    stiffMatType = "secant";
 }
 
 //////////////////////////////////////////////////////////
