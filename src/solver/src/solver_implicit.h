@@ -14,9 +14,9 @@ protected:
     std :: string symsolver_type = "EigenConj";
 
     int stiffnessMatrixUpdate; //update matrices every X iteration
-    std::string stiffMatType;
+    std::string stiffMatType, stiffMatTypeFirstIT;
 
-    virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration, bool enforce);
+    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, -1); };
@@ -92,7 +92,7 @@ protected:
     virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
-    virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration, bool enforce);
+    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
@@ -134,7 +134,7 @@ protected:
     virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
-    virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration, bool enforce);
+    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);

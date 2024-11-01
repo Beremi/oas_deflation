@@ -13,6 +13,7 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     conj_grad_relative_maxit = 0.85;
     isTimeReal = false;
     stiffMatType = "elastic";
+    stiffMatTypeFirstIT = "void";
 }
 
 //////////////////////////////////////////////////////////
@@ -35,7 +36,7 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
     }
     elems->prepareStiffnessMatrix(K);
 
-    updateSystemMatrices(stiffMatType, 0, 1);
+    updateSystemMatrices(0, 1);
 }
 
 
@@ -170,9 +171,10 @@ void SteadyStateLinearSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-bool SteadyStateLinearSolver :: updateSystemMatrices(string matrixType, unsigned iteration, bool enforce) {
+bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
     if ( enforce || stiffnessMatrixUpdate == 0 || ( stiffnessMatrixUpdate > 0 && iteration % abs(stiffnessMatrixUpdate) == 0 ) ) {
-        elems->updateStiffnessMatrix(K, matrixType);
+        if (iteration==0 && stiffMatTypeFirstIT.compare("void")!=0) elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
+        else elems->updateStiffnessMatrix(K, stiffMatType);
         return true;
     } else {
         return false;
@@ -362,8 +364,15 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 idc->readFromStream(helpuint, inputfile);
             } else if ( param.compare("stiff_matrix_type") == 0 ) {
                 iss >> stiffMatType;
-                if (stiffMatType.compare("elastic") != 0 && stiffMatType.compare("secant")!=0  && stiffMatType.compare("tangent")!=0){
-                    cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', or 'tangent', entered value is " << stiffMatType << endl;
+                if (stiffMatType.compare("elastic") != 0 && stiffMatType.compare("secant")!=0  && stiffMatType.compare("tangent")!=0  && stiffMatType.compare("consistent")!=0){
+                    cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatType << endl;
+                    exit(1);
+                }            
+            } else if ( param.compare("first_iteration_stiff_matrix_type") == 0 ) {
+                iss >> stiffMatTypeFirstIT;
+                if (stiffMatTypeFirstIT.compare("elastic") != 0 && stiffMatType.compare("secant")!=0  && stiffMatType.compare("tangent")!=0  && stiffMatType.compare("consistent")!=0){
+                    cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatTypeFirstIT << endl;
+                    exit(1);
                 }
             }
         }
@@ -493,7 +502,7 @@ void SteadyStateNonLinearSolver :: reset() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( updateSystemMatrices(stiffMatType, it, false) ) {
+            if ( updateSystemMatrices(it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
@@ -596,7 +605,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( updateSystemMatrices(stiffMatType, it, false) ) {
+            if ( updateSystemMatrices(it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
@@ -1078,8 +1087,8 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 };
 
 //////////////////////////////////////////////////////////
-bool TransientLinearTransportSolver :: updateSystemMatrices(string matrixType, unsigned iteration, bool enforce) {
-    bool updated0 = SteadyStateNonLinearSolver :: updateSystemMatrices(matrixType, iteration, enforce);
+bool TransientLinearTransportSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
+    bool updated0 = SteadyStateNonLinearSolver :: updateSystemMatrices(iteration, enforce);
     bool updated1 = false;
     if ( enforce || dampingMatrixUpdate == 0 || ( dampingMatrixUpdate > 0 && iteration % abs(dampingMatrixUpdate) == 0 ) ) {
         elems->updateDampingMatrix(C);
@@ -1357,8 +1366,8 @@ void TransientLinearMechanicalSolver :: runAfterEachStep() {
 
 
 //////////////////////////////////////////////////////////
-bool TransientLinearMechanicalSolver :: updateSystemMatrices(string matrixType, unsigned iteration, bool enforce) {
-    bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(matrixType, iteration, enforce);
+bool TransientLinearMechanicalSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
+    bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(iteration, enforce);
     bool updated1 = false;
     if ( enforce || massMatrixUpdate == 0 || ( massMatrixUpdate > 0 && iteration % abs(massMatrixUpdate) == 0 ) ) {
         elems->updateMassMatrix(M, lumpMassM);
