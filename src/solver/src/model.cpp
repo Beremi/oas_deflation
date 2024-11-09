@@ -169,7 +169,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 iss >> iint;
                 for ( int i = 0; i < iint; i++ ) {
                     iss >> istr;
-                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, ndim );
+                    exporters.readFromFile( ( baseDir / istr ).string(), & nodes, & elems, & constr, & bconds, ndim );
                 }
             } else if ( istr.compare("PBlockFiles") == 0 ) {
                 iss >> iint;

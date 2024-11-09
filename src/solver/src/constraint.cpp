@@ -289,6 +289,7 @@ void ConstraintContainer :: clear() {
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
     //initiate volumetric averages
+    giveFullMatrixX(nodecont, bccont, solver);
 
     unsigned numFreeDoFs = nodecont->giveTotalNumDoFs() - bccont->giveNumBlockedDoFs();
 
@@ -363,7 +364,103 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     //     cn->print();
     // }
 }
+void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
+    //initiate volumetric averages
+    unsigned numFreeDoFs = nodecont->giveTotalNumDoFs();
 
+    nodes = nodecont;
+    bconds = bccont;
+
+    for ( auto const &jD : constraints ) {
+        jD->init(solver);
+    }
+    VolumetricAverage *va;
+    for ( int k = constraints.size() - 1; k >= 0; k-- ) {
+        va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
+        if ( va ) {
+            constraints.push_back(va);
+            constraints.erase(constraints.begin() + k);
+        }
+    }
+
+    std :: vector< Ttripletd >tripletList;
+    // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
+    // // map<pair<size_t, size_t>, double> indeces21;
+    // map<pair<size_t, size_t>, double> indeces22;
+    if ( !this->isActive() ) {
+        return;
+    }
+
+    ///////////////////////////////////////////////////
+    // fill the matrix with corresponding multipliers for slaveDoFs
+    unsigned i; // row index =  slave DoF
+    unsigned j, numM; // column index = master DoF
+
+    std :: vector< unsigned > NonSlaveIDs;
+    for (int i = 0; i < numFreeDoFs; ++i) {
+        NonSlaveIDs.push_back(i);
+    }
+    std :: vector< unsigned > masterIDs;
+    
+    for ( auto const &jD : constraints ) {
+        // jD->print();
+        i = jD->giveSlaveDoF();
+        NonSlaveIDs.erase(std::remove(NonSlaveIDs.begin(), NonSlaveIDs.end(), i), NonSlaveIDs.end());
+    }
+
+    for ( auto const &jD : constraints ) {
+        // jD->print();
+        i = jD->giveSlaveDoF();
+        // i = jD->giveSlaveDoF() +  ; // + 1 because it is numbered from 0 and numFreeDoFs is total count
+
+        //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", numFreeDoFs = " << numFreeDoFs << '\n';
+        // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
+        // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
+        // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
+
+        // if ( i < numFreeDoFs - constraints.size() ) {
+        //     std :: cerr << "CONSTRAINT error: should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << std :: endl;
+        //     std :: cout << i << " " << jD->giveSlaveDoF() << " " <<  numFreeDoFs << " " << numFreeDoFs - constraints.size() << std :: endl;
+        //     exit(1);
+        // } else if ( i >= numFreeDoFs ) {
+        //     // Point A = jD->giveSlaveNode()->givePoint();
+        //     // std::cout << "node name = " << jD->giveSlaveNode()->giveName() << '\n';
+        //     // std::cout << "Point(" << A.getX() << ", " << A.getY() << ", " << A.getZ() << ")" << '\n';
+        //     std :: cerr << "constraint applied simultaneously with boundary conditions" << '\n';
+        //     exit(1);
+        // }
+
+        
+
+        numM = jD->giveNumOfDoFMasters();
+        for ( unsigned ind = 0; ind < numM; ind++ ) {
+            j = jD->giveMasterDoF(ind);
+            masterIDs.push_back(j);
+
+            // if ( j < numFreeDoFs - constraints.size() ) {
+                // master DoF is free
+                int n = std::distance(NonSlaveIDs.begin(), std::find(NonSlaveIDs.begin(), NonSlaveIDs.end(), j));
+                tripletList.push_back(Ttripletd(i, n, jD->giveMasterMultiplier(ind) ) );
+            // }
+        }
+    }
+
+    // here fill in value 1 for all other DoFs
+    ///////////////////////////////////////////////////
+    for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
+        // fill the matrix with 1 for each unrestrained DoF (diagonal)
+        tripletList.push_back(Ttripletd(NonSlaveIDs[i], i, 1) );
+    }
+    
+    X_full.resize(numFreeDoFs, numFreeDoFs - constraints.size() );
+    X_full.setFromTriplets(tripletList.begin(), tripletList.end() );
+    X_full.makeCompressed();
+}
+CoordinateIndexedSparseMatrix ConstraintContainer :: giveFullMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
+    initFull(nodecont, bccont, solver);
+    cout << "Full Xmatrix\n" <<  X_full << endl;
+    return X_full;
+}
 
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now) {

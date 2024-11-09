@@ -403,12 +403,20 @@ void ElementContainer :: resetMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped) const {
+void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool full) const {
     std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
 
-    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    unsigned nfreeDoFs;
+    if (full) {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    }
+    // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
+
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
@@ -456,13 +464,22 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M, boo
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped) const {
+void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped, bool full) const {
     if ( K.rows() == 0 ) {
         return;
     }
     K = K * 0; //set everything to zero
 
-    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    unsigned nfreeDoFs;
+    if (full) {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    }
+    // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    cout << "nfreeDoFs " <<  nfreeDoFs << endl;
+
+
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     Vector elDoFValues;
@@ -483,9 +500,20 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
         }
         elDoFs = ( * e )->giveDoFs();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-            DoFi = nodes->giveDoFid(elDoFs [ i ]);
+             if (full) {
+                DoFi = elDoFs [ i ];
+            } else {
+                 DoFi = nodes->giveDoFid(elDoFs [ i ]);
+            }
+            // DoFi = nodes->giveDoFid(elDoFs [ i ]);
+
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
-                DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                  if (full) {
+                    DoFj = elDoFs [ j ];
+                } else {
+                    DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                }
+                // DoFj = nodes->giveDoFid(elDoFs [ j ]);
 
                 //diagonal
                 if ( DoFi == DoFj ) {
@@ -502,7 +530,6 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             }
         }
     }
-
     /*
      * for(size_t i=0; i<K.RowCount; i++){
      *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
@@ -537,6 +564,9 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const {
     updateStructuralMatrix(K, 0, param, 0);
+    cout << "Free matrix\n" <<  K << endl;
+    CoordinateIndexedSparseMatrix K_full = prepareFullStiffnessMatrix();
+    updateFullStiffnessMatrix(K_full, param);
 }
 
 //////////////////////////////////////////////////////////
@@ -547,6 +577,20 @@ void ElementContainer :: updateDampingMatrix(CoordinateIndexedSparseMatrix &C) c
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const {
     updateStructuralMatrix(M, 2, "", lumped);
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ElementContainer :: prepareFullStiffnessMatrix() const {
+    CoordinateIndexedSparseMatrix K_full;
+    prepareStructuralMatrix(K_full, 0, 0, true);
+    return K_full;
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ElementContainer :: updateFullStiffnessMatrix(CoordinateIndexedSparseMatrix K_full, string param) const {
+    updateStructuralMatrix(K_full, 0, param, 0, true);
+    cout << "Full matrix\n" <<  K_full << endl;
+    return K_full;
 }
 
 //////////////////////////////////////////////////////////

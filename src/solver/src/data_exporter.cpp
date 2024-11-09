@@ -424,6 +424,43 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, fs :: path resultD
     }
 }
 
+void MatrixExporter :: readFromLine(istringstream &iss) {
+    iss >> filename;
+    DataExporter :: readFromLine(iss);
+}
+
+//////////////////////////////////////////////////////////
+void MatrixExporter :: init() {
+    DataExporter :: init();
+}
+
+//////////////////////////////////////////////////////////
+void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
+    char buffer[ 100 ];
+    CoordinateIndexedSparseMatrix X_full = constraints->giveFullMatrixX(nodes, bccont, solver);
+    CoordinateIndexedSparseMatrix K_full = elems->prepareFullStiffnessMatrix();
+    K_full = elems->updateFullStiffnessMatrix(K_full, "consistent");
+    CoordinateIndexedSparseMatrix K_eff = X_full.transpose() * K_full * X_full;
+
+
+    giveFileName(step, buffer);
+    ofstream outputfile( ( resultDir / buffer ).string() );
+
+    // unsigned p;
+    if ( outputfile.is_open() ) {
+        
+        
+
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+       
+        outputfile <<  K_eff;
+
+        outputfile.close();
+    }
+}
+
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GAUGE EXPORTERS
@@ -903,7 +940,7 @@ ExporterContainer :: ~ExporterContainer() {
  * - %VTKRBExporter - for other parameters see VTKRB2DExporter::readFromLine
  * - %VTKRCExporter - for other parameters see VTKRCExporter::readFromLine
  */
-void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
+void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, ConstraintContainer *c, BCContainer *b, unsigned dimension) {
     cout << "Input file '" <<  filename;
     size_t origsize = exporters.size();
     string line, exptype;
@@ -983,6 +1020,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     }
                 } else if ( exptype.compare("ElementStatsExporter") == 0 ) {
                     ElementStatsExporter *newexp = new ElementStatsExporter(e, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
+                } else if ( exptype.compare("StiffnessMatrixExporter") == 0 ) {
+                    MatrixExporter *newexp = new MatrixExporter(e, n, b, c, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else {
