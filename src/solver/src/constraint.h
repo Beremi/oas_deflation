@@ -94,6 +94,7 @@ private:
     std :: vector< JointDoF * >constraints;
     CoordinateIndexedSparseMatrix X;  // for connection due to geometry
     CoordinateIndexedSparseMatrix X_full;  // for export
+    std :: vector <unsigned int> fullMasterIDs;  // for export
     bool time_dependent = false;
 
 public:
@@ -103,7 +104,8 @@ public:
     // void calculateSlaveDoFfield(NodeContainer *nodes);
     void init(NodeContainer *nodes, BCContainer *bconds, Solver *solver); // here matrix X will be created
     void initFull(NodeContainer *nodes, BCContainer *bconds, Solver *solver); // here matrix X will be created
-    CoordinateIndexedSparseMatrix giveFullMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver);
+    CoordinateIndexedSparseMatrix giveMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver, bool BC_applied = true);
+    std :: vector <unsigned int> giveFullMasterIDs();
     void clear();
     void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now = 0);
     void calculateDependentDoFs(Vector &fullDoFs, const double time_now = 0.0, const bool all = false) const;

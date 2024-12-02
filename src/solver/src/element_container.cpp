@@ -403,16 +403,16 @@ void ElementContainer :: resetMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool full) const {
+void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied) const {
     std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
 
     unsigned nfreeDoFs;
-    if (full) {
-        nfreeDoFs = nodes->giveTotalNumDoFs();
-    } else {
+    if (BC_applied) {
         nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
     }
     // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
     // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
@@ -464,20 +464,20 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M, boo
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped, bool full) const {
+void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped, bool BC_applied) const {
     if ( K.rows() == 0 ) {
         return;
     }
     K = K * 0; //set everything to zero
 
     unsigned nfreeDoFs;
-    if (full) {
-        nfreeDoFs = nodes->giveTotalNumDoFs();
-    } else {
+    if (BC_applied) {
         nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
     }
     // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
-    cout << "nfreeDoFs " <<  nfreeDoFs << endl;
+    // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
 
 
     unsigned DoFi, DoFj;
@@ -500,18 +500,18 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
         }
         elDoFs = ( * e )->giveDoFs();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-             if (full) {
-                DoFi = elDoFs [ i ];
+             if (BC_applied) {
+                DoFi = nodes->giveDoFid(elDoFs [ i ]);
             } else {
-                 DoFi = nodes->giveDoFid(elDoFs [ i ]);
+                DoFi = elDoFs [ i ];
             }
             // DoFi = nodes->giveDoFid(elDoFs [ i ]);
 
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
-                  if (full) {
-                    DoFj = elDoFs [ j ];
-                } else {
+                  if (BC_applied) {
                     DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                } else {
+                    DoFj = elDoFs [ j ];
                 }
                 // DoFj = nodes->giveDoFid(elDoFs [ j ]);
 
@@ -564,9 +564,6 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const {
     updateStructuralMatrix(K, 0, param, 0);
-    cout << "Free matrix\n" <<  K << endl;
-    CoordinateIndexedSparseMatrix K_full = prepareFullStiffnessMatrix();
-    updateFullStiffnessMatrix(K_full, param);
 }
 
 //////////////////////////////////////////////////////////
@@ -580,17 +577,16 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool
 }
 
 //////////////////////////////////////////////////////////
-CoordinateIndexedSparseMatrix ElementContainer :: prepareFullStiffnessMatrix() const {
-    CoordinateIndexedSparseMatrix K_full;
-    prepareStructuralMatrix(K_full, 0, 0, true);
-    return K_full;
+CoordinateIndexedSparseMatrix ElementContainer :: prepareOutputStiffnessMatrix(bool BC_applied) const {
+    CoordinateIndexedSparseMatrix K_out;
+    prepareStructuralMatrix(K_out, 0, 0, BC_applied);  // K matrix with BC applied with solver numbering or K matrix withou BC_applied with DoF numbering
+    return K_out;
 }
 
 //////////////////////////////////////////////////////////
-CoordinateIndexedSparseMatrix ElementContainer :: updateFullStiffnessMatrix(CoordinateIndexedSparseMatrix K_full, string param) const {
-    updateStructuralMatrix(K_full, 0, param, 0, true);
-    cout << "Full matrix\n" <<  K_full << endl;
-    return K_full;
+CoordinateIndexedSparseMatrix ElementContainer :: updateOutputStiffnessMatrix(CoordinateIndexedSparseMatrix K_out, string param, bool BC_applied) const {
+    updateStructuralMatrix(K_out, 0, param, 0, BC_applied);
+    return K_out;
 }
 
 //////////////////////////////////////////////////////////

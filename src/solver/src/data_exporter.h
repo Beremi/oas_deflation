@@ -118,8 +118,14 @@ private:
     NodeContainer *nodes;
     BCContainer *bccont;
     ConstraintContainer *constraints;
+    CoordinateIndexedSparseMatrix K_init;
+    CoordinateIndexedSparseMatrix X;
+    std :: string matrix_type;
+    std :: string Stiff_matrix_type;
+    std :: vector< unsigned int > masters;
+    std :: vector< unsigned int > fullMasterIDs;
 public:
-    MatrixExporter(ElementContainer *e, NodeContainer *n, BCContainer *bc, ConstraintContainer *cc, unsigned dimension) : DataExporter(dimension) {elems = e; nodes = n; bccont = bc;  constraints = cc; name = "StiffnessMatrixExporter"; };
+    MatrixExporter(ElementContainer *e, NodeContainer *n, BCContainer *bc, ConstraintContainer *cc, unsigned dimension) : DataExporter(dimension) {elems = e; nodes = n; bccont = bc;  constraints = cc; name = "MatrixExporter"; };
     ~MatrixExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);

@@ -1,0 +1,208 @@
+[33m9b88bc6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mLocalBranch[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m Continuum and Consistent Tangent Elastoplastic stiffness matrix
+[33mde14ee1[m allowed consistent stiffness matrix code + allowed to set different type of stiffness matrix for the first iteration
+[33mf03d611[m user definition of stiffness matrix type
+[33mb744ebf[m minor changes in preprocessor
+[33m300ba5c[m uncrustify
+[33m2fd41ef[m export of inertia forces
+[33mfe7cec4[m fix in exportin IP location and projecting  LDPM for FE2 homogenization
+[33m330d484[m another fix of volumetric strain in RVE
+[33m1594801[m another fix of volumetric strain in RVE
+[33m4a36354[m volumetric strain of simplices for RVE corrected
+[33m011120c[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m77cee43[m adding nodefile to preprocessor
+[33m040d1e7[m LD_viewer using tree view
+[33m2f6d898[m added elastic discrete model based n volumetric-deviatoric split
+[33m162e5e4[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33mbe00dd4[m model generator update
+[33m56f9425[m LD_viwer readme updated
+[33m48a6b29[m updated dogbone 2d generators to generate particles inside specimen shape; speedup power tesselation
+[33mafb53fd[m LD_viewer added logging
+[33m9564da5[m lumped mass M update
+[33mdb057b3[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m38cc693[m allowing rotational stiffness in 3D
+[33m8e19b92[m Merge branch 'master' of https://gitlab.com/kelidas/OAS
+[33md88b0bd[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m1741b69[m minor changes
+[33m95c304a[m Corrected data type for LumpedMassMatrix in MLelement
+[33ma7b6fea[m Update to libtorch initialization in MLelement
+[33m45f2d6b[m LD_viewer autoreloading
+[33m2ef4964[m total crack opening correction
+[33m1fa8c5f[m crack opening export in LDPM material
+[33mdf9cfda[m update of handling lumped mass matrix
+[33m43a5827[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m35235f4[m optional lumped mass M in implicit solver, update of coupled LDPM
+[33m0954ae6[m Merge branch 'master' of https://gitlab.com/kelidas/OAS
+[33maf0797d[m MLelement corrections (internal forces frozen, back to basic division-by-constant normalization, input size reduction, ...)
+[33m4106147[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m6544eb5[m added three-point integration over triangle in rigid-body contact
+[33m1e9e500[m ML Superelement Pytorch implementation
+[33mdc3af20[m added pertrubation of the system to study stability
+[33m7c3116d[m update of WBZ method parameters
+[33m2b2081f[m WBZ method check
+[33mcd1ffb9[m spectral radii for dynamics
+[33mb5aee19[m location of IP export fixed, LDPM shape F changed
+[33mbcc0969[m minor revisions in solver and transport element
+[33maf77507[m uncrustify
+[33m733d3cc[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33ma6ba93d[m RVE projectors corrections
+[33m4c2cbbd[m minor fix in ML_TORCH
+[33m7c8a13f[m added Torch for superelem
+[33m4a67923[m Von Mises material Radial return implementation
+[33m2307a03[m update in MLMechElement
+[33me36a882[m first commit of superelement for machine learning based mechanics
+[33m22ffd77[m[33m ([m[1;32mOldVersion[m[33m)[m Cosserat RVE corrected, added computation of global energies to all solver types
+[33mb177ae1[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m57f72d2[m B-bar integration method
+[33m0680a9e[m LDviewer minor fix
+[33m5d55f52[m added missing file
+[33m7157733[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33ma07e770[m major update of RVE material
+[33m3dc7208[m updated docs - dependencies; dockerfile for Ubuntu 24.04
+[33m13e18cb[m version files updated
+[33m0c2f840[m updated version files
+[33mce81279[m updated findPackage for lapacke and Python
+[33m39e978c[m CLS with tensorial stress update - the tensorial stress is computed only once
+[33me038930[m von Mises plasticity, minor update
+[33m040c9d8[m basic files for von Mises plasticity, without the actual material model
+[33mf0598ad[m skip  solver when there is zero DoFs
+[33md804041[m corrections in RigidPlate, works now also for outside regions only
+[33mfb51106[m change of some CSL materia functions to const
+[33me98038e[m added additional alpha for inelastic behavior in CSL material with tensorial stress update
+[33m463f084[m LDPM and CSL material model update
+[33md1c0114[m minor changes
+[33m7d95eac[m linear solver correction
+[33m9770f64[m correction to mass matrix of LDPM tetra element
+[33m30be490[m minmum damage in CSLMaterialWithTensorialStressUpdate, correction to condition to export extrpolated values
+[33m10a9385[m correction of LDPM element mass matrix and fix of data exporter initializetion
+[33mcbcfd36[m update of parameter check in generalized-alpha method
+[33mcf2d9bc[m uncrustify
+[33mc1e2db9[m corrected export of kinetic energy
+[33m962f5b8[m relaxing check for generalized-alpha method parameters
+[33m6f178ee[m delete forgotten export of kinetic energy
+[33m3c1c1e0[m added Newmark and HTT solvers
+[33ma438ea9[m storing mass and damping matrix - major speed up factor for transient simulations
+[33me8e12d2[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m0288057[m implict solver minor update
+[33m5adbbc4[m using unique pointer in factorizeLinearSystem
+[33md797af9[m internal and external energy update
+[33m60ba8c1[m fix of internal and external energy evaluation
+[33m4c18853[m uncrustify
+[33m4fad032[m major update of implicit solver - factorization done separately from solving linear system
+[33m2727133[m Coupled transport material production of internal source corrected
+[33m98a6ef4[m correction to CSL material with tensorial stress update
+[33md293715[m LDPM material corrected
+[33mb6b6859[m prepocessor TPBT changes
+[33m83e0b6a[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33ma415b46[m LDPM material fixes
+[33mae8e98f[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33mec81c3a[m 3D TPB gradientZoneWidth
+[33m4c41e87[m LDPM element NaN check
+[33m1ba5675[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33mb9280d6[m do not print preprocessor 3PBT
+[33ma0f8602[m Prepro TPB update
+[33m791eedc[m Prepro TPB update
+[33maca4eb9[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33m70fb1ce[m Prepro TPB update
+[33m20cb2fc[m added benchmark for TET elements
+[33mfd7a684[m tetrahedral element fixed
+[33mcafa122[m traingular constant strain and tetrahedral constant strain elements added (tetra not fully fuctional yet)
+[33m7f59eb8[m data nodal exporter allowed to export extrapolated values
+[33m8fb13c1[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m9749ef8[m new discrete material dependent on tensorial stress according to Bolander's papers
+[33m3113d74[m added mplcursors
+[33m62ccf31[m LD_viewver - added limits, show legend
+[33m57f1b2c[m added publications
+[33m538654b[m uncrustify
+[33m404572b[m LDPM shear updated, added publications to doxygen
+[33m1a64832[m ability to  prescribe initial eigen-strain, unfortunately ADAPTIVITY is not supported any more
+[33m90c90e0[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33md76aa18[m LDPM const. model update
+[33mf8fa1a2[m added notes about installation on MacOS; updated tests - materials renamed
+[33m13711bf[m correction in strain size for vectorial material with rotational stiffness
+[33mcdaa517[m RVE material, enforce_linearity overwrites do_not_precompute
+[33m71a7102[m corrections to CSL mass matrix in 3D
+[33m3c91d37[m correction of error in area calculation for RBC
+[33mf5f2159[m minor changes to transport element
+[33mf011108[m set numIP for transport element
+[33mddf3fae[m key word ignore_negative_area for discrete elements
+[33md20d0bb[m IP location export & uncrustify
+[33m212d0e5[m export of stress and couple stress for Cosserat
+[33m5c76343[m export of IP weight
+[33mf72b00a[m fiber behavior updates + TensMechMaterial - correction in header
+[33m4d822ea[m explicit solver finalized
+[33m7051da2[m adding licence GPLv3
+[33m9ab255a[m mass matrix for continuous elements + possibility to add user defined centroid for RBC elements
+[33m094c0d0[m partially working explicit solver
+[33m2f5e9bf[m correction to the bending stiffness in RBC
+[33m9b57062[m initial work on explicit solver
+[33m88b7286[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33mb9b8d99[m corrections to negative areas incorrectly generated by preprocessor
+[33m443639e[m fiber material updates
+[33m9320141[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m8c791d3[m RigidBodyContact in 3D: automatic check of orientation
+[33ma9fea7f[m Balistic plate
+[33m79e3629[m Balistic plate
+[33md04fc25[m uncrustify
+[33m9af44f2[m added rotational stiffness to RigidBodyContact
+[33md69126d[m LDPM const. model update - compression calculates derivative of boundary and lienarize the boundary from the point where slope equals Ed
+[33m9172ac0[m direct input of jointDoFs fixed
+[33m16e6803[m CFRAC Clover update
+[33md8b95c9[m merging
+[33m6eab7db[m zero areas in 2D RBC fixed
+[33m70d4ba2[m Sparse 2d clover
+[33m683f298[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33me1cd566[m Sparse 2d clover
+[33m17980e4[m RVE material, more IP for RBC
+[33m287f76e[m correction to integration of RBC
+[33m3d85631[m multiple integration points for rigid-body contact
+[33ma8103da[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33m1982c0b[m 2d hanging zone
+[33m0c2f488[m fix reading files with windows end of line; minor fixes
+[33m67ab4ba[m removal of keybord input from preprocessor
+[33mbea9d49[m corections of rigid arm constraint in 2D, there was previously oposite sign in displacements due to rotations
+[33m5660bfa[m merging
+[33m34c02bd[m update for RVE volume calculation
+[33m62b17a6[m Circ RVE preprocessor + MechanicalSphericalPeriodicBC and MechanicalSphericalPeriodicBCExperimental
+[33m388bc17[m modifications of SphericalRVE
+[33m169c421[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33m3b3bd15[m SphericalPeriodicBC reversed
+[33mfffd0dd[m LDPMMaterial has elastic stiffness
+[33m97a61f0[m LDPM element fixed, VTKRC exporter adapted for LDPM
+[33md1e5f85[m circRVE generation
+[33m687d575[m spherical RVE
+[33m196a2d2[m correction to T1 direction in LDPM tetra
+[33mc2b01dc[m another fix of residuals export
+[33ma838423[m residuals export fix
+[33m3b2d018[m export of residuals
+[33m9a450ae[m correction to RBC with zero area
+[33m6ab9d8f[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33m05fde54[m HangingFracZone
+[33m361da85[m preprocesot TDCB
+[33m4a1989c[m implementation of hanging nodes
+[33mb8751bd[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m8560dfc[m new iterative algorithm to find omega0 in CSL material
+[33mdbefa88[m KD TREE remerge
+[33m9e5cff8[m TDCB FEM
+[33m01d0cc9[m TDCB FEM
+[33m7eabefb[m TDCB FEM
+[33md1082fc[m MK: Dogbones - weak boundary update
+[33md3b5d81[m MK Dogbones - weak boundary
+[33mdba016d[m MK: Dogbones - power tessalation, KD tree for block nodes generator
+[33mda3d47e[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33m2852a33[m switch off plotting in preprocessor
+[33mfe7861a[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33m3c8d6c8[m 3d Clover
+[33me1b0570[m correction to volumetric strain in LDPM element
+[33m81413c8[m Merge branch 'master' of gitlab.com:kelidas/OAS
+[33mec456bf[m minor element upgrade
+[33m4df1e4e[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33mec62f02[m 3d tdcb
+[33mafed56d[m publications updated
+[33m95a402e[m 2d TDCB update
+[33ma0e8b6e[m 2d TDCB update
+[33m9573b50[m 2d TDCB update
+[33m1c43230[m 2d TDCB update
+[33m5c543e0[m 3d TDCB
+[33ma977b17[m Merge branch 'master' of gitlab.com:kelidas/partmod
+[33m9774548[m Clover3d
+[33mf93d746[m update of documentation - publications

@@ -426,40 +426,142 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, fs :: path resultD
 
 void MatrixExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
+    iss >> matrix_type; // Matrix: Kfull - full K matrix, Keff - effective (XT*K*X), Kcond - condensed, Xfull - full X matrix
+    iss >> Stiff_matrix_type; // Stifness matrix type
+    // cout << Stiff_matrix_type << endl;
+    // cout.flush();
+    // cout << typeid(Stiff_matrix_type).name() << endl;
+    // cout.flush();
+
+    
+    unsigned int numMasters;
+    iss >> numMasters;
+    masters.resize(numMasters);
+    for ( unsigned k = 0; k < numMasters; k++ ) {
+        iss >> masters[ k ];
+    }
     DataExporter :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
 void MatrixExporter :: init() {
+    X = constraints->giveMatrixX(nodes, bccont, solver, true);
+    K_init = elems->prepareOutputStiffnessMatrix(true);
+    fullMasterIDs = constraints->giveFullMasterIDs();
     DataExporter :: init();
 }
 
 //////////////////////////////////////////////////////////
 void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
     char buffer[ 100 ];
-    CoordinateIndexedSparseMatrix X_full = constraints->giveFullMatrixX(nodes, bccont, solver);
-    CoordinateIndexedSparseMatrix K_full = elems->prepareFullStiffnessMatrix();
-    K_full = elems->updateFullStiffnessMatrix(K_full, "consistent");
-    CoordinateIndexedSparseMatrix K_eff = X_full.transpose() * K_full * X_full;
+    CoordinateIndexedSparseMatrix Mat_out;
+    CoordinateIndexedSparseMatrix K;
 
+    K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, true);
+   
 
+    if (matrix_type == "Kfull") {
+        Mat_out = K;
+
+    } else if ( matrix_type == "Keff" ) {
+        Mat_out = X.transpose() * K * X;
+
+    } else if ( matrix_type == "Kcond" ) {
+        Mat_out = X.transpose() * K * X; // Keff with numbering consistent with fullMasterIDs  
+        unsigned eff_size = Mat_out.rows(); // number of rows of Keff
+        unsigned master_size = masters.size(); // number of master rows
+
+        // finds rows in Keff corresponding to masters (from read from line) 
+        std :: vector< unsigned int > master_rows; 
+        master_rows.resize(master_size);
+        for ( unsigned i = 0; i < master_size; i++ ) {  
+            unsigned n = std::distance(fullMasterIDs.begin(), std::find(fullMasterIDs.begin(), fullMasterIDs.end(), masters[i])); //fins index of value "j"
+            master_rows[i] = n;
+        }
+
+        // rows in Keff corresponding to slaves 
+        unsigned slave_size = eff_size - master_size; // number of slave rows
+        std :: vector< unsigned int > slave_rows;
+        for ( unsigned ind = 0; ind < eff_size; ind++ ) {
+            slave_rows.push_back(ind);
+        }
+        for ( unsigned i : master_rows ) {
+            slave_rows.erase(std::remove(slave_rows.begin(), slave_rows.end(), i), slave_rows.end());
+        }
+
+        // masters X masters  submatrix
+        Matrix K_mm;
+        K_mm.resize(master_size, master_size);
+        unsigned k = 0;
+        unsigned l = 0;
+        for (int i : master_rows) {
+            l = 0;
+            for (int j : master_rows) {
+                K_mm(k,l) = Mat_out.coeffRef(i,j);
+                l++;
+            }
+            k++;
+        }
+
+        // masters X slaves  submatrix
+        Matrix K_ms;
+        K_ms.resize(master_size, slave_size);
+        k = 0;
+        l = 0;
+        for (int i : master_rows) {
+            l = 0;
+            for (int j : slave_rows) {
+                K_ms(k,l) = Mat_out.coeffRef(i,j);
+                l++;
+            }
+            k++;
+        }
+
+        // slaves X slaves  submatrix
+        Matrix K_ss;
+        K_ss.resize(slave_size, slave_size);
+        k = 0;
+        l = 0;
+        for (int i : slave_rows) {
+            l = 0;
+            for (int j : slave_rows) {
+                K_ss(k,l) = Mat_out.coeffRef(i,j);
+                l++;
+            }
+            k++;
+        }
+
+        // condensed matrix Kcond
+        Matrix K_cond;
+        K_cond.resize(master_size, master_size);
+        K_cond = K_mm - K_ms * K_ss.inverse() * K_ms.transpose();
+
+        // export
+        Mat_out.resize(master_size, master_size);
+        for ( unsigned i = 0; i < master_size; i++ ) {
+           for ( unsigned j = 0; j < master_size; j++ ) {
+            Mat_out.coeffRef(i,j) = K_cond(i,j);
+            } 
+        }
+
+    } else if ( matrix_type == "Xfull" ) {
+        Mat_out = X;
+    }    
+   
     giveFileName(step, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
     // unsigned p;
     if ( outputfile.is_open() ) {
-        
-        
 
         outputfile << std :: scientific;
         outputfile.precision(precision);
        
-        outputfile <<  K_eff;
+        outputfile <<  Mat_out;
 
         outputfile.close();
     }
 }
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -1022,7 +1124,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     ElementStatsExporter *newexp = new ElementStatsExporter(e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
-                } else if ( exptype.compare("StiffnessMatrixExporter") == 0 ) {
+                } else if ( exptype.compare("MatrixExporter") == 0 ) {
                     MatrixExporter *newexp = new MatrixExporter(e, n, b, c, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);

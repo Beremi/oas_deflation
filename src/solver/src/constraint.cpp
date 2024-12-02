@@ -289,7 +289,6 @@ void ConstraintContainer :: clear() {
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
     //initiate volumetric averages
-    giveFullMatrixX(nodecont, bccont, solver);
 
     unsigned numFreeDoFs = nodecont->giveTotalNumDoFs() - bccont->giveNumBlockedDoFs();
 
@@ -409,38 +408,16 @@ void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccon
     }
 
     for ( auto const &jD : constraints ) {
-        // jD->print();
+      
         i = jD->giveSlaveDoF();
-        // i = jD->giveSlaveDoF() +  ; // + 1 because it is numbered from 0 and numFreeDoFs is total count
-
-        //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", numFreeDoFs = " << numFreeDoFs << '\n';
-        // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
-        // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
-        // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
-
-        // if ( i < numFreeDoFs - constraints.size() ) {
-        //     std :: cerr << "CONSTRAINT error: should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << std :: endl;
-        //     std :: cout << i << " " << jD->giveSlaveDoF() << " " <<  numFreeDoFs << " " << numFreeDoFs - constraints.size() << std :: endl;
-        //     exit(1);
-        // } else if ( i >= numFreeDoFs ) {
-        //     // Point A = jD->giveSlaveNode()->givePoint();
-        //     // std::cout << "node name = " << jD->giveSlaveNode()->giveName() << '\n';
-        //     // std::cout << "Point(" << A.getX() << ", " << A.getY() << ", " << A.getZ() << ")" << '\n';
-        //     std :: cerr << "constraint applied simultaneously with boundary conditions" << '\n';
-        //     exit(1);
-        // }
-
-        
 
         numM = jD->giveNumOfDoFMasters();
         for ( unsigned ind = 0; ind < numM; ind++ ) {
             j = jD->giveMasterDoF(ind);
             masterIDs.push_back(j);
 
-            // if ( j < numFreeDoFs - constraints.size() ) {
-                // master DoF is free
-                int n = std::distance(NonSlaveIDs.begin(), std::find(NonSlaveIDs.begin(), NonSlaveIDs.end(), j));
-                tripletList.push_back(Ttripletd(i, n, jD->giveMasterMultiplier(ind) ) );
+            int n = std::distance(NonSlaveIDs.begin(), std::find(NonSlaveIDs.begin(), NonSlaveIDs.end(), j)); //fins index of value "j"
+            tripletList.push_back(Ttripletd(i, n, jD->giveMasterMultiplier(ind) ) );
             // }
         }
     }
@@ -455,11 +432,23 @@ void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccon
     X_full.resize(numFreeDoFs, numFreeDoFs - constraints.size() );
     X_full.setFromTriplets(tripletList.begin(), tripletList.end() );
     X_full.makeCompressed();
+
+    fullMasterIDs = NonSlaveIDs;
 }
-CoordinateIndexedSparseMatrix ConstraintContainer :: giveFullMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
-    initFull(nodecont, bccont, solver);
-    cout << "Full Xmatrix\n" <<  X_full << endl;
-    return X_full;
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ConstraintContainer :: giveMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver, bool BC_applied) {
+    if (BC_applied == true) { // X matrix with BC applied, solver numbering
+        return X;
+    } else {
+        initFull(nodecont, bccont, solver);  // X matrix without BC applied, DoFs numbering
+        return X_full;
+    }
+}
+
+//////////////////////////////////////////////////////////
+std :: vector <unsigned int> ConstraintContainer :: giveFullMasterIDs() {
+    return fullMasterIDs;
 }
 
 //////////////////////////////////////////////////////////
