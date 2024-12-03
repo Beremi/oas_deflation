@@ -22,7 +22,7 @@ private:
     ;
     unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied = true) const;
-    void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType, bool lumped, bool BC_applied = true) const;
+    void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType, bool lumped, bool BC_applied = true, bool solver_numbering = true) const;
     void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
     std :: vector< std :: string >file_to_load_from;
 
@@ -42,7 +42,7 @@ public:
     void updateMaterialStatuses();
     void resetMaterialStatuses();
     CoordinateIndexedSparseMatrix prepareOutputStiffnessMatrix(bool BC_applied = true) const;
-    CoordinateIndexedSparseMatrix updateOutputStiffnessMatrix(CoordinateIndexedSparseMatrix K_out, std :: string param, bool BC_applied = true) const;
+    CoordinateIndexedSparseMatrix updateOutputStiffnessMatrix(CoordinateIndexedSparseMatrix K_out, std :: string param, bool BC_applied = true, bool solver_numbering = true) const;
     void prepareStiffnessMatrix(CoordinateIndexedSparseMatrix &K) const;
     void updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, std :: string param) const;
     void prepareDampingMatrix(CoordinateIndexedSparseMatrix &C) const;

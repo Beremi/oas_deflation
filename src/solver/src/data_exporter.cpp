@@ -424,31 +424,125 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, fs :: path resultD
     }
 }
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT X, K, K_effective, K_condensed MATRICES with or without BC rows/columns and with solver or DoFOrder numbering of rows/columns
+//////////////////////////////////////////////////////////
 void MatrixExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
-    iss >> matrix_type; // Matrix: Kfull - full K matrix, Keff - effective (XT*K*X), Kcond - condensed, Xfull - full X matrix
-    iss >> Stiff_matrix_type; // Stifness matrix type
-    // cout << Stiff_matrix_type << endl;
-    // cout.flush();
-    // cout << typeid(Stiff_matrix_type).name() << endl;
-    // cout.flush();
-
-    
     unsigned int numMasters;
-    iss >> numMasters;
-    masters.resize(numMasters);
-    for ( unsigned k = 0; k < numMasters; k++ ) {
-        iss >> masters[ k ];
+    
+    std::string token;
+    while (iss >> token) {
+        if (token == "matrix_type") {
+            iss >> matrix_type;
+        } else if (token == "Stiff_matrix_type") {
+            iss >> Stiff_matrix_type;
+        } else if (token == "BC_applied") {
+            std :: string bc_app;
+            iss >> bc_app;
+            if (bc_app == "true") {
+                BC_applied = true;
+            } else if (bc_app == "false") {
+                BC_applied = false;
+            } else {
+                cout << "Matrix Exporter: " << bc_app << "  BC_applied can only be 'true' or 'false', using 'true' \n";
+            }
+            
+        } else if (token == "numbering_type") {
+            std :: string slvr_nmbr;
+            iss >> slvr_nmbr;
+            if (slvr_nmbr == "solver"){
+                solver_numbering = true;
+            } else if (slvr_nmbr == "DoFOrder") {
+                solver_numbering = false;
+            } else {
+                cout << "Matrix Exporter: " << slvr_nmbr << " numbering type not supported using the solver type \n";
+                solver_numbering = true;
+            }
+        } else if (token == "masters") {
+            iss >> numMasters;
+            CondMasters.resize(numMasters);
+            for ( unsigned k = 0; k < numMasters; k++ ) {
+                iss >> CondMasters[ k ];
+            }
+        }
     }
+
+    if (matrix_type == "K_condensed" and numMasters == 0) {
+        cerr << "Matrix Exporter: " << "for K_condensed matrix master DoFs ('masters') must be specified \n";
+    }
+
+
     DataExporter :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
 void MatrixExporter :: init() {
-    X = constraints->giveMatrixX(nodes, bccont, solver, true);
-    K_init = elems->prepareOutputStiffnessMatrix(true);
+    X_init = constraints->giveMatrixX(nodes, bccont, solver, BC_applied);
+    K_init = elems->prepareOutputStiffnessMatrix(BC_applied);
     fullMasterIDs = constraints->giveFullMasterIDs();
+    blockedDofsIDs = bccont -> giveArrayOfBlockedDoFs(); // BC DoFs IDs in DoFOrder numbering
     DataExporter :: init();
+
+    std::vector<int> solverOrder;
+    cout << "solver order: ";
+    for (int i = 0; i < 12; ++i) {
+        solverOrder.push_back(nodes->giveDoFid(i));
+        cout << nodes->giveDoFid(i) << " ";
+    }
+}
+
+//////////////////////////////////////////////////////////  Reorders the X matrix without BC_applied from DoFOrder to solver numbering
+const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(const CoordinateIndexedSparseMatrix& matriX) const {
+
+    CoordinateIndexedSparseMatrix matrix = const_cast<CoordinateIndexedSparseMatrix &>(matriX);
+
+    int matrixsizerows = matrix.rows();
+    int matrixsizecols = matrix.cols();
+
+    std::vector<int> solverOrder;
+    for (int i = 0; i < matrixsizerows; ++i) {
+        solverOrder.push_back(nodes->giveDoFid(i));
+        cout << nodes->giveDoFid(i) << " ";
+        
+    }
+
+    std::vector<int> masterFullPositions;
+    for (const int i : fullMasterIDs) {
+        auto it1 = std::find(solverOrder.begin(), solverOrder.end(), i);
+        masterFullPositions.push_back(std::distance(solverOrder.begin(), it1));
+    }
+
+    std::vector<int> indices(masterFullPositions.size());
+    for (size_t i = 0; i < masterFullPositions.size(); ++i) {
+        indices[i] = i;
+    }
+    
+    // Sort the indices based on the values in vec1
+    std::sort(indices.begin(), indices.end(), [&masterFullPositions](int i1, int i2) {
+        return masterFullPositions[i1] < masterFullPositions[i2];
+    });
+
+    CoordinateIndexedSparseMatrix newMatrix(matrixsizerows, matrixsizecols);
+
+    std::vector<int> rowNums;
+    for (int i = 0; i < matrixsizerows; ++i) {
+        rowNums.push_back(i);
+    }
+
+    std::vector<int> colNums;
+    for (int i = 0; i < matrixsizecols; ++i) {
+        colNums.push_back(i);
+    }
+
+    for (const int i : rowNums) {
+        for (const int j : colNums) {
+            newMatrix.coeffRef(solverOrder[ i ], indices[ j ]) = matrix.coeffRef( i , j);
+        }
+    }   
+
+    return newMatrix;
 }
 
 //////////////////////////////////////////////////////////
@@ -456,26 +550,37 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
     char buffer[ 100 ];
     CoordinateIndexedSparseMatrix Mat_out;
     CoordinateIndexedSparseMatrix K;
-
-    K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, true);
+    CoordinateIndexedSparseMatrix X;
    
+    if (BC_applied) {  // matrices indentical for solver and DoFOrder numbering
+        K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied);
+        X = X_init;
+    } else {
+        if (solver_numbering == false) {
+            K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+            X = X_init;
+        } else {
+            K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+            X = MatrixXSwitchRowsCols(X_init);
+        }
+    }
 
-    if (matrix_type == "Kfull") {
+    if (matrix_type == "K_all_DoFs") {
         Mat_out = K;
 
-    } else if ( matrix_type == "Keff" ) {
-        Mat_out = X.transpose() * K * X;
+    } else if ( matrix_type == "K_effective" ) {
+        Mat_out = X.transpose() * K * X; // Keff 
 
-    } else if ( matrix_type == "Kcond" ) {
-        Mat_out = X.transpose() * K * X; // Keff with numbering consistent with fullMasterIDs  
+    } else if ( matrix_type == "K_condensed" ) {
+        Mat_out = X.transpose() * K * X; // Keff 
         unsigned eff_size = Mat_out.rows(); // number of rows of Keff
-        unsigned master_size = masters.size(); // number of master rows
+        unsigned master_size = CondMasters.size(); // number of master rows
 
-        // finds rows in Keff corresponding to masters (from read from line) 
+        // finds rows in Keff corresponding to masters (from read from line) - CondMasters
         std :: vector< unsigned int > master_rows; 
         master_rows.resize(master_size);
         for ( unsigned i = 0; i < master_size; i++ ) {  
-            unsigned n = std::distance(fullMasterIDs.begin(), std::find(fullMasterIDs.begin(), fullMasterIDs.end(), masters[i])); //fins index of value "j"
+            unsigned n = std::distance(fullMasterIDs.begin(), std::find(fullMasterIDs.begin(), fullMasterIDs.end(), CondMasters[i])); //finds index of value "j"
             master_rows[i] = n;
         }
 
@@ -489,7 +594,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
             slave_rows.erase(std::remove(slave_rows.begin(), slave_rows.end(), i), slave_rows.end());
         }
 
-        // masters X masters  submatrix
+        // masters X masters  submatrix - K_mm
         Matrix K_mm;
         K_mm.resize(master_size, master_size);
         unsigned k = 0;
@@ -503,7 +608,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
             k++;
         }
 
-        // masters X slaves  submatrix
+        // masters X slaves  submatrix - K_ms = transpose(K_sm)
         Matrix K_ms;
         K_ms.resize(master_size, slave_size);
         k = 0;
@@ -517,7 +622,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
             k++;
         }
 
-        // slaves X slaves  submatrix
+        // slaves X slaves  submatrix - K_ss
         Matrix K_ss;
         K_ss.resize(slave_size, slave_size);
         k = 0;
@@ -531,7 +636,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
             k++;
         }
 
-        // condensed matrix Kcond
+        // condensed matrix Kcond - Static condensation = Guyan reduction : K_reduced = K_mm - K_ms * K_ss-1 * K_sm;  
         Matrix K_cond;
         K_cond.resize(master_size, master_size);
         K_cond = K_mm - K_ms * K_ss.inverse() * K_ms.transpose();
@@ -544,7 +649,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
             } 
         }
 
-    } else if ( matrix_type == "Xfull" ) {
+    } else if ( matrix_type == "X" ) {
         Mat_out = X;
     }    
    
