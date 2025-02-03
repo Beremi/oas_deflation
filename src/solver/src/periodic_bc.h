@@ -40,6 +40,20 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Mechanical Periodic Boundary Condition on prism with Voigt's constraint
+class MechanicalPeriodicBCwithCrack : public MechanicalPeriodicBC
+{
+protected:
+    Vector crack_normal;
+    double crackplane_d;    
+public:
+    MechanicalPeriodicBCwithCrack();
+    virtual ~MechanicalPeriodicBCwithCrack() {};
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Mechanical Periodic Boundary Condition on prism with Voigt's constraint
 class MechanicalPeriodicBCwithVoigtConstraint : public MechanicalPeriodicBC
 {
 protected:

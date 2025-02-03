@@ -2112,9 +2112,16 @@ def create2dPeriodicShear(maxLim, minDist, trials, powerTes ):
     ### direct setting of mechanicalBCs
     node_coords, mechBC_merged, mechInitC_merged, radii = asssemble2dPeriodicShear(maxLim, minDist, trials, powerTes );
 
-    print ('Conducting Voronoi tesselation...', end ='')
-    vor = Voronoi(node_coords)
-    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    #print ('Conducting Voronoi tesselation...', end ='')
+    #vor = Voronoi(node_coords)
+    #regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    #print('done.')
+
+    if powerTes == False:
+        vor = Voronoi(node_coords)
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    else:
+        vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runPowerPlain(node_coords, radii, 2, maxLim)
     print('done.')
 
 
