@@ -363,7 +363,93 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     //     cn->print();
     // }
 }
+void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
+    //initiate volumetric averages
+    unsigned numFreeDoFs = nodecont->giveTotalNumDoFs();
 
+    nodes = nodecont;
+    bconds = bccont;
+
+    for ( auto const &jD : constraints ) {
+        jD->init(solver);
+    }
+    VolumetricAverage *va;
+    for ( int k = constraints.size() - 1; k >= 0; k-- ) {
+        va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
+        if ( va ) {
+            constraints.push_back(va);
+            constraints.erase(constraints.begin() + k);
+        }
+    }
+
+    std :: vector< Ttripletd >tripletList;
+    // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
+    // // map<pair<size_t, size_t>, double> indeces21;
+    // map<pair<size_t, size_t>, double> indeces22;
+    if ( !this->isActive() ) {
+        return;
+    }
+
+    ///////////////////////////////////////////////////
+    // fill the matrix with corresponding multipliers for slaveDoFs
+    unsigned i; // row index =  slave DoF
+    unsigned j, numM; // column index = master DoF
+
+    std :: vector< unsigned > NonSlaveIDs;
+    for (int i = 0; i < numFreeDoFs; ++i) {
+        NonSlaveIDs.push_back(i);
+    }
+    std :: vector< unsigned > masterIDs;
+    
+    for ( auto const &jD : constraints ) {
+        // jD->print();
+        i = jD->giveSlaveDoF();
+        NonSlaveIDs.erase(std::remove(NonSlaveIDs.begin(), NonSlaveIDs.end(), i), NonSlaveIDs.end());
+    }
+
+    for ( auto const &jD : constraints ) {
+      
+        i = jD->giveSlaveDoF();
+
+        numM = jD->giveNumOfDoFMasters();
+        for ( unsigned ind = 0; ind < numM; ind++ ) {
+            j = jD->giveMasterDoF(ind);
+            masterIDs.push_back(j);
+
+            int n = std::distance(NonSlaveIDs.begin(), std::find(NonSlaveIDs.begin(), NonSlaveIDs.end(), j)); //fins index of value "j"
+            tripletList.push_back(Ttripletd(i, n, jD->giveMasterMultiplier(ind) ) );
+            // }
+        }
+    }
+
+    // here fill in value 1 for all other DoFs
+    ///////////////////////////////////////////////////
+    for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
+        // fill the matrix with 1 for each unrestrained DoF (diagonal)
+        tripletList.push_back(Ttripletd(NonSlaveIDs[i], i, 1) );
+    }
+    
+    X_full.resize(numFreeDoFs, numFreeDoFs - constraints.size() );
+    X_full.setFromTriplets(tripletList.begin(), tripletList.end() );
+    X_full.makeCompressed();
+
+    fullMasterIDs = NonSlaveIDs;
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ConstraintContainer :: giveMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver, bool BC_applied) {
+    if (BC_applied == true) { // X matrix with BC applied, solver numbering
+        return X;
+    } else {
+        initFull(nodecont, bccont, solver);  // X matrix without BC applied, DoFs numbering
+        return X_full;
+    }
+}
+
+//////////////////////////////////////////////////////////
+std :: vector <unsigned int> ConstraintContainer :: giveFullMasterIDs() {
+    return fullMasterIDs;
+}
 
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now) {

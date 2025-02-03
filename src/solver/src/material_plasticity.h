@@ -13,6 +13,8 @@ class VonMisesPlasticMaterialStatus : public TensMechMaterialStatus
 protected:
     Vector backstress, plasticstrain;
     Vector temp_backstress, temp_plasticstrain;
+    Vector N;
+    double f, beta_t;
     double sigmay, temp_sigmay;
     double outplane_plasticstrain, temp_outplane_plasticstrain;
     double outplane_backstress, temp_outplane_backstress;

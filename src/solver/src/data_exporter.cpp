@@ -426,6 +426,250 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, fs :: path resultD
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EXPORT X, K, K_effective, K_condensed MATRICES with or without BC rows/columns and with solver or DoFOrder numbering of rows/columns
+//////////////////////////////////////////////////////////
+void MatrixExporter :: readFromLine(istringstream &iss) {
+    iss >> filename;
+    unsigned int numMasters;
+    
+    std::string token;
+    while (iss >> token) {
+        if (token == "matrix_type") {
+            iss >> matrix_type;
+        } else if (token == "Stiff_matrix_type") {
+            iss >> Stiff_matrix_type;
+        } else if (token == "BC_applied") {
+            std :: string bc_app;
+            iss >> bc_app;
+            if (bc_app == "true") {
+                BC_applied = true;
+            } else if (bc_app == "false") {
+                BC_applied = false;
+            } else {
+                cout << "Matrix Exporter: " << bc_app << "  BC_applied can only be 'true' or 'false', using 'true' \n";
+            }
+            
+        } else if (token == "numbering_type") {
+            std :: string slvr_nmbr;
+            iss >> slvr_nmbr;
+            if (slvr_nmbr == "solver"){
+                solver_numbering = true;
+            } else if (slvr_nmbr == "DoFOrder") {
+                solver_numbering = false;
+            } else {
+                cout << "Matrix Exporter: " << slvr_nmbr << " numbering type not supported using the solver type \n";
+                solver_numbering = true;
+            }
+        } else if (token == "masters") {
+            iss >> numMasters;
+            CondMasters.resize(numMasters);
+            for ( unsigned k = 0; k < numMasters; k++ ) {
+                iss >> CondMasters[ k ];
+            }
+        }
+    }
+
+    if (matrix_type == "K_condensed" and numMasters == 0) {
+        cerr << "Matrix Exporter: " << "for K_condensed matrix master DoFs ('masters') must be specified \n";
+    }
+
+
+    DataExporter :: readFromLine(iss);
+}
+
+//////////////////////////////////////////////////////////
+void MatrixExporter :: init() {
+    X_init = constraints->giveMatrixX(nodes, bccont, solver, BC_applied);
+    K_init = elems->prepareOutputStiffnessMatrix(BC_applied);
+    fullMasterIDs = constraints->giveFullMasterIDs();
+    blockedDofsIDs = bccont -> giveArrayOfBlockedDoFs(); // BC DoFs IDs in DoFOrder numbering
+    DataExporter :: init();
+
+    std::vector<int> solverOrder;
+    cout << "solver order: ";
+    for (int i = 0; i < 12; ++i) {
+        solverOrder.push_back(nodes->giveDoFid(i));
+        cout << nodes->giveDoFid(i) << " ";
+    }
+}
+
+//////////////////////////////////////////////////////////  Reorders the X matrix without BC_applied from DoFOrder to solver numbering
+const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(const CoordinateIndexedSparseMatrix& matriX) const {
+
+    CoordinateIndexedSparseMatrix matrix = const_cast<CoordinateIndexedSparseMatrix &>(matriX);
+
+    int matrixsizerows = matrix.rows();
+    int matrixsizecols = matrix.cols();
+
+    std::vector<int> solverOrder;
+    for (int i = 0; i < matrixsizerows; ++i) {
+        solverOrder.push_back(nodes->giveDoFid(i));
+        cout << nodes->giveDoFid(i) << " ";
+        
+    }
+
+    std::vector<int> masterFullPositions;
+    for (const int i : fullMasterIDs) {
+        auto it1 = std::find(solverOrder.begin(), solverOrder.end(), i);
+        masterFullPositions.push_back(std::distance(solverOrder.begin(), it1));
+    }
+
+    std::vector<int> indices(masterFullPositions.size());
+    for (size_t i = 0; i < masterFullPositions.size(); ++i) {
+        indices[i] = i;
+    }
+    
+    // Sort the indices based on the values in vec1
+    std::sort(indices.begin(), indices.end(), [&masterFullPositions](int i1, int i2) {
+        return masterFullPositions[i1] < masterFullPositions[i2];
+    });
+
+    CoordinateIndexedSparseMatrix newMatrix(matrixsizerows, matrixsizecols);
+
+    std::vector<int> rowNums;
+    for (int i = 0; i < matrixsizerows; ++i) {
+        rowNums.push_back(i);
+    }
+
+    std::vector<int> colNums;
+    for (int i = 0; i < matrixsizecols; ++i) {
+        colNums.push_back(i);
+    }
+
+    for (const int i : rowNums) {
+        for (const int j : colNums) {
+            newMatrix.coeffRef(solverOrder[ i ], indices[ j ]) = matrix.coeffRef( i , j);
+        }
+    }   
+
+    return newMatrix;
+}
+
+//////////////////////////////////////////////////////////
+void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
+    char buffer[ 100 ];
+    CoordinateIndexedSparseMatrix Mat_out;
+    CoordinateIndexedSparseMatrix K;
+    CoordinateIndexedSparseMatrix X;
+   
+    if (BC_applied) {  // matrices indentical for solver and DoFOrder numbering
+        K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied);
+        X = X_init;
+    } else {
+        if (solver_numbering == false) {
+            K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+            X = X_init;
+        } else {
+            K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+            X = MatrixXSwitchRowsCols(X_init);
+        }
+    }
+
+    if (matrix_type == "K_all_DoFs") {
+        Mat_out = K;
+
+    } else if ( matrix_type == "K_effective" ) {
+        Mat_out = X.transpose() * K * X; // Keff 
+
+    } else if ( matrix_type == "K_condensed" ) {
+        Mat_out = X.transpose() * K * X; // Keff 
+        unsigned eff_size = Mat_out.rows(); // number of rows of Keff
+        unsigned master_size = CondMasters.size(); // number of master rows
+
+        // finds rows in Keff corresponding to masters (from read from line) - CondMasters
+        std :: vector< unsigned int > master_rows; 
+        master_rows.resize(master_size);
+        for ( unsigned i = 0; i < master_size; i++ ) {  
+            unsigned n = std::distance(fullMasterIDs.begin(), std::find(fullMasterIDs.begin(), fullMasterIDs.end(), CondMasters[i])); //finds index of value "j"
+            master_rows[i] = n;
+        }
+
+        // rows in Keff corresponding to slaves 
+        unsigned slave_size = eff_size - master_size; // number of slave rows
+        std :: vector< unsigned int > slave_rows;
+        for ( unsigned ind = 0; ind < eff_size; ind++ ) {
+            slave_rows.push_back(ind);
+        }
+        for ( unsigned i : master_rows ) {
+            slave_rows.erase(std::remove(slave_rows.begin(), slave_rows.end(), i), slave_rows.end());
+        }
+
+        // masters X masters  submatrix - K_mm
+        Matrix K_mm;
+        K_mm.resize(master_size, master_size);
+        unsigned k = 0;
+        unsigned l = 0;
+        for (int i : master_rows) {
+            l = 0;
+            for (int j : master_rows) {
+                K_mm(k,l) = Mat_out.coeffRef(i,j);
+                l++;
+            }
+            k++;
+        }
+
+        // masters X slaves  submatrix - K_ms = transpose(K_sm)
+        Matrix K_ms;
+        K_ms.resize(master_size, slave_size);
+        k = 0;
+        l = 0;
+        for (int i : master_rows) {
+            l = 0;
+            for (int j : slave_rows) {
+                K_ms(k,l) = Mat_out.coeffRef(i,j);
+                l++;
+            }
+            k++;
+        }
+
+        // slaves X slaves  submatrix - K_ss
+        Matrix K_ss;
+        K_ss.resize(slave_size, slave_size);
+        k = 0;
+        l = 0;
+        for (int i : slave_rows) {
+            l = 0;
+            for (int j : slave_rows) {
+                K_ss(k,l) = Mat_out.coeffRef(i,j);
+                l++;
+            }
+            k++;
+        }
+
+        // condensed matrix Kcond - Static condensation = Guyan reduction : K_reduced = K_mm - K_ms * K_ss-1 * K_sm;  
+        Matrix K_cond;
+        K_cond.resize(master_size, master_size);
+        K_cond = K_mm - K_ms * K_ss.inverse() * K_ms.transpose();
+
+        // export
+        Mat_out.resize(master_size, master_size);
+        for ( unsigned i = 0; i < master_size; i++ ) {
+           for ( unsigned j = 0; j < master_size; j++ ) {
+            Mat_out.coeffRef(i,j) = K_cond(i,j);
+            } 
+        }
+
+    } else if ( matrix_type == "X" ) {
+        Mat_out = X;
+    }    
+   
+    giveFileName(step, buffer);
+    ofstream outputfile( ( resultDir / buffer ).string() );
+
+    // unsigned p;
+    if ( outputfile.is_open() ) {
+
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+       
+        outputfile <<  Mat_out;
+
+        outputfile.close();
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // GAUGE EXPORTERS
 void Gauge :: giveFileName(unsigned step, char *buffer) const {
     ( void ) step;
@@ -903,7 +1147,7 @@ ExporterContainer :: ~ExporterContainer() {
  * - %VTKRBExporter - for other parameters see VTKRB2DExporter::readFromLine
  * - %VTKRCExporter - for other parameters see VTKRCExporter::readFromLine
  */
-void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
+void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, ConstraintContainer *c, BCContainer *b, unsigned dimension) {
     cout << "Input file '" <<  filename;
     size_t origsize = exporters.size();
     string line, exptype;
@@ -983,6 +1227,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     }
                 } else if ( exptype.compare("ElementStatsExporter") == 0 ) {
                     ElementStatsExporter *newexp = new ElementStatsExporter(e, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
+                } else if ( exptype.compare("MatrixExporter") == 0 ) {
+                    MatrixExporter *newexp = new MatrixExporter(e, n, b, c, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
                 } else {

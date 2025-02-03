@@ -403,12 +403,20 @@ void ElementContainer :: resetMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped) const {
+void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied) const {
     std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
 
-    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    unsigned nfreeDoFs;
+    if (BC_applied) {
+        nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
+    }
+    // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
+
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
@@ -456,13 +464,22 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M, boo
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped) const {
+void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped, bool BC_applied, bool solver_numbering) const { // last two parameters only for export
     if ( K.rows() == 0 ) {
         return;
     }
     K = K * 0; //set everything to zero
 
-    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    unsigned nfreeDoFs;
+    if (BC_applied) {
+        nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
+    }
+    // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
+
+
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     Vector elDoFValues;
@@ -471,6 +488,8 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {
             k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
+            // cout << k;                //stiffness or conductivity
+
         } else if ( diffType == 1 ) {
             k = ( * e )->giveDampingMatrix();                    //damping or capacity
         } else if ( diffType == 2 && lumped ) {
@@ -482,10 +501,23 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             exit(1);
         }
         elDoFs = ( * e )->giveDoFs();
+        // cout << "\n  elDoFs: " ;
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-            DoFi = nodes->giveDoFid(elDoFs [ i ]);
+             if (solver_numbering) {
+                DoFi = nodes->giveDoFid(elDoFs [ i ]);
+            } else {
+                DoFi = elDoFs [ i ];
+            }
+            // cout << DoFi << " ";
+            // DoFi = nodes->giveDoFid(elDoFs [ i ]);
+
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
-                DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                  if (solver_numbering) {
+                    DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                } else {
+                    DoFj = elDoFs [ j ];
+                }
+                // DoFj = nodes->giveDoFid(elDoFs [ j ]);
 
                 //diagonal
                 if ( DoFi == DoFj ) {
@@ -501,8 +533,8 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
                 }
             }
         }
+        // cout << "\n ";
     }
-
     /*
      * for(size_t i=0; i<K.RowCount; i++){
      *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
@@ -547,6 +579,19 @@ void ElementContainer :: updateDampingMatrix(CoordinateIndexedSparseMatrix &C) c
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const {
     updateStructuralMatrix(M, 2, "", lumped);
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ElementContainer :: prepareOutputStiffnessMatrix(bool BC_applied) const {
+    CoordinateIndexedSparseMatrix K_out;
+    prepareStructuralMatrix(K_out, 0, 0, BC_applied);  
+    return K_out;
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ElementContainer :: updateOutputStiffnessMatrix(CoordinateIndexedSparseMatrix K_out, string param, bool BC_applied, bool solver_numbering) const {
+    updateStructuralMatrix(K_out, 0, param, 0, BC_applied, solver_numbering);
+    return K_out;
 }
 
 //////////////////////////////////////////////////////////

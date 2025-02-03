@@ -4,6 +4,8 @@
 #include "globals.h"
 #include "node_container.h"
 #include "element_container.h"
+#include "constraint.h"
+#include "boundary_condition.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -100,6 +102,37 @@ private:
 public:
     TXTIntegrationPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e;   name = "TXTIntegrationPointExporter"; };
     ~TXTIntegrationPointExporter() {};
+    virtual void init();
+    void readFromLine(std :: istringstream &iss);
+    virtual void exportData(unsigned step, fs :: path resultDir) const;
+protected:
+};
+
+/////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT MATRIX TO TXT
+class MatrixExporter : public DataExporter
+{
+private:
+    ElementContainer *elems;
+    NodeContainer *nodes;
+    BCContainer *bccont;
+    ConstraintContainer *constraints;
+    CoordinateIndexedSparseMatrix K_init;
+    CoordinateIndexedSparseMatrix X_init;
+    bool BC_applied = true; // true - Matrices without BC DoFs, false - Matrices with all DoFs
+    bool solver_numbering = true; // true - numbering in solver, false - numbering by input order of DoFs
+    std :: string matrix_type = "K_all_DoFs"; // type of exported matrix - K_all_DoFs, K_effective, K_condensed, X
+    std :: string Stiff_matrix_type = "elastic"; // type of stiffness matrix - elastic, tangent, consistent, ...
+    std :: vector< unsigned int > CondMasters; // input vector of master DoFs for static condensation
+    std :: vector< unsigned int > fullMasterIDs; // IDs of master DoFs in DoF numbering
+    std :: vector< unsigned int > blockedDofsIDs; // IDs of blocked DoFs (BCs) in DoF numbering
+    const CoordinateIndexedSparseMatrix MatrixXSwitchRowsCols (const CoordinateIndexedSparseMatrix& matrix) const;
+
+
+public:
+    MatrixExporter(ElementContainer *e, NodeContainer *n, BCContainer *bc, ConstraintContainer *cc, unsigned dimension) : DataExporter(dimension) {elems = e; nodes = n; bccont = bc;  constraints = cc; name = "MatrixExporter"; };
+    ~MatrixExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
     virtual void exportData(unsigned step, fs :: path resultDir) const;
@@ -254,7 +287,7 @@ private:
 public:
     ExporterContainer() {};
     ~ExporterContainer();
-    void readFromFile(const std :: string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
+    void readFromFile(const std :: string filename, NodeContainer *n, ElementContainer *e, ConstraintContainer *c, BCContainer *b, unsigned dimension);
     void exportData(unsigned step, double time, const bool &exportAll) const;
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
