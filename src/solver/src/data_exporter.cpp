@@ -486,10 +486,8 @@ void MatrixExporter :: init() {
     DataExporter :: init();
 
     std::vector<int> solverOrder;
-    cout << "solver order: ";
     for (int i = 0; i < 12; ++i) {
         solverOrder.push_back(nodes->giveDoFid(i));
-        cout << nodes->giveDoFid(i) << " ";
     }
 }
 

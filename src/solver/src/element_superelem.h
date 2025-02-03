@@ -13,14 +13,22 @@ class MLMechElement : public Element
 {
 protected:
     unsigned poly_degree;
+    Matrix stiffmat_elastic;
     Matrix stiffmat;
+    double max_elastic_strain_energy = 1e4;
     fs :: path sm_path;
     fs :: path nm_path;
+    fs :: path nmL_path = "";
     fs :: path ml_path;
     Matrix readStiffMatrixFromFile() const;
-    Matrix readDataNormalizationMatrix(int size) const;
+    Matrix readDataNormalizationMatrix(int size, fs :: path matrix_path) const;
     torch :: jit :: script :: Module module;
     Matrix norm;
+    Matrix normL;
+    std :: string Ftype = "Fp"; // F, Fp
+    std :: string Ktype = "L_tangent"; // L_tangent, Lp_tangent, K, Kp
+    std :: string normalizationType = "default"; // default, bisymLog
+
 
 
 public:
