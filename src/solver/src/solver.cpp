@@ -1,6 +1,7 @@
 #include "solver.h"
 #include "solver_implicit.h"
 #include "solver_explicit.h"
+#include "solver_eigenvalue.h"
 #include "adaptivity.h"
 #include <cstdlib> //random number generator
 #define numPhysicalFields 4
@@ -101,6 +102,11 @@ Solver *Solver :: readFromFile(const string filename) {
             return newsolver;
         } else if ( param.compare("TransientCentralDifferenceMechanicalSolver") == 0 ) {
             TransientCentralDifferenceMechanicalSolver *newsolver = new TransientCentralDifferenceMechanicalSolver();
+            newsolver->readFromFile(filename);
+            cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
+            return newsolver;
+        } else if ( param.compare("EigenvalueMechanicalSolver") == 0 ) {
+            EigenvalueMechanicalSolver *newsolver = new EigenvalueMechanicalSolver();
             newsolver->readFromFile(filename);
             cout << "Input file '" <<  filename << "' succesfully loaded; " << newsolver->name << " found" << endl;
             return newsolver;
