@@ -1656,10 +1656,15 @@ def create3d_Hanging_FracZone(maxLim, minDist, trials):
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions  = assemble3d_Hanging_FracZone(maxLim, minDist, trials)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii  = assemble3d_Hanging_FracZone(maxLim, minDist, trials)
 
-    print('Conducting Voronoi tesselation...', end = '')
-    vor, volumes= utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    #print('Conducting Voronoi tesselation...', end = '')
+    #vor, volumes= utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    #print('done.')
+
+    print('Conducting Power tesselationSSSSSSS...', end = '')
+    #vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
+    vor, areas = utilitiesNumeric.runMirroredPower(node_coords, radii, dim, maxLim)
     print('done.')
 
 
@@ -1675,8 +1680,7 @@ def create3d_Hanging_FracZone(maxLim, minDist, trials):
     fn2 = utilitiesNumeric.generalFunc(func2)
     functions.append (fn2)
 
-
-    return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, [], functions
+    return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, [], functions, radii
 
 
 
@@ -5445,8 +5449,12 @@ def assemble3d_Hanging_FracZone(maxLim, minDist, trials):
     nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
     pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
 
+
     print('fine fracture zone volume')
-    pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+    node_coords = np.array(node_coords)
+    radii = np.zeros(len(node_coords))+minDist*0.4
+    #pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+    node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, 3, trials, node_coords, np.array(radii), allow_domain_overlap = False, periodic_distance=False)
 
     leftRigidPlateMechBC = np.array([0, 0,0,   -1,-1,-1, -1,-1,-1, -1,-1,-1])
     leftRigidPlate = utilitiesMech.RigidPlate(-1, 3, None, directIdcs=True )
@@ -5460,7 +5468,7 @@ def assemble3d_Hanging_FracZone(maxLim, minDist, trials):
     govNodes.append(np.array([ maxLim[0]/2+0.01, 0.011,maxLim[2]/2 ]))
     govNodesMechBC.append(utilitiesMech.mechanicalBC(dim, -2, rightRigidPlateMechBC))
 
-    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
+    return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii
 
 
 

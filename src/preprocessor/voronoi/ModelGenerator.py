@@ -805,13 +805,13 @@ class Model:
     def run_3d_Hanging_FracZone(self, node_coords_init=None):
         self.activeTransport = False
 
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create3d_Hanging_FracZone(self.maxLim, self.minDist, self.trials)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3d_Hanging_FracZone(self.maxLim, self.minDist, self.trials)
 
         coords = np.asarray(self.node_coords)
         lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),
         np.amax(coords[:,1]),np.amin(coords[:,2]),np.amax(coords[:,2]) ]
 
-        self.materialZones= utilitiesModeling.assembleMaterialZones (0, 3, model='hangingfraczone', maxLim=lims)
+        #self.materialZones= utilitiesModeling.assembleMaterialZones (0, 3, model='hangingfraczone', maxLim=lims)
 
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []

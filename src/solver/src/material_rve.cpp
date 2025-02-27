@@ -769,12 +769,10 @@ bool DiscreteMechanicalRVEMaterialStatus ::  giveValues(string code, Vector &res
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
     //delete curvatutures according to an updated homogenization theory
     ( void ) timeStep;
-
     //precomputed material
     if ( is_precomputed ) {
         return giveStressPrecomputed(strain, timeStep);
     }
-
     cout << "Solving mechanical RVE" << endl;
 
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
