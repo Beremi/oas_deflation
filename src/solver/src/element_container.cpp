@@ -10,6 +10,7 @@
 #include <algorithm>
 #include "model.h"
 #include "periodic_bc.h"
+#include "constraint.h"
 
 using namespace std;
 
@@ -418,6 +419,18 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
     // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
 
     unsigned DoFi, DoFj;
+    if ( diffType == 0 ) {
+        for ( unsigned i = 0; i < constcont->giveLagrangeMultsSize(); i++ ) {
+            LagrangeMultiplier *lm = constcont->giveLagrangeMultiplier(i);    
+            DoFi = nodes->giveDoFid(lm->giveSlaveDoF());
+            for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
+                DoFj = nodes->giveDoFid(lm->giveMasterDoF(j));
+                tripletList.push_back(Ttripletd(DoFi, DoFj, 0.0) );
+                tripletList.push_back(Ttripletd(DoFj, DoFi, 0.0) );                
+            }
+        }
+    }
+
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
@@ -484,6 +497,20 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     vector< unsigned >elDoFs;
     Vector elDoFValues;
     Matrix k;
+
+    
+    if ( diffType == 0 ) {
+        for ( unsigned i = 0; i < constcont->giveLagrangeMultsSize(); i++ ) {
+            LagrangeMultiplier *lm = constcont->giveLagrangeMultiplier(i);    
+            DoFi = nodes->giveDoFid(lm->giveSlaveDoF());
+            for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
+                DoFj = nodes->giveDoFid(lm->giveMasterDoF(j));
+                K.coeffRef(DoFi, DoFj) += lm->giveMasterMultiplier(j);
+                K.coeffRef(DoFj, DoFi) += lm->giveMasterMultiplier(j);          
+            }
+        }
+    }
+
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {

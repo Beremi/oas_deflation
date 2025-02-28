@@ -174,12 +174,12 @@ void NodeContainer :: establishDoFArray() {
 
     /////////////////////////////////////////////////////////////////
     // #constraint
-    constrDoFs = constr->giveSize();
+    constrDoFs = constr->giveConstraintsSize();
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-    cstr.resize(constr->giveSize() );
-    for ( unsigned j = 0; j < constr->giveSize(); j++ ) {
+    cstr.resize(constr->giveConstraintsSize() );
+    for ( unsigned j = 0; j < constr->giveConstraintsSize(); j++ ) {
         cstr [ j ].first = constr->giveConstraint(j)->giveSlaveDoF();
         cstr [ j ].second = j;
     }

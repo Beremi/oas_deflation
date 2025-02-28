@@ -227,7 +227,7 @@ void MechanicalPeriodicBC :: generateExporters(NodeContainer *nodes, ExporterCon
 //////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
-        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
+        Node *m = constrs->giveConstraint(constrs->giveConstraintsSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
         dBC.resize(m->giveNumberOfDoFs(), -1);         //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data
@@ -288,7 +288,7 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *elems
 
     calculateVolume(elems);
 
-    unsigned const_num = constrs->giveSize();
+    unsigned const_num = constrs->giveConstraintsSize();
     unsigned funcs_num = funcs->giveSize();
     unsigned bcs_num = bcs->giveSize();
     unsigned ex_num = ex->giveSize();
@@ -329,7 +329,7 @@ void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *elems
     //export data
     generateExporters(nodes, ex);
 
-    cout << "Applied periodic boundary conditions: " << nodes->giveSize() - initalNodeNum << " new DoFs (nodes " << initalNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
+    cout << "Applied periodic boundary conditions: " << nodes->giveSize() - initalNodeNum << " new DoFs (nodes " << initalNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveConstraintsSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -1049,7 +1049,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         volume *= a;
     }
 
-    unsigned const_num = constrs->giveSize();
+    unsigned const_num = constrs->giveConstraintsSize();
     unsigned funcs_num = funcs->giveSize();
     unsigned bcs_num = bcs->giveSize();
     unsigned ex_num = ex->giveSize();
@@ -1114,7 +1114,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
         bcs->removeBoundaryCondition(p);
     }
     //remove added constraints (this removes the master-slave constraint)
-    for ( int p = int( constrs->giveSize() ) - 1; p >= int( const_num ); p-- ) {
+    for ( int p = int( constrs->giveConstraintsSize() ) - 1; p >= int( const_num ); p-- ) {
         constrs->removeConstraint(p);
     }
     //remove added functions
@@ -1177,7 +1177,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     //export data
     generateExporters(nodes, ex);
 
-    cout << "Applied periodic boundary conditions: " << nodes->giveSize() - initalNodeNum << " new DoFs (nodes " << initalNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
+    cout << "Applied periodic boundary conditions: " << nodes->giveSize() - initalNodeNum << " new DoFs (nodes " << initalNodeNum << " - " <<  nodes->giveSize() - 1 << "); " << constrs->giveConstraintsSize() - const_num << " new constraints; " << bcs->giveSize() - bcs_num << " new boundary conditions; " << funcs->giveSize() - funcs_num << " new function; " << ex->giveSize() - ex_num << " new exporters; " << "created" << endl;
 }
 
 
@@ -1340,7 +1340,7 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
 //////////////////////////////////////////////////////////
 void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
-        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
+        Node *m = constrs->giveConstraint(constrs->giveConstraintsSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
         dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );         //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
@@ -1824,7 +1824,7 @@ void CosseratMechanicalPeriodicBC :: readLoading(istringstream &iss) {
 //////////////////////////////////////////////////////////
 void CosseratMechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     if ( 1 ) {  //last master node cannot move
-        Node *m = constrs->giveConstraint(constrs->giveSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
+        Node *m = constrs->giveConstraint(constrs->giveConstraintsSize() - 1)->giveMasterNode(0);// warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
         dBC.resize(m->giveNumberOfDoFs(), -1);         //todo: warning C4267: 'argument': conversion from 'size_t' to 'const _Ty', possible loss of data

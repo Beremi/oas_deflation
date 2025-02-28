@@ -26,7 +26,7 @@ public:
     JointDoF() {};
     virtual ~JointDoF() {};
     JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
-    void readFromLine(std :: istringstream &iss, NodeContainer *nodes);
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *nodes);
     void print();
     virtual void init(Solver *solver);
     unsigned giveSlaveDoF() const;
@@ -47,6 +47,18 @@ public:
     std :: vector< Function * >giveTimeFns() { return time_fns; };
     Function *giveTimeFn(unsigned k) const { return time_fns [ k ]; };
     bool isTimeDependent() { return !time_fns.empty(); };
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+class LagrangeMultiplier : public JointDoF
+{
+protected:
+public:
+    LagrangeMultiplier() {};
+    LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
+    virtual ~LagrangeMultiplier() {};
+    virtual void init(Solver *solver);
 };
 
 //////////////////////////////////////////////////////////
@@ -92,6 +104,7 @@ private:
     NodeContainer *nodes;
     BCContainer *bconds;
     std :: vector< JointDoF * >constraints;
+    std :: vector< LagrangeMultiplier * >lagmults;
     CoordinateIndexedSparseMatrix X;  // for connection due to geometry
     CoordinateIndexedSparseMatrix X_full;  // for export
     std :: vector <unsigned int> fullMasterIDs;  // for export
@@ -112,8 +125,10 @@ public:
     void calculateDoFsDependentOnConjugates(Vector &full_ddr, const Vector &fullDoFs, const Vector &fullFExt) const;
     void calculateMasterForces(Vector &fullForces);
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };
+    LagrangeMultiplier *giveLagrangeMultiplier(const unsigned &i) { return lagmults [ i ]; };
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };
-    size_t giveSize() { return constraints.size(); };
+    size_t giveConstraintsSize() { return constraints.size(); };
+    size_t giveLagrangeMultsSize() { return lagmults.size(); };
     bool isActive() const { return !constraints.empty(); }
     void removeConstraint(unsigned i);
 

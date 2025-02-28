@@ -26,6 +26,7 @@ Model :: Model(bool pT) {
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
     elems.setModel(this);
+    elems.setContainers(& constr);
     solver = nullptr;
     initialFieldFile = "";
     initialTimeDerFieldFile = "";

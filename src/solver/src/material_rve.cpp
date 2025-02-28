@@ -322,7 +322,7 @@ void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
     JointDoF *jd;
     Node *masternode;
     bool found = false;
-    for ( unsigned j = 0; j < constrs->giveSize(); j++ ) {
+    for ( unsigned j = 0; j < constrs->giveConstraintsSize(); j++ ) {
         if ( found ) {
             break;
         }

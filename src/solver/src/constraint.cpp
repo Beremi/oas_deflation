@@ -84,6 +84,28 @@ void JointDoF :: init(Solver *solver) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// Lagrange multiplier
+LagrangeMultiplier :: LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult) {
+    slaveNode = nullptr;
+    direction = -1;
+    masters = m;
+    directions = dirs;
+    multipliers = mult;
+    if ( fns.empty() ) {
+        this->time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
+    } else {
+        this->time_fns = fns;
+        this->additional_term = time_mult;
+    }
+}
+
+//////////////////////////////////////////////////////////
+void LagrangeMultiplier :: init(Solver *solver) {
+    JointDoF :: init(solver);
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // Volumetric Average
 VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc) {
     nodes = n;
@@ -100,7 +122,7 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
     std :: vector< unsigned >jdd;
     JointDoF *jd;
     VolumetricAverage *va;
-    for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
+    for ( unsigned j = 0; j < constraints->giveConstraintsSize(); j++ ) {
         jd = constraints->giveConstraint(j);
         va = dynamic_cast< VolumetricAverage * >( jd );
         if ( !va ) {
@@ -141,9 +163,9 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
 void VolumetricAverage :: init(Solver *solver) {
     //collect all slaves from other joint DoFs
     std :: vector< unsigned >otherslaves;
-    otherslaves.resize(constraints->giveSize() );
+    otherslaves.resize(constraints->giveConstraintsSize() );
     JointDoF *jd;
-    for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
+    for ( unsigned j = 0; j < constraints->giveConstraintsSize(); j++ ) {
         jd = constraints->giveConstraint(j);
         otherslaves [ j ] = jd->giveSlaveDoF();
     }
@@ -234,6 +256,7 @@ void ConstraintContainer :: readFromFile(const std :: string filename, const uns
     ( void ) ndim;
     std :: cout << "Input file '" <<  filename;
     unsigned origsize = constraints.size();
+    unsigned lagorigsize = lagmults.size();
     std :: string line, ConstrType;
     std :: ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
@@ -244,17 +267,21 @@ void ConstraintContainer :: readFromFile(const std :: string filename, const uns
             std :: istringstream iss(line);
             iss >> std :: ws >> ConstrType;
             if ( !( ConstrType.rfind("#", 0) == 0 ) ) {
-                if ( ConstrType.compare("jointDoF") == 0 ) {
+                if ( ConstrType.compare("jointDoF") == 0 || ConstrType.compare("JointDoF") == 0 ) {
                     JointDoF *newJD = new JointDoF();
                     newJD->readFromLine(iss, nodecont);
                     constraints.push_back(newJD);
+                } else if ( ConstrType.compare("LagrangeMultiplier") == 0 || ConstrType.compare("lagrangemultiplier") == 0 ) {
+                    LagrangeMultiplier *newLM = new LagrangeMultiplier();
+                    newLM->readFromLine(iss, nodecont);
+                    lagmults.push_back(newLM);
                 } else {
                     std :: cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << std :: endl;
                     exit(EXIT_FAILURE);
                 }
             }
         }
-        std :: cout << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << std :: endl;
+        std :: cout << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs and " << lagmults.size() - lagorigsize << " Lagrangian multipliers found" << std :: endl;
         inputfile.close();
     } else {
         std :: cerr << "Error: unable to open input file '" <<  filename <<  "'" << std :: endl;
@@ -275,11 +302,21 @@ ConstraintContainer :: ~ConstraintContainer() {
             delete c;
         }
     }
+    for ( auto &c: lagmults ) {
+        if ( c != nullptr ) {
+            delete c;
+        }
+    }
 }
 
 
 void ConstraintContainer :: clear() {
     for ( auto &c: constraints ) {
+        if ( c != nullptr ) {
+            delete c;
+        }
+    }
+    for ( auto &c: lagmults ) {
         if ( c != nullptr ) {
             delete c;
         }
@@ -305,6 +342,9 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
             constraints.push_back(va);
             constraints.erase(constraints.begin() + k);
         }
+    }
+    for ( auto const &LM : lagmults ) {
+        LM->init(solver);
     }
 
     std :: vector< Ttripletd >tripletList;
@@ -363,6 +403,8 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     //     cn->print();
     // }
 }
+
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
     //initiate volumetric averages
     unsigned numFreeDoFs = nodecont->giveTotalNumDoFs();
@@ -380,6 +422,10 @@ void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccon
             constraints.push_back(va);
             constraints.erase(constraints.begin() + k);
         }
+    }
+
+    for ( auto const &LM : lagmults ) {
+        LM->init(solver);
     }
 
     std :: vector< Ttripletd >tripletList;

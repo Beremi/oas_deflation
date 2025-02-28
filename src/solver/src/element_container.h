@@ -7,6 +7,7 @@
 #include "node_container.h"
 
 class Model; //forward declaration
+class ConstraintContainer; //forward declaration
 
 //////////////////////////////////////////////////////////
 class ElementContainer
@@ -19,6 +20,7 @@ private:
     ;
     MaterialContainer *materials = nullptr;
     Model *model = nullptr;
+    ConstraintContainer *constcont = nullptr;
     ;
     unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied = true) const;
@@ -30,6 +32,7 @@ public:
     ElementContainer() { model = nullptr; };
     ~ElementContainer();
     void setModel(Model *mod);
+    void setContainers(ConstraintContainer * c) { constcont = c;} ;
     void readFromFile(const std :: string filename, const unsigned ndim, MaterialContainer *matrs);
     // void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
     void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double time_now = 0, const unsigned step = 0, const bool saveNodeIds = true, const double idc_time = 0, const double time_step = 1e-4) const;
