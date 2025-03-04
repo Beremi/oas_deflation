@@ -25,6 +25,7 @@ set (solver_files
     material_csl.cpp
     material_tensorial.cpp
     material_thermomechanical.cpp
+    material_neuralnetwork.cpp
     material_ldpm.cpp
     material_fatigue.cpp
     node_container.cpp
