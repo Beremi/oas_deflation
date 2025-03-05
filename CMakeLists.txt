@@ -93,7 +93,7 @@ if (MSVC)
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -ffast-math -fno-math-errno -march=native -fopenmp -DNDEBUG") # -pedantic-errorsc -ggdb
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -ffast-math -fno-math-errno -march=native -DNDEBUG") # -pedantic-errorsc -ggdb  -fopenmp
     if (CHECK_CONVERSION)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion -Wconversion")
     endif()
