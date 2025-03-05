@@ -25,7 +25,6 @@ set (solver_files
     material_csl.cpp
     material_tensorial.cpp
     material_thermomechanical.cpp
-    material_neuralnetwork.cpp
     material_ldpm.cpp
     material_fatigue.cpp
     node_container.cpp
@@ -57,6 +56,8 @@ add_library(solver
     )
 
 if (USE_ML_TORCH)
+    list(APPEND solver_files material_neuralnetwork.cpp
+    )
     add_library(ml_torch
         ${LIB_TYPE}
         ${superelem_files}

@@ -12,14 +12,10 @@
 #include "material_fiber.h"
 #include "material_thermomechanical.h"
 #include "material_plasticity.h"
-<<<<<<< Updated upstream
-=======
+
 #ifdef ML_TORCH_FOUND
  #include "material_neuralnetwork.h"
 #endif // TORCH_FOUND
-
-
->>>>>>> Stashed changes
 
 
 using namespace std;
@@ -101,9 +97,6 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     DiscreteMechanicalRVEMaterial *newmat = new DiscreteMechanicalRVEMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
-<<<<<<< Updated upstream
-=======
-
                 } else if ( matType.compare("NeuralNetworkMaterial") == 0 ) {
                     #ifdef ML_TORCH_FOUND
                         NeuralNetworkMaterial *newmat = new NeuralNetworkMaterial(dim);
@@ -113,8 +106,6 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                         cerr << "Error: This OAS executable compiled without NeuralNetworkMaterial (LibTorch) support." << endl;
                         exit(EXIT_FAILURE);
                     #endif                 // TORCH_FOUND
-                    
->>>>>>> Stashed changes
                 } else if ( matType.compare("HTCMaterial") == 0 ) {
                     HTCMaterial *newmat = new HTCMaterial(dim);
                     newmat->readFromLine(iss);
