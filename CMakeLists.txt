@@ -128,7 +128,7 @@ set(TARGETNAME OAS)
 find_package (Eigen3 3.3.9 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
-#if (USE_MPI)
+if (USE_MPI)
     if (MPI_DIR)
         include_directories ("${MPI_DIR}/include")
         find_library (MPI_LIBRARY NAMES mpi PATHS ${MPI_DIR}/lib64 ${MPI_DIR}/lib)
@@ -148,7 +148,7 @@ find_package(OpenMP REQUIRED)
     endif (MPI_DIR)
     list (APPEND MODULE_LIST "MPI")
     # Compile and link flags?
-#endif ()
+endif ()
 
 if(TARGET Eigen3::Eigen)
   message(STATUS "Eigen3 v${EIGEN3_VERSION_STRING} found in ${EIGEN3_INCLUDE_DIR}")
