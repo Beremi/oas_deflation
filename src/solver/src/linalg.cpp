@@ -445,6 +445,48 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
     return true;
 }
 
+bool LinalgEigenSpectraSolver(const CoordinateIndexedSparseMatrix &mat, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals) {
+    // Define matrix operation for Spectra
+    Spectra :: SparseSymMatProd<double> op(mat);
+
+    Spectra :: SymEigsSolver<Spectra :: SparseSymMatProd<double>> eigs(op, n_eigen_vals, 3 * n_eigen_vals);
+    eigs.init();
+    eigs.compute(Spectra :: SortRule :: SmallestAlge);  // Largest algebraic eigenvalues
+
+    if (eigs.info() == Spectra :: CompInfo :: Successful) {
+        eigenvalues = eigs.eigenvalues();
+        eigenvectors = eigs.eigenvectors();
+        std::cout << "Eigenvalues:\n" << eigenvalues << std::endl;
+    } else {
+        std::cerr << "Eigenvalue computation failed!" << std::endl;
+    }
+
+    return true;
+}
+
+bool LinalgEigenSpectraGENSolver(const CoordinateIndexedSparseMatrix &mat, const CoordinateIndexedSparseMatrix &matB, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals) {
+    // Define matrix operation for Spectra
+    Spectra :: SparseGenMatProd<double> op(mat);
+    Spectra :: SparseCholesky<double> op_B(matB);
+
+    // Define the solver: Solve Ax = λBx
+    //Spectra :: SymGEigsSolver<Spectra :: SparseGenMatProd<double>, Spectra :: SparseSymMatProd<double>, Spectra :: GEigsMode::Cholesky> eigs(op, op_B, n_eigen_vals, 2 * n_eigen_vals);
+    Spectra :: SymGEigsSolver<Spectra :: SparseGenMatProd<double>, Spectra::SparseCholesky<double>, Spectra :: GEigsMode :: Cholesky> eigs(op, op_B, n_eigen_vals, 2 * n_eigen_vals);
+    eigs.init();
+    eigs.compute(Spectra :: SortRule :: SmallestAlge);  // Largest algebraic eigenvalues
+
+    if (eigs.info() == Spectra :: CompInfo :: Successful) {
+        eigenvalues = eigs.eigenvalues();
+        eigenvectors = eigs.eigenvectors();
+        std::cout << "Eigenvalues:\n" << eigenvalues << std::endl;
+    } else {
+        std::cerr << "Eigenvalue computation failed!" << std::endl;
+    }
+
+    return true;
+
+}
+
 bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b) {
     ( void ) A;
     ( void ) x;

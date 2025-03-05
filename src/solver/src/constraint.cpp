@@ -442,11 +442,11 @@ void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccon
     unsigned j, numM; // column index = master DoF
 
     std :: vector< unsigned > NonSlaveIDs;
-    for (int i = 0; i < numFreeDoFs; ++i) {
+    for (i = 0; i < numFreeDoFs; ++i) {
         NonSlaveIDs.push_back(i);
     }
     std :: vector< unsigned > masterIDs;
-    
+
     for ( auto const &jD : constraints ) {
         // jD->print();
         i = jD->giveSlaveDoF();
@@ -454,7 +454,7 @@ void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccon
     }
 
     for ( auto const &jD : constraints ) {
-      
+
         i = jD->giveSlaveDoF();
 
         numM = jD->giveNumOfDoFMasters();
@@ -474,7 +474,7 @@ void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccon
         // fill the matrix with 1 for each unrestrained DoF (diagonal)
         tripletList.push_back(Ttripletd(NonSlaveIDs[i], i, 1) );
     }
-    
+
     X_full.resize(numFreeDoFs, numFreeDoFs - constraints.size() );
     X_full.setFromTriplets(tripletList.begin(), tripletList.end() );
     X_full.makeCompressed();

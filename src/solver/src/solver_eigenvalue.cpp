@@ -8,7 +8,7 @@ using namespace std;
 //////////////////////////////////////////////////////////
 EigenvalueMechanicalSolver :: EigenvalueMechanicalSolver() {
     name = "EigenvalueMechanicalSolver";
-    //use_lumped_M = true; 
+    //use_lumped_M = true;
     num_eigs = 0;
     time = 0;
     dt = 1;
@@ -27,7 +27,10 @@ void EigenvalueMechanicalSolver :: init(std :: string init_r_file, std :: string
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(M);
     }
-    lumpedM = M.diagonal();    
+    M.makeCompressed();
+    elems->prepareStiffnessMatrix(K);
+    K.makeCompressed();
+    lumpedM = M.diagonal();
 }
 
 //////////////////////////////////////////////////////////
@@ -64,7 +67,12 @@ Solver *EigenvalueMechanicalSolver :: readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void EigenvalueMechanicalSolver :: solve() {
-    
+    Vector eigenvalues;
+    Matrix eigenvectors;
+    //LinalgEigenSpectraSolver(M, eigenvalues, eigenvectors, num_eigs);
+    //LinalgEigenSpectraGENSolver(M, K, eigenvalues, eigenvectors, num_eigs);
+
+    //cout << "Eigenvalues: " << eigenvalues << endl;
 
     //update velocity and acceleration
     //nodes->giveFullDoFArray(v_red, v);
@@ -73,7 +81,7 @@ void EigenvalueMechanicalSolver :: solve() {
 
     //DOES NOT SUPPORT CONSTRAINT WITH CONJUGATE VARIABLES AND FUNCTIONS
     //nodes->giveConstraints()->calculateDependentDoFs(v);
-    //nodes->giveConstraints()->calculateDependentDoFs(a);    
+    //nodes->giveConstraints()->calculateDependentDoFs(a);
 }
 
 //////////////////////////////////////////////////////////

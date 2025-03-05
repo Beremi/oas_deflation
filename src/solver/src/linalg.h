@@ -20,6 +20,12 @@
 #include <Eigen/SparseLU>
 #include <Eigen/SparseCholesky>
 #include <Eigen/Eigenvalues>
+#include <Eigen/SparseCore>
+#include <Spectra/SymEigsSolver.h>
+#include <Spectra/SymGEigsSolver.h>
+#include <Spectra/MatOp/SparseSymMatProd.h>
+#include <Spectra/MatOp/SparseGenMatProd.h>
+#include <Spectra/MatOp/SparseCholesky.h>
 
 //  \[ ([\w\s\+\*]*) \] \[ ([\w\s\+\*]*) \]
 #include "globals.h"
@@ -29,7 +35,7 @@ using Ttripletd = Eigen :: Triplet< double >;
 using Vector = Eigen :: VectorXd;
 using Point = Eigen :: Vector3d;
 using Matrix = Eigen :: MatrixXd;
-typedef typename Eigen :: SparseMatrix< double, Eigen :: RowMajor >CoordinateIndexedSparseMatrix;  // row-major-sparse * dense vector/matrix products - multi-threading
+typedef typename Eigen :: SparseMatrix< double, Eigen :: ColMajor > CoordinateIndexedSparseMatrix;  // row-major-sparse * dense vector/matrix products - multi-threading
 
 const static Eigen :: IOFormat VectorSemicolonFmt(Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
 
@@ -116,6 +122,10 @@ bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x,
 bool LinalgEigenSolver(const Vector &A, Vector &eigenvalues, std :: vector< Vector > &eigevectors);
 
 bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, std :: vector< Vector > &eigevectors);
+
+bool LinalgEigenSpectraSolver(const CoordinateIndexedSparseMatrix &mat, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals);
+
+bool LinalgEigenSpectraGENSolver(const CoordinateIndexedSparseMatrix &mat, const CoordinateIndexedSparseMatrix &matB, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals);
 
 bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b);
 

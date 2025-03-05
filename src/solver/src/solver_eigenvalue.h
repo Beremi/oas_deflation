@@ -11,7 +11,9 @@ class EigenvalueMechanicalSolver : public Solver
 protected:
     Vector lumpedM;
     CoordinateIndexedSparseMatrix M;
+    CoordinateIndexedSparseMatrix K;
     unsigned num_eigs;
+    //std :: unique_ptr< LinalgEigenSpectraSolver > linalgsolver;
 
 private:
 public:

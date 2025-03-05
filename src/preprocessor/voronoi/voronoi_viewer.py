@@ -426,7 +426,7 @@ def tesselation_plot_3d_mlab(tes, animate=False):
     fig.scene.disable_render = True
     mlab_points = []
     mlab_cells = []
-    for (x, y, z), r, region in zip(tes.points, tes.radii, tes.regions):
+    for (x, y, z), r, region in zip(tes.points, tes.weights, tes.regions):
         # if prev_obj:
         #    prev_obj.actor.property.opacity = 1.0
         #    prev_obj.actor.property.color = (1,1,1)
