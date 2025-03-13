@@ -14,7 +14,7 @@ protected:
     std :: string symsolver_type = "EigenConj";
 
     int stiffnessMatrixUpdate; //update matrices every X iteration
-    std::string stiffMatType, stiffMatTypeFirstIT;
+    std :: string stiffMatType, stiffMatTypeFirstIT;
 
     virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
 

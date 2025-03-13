@@ -50,7 +50,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
     cout << "Input file '" <<  filename;
     size_t origsize = matrs.size();
     string line, matType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     unsigned id = 0;
     CSLMaterialWithTensorialStressUpdate *CSLMaterialWithTensorialStressUpdateMaster = nullptr;
     if ( inputfile.is_open() ) {
@@ -98,14 +98,14 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("NeuralNetworkMaterial") == 0 ) {
-                    #ifdef ML_TORCH_FOUND
-                        NeuralNetworkMaterial *newmat = new NeuralNetworkMaterial(dim);
-                        newmat->readFromLine(iss);
-                        matrs.push_back(newmat);
-                    #else
-                        cerr << "Error: This OAS executable compiled without NeuralNetworkMaterial (LibTorch) support." << endl;
-                        exit(EXIT_FAILURE);
-                    #endif                 // TORCH_FOUND
+#ifdef ML_TORCH_FOUND
+                    NeuralNetworkMaterial *newmat = new NeuralNetworkMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+#else
+                    cerr << "Error: This OAS executable compiled without NeuralNetworkMaterial (LibTorch) support." << endl;
+                    exit(EXIT_FAILURE);
+#endif                 // TORCH_FOUND
                 } else if ( matType.compare("HTCMaterial") == 0 ) {
                     HTCMaterial *newmat = new HTCMaterial(dim);
                     newmat->readFromLine(iss);
@@ -156,7 +156,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                 } else if ( matType.compare("FatigueMaterial") == 0 ) {
                     FatigueMaterial *newmat = new FatigueMaterial(dim);
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( FatigueShearMaterial * ) newmat );
+                    matrs.push_back( ( FatigueShearMaterial * ) newmat);
                 } else if ( matType.compare("Slide32Material") == 0 ) {
                     Slide32Material *newmat = new Slide32Material(dim);
                     newmat->readFromLine(iss);

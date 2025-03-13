@@ -45,8 +45,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
                 iss >> val;
                 times_to_save.push_back(val);
             }
-            sort( times_to_save.begin(), times_to_save.end() );      // sort times
-            times_to_save.erase( std :: unique( times_to_save.begin(), times_to_save.end() ), times_to_save.end() );           // store only unique values
+            sort(times_to_save.begin(), times_to_save.end() );       // sort times
+            times_to_save.erase(std :: unique(times_to_save.begin(), times_to_save.end() ), times_to_save.end() );             // store only unique values
         } else if ( param.compare("saveSteps") == 0 ) {
             iss >> num;
             unsigned val = 0;
@@ -54,8 +54,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
                 iss >> val;
                 steps_to_save.push_back(val);
             }
-            sort( steps_to_save.begin(), steps_to_save.end() );      // sort steps
-            steps_to_save.erase( std :: unique( steps_to_save.begin(), steps_to_save.end() ), steps_to_save.end() );           // store only unique values
+            sort(steps_to_save.begin(), steps_to_save.end() );       // sort steps
+            steps_to_save.erase(std :: unique(steps_to_save.begin(), steps_to_save.end() ), steps_to_save.end() );             // store only unique values
         } else if ( param.compare("timeShift") == 0 ) {
             iss >> saveTime_last;
         } else if ( param.compare("stepShift") == 0 ) {
@@ -189,7 +189,7 @@ void TXTNodalExporter :: init() {
         } else {
             for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
                 nodes->giveNode(n)->giveValues(codes [ i ], solver, res);
-                maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );       // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
+                maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );       // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
             }
         }
     }
@@ -241,8 +241,8 @@ void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
                 } else {
                     nn->giveValues(codes [ c ], solver, res);
                 }
-                for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
-                    outputfile << "\t" << res [ p ] * multiplier;                    
+                for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
+                    outputfile << "\t" << res [ p ] * multiplier;
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
                     outputfile <<  "\t" << 0;
@@ -288,7 +288,7 @@ void TXTElementExporter :: init() {
         maxsize [ i ] = 0;
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             elems->giveElement(e)->giveValues(codes [ i ], res);
-            maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );
+            maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );
         }
     }
 }
@@ -321,7 +321,7 @@ void TXTElementExporter :: exportData(unsigned step, fs :: path resultDir) const
             outputfile << ee->giveID();
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 ee->giveValues(codes [ c ], res);
-                for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
+                for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
                     outputfile << "\t" << res [ p ] * multiplier;
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
@@ -373,7 +373,7 @@ void TXTIntegrationPointExporter :: init() {
             nIP = ee->giveNumIP();
             for ( unsigned k = 0; k < nIP; k++ ) {
                 ee->giveIPValues(codes [ i ], k, res);
-                maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );
+                maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );
             }
         }
     }
@@ -411,7 +411,7 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, fs :: path resultD
                 outputfile << ee->giveID() << "\t" << k;
                 for ( unsigned c = 0; c < codes.size(); c++ ) {
                     ee->giveIPValues(codes [ c ], k, res);
-                    for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
+                    for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
                         outputfile << "\t" << res [ p ] * multiplier;
                     }
                     for ( ; p < maxsize [ c ]; p++ ) {
@@ -433,44 +433,43 @@ void MatrixExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned int numMasters;
 
-    std::string token;
-    while (iss >> token) {
-        if (token == "matrix_type") {
+    std :: string token;
+    while ( iss >> token ) {
+        if ( token == "matrix_type" ) {
             iss >> matrix_type;
-        } else if (token == "Stiff_matrix_type") {
+        } else if ( token == "Stiff_matrix_type" ) {
             iss >> Stiff_matrix_type;
-        } else if (token == "BC_applied") {
+        } else if ( token == "BC_applied" ) {
             std :: string bc_app;
             iss >> bc_app;
-            if (bc_app == "true") {
+            if ( bc_app == "true" ) {
                 BC_applied = true;
-            } else if (bc_app == "false") {
+            } else if ( bc_app == "false" ) {
                 BC_applied = false;
             } else {
                 cout << "Matrix Exporter: " << bc_app << "  BC_applied can only be 'true' or 'false', using 'true' \n";
             }
-
-        } else if (token == "numbering_type") {
+        } else if ( token == "numbering_type" ) {
             std :: string slvr_nmbr;
             iss >> slvr_nmbr;
-            if (slvr_nmbr == "solver"){
+            if ( slvr_nmbr == "solver" ) {
                 solver_numbering = true;
-            } else if (slvr_nmbr == "DoFOrder") {
+            } else if ( slvr_nmbr == "DoFOrder" ) {
                 solver_numbering = false;
             } else {
                 cout << "Matrix Exporter: " << slvr_nmbr << " numbering type not supported using the solver type \n";
                 solver_numbering = true;
             }
-        } else if (token == "masters") {
+        } else if ( token == "masters" ) {
             iss >> numMasters;
             CondMasters.resize(numMasters);
             for ( unsigned k = 0; k < numMasters; k++ ) {
-                iss >> CondMasters[ k ];
+                iss >> CondMasters [ k ];
             }
         }
     }
 
-    if (matrix_type == "K_condensed" and numMasters == 0) {
+    if ( matrix_type == "K_condensed" and numMasters == 0 ) {
         cerr << "Matrix Exporter: " << "for K_condensed matrix master DoFs ('masters') must be specified \n";
     }
 
@@ -483,61 +482,59 @@ void MatrixExporter :: init() {
     X_init = constraints->giveMatrixX(nodes, bccont, solver, BC_applied);
     K_init = elems->prepareOutputStiffnessMatrix(BC_applied);
     fullMasterIDs = constraints->giveFullMasterIDs();
-    blockedDofsIDs = bccont -> giveArrayOfBlockedDoFs(); // BC DoFs IDs in DoFOrder numbering
+    blockedDofsIDs = bccont->giveArrayOfBlockedDoFs();   // BC DoFs IDs in DoFOrder numbering
     DataExporter :: init();
 
-    std::vector<int> solverOrder;
+    std :: vector< int >solverOrder;
     for (int i = 0; i < 12; ++i) {
-        solverOrder.push_back(nodes->giveDoFid(i));
+        solverOrder.push_back( nodes->giveDoFid(i) );
     }
 }
 
 //////////////////////////////////////////////////////////  Reorders the X matrix without BC_applied from DoFOrder to solver numbering
-const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(const CoordinateIndexedSparseMatrix& matriX) const {
-
-    CoordinateIndexedSparseMatrix matrix = const_cast<CoordinateIndexedSparseMatrix &>(matriX);
+const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(const CoordinateIndexedSparseMatrix &matriX) const {
+    CoordinateIndexedSparseMatrix matrix = const_cast< CoordinateIndexedSparseMatrix & >( matriX );
 
     int matrixsizerows = matrix.rows();
     int matrixsizecols = matrix.cols();
 
-    std::vector<int> solverOrder;
+    std :: vector< int >solverOrder;
     for (int i = 0; i < matrixsizerows; ++i) {
-        solverOrder.push_back(nodes->giveDoFid(i));
+        solverOrder.push_back( nodes->giveDoFid(i) );
         cout << nodes->giveDoFid(i) << " ";
-
     }
 
-    std::vector<int> masterFullPositions;
+    std :: vector< int >masterFullPositions;
     for (const int i : fullMasterIDs) {
-        auto it1 = std::find(solverOrder.begin(), solverOrder.end(), i);
-        masterFullPositions.push_back(std::distance(solverOrder.begin(), it1));
+        auto it1 = std :: find(solverOrder.begin(), solverOrder.end(), i);
+        masterFullPositions.push_back( std :: distance(solverOrder.begin(), it1) );
     }
 
-    std::vector<int> indices(masterFullPositions.size());
+    std :: vector< int >indices( masterFullPositions.size() );
     for (size_t i = 0; i < masterFullPositions.size(); ++i) {
-        indices[i] = i;
+        indices [ i ] = i;
     }
 
     // Sort the indices based on the values in vec1
-    std::sort(indices.begin(), indices.end(), [&masterFullPositions](int i1, int i2) {
-        return masterFullPositions[i1] < masterFullPositions[i2];
+    std :: sort(indices.begin(), indices.end(), [ & masterFullPositions ](int i1, int i2) {
+        return masterFullPositions [ i1 ] < masterFullPositions [ i2 ];
     });
 
     CoordinateIndexedSparseMatrix newMatrix(matrixsizerows, matrixsizecols);
 
-    std::vector<int> rowNums;
+    std :: vector< int >rowNums;
     for (int i = 0; i < matrixsizerows; ++i) {
         rowNums.push_back(i);
     }
 
-    std::vector<int> colNums;
+    std :: vector< int >colNums;
     for (int i = 0; i < matrixsizecols; ++i) {
         colNums.push_back(i);
     }
 
     for (const int i : rowNums) {
         for (const int j : colNums) {
-            newMatrix.coeffRef(solverOrder[ i ], indices[ j ]) = matrix.coeffRef( i , j);
+            newMatrix.coeffRef(solverOrder [ i ], indices [ j ]) = matrix.coeffRef(i, j);
         }
     }
 
@@ -551,46 +548,44 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
     CoordinateIndexedSparseMatrix K;
     CoordinateIndexedSparseMatrix X;
 
-    if (BC_applied) {  // matrices indentical for solver and DoFOrder numbering
-        K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied);
+    if ( BC_applied ) {  // matrices indentical for solver and DoFOrder numbering
+        K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied);
         X = X_init;
     } else {
-        if (solver_numbering == false) {
-            K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+        if ( solver_numbering == false ) {
+            K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
             X = X_init;
         } else {
-            K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+            K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
             X = MatrixXSwitchRowsCols(X_init);
         }
     }
 
-    if (matrix_type == "K_all_DoFs") {
+    if ( matrix_type == "K_all_DoFs" ) {
         Mat_out = K;
-
     } else if ( matrix_type == "K_effective" ) {
         Mat_out = X.transpose() * K * X; // Keff
-
     } else if ( matrix_type == "K_condensed" ) {
         Mat_out = X.transpose() * K * X; // Keff
         unsigned eff_size = Mat_out.rows(); // number of rows of Keff
         unsigned master_size = CondMasters.size(); // number of master rows
 
         // finds rows in Keff corresponding to masters (from read from line) - CondMasters
-        std :: vector< unsigned int > master_rows;
+        std :: vector< unsigned int >master_rows;
         master_rows.resize(master_size);
         for ( unsigned i = 0; i < master_size; i++ ) {
-            unsigned n = std::distance(fullMasterIDs.begin(), std::find(fullMasterIDs.begin(), fullMasterIDs.end(), CondMasters[i])); //finds index of value "j"
-            master_rows[i] = n;
+            unsigned n = std :: distance( fullMasterIDs.begin(), std :: find(fullMasterIDs.begin(), fullMasterIDs.end(), CondMasters [ i ]) ); //finds index of value "j"
+            master_rows [ i ] = n;
         }
 
         // rows in Keff corresponding to slaves
         unsigned slave_size = eff_size - master_size; // number of slave rows
-        std :: vector< unsigned int > slave_rows;
+        std :: vector< unsigned int >slave_rows;
         for ( unsigned ind = 0; ind < eff_size; ind++ ) {
             slave_rows.push_back(ind);
         }
         for ( unsigned i : master_rows ) {
-            slave_rows.erase(std::remove(slave_rows.begin(), slave_rows.end(), i), slave_rows.end());
+            slave_rows.erase( std :: remove(slave_rows.begin(), slave_rows.end(), i), slave_rows.end() );
         }
 
         // masters X masters  submatrix - K_mm
@@ -601,7 +596,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
         for (int i : master_rows) {
             l = 0;
             for (int j : master_rows) {
-                K_mm(k,l) = Mat_out.coeffRef(i,j);
+                K_mm(k, l) = Mat_out.coeffRef(i, j);
                 l++;
             }
             k++;
@@ -615,7 +610,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
         for (int i : master_rows) {
             l = 0;
             for (int j : slave_rows) {
-                K_ms(k,l) = Mat_out.coeffRef(i,j);
+                K_ms(k, l) = Mat_out.coeffRef(i, j);
                 l++;
             }
             k++;
@@ -629,7 +624,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
         for (int i : slave_rows) {
             l = 0;
             for (int j : slave_rows) {
-                K_ss(k,l) = Mat_out.coeffRef(i,j);
+                K_ss(k, l) = Mat_out.coeffRef(i, j);
                 l++;
             }
             k++;
@@ -643,11 +638,10 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
         // export
         Mat_out.resize(master_size, master_size);
         for ( unsigned i = 0; i < master_size; i++ ) {
-           for ( unsigned j = 0; j < master_size; j++ ) {
-            Mat_out.coeffRef(i,j) = K_cond(i,j);
+            for ( unsigned j = 0; j < master_size; j++ ) {
+                Mat_out.coeffRef(i, j) = K_cond(i, j);
             }
         }
-
     } else if ( matrix_type == "X" ) {
         Mat_out = X;
     }
@@ -657,7 +651,6 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
 
     // unsigned p;
     if ( outputfile.is_open() ) {
-
         outputfile << std :: scientific;
         outputfile.precision(precision);
 
@@ -672,7 +665,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
 // GAUGE EXPORTERS
 void Gauge :: giveFileName(unsigned step, char *buffer) const {
     ( void ) step;
-    sprintf(buffer, "%s.out", filename.c_str() );
+    sprintf( buffer, "%s.out", filename.c_str() );
 }
 
 
@@ -710,17 +703,17 @@ void ForceGauge :: readFromLine(istringstream &iss) {
         } else {
             std :: cout << "type of force 'mech' or 'trsp' for ForceGauge not determined, by default, 'mech' is considered" << '\n';
         }
-        Block bl(nodes->giveNode(0)->giveDimension() );
+        Block bl( nodes->giveNode(0)->giveDimension() );
         bl.readFromLine(iss);
         for ( auto const &nod : * nodes ) {
-            if ( bl.isInside(nod->givePoint() ) ) {
+            if ( bl.isInside( nod->givePoint() ) ) {
                 if ( ( nod->doesMechanics() && mech ) || ( nod->doesTransport() && !mech ) ) {
-                    this->n.push_back(nodes->giveNodeId(nod) );
+                    this->n.push_back( nodes->giveNodeId(nod) );
                 }
             }
         }
     } else {
-        num = std :: stoul(param.c_str() );
+        num = std :: stoul( param.c_str() );
         this->n.resize(num);
         for ( unsigned i = 0; i < num; i++ ) {
             iss >> this->n [ i ];
@@ -745,7 +738,7 @@ ForceGauge :: ForceGauge(string &f, string &gaugename, string &c, vector< unsign
 void ForceGauge :: init() {
     DataExporter :: init();
 
-    DoFs.resize(n.size() );
+    DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveOrderOfEnergyConjugateCode(codes [ 0 ]);
     }
@@ -760,7 +753,7 @@ void ForceGauge :: exportData(unsigned step, fs :: path resultDir) const {
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -812,7 +805,7 @@ void DoFGauge :: init() {
             DoFpos = 2;
         }
     } else if ( all_of(codes [ 0 ].begin(), codes [ 0 ].end(), :: isdigit) ) {
-        DoFpos = atoi( codes [ 0 ].c_str() );
+        DoFpos = atoi(codes [ 0 ].c_str() );
     } else {
         if ( dim == 3 ) {
             cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;
@@ -823,7 +816,7 @@ void DoFGauge :: init() {
         }
     }
 
-    DoFs.resize(n.size() );
+    DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + DoFpos;
     }
@@ -838,7 +831,7 @@ void DoFGauge :: exportData(unsigned step, fs :: path resultDir) const {
     double value = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
@@ -881,7 +874,7 @@ void IntegrationPointGauge :: init() {
     for ( unsigned e = 0; e < elems.size(); e++ ) {
         ee = elemcont->giveElement(elems [ e ]);
         ee->giveIPValues(codes [ 0 ], ipnums [ e ], res);
-        maxsize [ 0 ] = max< size_t >( maxsize [ 0 ], res.size() );
+        maxsize [ 0 ] = max< size_t >(maxsize [ 0 ], res.size() );
     }
 }
 
@@ -892,7 +885,7 @@ void IntegrationPointGauge :: exportData(unsigned step, fs :: path resultDir) co
     Vector values;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector res;
     Vector sum = Vector :: Zero(maxsize [ 0 ]);
 
@@ -903,7 +896,7 @@ void IntegrationPointGauge :: exportData(unsigned step, fs :: path resultDir) co
         for ( unsigned i = 0; i < elems.size(); i++ ) {
             e = elemcont->giveElement(elems [ i ]);
             e->giveIPValues(codes [ 0 ], ipnums [ i ], res);
-            for ( unsigned p = 0; p < min< size_t >(maxsize [ 0 ], res.size() ); p++ ) {
+            for ( unsigned p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
                 sum [ p ] += res [ p ];
             }
         }
@@ -947,7 +940,7 @@ void ElementContainerGauge :: exportData(unsigned step, fs :: path resultDir) co
     Vector values;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector res;
     elemcont->giveValues(codes [ 0 ], res);
 
@@ -1031,13 +1024,13 @@ void DisplacementGauge :: exportData(unsigned step, fs :: path resultDir) const 
     double valueB = 0;
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector DoFs = solver->giveTrialDoFValues();
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         if ( elemA ) {
-            Vector mv = elemA->giveMasterVariables(& natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemA->giveMasterVariables( & natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
             valueA = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueA = mv [ 0 ];
@@ -1055,7 +1048,7 @@ void DisplacementGauge :: exportData(unsigned step, fs :: path resultDir) const 
             }
         }
         if ( elemB ) {
-            Vector mv = elemB->giveMasterVariables(& natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemB->giveMasterVariables( & natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
             valueB = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueB = mv [ 0 ];
@@ -1104,12 +1097,12 @@ void SolverGauge :: exportData(unsigned step, fs :: path resultDir) const {
     char buffer[ 100 ];
     giveFileName(step, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         solver->giveValues(codes [ 0 ], res);
-        for ( p = 0; p < min< size_t >(maxsize [ 0 ], res.size() ); p++ ) {
+        for ( p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
             outputfile << "\t" << res [ p ] * multiplier;
         }
         for ( ; p < maxsize [ 0 ]; p++ ) {
@@ -1150,7 +1143,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
     cout << "Input file '" <<  filename;
     size_t origsize = exporters.size();
     string line, exptype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1293,7 +1286,7 @@ void ExporterContainer :: init(const bool &initial) {
             if ( g ) {
                 g->giveFileName(0, buffer);
                 ofstream outputfile;
-                outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+                outputfile.open( ( resultDir / buffer ).string(), ios :: app);
                 if ( outputfile.good() ) {
                     maxsize = g->giveMaxSize(0);
                     if ( maxsize == 1 ) {
@@ -1311,7 +1304,7 @@ void ExporterContainer :: init(const bool &initial) {
         for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
             ( * unique )->giveFileName(0, buffer);
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app);
             if ( outputfile.good() ) {
                 outputfile << endl;
             }
@@ -1340,7 +1333,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const bool &exp
         ( * unique )->giveFileName(0, buffer);
         if ( ( * unique )->doExportNow(time, step) || exportAll ) {
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app);
             if ( outputfile.good() ) {
                 outputfile << std :: scientific;
                 outputfile << step << "\t" << time;
@@ -1360,7 +1353,7 @@ void ExporterContainer :: exportData(unsigned step, double time, const bool &exp
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
         ( * unique )->giveFileName(0, buffer);
         ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app);
         if ( outputfile.good() && ( ( * unique )->doExportNow(time, step) || exportAll ) ) {
             outputfile << endl;
         }
@@ -1411,7 +1404,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
         if ( el->giveName().rfind("LTCB", 0) == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.resize( elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
             }

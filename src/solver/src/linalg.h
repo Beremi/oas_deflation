@@ -35,7 +35,7 @@ using Ttripletd = Eigen :: Triplet< double >;
 using Vector = Eigen :: VectorXd;
 using Point = Eigen :: Vector3d;
 using Matrix = Eigen :: MatrixXd;
-typedef typename Eigen :: SparseMatrix< double, Eigen :: ColMajor > CoordinateIndexedSparseMatrix;  // row-major-sparse * dense vector/matrix products - multi-threading
+typedef typename Eigen :: SparseMatrix< double, Eigen :: ColMajor >CoordinateIndexedSparseMatrix;   // row-major-sparse * dense vector/matrix products - multi-threading
 
 const static Eigen :: IOFormat VectorSemicolonFmt(Eigen :: FullPrecision, Eigen :: DontAlignCols, "; ", "; ", "", "", "", "");
 

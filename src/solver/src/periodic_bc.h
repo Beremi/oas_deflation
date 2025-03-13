@@ -44,7 +44,7 @@ class MechanicalPeriodicBCwithCrack : public MechanicalPeriodicBC
 {
 protected:
     Vector crack_normal;
-    double crackplane_d;    
+    double crackplane_d;
 public:
     MechanicalPeriodicBCwithCrack();
     virtual ~MechanicalPeriodicBCwithCrack() {};

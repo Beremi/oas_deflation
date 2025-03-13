@@ -24,7 +24,6 @@ VonMisesPlasticMaterialStatus :: VonMisesPlasticMaterialStatus(VonMisesPlasticMa
     outplane_backstress = 0.;
     beta_t = 1.;
     f = -1;
-
 }
 
 //////////////////////////////////////////////////////////
@@ -87,7 +86,7 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
     sigmaIso [ 0 ] = sigmaIso [ 1 ] = sigmaIso [ 2 ] = 1. / 3. * ( sigmaEff [ 0 ] + sigmaEff [ 1 ] + sigmaEff [ 2 ] );
     Vector n = sigmaEff - sigmaIso; // Deviatoric part
 
-    f = sqrt(3. * ( 1. / 6. * ( pow( ( sigmaEff [ 0 ] - sigmaEff [ 1 ] ), 2) + pow( ( sigmaEff [ 0 ] - sigmaEff [ 2 ] ), 2) + pow( ( sigmaEff [ 1 ] - sigmaEff [ 2 ] ), 2) ) + pow(sigmaEff [ 3 ], 2) + pow(sigmaEff [ 4 ], 2) + pow(sigmaEff [ 5 ], 2) ) ) - temp_sigmay;
+    f = sqrt( 3. * ( 1. / 6. * ( pow( ( sigmaEff [ 0 ] - sigmaEff [ 1 ] ), 2 ) + pow( ( sigmaEff [ 0 ] - sigmaEff [ 2 ] ), 2 ) + pow( ( sigmaEff [ 1 ] - sigmaEff [ 2 ] ), 2 ) ) + pow(sigmaEff [ 3 ], 2) + pow(sigmaEff [ 4 ], 2) + pow(sigmaEff [ 5 ], 2) ) ) - temp_sigmay;
 
     if ( f <= 0.000001 ) {  // Elastic regime
         if ( dimension == 2 ) {
@@ -100,7 +99,6 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
         temp_sigmay = sigmay;
         temp_outplane_plasticstrain = outplane_plasticstrain;
         temp_outplane_backstress = outplane_backstress;
-
     } else { // Plastic regime
         double n_norm = sqrt(n [ 0 ] * n [ 0 ] + n [ 1 ] * n [ 1 ] + n [ 2 ] * n [ 2 ] + 2 * n [ 3 ] * n [ 3 ] + 2 * n [ 4 ] * n [ 4 ] + 2 * n [ 5 ] * n [ 5 ]);
         N = n / n_norm;
@@ -122,7 +120,7 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
         temp_sigmay = sigmay + 2. / 3. * vmpm->giveBetaRatio() * vmpm->giveHardeningModulus() * lambda * sqrt(3. / 2.);
         temp_stress_full = sigmaTrial - 2. * G * lambda * N;
 
-        beta_t = sqrt(2./3.) * (temp_sigmay + sqrt(2./3.) * lambda * ( 1 - vmpm->giveBetaRatio() ) * vmpm->giveHardeningModulus()) / n_norm;
+        beta_t = sqrt(2. / 3.) * ( temp_sigmay + sqrt(2. / 3.) * lambda * ( 1 - vmpm->giveBetaRatio() ) * vmpm->giveHardeningModulus() ) / n_norm;
 
         if ( dimension == 2 ) {
             temp_stress << temp_stress_full [ 0 ], temp_stress_full [ 1 ], temp_stress_full [ 5 ];
@@ -143,7 +141,6 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
             temp_backstress = temp_backstress_full;
         }
         // cout << "PLASTIC" << "\n";
-
     }
     return temp_stress;
 };
@@ -182,55 +179,49 @@ Vector VonMisesPlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector
 
 //////////////////////////////////////////////////////////
 Matrix VonMisesPlasticMaterialStatus :: giveStiffnessTensor(string type) const {
-    if ( type == "tangent" || type == "consistent") {
-        ( void ) type; 
+    if ( type == "tangent" || type == "consistent" ) {
+        ( void ) type;
         VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
         Matrix elastic_tensor = TensMechMaterialStatus :: giveStiffnessTensor(type);
         Matrix elastoplastic_tensor = elastic_tensor;
-        Vector N_dim = Vector :: Zero(vmpm->giveStrainSize());
-        Matrix I_min_13 = Matrix :: Zero(vmpm->giveStrainSize(), vmpm->giveStrainSize());
+        Vector N_dim = Vector :: Zero( vmpm->giveStrainSize() );
+        Matrix I_min_13 = Matrix :: Zero( vmpm->giveStrainSize(), vmpm->giveStrainSize() );
 
         if ( f <= 0.000001 ) {  // Elastic regime
             elastoplastic_tensor = elastic_tensor;
-
         } else { // Plastic regime
-
             double G = vmpm->giveElasticModulus() / ( 2. * ( 1. + vmpm->givePoissonsRatio() ) );
-            
-            double gamma = 1. / (1. + vmpm->giveHardeningModulus() / (3. * G));
+
+            double gamma = 1. / ( 1. + vmpm->giveHardeningModulus() / ( 3. * G ) );
 
             unsigned dimension = vmpm->giveDimension();
             if ( dimension == 2 ) {
-                I_min_13(0,0) = I_min_13(1,1) = 2./3.;
-                I_min_13(0,1) = I_min_13(1,0) = -1./3.;
-                I_min_13(2,2) = 0.5;
+                I_min_13(0, 0) = I_min_13(1, 1) = 2. / 3.;
+                I_min_13(0, 1) = I_min_13(1, 0) = -1. / 3.;
+                I_min_13(2, 2) = 0.5;
 
-                N_dim[0] = N[0];
-                N_dim[1] = N[1];
-                N_dim[2] = N[5];
-
+                N_dim [ 0 ] = N [ 0 ];
+                N_dim [ 1 ] = N [ 1 ];
+                N_dim [ 2 ] = N [ 5 ];
             } else {
-                I_min_13(0,0) = I_min_13(1,1) = I_min_13(2,2) = 2./3.;
-                I_min_13(0,1) = I_min_13(0,2) = I_min_13(1,0) = I_min_13(1,2) = I_min_13(2,0) = I_min_13(2,1) = -1./3.;
-                I_min_13(3,3) = I_min_13(4,4) = I_min_13(5,5) = 0.5;
+                I_min_13(0, 0) = I_min_13(1, 1) = I_min_13(2, 2) = 2. / 3.;
+                I_min_13(0, 1) = I_min_13(0, 2) = I_min_13(1, 0) = I_min_13(1, 2) = I_min_13(2, 0) = I_min_13(2, 1) = -1. / 3.;
+                I_min_13(3, 3) = I_min_13(4, 4) = I_min_13(5, 5) = 0.5;
                 N_dim = N;
             }
 
-            if ( type == "tangent") {
-                elastoplastic_tensor = elastic_tensor - 2.*G*gamma* N_dim * N_dim.transpose(); // continuum elastoplastic tensor
+            if ( type == "tangent" ) {
+                elastoplastic_tensor = elastic_tensor - 2. * G * gamma * N_dim * N_dim.transpose(); // continuum elastoplastic tensor
             } else {
-                elastoplastic_tensor = elastic_tensor - (1. - beta_t) * 2.*G* I_min_13  - 2.*G* (gamma - (1. - beta_t))* N_dim * N_dim.transpose(); // consistent elastoplastic tensor 
+                elastoplastic_tensor = elastic_tensor - ( 1. - beta_t ) * 2. * G * I_min_13  - 2. * G * ( gamma - ( 1. - beta_t ) ) * N_dim * N_dim.transpose(); // consistent elastoplastic tensor
             }
-
         }
 
-        return elastoplastic_tensor;  
-        
+        return elastoplastic_tensor;
     } else {
         ( void ) type;
         return TensMechMaterialStatus :: giveStiffnessTensor(type);
     }
-
 };
 
 

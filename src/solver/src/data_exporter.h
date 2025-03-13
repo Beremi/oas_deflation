@@ -124,14 +124,14 @@ private:
     bool solver_numbering = true; // true - numbering in solver, false - numbering by input order of DoFs
     std :: string matrix_type = "K_all_DoFs"; // type of exported matrix - K_all_DoFs, K_effective, K_condensed, X
     std :: string Stiff_matrix_type = "elastic"; // type of stiffness matrix - elastic, tangent, consistent, ...
-    std :: vector< unsigned int > CondMasters; // input vector of master DoFs for static condensation
-    std :: vector< unsigned int > fullMasterIDs; // IDs of master DoFs in DoF numbering
-    std :: vector< unsigned int > blockedDofsIDs; // IDs of blocked DoFs (BCs) in DoF numbering
-    const CoordinateIndexedSparseMatrix MatrixXSwitchRowsCols (const CoordinateIndexedSparseMatrix& matrix) const;
+    std :: vector< unsigned int >CondMasters;  // input vector of master DoFs for static condensation
+    std :: vector< unsigned int >fullMasterIDs;  // IDs of master DoFs in DoF numbering
+    std :: vector< unsigned int >blockedDofsIDs;  // IDs of blocked DoFs (BCs) in DoF numbering
+    const CoordinateIndexedSparseMatrix MatrixXSwitchRowsCols(const CoordinateIndexedSparseMatrix &matrix) const;
 
 
 public:
-    MatrixExporter(ElementContainer *e, NodeContainer *n, BCContainer *bc, ConstraintContainer *cc, unsigned dimension) : DataExporter(dimension) {elems = e; nodes = n; bccont = bc;  constraints = cc; name = "MatrixExporter"; };
+    MatrixExporter(ElementContainer *e, NodeContainer *n, BCContainer *bc, ConstraintContainer *cc, unsigned dimension) : DataExporter(dimension) { elems = e; nodes = n; bccont = bc;  constraints = cc; name = "MatrixExporter"; };
     ~MatrixExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);

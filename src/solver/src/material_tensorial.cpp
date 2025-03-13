@@ -67,7 +67,7 @@ double TensTrsprtMaterialStatus :: calculatePressureDependentPermeability(double
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }

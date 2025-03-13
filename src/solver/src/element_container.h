@@ -32,7 +32,7 @@ public:
     ElementContainer() { model = nullptr; };
     ~ElementContainer();
     void setModel(Model *mod);
-    void setContainers(ConstraintContainer * c) { constcont = c;} ;
+    void setContainers(ConstraintContainer *c) { constcont = c; };
     void readFromFile(const std :: string filename, const unsigned ndim, MaterialContainer *matrs);
     // void saveToFile(const std :: string &filepath, std :: vector< unsigned > &elems_to_save) const;
     void saveElemStatsToFile(const std :: string &filepath, const std :: vector< unsigned > &elems_to_save, const double time_now = 0, const unsigned step = 0, const bool saveNodeIds = true, const double idc_time = 0, const double time_step = 1e-4) const;

@@ -18,8 +18,8 @@ class NeuralNetworkMaterialStatus : public MaterialStatus
 {
 protected:
     Matrix giveElasticStiffnessTensor3D() const;
-    torch::Tensor hidden; 
-    torch::Tensor temp_hidden; 
+    torch :: Tensor hidden;
+    torch :: Tensor temp_hidden;
 
 public:
     NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum);
@@ -33,7 +33,7 @@ public:
     virtual Matrix giveMassTensor() const;
     virtual Matrix giveDampingTensor() const;
 
-    virtual torch::Tensor giveHiddenState() const;
+    virtual torch :: Tensor giveHiddenState() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ protected:
     Matrix readDataNormalizationMatrix(int size, fs :: path matrix_path) const;
     Matrix stiffmat_elastic;
     Matrix norm;
-    
+
     fs :: path ml_path;
     torch :: jit :: script :: Module network;
     int num_layers, hidden_size; // for hidden GRU tensor
@@ -69,11 +69,10 @@ public:
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont);  };
 
     Matrix giveNormMatrix() const { return norm; };
-    std::tuple<int, int> giveNetworkProps() const { return std::make_tuple(num_layers, hidden_size);};
+    std :: tuple< int, int >giveNetworkProps() const { return std :: make_tuple(num_layers, hidden_size); };
 
     // std::vector<torch::jit::IValue> predictNetwork(std::vector<torch::jit::IValue> inputs); // I am not doing this because it requires type definition, but "auto" is more versatile
-    torch :: jit :: script :: Module giveNetwork() const {return network; };
-
+    torch :: jit :: script :: Module giveNetwork() const { return network; };
 };
 
 

@@ -91,7 +91,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -173,8 +173,11 @@ void SteadyStateLinearSolver :: solve() {
 //////////////////////////////////////////////////////////
 bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
     if ( enforce || stiffnessMatrixUpdate == 0 || ( stiffnessMatrixUpdate > 0 && iteration % abs(stiffnessMatrixUpdate) == 0 ) ) {
-        if (iteration==0 && stiffMatTypeFirstIT.compare("void")!=0) elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
-        else elems->updateStiffnessMatrix(K, stiffMatType);
+        if ( iteration == 0 && stiffMatTypeFirstIT.compare("void") != 0 ) {
+            elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
+        } else {
+            elems->updateStiffnessMatrix(K, stiffMatType);
+        }
         return true;
     } else {
         return false;
@@ -364,13 +367,13 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 idc->readFromStream(helpuint, inputfile);
             } else if ( param.compare("stiff_matrix_type") == 0 ) {
                 iss >> stiffMatType;
-                if (stiffMatType.compare("elastic") != 0 && stiffMatType.compare("secant")!=0  && stiffMatType.compare("tangent")!=0  && stiffMatType.compare("consistent")!=0){
+                if ( stiffMatType.compare("elastic") != 0 && stiffMatType.compare("secant") != 0  && stiffMatType.compare("tangent") != 0  && stiffMatType.compare("consistent") != 0 ) {
                     cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatType << endl;
                     exit(1);
-                }            
+                }
             } else if ( param.compare("first_iteration_stiff_matrix_type") == 0 ) {
                 iss >> stiffMatTypeFirstIT;
-                if (stiffMatTypeFirstIT.compare("elastic") != 0 && stiffMatType.compare("secant")!=0  && stiffMatType.compare("tangent")!=0  && stiffMatType.compare("consistent")!=0){
+                if ( stiffMatTypeFirstIT.compare("elastic") != 0 && stiffMatType.compare("secant") != 0  && stiffMatType.compare("tangent") != 0  && stiffMatType.compare("consistent") != 0 ) {
                     cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatTypeFirstIT << endl;
                     exit(1);
                 }
@@ -473,9 +476,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
         cout << residualPF [ i ] << " " << f_extPF [ i ]  << " " << f_intPF [ i ] << endl;
-        resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max(max(abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
         //cout << energyPF [ i ] << " "  << W_ext [ i ] << " "  << W_int [ i ] << " "  << EPS2 << endl;
     }
     resErr = sqrt(resErr);
@@ -984,7 +987,7 @@ void TransientLinearTransportSolver :: rebuild() {
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1041,7 +1044,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
     double num;
     int valueIN;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1156,7 +1159,7 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
 
     int valueIN;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1342,7 +1345,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 

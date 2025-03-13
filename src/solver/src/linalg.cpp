@@ -31,10 +31,10 @@ bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
     //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
 
-    cgK.setMaxIterations(relMaxIT * A.cols() );
+    cgK.setMaxIterations( relMaxIT * A.cols() );
     cgK.setTolerance(precision);
     cgK.compute(A);
-    initialGuess = Vector :: Zero(A.cols() );
+    initialGuess = Vector :: Zero( A.cols() );
     maxIT = relMaxIT * A.cols();
 
 #if PRINT_DEBUG_TIME
@@ -447,18 +447,18 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
 
 bool LinalgEigenSpectraSolver(const CoordinateIndexedSparseMatrix &mat, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals) {
     // Define matrix operation for Spectra
-    Spectra :: SparseSymMatProd<double> op(mat);
+    Spectra :: SparseSymMatProd< double >op(mat);
 
-    Spectra :: SymEigsSolver<Spectra :: SparseSymMatProd<double>> eigs(op, n_eigen_vals, 3 * n_eigen_vals);
+    Spectra :: SymEigsSolver< Spectra :: SparseSymMatProd< double > >eigs(op, n_eigen_vals, 3 * n_eigen_vals);
     eigs.init();
     eigs.compute(Spectra :: SortRule :: SmallestAlge);  // Largest algebraic eigenvalues
 
-    if (eigs.info() == Spectra :: CompInfo :: Successful) {
+    if ( eigs.info() == Spectra :: CompInfo :: Successful ) {
         eigenvalues = eigs.eigenvalues();
         eigenvectors = eigs.eigenvectors();
-        std::cout << "Eigenvalues:\n" << eigenvalues << std::endl;
+        std :: cout << "Eigenvalues:\n" << eigenvalues << std :: endl;
     } else {
-        std::cerr << "Eigenvalue computation failed!" << std::endl;
+        std :: cerr << "Eigenvalue computation failed!" << std :: endl;
     }
 
     return true;
@@ -466,25 +466,24 @@ bool LinalgEigenSpectraSolver(const CoordinateIndexedSparseMatrix &mat, Vector &
 
 bool LinalgEigenSpectraGENSolver(const CoordinateIndexedSparseMatrix &mat, const CoordinateIndexedSparseMatrix &matB, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals) {
     // Define matrix operation for Spectra
-    Spectra :: SparseGenMatProd<double> op(mat);
-    Spectra :: SparseCholesky<double> op_B(matB);
+    Spectra :: SparseGenMatProd< double >op(mat);
+    Spectra :: SparseCholesky< double >op_B(matB);
 
     // Define the solver: Solve Ax = λBx
     //Spectra :: SymGEigsSolver<Spectra :: SparseGenMatProd<double>, Spectra :: SparseSymMatProd<double>, Spectra :: GEigsMode::Cholesky> eigs(op, op_B, n_eigen_vals, 2 * n_eigen_vals);
-    Spectra :: SymGEigsSolver<Spectra :: SparseGenMatProd<double>, Spectra::SparseCholesky<double>, Spectra :: GEigsMode :: Cholesky> eigs(op, op_B, n_eigen_vals, 2 * n_eigen_vals);
+    Spectra :: SymGEigsSolver< Spectra :: SparseGenMatProd< double >, Spectra :: SparseCholesky< double >, Spectra :: GEigsMode :: Cholesky >eigs(op, op_B, n_eigen_vals, 2 * n_eigen_vals);
     eigs.init();
     eigs.compute(Spectra :: SortRule :: SmallestAlge);  // Largest algebraic eigenvalues
 
-    if (eigs.info() == Spectra :: CompInfo :: Successful) {
+    if ( eigs.info() == Spectra :: CompInfo :: Successful ) {
         eigenvalues = eigs.eigenvalues();
         eigenvectors = eigs.eigenvectors();
-        std::cout << "Eigenvalues:\n" << eigenvalues << std::endl;
+        std :: cout << "Eigenvalues:\n" << eigenvalues << std :: endl;
     } else {
-        std::cerr << "Eigenvalue computation failed!" << std::endl;
+        std :: cerr << "Eigenvalue computation failed!" << std :: endl;
     }
 
     return true;
-
 }
 
 bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b) {
@@ -518,7 +517,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot(AC.cross(AD) );
+    double coplanarityError = AB.dot( AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -632,15 +631,15 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         weis [ 0 ] = weis [ 2 ] = 5. / 9.;
         weis [ 1 ] = 8. / 9.;
     } else if ( n == 4 ) {
-        locs [ 0 ] = -sqrt( 3. / 7. + 2. / 7. * sqrt(6. / 5.) );
-        locs [ 1 ] = -sqrt( 3. / 7. - 2. / 7. * sqrt(6. / 5.) );
+        locs [ 0 ] = -sqrt(3. / 7. + 2. / 7. * sqrt(6. / 5.) );
+        locs [ 1 ] = -sqrt(3. / 7. - 2. / 7. * sqrt(6. / 5.) );
         locs [ 2 ] = -locs [ 1 ];
         locs [ 3 ] = -locs [ 0 ];
         weis [ 0 ] = weis [ 3 ] = ( 18. - sqrt(30.) ) / 36;
         weis [ 1 ] = weis [ 2 ] = ( 18. + sqrt(30.) ) / 36;
     } else if ( n == 5 ) {
-        locs [ 0 ] = -sqrt( 5. + 2. * sqrt(10. / 7.) ) / 3;
-        locs [ 1 ] = -sqrt( 5. - 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 0 ] = -sqrt(5. + 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 1 ] = -sqrt(5. - 2. * sqrt(10. / 7.) ) / 3;
         locs [ 2 ] = 0.;
         locs [ 3 ] = -locs [ 1 ];
         locs [ 4 ] = -locs [ 0 ];

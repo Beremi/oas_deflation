@@ -17,20 +17,20 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     NeuralNetworkMaterial *m = static_cast< NeuralNetworkMaterial * >( mat );
 
     // Normalization of input DoFs.
-    Matrix norm = m -> giveNormMatrix();
-    double x_mean = norm(0,0);
-    double x_std = norm(1,0);
-    double y_mean = norm(2,0);
-    double y_std = norm(3,0);
+    Matrix norm = m->giveNormMatrix();
+    double x_mean = norm(0, 0);
+    double x_std = norm(1, 0);
+    double y_mean = norm(2, 0);
+    double y_std = norm(3, 0);
 
     // std::cout << "\nCheckpoint 01\n" << std::flush;
-    
-    Vector strain_norm = (temp_strain.array() - x_mean) / x_std;
+
+    Vector strain_norm = ( temp_strain.array() - x_mean ) / x_std;
     Eigen :: VectorXf strain_float = strain_norm.cast< float > ();
     torch :: Tensor inputs_torch = torch :: from_blob(strain_float.data(), { 1, strain.size() }).clone(); // Populates torch Tensor with Eigen Vector/Matrix
     // inputs_torch = inputs_torch.unsqueeze(0); // so that sequence len = 1
 
-    std::vector<torch::jit::IValue> inputs;
+    std :: vector< torch :: jit :: IValue >inputs;
     inputs.push_back(inputs_torch);
     inputs.push_back(hidden);
 
@@ -43,8 +43,8 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     auto tuple_output = outputs.toTuple();
     // std::cout << "prediction succesful\n"  << "\n";
 
-    torch::Tensor stress_norm_tensor = tuple_output->elements()[0].toTensor();
-    torch::Tensor hidden_new = tuple_output->elements()[1].toTensor();
+    torch :: Tensor stress_norm_tensor = tuple_output->elements() [ 0 ].toTensor();
+    torch :: Tensor hidden_new = tuple_output->elements() [ 1 ].toTensor();
 
     // Update the hidden state
     temp_hidden = hidden_new;
@@ -54,16 +54,15 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     // std::cout << "\nCheckpoint 03\n" << std::flush;
 
     // Convert forces_norm Tensor to vector and to Eigen Vector and to double type
-    std :: vector< float >outVec( stress_norm_tensor.data_ptr< float >(), stress_norm_tensor.data_ptr< float >() + stress_norm_tensor.numel() );
-    Eigen :: VectorXf outFloat = Eigen :: VectorXf :: Map(& outVec [ 0 ], strain.size());
+    std :: vector< float >outVec(stress_norm_tensor.data_ptr< float >(), stress_norm_tensor.data_ptr< float >() + stress_norm_tensor.numel() );
+    Eigen :: VectorXf outFloat = Eigen :: VectorXf :: Map( & outVec [ 0 ], strain.size() );
     Eigen :: VectorXd stress_norm = outFloat.cast< double > ();
     // std::cout << "Stress Norm\n" << stress_norm << "\n" << std::flush;
 
     // // Denormalize output stress
-    Vector stress = (stress_norm.array() * y_std) + y_mean;
-    
-    return stress;
+    Vector stress = ( stress_norm.array() * y_std ) + y_mean;
 
+    return stress;
 };
 
 //////////////////////////////////////////////////////////
@@ -93,11 +92,11 @@ Vector NeuralNetworkMaterialStatus :: giveStressWithFrozenIntVars(const Vector &
 //////////////////////////////////////////////////////////
 Matrix NeuralNetworkMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
-   
+
     NeuralNetworkMaterial *m = static_cast< NeuralNetworkMaterial * >( mat );
 
-    if (m -> isStiffnessFromMatrix()) {
-        Matrix D = m -> giveStiffnessMatrix();
+    if ( m->isStiffnessFromMatrix() ) {
+        Matrix D = m->giveStiffnessMatrix();
         return D;
     } else {
         unsigned size = 1;
@@ -113,7 +112,7 @@ Matrix NeuralNetworkMaterialStatus :: giveStiffnessTensor(string type) const {
             exit(1);
         }
         Matrix D = Matrix :: Zero(size, size);
-    
+
         if ( dimension == 1 ) {
             D(0, 0) = m->giveElasticModulus();
         } else if ( dimension == 2 ) {
@@ -140,7 +139,7 @@ Matrix NeuralNetworkMaterialStatus :: giveStiffnessTensor(string type) const {
 
 Matrix NeuralNetworkMaterialStatus :: giveElasticStiffnessTensor3D() const {
     NeuralNetworkMaterial *m = static_cast< NeuralNetworkMaterial * >( mat );
-    Matrix D = m -> giveStiffnessMatrix();
+    Matrix D = m->giveStiffnessMatrix();
     return D;
 };
 
@@ -158,7 +157,7 @@ Matrix NeuralNetworkMaterialStatus :: giveMassTensor() const {
 }
 
 //////////////////////////////////////////////////////////
-torch::Tensor NeuralNetworkMaterialStatus :: giveHiddenState() const {
+torch :: Tensor NeuralNetworkMaterialStatus :: giveHiddenState() const {
     return hidden;
 }
 
@@ -166,12 +165,11 @@ torch::Tensor NeuralNetworkMaterialStatus :: giveHiddenState() const {
 //////////////////////////////////////////////////////////
 NeuralNetworkMaterialStatus :: NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "neural network tensorial mechanical mat. status";
-    std::tuple<int, int> props = m -> giveNetworkProps();
-    int num_layers = std::get<0>(props);
-    int hidden_size = std::get<1>(props);
-    hidden = torch::zeros({num_layers, hidden_size}); // initial hidden state as zero
-    temp_hidden = torch::zeros({num_layers, hidden_size}); // initial hidden state as zero
-
+    std :: tuple< int, int >props = m->giveNetworkProps();
+    int num_layers = std :: get< 0 >(props);
+    int hidden_size = std :: get< 1 >(props);
+    hidden = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
+    temp_hidden = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
 }
 
 //////////////////////////////////////////////////////////
@@ -207,7 +205,7 @@ Matrix NeuralNetworkMaterial :: readDataNormalizationMatrix(int size, fs :: path
     while ( getline(matrixDataFile, matrixRowString) ) {
         stringstream matrixRowStringStream(matrixRowString);
         while ( matrixRowStringStream >> matrixEntry ) {
-            matrixEntries.push_back( stod(matrixEntry) );   //here we convert the string to double and fill in the row vector storing all the matrix entries
+            matrixEntries.push_back(stod(matrixEntry) );    //here we convert the string to double and fill in the row vector storing all the matrix entries
         }
         matrixRowNumber++; //update the row numbers
     }
@@ -236,7 +234,7 @@ Matrix NeuralNetworkMaterial :: readStiffMatrixFromFile() const {
     while ( getline(matrixDataFile, matrixRowString) ) {
         stringstream matrixRowStringStream(matrixRowString);
         while ( matrixRowStringStream >> matrixEntry ) {
-            matrixEntries.push_back(stod(matrixEntry) );    //here we convert the string to double and fill in the row vector storing all the matrix entries
+            matrixEntries.push_back( stod(matrixEntry) );    //here we convert the string to double and fill in the row vector storing all the matrix entries
         }
         matrixRowNumber++; //update the column numbers
     }
@@ -263,7 +261,6 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
     bstiffmat = bmlmodel = bnormmat = bE = bnu = blayers = bhidden = bdensity = false;
 
     while (  iss >> param ) {
-
         if ( param.compare("E") == 0 ) {
             bE = true;
             iss >> E;
@@ -275,48 +272,41 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
             iss >> density;
         } else if ( param.compare("planeStrain") == 0 ) {
             planeStress = false;
-
         } else if ( param.compare("stiff_mat") == 0 ) {
             bstiffmat = true;
             string filepath;
             iss >> filepath;
             sm_path = GlobPaths :: BASEDIR  / filepath;
             stiffmat_elastic = readStiffMatrixFromFile();
-
         } else if ( param.compare("ml_model") == 0 ) {
             bmlmodel = true;
             string filepath;
             iss >> filepath;
             ml_path = GlobPaths :: BASEDIR  / filepath;
             // std::cout << "\nnorm Matrix\n" << norm << "\n" << std::flush;
-            network = torch :: jit :: load( ml_path.string() );
-            
+            network = torch :: jit :: load(ml_path.string() );
         } else if ( param.compare("norm_mat") == 0 ) {
             bnormmat = true;
             string filepath;
             iss >> filepath;
             nm_path = GlobPaths :: BASEDIR  / filepath;
             norm = readDataNormalizationMatrix(1, nm_path);
-
         } else if ( param.compare("num_layers") == 0 ) {
             blayers = true;
             iss >> num_layers;
-            
         } else if ( param.compare("hidden_size") == 0 ) {
             bhidden = true;
             iss >> hidden_size;
-        
         }  else {
             cerr << "MLElement ERROR: " << param << " input parameter not defined \n";
         }
-
     }
 
     if ( !bstiffmat && !bE ) {
         cerr << name << ": no elastic stiffness matrix neither E, nu was specified" << endl;
         exit(EXIT_FAILURE);
     }
-    if ( !bstiffmat && (bE || bnu) ) {
+    if ( !bstiffmat && ( bE || bnu ) ) {
         cout << name << ": elasticity defined by E,nu" << endl;
         stiffness_from_matrix = false;
         if ( !bE ) {
@@ -328,7 +318,7 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
             exit(EXIT_FAILURE);
         }
     }
-    if (!bE && !bnu) {
+    if ( !bE && !bnu ) {
         cout << name << ": elasticity defined by elastic stiffness matrix" << endl;
         stiffness_from_matrix = true;
 
@@ -339,15 +329,15 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bmlmodel ) {
         cerr << name << ": ML model was not specified" << endl;
-        exit(EXIT_FAILURE);  
+        exit(EXIT_FAILURE);
     }
     if ( !blayers ) {
         cerr << name << ": NN number of layers was not specified" << endl;
-        exit(EXIT_FAILURE);  
+        exit(EXIT_FAILURE);
     }
     if ( !bhidden ) {
         cerr << name << ": NN hiden size was not specified" << endl;
-        exit(EXIT_FAILURE);  
+        exit(EXIT_FAILURE);
     }
     if ( !bnormmat ) {
         cerr << name << ": normalization matrix was not specified" << endl;
