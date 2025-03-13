@@ -589,6 +589,13 @@ Vector Element :: giveShapeFunctions(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+Matrix Element :: giveShapeFunctionsGrad(const Point *x) const {
+    Matrix phi = Matrix :: Zero(nodes.size(), ndim );
+    shafunc->giveShapeFGrad(x, phi);
+    return phi;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MATERIAL TEST ELEMENT - only one material point and virtual loading through prescribed strains
 //////////////////////////////////////////////////////////

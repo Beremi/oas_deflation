@@ -805,7 +805,7 @@ class Model:
     def run_3d_Hanging_FracZone(self, node_coords_init=None):
         self.activeTransport = False
 
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3d_Hanging_FracZone(self.maxLim, self.minDist, self.trials)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3d_Hanging_FracZone(self.maxLim, self.minDist, 0.01, self.trials)
 
         coords = np.asarray(self.node_coords)
         lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),

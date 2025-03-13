@@ -258,7 +258,7 @@ void Solver :: giveValues(string code, Vector &result) const {
 void Solver :: computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep) {
     nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
     elems->integrateInternalForces(rr, f_int, frozen, timeStep);
-    nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext);     //give prescribed DoFs
+    nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext, rr);     //give prescribed DoFs
     residuals = f_ext - f_int;
 }
 

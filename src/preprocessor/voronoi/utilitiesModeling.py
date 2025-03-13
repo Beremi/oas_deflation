@@ -1650,13 +1650,13 @@ def create2d_box_with_periodic_nodes(maxLim, minDist, trials):
 
 
 
-def create3d_Hanging_FracZone(maxLim, minDist, trials):
+def create3d_Hanging_FracZone(maxLim, minDist, topsupwidth, trials):
     print('Creating 3d frac zone...')
     dim=3
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii  = assemble3d_Hanging_FracZone(maxLim, minDist, trials)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii  = assemble3d_Hanging_FracZone(maxLim, minDist, topsupwidth, trials)
 
     #print('Conducting Voronoi tesselation...', end = '')
     #vor, volumes= utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
@@ -5420,7 +5420,7 @@ def assemble2d_box_with_periodic_nodes(maxLim, minDist, trials):
 
 
 
-def assemble3d_Hanging_FracZone(maxLim, minDist, trials):
+def assemble3d_Hanging_FracZone(maxLim, minDist, topsupwidth, trials):
     dim = 3
     node_coords = []
     mechBC_merged = []
@@ -5437,8 +5437,8 @@ def assemble3d_Hanging_FracZone(maxLim, minDist, trials):
     nodeB = np.array([maxLim[0]-indent, indent, maxLim[2]-indent])
     pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
     print('top bound surface for fem frac zone')
-    nodeA = np.array([indent, maxLim[1]-indent, indent])
-    nodeB = np.array([maxLim[0]-indent, maxLim[1]-indent, maxLim[2]-indent])
+    nodeA = np.array([maxLim[0]/2. - topsupwidth/2. + indent, maxLim[1]-indent, indent])
+    nodeB = np.array([maxLim[0]/2. + topsupwidth/2. - indent, maxLim[1]-indent, maxLim[2]-indent])
     pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDist*0.9, dim, node_coords, trials*2)
     print('left bound surface for fem frac zone')
     nodeA = np.array([indent, indent, indent])

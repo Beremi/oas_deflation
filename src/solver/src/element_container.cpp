@@ -505,8 +505,10 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             DoFi = nodes->giveDoFid(lm->giveSlaveDoF());
             for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
                 DoFj = nodes->giveDoFid(lm->giveMasterDoF(j));
-                K.coeffRef(DoFi, DoFj) += lm->giveMasterMultiplier(j);
-                K.coeffRef(DoFj, DoFi) += lm->giveMasterMultiplier(j);          
+                if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                    K.coeffRef(DoFi, DoFj) += lm->giveMasterMultiplier(j);
+                    K.coeffRef(DoFj, DoFi) += lm->giveMasterMultiplier(j);          
+                }
             }
         }
     }

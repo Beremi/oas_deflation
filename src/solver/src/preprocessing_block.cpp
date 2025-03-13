@@ -533,6 +533,7 @@ void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCContai
         connectSlaveMasterRigid(constrs, slave, master, this->dim, activeDirs);
     }
 
+
     if ( insideRegions.size() > 0 || outsideRegions.size() > 0 ) {
         for ( auto const &nod : * nodes ) {
             //test for regions
@@ -1150,16 +1151,32 @@ void MechHangingNode :: apply(NodeContainer *n, ElementContainer *e, BCContainer
     vector< unsigned >dirs( masters.size() );
     vector< double >mults( masters.size() );
 
+    //displacements
     for ( unsigned k = 0; k < masters.size(); k++ ) {
         mults [ k ] = weights [ k ];
     }
-    for ( unsigned i = 0; i < ndim; i++ ) {
+    unsigned i = 0;
+    for ( ; i < ndim; i++ ) {
         for ( unsigned k = 0; k < masters.size(); k++ ) {
             dirs [ k ] = i;
         }
         JointDoF *newJD = new JointDoF(n->giveNode(nodeid), i, masters, dirs, mults);
         c->addConstraint(newJD);
     }
+    
+    /*
+    //rotations
+    Matrix weightsm = ee->giveShapeFunctionsGrad(& natcoords);   
+    for ( ; i < n->giveNode(nodeid)->givePhysicalFieldsDoFNum()[0]; i++ ) {
+        for ( unsigned k = 0; k < masters.size(); k++ ) {
+          mults [ k ] = weightsm ( i , k );
+          dirs [ k ] = i;
+        }
+        cout << "rotation X " << i << endl;
+        JointDoF *newJD = new JointDoF(n->giveNode(nodeid), i, masters, dirs, mults);
+        c->addConstraint(newJD);
+    }    
+    */
 }
 
 //////////////////////////////////////////////////////////
