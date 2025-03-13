@@ -195,6 +195,7 @@ void TXTNodalExporter :: init() {
     }
 }
 
+
 //////////////////////////////////////////////////////////
 void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
     char buffer[ 100 ];
@@ -231,7 +232,8 @@ void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
         unsigned expid;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             nn = nodes->giveNode(n);
-            outputfile << nn->giveID();
+            //outputfile << nn->giveID();
+            outputfile.write(reinterpret_cast<const char*>(nn->giveID()), sizeof(nn->giveID()));
             expid = 0;
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 if ( codes [ c ].rfind("extrapolated", 0) == 0 ) {
@@ -241,13 +243,17 @@ void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
                     nn->giveValues(codes [ c ], solver, res);
                 }
                 for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
-                    outputfile << "\t" << res [ p ] * multiplier;
+                    //outputfile << "\t" << res [ p ] * multiplier;
+                    auto value = res [ p ] * multiplier;
+                    outputfile.write(reinterpret_cast<const char*>(&value), sizeof(value));
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
-                    outputfile <<  "\t" << 0;
+                    //outputfile <<  "\t" << 0;
+                    auto value = 0;
+                    outputfile.write(reinterpret_cast<const char*>(&value), sizeof(value));
                 }
             }
-            outputfile << endl;
+            outputfile << "\n";
         }
         outputfile.close();
     }
@@ -431,7 +437,7 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, fs :: path resultD
 void MatrixExporter :: readFromLine(istringstream &iss) {
     iss >> filename;
     unsigned int numMasters;
-    
+
     std::string token;
     while (iss >> token) {
         if (token == "matrix_type") {
@@ -448,7 +454,7 @@ void MatrixExporter :: readFromLine(istringstream &iss) {
             } else {
                 cout << "Matrix Exporter: " << bc_app << "  BC_applied can only be 'true' or 'false', using 'true' \n";
             }
-            
+
         } else if (token == "numbering_type") {
             std :: string slvr_nmbr;
             iss >> slvr_nmbr;
@@ -503,7 +509,7 @@ const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(cons
     for (int i = 0; i < matrixsizerows; ++i) {
         solverOrder.push_back(nodes->giveDoFid(i));
         cout << nodes->giveDoFid(i) << " ";
-        
+
     }
 
     std::vector<int> masterFullPositions;
@@ -516,7 +522,7 @@ const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(cons
     for (size_t i = 0; i < masterFullPositions.size(); ++i) {
         indices[i] = i;
     }
-    
+
     // Sort the indices based on the values in vec1
     std::sort(indices.begin(), indices.end(), [&masterFullPositions](int i1, int i2) {
         return masterFullPositions[i1] < masterFullPositions[i2];
@@ -538,7 +544,7 @@ const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(cons
         for (const int j : colNums) {
             newMatrix.coeffRef(solverOrder[ i ], indices[ j ]) = matrix.coeffRef( i , j);
         }
-    }   
+    }
 
     return newMatrix;
 }
@@ -549,7 +555,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
     CoordinateIndexedSparseMatrix Mat_out;
     CoordinateIndexedSparseMatrix K;
     CoordinateIndexedSparseMatrix X;
-   
+
     if (BC_applied) {  // matrices indentical for solver and DoFOrder numbering
         K = elems -> updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied);
         X = X_init;
@@ -567,22 +573,22 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
         Mat_out = K;
 
     } else if ( matrix_type == "K_effective" ) {
-        Mat_out = X.transpose() * K * X; // Keff 
+        Mat_out = X.transpose() * K * X; // Keff
 
     } else if ( matrix_type == "K_condensed" ) {
-        Mat_out = X.transpose() * K * X; // Keff 
+        Mat_out = X.transpose() * K * X; // Keff
         unsigned eff_size = Mat_out.rows(); // number of rows of Keff
         unsigned master_size = CondMasters.size(); // number of master rows
 
         // finds rows in Keff corresponding to masters (from read from line) - CondMasters
-        std :: vector< unsigned int > master_rows; 
+        std :: vector< unsigned int > master_rows;
         master_rows.resize(master_size);
-        for ( unsigned i = 0; i < master_size; i++ ) {  
+        for ( unsigned i = 0; i < master_size; i++ ) {
             unsigned n = std::distance(fullMasterIDs.begin(), std::find(fullMasterIDs.begin(), fullMasterIDs.end(), CondMasters[i])); //finds index of value "j"
             master_rows[i] = n;
         }
 
-        // rows in Keff corresponding to slaves 
+        // rows in Keff corresponding to slaves
         unsigned slave_size = eff_size - master_size; // number of slave rows
         std :: vector< unsigned int > slave_rows;
         for ( unsigned ind = 0; ind < eff_size; ind++ ) {
@@ -634,7 +640,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
             k++;
         }
 
-        // condensed matrix Kcond - Static condensation = Guyan reduction : K_reduced = K_mm - K_ms * K_ss-1 * K_sm;  
+        // condensed matrix Kcond - Static condensation = Guyan reduction : K_reduced = K_mm - K_ms * K_ss-1 * K_sm;
         Matrix K_cond;
         K_cond.resize(master_size, master_size);
         K_cond = K_mm - K_ms * K_ss.inverse() * K_ms.transpose();
@@ -644,13 +650,13 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
         for ( unsigned i = 0; i < master_size; i++ ) {
            for ( unsigned j = 0; j < master_size; j++ ) {
             Mat_out.coeffRef(i,j) = K_cond(i,j);
-            } 
+            }
         }
 
     } else if ( matrix_type == "X" ) {
         Mat_out = X;
-    }    
-   
+    }
+
     giveFileName(step, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
@@ -659,7 +665,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
 
         outputfile << std :: scientific;
         outputfile.precision(precision);
-       
+
         outputfile <<  Mat_out;
 
         outputfile.close();

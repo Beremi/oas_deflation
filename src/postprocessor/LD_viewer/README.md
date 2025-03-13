@@ -4,6 +4,7 @@ Simple viewer for LD.out files or any text files structured as a table with a he
 - example ld_viewer.desktop for linux right click context menu in Dolphin
   - in KDE Plasma 5 desktops place in /home/username/.local/share/kservices5/ServiceMenus
   - in KDE Plasma 6 desktops place in /home/username/.local/share/kio/servicemenus
+  - set as executable (```chmod +x ld_viewer.desktop```)
 
 ## Requirments:
 - traits

@@ -12,10 +12,10 @@ from mpl_toolkits.mplot3d import Axes3D
 
 try:
     from power_tesselation_cython import _generate_voronoi_parts_2d_cython
-    print('Using Cython version of point generator - _generate_voronoi_parts_2d_cython.')
+    print('Using Cython version of power tesselation - _generate_voronoi_parts_2d_cython.')
 except:
     _generate_voronoi_parts_2d_cython = None
-    print('''Using Python version of generator. To use the Cython version the
+    print('''Using Python version of power tesselation. To use the Cython version the
           the code has to be build using: python setup.py build_ext --inplace.''')
 
 class TimeFilter(logging.Filter):

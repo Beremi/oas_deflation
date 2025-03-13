@@ -10,4 +10,4 @@ X-KDE-Priority=TopLevel
 [Desktop Action ld_view]
 Icon=engauge-digitizer
 Name=LD Viewer
-Exec=/home/kelidas/anaconda3/bin/python /home/kelidas/workspace_git/OAS/src/postprocessor/LD_viewer/LD_viewer.py %f
+Exec=/home/kelidas/anaconda3/bin/python /home/kelidas/workspace_git/OAS/src/postprocessor/LD_viewer/LD_viewer.py %F
