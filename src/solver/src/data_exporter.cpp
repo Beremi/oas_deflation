@@ -232,8 +232,7 @@ void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
         unsigned expid;
         for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
             nn = nodes->giveNode(n);
-            //outputfile << nn->giveID();
-            outputfile.write(reinterpret_cast<const char*>(nn->giveID()), sizeof(nn->giveID()));
+            outputfile << nn->giveID();
             expid = 0;
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 if ( codes [ c ].rfind("extrapolated", 0) == 0 ) {
@@ -243,14 +242,10 @@ void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
                     nn->giveValues(codes [ c ], solver, res);
                 }
                 for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
-                    //outputfile << "\t" << res [ p ] * multiplier;
-                    auto value = res [ p ] * multiplier;
-                    outputfile.write(reinterpret_cast<const char*>(&value), sizeof(value));
+                    outputfile << "\t" << res [ p ] * multiplier;                    
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
-                    //outputfile <<  "\t" << 0;
-                    auto value = 0;
-                    outputfile.write(reinterpret_cast<const char*>(&value), sizeof(value));
+                    outputfile <<  "\t" << 0;
                 }
             }
             outputfile << "\n";

@@ -1052,7 +1052,7 @@ void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContain
     nBC.resize( ( dim - 1 ) * 3, fnID );
     vector< double >mult;
     mult.resize( ( dim - 1 ) * 3, 0. );
-    Vector normal;
+    Point normal;
     double area;
     for ( auto &el : * e ) {
         rbb = dynamic_cast< RigidBodyBoundary * >( el );

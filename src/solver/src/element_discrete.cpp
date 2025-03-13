@@ -1091,8 +1091,8 @@ Matrix Truss :: giveHMatrix(const Point *x) const {
     return Matrix(0, 0);
 }
 //////////////////////////////////////////////////////////
-Vector Truss :: giveContactStrainNT(const Vector &DoFs) const {
-    Vector strain = Bs [ 0 ] * DoFs;
+Vector Truss :: giveContactStrainNT() const {
+    Vector strain = RigidBodyContact::giveContactStrainNT();
     for ( size_t k = 1; k < ( size_t ) strain.size(); k++ ) {
         strain [ k ] = 0;                                  //only normal strain active in truss
     }

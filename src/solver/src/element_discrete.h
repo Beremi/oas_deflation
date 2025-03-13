@@ -167,7 +167,7 @@ protected:
 public:
     Truss(const unsigned dim) : RigidBodyContact(dim) { name = "Truss"; };
     ~Truss() {};
-    virtual Vector giveContactStrainNT(const Vector &DoFs) const;
+    virtual Vector giveContactStrainNT() const;
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
 };
