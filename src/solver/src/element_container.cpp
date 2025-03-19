@@ -425,12 +425,14 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
             DoFi = nodes->giveDoFid( lm->giveSlaveDoF() );
             for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
                 DoFj = nodes->giveDoFid( lm->giveMasterDoF(j) );
-                tripletList.push_back( Ttripletd(DoFi, DoFj, 0.0) );
-                tripletList.push_back( Ttripletd(DoFj, DoFi, 0.0) );
+                if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                    tripletList.push_back( Ttripletd(DoFi, DoFj, 0.0) );
+                    tripletList.push_back( Ttripletd(DoFj, DoFi, 0.0) );
+                }
             }
         }
     }
-
+    
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
