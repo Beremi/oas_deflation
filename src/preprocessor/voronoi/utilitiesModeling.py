@@ -2812,11 +2812,11 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     #return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, transportBC_merged
     return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, [],notches
 
-def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None ):
+def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None, periodic = False ):
     print('Creating 3d cube. Power tesselation: %s' %powerTes)
     #govNodes, rigidPlates
     dim = 3
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates,radii  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init);
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates,radii  = assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=coupled, node_coords_init=node_coords_init, periodic = periodic);
     node_coords = np.asarray(node_coords)
     """
     if SHOW_PLOT:
@@ -2826,9 +2826,15 @@ def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_i
         ax.scatter(node_coords[:,0], node_coords[:,1], node_coords[:,2])
         plt.show()
     """
-    print('Conducting Voronoi tesselation...', end = '')
-    vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
+
+    if powerTes==False:
+        print('Conducting Voronoi tesselation...', end = '')
+        vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim)
+    else:
+        print('Conducting Power tesselation...', end = '')
+        vor, volumes = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim)
     print('done.')
+
 
     ########################################################################
     functions = []
@@ -8459,7 +8465,7 @@ def assemble3DBalbet(maxLim, minDist, trials, powerTes, shotRadius=0.02, shotGra
 
 
 
-def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None):
+def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None, periodic = False):
     dim = 3
     #lists for the model
     if node_coords_init is None:
@@ -8599,49 +8605,65 @@ def assemble3Dcube(maxLim, minDist, trials, powerTes, coupled=False, node_coords
             pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
 
         if powerTes == True:
-            node_coords = np.zeros((0,dim))
-            radii = np.zeros(len(node_coords))
 
-            """
-            mechBC = np.array([-1,0,0,-1,-1,-1,    -1,-1,-1,-1,-1,-1])
-            mBC = utilitiesMech.mechanicalBC(dim, 0, mechBC)
-            mechBC_merged.append(mBC)
-            """
+            minDistX = 0.6*minDist
+            indentX = 0.25*minDist
 
-            node_coords = np.vstack((node_coords,   np.array([maxLim[0]/2, maxLim[1]/2, maxLim[2]/2])  ))
-            radii = np.hstack((radii, minDist*0.4));
-
+            node_coords = []
 
             #front surf
-            nodeA =  np.array([indent ,  indent, indent])
-            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, indent])
-            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+            nodeA =  np.array([indentX ,  indentX, indent])
+            nodeB =  np.array([maxLim[0] - indentX, maxLim[1] - indentX, indent])
+            na = len(node_coords)
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDistX, dim, node_coords, trials)
+            na = len(node_coords)-na
 
             #back surf
-            nodeA =  np.array([indent ,  indent, maxLim[2] - indent])
-            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] -indent])
-            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
-
-            #top surf
-            nodeA =  np.array([indent , maxLim[1] - indent, indent])
-            nodeB =  np.array([maxLim[0] - indent, maxLim[1] - indent, maxLim[2] - indent])
-            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+            if periodic:
+                node_coords2 = np.copy(node_coords[-na:])
+                node_coords2[:,2] += maxLim[2] - 2*indent
+                node_coords =  node_coords + node_coords2.tolist()
+            else:
+                nodeA =  np.array([indentX ,  indentX, maxLim[2] - indent])
+                nodeB =  np.array([maxLim[0] - indentX, maxLim[1] - indentX, maxLim[2] -indent])
+                pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDistX, dim, node_coords, trials)
 
             #bot surf
-            nodeA =  np.array([indent , indent, indent])
-            nodeB =  np.array([maxLim[0] - indent, indent,  maxLim[2] - indent])
-            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+            nodeA =  np.array([indentX , indent, indentX])
+            nodeB =  np.array([maxLim[0] - indentX, indent,  maxLim[2] - indentX])
+            na = len(node_coords)
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDistX, dim, node_coords, trials)
+            na = len(node_coords)-na
+
+            #top surf
+            if periodic:
+                node_coords2 = np.copy(node_coords[-na:])
+                node_coords2[:,1] += maxLim[1] - 2*indent
+                node_coords =  node_coords + node_coords2.tolist()
+            else:
+                nodeA =  np.array([indentX , maxLim[1] - indent, indentX])
+                nodeB =  np.array([maxLim[0] - indentX, maxLim[1] - indent, maxLim[2] - indentX])
+                pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDistX, dim, node_coords, trials)
 
             #left face surf
-            nodeA =  np.array([indent , indent, indent])
-            nodeB =  np.array([indent, maxLim[1] - indent, maxLim[2] - indent])
-            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+            nodeA =  np.array([indent , indentX, indentX])
+            nodeB =  np.array([indent, maxLim[1] - indentX, maxLim[2] - indentX])
+            na = len(node_coords)
+            pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDistX, dim, node_coords, trials)
+            na = len(node_coords)-na
 
             #right face surf
-            nodeA =  np.array([maxLim[0]-indent , indent, indent])
-            nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indent, maxLim[2] - indent])
-            node_coords, radii = pointGenerators.generateParticlesOrtoSurface(nodeA, nodeB, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True)
+            if periodic:
+                node_coords2 = np.copy(node_coords[-na:])
+                node_coords2[:,0] += maxLim[0] - 2*indent
+                node_coords =  node_coords + node_coords2.tolist()
+            else:
+                nodeA =  np.array([maxLim[0]-indent , indentX, indentX])
+                nodeB =  np.array([maxLim[0]-indent, maxLim[1] - indentX, maxLim[2] - indentX])
+                pointGenerators.generateNodesOrtoSurface3dRand(nodeA, nodeB, minDistX, dim, node_coords, trials)
 
+            radii = np.ones(len(node_coords))*minDistX/2.
+            node_coords = np.asarray(node_coords)
             # volume
             node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = False, periodic_distance=True)
 

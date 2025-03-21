@@ -420,6 +420,9 @@ class Model:
         if self.modelType == '3d_cube':
             self.run_3d_cube()
 
+        if self.modelType == '3d_cube_with_periodic_faces':
+            self.run_3d_cube(periodic_faces = True)
+
         if self.modelType == '3d_balbet':
             self.run_3d_balbet()
 
@@ -554,8 +557,8 @@ class Model:
 
 
 
-    def run_3d_cube(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dCube(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
+    def run_3d_cube(self, periodic_faces = False, node_coords_init=None):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dCube(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init, periodic = periodic_faces)
         self.materialZones=None
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('box3d', maxLim=self.maxLim)
 
@@ -1097,7 +1100,7 @@ class Model:
             density = None
             #
             for i in range (len(r)):
-                if (r[i]=='young'):
+                if (r[i]=='young' or r[i]=='E0'):
                     young = float(r[i+1])
                 if (r[i]=='alpha'):
                     alpha = float(r[i+1])
