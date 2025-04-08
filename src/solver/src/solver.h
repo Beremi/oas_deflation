@@ -11,6 +11,7 @@
 #include "indirect_displ_control.h"
 
 class Pertrubation; //forward declaration
+class ExporterContainer; //forward declaration
 
 //////////////////////////////////////////////////////////
 class Solver
@@ -20,14 +21,16 @@ protected:
     ElementContainer *elems;
     NodeContainer *nodes;
     FunctionContainer *funcs;
+    ExporterContainer *exporters;
     BCContainer *bcs;
-    double time, dt, initdt, termination_time;
+    double time = 0;
+    double dt, initdt, termination_time;
     double init_time = 0.0;  ///> when starting from previously calculated results
     Vector f_ext, load, load_old, f_int, pbc, r, f, full_ddr, ddr, residuals;
     Vector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
     Vector v;
     unsigned freeDoFnum, totalDoFnum;
-    int step;
+    int step=0;
     unsigned init_step = 0;  ///> when starting from previously calculated results
     bool isTimeReal;
     bool terminated, fully_converged;
@@ -51,7 +54,7 @@ public:
     virtual void init(std :: string init_r_file, std :: string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const std :: string filename);
     virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };
-    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc);
+    void setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc, ExporterContainer *exp);
     std :: string giveName() const { return name; }
     bool isTerminated() { return terminated; }
     bool convergedToTolerance() const { return fully_converged; };

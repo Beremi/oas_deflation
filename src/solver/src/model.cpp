@@ -91,11 +91,11 @@ void Model :: jumpToNextStage() {
 void Model :: solve() {
     //solution
     signal(SIGINT, my_handler);
-    exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->isTerminated() );
+    exporters.exportData( solver->giveStepNumber(), -1, solver->giveTime(), solver->isTerminated() );
     while ( !solver->isTerminated() && TERMINATED == 0 ) {
         auto start_part = std :: chrono :: system_clock :: now();
         solver->solveStep();
-        exporters.exportData( solver->giveStepNumber(), solver->giveTime(), solver->isTerminated() );
+        exporters.exportData( solver->giveStepNumber(), -1, solver->giveTime(), solver->isTerminated() );
         if ( printTime && solver->showStepTime() ) {
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;
@@ -192,7 +192,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                 //delete ptr;
                 solver = Solver().readFromFile( ( baseDir / istr ).string() );
                 // QUESTION JK: why is this here and not in the constructor? together with new Solver() ?
-                solver->setContainers(& elems, & nodes, & funcs, & bconds);
+                solver->setContainers(& elems, & nodes, & funcs, & bconds, &exporters);
             } else if ( initial && istr.compare("initial_master_field") == 0 ) {
                 iss >> initialFieldFile;
             } else if ( initial && istr.compare("initial_master_time_derivative_field") == 0 ) {
@@ -241,6 +241,6 @@ void Model :: clear() {
     pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 
-    solver->setContainers(& elems, & nodes, & funcs, & bconds);
+    solver->setContainers(& elems, & nodes, & funcs, & bconds, & exporters);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 }

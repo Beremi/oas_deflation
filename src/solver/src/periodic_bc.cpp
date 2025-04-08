@@ -1092,7 +1092,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     cout << "*** computing elastic solution on the periodic model" << endl;
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
-    linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBC() );
+    linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBC(), masterModel->giveExporters() );
     linS->setTimeStep(dt);
     linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);

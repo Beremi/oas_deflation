@@ -15,8 +15,8 @@ public:
     VTKExporter(unsigned dimension) : DataExporter(dimension) { binaryswitch = true;   name = "VTKExporter"; };
     virtual ~VTKExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
-    virtual void giveFileName(unsigned step, char *buffer) const;
-    virtual void exportData(unsigned step, fs :: path resultDir) const = 0;
+    virtual void giveFileName(unsigned step, int iteration, char *buffer) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const = 0;
 protected:
     unsigned cell_data_size, node_data_size;
     bool binaryswitch;
@@ -35,7 +35,7 @@ public:
     VTKElementExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKElementExporter"; };
     ~VTKElementExporter() {};
     // virtual void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 
@@ -53,7 +53,7 @@ public:
     VTKRB2DExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRB2DExporter"; };
     ~VTKRB2DExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
-    virtual void exportData(unsigned step, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 
@@ -70,7 +70,7 @@ public:
     VTKRCExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRCExporter"; };
     ~VTKRCExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
-    virtual void exportData(unsigned step, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 

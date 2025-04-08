@@ -14,8 +14,8 @@ public:
     ElementStatsExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
     virtual ~ElementStatsExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
-    virtual void giveFileName(unsigned step, char *buffer) const;
-    virtual void exportData(unsigned step, fs :: path resultDir) const;
+    virtual void giveFileName(unsigned step, int iteration, char *buffer) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 

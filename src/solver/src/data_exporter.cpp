@@ -7,13 +7,17 @@
 #include "element_discrete.h"
 #include "solver.h"
 
+#define buffersize 200
+
 using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC DATA EXPORTER - master class
-void DataExporter :: giveFileName(unsigned step, char *buffer) const {
-    sprintf(buffer, "%s_%05d.out", filename.c_str(), step);
+void DataExporter :: giveFileName(unsigned step, int iteration, char *buffer) const {
+
+    if (iteration<0) sprintf(buffer, "%s_%05d.out", filename.c_str(), step);
+    else sprintf(buffer, "%s_%05d_iter_%05d.out", filename.c_str(), step, iteration);
 }
 
 //////////////////////////////////////////////////////////
@@ -64,6 +68,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
             iss >> precision;
         } else if ( param.compare("multiplier") == 0 ) {
             iss >> multiplier;
+        } else if ( param.compare("saveIterations") == 0 ) {
+            iss >> save_iterations;
         }
     }
 }
@@ -95,16 +101,16 @@ void DataExporter :: init() {
 }
 
 //////////////////////////////////////////////////////////
-bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
+bool DataExporter :: doExportNow(const double &time, const int &iteration, const unsigned &step) {
+    if (iteration>=0 && !save_iterations) return false;
     if ( ( time >= next_time_to_save ) || ( step >= next_step_to_save ) ) {
-        step_last = step;
-        time_last = time;
         return true;
     } else {
         return false;
     }
 }
 
+//////////////////////////////////////////////////////////
 void DataExporter :: updateNextTimeToSave(const double &time)
 {
     if ( ( time > next_time_to_save ) ) {
@@ -123,7 +129,7 @@ void DataExporter :: updateNextTimeToSave(const double &time)
     }
 }
 
-
+//////////////////////////////////////////////////////////
 void DataExporter :: updateNextStepToSave(const unsigned &step)
 {
     if ( ( step == next_step_to_save ) ) {
@@ -197,10 +203,10 @@ void TXTNodalExporter :: init() {
 
 
 //////////////////////////////////////////////////////////
-void TXTNodalExporter :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void TXTNodalExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Node *nn;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
     unsigned p;
@@ -294,10 +300,10 @@ void TXTElementExporter :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void TXTElementExporter :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void TXTElementExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Element *ee;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
     Vector res;
     unsigned p;
@@ -380,12 +386,12 @@ void TXTIntegrationPointExporter :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void TXTIntegrationPointExporter :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void TXTIntegrationPointExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Element *ee;
     size_t nIP;
     Vector res;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
     unsigned p;
@@ -542,8 +548,8 @@ const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(cons
 }
 
 //////////////////////////////////////////////////////////
-void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void MatrixExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     CoordinateIndexedSparseMatrix Mat_out;
     CoordinateIndexedSparseMatrix K;
     CoordinateIndexedSparseMatrix X;
@@ -646,7 +652,7 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
         Mat_out = X;
     }
 
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
     // unsigned p;
@@ -663,8 +669,9 @@ void MatrixExporter :: exportData(unsigned step, fs :: path resultDir) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // GAUGE EXPORTERS
-void Gauge :: giveFileName(unsigned step, char *buffer) const {
+void Gauge :: giveFileName(unsigned step, int iteration, char *buffer) const {
     ( void ) step;
+    ( void ) iteration;
     sprintf( buffer, "%s.out", filename.c_str() );
 }
 
@@ -748,10 +755,10 @@ void ForceGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void ForceGauge :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void ForceGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     double value = 0;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
@@ -826,10 +833,10 @@ void DoFGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void DoFGauge :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void DoFGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     double value = 0;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
@@ -880,10 +887,10 @@ void IntegrationPointGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void IntegrationPointGauge :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void IntegrationPointGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Vector values;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector res;
@@ -935,10 +942,10 @@ void ElementContainerGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainerGauge :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void ElementContainerGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Vector values;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector res;
@@ -1017,12 +1024,12 @@ void DisplacementGauge :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void DisplacementGauge :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void DisplacementGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Vector res;
     double valueA = 0;
     double valueB = 0;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector DoFs = solver->giveTrialDoFValues();
@@ -1091,11 +1098,11 @@ void SolverGauge :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void SolverGauge :: exportData(unsigned step, fs :: path resultDir) const {
+void SolverGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
     Vector res;
     size_t p;
-    char buffer[ 100 ];
-    giveFileName(step, buffer);
+    char buffer[ buffersize ];
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
     outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
@@ -1248,6 +1255,7 @@ void ExporterContainer :: setSolver(Solver *s) {
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: init(const bool &initial) {
+
     fs :: create_directories(resultDir);
 
     bool newname;
@@ -1266,13 +1274,12 @@ void ExporterContainer :: init(const bool &initial) {
             }
         }
     }
-
     if ( initial ) {
         //gauge files header
-        char buffer[ 100 ];
+        char buffer[ buffersize ];
         for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-            ( * unique )->giveFileName(0, buffer);
-            ofstream outputfile;
+            ( * unique )->giveFileName(0, -1, buffer);
+            ofstream outputfile;;
             outputfile.open( ( resultDir / buffer ).string() );
             if ( outputfile.good() ) {
                 outputfile << "#step" << "\t" << "time";
@@ -1284,7 +1291,7 @@ void ExporterContainer :: init(const bool &initial) {
         for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
             Gauge *g = dynamic_cast< Gauge * >( * d );
             if ( g ) {
-                g->giveFileName(0, buffer);
+                g->giveFileName(0, -1, buffer);
                 ofstream outputfile;
                 outputfile.open( ( resultDir / buffer ).string(), ios :: app);
                 if ( outputfile.good() ) {
@@ -1300,9 +1307,8 @@ void ExporterContainer :: init(const bool &initial) {
                 outputfile.close();
             }
         }
-
         for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-            ( * unique )->giveFileName(0, buffer);
+            ( * unique )->giveFileName(0, -1, buffer);
             ofstream outputfile;
             outputfile.open( ( resultDir / buffer ).string(), ios :: app);
             if ( outputfile.good() ) {
@@ -1326,12 +1332,12 @@ void ExporterContainer :: clear() {
 
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: exportData(unsigned step, double time, const bool &exportAll) const {
+void ExporterContainer :: exportData(unsigned step, int iteration, double time, const bool &exportAll) const {
     //add step number to gauge exporter files
-    char buffer[ 100 ];
+    char buffer[ buffersize ];
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        if ( ( * unique )->doExportNow(time, step) || exportAll ) {
+        ( * unique )->giveFileName(0, -1, buffer);
+        if ( ( * unique )->doExportNow(time, iteration, step) || exportAll ) {
             ofstream outputfile;
             outputfile.open( ( resultDir / buffer ).string(), ios :: app);
             if ( outputfile.good() ) {
@@ -1344,26 +1350,26 @@ void ExporterContainer :: exportData(unsigned step, double time, const bool &exp
 
     // export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        if ( ( * d )->doExportNow(time, step) || exportAll ) {
-            ( * d )->exportData(step, resultDir);
+        if ( ( * d )->doExportNow(time, iteration, step) || exportAll ) {
+            ( * d )->exportData(step, iteration, resultDir);
         }
     }
 
     // add end line to gauge exporter files
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
+        ( * unique )->giveFileName(0, -1, buffer);
         ofstream outputfile;
         outputfile.open( ( resultDir / buffer ).string(), ios :: app);
-        if ( outputfile.good() && ( ( * unique )->doExportNow(time, step) || exportAll ) ) {
+        if ( outputfile.good() && ( ( * unique )->doExportNow(time, iteration, step) || exportAll ) ) {
             outputfile << endl;
         }
         outputfile.close();
     }
 
-    updateAllTimeAndStepToSave(step, time);
+    if (iteration<0) updateAllTimeAndStepToSave(step, time);
 };
 
-
+//////////////////////////////////////////////////////////
 void ExporterContainer :: updateAllTimeAndStepToSave(unsigned step, double time) const {
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
         ( * d )->updateNextTimeToSave(time);

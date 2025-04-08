@@ -4,6 +4,7 @@
 #include "solver_eigenvalue.h"
 #include "adaptivity.h"
 #include <cstdlib> //random number generator
+#include "data_exporter.h"
 #define numPhysicalFields 4
 
 using namespace std;
@@ -32,11 +33,12 @@ Solver :: ~Solver() {
 }
 
 //////////////////////////////////////////////////////////
-void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc) {
+void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc, ExporterContainer *exp) {
     elems = e;
     nodes = n;
     funcs = functions;
     bcs = bc;
+    exporters = exp;
 }
 
 //////////////////////////////////////////////////////////

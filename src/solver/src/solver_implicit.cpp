@@ -709,6 +709,8 @@ void SteadyStateNonLinearSolver :: solve() {
             } else {
                 converged = false;
             }
+        
+            exporters->exportData(step, it, time, 0); //to export data during iterations
         }
 
         if ( converged ) {

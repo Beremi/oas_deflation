@@ -41,13 +41,15 @@ using namespace std;
 //#include <vtkMassProperties.h>
 #endif
 
+#define buffersize 200
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // VTK EXPORTERS
 
-void VTKExporter :: giveFileName(unsigned step, char *buffer) const {
-    sprintf(buffer, "%s_%05d.vtu", filename.c_str(), step);
+void VTKExporter :: giveFileName(unsigned step, int iteration, char *buffer) const {
+    if (iteration<0) sprintf(buffer, "%s_%05d.vtu", filename.c_str(), step);
+    else sprintf(buffer, "%s_%05d_iter_%05d.vtu", filename.c_str(), step, iteration);
 }
 
 //////////////////////////////////////////////////////////
@@ -102,10 +104,10 @@ void VTKExporter :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 // ELEMENTS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKElementExporter :: exportData(unsigned step, fs :: path resultDir) const {
+void VTKElementExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-    char buffer[ 100 ];
-    giveFileName(step, buffer);
+    char buffer[ buffersize ];
+    giveFileName(step, iteration, buffer);
     // Point P;
     // Element *ee;
 
@@ -252,9 +254,10 @@ void VTKElementExporter :: exportData(unsigned step, fs :: path resultDir) const
 
 // RIGID POLYGONS TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRB2DExporter :: exportData(unsigned step, fs :: path resultDir) const {
+void VTKRB2DExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
     ( void ) step;
     ( void ) resultDir;
+    ( void ) iteration; 
     /*
      * // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
      * // NOTE this is messy construction of xml file, will be remade using some of xml libraries for cpp
@@ -380,9 +383,9 @@ void VTKRB2DExporter :: exportData(unsigned step, fs :: path resultDir) const {
 
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
-void VTKRCExporter :: exportData(unsigned step, fs :: path resultDir) const {
-    char buffer[ 100 ];
-    giveFileName(step, buffer);
+void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
+    giveFileName(step, iteration, buffer);
 
     Vector DoFs = solver->giveTrialDoFValues();
 
