@@ -31,11 +31,13 @@ bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
     //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
 
-    cgK.setMaxIterations( relMaxIT * A.cols() );
-    cgK.setTolerance(precision);
-    cgK.compute(A);
-    initialGuess = Vector :: Zero( A.cols() );
-    maxIT = relMaxIT * A.cols();
+    if ( A.rows() > 0 ) {
+        cgK.setMaxIterations( relMaxIT * A.cols() );
+        cgK.setTolerance(precision);
+        cgK.compute(A);
+        initialGuess = Vector :: Zero( A.cols() );
+        maxIT = relMaxIT * A.cols();
+    }
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -94,9 +96,9 @@ bool LDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
-
-    ldlt.compute(A);
-
+    if ( A.rows() > 0 ) {
+        ldlt.compute(A);
+    }
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
@@ -146,8 +148,9 @@ bool LUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
-
-    lu.compute(A);
+    if ( A.rows() > 0 ) {
+        lu.compute(A);
+    }
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -199,7 +202,9 @@ bool LLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     auto start = std :: chrono :: system_clock :: now();
 #endif
 
-    llt.compute(A);
+    if ( A.rows() > 0 ) {
+        llt.compute(A);
+    }
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();

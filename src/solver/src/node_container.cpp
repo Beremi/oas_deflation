@@ -321,9 +321,6 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, Vector &loa
 
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         f_ext [ k ] = load [ k ];
-        if ( DoFid [ k ] >= freeDoFs + constrDoFs ) {
-            f_ext [ k ] = f_int [ k ] + f_dam [ k ] + f_acc [ k ];
-        }
     }
 
     double lag;
@@ -332,6 +329,13 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, Vector &loa
         lag = full_r [ lm->giveSlaveDoF() ];
         for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
             f_ext [ lm->giveMasterDoF(j) ] -= lag * lm->giveMasterMultiplier(j);
+        }
+    }
+    
+    //update reactions
+    for ( unsigned k = 0; k < totalDoFs; k++ ) {
+        if ( DoFid [ k ] >= freeDoFs + constrDoFs ) {
+            f_ext [ k ] = f_int [ k ] + f_dam [ k ] + f_acc [ k ];
         }
     }
 }
