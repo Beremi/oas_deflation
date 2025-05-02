@@ -373,8 +373,8 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 }
             } else if ( param.compare("first_iteration_stiff_matrix_type") == 0 ) {
                 iss >> stiffMatTypeFirstIT;
-                if ( stiffMatTypeFirstIT.compare("elastic") != 0 && stiffMatType.compare("secant") != 0  && stiffMatType.compare("tangent") != 0  && stiffMatType.compare("consistent") != 0 ) {
-                    cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatTypeFirstIT << endl;
+                if ( stiffMatTypeFirstIT.compare("elastic") != 0 && stiffMatTypeFirstIT.compare("secant") != 0  && stiffMatTypeFirstIT.compare("tangent") != 0  && stiffMatTypeFirstIT.compare("consistent") != 0 ) {
+                    cerr << "Error: first_iteration_stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatTypeFirstIT << endl;
                     exit(1);
                 }
             }
