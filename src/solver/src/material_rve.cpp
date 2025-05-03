@@ -764,6 +764,16 @@ bool DiscreteMechanicalRVEMaterialStatus ::  giveValues(string code, Vector &res
     }
 }
 
+/////////////////////////////////./////////////////////////
+Vector DiscreteMechanicalRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
+    DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    temp_strain = macromaterial->strainToCosserat(strain);
+    transformStrain();
+    local_stress = giveStiffnessTensorLocal("elastic") * local_strain;
+    transformStress();
+    return macromaterial->stressToCauchy(temp_stress);
+}
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
@@ -774,7 +784,6 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
         return giveStressPrecomputed(strain, timeStep);
     }
     cout << "Solving mechanical RVE" << endl;
-
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     temp_strain = addEigenStrain(macromaterial->strainToCosserat(strain) );  //macroscopic eigenstrain
 
@@ -801,6 +810,12 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
 
 /////////////////////////////////./////////////////////////
 bool DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion() {
+
+    if (mat->giveDimension() != 3){
+        cerr << "Ottosen criterion implemented only for 3 dimensions" << endl;
+        exit(1);
+    }
+
     vector< Vector >eigvecs;
     Vector eignums;
 
@@ -839,17 +854,6 @@ bool DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion() {
 }
 
 /////////////////////////////////./////////////////////////
-Vector DiscreteMechanicalRVEMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) timeStep;
-    DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    temp_strain = macromaterial->strainToCosserat(strain);
-    transformStrain();
-    local_stress = giveStiffnessTensorLocal("elastic") * local_strain;
-    transformStress();
-    return macromaterial->stressToCauchy(temp_stress);
-}
-
-/////////////////////////////////./////////////////////////
 double DiscreteMechanicalRVEMaterialStatus :: giveCrackVolume() const {
     if ( is_precomputed ) {
         return 0;
@@ -874,7 +878,7 @@ double DiscreteMechanicalRVEMaterialStatus :: giveCrackVolume() const {
 //////////////////////////////////////////////////////////
 Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocal(string type) const {
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    if ( is_precomputed ) {
+    if ( is_precomputed || macromat->hasPrecomputedTensorsStored()) {
         return macromat->givePrecomputedElasticTensor();
     } else {
         unsigned strain_size = mat->giveStrainSize();
@@ -1255,13 +1259,15 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
                 double factor = 1e-10;
                 for ( unsigned i = 0; i < strain_size; i++ ) {
                     cout << "precomputing for strain component " << i << " out of " << strain_size << endl;
-                    help_strain [ i ] = factor;
+                    help_strain [ i ] = factor;     
                     help_stress = giveStress(help_strain, -1);
                     help_strain [ i ] = 0.;
                     for ( unsigned j = 0; j < strain_size; j++ ) {
                         Keff(i, j) = help_stress [ j ] / factor;
                     }
                 }
+                //cout << Keff << endl;
+                //exit(1);
                 macromaterial->setConversionFromCauchy(previously_cauchy);
             }
             macromaterial->setPrecomputedElasticTensor(Keff);
@@ -1473,6 +1479,7 @@ DiscreteMechanicalRVEMaterial :: DiscreteMechanicalRVEMaterial(unsigned dimensio
     average_density = 0.;
     convert_from_cauchy = false;
     CauchyToCosseratMatrix = Matrix :: Zero(0, 0);
+    storedPrecomputeTensors = false;
 }
 
 /////////////////////////////////./////////////////////////
