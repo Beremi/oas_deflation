@@ -40,6 +40,7 @@ protected:
     virtual void computeTotalInternalAndExternalAndKineticEnergy();
 
     bool showTime;
+    bool silent;
 
     virtual void updateFieldVariables();
     virtual void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep);
@@ -82,7 +83,8 @@ public:
     virtual void giveValues(std :: string code, Vector &result) const;
     virtual void rebuild();
     Vector giveResiduals() const { return residuals; };
-    bool showStepTime()const { return showTime; };
+    bool showStepTime() const { return showTime; };
+    bool isSilent() const {return silent;};
 };
 
 //////////////////////////////////////////////////////////

@@ -116,6 +116,8 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> this->init_step;
             } else if ( param.compare("solver_type") == 0 ) {
                 iss >> symsolver_type;
+            } else if ( param.compare("silent") == 0 ) {
+                silent = true;
             } else if ( param.compare("pertrubation") == 0 ) {
                 Pertrubation *p = new Pertrubation();
                 p->readFromLine(iss);
@@ -189,7 +191,7 @@ bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, bool en
 void SteadyStateLinearSolver :: runBeforeEachStep() {
     Solver :: runBeforeEachStep();
     trial_r = r;
-    cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
+    if (not silent) cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -200,7 +202,7 @@ void SteadyStateLinearSolver :: runAfterEachStep() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: factorizeLinearSystem() {
-    cout << "factorizing system matrix" << endl;
+    if (not silent) cout << "factorizing system matrix" << endl;
 
     if ( linalgsolver == nullptr ) {
         if ( symsolver_type == "EigenConj" ) {
@@ -531,13 +533,13 @@ void SteadyStateNonLinearSolver :: reset() {
             if ( it == 0 ) {
                 disErr = 0;                        //error in displacement change, only from second iteration
             }
-            cout << setw(6) << it << setw(15) << resErr;
+            if (not silent) cout << setw(6) << it << setw(15) << resErr;
             if ( it == 0 ) {
-                cout << setw(15) << "---";
+                if (not silent) cout << setw(15) << "---";
             } else {
-                cout << setw(15) << disErr;
+                if (not silent) cout << setw(15) << disErr;
             }
-            cout << setw(15) << eneErr << endl;
+            if (not silent) cout << setw(15) << eneErr << endl;
 
             if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
@@ -568,7 +570,7 @@ void SteadyStateNonLinearSolver :: reset() {
             this->fully_converged = true;
         } else if ( !converged ) {
             if ( disErr < limitDisErr && resErr < limitResErr && eneErr < limitEneErr ) {
-                std :: cout << "tolerance increased in this step" << '\n';
+                if (not silent) std :: cout << "tolerance increased in this step" << '\n';
                 converged = true;
                 this->fully_converged = false;
                 computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
@@ -677,19 +679,21 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( it == 0 ) {
                 disErr = 0;                        //error in displacement change, only from second iteration
             }
-            cout << setw(6) << it << setw(15) << resErr;
+            if (not silent) cout << setw(6) << it << setw(15) << resErr;
             if ( it == 0 ) {
-                cout << setw(15) << "---";
+                if (not silent) cout << setw(15) << "---";
             } else {
-                cout << setw(15) << disErr;
+                if (not silent) cout << setw(15) << disErr;
             }
-            cout << setw(15) << eneErr << endl;
+            if (not silent) cout << setw(15) << eneErr << endl;
+
+            //if (not silent) checkAllVectorsForNaNs();
 
             // This check works only if flag "-ffast-math" is removed from CMake
             if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
                 if ( std :: isnan(resErr) ) {
-                    std :: cerr << "\tresidua ";
+                    std :: cerr << "\tresiduals ";
                 }
                 if ( std :: isnan(disErr) ) {
                     std :: cerr << "\tdisplacements ";
@@ -736,13 +740,13 @@ void SteadyStateNonLinearSolver :: solve() {
             }
 
             time += dt;
-            std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+            if (not silent) std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
             restarts++;
             restarted = true;
             restart_now = false;
         } else if ( !converged ) {
             if ( disErr < limitDisErr && resErr < limitResErr && eneErr < limitEneErr ) {
-                std :: cout << "tolerance increased in this step" << '\n';
+                if (not silent) std :: cout << "tolerance increased in this step" << '\n';
                 converged = true;
                 this->fully_converged = false;
                 computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
@@ -753,18 +757,18 @@ void SteadyStateNonLinearSolver :: solve() {
             }
         } else if ( ( !restarted ) && converged && it < enlargeIt ) {
             dt = fmin(dt * step_increase, dtmax);
-            std :: cout << "enlarging step, timestep = " << dt << '\n';
+            if (not silent) std :: cout << "enlarging step, timestep = " << dt << '\n';
         } else if ( converged && it > shortenIt && dt > dtmin ) {
             dt = fmax(dt * step_decrease, dtmin);
-            std :: cout << "shortening step, timestep = " << dt << '\n';
+            if (not silent) std :: cout << "shortening step, timestep = " << dt << '\n';
         }
         if  ( dt > dtmax ) {
             dt = dtmax;
-            std :: cout << "shortening step to the maximum one: " << dt << '\n';
+            if (not silent) std :: cout << "shortening step to the maximum one: " << dt << '\n';
         }
         if  ( dt < dtmin ) {
             dt = dtmin;
-            std :: cout << "enlarging step to the minimum one: " << dt << '\n';
+            if (not silent) std :: cout << "enlarging step to the minimum one: " << dt << '\n';
         }
     }
 }
@@ -781,11 +785,13 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
 
     SteadyStateLinearSolver :: runBeforeEachStep();
 
-    cout <<  scientific; //cout << setprecision(8);
-    cout << "----------------------------------------------------" << endl;
-    cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
-    cout << setw(6) << " " << setw(15) << maxResErr << setw(15) << maxDisErr << setw(15) << maxEneErr << endl;
-    cout << "----------------------------------------------------" << endl;
+    if (not silent) {
+        cout <<  scientific; //cout << setprecision(8);
+        cout << "----------------------------------------------------" << endl;
+        cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
+        cout << setw(6) << " " << setw(15) << maxResErr << setw(15) << maxDisErr << setw(15) << maxEneErr << endl;
+        cout << "----------------------------------------------------" << endl;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -814,8 +820,8 @@ void SteadyStateNonLinearSolver :: printAllVectors() {
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: checkAllVectorsForNaNs() {
     // JK left for testing
-    bool trial_r_nan, r_nan, full_ddr_nan, ddr_nan, f_int_nan, f_ext_nan, load_nan, f_nan;
-    trial_r_nan = r_nan = full_ddr_nan = ddr_nan = f_int_nan = f_ext_nan = load_nan = f_nan = false;
+    bool trial_r_nan, r_nan, full_ddr_nan, ddr_nan, f_int_nan, f_ext_nan, load_nan, f_nan, residuals_nan;
+    trial_r_nan = r_nan = full_ddr_nan = ddr_nan = f_int_nan = f_ext_nan = load_nan = f_nan = residuals_nan = false;
     for ( unsigned i = 0; i < trial_r.size(); i++ ) {
         if ( std :: isnan(trial_r [ i ]) || std :: isinf(trial_r [ i ]) ) {
             trial_r_nan = true;
@@ -841,13 +847,16 @@ void SteadyStateNonLinearSolver :: checkAllVectorsForNaNs() {
         if ( std :: isnan(load [ i ]) || std :: isinf(load [ i ]) ) {
             load_nan = true;
         }
+        if ( std :: isnan(residuals [ i ]) || std :: isinf(residuals [ i ]) ) {
+            residuals_nan = true;
+        }
         if ( i < f.size() ) {
             if ( std :: isnan(f [ i ]) || std :: isinf(f [ i ]) ) {
                 f_nan = true;
             }
         }
     }
-    std :: cout << "trial_r_nan " << trial_r_nan << " r_nan " << r_nan << " full_ddr_nan " << full_ddr_nan << " ddr_nan " << ddr_nan << " f_int_nan " << f_int_nan << " f_ext_nan " << f_ext_nan << " load_nan " << load_nan << " f_nan " << f_nan << '\n';
+    std :: cout << "trial_r_nan " << trial_r_nan << " r_nan " << r_nan << " full_ddr_nan " << full_ddr_nan << " ddr_nan " << ddr_nan << " f_int_nan " << f_int_nan << " f_ext_nan " << f_ext_nan << " load_nan " << load_nan << " f_nan " << f_nan << " residuals_nan "<<  residuals_nan << '\n';
 }
 
 //////////////////////////////////////////////////////////
@@ -855,7 +864,7 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
         SteadyStateLinearSolver :: runAfterEachStep();
 
-        cout << "----------------------------------------------------" << endl;
+        if (not silent) cout << "----------------------------------------------------" << endl;
 
         if ( idc ) {
             idc_time_converged = idc_time;

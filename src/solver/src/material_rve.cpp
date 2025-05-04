@@ -745,7 +745,7 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressPrecomputed(const Vector
     transformStress();
     if ( macromaterial->isNonlinear() && checkOttosenCriterion() ) {
         setFromPrecomputedToFullModel();
-        return macromaterial->stressToCauchy(giveStress(strain, timeStep) );
+        return giveStress(strain, timeStep);
     }
     return macromaterial->stressToCauchy(temp_stress);
 }
@@ -777,13 +777,13 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStressWithFrozenIntVars(const 
 
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    //delete curvatutures according to an updated homogenization theory
+    //delete curvatutures according to an updated homogenization theory    
     ( void ) timeStep;
     //precomputed material
     if ( is_precomputed ) {
         return giveStressPrecomputed(strain, timeStep);
     }
-    cout << "Solving mechanical RVE" << endl;
+    if (not RVE->giveSolver()->isSilent()) cout << "Solving mechanical RVE" << endl;
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     temp_strain = addEigenStrain(macromaterial->strainToCosserat(strain) );  //macroscopic eigenstrain
 
@@ -804,7 +804,6 @@ Vector DiscreteMechanicalRVEMaterialStatus :: giveStress(const Vector &strain, d
     collectStresses();
 
     transformStress();
-
     return macromaterial->stressToCauchy(temp_stress);
 }
 

@@ -22,6 +22,7 @@ Solver :: Solver() {
     W_int_old = Vector :: Zero(numPhysicalFields);
     W_kin = Vector :: Zero(numPhysicalFields);
     isTimeReal = false;
+    silent = false;
 }
 
 //////////////////////////////////////////////////////////
