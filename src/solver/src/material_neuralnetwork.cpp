@@ -348,8 +348,15 @@ Matrix NeuralNetworkMaterial :: readStiffMatrixFromFile() const {
 //////////////////////////////////////////////////////////
 void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
     string param;
-    bool bstiffmat, bmlmodel, blayers, bhidden, blayers1, bhidden1, bnormmat, bE, bnu, bdensity, bft, bGt, bRVEsize;
-    bstiffmat = bmlmodel = bnormmat = bE = bnu = blayers = bhidden = blayers1 = bhidden1 = bdensity = bft = bGt = bRVEsize = false;
+    bool bstiffmat, bmlmodel, bnormmat, bE, bnu, bdensity, bft, bGt, bRVEsize;
+    bstiffmat = bmlmodel = bnormmat = bE = bnu = bdensity = bft = bGt = bRVEsize = false;
+    const int MAX_LAYERS = 5;
+    // std::cout << "  Resizing layers \n" << std::flush;
+    // layers.resize(MAX_LAYERS);
+    // std::vector<Layer> test_layers;
+    // test_layers.resize(5);
+    // std::cout << "  RESIZED layers \n" << std::flush;
+   
 
     while (  iss >> param ) {
         if ( param.compare("E") == 0 ) {
@@ -383,26 +390,56 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
             string filepath;
             iss >> filepath;
             ml_path = GlobPaths :: BASEDIR  / filepath;
-            // std::cout << "\nnorm Matrix\n" << norm << "\n" << std::flush;
-            network = torch :: jit :: load(ml_path.string() );
+            std::cout << "  Loading ml_model \n" << std::flush;
+            // network = torch :: jit :: load(ml_path.string() );
+            try {
+                network = torch :: jit :: load(ml_path.string() );
+            } catch (const c10::Error& e) {
+                std::cerr << "  Error loading the ML model" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
         } else if ( param.compare("norm_mat") == 0 ) {
             bnormmat = true;
             string filepath;
             iss >> filepath;
             nm_path = GlobPaths :: BASEDIR  / filepath;
             norm = readDataNormalizationMatrix(10, nm_path);
-        } else if ( param.compare("num_layers") == 0 ) {
-            blayers = true;
-            iss >> num_layers;
-        } else if ( param.compare("hidden_size") == 0 ) {
-            bhidden = true;
-            iss >> hidden_size;
-        } else if ( param.compare("num_layers1") == 0 ) {
-            blayers1 = true;
-            iss >> num_layers1;
-        } else if ( param.compare("hidden_size1") == 0 ) {
-            bhidden1 = true;
-            iss >> hidden_size1;
+
+        } else if (param.find("layer_type") != std::string::npos) {
+            std::cout << "  Loading layer_types \n" << std::flush;
+
+            for (int i = 0; i < MAX_LAYERS; ++i) {
+                std::string layer_type = "layer_type" + std::to_string(i);
+                if (param == layer_type) {
+                    // std::string layer_name;
+                    // iss >> layer_name;
+                    // std::cout << "  layer type" << layer_name << "\n" << std::flush;
+                    
+                    layers.push_back({"x", 0, 0});
+                    iss >> layers.back().name; 
+                    // vector[vector.size()-1]
+                    // iss >> layers[i].name; 
+
+                }
+            }
+        } else if (param.find("num_layers") != std::string::npos) {
+            std::cout << "  Loading num_layers \n" << std::flush;
+
+            for (int i = 0; i < MAX_LAYERS; ++i) {
+                std::string num_lrs = "num_layers" + std::to_string(i);
+                if (param == num_lrs) {
+                    iss >> layers[i].num_layers;
+                }
+            }
+        } else if (param.find("hidden_size") != std::string::npos) {
+            std::cout << "  Loading hidden_sizes \n" << std::flush;
+            for (int i = 0; i < MAX_LAYERS; ++i) {
+                std::string hdns = "hidden_size" + std::to_string(i);
+                if (param == hdns) {
+                    iss >> layers[i].hidden_size;
+                }
+            }
         }  else {
             cerr << "MLElement ERROR: " << param << " input parameter not defined \n";
         }
