@@ -127,8 +127,8 @@ double NeuralNetworkMaterialStatus :: giveMassConstant() const {
 Vector NeuralNetworkMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
-    // temp_stress = giveStiffnessTensor("elastic") * temp_strain;
-    temp_stress = giveStress(temp_strain, timeStep);
+    temp_stress = giveStiffnessTensor("elastic") * temp_strain;
+    // temp_stress = giveStress(temp_strain, timeStep);
     return temp_stress;
 };
 
