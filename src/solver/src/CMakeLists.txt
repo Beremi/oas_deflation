@@ -2,7 +2,9 @@ set (solver_files
     model.cpp
     boundary_condition.cpp
     constraint.cpp
+    cross_section.cpp
     data_exporter.cpp
+    element_beam.cpp
     element_container.cpp
     element.cpp
     element_discrete.cpp
@@ -16,6 +18,7 @@ set (solver_files
     material_container.cpp
     material_coulomb_friction.cpp
     material.cpp
+    material_beam.cpp
     material_vectorial.cpp
     material_fiber.cpp
     material_misc.cpp

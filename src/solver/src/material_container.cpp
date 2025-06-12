@@ -12,6 +12,7 @@
 #include "material_fiber.h"
 #include "material_thermomechanical.h"
 #include "material_plasticity.h"
+#include "material_beam.h"
 
 #ifdef ML_TORCH_FOUND
  #include "material_neuralnetwork.h"
@@ -195,6 +196,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("VectMechVolDevSplitMaterial") == 0 ) {
                     VectMechVolDevSplitMaterial *newmat = new VectMechVolDevSplitMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("BeamMaterial") == 0 ) {
+                    BeamMaterial *newmat = new BeamMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else {

@@ -20,6 +20,7 @@
 #include "boundary_condition.h"
 #include "data_exporter.h"
 #include "preprocessing_block.h"
+#include "cross_section.h"
 #include "solver.h"
 #include "geometry.h"
 
@@ -47,6 +48,7 @@ public:
     fs :: path giveResultDirectory() const { return resultDir; };
     PBlockContainer *givePBlockContainer() { return & pblocks; };
     RegionContainer *giveRegionContainer() { return & regions; };
+    CrossSectionContainer *giveCSContainer() { return & crosssects; };
 
     unsigned giveDimension() const { return ndim; };
     void resetTime() { solver->setTime(0); solver->setStep(0); }
@@ -73,6 +75,7 @@ protected:
     ExporterContainer exporters;
     PBlockContainer pblocks;
     RegionContainer regions;
+    CrossSectionContainer crosssects;
     Solver *solver;
 };
 

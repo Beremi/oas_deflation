@@ -42,6 +42,7 @@ void Model :: init(const bool &initial) {     //initialization
     }
     cout << "initialization of elements" << endl;
     cout.flush();
+    crosssects.init();
     elems.init();
     cout << "initialization of preprocessing blocks" << endl;
     cout.flush();
@@ -184,6 +185,12 @@ void Model :: readFromFile(const string filename, const bool &initial) {
                     iss >> istr;
                     regions.readFromFile( ( baseDir / istr ).string(), ndim);
                 }
+            } else if ( istr.compare("CrossSectionFiles") == 0 ) {
+                iss >> iint;
+                for ( int i = 0; i < iint; i++ ) {
+                    iss >> istr;
+                    crosssects.readFromFile( ( baseDir / istr ).string(), ndim );
+                }
             } else if ( initial && istr.compare("Solver") == 0 ) {
                 iss >> istr;
                 //solver = new Solver;
@@ -225,6 +232,7 @@ void Model :: clear() {
     elems.clear();
     exporters.clear();
     pblocks.clear();
+    crosssects.clear();
 
     // funcs = FunctionContainer();  // functions remain too
     bconds = BCContainer();
@@ -234,6 +242,7 @@ void Model :: clear() {
     elems = ElementContainer();
     exporters = ExporterContainer();
     pblocks = PBlockContainer();
+    crosssects = CrossSectionContainer();
 
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);

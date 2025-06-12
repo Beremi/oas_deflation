@@ -11,6 +11,8 @@
 #include "model.h"
 #include "periodic_bc.h"
 #include "constraint.h"
+#include "cross_section.h"
+#include "element_beam.h"
 
 using namespace std;
 
@@ -40,6 +42,7 @@ void ElementContainer :: setModel(Model *mod) {
     model = mod;
     nodes = model->giveNodes();
     bconds = model->giveBC();
+    crosssects = model->giveCSContainer();
 };
 
 //////////////////////////////////////////////////////////
@@ -180,6 +183,14 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                 } else if ( elemType.compare("RigidBodyContactWithHeatConduction") == 0 ) {
                     RigidBodyContactWithHeatConduction *newelem = new RigidBodyContactWithHeatConduction(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                //} else if ( elemType.compare("EulerBernoulliBeam3D") == 0 ) {
+                //    TimoshenkoBeam3D *newelem = new TimoshenkoBeam3D(ndim);
+                //    newelem->readFromLine(iss, nodes, matrs, crosssects);
+                //    elems.push_back(newelem);
+                } else if ( elemType.compare("TimoshenkoBeam3D") == 0 ) {
+                    TimoshenkoBeam3D *newelem = new TimoshenkoBeam3D(ndim);
+                    newelem->readFromLine(iss, nodes, matrs, crosssects);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("MLMechElement") == 0 ) {
 #ifdef ML_TORCH_FOUND

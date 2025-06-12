@@ -1,0 +1,2 @@
+TXTNodalExporter nodes 2 displacement rotation
+TXTIntegrationPointExporter internalforces 2 location stress

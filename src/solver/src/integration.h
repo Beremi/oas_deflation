@@ -42,6 +42,19 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// TWO POINT INTEGRATION ON LINE
+class IntegrLine : public IntegrationType
+{
+public:
+    IntegrLine() { name = "IntegrLine"; };
+    virtual ~IntegrLine() {};
+    virtual void init();
+    void setNumIP(unsigned n);
+};
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // ONE POINT INTEGRATION FOR DISCRETE MODELS
 class IntegrDiscrete1 : public IntegrationType
 {
