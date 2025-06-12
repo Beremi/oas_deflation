@@ -49,19 +49,23 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
 
     inputs_torch.unsqueeze_(0);
 
+    // inputs into form that libtorch wants
     std :: vector< torch :: jit :: IValue >inputs;
-
-    auto hc0_in = std::make_tuple(hc0[0], hc0[1]);
-    auto hc1_in = std::make_tuple(hc1[0], hc1[1]);
-
     inputs.push_back(inputs_torch);
-    // inputs.push_back(hc0);
-    // inputs.push_back(hc1);
-    inputs.push_back(hc0_in);
-    inputs.push_back(hc1_in);
 
-    // std::cout << "inputs build \n"  << "\n";
+    std::vector<Layer> layers = m->giveNetworkProps();
+    for (size_t i = 0; i < layers.size(); ++i) {
+        Layer& layer = layers[i]; // <- note the &
+        if (layer.name == "LSTM") {
+            auto hc_in = std::make_tuple(hc_vectors[i][0], hc_vectors[i][1]);
+            inputs.push_back(hc_in);
+        } else if (layer.name == "GRU") {
+            auto h_in = hc_vectors[i][0];
+            inputs.push_back(h_in);
+        }
+    }
 
+    // network prediction
     auto outputs = m->giveNetwork().forward(inputs);
     auto tuple_output = outputs.toTuple();
     // std::cout << "prediction succesful\n"  << "\n";
@@ -69,30 +73,25 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     torch :: Tensor stress_norm_tensor = tuple_output->elements() [ 0 ].toTensor();
     // torch :: Tensor hidden_new = tuple_output->elements() [ 1 ].toTensor();
 
-    auto hc0_tuple = tuple_output->elements()[1].toTuple();
-    auto hc1_tuple = tuple_output->elements()[2].toTuple();
+    // Update hidden states
+    for (size_t i = 0; i < layers.size(); ++i) {
+        Layer& layer = layers[i]; // <- note the &
+        if (layer.name == "LSTM") {
+            auto hc_tuple = tuple_output->elements()[i+1].toTuple();
+            temp_hc_vectors[i][0] = hc_tuple->elements()[0].toTensor(); // update h tensor
+            temp_hc_vectors[i][1] = hc_tuple->elements()[1].toTensor(); // update c tensor
+        } else if (layer.name == "GRU") {
+            auto h_tensor = tuple_output->elements()[i+1].toTensor();
+            temp_hc_vectors[i][0] = h_tensor;
+        }
+    }
 
-    // std::cout << "pre hidden update\n"  << "\n";
-
-
-    // Update the hidden state
-    torch::Tensor hidden0 = hc0_tuple->elements()[0].toTensor();
-    // std::cout << hidden0  << "\n";
-    // std::cout << hidden0.sizes()  << "\n";
-
-
-    temp_hc0[0] = hc0_tuple->elements()[0].toTensor();
-    temp_hc0[1] = hc0_tuple->elements()[1].toTensor();
-    temp_hc1[0] = hc1_tuple->elements()[0].toTensor();
-    temp_hc1[1] = hc1_tuple->elements()[1].toTensor();
-   
     // std::cout << "post hidden update\n"  << "\n";
-
 
     // temp_hidden = hidden_new;
 
     stress_norm_tensor = stress_norm_tensor.squeeze(0); // gets rid of the "sequence" dimension
-    stress_norm_tensor.squeeze_(0); 
+    stress_norm_tensor.squeeze_(0); // gets rid of the "batch_size" dimension (use in case batch_size = 1)
 
     // std::cout << "\nCheckpoint 03\n" << std::flush;
 
@@ -106,7 +105,6 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     Vector stress = ( stress_norm.array() * y_std.array() ) + y_mean.array();
 
     // std::cout << "returning stress\n"  << "\n";
-
     return stress;
 };
 
@@ -129,8 +127,8 @@ double NeuralNetworkMaterialStatus :: giveMassConstant() const {
 Vector NeuralNetworkMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
-    // temp_stress = giveStiffnessTensor("elastic") * temp_strain;
-    temp_stress = giveStress(temp_strain, timeStep);
+    temp_stress = giveStiffnessTensor("elastic") * temp_strain;
+    // temp_stress = giveStress(temp_strain, timeStep);
     return temp_stress;
 };
 
@@ -182,7 +180,7 @@ Matrix NeuralNetworkMaterialStatus :: giveStiffnessTensor(string type) const {
 
 //////////////////////////////////////////////////////////
 
-Matrix NeuralNetworkMaterialStatus :: giveElasticStiffnessTensor3D() const {
+Matrix NeuralNetworkMaterialStatus :: giveElasticStiffnessTensor3D() const { 
     Matrix D = Matrix :: Zero(6, 6);
     NeuralNetworkMaterial *m = static_cast< NeuralNetworkMaterial * >( mat );
     double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
@@ -195,10 +193,9 @@ Matrix NeuralNetworkMaterialStatus :: giveElasticStiffnessTensor3D() const {
 //////////////////////////////////////////////////////////
 void NeuralNetworkMaterialStatus :: update() {
     MaterialStatus :: update();
-    // hidden = temp_hidden;
-    hc0 = temp_hc0;
-    hc1 = temp_hc1;
-
+    for (size_t i = 0; i < hc_vectors.size(); ++i) {
+        hc_vectors[i] = temp_hc_vectors[i];
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -209,58 +206,43 @@ Matrix NeuralNetworkMaterialStatus :: giveMassTensor() const {
 }
 
 //////////////////////////////////////////////////////////
-// torch :: Tensor NeuralNetworkMaterialStatus :: giveHiddenState() const {
-    // return hidden;
-// }
-
 std :: vector<std :: vector <torch::Tensor> > NeuralNetworkMaterialStatus :: giveHiddenState() const {
-    std :: vector<std :: vector <torch::Tensor> > hs;
-    hs.push_back(hc0);
-    hs.push_back(hc1);
-    return hs;
-
+    return hc_vectors;
 }
-
 
 //////////////////////////////////////////////////////////
 NeuralNetworkMaterialStatus :: NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "neural network tensorial mechanical mat. status";
-    // std :: tuple< int, int >props = m->giveNetworkProps();
-    // int num_layers = std :: get< 0 >(props);
-    // int hidden_size = std :: get< 1 >(props);
-    // hidden = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
-    // temp_hidden = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
 
-    std :: tuple< int, int >props = m->giveNetworkProps();
-    int num_layers = std :: get< 0 >(props);
-    int hidden_size = std :: get< 1 >(props);
+    std::vector<Layer> layers = m->giveNetworkProps();
 
-    torch::Tensor h0 = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
-    torch::Tensor c0 = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
-    h0.unsqueeze_(0);
-    c0.unsqueeze_(0);
+    for (size_t i = 0; i < layers.size(); ++i) {
+        Layer& layer = layers[i]; // <- note the &
+        int num_layers = layer.num_layers;
+        int hidden_size = layer.hidden_size;
 
-    hc0.push_back(h0);
-    hc0.push_back(c0);
-    temp_hc0.push_back(h0);
-    temp_hc0.push_back(c0);
+        if (layer.name == "LSTM") {
+            std::vector<torch::Tensor> hc;
+            torch::Tensor h = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
+            torch::Tensor c = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
+            h.unsqueeze_(0); // add the "batch_size" dimension (in this case batch_size = 1)
+            c.unsqueeze_(0); // add the "batch_size" dimension (in this case batch_size = 1)
+            hc.push_back(h);
+            hc.push_back(c);
+            hc_vectors.push_back(hc);
+            temp_hc_vectors.push_back(hc);
 
-    std :: tuple< int, int >props1 = m->giveNetworkProps1();
-    int num_layers1 = std :: get< 0 >(props1);
-    int hidden_size1 = std :: get< 1 >(props1);
-
-    torch::Tensor h1 = torch :: zeros({ num_layers1, hidden_size1 }); // initial hidden state as zero
-    torch::Tensor c1 = torch :: zeros({ num_layers1, hidden_size1 }); // initial hidden state as zero
-
-    h1.unsqueeze_(0);
-    c1.unsqueeze_(0);
-
-    hc1.push_back(h1);
-    hc1.push_back(c1);
-    temp_hc1.push_back(h1);
-    temp_hc1.push_back(c1);
-
-
+        } else if (layer.name == "GRU") {
+            std::vector<torch::Tensor> hc;
+            torch::Tensor h = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
+            h.unsqueeze_(0); // add the "batch_size" dimension (in this case batch_size = 1)
+            hc.push_back(h);
+            hc_vectors.push_back(hc);
+            temp_hc_vectors.push_back(hc);
+        }
+        // std::cout << layer.name << "  " << layer.num_layers << "  " << layer.hidden_size << "\n" << std::flush;
+    }
+   
 }
 
 //////////////////////////////////////////////////////////
@@ -348,8 +330,9 @@ Matrix NeuralNetworkMaterial :: readStiffMatrixFromFile() const {
 //////////////////////////////////////////////////////////
 void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
     string param;
-    bool bstiffmat, bmlmodel, blayers, bhidden, blayers1, bhidden1, bnormmat, bE, bnu, bdensity, bft, bGt, bRVEsize;
-    bstiffmat = bmlmodel = bnormmat = bE = bnu = blayers = bhidden = blayers1 = bhidden1 = bdensity = bft = bGt = bRVEsize = false;
+    bool bstiffmat, bmlmodel, bnormmat, bE, bnu, bdensity, bft, bGt, bRVEsize;
+    bstiffmat = bmlmodel = bnormmat = bE = bnu = bdensity = bft = bGt = bRVEsize = false;
+    const int MAX_LAYERS = 5;
 
     while (  iss >> param ) {
         if ( param.compare("E") == 0 ) {
@@ -382,27 +365,44 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
             bmlmodel = true;
             string filepath;
             iss >> filepath;
+            
             ml_path = GlobPaths :: BASEDIR  / filepath;
             // std::cout << "\nnorm Matrix\n" << norm << "\n" << std::flush;
-            network = torch :: jit :: load(ml_path.string() );
+            try {
+                network = torch :: jit :: load(ml_path.string() );
+            } catch (const c10::Error& e) {
+                std::cerr << "Error loading the model: " << e.what() << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            
         } else if ( param.compare("norm_mat") == 0 ) {
             bnormmat = true;
             string filepath;
             iss >> filepath;
             nm_path = GlobPaths :: BASEDIR  / filepath;
             norm = readDataNormalizationMatrix(10, nm_path);
-        } else if ( param.compare("num_layers") == 0 ) {
-            blayers = true;
-            iss >> num_layers;
-        } else if ( param.compare("hidden_size") == 0 ) {
-            bhidden = true;
-            iss >> hidden_size;
-        } else if ( param.compare("num_layers1") == 0 ) {
-            blayers1 = true;
-            iss >> num_layers1;
-        } else if ( param.compare("hidden_size1") == 0 ) {
-            bhidden1 = true;
-            iss >> hidden_size1;
+        } else if (param.find("layer_type") != std::string::npos) {
+            for (int i = 0; i < MAX_LAYERS; ++i) {
+                std::string layer_type = "layer_type" + std::to_string(i);
+                if (param == layer_type) {
+                    layers.push_back({"x", 0, 0});
+                    iss >> layers[i].name;
+                }
+            }
+        } else if (param.find("num_layers") != std::string::npos) {
+            for (int i = 0; i < MAX_LAYERS; ++i) {
+                std::string num_lrs = "num_layers" + std::to_string(i);
+                if (param == num_lrs) {
+                    iss >> layers[i].num_layers;
+                }
+            }
+        } else if (param.find("hidden_size") != std::string::npos) {
+            for (int i = 0; i < MAX_LAYERS; ++i) {
+                std::string hdns = "hidden_size" + std::to_string(i);
+                if (param == hdns) {
+                    iss >> layers[i].hidden_size;
+                }
+            }
         }  else {
             cerr << "MLElement ERROR: " << param << " input parameter not defined \n";
         }
@@ -450,17 +450,21 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
         cerr << name << ": ML model was not specified" << endl;
         exit(EXIT_FAILURE);
     }
-    if ( !blayers ) {
-        cerr << name << ": NN number of layers was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if ( !bhidden ) {
-        cerr << name << ": NN hiden size was not specified" << endl;
-        exit(EXIT_FAILURE);
-    }
     if ( !bnormmat ) {
         cerr << name << ": normalization matrix was not specified" << endl;
         exit(EXIT_FAILURE);
+    }
+
+    for (size_t i = 0; i < layers.size(); ++i) {
+        Layer& layer = layers[i];
+        if (layer.name == "LSTM" || layer.name == "GRU") {
+            if (layer.hidden_size == 0 || layer.num_layers == 0) {
+                cerr << "layer" << i << " has incorrectly specified num_layers of hidden_size" << endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        std::cout << layer.name << "  " << layer.num_layers << "  " << layer.hidden_size << "\n" << std::flush;
+
     }
 };
 
