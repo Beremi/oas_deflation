@@ -78,11 +78,13 @@ Matrix BeamMaterialStatus :: giveStiffnessTensor(string type) const {
 
 //////////////////////////////////////////////////////////
 Vector BeamMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     return BeamMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
 Vector BeamMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     (void) timeStep;
     temp_stress = giveStiffnessTensor("elastic")*strain;
     return temp_stress;

@@ -46,6 +46,7 @@ public:
     void findElementFriends();
     void updateMaterialStatuses();
     void resetMaterialStatuses();
+    void addElement(Element *newelem);
     CoordinateIndexedSparseMatrix prepareOutputStiffnessMatrix(bool BC_applied = true) const;
     CoordinateIndexedSparseMatrix updateOutputStiffnessMatrix(CoordinateIndexedSparseMatrix K_out, std :: string param, bool BC_applied = true, bool solver_numbering = true) const;
     void prepareStiffnessMatrix(CoordinateIndexedSparseMatrix &K) const;

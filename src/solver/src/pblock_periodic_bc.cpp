@@ -1,4 +1,4 @@
-#include "periodic_bc.h"
+#include "pblock_periodic_bc.h"
 #include "model.h"
 #include "material_vectorial.h"
 #include "element_ldpm.h"
@@ -280,11 +280,14 @@ void MechanicalPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementCo
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBC :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) mats;
-    ( void ) solver;
-    ( void ) regions;
+void MechanicalPeriodicBC :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ElementContainer * elems = model->giveElements();
+    BCContainer * bcs = model->giveBoundaryConditions();
+    ConstraintContainer * constrs = model->giveConstraints();
+    FunctionContainer * funcs = model->giveFunctions();
+    ExporterContainer * ex = model->giveExporters();
 
     calculateVolume(elems);
 
@@ -1038,11 +1041,15 @@ void MechanicalPeriodicBCwithVoigtConstraint :: generateRigidBodyBC(NodeContaine
 //////////////////////////////////////////////////////////
 // Mechanical Periodic BC with Elastic constraint
 //////////////////////////////////////////////////////////
-void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) mats;
-    ( void ) solver;
-    ( void ) regions;
+void MechanicalPeriodicBCwithElasticConstraint :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ElementContainer * elems = model->giveElements();
+    BCContainer * bcs = model->giveBoundaryConditions();
+    ConstraintContainer * constrs = model->giveConstraints();
+    FunctionContainer * funcs = model->giveFunctions();
+    Solver * solver = model->giveSolver();
+    ExporterContainer * ex = model->giveExporters();
 
     volume = 1;
     for ( auto const a : PUCsize ) {
@@ -1092,7 +1099,7 @@ void MechanicalPeriodicBCwithElasticConstraint :: apply(NodeContainer *nodes, El
     cout << "*** computing elastic solution on the periodic model" << endl;
     double dt = 1.;
     SteadyStateLinearSolver *linS = new SteadyStateLinearSolver();
-    linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBC(), masterModel->giveExporters() );
+    linS->setContainers( masterModel->giveElements(), masterModel->giveNodes(), masterModel->giveFunctions(),  masterModel->giveBoundaryConditions(), masterModel->giveExporters() );
     linS->setTimeStep(dt);
     linS->setInitialTimeStep(dt);
     masterModel->setSolver(linS);

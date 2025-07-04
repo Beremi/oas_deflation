@@ -1,9 +1,9 @@
-#include "preprocessing_block.h"
+#include "pblock_constraints.h"
 #include "model.h"
 #include "material_vectorial.h"
 #include "element_ldpm.h"
 #include "solver_implicit.h"
-#include "periodic_bc.h"
+#include "pblock_periodic_bc.h"
 
 // #include "misc.h"  // TODO JK: this include causes linking error
 using namespace std;
@@ -96,14 +96,10 @@ void MaterialRegion :: readFromLine(istringstream &iss, unsigned d) {
     }
 }
 
-void MaterialRegion :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) solver;
-    ( void ) regions;
-    ( void ) ex;
-    ( void ) funcs;
-    ( void ) constrs;
-    ( void ) bcs;
-    ( void ) nodes;
+void MaterialRegion :: apply(Model *model) {
+
+    MaterialContainer * mats = model->giveMaterials();
+    ElementContainer * elems = model->giveElements();
 
     // TODO make sure material is sutable for mech / transport
     unsigned num_nodes_inside;
@@ -141,11 +137,13 @@ VoigtConstraint :: VoigtConstraint() {
 VoigtConstraint :: ~VoigtConstraint() {}
 
 //////////////////////////////////////////////////////////
-void VoigtConstraint :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) mats;
-    ( void ) solver;
-    ( void ) regions;
+void VoigtConstraint :: apply(Model *model) {
+    
+    BCContainer * bcs = model->giveBoundaryConditions();
+    NodeContainer * nodes = model->giveNodes();
+    ExporterContainer * ex = model->giveExporters();
+    ConstraintContainer * constrs = model->giveConstraints();
+    FunctionContainer * funcs = model->giveFunctions();
 
     MechDoF *master;
     unsigned masterNodeNum = nodes->giveSize();
@@ -414,13 +412,11 @@ PressureFromMechanicalLoad :: PressureFromMechanicalLoad() {
 PressureFromMechanicalLoad :: ~PressureFromMechanicalLoad() {};
 
 //////////////////////////////////////////////////////////
-void PressureFromMechanicalLoad :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) solver;
-    ( void ) regions;
+void PressureFromMechanicalLoad :: apply(Model *model){
+
+    ConstraintContainer * constrs = model->giveConstraints();
+    MaterialContainer * mats = model->giveMaterials();
+    NodeContainer * nodes = model->giveNodes();
 
     VectTrsprtCoupledMaterial *dtcm = dynamic_cast< VectTrsprtCoupledMaterial * >( mats->giveMaterial(materialnum) );
     if ( dtcm == nullptr ) {
@@ -513,16 +509,13 @@ void RigidPlate :: checkPhysicalField(Node *master) {
 }
 
 //////////////////////////////////////////////////////////
-void RigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) solver;
+void RigidPlate :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ConstraintContainer * constrs = model->giveConstraints();
+    RegionContainer * regions = model->giveRegions();
 
     Node *master, *slave;
-    //////////////////////////////////////////////////////////
     // read the line "masterId numSlaves slaveId1, slaveId2...."
     master = nodes->giveNode(master_id);
     // check if it is master node
@@ -588,14 +581,10 @@ void CoordRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
 }
 
 //////////////////////////////////////////////////////////
-void CoordRigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) regions;
-    ( void ) solver;
+void CoordRigidPlate :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ConstraintContainer * constrs = model->giveConstraints();
 
     // jointDoF jD;
     Node *master;
@@ -666,14 +655,10 @@ void RingRigidPlate :: readFromLine(istringstream &iss, unsigned d) {
 }
 
 //////////////////////////////////////////////////////////
-void RingRigidPlate :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) regions;
-    ( void ) solver;
+void RingRigidPlate :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ConstraintContainer * constrs = model->giveConstraints();
 
     // jointDoF jD;
     Node *master;
@@ -736,14 +721,11 @@ void ExpansionRing :: readFromLine(istringstream &iss, unsigned d) {
 }
 
 //////////////////////////////////////////////////////////
-void ExpansionRing :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) regions;
-    ( void ) solver;
+void ExpansionRing :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ConstraintContainer * constrs = model->giveConstraints();
+    FunctionContainer * funcs = model->giveFunctions();
 
     // jointDoF jD;
     Node *master;
@@ -801,14 +783,10 @@ void ExpansionRingDoFLoad :: readFromLine(istringstream &iss, unsigned d) {
     }
 }
 
-void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) regions;
-    ( void ) solver;
+void ExpansionRingDoFLoad :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ConstraintContainer * constrs = model->giveConstraints();
 
     // jointDoF jD;
     Node *master;
@@ -847,14 +825,10 @@ void ExpansionRingDoFLoad :: apply(NodeContainer *nodes, ElementContainer *elems
 }
 
 
-void ExpansionRingSingleDoFLoad :: apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) regions;
-    ( void ) solver;
+void ExpansionRingSingleDoFLoad :: apply(Model *model){
+
+    NodeContainer * nodes = model->giveNodes();
+    ConstraintContainer * constrs = model->giveConstraints();
 
     // jointDoF jD;
     Node *slave;
@@ -1035,14 +1009,12 @@ void NormalSurfaceLoad :: readFromLine(istringstream &iss, unsigned d) {
 }
 
 //////////////////////////////////////////////////////////
-void NormalSurfaceLoad :: apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    //add boundary conditions
-    ( void ) n;
-    ( void ) c;
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) solver;
+void NormalSurfaceLoad :: apply(Model *model){
+
+    BCContainer * b = model->giveBoundaryConditions();
+    RegionContainer * regions = model->giveRegions();
+    ElementContainer * e = model->giveElements();
+
     RigidBodyBoundary *rbb;
     LDPMTetra *tet;
     BoundaryCondition *bc;
@@ -1134,14 +1106,11 @@ void MechHangingNode :: readFromLine(istringstream &iss, unsigned d) {
 }
 
 //////////////////////////////////////////////////////////
-void MechHangingNode :: apply(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solver) {
-    //add boundary conditions
-    ( void ) funcs;
-    ( void ) ex;
-    ( void ) mats;
-    ( void ) solver;
-    ( void ) b;
-    ( void ) regions;
+void MechHangingNode :: apply(Model *model){
+
+    ElementContainer * e = model->giveElements();
+    NodeContainer * n = model->giveNodes();
+    ConstraintContainer * c = model->giveConstraints();
 
     Element *ee = e->giveElement(elemid);
     unsigned ndim = ee->giveDimension();
@@ -1181,143 +1150,6 @@ void MechHangingNode :: apply(NodeContainer *n, ElementContainer *e, BCContainer
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// CONTAINER FOR PBLOCKS
-PBlockContainer :: ~PBlockContainer() {
-    for ( vector< PBlock * > :: iterator f = blocks.begin(); f != blocks.end(); ++f ) {
-        if ( * f != nullptr ) {
-            delete * f;
-        }
-    }
-}
-
-//////////////////////////////////////////////////////////
-void PBlockContainer :: clear() {
-    for ( vector< PBlock * > :: iterator f = blocks.begin(); f != blocks.end(); ++f ) {
-        if ( * f != nullptr ) {
-            delete * f;
-        }
-    }
-}
-
-//////////////////////////////////////////////////////////
-void PBlockContainer :: setContainers(NodeContainer *n, ElementContainer *e, BCContainer *b, ConstraintContainer *c, FunctionContainer *f, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *r, Solver *solv) {
-    nodes = n;
-    elems = e;
-    bcs = b;
-    constrs = c;
-    funcs = f;
-    exporters = ex;
-    materials = mats;
-    regions = r;
-    solver = solv;
-}
-
-//////////////////////////////////////////////////////////
-void PBlockContainer :: init() {
-    for ( auto b: blocks ) {
-        b->apply(nodes, elems, bcs, constrs, funcs, exporters, materials, regions, solver);
-    }
-}
-
-//////////////////////////////////////////////////////////
-void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
-    unsigned origsize = blocks.size(); //todo: warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of dat
-    string line, ftype;
-    ifstream inputfile( filename.c_str() );
-    if ( inputfile.is_open() ) {
-        while ( getline(inputfile >> std :: ws, line) ) {
-            if ( line.empty() || ( line.at(0) == '#' ) ) {
-                continue;
-            }
-            istringstream iss(line);
-            iss >> ftype;
-            if ( !( ftype.rfind("#", 0) == 0 ) ) {
-                if ( ftype.compare("MechanicalPeriodicBC") == 0 ) {
-                    MechanicalPeriodicBC *newblock = new MechanicalPeriodicBC();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("MechanicalSphericalPeriodicBCExperimental") == 0 ) {
-                    MechanicalSphericalPeriodicBCExperimental *newblock = new MechanicalSphericalPeriodicBCExperimental();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("MechanicalSphericalPeriodicBC") == 0 ) {
-                    MechanicalSphericalPeriodicBC *newblock = new MechanicalSphericalPeriodicBC();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("MechanicalPeriodicBCwithVoigtConstraint") == 0 ) {
-                    MechanicalPeriodicBCwithVoigtConstraint *newblock = new MechanicalPeriodicBCwithVoigtConstraint();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("MechanicalPeriodicBCwithElasticConstraint") == 0 ) {
-                    MechanicalPeriodicBCwithElasticConstraint *newblock = new MechanicalPeriodicBCwithElasticConstraint();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("TransportPeriodicBC") == 0 ) {
-                    MechanicalPeriodicBC *newblock = new TransportPeriodicBC();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("RigidPlate") == 0 ) {
-                    RigidPlate *newblock = new RigidPlate();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("CoordRigidPlate") == 0 ) {
-                    CoordRigidPlate *newblock = new CoordRigidPlate();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("RingRigidPlate") == 0 ) {
-                    RingRigidPlate *newblock = new RingRigidPlate();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("ExpansionRing") == 0 ) {
-                    ExpansionRing *newblock = new ExpansionRing();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("ExpansionRingDoFLoad") == 0 ) {
-                    ExpansionRingDoFLoad *newblock = new ExpansionRingDoFLoad();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("ExpansionRingSingleDoFLoad") == 0 ) {
-                    ExpansionRingSingleDoFLoad *newblock = new ExpansionRingSingleDoFLoad();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("VoigtConstraint") == 0 ) {
-                    VoigtConstraint *newblock = new VoigtConstraint();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("PressureFromMechanicalLoad") == 0 ) {
-                    PressureFromMechanicalLoad *newblock = new PressureFromMechanicalLoad();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("MaterialRegion") == 0 ) {
-                    MaterialRegion *newblock = new MaterialRegion();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("NormalSurfaceLoad") == 0 ) {
-                    NormalSurfaceLoad *newblock = new NormalSurfaceLoad();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("MechHangingNode") == 0 ) {
-                    MechHangingNode *newblock = new MechHangingNode();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else if ( ftype.compare("CosseratMechanicalPeriodicBC") == 0 ) {
-                    CosseratMechanicalPeriodicBC *newblock = new CosseratMechanicalPeriodicBC();
-                    newblock->readFromLine(iss, dim);
-                    blocks.push_back(newblock);
-                } else {
-                    cerr << "Error: preprocessor block '" <<  ftype <<  "' is not implemented yet." << endl;
-                    exit(EXIT_FAILURE);
-                }
-            }
-        }
-        inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << blocks.size() - origsize << " preprocessing blocks found" << endl;
-    } else {
-        cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
-        exit(EXIT_FAILURE);
-    }
-}
-
 
 
 void connectSlaveMasterRigid(ConstraintContainer *constrs, Node *slave, Node *master, unsigned const &ndim, const vector< bool > &activeDirs, bool includeRigidBodyRotation) {

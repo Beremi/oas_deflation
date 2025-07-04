@@ -68,8 +68,6 @@ print(np.column_stack((displA,displB,np.divide((displB-displA),displA))))
 print("internal force:")
 intfA = np.loadtxt(os.path.join("results","internalforces_00001.out"),skiprows = 1, usecols = [5,6,7,8,9,10])
 intfB = np.loadtxt(os.path.join(folder,"results","internalforces_00001.out"),skiprows = 1, usecols = [5,6,7,8,9,10])
-for B in intfB:
-    B = np.array([B[0]*normal[0]+B[1]*t1[0]+B[2]*t2[0],B[0]*normal[1]+B[1]*t1[1]+B[2]*t2[1],B[0]*normal[2]+B[1]*t1[2]+B[2]*t2[2],B[3]*normal[0]+B[4]*t1[0]+B[5]*t2[0],B[3]*normal[1]+B[4]*t1[1]+B[5]*t2[1],B[3]*normal[2]+B[4]*t1[2]+B[5]*t2[2]])
 for k in range(len(intfA)):
     print("IP ",k)
     print(np.column_stack((intfA[k],intfB[k],np.divide((intfB[k]-intfA[k]),intfA[k]))))

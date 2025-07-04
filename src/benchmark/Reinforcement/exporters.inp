@@ -1,0 +1,3 @@
+VTKRCExporter faces saveEvery 0.0001 cellData 4 strain stress damage tempCrackOpening pointData 0
+VTKElementExporter	elems	saveEvery	0.0001	cellData	4 strain stress damage	crack_opening	nodeData 2 displacement rotation
+VTKRebarExporter	rebars	saveEvery	0.0001	cellData	2 length internal_forces	nodeData 1 displacement

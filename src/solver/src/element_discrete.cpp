@@ -478,7 +478,7 @@ void RigidBodyContact :: computeMassMatrix() {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveBoundingBox() {
+Vector RigidBodyContact :: giveBoundingBox() const {
     Vector bbox = giveFacetBoundingBox();
 
     Point *p;
@@ -493,7 +493,7 @@ Vector RigidBodyContact :: giveBoundingBox() {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveFacetBoundingBox() {
+Vector RigidBodyContact :: giveFacetBoundingBox() const {
     Vector bbox = Vector :: Zero(ndim * 2);
 
     //init
@@ -627,11 +627,35 @@ Vector RigidBodyContact :: integrateInternalSources() {
 }
 
 
-
-
-
-
 //////////////////////////////////////////////////////////
+bool RigidBodyContact :: isPointInside(Point *xn, const Point *x) const{
+    
+    if (ndim==3){
+        //https://stackoverflow.com/questions/25179693/how-to-check-whether-the-point-is-in-the-tetrahedron-or-not
+        Matrix M = Matrix::Zero(3,3);
+        Point X, Y, A;
+        for(unsigned j=0; j<2; j++){
+            Point C = vert[vert.size()-1]->givePoint();
+            A = nodes[j]->givePoint();
+            X = centroid - A;
+            M(0,0) = X[0]; M(1,0) = X[1]; M(2,0) = X[2];
+            for(unsigned i=0; i<vert.size(); i++){
+                X = C - A;
+                M(0,1) = X[0]; M(1,1) = X[1]; M(2,1) = X[2];
+                X = vert[i]->givePoint() - A;
+                M(0,2) = X[0]; M(1,2) = X[1]; M(2,2) = X[2];
+                Y = M.colPivHouseholderQr().solve( (*x) - A ); 
+                if (Y[0]>=0. && Y[1]>=0. && Y[2]>=0. && Y[0]+Y[1]+Y[2]<=1.){
+                    *xn = Point(j,0,0);                    
+                    return true;
+                }
+                C = vert[i]->givePoint();
+            }
+        }
+    }
+    return false;
+}
+
 //////////////////////////////////////////////////////////
 void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
     Vector ipres;

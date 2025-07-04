@@ -77,6 +77,12 @@ void CrossSection::init(){
 CircularCrossSection::CircularCrossSection(){
 }
 
+//////////////////////////////////////////////////////////
+CircularCrossSection::CircularCrossSection(double r, double n){
+    radius = r;
+    nu = n;
+}
+
 /////////////////////////////////////////////////////////
 void CircularCrossSection::readFromLine(std :: istringstream &iss, const  unsigned ndim){
     (void) ndim;

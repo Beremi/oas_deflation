@@ -20,6 +20,22 @@ TimoshenkoBeam3D::TimoshenkoBeam3D(unsigned dim):Element(dim){
 }
 
 /////////////////////////////////////////////////////////
+TimoshenkoBeam3D::TimoshenkoBeam3D(Node* a, Node* b, Material * m, CrossSection *cs, Point zrefpoint):Element(3){
+    ndim = 3;
+    name = "TimoshenkoBeam3D";
+    numOfNodes = 2;
+    nodes.resize(numOfNodes);
+    nodes[0] = a;
+    nodes[1] = b;
+    vtk_cell_type = 3;
+    shafunc = new NullShapeF(1);
+    inttype = new IntegrLine();
+    zdir = zrefpoint;
+    CS = cs;
+    mat = m;
+}
+
+/////////////////////////////////////////////////////////
 void TimoshenkoBeam3D::setIntegrationPointsAndWeights(){
         IntegrLine *it = static_cast< IntegrLine * >( inttype );
         it->setNumIP(3);
@@ -100,10 +116,8 @@ void TimoshenkoBeam3D::init(){
         R(3*i+2,3*i+2) = t2.z();
     }
 
-
     Element :: init(); //calling base class method;
     BeamMaterial* tm = dynamic_cast<BeamMaterial*>(mat);
-
 
     if(!tm){
         cerr << "Error in TimoshenkoBeam3D: material must be instance of BeamMaterial" << endl;
@@ -136,11 +150,10 @@ void TimoshenkoBeam3D::checkNodeType() const{
 Matrix TimoshenkoBeam3D::giveBMatrix(const Point *x) const {
     //EN234: Three-dimentional Timoshenko beam element undergoing axial, torsional and bending deformations, Wenqiang Fang, 2015
     double ksi  = x->x();
-    TensMechMaterial* tm = static_cast<TensMechMaterial*>(mat);
+    BeamMaterial* tm = static_cast<BeamMaterial*>(mat);
     double FiZ = 12*tm->giveElasticModulus()*CS->giveIz()/(CS->giveKappaY()*tm->giveShearModulus()*CS->giveArea()*pow(length,2));
     double FiY = 12*tm->giveElasticModulus()*CS->giveIy()/(CS->giveKappaZ()*tm->giveShearModulus()*CS->giveArea()*pow(length,2));
     double ksi2 = pow(ksi,2);
-
     Matrix B = Matrix :: Zero( 6, 12 );
     //x strain.
     B(0, 0) = -1./length;
@@ -178,7 +191,6 @@ Matrix TimoshenkoBeam3D::giveBMatrix(const Point *x) const {
     B(5, 5) = 1./(1.+FiZ)/length*(-4.+6.*ksi-FiZ);
     B(5, 7) = -6./(1.+FiZ)/pow(length,2)*(-1.+2.*ksi);
     B(5, 11) = 1./(1.+FiZ)/length*(-2.+6.*ksi+FiZ);
-
     return B*R;
 }
 
@@ -228,6 +240,15 @@ void TimoshenkoBeam3D::giveValues(std :: string code, Vector &result) const{
     if ( code.compare("length") == 0 ) {
         result.resize(1);
         result [ 0 ] = length;
+    } else if ( code.compare("internal_forces") == 0 ) {
+        Vector IF = Vector::Zero(6);
+        for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
+            IF += stats [ k ]->giveTempStress()*inttype->giveIPWeight(k);            
+        }        
+        result.resize(IF.size());
+        for(unsigned i=0; i<IF.size(); i++){
+            result[i] = IF[i]/length;
+        }
     } else {
         result.resize(0);
     }

@@ -1208,6 +1208,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     VTKElementExporter *newexp = new VTKElementExporter(e, n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("VTKRebarExporter") == 0 ) {
+                    VTKRebarExporter *newexp = new VTKRebarExporter(e, n, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKRBExporter") == 0 ) {
                     if ( dimension == 2 ) {
                         VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n, dimension);

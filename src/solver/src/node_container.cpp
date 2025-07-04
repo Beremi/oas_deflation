@@ -28,7 +28,7 @@ void NodeContainer :: addNode(Node *n) {
     n->setID(nodes.size() );
     n->setStartingDoF(totalDoFs);
     nodes.push_back(n);
-    totalDoFs += n->giveNumberOfDoFs();
+    totalDoFs += n->giveNumberOfDoFs();    
 }
 
 //////////////////////////////////////////////////////////
@@ -129,6 +129,7 @@ unsigned NodeContainer :: giveNodeId(const Node *node) const {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: init() {
+    constr->checkInternalDependencies();
     establishDoFArray();
 }
 
@@ -164,6 +165,7 @@ void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: establishDoFArray() {
+
     BC->calculateDoFfields();
     DoFid.resize(totalDoFs);
     DoF2nodes.resize(totalDoFs);
@@ -236,7 +238,7 @@ void NodeContainer :: establishDoFArray() {
         }
     }
 
-    //identify physical fields of DoFs
+    //identify physical fields of DoFs    
     physicalFieldsDoF.resize(totalDoFs);
     unsigned i = 0;
     vector< unsigned >nodePhysFields;
@@ -248,7 +250,6 @@ void NodeContainer :: establishDoFArray() {
             i++;
         }
     }
-
     cout << "Loaded problem contains " << freeDoFs << " DoF; additional " << constrDoFs << " DoF are dictated by constraint and "  << totalDoFs - freeDoFs - constrDoFs << " DoF are directly prescribed" << endl;
 }
 

@@ -663,3 +663,13 @@ Point Element :: giveIPLoc(unsigned k) const {
         return nc;
     }
 }
+
+//////////////////////////////////////////////////////////
+Vector Element :: giveBoundingBox()const{
+    Vector bbox = Vector::Zero(2*ndim);
+    for(unsigned i=0; i<ndim; i++){
+        bbox[2*i] = 1/0.;
+        bbox[2*i+1] = -1/0.;
+    }
+    return bbox;
+}

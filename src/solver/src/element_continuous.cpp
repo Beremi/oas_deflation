@@ -447,7 +447,6 @@ void CosseratBrick :: computeMassMatrix() {
     MechanicalBrick :: computeMassMatrix();
     TensCosseratMechMaterial *cosmat = static_cast< TensCosseratMechMaterial * >( mat );
     unsigned k = 2 * ndim - 3; //number of rotations
-    unsigned kk = 3 * ndim - 3;  //total number of dofs
     for ( unsigned i = 0; i < 4; i++ ) {
         for ( unsigned j = 0; j < 4; j++ ) {
             for (unsigned d = 0; d < k; d++) {

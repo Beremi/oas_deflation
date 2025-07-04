@@ -19,7 +19,7 @@
 #include "element_container.h"
 #include "boundary_condition.h"
 #include "data_exporter.h"
-#include "preprocessing_block.h"
+#include "pblock_container.h"
 #include "cross_section.h"
 #include "solver.h"
 #include "geometry.h"
@@ -41,14 +41,14 @@ public:
     Solver *giveSolver() { return solver; };
     void setSolver(Solver *s) { solver = s; };
     FunctionContainer *giveFunctions() { return & funcs; };
-    BCContainer *giveBC() { return & bconds; };
+    BCContainer *giveBoundaryConditions() { return & bconds; };
     ConstraintContainer *giveConstraints() { return & constr; };
     ExporterContainer *giveExporters() { return & exporters; };
     MaterialContainer *giveMaterials() { return & matrs; };
     fs :: path giveResultDirectory() const { return resultDir; };
-    PBlockContainer *givePBlockContainer() { return & pblocks; };
-    RegionContainer *giveRegionContainer() { return & regions; };
-    CrossSectionContainer *giveCSContainer() { return & crosssects; };
+    PBlockContainer *givePreprocessingBlocks() { return & pblocks; };
+    RegionContainer *giveRegions() { return & regions; };
+    CrossSectionContainer *giveCrossSections() { return & crosssects; };
 
     unsigned giveDimension() const { return ndim; };
     void resetTime() { solver->setTime(0); solver->setStep(0); }

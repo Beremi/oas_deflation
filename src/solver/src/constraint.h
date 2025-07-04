@@ -47,6 +47,7 @@ public:
     std :: vector< Function * >giveTimeFns() { return time_fns; };
     Function *giveTimeFn(unsigned k) const { return time_fns [ k ]; };
     bool isTimeDependent() { return !time_fns.empty(); };
+    bool replaceDependentMasters(std :: vector<unsigned> &depms, std :: vector<JointDoF*> &depmsJDs);
 };
 
 //////////////////////////////////////////////////////////
@@ -131,6 +132,8 @@ public:
     size_t giveLagrangeMultsSize() { return lagmults.size(); };
     bool isActive() const { return !constraints.empty(); }
     void removeConstraint(unsigned i);
+    void addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations);
+    void checkInternalDependencies();
 
     std :: vector< JointDoF * > :: iterator begin() { return constraints.begin(); }
     std :: vector< JointDoF * > :: iterator end() { return constraints.end(); }

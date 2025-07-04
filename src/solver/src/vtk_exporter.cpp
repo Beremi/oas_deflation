@@ -1,5 +1,6 @@
 #include "vtk_exporter.h"
 #include "element_discrete.h"
+#include "element_beam.h"
 #include "element_ldpm.h"
 #include "solver.h"
 #include "misc.h"
@@ -607,3 +608,162 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
     cout << "VTK library not install, export of Rigid Contacts skipped" << endl;
 #endif
 }
+
+
+//////////////////////////////////////////////////////////
+// REBARS TO VTU FILE
+//////////////////////////////////////////////////////////
+void VTKRebarExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
+    char buffer[ buffersize ];
+    giveFileName(step, iteration, buffer);
+    // Point P;
+    // Element *ee;
+
+#ifdef __VTK_MODULE
+
+    //SELECT ELEMENTS
+    vector<Element*> selected_elements;
+    Element *el;
+    for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
+        el = elems->giveElement(e);
+        TimoshenkoBeam3D *tb = dynamic_cast<TimoshenkoBeam3D *>(el);
+        if (tb) selected_elements.push_back(el);
+    }
+
+    Vector DoFs = solver->giveTrialDoFValues();
+
+    vtkSmartPointer< vtkUnstructuredGrid >unstructuredGrid = vtkSmartPointer< vtkUnstructuredGrid > :: New();
+
+    vtkSmartPointer< vtkPoints >points = vtkSmartPointer< vtkPoints > :: New();
+
+    Point *pp;
+    for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+        pp = nodes->giveNode(n)->givePointPointer();
+        points->InsertNextPoint( pp->x(), pp->y(), pp->z() );
+    }
+    unstructuredGrid->SetPoints(points);
+
+    vector< Node * >elnodes;
+    for ( unsigned e = 0; e < selected_elements.size(); e++ ) {
+        el = selected_elements[e];
+        elnodes = el->giveNodes();
+        vtkSmartPointer< vtkIdList >elindices = vtkSmartPointer< vtkIdList > :: New();
+        for ( unsigned p = 0; p < elnodes.size(); p++ ) {
+            elindices->InsertNextId( elnodes [ p ]->giveID() );
+        }
+        unstructuredGrid->InsertNextCell(el->giveVTKCellType(), elindices);
+    }
+
+    unsigned i, j;
+    size_t msize;
+    vector< Vector >data;
+    unsigned p;
+    // ****************** cell data
+    data.resize( selected_elements.size() );
+    for ( p = 0; p < cell_data_size; p++ ) {
+        msize = 1;
+        i = 0;
+        for ( vector< Element * > :: const_iterator ee = selected_elements.begin(); ee != selected_elements.end(); ++ee, i++ ) {
+            ( * ee )->giveValues(codes [ p ].c_str(), data [ i ]);
+            msize = max< size_t >( msize, data [ i ].size() );
+        }
+        vtkSmartPointer< vtkDoubleArray >cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+        cellDataArray->SetName( codes [ p ].c_str() );
+        cellDataArray->SetNumberOfComponents(msize);
+        cellDataArray->SetNumberOfValues(selected_elements.size() * msize);
+        i = 0;
+        for ( vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d, i++ ) {
+            for ( j = 0; j < min< size_t >( msize, d->size() ); j++ ) {
+                cellDataArray->SetValue(msize * i + j, ( * d ) [ j ]);
+            }
+            for ( ; j < msize; j++ ) {
+                cellDataArray->SetValue(msize * i + j, 0);
+            }
+        }
+        unstructuredGrid->GetCellData()->AddArray(cellDataArray);
+    }
+
+
+    // ****************** node data
+    data.resize( nodes->giveSize() );
+    for ( ; p < node_data_size + cell_data_size; p++ ) {
+        msize = 1;
+        i = 0;
+        if ( codes [ p ].compare("residuals") == 0 ) {
+            msize = 0;
+            unsigned stDoF = 0;
+            unsigned numDoF = 0;
+            Vector res = solver->giveResiduals();
+            for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
+                stDoF = ( * nn )->giveStartingDoF();
+                numDoF = ( * nn )->giveNumberOfDoFs();
+                data [ i ] = Vector(numDoF);
+                msize = max< size_t >(msize, numDoF);
+                for ( unsigned t = 0; t < numDoF; t++ ) {
+                    data [ i ] [ t ] = res [ stDoF + t ];
+                }
+            }
+        } else {
+            for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
+                ( * nn )->giveValues(codes [ p ].c_str(), solver, data [ i ]);
+                msize = max< size_t >( msize, data [ i ].size() );
+            }
+        }
+        vtkSmartPointer< vtkDoubleArray >pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+        pointDataArray->SetName( codes [ p ].c_str() );
+        pointDataArray->SetNumberOfComponents(msize);
+        pointDataArray->SetNumberOfValues(nodes->giveSize() * msize);
+        i = 0;
+        for ( vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d, i++ ) {
+            for ( j = 0; j < min< size_t >( msize, d->size() ); j++ ) {
+                pointDataArray->SetValue(msize * i + j, ( * d ) [ j ]);
+            }
+            for ( ; j < msize; j++ ) {
+                pointDataArray->SetValue(msize * i + j, 0);
+            }
+        }
+        unstructuredGrid->GetPointData()->AddArray(pointDataArray);
+    }
+
+    // ****************** extrapolated node data
+    for ( ; p < codes.size(); p++ ) {
+        msize = 1;
+
+        elems->extrapolateValuesFromIntegrationPointsToNodes(codes [ p ], data);
+        for ( auto &v: data ) {
+            msize = max< size_t >( msize, v.size() );
+        }
+
+        vtkSmartPointer< vtkDoubleArray >pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+        pointDataArray->SetName( codes [ p ].c_str() );
+        pointDataArray->SetNumberOfComponents(msize);
+        pointDataArray->SetNumberOfValues(nodes->giveSize() * msize);
+        i = 0;
+        for ( vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d, i++ ) {
+            for ( j = 0; j < min< size_t >( msize, d->size() ); j++ ) {
+                pointDataArray->SetValue(msize * i + j, ( * d ) [ j ]);
+            }
+            for ( ; j < msize; j++ ) {
+                pointDataArray->SetValue(msize * i + j, 0);
+            }
+        }
+        unstructuredGrid->GetPointData()->AddArray(pointDataArray);
+    }
+
+    //vtkNew<vtkXMLUnstructuredGridWriter> writer;
+    vtkSmartPointer< vtkXMLUnstructuredGridWriter >writer = vtkSmartPointer< vtkXMLUnstructuredGridWriter > :: New();
+    writer->SetFileName( ( resultDir / buffer ).string().c_str() );
+    writer->SetInputData(unstructuredGrid);
+    if ( binaryswitch ) {
+        writer->SetDataModeToBinary();
+    } else {
+        writer->SetDataModeToAscii();
+    }
+    //writer->SetCompressorType();
+    writer->Write();
+#else
+    cout << "VTK library not install, export of Rebars skipped" << endl;
+#endif
+}
+

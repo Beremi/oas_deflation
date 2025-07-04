@@ -1,7 +1,7 @@
 #ifndef _PERIODIC_BC_H
 #define _PERIODIC_BC_H
 
-#include "preprocessing_block.h"
+#include "pblock_constraints.h"
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ protected:
 public:
     MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; nonsymmetric_shear = false; };
     virtual ~MechanicalPeriodicBC() {};
-    virtual void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
+    virtual void apply(Model *model);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
     std :: vector< double >giveDimensions() const { return PUCsize; };
     double giveVolume() const;
@@ -74,7 +74,7 @@ protected:
 public:
     MechanicalPeriodicBCwithElasticConstraint() { name = "MechanicalPeriodicBCwithElasticConstraint"; };
     virtual ~MechanicalPeriodicBCwithElasticConstraint() {};
-    void apply(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs, ExporterContainer *ex, MaterialContainer *mats, RegionContainer *regions, Solver *solv);
+    void apply(Model *model);
 };
 
 //////////////////////////////////////////////////////////

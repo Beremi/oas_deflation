@@ -39,8 +39,10 @@ set (solver_files
     vtk_exporter.cpp
     exporter_model.cpp
     constraint.cpp
-    periodic_bc.cpp
-    preprocessing_block.cpp
+    pblock_constraints.cpp
+    pblock_periodic_bc.cpp
+    pblock_rebar.cpp
+    pblock_container.cpp
     function.cpp
     indirect_displ_control.cpp
     shape_functions.cpp

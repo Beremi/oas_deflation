@@ -9,7 +9,7 @@
 #endif // TORCH_FOUND
 #include <algorithm>
 #include "model.h"
-#include "periodic_bc.h"
+#include "pblock_periodic_bc.h"
 #include "constraint.h"
 #include "cross_section.h"
 #include "element_beam.h"
@@ -41,8 +41,8 @@ void ElementContainer :: clear() {
 void ElementContainer :: setModel(Model *mod) {
     model = mod;
     nodes = model->giveNodes();
-    bconds = model->giveBC();
-    crosssects = model->giveCSContainer();
+    bconds = model->giveBoundaryConditions();
+    crosssects = model->giveCrossSections();
 };
 
 //////////////////////////////////////////////////////////
@@ -251,6 +251,14 @@ Element *ElementContainer :: giveElement(unsigned const num) const {
     }
     cerr << "ElementContainer Error: requested element no. " << num << " but only " << elems.size() << " exist" << endl;
     exit(1);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: addElement(Element *newelem){
+    newelem->init();
+    newelem->setID(elems.size() );
+    newelem->initMaterialStatuses();
+    elems.push_back(newelem);
 }
 
 
@@ -840,8 +848,8 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
 
     //extract pairs
     set< pair< unsigned, unsigned > >periodicPairs;
-    for ( unsigned i = 0; i < model->givePBlockContainer()->giveSize(); i++ ) {
-        MechanicalPeriodicBC *pb = dynamic_cast< MechanicalPeriodicBC * >( model->givePBlockContainer()->givePBlock(i) );
+    for ( unsigned i = 0; i < model->givePreprocessingBlocks()->giveSize(); i++ ) {
+        MechanicalPeriodicBC *pb = dynamic_cast< MechanicalPeriodicBC * >( model->givePreprocessingBlocks()->givePBlock(i) );
         if ( pb ) {
             vector< unsigned >masters = pb->giveMasters();
             vector< unsigned >slaves = pb->giveSlaves();
@@ -1010,3 +1018,4 @@ void ElementContainer :: assignFibersToElems() {
         f->setUpCrossings();
     }
 }
+

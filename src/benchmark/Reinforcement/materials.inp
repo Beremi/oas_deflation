@@ -1,0 +1,3 @@
+#VectMechMaterial	E0	2.150000e+10	alpha	0.300000	density	2200.000000
+CSLMaterial	E0	2.150000e+10	alpha	0.300000 ft 3e6 Gt 50	density	2200.000000
+BeamMaterial E 210e9 nu 0.2 density 7500

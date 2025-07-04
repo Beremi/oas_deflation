@@ -3,7 +3,7 @@
 #include "element_discrete.h"
 #include "element_ldpm.h"
 #include "element_continuous.h"
-#include "periodic_bc.h"
+#include "pblock_periodic_bc.h"
 
 using namespace std;
 
@@ -311,7 +311,7 @@ void DiscreteTransportRVEMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 void DiscreteTransportRVEMaterialStatus :: generateRandomFixedBC() {
-    BCContainer *bconds = RVE->giveBC();
+    BCContainer *bconds = RVE->giveBoundaryConditions();
     FunctionContainer *funcs = RVE->giveFunctions();
     ConstraintContainer *constrs = RVE->giveConstraints();
 
@@ -364,7 +364,7 @@ void DiscreteTransportRVEMaterialStatus :: generateVolumetricAverageBC() {
     unsigned ndim = macromat->giveDimension();
 
     NodeContainer *nodes = RVE->giveNodes();
-    BCContainer *bconds = RVE->giveBC();
+    BCContainer *bconds = RVE->giveBoundaryConditions();
     ElementContainer *elems = RVE->giveElements();
     ConstraintContainer *constrs = RVE->giveConstraints();
 
@@ -1618,7 +1618,7 @@ void DiscreteCoupledRVEMaterialStatus ::  init() {
 
         TransportPeriodicBC *tp;
         double PUCVolume = 0.;
-        PBlockContainer *pblocks = trspRVEstat->giveWholeRVE()->givePBlockContainer();
+        PBlockContainer *pblocks = trspRVEstat->giveWholeRVE()->givePreprocessingBlocks();
         for ( unsigned i = 0; i < pblocks->giveSize(); i++ ) {
             tp = dynamic_cast< TransportPeriodicBC * >( pblocks->givePBlock(i) );
             if ( tp ) {
@@ -1864,7 +1864,7 @@ void DiscreteCoupledRVEMaterialStatus :: findFriends() {
     NodeContainer *nodesT = trspRVEstat->giveWholeRVE()->giveNodes();
 
     vector< double >RVEsize;
-    PBlockContainer *pblocksM =  mechRVEstat->giveWholeRVE()->givePBlockContainer();
+    PBlockContainer *pblocksM =  mechRVEstat->giveWholeRVE()->givePreprocessingBlocks();
 
     for ( unsigned i = 0; i < pblocksM->giveSize(); i++ ) {
         MechanicalPeriodicBC *mpb = dynamic_cast< MechanicalPeriodicBC * >( pblocksM->givePBlock(i) );

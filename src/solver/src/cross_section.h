@@ -33,6 +33,7 @@ protected:
     double nu; //Poisson number for shear reduction coeff. kappa
 public:
     CircularCrossSection();
+    CircularCrossSection(double radius, double nu);
     virtual ~CircularCrossSection() { };  
     virtual void readFromLine(std :: istringstream &iss, const  unsigned ndim);
     virtual void init();
@@ -83,6 +84,7 @@ public:
     void clear();
     size_t giveSize() const { return css.size(); }
     CrossSection* giveCrossSection(unsigned i){return css[i];};
+    void addCrossSection(CrossSection *cs){css.push_back(cs);};
 
     std :: vector< CrossSection * > :: iterator begin() { return css.begin(); }
     std :: vector< CrossSection * > :: iterator end() { return css.end(); }

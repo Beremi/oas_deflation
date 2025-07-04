@@ -219,7 +219,7 @@ void Model :: readFromFile(const string filename, const bool &initial) {
         resultDir = baseDir / result_dir_name;
     }
 
-    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
+    pblocks.setModel(this);
 }
 
 
@@ -247,7 +247,7 @@ void Model :: clear() {
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
     elems.setModel(this);
-    pblocks.setContainers(& nodes, & elems, & bconds, & constr, & funcs, & exporters, & matrs, & regions, solver);
+    pblocks.setModel(this);
     // std :: cout << "step: " << solver->giveStepNumber() << ", time: " << solver->giveTime() << '\n';
 
     solver->setContainers(& elems, & nodes, & funcs, & bconds, & exporters);

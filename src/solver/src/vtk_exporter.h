@@ -39,6 +39,21 @@ public:
 protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT REBARS TO VTK (VTU)
+class VTKRebarExporter : public VTKExporter
+{
+protected:
+    ElementContainer *elems;
+    NodeContainer *nodes;
+public:
+    VTKRebarExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRebarExporter"; };
+    ~VTKRebarExporter() {};
+    // virtual void readFromLine(istringstream &iss);
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
+protected:
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

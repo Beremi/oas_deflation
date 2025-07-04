@@ -83,6 +83,42 @@ void JointDoF :: init(Solver *solver) {
 }
 
 //////////////////////////////////////////////////////////
+bool JointDoF :: replaceDependentMasters(vector<unsigned> &depms, vector<JointDoF*> &depmsJDs){
+
+    bool replaced = false;
+    //todo: might also involve dependency on some function ...    
+    
+    //collect masters
+    unsigned masterID;
+    unsigned pos;
+    for ( unsigned k = masters.size(); k>0; k-- ) {
+        masterID = giveMasterDoF(k-1);
+        auto posx = find(depms.begin(), depms.end(), masterID);
+        if(posx != depms.end()){
+            pos = posx - depms.begin();
+
+            vector<Node*> mas = depmsJDs[pos]->giveMasterNodes();
+            masters.erase(masters.begin() + k-1);
+            masters.insert(masters.end(), mas.begin(), mas.end());
+
+            vector<unsigned> dir = depmsJDs[pos]->giveMasterDirs();
+            directions.erase(directions.begin() + k-1);
+            directions.insert(directions.end(), dir.begin(), dir.end());
+        
+            vector<double> mul = depmsJDs[pos]->giveMasterMultipliers();
+            for(vector<double>::const_iterator m=mul.begin(); m!=mul.end(); ++m){
+                multipliers.push_back( (*m) * multipliers[k-1]);
+            }
+            multipliers.erase(multipliers.begin() + k-1);
+
+            replaced = true;
+        }
+    }
+    
+    return replaced;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Lagrange multiplier
 LagrangeMultiplier :: LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult) {
@@ -323,6 +359,56 @@ void ConstraintContainer :: clear() {
     }
 }
 
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: checkInternalDependencies() {
+
+    unsigned numM;
+    vector<unsigned> allDependents(constraints.size());
+    set<unsigned> allMasters;
+    vector<unsigned>::const_iterator prev;
+    unsigned i =0;
+    vector<unsigned> depms;
+    vector<JointDoF*> depmsJD;
+    JointDoF *repJD;
+    unsigned repJDnum;
+    for ( auto const &jD : constraints ) {
+        prev = find(allDependents.begin(), allDependents.begin()+i+1, jD->giveSlaveDoF());
+        if (prev-allDependents.begin()<i){
+            cerr << "Error in constraints, DoF " << jD->giveSlaveDoF() << " (node "<< jD->giveSlaveNode()->giveID() << " direction " << jD->giveSlaveDir() << " ) is contrained twice" << endl;
+            exit(1);
+        }
+        allDependents[i] = jD->giveSlaveDoF();
+        
+        numM = jD->giveNumOfDoFMasters();
+        for ( unsigned ind = 0; ind < numM; ind++ ) {
+            allMasters.insert(jD->giveMasterDoF(ind));
+        }
+        i++;
+    }
+    for (set<unsigned>::iterator depm = allMasters.begin(); depm != allMasters.end(); depm++){
+        prev = find(allDependents.begin(), allDependents.end(), *depm);
+        if (prev!=allDependents.end()){
+            repJDnum = prev  - allDependents.begin();
+            repJD = constraints[repJDnum];
+            depms.push_back(*depm);
+            depmsJD.push_back(repJD);
+        }
+    }
+
+    if (depms.size()>0){
+        //first replace those that provides the dependencies, do it repetitively until no dependencies are inside hidden
+        for ( auto &jD : depmsJD ) {
+            while (jD->replaceDependentMasters(depms, depmsJD)) {};        
+        }
+        //apply replacement to all joint dofs
+        for ( auto &jD : constraints ) {
+            jD->replaceDependentMasters(depms, depmsJD);        
+        }
+    }
+}
+
+
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
     //initiate volumetric averages
@@ -359,9 +445,11 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     // fill the matrix with corresponding multipliers for slaveDoFs
     unsigned i; // row index =  slave DoF
     unsigned j, numM; // column index = master DoF
+    bool update;
     for ( auto const &jD : constraints ) {
         // jD->print();
         i = nodes->giveDoFid( jD->giveSlaveDoF() );
+
         //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", numFreeDoFs = " << numFreeDoFs << '\n';
         // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
         // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
@@ -378,9 +466,10 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
             std :: cerr << "constraint applied simultaneously with boundary conditions" << '\n';
             exit(1);
         }
-        numM = jD->giveNumOfDoFMasters();
+
+        numM = jD->giveNumOfDoFMasters();            
         for ( unsigned ind = 0; ind < numM; ind++ ) {
-            j = nodes->giveDoFid( jD->giveMasterDoF(ind) );
+            j = nodes->giveDoFid( jD->giveMasterDoF(ind) );            
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
                 tripletList.push_back( Ttripletd( i, j, jD->giveMasterMultiplier(ind) ) );
@@ -575,4 +664,87 @@ void ConstraintContainer :: removeConstraint(unsigned i) {
     delete constraints [ i ];
     constraints [ i ] = nullptr;
     constraints.erase(constraints.begin() + i);
+}
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations){
+    Point diff = dependent->givePoint() - primary->givePoint();
+    vector< Node * >vm;
+    vector< unsigned >dirs;
+    vector< double >mults;    
+    JointDoF* jd;
+
+    if ( dim == 3 ) {
+        vm.resize(3,primary);
+        mults.resize(3);
+        dirs.resize(3);
+        //direction X
+        mults[0] = 1.;
+        mults[1] = diff[2];
+        mults[2] = -diff[1];
+        dirs[0] = 0;
+        dirs[1] = 4;
+        dirs[2] = 5;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        //direction Y
+        mults[1] = -diff[2];
+        mults[2] = diff[0];
+        dirs[0] = 1;
+        dirs[1] = 3;
+        dirs[2] = 5;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        //direction Z
+        mults[1] = diff[1];
+        mults[2] = -diff[0];
+        dirs[0] = 2;
+        dirs[1] = 3;
+        dirs[2] = 4;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        if (includeRotations){
+            vm.resize(1,primary);
+            mults.resize(1,1);
+            dirs.resize(1,3);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+            dirs.resize(1,4);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+            dirs.resize(1,5);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+        }
+
+    } else if( dim == 2 ) {
+        vm.resize(2,primary);
+        mults.resize(2);
+        dirs.resize(2);
+        //direction X
+        mults[0] = 1.;
+        mults[1] = -diff[1];
+        dirs[0] = 0;
+        dirs[1] = 2;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        //direction Y
+        mults[0] = 1.;
+        mults[1] = diff[0];
+        dirs[0] = 1;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        if (includeRotations){
+            vm.resize(1,primary);
+            mults.resize(1,1);
+            dirs.resize(1,2);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+        }
+    }
 }
