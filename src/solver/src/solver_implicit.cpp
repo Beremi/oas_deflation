@@ -361,10 +361,10 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 } else {
                     critical_step_decrease = valueIN;
                 }
-            } else if ( param.compare("indirect_displacement_control") == 0 ) {
+            } else if ( param.compare("indirect_displacement_control") == 0 || param.compare("indirect_control") == 0) {
                 iss >> helpuint;
                 if ( !idc ) {
-                    idc = new IndirectDC();
+                    idc = new IndirectControl();
                 }
                 idc->readFromStream(helpuint, inputfile);
             } else if ( param.compare("stiff_matrix_type") == 0 ) {
@@ -613,45 +613,47 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( updateSystemMatrices(it, false) ) {
                 computeKeff();                                    //only if required
             }
-            nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
+            nodes->giveReducedForceArray(residuals, f);  
 
             if ( idc ) {      //indirect displacement control
+                Vector trial_r_last_iter = trial_r;
                 f_last_iter = f;
+
                 load.setZero();
                 nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time + idc_dt); //give prescribed DoFs
-                //updateFieldVariables(); //if used ddr needs to be set to zero
                 computeForcesAtIntegrationTime(true);
                 nodes->giveReducedForceArray(residuals, f);
 
-                /*
-                 * if ( LinalgSymmetricSolver(Keff, ddr, f_last_iter, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                 *  std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
-                 *  it = maxIt;
-                 *  resErr = 1e10;
-                 *  break;
-                 * }
-                 * if ( LinalgSymmetricSolver(Keff, ddf, f - f_last_iter, ddf, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                 *  std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
-                 *  it = maxIt;
-                 *  resErr = 1e10;
-                 *  break;
-                 * }
-                 */
-                linalgsolver->solve(ddr, f_last_iter);
-                linalgsolver->solve(ddf, f - f_last_iter);
+                linalgsolver->solve(ddr, f_last_iter); //A: original, no additiona load, time idc_time
+                linalgsolver->solve(ddf, f - f_last_iter); //B: added load, time idc_time + idc_dt
 
                 if ( !restart_now ) {
-                    nodes->giveFullDoFArray(ddr, full_ddr);
                     nodes->giveFullDoFArray(ddf, full_ddf);
-                    nodes->updateDirrichletBC(full_ddf, idc_time + idc_dt); //give prescribed DoFs, BC are driven by time
-                    nodes->updateDirrichletBC(help_idc_f, idc_time); //give prescribed DoFs, BC are driven by time
-                    full_ddf = full_ddf - help_idc_f;
-                    help_idc_r = trial_r + full_ddr;
-                    load_mult = idc->giveMultiplierCorrection(help_idc_r, full_ddf, time);
+                    nodes->giveFullDoFArray(ddr, full_ddr);
+
+                    //compute B
+                    Vector trial_r_B = trial_r_last_iter +full_ddf + full_ddr;
+                    nodes->updateDirrichletBC(trial_r_B, idc_time+idc_dt); //give prescribed DoFs
+                    load.setZero();
+                    nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
+                    computeInternalExternalForces( trial_r_B, load, false, idc_time + idc_dt );
+                    Vector fext_B = f_ext;
+
+                    //compute A
+                    Vector trial_r_A = trial_r_last_iter + full_ddr;
+                    load.setZero();
+                    nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
+                    computeInternalExternalForces( trial_r_A, load, false, idc_time );
+                    Vector fext_A = f_ext;    
+
+                    Vector diff_r = trial_r_B - trial_r_A;
+                    Vector diff_f = fext_B - fext_A;
+                    load_mult = idc->giveMultiplierCorrection(trial_r_A, fext_A, diff_r, diff_f, time);
 
                     ddr += load_mult * ddf;
                     idc_time += idc_dt * load_mult;
+                    trial_r = trial_r_last_iter;
 
                     load.setZero();
                     nodes->addRHS_nodalLoad(load, idc_time); //add nodal load

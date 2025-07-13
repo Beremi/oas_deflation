@@ -3,12 +3,13 @@ time_step	2.000000e-03
 max_time_step	2.000000e-03
 min_time_step	5.000000e-04
 total_time	0.100000e+00
+#total_time	2.400000e-03
 tolerance 1e-3
 limit_tolerance	1.000000e-01
-indirect_displacement_control 2
-idc_xcoords 0.39 0.41
-idc_ycoords 0. 0.
-idc_directions 0 0
-idc_weights -1 1
-idc_function 2
+indirect_control 2
+ic_xcoords 0.39 0.41
+ic_ycoords 0. 0.
+ic_directions 0 0
+ic_displ_weights -1 1
+ic_function 2
 maxIt	150

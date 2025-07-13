@@ -1,11 +1,10 @@
 SteadyStateNonLinearSolver
-time_step	0.001
+time_step	0.01
 total_time	1
-max_time_step 0.1
 limit_tolerance	1.000000e-01
-maxIt	200
+maxIt	1000
 tolerance	1.000000e-03
-stiffness_matrix_update -1
+stiffness_matrix_update 100
 solver_type EigenSparseLU
 spectral_radius 0
 

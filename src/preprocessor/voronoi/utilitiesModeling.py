@@ -2311,11 +2311,16 @@ def create2dCircRVE(maxLim, minDist, trials, powerTes):
     ### sampling of nodes
     all_node_coords, all_node_coords_polar, mechBC_merged, mechInitC_merged, radii  = asssemble2dCircRVE(maxLim, minDist, trials, powerTes )
 
-    print ('Conducting Voronoi tesselation...', end ='')
-    vor = Voronoi(all_node_coords)
-    regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    if powerTes==False:
+        print('Conducting Voronoi tesselation...', end = '')
+        vor = utilitiesNumeric.Voronoi (all_node_coords)
+        regions, vertices, polygons, areas, centroids, points = voronoi.voronoi_2d(vor, maxLim)
+    else:
+        print('Conducting Power tesselation...', end = '')
+        vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runPowerPlain(all_node_coords, radii, 2, [-maxLim/2, maxLim/2])
     print('done.')
 
+    
     # fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  line_width=2, line_alpha=0.6, point_size=2)
     # plt.show()
 
@@ -7504,10 +7509,25 @@ def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
     print('Assembling 2d periodic circular RVE.')
 
     ########### getting nodes and radii
-    node_coords = np.zeros( (1, dim) )
-    node_coords_polar = np.zeros( (1, dim) )
-    radii = np.zeros( 1 )
-    node_coords, polar_node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=True, periodic_distance=True)
+
+
+    #generate surface nodes
+    nnodes = int(np.pi*maxLim/(0.8*minDist)/2.+0.5)
+    step = np.pi/nnodes
+    node_coords_polar = np.zeros( (4*nnodes, dim) )
+    node_coords_polar[:,1] = 0.99*maxLim/2.
+    for i in range(nnodes):
+        node_coords_polar[4*i,0] = i*step
+        node_coords_polar[4*i+1,0] = (nnodes+i)*step
+        node_coords_polar[4*i+2,0] = i*step
+        node_coords_polar[4*i+3,0] = (nnodes+i)*step
+        node_coords_polar[4*i+2,1] = 1.01*maxLim/2.
+        node_coords_polar[4*i+3,1] = 1.01*maxLim/2.
+    node_coords = np.column_stack((np.cos(node_coords_polar[:,0]),np.sin(node_coords_polar[:,0])))*maxLim/2.
+    radii = np.zeros( len(node_coords_polar) )
+
+
+    node_coords, polar_node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=False, periodic_distance=False)
 
     node_coords = np.asarray(node_coords)
 

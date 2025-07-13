@@ -8,7 +8,7 @@
 #include "linalg.h"
 #include "element_container.h"
 #include "node_container.h"
-#include "indirect_displ_control.h"
+#include "indirect_control.h"
 
 class Pertrubation; //forward declaration
 class ExporterContainer; //forward declaration
@@ -60,6 +60,7 @@ public:
     bool isTerminated() { return terminated; }
     bool convergedToTolerance() const { return fully_converged; };
     Vector giveDoFValues() const { return r; }
+    double giveDoFValue(unsigned i) const { return r[i]; }
     Vector giveTrialDoFValues() const { return trial_r; }
     Vector giveExternalForces() const {  return f_ext; }
     double giveTrialDoFValue(unsigned k) const { return trial_r [ k ]; }

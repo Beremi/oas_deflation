@@ -455,7 +455,9 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
     iters = 0
     di = 0
 
-    node_coords_polar = np.zeros((1, dim))
+    node_coords_polar = np.column_stack((np.arctan2(node_coords_cart[:,1], node_coords_cart[:,0]), np.sqrt(np.sum(np.square(node_coords_cart),axis=1))))
+
+    periodicity = np.zeros(dim); periodicity[-1] = maxLim
 
     if dim==2:
         freq = fuller2D(d, maxDiam)
@@ -464,33 +466,36 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
         freq = fuller3D(d, maxDiam)
         center = np.zeros(3)
 
-    nA = 1  # n of particle I am generating
+    nA = len(node_coords_cart)  # n of particle I am generating
 
-    # generate and add the first particle
-    # print('------ generating particle 1')
-    if allow_domain_overlap:
-        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin
+    if nA==0:
+        # generate and add the first particle
+        # print('------ generating particle 1')
+        if allow_domain_overlap:
+            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin
+        else:
+            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
+
+        node_coords_cart[0] = point_cart
+        node_coords_polar[0] = point_polar
+        radii[0] = radius
+        if periodic_distance:
+             # print(point_polar, periodicity)
+            per_nodes_polar = point_polar - periodicity
+            per_nodes_cart = np.array([polarToCart(point_polar - periodicity)])
+
+        if dim == 2:
+            saturation += (np.pi*np.power(radius,2)) / (np.pi*np.power(maxLim, 2)/4)
+        elif dim == 3:
+            saturation += (4*np.pi*np.power(radius,3)/3) / (np.pi*np.power(maxLim,3)/8)
+
+        while ( (1. - saturation / volumeRatio ) < freq[di] ):
+            di += 1
+        radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+        nA += 1
     else:
-        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
-
-    node_coords_cart[0] = point_cart
-    node_coords_polar[0] = point_polar
-    radii[0] = radius
-    if periodic_distance:
-        periodicity = np.zeros(dim); periodicity[-1] = maxLim
-        # print(point_polar, periodicity)
-        per_nodes_polar = point_polar - periodicity
-        per_nodes_cart = np.array([polarToCart(point_polar - periodicity)])
-
-    if dim == 2:
-        saturation += (np.pi*np.power(radius,2)) / (np.pi*np.power(maxLim, 2)/4)
-    elif dim == 3:
-        saturation += (4*np.pi*np.power(radius,3)/4) / (np.pi*np.power(maxLim,3)/6)
-
-    while ( (1. - saturation / volumeRatio ) < freq[di] ):
-        di += 1
-    radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
-    nA += 1
+        per_nodes_polar = node_coords_polar
+        per_nodes_cart = np.copy(node_coords_cart)
 
     # generate other particles
     while 2*radius > minDiam and iters < trials:
@@ -526,8 +531,7 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
             while ( (1. - saturation / volumeRatio ) < freq[di]):
                 di += 1
             radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
-            nA += 1
-            # sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
+            nA += 1          # sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
             # sys.stdout.flush()
         else:
             iters += 1

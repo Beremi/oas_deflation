@@ -1,23 +1,25 @@
-#include "indirect_displ_control.h"
+#include "indirect_control.h"
+#include "model.h"
 
 using namespace std;
 
 //////////////////////////////////////////////////////////
-IndirectDC :: IndirectDC() {
-    name = "indirect displacement controller";
+IndirectControl :: IndirectControl() {
+    name = "indirect Controler";
     funcnum = -1;
     func = nullptr;
     nummaxunit = 0;
 };
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
+void IndirectControl :: readFromStream(unsigned num, ifstream &inputfile) {
     nummaxunit++;
 
-    c_nodes.resize(nummaxunit);
-    c_dirs.resize(nummaxunit);
-    c_weights.resize(nummaxunit);
-    c_DoFs.resize(nummaxunit);
+    nodes.resize(nummaxunit);
+    dirs.resize(nummaxunit);
+    r_weights.resize(nummaxunit);
+    f_weights.resize(nummaxunit);
+    DoFs.resize(nummaxunit);
     xcoords.resize(nummaxunit);
     ycoords.resize(nummaxunit);
     zcoords.resize(nummaxunit);
@@ -26,9 +28,10 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
     nodes_active.resize(nummaxunit);
     nodes_active [ nummaxunit - 1 ] = false;
 
-    c_nodes [ nummaxunit - 1 ].resize(num, 0);
-    c_dirs [ nummaxunit - 1 ].resize(num, 0);
-    c_weights [ nummaxunit - 1 ].resize(num, 0);
+    nodes [ nummaxunit - 1 ].resize(num, 0);
+    dirs [ nummaxunit - 1 ].resize(num, 0);
+    r_weights [ nummaxunit - 1 ].resize(num, 0);
+    f_weights [ nummaxunit - 1 ].resize(num, 0);
     xcoords [ nummaxunit - 1 ].resize(num, 0);
     ycoords [ nummaxunit - 1 ].resize(num, 0);
     zcoords [ nummaxunit - 1 ].resize(num, 0);
@@ -42,13 +45,13 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
         }
         istringstream iss(line);
         iss >> param;
-        if ( param.compare("idc_nodes") == 0 ) {
+        if ( param.compare("ic_nodes") == 0 || param.compare("idc_nodes") == 0 ) {
             nodes_active [ nummaxunit - 1 ] = true;
             for ( unsigned j = 0; j < num; j++ ) {
-                iss >> c_nodes [ nummaxunit - 1 ] [ j ];
+                iss >> nodes [ nummaxunit - 1 ] [ j ];
                 //cout << "IDC node " << j << c_nodes [ nummaxunit - 1 ] [ j ] << endl;
             }
-        } else if ( param.compare("idc_xcoords") == 0 ) {
+        } else if ( param.compare("ic_xcoords") == 0 || param.compare("idc_xcoords") == 0 ) {
             coords_active [ nummaxunit - 1 ] = true;
             //cout << "IDC xcoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
@@ -56,26 +59,30 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
                 //cout << "IDC xcoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
             //cout << endl;
-        } else if ( param.compare("idc_ycoords") == 0 ) {
+        } else if ( param.compare("ic_ycoords") == 0 || param.compare("idc_ycoords") == 0 ) {
             //cout << "IDC ycoords: ";
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> ycoords [ nummaxunit - 1 ] [ j ];
                 //cout << "IDC ycoords " << xcoords [ nummaxunit - 1 ] [ j ] << endl;
             }
             //cout << endl;
-        } else if ( param.compare("idc_zcoords") == 0 ) {
+        } else if ( param.compare("ic_zcoords") == 0 || param.compare("idc_zcoords") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> zcoords [ nummaxunit - 1 ] [ j ];
             }
-        } else if ( param.compare("idc_directions") == 0 ) {
+        } else if ( param.compare("ic_directions") == 0 || param.compare("idc_directions") == 0) {
             for ( unsigned j = 0; j < num; j++ ) {
-                iss >> c_dirs [ nummaxunit - 1 ] [ j ];
+                iss >> dirs [ nummaxunit - 1 ] [ j ];
             }
-        } else if ( param.compare("idc_weights") == 0 ) {
+        } else if ( param.compare("ic_displ_weights") == 0 || param.compare("idc_weights") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
-                iss >> c_weights [ nummaxunit - 1 ] [ j ];
+                iss >> r_weights [ nummaxunit - 1 ] [ j ];
             }
-        } else if ( param.compare("idc_function") == 0 ) {
+        } else if ( param.compare("ic_force_weights") == 0 ) {
+            for ( unsigned j = 0; j < num; j++ ) {
+                iss >> f_weights [ nummaxunit - 1 ] [ j ];
+            }
+        } else if ( param.compare("ic_function") == 0 || param.compare("idc_function") == 0 ) {
             iss >> funcnum;
         } else {
             inputfile.seekg(oldpos);    // get back to the position
@@ -88,7 +95,7 @@ void IndirectDC :: readFromStream(unsigned num, ifstream &inputfile) {
 
 
 //////////////////////////////////////////////////////////
-void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool initial) {
+void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, bool initial) {
     unsigned clength;
     Node *n;
     double dist;
@@ -96,27 +103,32 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
         func = funcs->giveFunction(funcnum);
     }
     for ( unsigned c = 0; c < nummaxunit; c++ ) {
-        clength = c_weights [ c ].size(); //todo: warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+        clength = r_weights [ c ].size(); //todo: warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
         if ( clength == 0 ) {
-            cerr << "Error: Indirect displacement controll weights were not set" << endl;
+            cerr << "Error: Indirect displacement Control weights were not set" << endl;
             exit(1);
         }
-        if ( c_DoFs [ c ].size() < clength || !initial ) {
+        clength = f_weights [ c ].size(); //todo: warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+        if ( clength == 0 ) {
+            cerr << "Error: Indirect force Control weights were not set" << endl;
+            exit(1);
+        }
+        if ( DoFs [ c ].size() < clength || !initial ) {
             // JK: in adaptivity, number of control DoFs remain, but DoFs from updated geometry are used
             if ( initial ) {
-                c_DoFs [ c ].resize(clength);
+                DoFs [ c ].resize(clength);
             }
             if ( nodes_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
-                    c_DoFs [ c ] [ i ] = nodes->giveNode(c_nodes [ c ] [ i ])->giveStartingDoF() + c_dirs [ c ] [ i ];
+                    DoFs [ c ] [ i ] = mnodes->giveNode(nodes [ c ] [ i ])->giveStartingDoF() + dirs [ c ] [ i ];
                 }
             } else if ( coords_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
-                    n = nodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), & dist);
-                    c_DoFs [ c ] [ i ] = n->giveStartingDoF() + c_dirs [ c ] [ i ];
+                    n = mnodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), & dist);
+                    DoFs [ c ] [ i ] = n->giveStartingDoF() + dirs [ c ] [ i ];
                 }
             } else {
-                cerr << "Error: Indirect displacement controll was not correctly set" << endl;
+                cerr << "Error: Indirect displacement Control was not correctly set" << endl;
                 exit(1);
             }
         }
@@ -124,17 +136,17 @@ void IndirectDC :: init(NodeContainer *nodes, FunctionContainer *funcs, bool ini
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_f, double time) {
+double IndirectControl :: giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time) {
     double df, dd;
-    double pdispl = givePrescribedDisplacement(time);
+    double pdispl = givePrescribedValue(time);
     double lambda = INFINITY;
     double lambda_temp;
     for ( unsigned c = 0; c < nummaxunit; c++ ) {
         dd = 0;
         df = 0;
-        for ( unsigned i = 0; i < c_weights [ c ].size(); i++ ) {
-            dd += ( prev_displ [ c_DoFs [ c ] [ i ] ] ) * c_weights [ c ] [ i ];
-            df += displ_f [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
+        for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
+            dd += ( prev_displ [ DoFs [ c ] [ i ] ] ) * r_weights [ c ] [ i ];
+            df += diff_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];
         }
         lambda_temp = ( pdispl - dd ) / df;
         if ( lambda_temp < lambda ) {
@@ -145,13 +157,13 @@ double IndirectDC :: giveMultiplierCorrection(Vector &prev_displ, Vector &displ_
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: giveControlValue(Vector &displ) {
+double IndirectControl :: giveControlValue(Model *model) {
     double dd = -INFINITY;
     double m;
     for ( unsigned c = 0; c < nummaxunit; c++ ) {
         m = 0;
-        for ( unsigned i = 0; i < c_weights [ c ].size(); i++ ) {
-            m += displ [ c_DoFs [ c ] [ i ] ] * c_weights [ c ] [ i ];
+        for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
+            m += model->giveSolver()->giveDoFValue( DoFs [ c ] [ i ] ) * r_weights [ c ] [ i ];
         }
         if ( m > dd ) {
             dd = m;
@@ -161,9 +173,10 @@ double IndirectDC :: giveControlValue(Vector &displ) {
 }
 
 //////////////////////////////////////////////////////////
-double IndirectDC :: givePrescribedDisplacement(double time) {
+double IndirectControl :: givePrescribedValue(double time) {
     if ( func ) {
         return func->giveY(time);
     }
     return time;
 }
+

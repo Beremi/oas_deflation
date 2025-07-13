@@ -44,7 +44,7 @@ set (solver_files
     pblock_rebar.cpp
     pblock_container.cpp
     function.cpp
-    indirect_displ_control.cpp
+    indirect_control.cpp
     shape_functions.cpp
     integration.cpp
     simplex.cpp

@@ -1,3 +1,3 @@
 #FuncTyped
-PWLFunction	1	0.000000	0.000000
-PWLFunction	1	0.000000	-1e-3
+PWLFunction	1   0   0
+PWLFunction	2 0 1   0   -1e-2
