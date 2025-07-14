@@ -63,10 +63,16 @@ void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveY(double t) const {
-    t = Function :: checkTimeBellowZero(t);
+    //t = Function :: checkTimeBellowZero(t);
 
     if ( x.size() <= 0 ) {
         return 0;
+    }
+
+    if ( t < x [ 0 ] ) {
+        cerr << "Warning in Function: asking for value below the minimal time (t=" << t << "), returning value " << y[0] << endl;
+        exit(1);
+        return y [ 0 ];
     }
 
     //indexovani ma typ podle typu velikosti pole

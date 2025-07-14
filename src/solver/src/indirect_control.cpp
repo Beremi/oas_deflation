@@ -145,8 +145,8 @@ double IndirectControl :: giveMultiplierCorrection(Vector &prev_displ, Vector &p
         dd = 0;
         df = 0;
         for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
-            dd += ( prev_displ [ DoFs [ c ] [ i ] ] ) * r_weights [ c ] [ i ];
-            df += diff_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];
+            dd += prev_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ] + prev_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];
+            df += diff_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ] + diff_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];
         }
         lambda_temp = ( pdispl - dd ) / df;
         if ( lambda_temp < lambda ) {
@@ -157,26 +157,39 @@ double IndirectControl :: giveMultiplierCorrection(Vector &prev_displ, Vector &p
 }
 
 //////////////////////////////////////////////////////////
-double IndirectControl :: giveControlValue(Model *model) {
-    double dd = -INFINITY;
-    double m;
-    for ( unsigned c = 0; c < nummaxunit; c++ ) {
-        m = 0;
-        for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
-            m += model->giveSolver()->giveDoFValue( DoFs [ c ] [ i ] ) * r_weights [ c ] [ i ];
-        }
-        if ( m > dd ) {
-            dd = m;
-        }
-    }
-    return dd;
-}
-
-//////////////////////////////////////////////////////////
 double IndirectControl :: givePrescribedValue(double time) {
     if ( func ) {
         return func->giveY(time);
     }
     return time;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+IndirectControlSumOfSquares :: IndirectControlSumOfSquares() {
+    name = "indirect Controler using sum of squares";
+};
+
+//////////////////////////////////////////////////////////
+double IndirectControlSumOfSquares :: giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time) {
+    double df, dd;
+    double pdispl = givePrescribedValue(time);
+    double lambda = INFINITY;
+    double lambda_temp;
+    for ( unsigned c = 0; c < nummaxunit; c++ ) {
+        dd = 0;
+        df = 0;
+        for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
+            dd += pow(prev_displ [ DoFs [ c ] [ i ] ], 2) * r_weights [ c ] [ i ] + pow(prev_force [ DoFs [ c ] [ i ] ], 2) * f_weights [ c ] [ i ];
+            df += pow(diff_displ [ DoFs [ c ] [ i ] ], 2) * r_weights [ c ] [ i ] + pow(diff_force [ DoFs [ c ] [ i ] ], 2) * f_weights [ c ] [ i ];
+        }        
+        lambda_temp = abs( ( pdispl - sqrt(dd) ) / sqrt(df) );
+        if (pdispl > sqrt(dd)) lambda_temp *= -1.;
+        if ( lambda_temp < lambda ) {
+            lambda = lambda_temp;
+        }
+    }
+    return lambda;
 }
 

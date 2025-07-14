@@ -11,5 +11,6 @@ ic_xcoords 0.39 0.41
 ic_ycoords 0. 0.
 ic_directions 0 0
 ic_displ_weights -1 1
+ic_force_weights 0 0
 ic_function 2
 maxIt	150

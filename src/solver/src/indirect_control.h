@@ -40,7 +40,17 @@ public:
     ~IndirectControl() {};
     void init(NodeContainer *mnodes, FunctionContainer *funcs, bool initial = true);
     void readFromStream(unsigned num, std :: ifstream &inputfile);
-    double giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time);
-    double giveControlValue(Model *model);
+    virtual double giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time);
+};
+
+//////////////////////////////////////////////////////////
+class IndirectControlSumOfSquares: public IndirectControl
+{
+protected:
+
+public:
+    IndirectControlSumOfSquares();
+    ~IndirectControlSumOfSquares() {};
+    virtual double giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time);
 };
 #endif /* _INDIRECT_CONTROL_H */

@@ -367,6 +367,12 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                     idc = new IndirectControl();
                 }
                 idc->readFromStream(helpuint, inputfile);
+            } else if ( param.compare("indirect_control_square_sum") == 0) {
+                iss >> helpuint;
+                if ( !idc ) {
+                    idc = new IndirectControlSumOfSquares();
+                }
+                idc->readFromStream(helpuint, inputfile);
             } else if ( param.compare("stiff_matrix_type") == 0 ) {
                 iss >> stiffMatType;
                 if ( stiffMatType.compare("elastic") != 0 && stiffMatType.compare("secant") != 0  && stiffMatType.compare("tangent") != 0  && stiffMatType.compare("consistent") != 0 ) {
@@ -643,7 +649,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     //compute A
                     Vector trial_r_A = trial_r_last_iter + full_ddr;
                     load.setZero();
-                    nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
+                    nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                     computeInternalExternalForces( trial_r_A, load, false, idc_time );
                     Vector fext_A = f_ext;    
 
