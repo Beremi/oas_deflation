@@ -91,7 +91,8 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
         }        
 
         found = false;
-        for ( vector< Element * > :: iterator ee = model->giveElements()->begin(); ee!= model->giveElements()->end() && !found; ++ee) {     
+        for ( vector< Element * > :: iterator ee = model->giveElements()->begin(); ee!= model->giveElements()->end() && !found; ++ee) {    
+            if (not (*ee)->doesMechanics()) continue; 
             bbox = (*ee)->giveBoundingBox();
             inside=true;
             //test bounding box
@@ -107,10 +108,14 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                 rbc = dynamic_cast< RigidBodyContact * >( *ee );
                 if (rbc){
                     model->giveConstraints()->addRigidArmConstraint(dim,model->giveNodes()->giveNode(nodes[i]),rbc->giveNode(unsigned(coord[0]+0.2)),false);
-                }   
+                }else{                    
+                    model->giveConstraints()->addHangingNodeConstraint(model->giveNodes()->giveNode(nodes[i]), *ee);
+                }
             }
         }
-        if(!found) cout << "Warning: rebar node " << nodes[i] << " was not connected to any meachical element" << endl;
+        if(!found){
+            cout << "Warning: rebar node " << nodes[i] << " at coordinates " << loc[0] << " " << loc[1] << " " << loc[2] << " is not connected to any mechanical element" << endl;
+        }
     }
 
     //find centers of intersection with elements
@@ -124,6 +129,7 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
         minp = Point(min(a[0],b[0]),min(a[1],b[1]),min(a[2],b[2]));        
         maxp = Point(max(a[0],b[0]),max(a[1],b[1]),max(a[2],b[2]));        
         for ( vector< Element * > :: iterator ee = model->giveElements()->begin(); ee!= model->giveElements()->end(); ++ee) {
+            if (!( *ee )->doesMechanics()) continue;
             rbc = dynamic_cast< RigidBodyContact * >( *ee );
             if (rbc){
                 bbox = rbc->giveFacetBoundingBox();
@@ -167,6 +173,9 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                     continue;
                 }
                 intersections.push_back(pair(t,rbc));
+            //elems that are not RigidBodyContact
+            } else {                
+                
             }
         }
     

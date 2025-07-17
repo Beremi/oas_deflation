@@ -411,6 +411,7 @@ bool Element :: giveGlobalCoords(Point *x, const Point *xn) const {
 
 //////////////////////////////////////////////////////////
 bool Element :: isPointInside(Point *xn, const Point *x) const {
+
     //initial screening
     Point maxc(-1e10, -1e10, -1e10);
     Point minc(1e10, 1e10, 1e10);
@@ -582,6 +583,32 @@ Point Element :: findNaturalCoords(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+Vector Element :: findIntersectionsWithLine(Point *A, Point *B)const{
+    double t;
+    vector<unsigned> q;
+    vector<unsigned> intersections;
+    for(unsigned k=0; k<triangulated_faces.size(); k++){            
+        t = find_intesection_of_segment_and_triangle(A, B, nodes[triangulated_faces[k][0]]->givePointPointer(), nodes[triangulated_faces[k][1]]->givePointPointer(), nodes[triangulated_faces[k][2]]->givePointPointer());
+        if (t>=0) {
+            intersections.push_back(t);
+        }
+    }
+    if (intersections.size()==0) return Vector::Zero(0);
+    else if(intersections.size()==1){
+        Vector extint(1);
+        extint[0] = intersections[0];
+        return extint;
+    }
+    else{
+        Vector extint = Vector::Zero(2);
+        sort(intersections.begin(),intersections.end());
+        extint[0] = intersections[0];
+        extint[1] = intersections.back();
+        return extint;
+    }
+}
+
+//////////////////////////////////////////////////////////
 Vector Element :: giveShapeFunctions(const Point *x) const {
     Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
@@ -666,10 +693,19 @@ Point Element :: giveIPLoc(unsigned k) const {
 
 //////////////////////////////////////////////////////////
 Vector Element :: giveBoundingBox()const{
-    Vector bbox = Vector::Zero(2*ndim);
-    for(unsigned i=0; i<ndim; i++){
-        bbox[2*i] = 1/0.;
-        bbox[2*i+1] = -1/0.;
+    Vector bbox = Vector::Zero(2*ndim);    
+    Point t;
+    for(unsigned k=0; k<nodes.size(); k++){
+        t = nodes[k]->givePoint();
+        for(unsigned i=0; i<ndim; i++){        
+            if(k==0){
+                bbox[2*i] = t[i];
+                bbox[2*i+1] = t[i];
+            }else{
+                bbox[2*i] = min(bbox[2*i],t[i]);
+                bbox[2*i+1] = max(bbox[2*i+1],t[i]);
+            }  
+        }          
     }
     return bbox;
 }

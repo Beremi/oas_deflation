@@ -1108,6 +1108,11 @@ void MechHangingNode :: readFromLine(istringstream &iss, unsigned d) {
 //////////////////////////////////////////////////////////
 void MechHangingNode :: apply(Model *model){
 
+    Element *ee = model->giveElements()->giveElement(elemid);
+    Node *nn = model->giveNodes()->giveNode(nodeid);
+    model->giveConstraints()->addHangingNodeConstraint(nn, ee);
+
+/*
     ElementContainer * e = model->giveElements();
     NodeContainer * n = model->giveNodes();
     ConstraintContainer * c = model->giveConstraints();
@@ -1132,20 +1137,7 @@ void MechHangingNode :: apply(Model *model){
         JointDoF *newJD = new JointDoF(n->giveNode(nodeid), i, masters, dirs, mults);
         c->addConstraint(newJD);
     }
-
-    /*
-     * //rotations
-     * Matrix weightsm = ee->giveShapeFunctionsGrad(& natcoords);
-     * for ( ; i < n->giveNode(nodeid)->givePhysicalFieldsDoFNum()[0]; i++ ) {
-     *  for ( unsigned k = 0; k < masters.size(); k++ ) {
-     *    mults [ k ] = weightsm ( i , k );
-     *    dirs [ k ] = i;
-     *  }
-     *  cout << "rotation X " << i << endl;
-     *  JointDoF *newJD = new JointDoF(n->giveNode(nodeid), i, masters, dirs, mults);
-     *  c->addConstraint(newJD);
-     * }
-     */
+*/
 }
 
 //////////////////////////////////////////////////////////

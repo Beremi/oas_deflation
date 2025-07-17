@@ -667,6 +667,42 @@ void ConstraintContainer :: removeConstraint(unsigned i) {
 }
 
 //////////////////////////////////////////////////////////
+void ConstraintContainer :: addHangingNodeConstraint(Node* dependent, Element* primary){
+    unsigned ndim = primary->giveDimension();
+    Point natcoords = primary->findNaturalCoords(dependent->givePointPointer() );
+    Vector weights = primary->giveShapeFunctions(& natcoords);
+    vector< Node * >masters = primary->giveNodes();
+    vector< unsigned >dirs(masters.size() );
+    vector< double >mults(masters.size() );
+
+    //displacements
+    for ( unsigned k = 0; k < masters.size(); k++ ) {
+        mults [ k ] = weights [ k ];
+    }
+    unsigned i = 0;
+    for ( ; i < ndim; i++ ) {
+        for ( unsigned k = 0; k < masters.size(); k++ ) {
+            dirs [ k ] = i;
+        }
+        JointDoF *newJD = new JointDoF(dependent, i, masters, dirs, mults);
+        addConstraint(newJD);
+    }
+    /*
+     * //rotations
+     * Matrix weightsm = ee->giveShapeFunctionsGrad(& natcoords);
+     * for ( ; i < n->giveNode(nodeid)->givePhysicalFieldsDoFNum()[0]; i++ ) {
+     *  for ( unsigned k = 0; k < masters.size(); k++ ) {
+     *    mults [ k ] = weightsm ( i , k );
+     *    dirs [ k ] = i;
+     *  }
+     *  cout << "rotation X " << i << endl;
+     *  JointDoF *newJD = new JointDoF(n->giveNode(nodeid), i, masters, dirs, mults);
+     *  c->addConstraint(newJD);
+     * }
+     */
+}
+
+//////////////////////////////////////////////////////////
 void ConstraintContainer :: addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations){
     Point diff = dependent->givePoint() - primary->givePoint();
     vector< Node * >vm;

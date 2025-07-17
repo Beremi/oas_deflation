@@ -656,3 +656,31 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         exit(1);
     }
 }
+
+
+double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, const Point *a, const Point *b, const Point *c){
+    //test bounding box
+    double maxp, minp;
+    for(unsigned i=0; i<3; i++){
+        maxp = (*a)[i];
+        maxp = max(maxp,(*b)[i]);
+        maxp = max(maxp,(*c)[i]);
+        minp = (*a)[i];
+        minp = min(minp,(*b)[i]);
+        minp = min(minp,(*c)[i]);
+        if (min((*A)[i],(*B)[i])>maxp || max((*A)[i],(*B)[i])<minp){
+            return -1.;
+        }
+    }
+
+    //compute intersection with facet plane
+    Point dirvec = (*B)-(*A);
+    double length = dirvec.norm();
+    dirvec.normalize();
+    Point normal = Point( ((*b)[1]-(*a)[1])*((*c)[2]-(*a)[2]) - ((*c)[1]-(*a)[1])*((*b)[2]-(*a)[2]), ((*b)[2]-(*a)[2])*((*c)[0]-(*a)[0]) - ((*c)[2]-(*a)[2])*((*b)[0]-(*a)[0])   , ((*b)[0]-(*a)[0])*((*c)[1]-(*a)[1]) - ((*c)[0]-(*a)[0]) *((*b)[1]-(*a)[1]) );
+    normal.normalize();
+    double d = -( (*a) [ 0 ] * normal [ 0 ] + (*a) [ 1 ] * normal [ 1 ] + (*a) [ 2 ] * normal [ 2 ] );
+    double t = -( normal [ 0 ] * (*A) [ 0 ] + normal [ 1 ] * (*A)[ 1 ] + normal [ 2 ] * (*A) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] );
+    if (t>=0 && t<=length) return t;
+    else return -1.;
+}

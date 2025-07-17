@@ -8,6 +8,7 @@
 class Node; //forward declaration
 class NodeContainer; //forward declaration
 class ElementContainer;  // forward declaration
+class Element;  // forward declaration
 class ConstraintContainer;  // forward declaration
 class BCContainer;  // forward declaration
 class Solver;  // forward declaration
@@ -133,6 +134,7 @@ public:
     bool isActive() const { return !constraints.empty(); }
     void removeConstraint(unsigned i);
     void addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations);
+    void addHangingNodeConstraint(Node* dependent, Element* primary);
     void checkInternalDependencies();
 
     std :: vector< JointDoF * > :: iterator begin() { return constraints.begin(); }

@@ -137,6 +137,8 @@ double triArea2D(const Point *a, const Point *b, const Point *c);
 
 double triArea3D(const Point *a, const Point *b, const Point *c);
 
+double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, const Point *a, const Point *b, const Point *c);
+
 double triInertia2D(const Point *a, const Point *b, const Point *c);
 
 double tetraVolumeSigned(const Point *a, const Point *b, const Point *c, const Point *d);
