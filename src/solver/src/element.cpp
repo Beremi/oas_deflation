@@ -583,12 +583,28 @@ Point Element :: findNaturalCoords(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+vector<vector<unsigned>> Element :: giveTraingulatedFaces()const{
+    //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
+    vector<vector<unsigned>> tf;
+    if (vtk_cell_type==9){//triangle
+        tf = {{0,1},{1,2},{2,0}};
+    }else if (vtk_cell_type==9){//quad
+        tf = {{0,1},{1,2},{2,3},{3,0}};
+    }else if (vtk_cell_type==9){//tetra
+        tf = {{0,1,2},{0,2,3},{0,1,3},{1,2,3}};
+    }else if (vtk_cell_type==12){//brick
+        tf = {{1,0,2},{3,2,0},{4,5,6},{7,6,5},{5,0,1},{4,1,0},{2,1,6},{5,6,1},{3,2,7},{6,7,2},{0,3,4},{7,4,3}};
+    }
+    return tf;
+} 
+
+//////////////////////////////////////////////////////////
 Vector Element :: findIntersectionsWithLine(Point *A, Point *B)const{
     double t;
-    vector<unsigned> q;
-    vector<unsigned> intersections;
-    for(unsigned k=0; k<triangulated_faces.size(); k++){            
-        t = find_intesection_of_segment_and_triangle(A, B, nodes[triangulated_faces[k][0]]->givePointPointer(), nodes[triangulated_faces[k][1]]->givePointPointer(), nodes[triangulated_faces[k][2]]->givePointPointer());
+    vector<double> intersections;
+    vector<vector<unsigned>> tf = giveTraingulatedFaces();    
+    for(unsigned k=0; k<tf.size(); k++){            
+        t = find_intesection_of_segment_and_triangle(A, B, nodes[tf[k][0]]->givePointPointer(), nodes[tf[k][1]]->givePointPointer(), nodes[tf[k][2]]->givePointPointer());
         if (t>=0) {
             intersections.push_back(t);
         }

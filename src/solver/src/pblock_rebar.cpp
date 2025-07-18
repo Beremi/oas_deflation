@@ -67,7 +67,7 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
     bool bintersect;
     double vol1, vol2, vol3;
     vector< Node * >verts;
-    vector< pair<double, RigidBodyContact* > > intersections; 
+    vector< pair<double, Element* > > intersections; 
     
 
     BeamMaterial * bm = dynamic_cast<BeamMaterial *> (model->giveMaterials()->giveMaterial(material_id));
@@ -175,39 +175,60 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                 intersections.push_back(pair(t,rbc));
             //elems that are not RigidBodyContact
             } else {                
-                
+                Vector tt = ( *ee )->findIntersectionsWithLine(&a, &b);    
+                for(unsigned i=0; i<tt.size(); i++){
+                    intersections.push_back(pair(tt[i],(*ee)));
+                }
             }
         }
     
-        //find centers of intersection with particles
-        vector<Node*>parts;
+        //find centers of intersection with particles and elements
+        vector<Node*>primaryParticles;
+        vector<Element*>primaryElements;
         vector<pair<double,double>>minmaxt;
         sort(intersections.begin(), intersections.end(), sortPairsA);
         unsigned l;
         
         for(unsigned i=0; i<intersections.size(); i++){
-            for(unsigned j=0; j<2; j++){
-                auto m = find(parts.begin(), parts.end(), intersections[i].second->giveNode(j));
-                if (m!=parts.end()){
-                    l = m-parts.begin();
+            if(dynamic_cast<RigidBodyContact*>(intersections[i].second)){
+                for(unsigned j=0; j<2; j++){
+                    auto m = find(primaryParticles.begin(), primaryParticles.end(), intersections[i].second->giveNode(j));
+                    if (m!=primaryParticles.end()){
+                        l = m-primaryParticles.begin();
+                        minmaxt[l].first=intersections[i].first;        
+                    } else {
+                        primaryParticles.push_back(intersections[i].second->giveNode(j));
+                        primaryElements.push_back(nullptr);
+                        minmaxt.push_back(pair(-1,intersections[i].first));
+                    }
+                }
+            }else{
+                auto m = find(primaryElements.begin(), primaryElements.end(), intersections[i].second);
+                if (m!=primaryElements.end()){
+                    l = m-primaryElements.begin();
                     minmaxt[l].first=intersections[i].first;        
                 } else {
-                    parts.push_back(intersections[i].second->giveNode(j));
+                    primaryParticles.push_back(nullptr);
+                    primaryElements.push_back(intersections[i].second);
                     minmaxt.push_back(pair(-1,intersections[i].first));
-                }
+                }                
             }
         }
 
         vector<pair<double, Node*>> newts;
         double newt;
         //add new nodes and constraints
-        for(unsigned i=0; i<parts.size(); i++){
+        for(unsigned i=0; i<primaryParticles.size(); i++){
             if(minmaxt[i].first>0){
                 newt = (minmaxt[i].first+minmaxt[i].second)/2.;
                 Point newloc = a + dirvec*newt;
                 Particle* newp = new Particle(dim, 0, newloc);
                 model->giveNodes()->addNode(newp);
-                model->giveConstraints()->addRigidArmConstraint(dim,newp,parts[i],false);
+                if(primaryParticles[i]){
+                    model->giveConstraints()->addRigidArmConstraint(dim,newp,primaryParticles[i],false);
+                }else{
+                    model->giveConstraints()->addHangingNodeConstraint(newp,primaryElements[i]);
+                }
                 newts.push_back(pair(newt,newp));
             }                       
         }
@@ -225,5 +246,5 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
         TimoshenkoBeam3D * tb = new TimoshenkoBeam3D(first , second, bm, cs, Point(100,100,100));
         model->giveElements()->addElement(tb);  
 
-    }   
+    }  
 }

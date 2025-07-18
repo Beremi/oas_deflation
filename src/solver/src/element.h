@@ -40,7 +40,6 @@ protected:
     virtual void initIntegration();
     virtual void computeMassMatrix();
     virtual void computeDampingMatrix();
-    std :: vector <std :: vector<int>> triangulated_faces;
 
 
     ShapeFunc *shafunc;
@@ -119,6 +118,7 @@ public:
     virtual Vector giveBoundingBox()const;
     virtual Vector findIntersectionsWithLine(Point *A, Point *B)const;
     bool doesMechanics()const{return (physicalFields[0]>0);};
+    std::vector< std::vector<unsigned> > giveTraingulatedFaces()const;
 };
 
 

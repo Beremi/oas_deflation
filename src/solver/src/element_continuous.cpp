@@ -16,7 +16,6 @@ TrsprtTriangle :: TrsprtTriangle() : Element(2) {
     shafunc = new Linear2DTriShapeF();
     inttype = new IntegrTri3();
     physicalFields [ 1 ] = true; //transport
-    triangulated_faces = {{0,1},{1,2},{2,0}};
 }
 
 //////////////////////////////////////////////////////////
@@ -55,10 +54,9 @@ Vector TrsprtTriangle :: giveStrain(unsigned i, const Vector &DoFs) {
 TrsprtQuad :: TrsprtQuad() {
     numOfNodes = 4;
     name = "TrsprtQuad";
-    vtk_cell_type = 10;
+    vtk_cell_type = 9;
     shafunc = new Linear2DQuadShapeF();
     inttype = new IntegrQuad4();
-    triangulated_faces = {{0,1},{1,2},{2,3},{3,0}};
 }
 
 //////////////////////////////////////////////////////////
@@ -72,7 +70,6 @@ TrsprtTetra :: TrsprtTetra() {
     shafunc = new Linear3DTetraShapeF();
     inttype = new IntegrTetra4();
     physicalFields [ 1 ] = true; //transport
-    triangulated_faces = {{0,1,2},{0,2,3},{0,1,3},{1,2,3}};
 
 }
 
@@ -99,7 +96,6 @@ TrsprtBrick :: TrsprtBrick() {
     shafunc = new Linear3DBrickShapeF();
     inttype = new IntegrBrick8();
     physicalFields [ 1 ] = true; //transport
-    triangulated_faces = {{1,0,2},{3,2,0},{4,5,6},{7,6,5},{5,0,1},{4,1,0},{2,1,6},{5,6,1},{3,2,7},{6,7,2},{0,3,4},{7,4,3}};
 }
 
 //////////////////////////////////////////////////////////
@@ -159,7 +155,6 @@ MechanicalTriangle :: MechanicalTriangle() : Element(2) {
     inttype = new IntegrTri3(); //ONE IP suffices, but it does not work in extrapolation routine
     physicalFields [ 0 ] = true; //mechanics
     b_bar_integration_split = false;
-    triangulated_faces = {{0,1},{1,2},{2,0}};
 }
 
 //////////////////////////////////////////////////////////
@@ -257,7 +252,6 @@ MechanicalQuad :: MechanicalQuad() {
     shafunc = new Linear2DQuadShapeF();
     inttype = new IntegrQuad4();
     b_bar_integration_split = false;
-    triangulated_faces = {{0,1},{1,2},{2,3},{3,0}};
 }
 
 //////////////////////////////////////////////////////////
@@ -272,7 +266,6 @@ MechanicalTetra :: MechanicalTetra() {
     inttype = new IntegrTetra4();
     physicalFields [ 0 ] = true; //mechanics
     b_bar_integration_split = false;
-    triangulated_faces = {{0,1,2},{0,2,3},{0,1,3},{1,2,3}};
 }
 
 //////////////////////////////////////////////////////////
@@ -313,7 +306,6 @@ MechanicalBrick :: MechanicalBrick() {
     shafunc = new Linear3DBrickShapeF();
     inttype = new IntegrBrick8();
     b_bar_integration_split = false;
-    triangulated_faces = {{1,0,2},{3,2,0},{4,5,6},{7,6,5},{5,0,1},{4,1,0},{2,1,6},{5,6,1},{3,2,7},{6,7,2},{0,3,4},{7,4,3}};
 }
 
 //////////////////////////////////////////////////////////
@@ -333,7 +325,6 @@ CosseratQuad :: CosseratQuad() {
     inttype = new IntegrQuad4();
     physicalFields [ 0 ] = true; //mechanics
     b_bar_integration_split = false;
-    triangulated_faces = {{0,1},{1,2},{2,3},{3,0}};
 }
 
 
@@ -404,7 +395,6 @@ CosseratBrick :: CosseratBrick() {
     shafunc = new Linear3DBrickShapeF();
     inttype = new IntegrBrick8();
     physicalFields [ 0 ] = true; //mechanics
-    triangulated_faces = {{1,0,2},{3,2,0},{4,5,6},{7,6,5},{5,0,1},{4,1,0},{2,1,6},{5,6,1},{3,2,7},{6,7,2},{0,3,4},{7,4,3}};
 }
 
 
