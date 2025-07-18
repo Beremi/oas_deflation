@@ -21,6 +21,7 @@ protected:
     Function *func;
     double target_value;
     int funcnum;
+    bool requiref;
     unsigned nummaxunit;
     std :: vector< bool >coords_active;
     std :: vector< bool >nodes_active;
@@ -37,10 +38,11 @@ protected:
 
 public:
     IndirectControl();
-    ~IndirectControl() {};
+    virtual ~IndirectControl() {};
     void init(NodeContainer *mnodes, FunctionContainer *funcs, bool initial = true);
     void readFromStream(unsigned num, std :: ifstream &inputfile);
     virtual double giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time);
+    bool requireForces()const;
 };
 
 //////////////////////////////////////////////////////////
@@ -50,7 +52,7 @@ protected:
 
 public:
     IndirectControlSumOfSquares();
-    ~IndirectControlSumOfSquares() {};
+    virtual ~IndirectControlSumOfSquares() {};
     virtual double giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time);
 };
 #endif /* _INDIRECT_CONTROL_H */

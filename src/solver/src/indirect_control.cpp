@@ -9,6 +9,7 @@ IndirectControl :: IndirectControl() {
     funcnum = -1;
     func = nullptr;
     nummaxunit = 0;
+    requiref = false;
 };
 
 //////////////////////////////////////////////////////////
@@ -113,6 +114,9 @@ void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, bo
             cerr << "Error: Indirect force Control weights were not set" << endl;
             exit(1);
         }
+        for ( unsigned i = 0; i < clength; i++ ) {
+            if (f_weights [ c ] [ i ] != 0) requiref = true;
+        }
         if ( DoFs [ c ].size() < clength || !initial ) {
             // JK: in adaptivity, number of control DoFs remain, but DoFs from updated geometry are used
             if ( initial ) {
@@ -162,6 +166,11 @@ double IndirectControl :: givePrescribedValue(double time) {
         return func->giveY(time);
     }
     return time;
+}
+
+//////////////////////////////////////////////////////////
+bool IndirectControl :: requireForces() const {
+    return requiref;
 }
 
 //////////////////////////////////////////////////////////

@@ -641,21 +641,28 @@ void SteadyStateNonLinearSolver :: solve() {
                     //compute B
                     Vector trial_r_B = trial_r_last_iter +full_ddf + full_ddr;
                     nodes->updateDirrichletBC(trial_r_B, idc_time+idc_dt); //give prescribed DoFs
-                    load.setZero();
-                    nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
-                    computeInternalExternalForces( trial_r_B, load, false, idc_time + idc_dt );
-                    Vector fext_B = f_ext;
+                    Vector fext_B;
+                    if(idc->requireForces()){
+                        load.setZero();
+                        nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
+                        computeInternalExternalForces( trial_r_B, load, false, idc_time + idc_dt );
+                        fext_B = f_ext;
+                    }
 
                     //compute A
                     Vector trial_r_A = trial_r_last_iter + full_ddr;
-                    load.setZero();
-                    nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
-                    computeInternalExternalForces( trial_r_A, load, false, idc_time );
-                    Vector fext_A = f_ext;    
+                    Vector fext_A;
+                    if(idc->requireForces()){
+                        load.setZero();
+                        nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
+                        computeInternalExternalForces( trial_r_A, load, false, idc_time );
+                        fext_A = f_ext;    
+                    }
 
-                    Vector diff_r = trial_r_B - trial_r_A;
-                    Vector diff_f = fext_B - fext_A;
-                    load_mult = idc->giveMultiplierCorrection(trial_r_A, fext_A, diff_r, diff_f, time);
+                    //differences and load multiplier
+                    trial_r_B -= trial_r_A;
+                    fext_B -= fext_A;
+                    load_mult = idc->giveMultiplierCorrection(trial_r_A, fext_A, trial_r_B, fext_B, time);
 
                     ddr += load_mult * ddf;
                     idc_time += idc_dt * load_mult;
