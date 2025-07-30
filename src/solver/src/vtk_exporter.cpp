@@ -763,7 +763,6 @@ void VTKRebarExporter :: exportData(unsigned step, int iteration, fs :: path res
 
     //vtkNew<vtkXMLUnstructuredGridWriter> writer;
     vtkSmartPointer< vtkXMLUnstructuredGridWriter >writer = vtkSmartPointer< vtkXMLUnstructuredGridWriter > :: New();
-    
     fs::path outputPath = resultDir / fname;
     writer->SetFileName( outputPath.string().c_str() );
     writer->SetInputData(unstructuredGrid);
