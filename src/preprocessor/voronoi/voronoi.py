@@ -85,7 +85,7 @@ def copy_data_general_full(data):
     return new_data
 
 
-def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None,notch=None):
+def mirror_dataBeam(data, dim, sizes, shifts=0, weights=[],notch=None):
     print('shifts %s' %shifts)
     '''Mirror data 2D and 3D'''
     if (dim == 2):
@@ -125,12 +125,12 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None,notch=None):
             for i,p in enumerate(data):
                 if p[0]<sizes[0]/2 and p[0]>sizes[0]/2-notch_width*1.1 and p[1]<sizes[1]*notch_height:
                     leftnotchpoints.append( [p[0]+1e-5, p[1],p[2] ])
-                    if len(weights>0):
+                    if len(weights)>0:
                         leftnotchweights.append(weights[i])
 
                 if p[0]>sizes[0]/2 and p[0]<sizes[0]/2+notch_width*1.1 and p[1]<sizes[1]*notch_height:
                     rightnotchpoints.append( [p[0]-1e-5, p[1],p[2] ])
-                    if len(weights>0):
+                    if len(weights)>0:
                         rightnotchweights.append(weights[i])
 
             data=np.asarray(data)
@@ -157,7 +157,7 @@ def mirror_dataBeam(data, dim, sizes, shifts=0, weights=None,notch=None):
     #"""
 
 
-    if weights is not None:
+    if len(weights) >0:
         if dim == 2:
             weightsOut = np.hstack([weights]*5)
         else:
